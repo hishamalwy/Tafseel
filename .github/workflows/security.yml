@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
   workflow_call:
 permissions:
+  actions: read
   contents: read
   security-events: write
 jobs:
