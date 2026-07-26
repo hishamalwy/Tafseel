@@ -1,0 +1,101 @@
+name: Deploy Production
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing validated GitHub Release (v1.2.3)
+        required: true
+        type: string
+      approve_migration:
+        description: Confirm reviewed migration and backup evidence
+        required: true
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: tafseel-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    name: production
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERSION: ${{ inputs.version }}
+      APP_URL: ${{ vars.APP_URL }}
+      ConnectionStrings__Tafseel: ${{ secrets.DATABASE_CONNECTION_STRING }}
+      Jwt__SigningKey: ${{ secrets.JWT_SIGNING_KEY }}
+      Resend__ApiToken: ${{ secrets.RESEND_API_TOKEN }}
+      Email__From: ${{ vars.EMAIL_FROM }}
+      Email__ConfirmationUrl: ${{ vars.EMAIL_CONFIRMATION_URL }}
+      Email__PasswordResetUrl: ${{ vars.EMAIL_PASSWORD_RESET_URL }}
+      Payments__Provider: ${{ vars.PAYMENTS_PROVIDER }}
+      Payments__WebhookSecret: ${{ secrets.PAYMENTS_WEBHOOK_SECRET }}
+      LiveSessions__Provider: ${{ vars.LIVE_SESSIONS_PROVIDER }}
+      FileStorage__Provider: ${{ vars.FILE_STORAGE_PROVIDER }}
+      DataProtection__KeysPath: ${{ vars.DATA_PROTECTION_KEYS_PATH }}
+      Cors__AllowedOrigins__0: ${{ vars.CORS_ORIGIN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SQL_SERVER: ${{ secrets.SQL_SERVER }}
+      SQL_DATABASE: ${{ secrets.SQL_DATABASE }}
+      SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
+      SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
+      DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+      DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
+      BACKUP_EVIDENCE_ID: ${{ secrets.BACKUP_EVIDENCE_ID }}
+    steps:
+      - name: Validate release and approval inputs
+        run: |
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          test '${{ inputs.approve_migration }}' = true || { echo "Migration approval is required"; exit 1; }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.version }}
+      - name: Download immutable release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "$VERSION" --dir release
+      - name: Verify artifact checksums and image digest
+        run: |
+          (cd release && sha256sum -c SHA256SUMS)
+          image="$(jq -r .image release/docker-metadata.json)"
+          test "$image" != null
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker pull "$image"
+          test "$(docker inspect --format='{{index .RepoDigests 0}}' "$image")" = "$image"
+          echo "DEPLOY_IMAGE=$image" >> "$GITHUB_ENV"
+      - name: Validate production configuration
+        shell: pwsh
+        run: ./scripts/ci/check-production-config.ps1
+      - name: Apply approved idempotent migration separately
+        run: |
+          test -n "$BACKUP_EVIDENCE_ID" || { echo "Backup evidence is required"; exit 1; }
+          docker run --rm -v "$PWD/release/tafseel-idempotent.sql:/work/migration.sql:ro" \
+            -e SQLCMDPASSWORD="$SQL_PASSWORD" mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04 \
+            /opt/mssql-tools18/bin/sqlcmd -C -b -S "$SQL_SERVER" -d "$SQL_DATABASE" -U "$SQL_USERNAME" -i /work/migration.sql
+      - name: Deploy immutable image
+        run: |
+          curl --fail --silent --show-error --retry 2 -X POST "$DEPLOY_HOOK_URL" \
+            -H 'Content-Type: application/json' -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \
+            --data "{\"environment\":\"production\",\"image\":\"$DEPLOY_IMAGE\",\"version\":\"$VERSION\",\"strategy\":\"${{ vars.DEPLOY_STRATEGY }}\"}"
+      - name: Production-safe smoke tests
+        id: smoke
+        run: |
+          for attempt in {1..40}; do curl -fsS "$APP_URL/health/ready" && break; sleep 5; done
+          curl -fsS "$APP_URL/health/ready"
+          curl -fsS "$APP_URL/health/live"
+          curl -fsS "$APP_URL/app/Tafseel-Landing.dc.html" >/dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/app/appsettings.json")" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/v1/auth/me")" = 401
+      - name: Roll back application on failed health
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          test -n '${{ vars.PREVIOUS_IMAGE }}' || { echo "Previous image is not configured; manual rollback required."; exit 1; }
+          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK_URL" \
+            -H 'Content-Type: application/json' -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \
+            --data "{\"environment\":\"production\",\"image\":\"${{ vars.PREVIOUS_IMAGE }}\",\"strategy\":\"rollback\",\"databaseRollback\":false}"
+      - name: Deployment evidence
+        if: always()
+        run: |
+          echo "Version \`$VERSION\`, revision \`${GITHUB_SHA}\`, image \`${DEPLOY_IMAGE:-unavailable}\`, run \`${GITHUB_RUN_ID}\`, actor \`${GITHUB_ACTOR}\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "Database migrations are never automatically rolled back." >> "$GITHUB_STEP_SUMMARY"

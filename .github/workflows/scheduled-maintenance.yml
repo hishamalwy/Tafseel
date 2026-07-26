@@ -1,0 +1,57 @@
+name: Scheduled Maintenance
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  container-baseline:
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit
+  maintenance:
+    name: maintenance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: dotnet tool restore && dotnet restore Tafseel.sln --locked-mode
+      - run: dotnet list Tafseel.sln package --vulnerable --include-transitive
+      - run: dotnet list Tafseel.sln package --deprecated
+      - name: Outdated dependency report
+        continue-on-error: true
+        run: dotnet list Tafseel.sln package --outdated | tee outdated.txt
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: dotnet ef migrations has-pending-model-changes --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api
+        env:
+          Jwt__SigningKey: maintenance-only-signing-key-with-at-least-32-characters
+          Resend__ApiToken: maintenance-token
+          Payments__WebhookSecret: maintenance-webhook-secret-with-at-least-32-characters
+      - name: Optional health and backup metadata checks
+        shell: bash
+        env:
+          HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL }}
+          BACKUP_STATUS_URL: ${{ vars.BACKUP_STATUS_URL }}
+          BACKUP_STATUS_TOKEN: ${{ secrets.BACKUP_STATUS_TOKEN }}
+        run: |
+          if [ -n "$HEALTH_URL" ]; then curl --fail --silent --show-error --max-time 20 "$HEALTH_URL"; else echo "Production health URL not configured."; fi
+          if [ -n "$BACKUP_STATUS_URL" ]; then curl --fail --silent --show-error --max-time 20 -H "Authorization: Bearer $BACKUP_STATUS_TOKEN" "$BACKUP_STATUS_URL"; else echo "Backup status integration not configured."; fi
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Scheduled maintenance" >> "$GITHUB_STEP_SUMMARY"
+          echo "Dependency, secret, migration-drift, optional health, and backup metadata checks ran. No dependency was changed automatically." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: maintenance-${{ github.run_id }}
+          path: outdated.txt
+          if-no-files-found: warn

@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <div style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh" data-stack="app">
@@ -114,6 +115,7 @@
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
                   <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Amount</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,6 +129,7 @@
                     <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
                     <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
                     <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
+                    <td style="padding:14px 20px;text-align:end"><sc-if value="{{ r.actionLabel }}"><button type="button" onClick="{{ r.onAction }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">{{ r.actionLabel }}</button></sc-if></td>
                   </tr>
                 </sc-for>
               </tbody>
@@ -473,7 +476,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 /* Mock student data — mirrors GET /api/students/me/dashboard */
-const REQUESTS = [
+let REQUESTS = [
   { id:'R-4821', title:'Carnot cycle problems from my past exam', service:'Custom recorded explanation', teacher:'Dr. Rana Al-Otaibi', status:'Delivered', deadline:'26 Jul', amount:'SAR 120', group:'action' },
   { id:'R-4809', title:'Binary search trees — traversal walkthrough', service:'Custom recorded explanation', teacher:'Omar Haddad', status:'In Progress', deadline:'28 Jul', amount:'SAR 150', group:'active' },
   { id:'R-4795', title:'Statics assignment 3 guidance', service:'Assignment guidance', teacher:'Khalid Al-Sudairi', status:'Payment Required', deadline:'29 Jul', amount:'SAR 175', group:'action' },
@@ -502,7 +505,7 @@ const AR = {
   ph_dash_search:'ابحث في الطلبات والمعلمين والملفات…'
 };
 
-const SAVED_TEACHERS = [
+let SAVED_TEACHERS = [
   { name:'Dr. Rana Al-Otaibi', subject:'Physics · Thermodynamics', rating:'4.9', price:'SAR 120' },
   { name:'Layla Mansour', subject:'Mathematics · Calculus II', rating:'4.8', price:'SAR 95' },
   { name:'Omar Haddad', subject:'Programming · Data structures', rating:'5.0', price:'SAR 150' }
@@ -545,13 +548,53 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
     section: 'overview', filter: 'all', drawer: false, notifsOpen: false,
-    read: [], toast: '',
+    read: [], toast: '', liveNotifs: [], liveSessions: [],
     settingsName: 'Noor Abdulaziz', settingsEmail: 'noor.a@example.com', notifyDeliveries: true, notifySessions: true
   };
 
   componentDidMount() {
     Tafseel.addDict(AR);
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    Tafseel.api.ready().then(session => {
+      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+      this.setState({ settingsName:session.fullName, settingsEmail:session.email });
+      return Promise.all([
+        Tafseel.api.get('/learning-requests/mine?pageSize=100'),
+        Tafseel.api.get('/orders/mine?pageSize=100'),
+        Tafseel.api.get('/favorite-teachers'),
+        Tafseel.api.get('/notifications?pageSize=100'),
+        Tafseel.api.get('/live-sessions/mine?pageSize=100')
+      ]);
+    }).then(data => {
+      if (!data) return;
+      const [requests, orders, favorites, notifications, sessions] = data;
+      const requestNames = ['Pending Teacher Review','Clarification Requested','Accepted','Declined','Cancelled'];
+      const orderNames = ['Payment Required','In Progress','Delivered','Revision Requested','Completed','Cancelled'];
+      REQUESTS = requests.items.map(x => ({
+        id:x.id, title:x.title, service:'Learning request', teacher:x.teacherId,
+        status:requestNames[x.status], deadline:new Date(x.preferredDeliveryAt).toLocaleDateString(),
+        amount:x.budget ? 'SAR ' + x.budget : 'Flexible', group:x.status >= 3 ? 'done' : 'active',
+        kind:'request', rawStatus:x.status, version:x.version
+      })).concat(orders.items.map(x => ({
+        id:x.id, title:'Order ' + x.id, service:'Personalized service', teacher:x.teacherId,
+        status:orderNames[x.status], deadline:new Date(x.agreedDeliveryAt).toLocaleDateString(),
+        amount:x.currency + ' ' + x.studentTotal, group:x.status === 4 ? 'done' : (x.status === 2 || x.status === 3 ? 'action' : 'active'),
+        kind:'order', rawStatus:x.status, paymentStatus:x.paymentStatus, version:x.version
+      })));
+      SAVED_TEACHERS = favorites.map(x => ({
+        name:x.fullName, subject:x.subjects.join(' · '), rating:String(x.rating),
+        price:(x.currency || 'SAR') + ' ' + (x.startingPrice || 0)
+      }));
+      this.setState({ liveNotifs:notifications.items.map(x => ({
+        id:x.id, title:x.title, body:x.body, time:new Date(x.createdAt).toLocaleString(), read:!!x.readAt
+      })), read:notifications.items.filter(x => x.readAt).map(x => x.id),
+        liveSessions:sessions.items.map(x => ({
+          id:x.id, teacher:x.teacherId, topic:x.title,
+          when:new Date(x.startsAt).toLocaleString(), countdown:'Scheduled',
+          urgent:x.status === 1, version:x.version
+        }))
+      });
+    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
   componentDidUpdate() { Tafseel.translate(); }
@@ -562,6 +605,28 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
   }
 
+  async orderAction(item) {
+    try {
+      if (item.status === 'Payment Required') {
+        const result = await Tafseel.api.post('/payments/orders/' + item.id, null, { 'Idempotency-Key':'payment-' + item.id });
+        return this.flash('Payment started: ' + result.checkoutReference);
+      }
+      const choice = prompt('Type complete, revision, or dispute:');
+      if (choice === 'complete')
+        await Tafseel.api.post('/orders/' + item.id + '/complete', null, { 'If-Match':item.version });
+      else if (choice === 'revision') {
+        const reason = prompt('What needs revision?');
+        if (!reason) return;
+        await Tafseel.api.post('/orders/' + item.id + '/revision', { reason }, { 'If-Match':item.version });
+      } else if (choice === 'dispute') {
+        const reason = prompt('Describe the dispute:');
+        if (!reason) return;
+        await Tafseel.api.post('/disputes', { orderId:item.id, reason });
+      } else return;
+      this.flash('Order updated.');
+    } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+  }
+
   renderVals() {
     const s = this.state;
     const NAV = [
@@ -570,7 +635,7 @@ class Component extends DCLogic {
       ['files', '⇩', 'Files', 0], ['reviews', '★', 'Reviews', 0], ['notifications', '🔔', 'Notifications', 0], ['settings', '⚙', 'Settings', 0]
     ];
 
-    const NOTIFS = [
+    const NOTIFS = s.liveNotifs.length ? s.liveNotifs : [
       { id:1, title:'Delivery uploaded', body:'Dr. Rana Al-Otaibi delivered “Carnot cycle problems”. Review within 3 days.', time:'12 minutes ago' },
       { id:2, title:'Payment required', body:'Khalid Al-Sudairi accepted your request at SAR 175. Pay to start the work.', time:'2 hours ago' },
       { id:3, title:'Live session reminder', body:'Your session with Omar Haddad starts tonight at 20:30 (GMT+3).', time:'5 hours ago' },
@@ -621,15 +686,20 @@ class Component extends DCLogic {
 
       allRequests: REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).map(r => {
         const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
-        return { ...r, statusStyle: 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg };
+        return {
+          ...r,
+          actionLabel:r.kind === 'order' && r.status === 'Payment Required' ? 'Pay' : r.kind === 'order' && ['In Progress','Delivered','Revision Requested'].includes(r.status) ? 'Manage' : '',
+          onAction:() => this.orderAction(r),
+          statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
+        };
       }),
 
-      allSessions: [
+      allSessions: (s.liveSessions.length ? s.liveSessions : [
         { teacher: 'Omar Haddad', topic: 'Binary search trees · 60 min', when: 'Tonight · 20:30 GMT+3', countdown: 'in 4h 12m', urgent: true },
         { teacher: 'Dr. Rana Al-Otaibi', topic: 'Thermodynamics revision · 90 min', when: 'Thu 30 Jul · 18:00 GMT+3', countdown: 'in 4 days', urgent: false },
         { teacher: 'Dr. Yousef Karim', topic: 'Organic mechanisms revision · 60 min', when: 'Sat 1 Aug · 17:00 GMT+3', countdown: 'in 6 days', urgent: false },
         { teacher: 'Tariq Zayed', topic: 'Thesis methodology · 90 min', when: 'Mon 3 Aug · 19:00 GMT+3', countdown: 'in 8 days', urgent: false }
-      ].map(se => ({
+      ]).map(se => ({
         ...se,
         cardStyle: 'border:1px solid ' + (se.urgent ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (se.urgent ? 'var(--primary-soft)' : 'var(--bg)'),
         countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:' + (se.urgent ? 'var(--primary)' : 'var(--muted)'),
@@ -637,7 +707,13 @@ class Component extends DCLogic {
         btnStyle: 'height:32px;padding:0 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' + (se.urgent
           ? 'border:0;background:var(--primary);color:var(--primary-ink);'
           : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onJoin: () => this.flash(se.urgent ? 'Opening session room with ' + se.teacher + '…' : 'Reschedule request sent to ' + se.teacher)
+        onJoin: async () => {
+          if (!se.id || !se.urgent) return this.flash('This session is not ready to join.');
+          try {
+            const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
+            location.href = join.url;
+          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        }
       })),
 
       savedTeachers: SAVED_TEACHERS,
@@ -678,15 +754,20 @@ class Component extends DCLogic {
 
       requests: rows.map(r => {
         const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
-        return { ...r, statusStyle: 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg };
+        return {
+          ...r,
+          actionLabel:r.kind === 'order' && r.status === 'Payment Required' ? 'Pay' : r.kind === 'order' && ['In Progress','Delivered','Revision Requested'].includes(r.status) ? 'Manage' : '',
+          onAction:() => this.orderAction(r),
+          statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
+        };
       }),
       noRequests: rows.length === 0,
       shownCount: rows.length,
 
-      sessions: [
+      sessions: (s.liveSessions.length ? s.liveSessions.slice(0, 2) : [
         { teacher: 'Omar Haddad', topic: 'Binary search trees · 60 min', when: 'Tonight · 20:30 GMT+3', countdown: 'in 4h 12m', urgent: true },
         { teacher: 'Dr. Rana Al-Otaibi', topic: 'Thermodynamics revision · 90 min', when: 'Thu 30 Jul · 18:00 GMT+3', countdown: 'in 4 days', urgent: false }
-      ].map(se => ({
+      ]).map(se => ({
         ...se,
         cardStyle: 'border:1px solid ' + (se.urgent ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (se.urgent ? 'var(--primary-soft)' : 'var(--bg)'),
         countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:' + (se.urgent ? 'var(--primary)' : 'var(--muted)'),
@@ -694,7 +775,13 @@ class Component extends DCLogic {
         btnStyle: 'height:32px;padding:0 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' + (se.urgent
           ? 'border:0;background:var(--primary);color:var(--primary-ink);'
           : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onJoin: () => this.flash(se.urgent ? 'Opening session room with ' + se.teacher + '…' : 'Reschedule request sent to ' + se.teacher)
+        onJoin: async () => {
+          if (!se.id || !se.urgent) return this.flash('This session is not ready to join.');
+          try {
+            const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
+            location.href = join.url;
+          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        }
       })),
 
       chart: chartData.map((v, i) => ({
@@ -713,14 +800,25 @@ class Component extends DCLogic {
       notifsOpen: s.notifsOpen,
       toggleNotifs: () => this.setState({ notifsOpen: !s.notifsOpen }),
       closeNotifs: () => this.setState({ notifsOpen: false }),
-      markAll: () => { this.setState({ read: NOTIFS.map(n => n.id) }); this.flash('All notifications marked as read'); },
+      markAll: async () => {
+        try {
+          await Tafseel.api.post('/notifications/read');
+          this.setState({ read: NOTIFS.map(n => n.id) });
+          this.flash('All notifications marked as read');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
       notifications: NOTIFS.map(n => {
         const isRead = s.read.includes(n.id);
         return {
           ...n,
           style: 'display:flex;gap:12px;width:100%;padding:16px 20px;border:0;border-bottom:1px solid var(--border);text-align:start;background:' + (isRead ? 'transparent' : 'var(--primary-soft)'),
           dotStyle: 'flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:' + (isRead ? 'var(--border-strong)' : 'var(--primary)'),
-          onClick: () => this.setState({ read: s.read.includes(n.id) ? s.read : s.read.concat(n.id) })
+          onClick: async () => {
+            if (!s.read.includes(n.id)) {
+              await Tafseel.api.post('/notifications/read?id=' + n.id).catch(() => {});
+              this.setState({ read:s.read.concat(n.id) });
+            }
+          }
         };
       })
     };

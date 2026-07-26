@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -83,6 +84,16 @@
               <div title="{{ c.title }}" style="{{ c.style }}"></div>
             </sc-for>
           </div>
+        </section>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-top:16px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">Pending withdrawals</h2>
+          <sc-for list="{{ withdrawals }}" as="w" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:12px;padding-block:10px;border-top:1px solid var(--border)">
+              <div style="flex:1"><strong>{{ w.amount }}</strong><div style="font-size:12px;color:var(--muted)">{{ w.teacher }}</div></div>
+              <button type="button" onClick="{{ w.reject }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">Reject</button>
+              <button type="button" onClick="{{ w.approve }}" style="height:32px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm)">Approve</button>
+            </div>
+          </sc-for>
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
@@ -384,7 +395,7 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const USERS = [
+let USERS = [
   { id:1, name:'Noor Abdulaziz', email:'noor.a@example.com', role:'Student', joined:'12 Mar 2026', status:'Active' },
   { id:2, name:'Dr. Rana Al-Otaibi', email:'rana.otaibi@example.com', role:'Teacher', joined:'3 Jan 2026', status:'Active' },
   { id:3, name:'Sami Mattar', email:'sami.mattar@example.com', role:'Reviewer', joined:'20 Nov 2025', status:'Active' },
@@ -463,13 +474,54 @@ class Component extends DCLogic {
     commissionRate: 15, requireReview: true, maintenanceMode: false
   };
 
-  componentDidMount() { this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme })); }
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    Tafseel.api.ready().then(session => {
+      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+      return Promise.all([
+        Tafseel.api.get('/admin/users?pageSize=100'),
+        Tafseel.api.get('/admin/metrics'),
+        Tafseel.api.get('/admin/catalog/subjects'),
+        Tafseel.api.get('/admin/catalog/topics'),
+        Tafseel.api.get('/admin/catalog/services'),
+        Tafseel.api.get('/admin/disputes?pageSize=100'),
+        Tafseel.api.get('/admin/withdrawals?status=0&pageSize=100')
+      ]);
+    }).then(data => {
+      if (!data) return;
+      USERS = data[0].items.map(x => ({
+        id:x.id, name:x.fullName, email:x.email,
+        role:x.roles[0] === 'QualityReviewer' ? 'Reviewer' : (x.roles[0] || 'User'),
+        joined:'', status:x.isSuspended ? 'Suspended' : 'Active'
+      }));
+      CATALOG_DATA.subjects = data[2].map(x => ({ id:x.id, name:x.name, meta:x.detail || '', active:x.isActive }));
+      CATALOG_DATA.topics = data[3].map(x => ({ id:x.id, name:x.name, meta:x.detail || '', active:x.isActive }));
+      CATALOG_DATA.services = data[4].map(x => ({ id:x.id, name:x.name, meta:x.detail || '', active:x.isActive }));
+      LIST_DATA.disputes = data[5].items.map(x => ({
+        title:'Order ' + x.orderId, meta:x.reason, status:x.status === 2 ? 'Resolved' : 'Open',
+        tone:x.status === 2 ? 'success' : 'error'
+      }));
+      this.setState({ liveMetrics:data[1], liveWithdrawals:data[6].items, userOverrides:{} });
+    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
+  }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
 
   flash(msg) {
     this.setState({ toast: msg });
     clearTimeout(this._t);
     this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+
+  async processWithdrawal(item, approve) {
+    const providerReference = approve ? prompt('Provider payout reference:') : null;
+    if (approve && !providerReference) return;
+    try {
+      await Tafseel.api.post('/withdrawals/' + item.id + '/process', {
+        approve, providerReference
+      }, { 'If-Match':item.version, 'Idempotency-Key':'withdrawal-' + item.id + '-' + approve });
+      this.setState({ liveWithdrawals:(this.state.liveWithdrawals || []).filter(x => x.id !== item.id) });
+      this.flash(approve ? 'Withdrawal approved' : 'Withdrawal rejected');
+    } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
   }
 
   renderVals() {
@@ -534,10 +586,13 @@ class Component extends DCLogic {
             ...u, initials: u.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
             statusStyle: 'display:inline-flex;height:22px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + bg + ';color:' + fg,
             toggleLabel: u.status === 'Suspended' ? 'Activate' : 'Suspend',
-            onToggle: () => {
+            onToggle: async () => {
               const next = u.status === 'Suspended' ? 'Active' : 'Suspended';
-              this.setState({ userOverrides: { ...s.userOverrides, [u.id]: next } });
-              this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+              try {
+                await Tafseel.api.put('/admin/users/' + encodeURIComponent(u.id) + '/suspension', { suspended:next === 'Suspended' });
+                this.setState({ userOverrides: { ...s.userOverrides, [u.id]: next } });
+                this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+              } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
             }
           };
         }),
@@ -550,7 +605,14 @@ class Component extends DCLogic {
         return {
           ...c, active,
           onEdit: () => this.flash('Editing ' + c.name),
-          onToggle: () => { this.setState({ catalogOverrides: { ...s.catalogOverrides, [c.id]: !active } }); this.flash(c.name + (active ? ' deactivated' : ' activated')); }
+          onToggle: async () => {
+            if (s.catalogKind === 'coupons') return this.flash('Coupons are not enabled in the backend.');
+            try {
+              await Tafseel.api.patch('/admin/catalog/' + s.catalogKind + '/' + c.id + '/active', { isActive:!active });
+              this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
+              this.flash(c.name + (active ? ' deactivated' : ' activated'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          }
         };
       }),
 
@@ -563,9 +625,18 @@ class Component extends DCLogic {
       commissionRate: s.commissionRate, onCommissionRate: e => this.setState({ commissionRate: e.target.value }),
       requireReview: s.requireReview, onRequireReview: e => this.setState({ requireReview: e.target.checked }),
       maintenanceMode: s.maintenanceMode, onMaintenanceMode: e => this.setState({ maintenanceMode: e.target.checked }),
-      onSavePlatformSettings: () => this.flash('Platform settings saved'),
+      onSavePlatformSettings: () => this.flash('Production settings are deployment-managed and cannot be changed here.'),
 
-      metrics: [
+      metrics: s.liveMetrics ? [
+        { label:'Total users', value:String(s.liveMetrics.totalUsers), icon:'◈', delta:'Current total', tone:'ok' },
+        { label:'Active teachers', value:String(s.liveMetrics.activeTeachers), icon:'✎', delta:'Active accounts', tone:'ok' },
+        { label:'Active students', value:String(s.liveMetrics.activeStudents), icon:'◍', delta:'Active accounts', tone:'ok' },
+        { label:'Pending applications', value:String(s.liveMetrics.pendingApplications), icon:'◷', delta:'Needs review', tone:'muted' },
+        { label:'Total orders', value:String(s.liveMetrics.totalOrders), icon:'⇩', delta:'All time', tone:'ok' },
+        { label:'Confirmed payments', value:'SAR ' + s.liveMetrics.confirmedPayments, icon:'$', delta:'Confirmed', tone:'ok' },
+        { label:'Platform revenue', value:'SAR ' + s.liveMetrics.platformRevenue, icon:'%', delta:'Ledger balance', tone:'muted' },
+        { label:'Open disputes', value:String(s.liveMetrics.openDisputes), icon:'⚠', delta:'Needs attention', tone:'warn' }
+      ] : [
         { label: 'Total users', value: '8,412', icon: '◈', delta: '+312 this month', tone: 'ok' },
         { label: 'Active teachers', value: '1,240', icon: '✎', delta: '+48 this month', tone: 'ok' },
         { label: 'Active students', value: '6,940', icon: '◍', delta: '+264 this month', tone: 'ok' },
@@ -575,6 +646,12 @@ class Component extends DCLogic {
         { label: 'Platform commission', value: 'SAR 612K', icon: '%', delta: '15% take rate', tone: 'muted' },
         { label: 'Open disputes', value: '3', icon: '⚠', delta: 'Needs attention', tone: 'warn' }
       ].map(m => ({ ...m, deltaStyle: 'font-size:12px;font-weight:600;color:' + (m.tone === 'warn' ? 'var(--warning)' : m.tone === 'ok' ? 'var(--success)' : 'var(--muted)') })),
+
+      withdrawals: (s.liveWithdrawals || []).map(w => ({
+        teacher:w.teacherId, amount:w.currency + ' ' + w.amount,
+        approve:async () => this.processWithdrawal(w, true),
+        reject:async () => this.processWithdrawal(w, false)
+      })),
 
       revenueChart: [210, 240, 265, 250, 290, 320, 355, 408].map((v, i, arr) => ({
         title: 'SAR ' + v + 'K', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
@@ -612,10 +689,13 @@ class Component extends DCLogic {
           checked,
           onCheck: () => this.setState({ selected: checked ? s.selected.filter(id => id !== u.id) : s.selected.concat(u.id) }),
           toggleLabel: u.status === 'Suspended' ? 'Activate' : 'Suspend',
-          onToggle: () => {
+          onToggle: async () => {
             const next = u.status === 'Suspended' ? 'Active' : 'Suspended';
-            this.setState({ userOverrides: { ...s.userOverrides, [u.id]: next } });
-            this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+            try {
+              await Tafseel.api.put('/admin/users/' + encodeURIComponent(u.id) + '/suspension', { suspended:next === 'Suspended' });
+              this.setState({ userOverrides:{ ...s.userOverrides, [u.id]:next } });
+              this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
           }
         };
       }),

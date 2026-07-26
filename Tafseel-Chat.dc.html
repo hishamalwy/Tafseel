@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Messages — Tafseel</title>
+  <link rel="stylesheet" href="css/tafseel.css">
+  <script src="js/tafseel.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/chat.js" defer></script>
+</head>
+<body>
+  <header class="tf-app-header">
+    <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
+    <a href="Tafseel-Student-Dashboard.dc.html">Dashboard</a>
+  </header>
+  <main class="tf-workflow">
+    <section class="tf-chat" aria-label="Messages">
+      <aside class="tf-chat-list">
+        <h1>Messages</h1>
+        <div id="conversations" class="tf-list"></div>
+      </aside>
+      <div class="tf-chat-main">
+        <div id="chat-title" class="tf-chat-title">Choose a conversation</div>
+        <div id="messages" class="tf-messages" aria-live="polite"></div>
+        <form id="composer" class="tf-composer">
+          <label for="message" hidden>Message</label>
+          <input id="message" maxlength="4000" autocomplete="off" placeholder="Write a message…" required>
+          <button class="tf-button" type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

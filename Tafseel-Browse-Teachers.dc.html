@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
@@ -178,7 +179,7 @@
               </div>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;align-items:center;gap:6px">
-                  <a href="Tafseel-Teacher-Profile.dc.html" style="font-weight:700;font-size:16px;color:var(--text)" style-hover="color:var(--primary)">{{ t.name }}</a>
+                  <a href="{{ t.profileHref }}" style="font-weight:700;font-size:16px;color:var(--text)" style-hover="color:var(--primary)">{{ t.name }}</a>
                   <span title="Verified teacher" style="flex:none;width:15px;height:15px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:9px;display:grid;place-items:center">✓</span>
                   <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--warning-soft);color:var(--warning)">{{ t.level }}</span>
                 </div>
@@ -213,8 +214,8 @@
                 <div style="font-weight:700;font-size:16px">{{ t.priceLabel }}</div>
               </div>
               <div style="display:flex;gap:8px">
-                <a href="Tafseel-Teacher-Profile.dc.html" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">Profile</a>
-                <a href="Tafseel-Request.dc.html" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-size:13.5px;font-weight:600" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request</a>
+                <a href="{{ t.profileHref }}" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">Profile</a>
+                <a href="{{ t.profileHref }}" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-size:13.5px;font-weight:600" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request</a>
               </div>
             </div>
 
@@ -253,7 +254,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 /* Mock marketplace data — shape mirrors the future GET /api/teachers response. */
-const TEACHERS = [
+let TEACHERS = [
   { id:1, name:'Dr. Rana Al-Otaibi', subject:'Physics', level:'Top rated', years:'11 yrs experience', exp:11, rating:4.9, reviews:214, completed:'640 requests', bio:'Former university lecturer. I break thermodynamics and mechanics problems down into the exact steps examiners look for.', skills:['Thermodynamics','Mechanics','Past papers'], response:'Replies in ~1h', responseMins:60, languages:'Arabic, English', langs:['Arabic','English'], price:120, online:true, verified:true, thisWeek:true, levels:['High school','Undergraduate'], services:['Custom explanation','Exam revision','Live session'] },
   { id:2, name:'Omar Haddad', subject:'Programming', level:'Rising talent', years:'6 yrs experience', exp:6, rating:5.0, reviews:168, completed:'392 requests', bio:'Software engineer at a fintech. I mentor students through data structures, algorithms and their first real codebase.', skills:['Data structures','Python','Databases'], response:'Replies in ~40m', responseMins:40, languages:'Arabic, English', langs:['Arabic','English'], price:150, online:true, verified:true, thisWeek:true, levels:['Undergraduate','Professional'], services:['Custom explanation','Project mentoring','Live session'] },
   { id:3, name:'Layla Mansour', subject:'Mathematics', level:'Top rated', years:'9 yrs experience', exp:9, rating:4.8, reviews:302, completed:'871 requests', bio:'Calculus and linear algebra specialist. Send me the problem set and you get a worked walkthrough, not just answers.', skills:['Calculus II','Linear algebra','Statistics'], response:'Replies in ~2h', responseMins:120, languages:'Arabic', langs:['Arabic'], price:95, online:false, verified:true, thisWeek:true, levels:['High school','Undergraduate'], services:['Custom explanation','Assignment guidance'] },
@@ -290,6 +291,24 @@ class Component extends DCLogic {
   componentDidMount() {
     Tafseel.addDict(AR);
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    const query = new URLSearchParams(location.search);
+    this.setState({ q: query.get('search') || '' });
+    Tafseel.api.get('/teachers' + Tafseel.api.query({ search: query.get('search'), pageSize: 100 }))
+      .then(page => {
+        TEACHERS = page.items.map(t => ({
+          id:t.teacherId, name:t.fullName, subject:t.subjects[0] || 'General',
+          level:t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
+          years:'Verified experience', exp:0, rating:t.rating, reviews:t.ratingCount,
+          completed:t.completedOrders + ' requests', bio:t.headline, skills:t.subjects,
+          response:'Replies in ~' + Math.max(1, Math.round(t.responseTimeMinutes / 60)) + 'h',
+          responseMins:t.responseTimeMinutes, languages:'', langs:[],
+          price:t.startingPrice || 0, online:false, verified:t.verified, thisWeek:false,
+          levels:[], services:[],
+          profileHref:'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(t.teacherId)
+        }));
+        this.setState({ page: 1 });
+      })
+      .catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
   componentDidUpdate() { Tafseel.translate(); }
@@ -404,15 +423,25 @@ class Component extends DCLogic {
 
       results: shown.map(t => ({
         ...t,
+        profileHref: t.profileHref || ('Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(t.id)),
         priceLabel: 'SAR ' + t.price,
         onlineLabel: t.online ? 'Online now' : 'Offline',
         dotStyle: 'position:absolute;inset-block-end:-2px;inset-inline-end:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);background:' + (t.online ? 'var(--success)' : 'var(--border-strong)'),
         fav: s.favs.includes(t.id),
         favIcon: s.favs.includes(t.id) ? '♥' : '♡',
         favStyle: 'flex:none;width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);font-size:15px;line-height:1;color:' + (s.favs.includes(t.id) ? 'var(--error)' : 'var(--muted)'),
-        onFav: () => {
+        onFav: async () => {
           const next = this.toggleIn('favs', t.id);
-          this.flash(next.includes(t.id) ? t.name + ' saved to your teachers' : t.name + ' removed from saved');
+          try {
+            await Tafseel.api.request('/favorite-teachers/' + encodeURIComponent(t.id), {
+              method: next.includes(t.id) ? 'PUT' : 'DELETE'
+            });
+            this.flash(next.includes(t.id) ? t.name + ' saved to your teachers' : t.name + ' removed from saved');
+          } catch (error) {
+            this.toggleIn('favs', t.id);
+            if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
+            else this.flash(Tafseel.api.errorMessage(error));
+          }
         },
         compared: s.compare.includes(t.id),
         onCompare: () => {

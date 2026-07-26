@@ -1,0 +1,11 @@
+title = "Tafseel secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated and ignored runtime/build data"
+paths = [
+  '''(?i)(^|/)App_Data/''',
+  '''(?i)(^|/)(bin|obj|artifacts|TestResults)/'''
+]

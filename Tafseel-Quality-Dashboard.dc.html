@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -267,7 +268,7 @@
 <script type="text/x-dc" data-dc-script data-props="{}">
 const RUBRIC_KEYS = ['Subject knowledge', 'Accuracy of information', 'Clarity of explanation', 'Communication skills', 'Teaching structure', 'Voice quality', 'Video quality', 'Student engagement', 'Professionalism'];
 
-const APPLICATIONS = [
+let APPLICATIONS = [
   { id:'a1', name:'Mona Rasheed', initials:'MR', subject:'Mathematics', submitted:'24 Jul', priority:'High', status:'Pending', demoTopic:'Factoring quadratics using the box method', facts:[
     {k:'Email', v:'mona.rasheed@example.com'},{k:'City', v:'Jeddah, Saudi Arabia'},{k:'Experience', v:'5 years'},{k:'Degree', v:'BSc Mathematics, KAU'},{k:'Education level', v:'High school, Undergraduate'},{k:'Languages', v:'Arabic, English'}
   ]},
@@ -302,7 +303,13 @@ class Component extends DCLogic {
     reviewersOnline: 4
   };
 
-  componentDidMount() { this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme })); }
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    Tafseel.api.ready().then(session => {
+      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+      return this.loadQueue();
+    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
+  }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
 
   flash(msg) {
@@ -311,8 +318,36 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ toast: '' }), 2800);
   }
 
-  openApp(id) {
-    this.setState({ view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false });
+  async loadQueue() {
+    const [items, subjects, topics] = await Promise.all([
+      Tafseel.api.get('/teacher-applications/queue'),
+      Tafseel.api.get('/subjects'),
+      Tafseel.api.get('/topics?qualificationOnly=true')
+    ]);
+    const status = ['Draft','Pending','Under Review','Changes Requested','Approved','Rejected','Withdrawn'];
+    const priority = ['Low','Medium','High'];
+    APPLICATIONS = items.map(x => ({
+      id:x.id, name:x.teacherId, initials:'TR',
+      subject:(subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
+      submitted:x.submittedAt ? new Date(x.submittedAt).toLocaleDateString() : '',
+      priority:priority[x.priority], status:status[x.status],
+      demoTopic:(topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
+      facts:[{ k:'Teacher ID', v:x.teacherId }], version:x.version, rawStatus:x.status
+    }));
+    this.setState({ currentId:this.state.currentId });
+  }
+
+  async openApp(id) {
+    try {
+      let item = APPLICATIONS.find(x => x.id === id);
+      if (item && item.rawStatus === 1) {
+        await Tafseel.api.post('/teacher-applications/' + id + '/start-review', { priority:1 }, { 'If-Match':item.version });
+        await this.loadQueue();
+      }
+      this.setState({ view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false });
+    } catch (error) {
+      this.flash(Tafseel.api.errorMessage(error));
+    }
   }
 
   renderVals() {
@@ -341,13 +376,22 @@ class Component extends DCLogic {
     const scored = Object.values(s.scores);
     const overallScore = scored.length ? (scored.reduce((a, b) => a + b, 0) / scored.length).toFixed(1) : '0.0';
 
-    const decide = (label) => {
+    const decide = async (label) => {
       if ((label === 'Rejected' || label === 'Changes Requested') && !s.comment.trim()) {
         this.setState({ needsReason: true });
         return;
       }
-      this.setState({ needsReason: false, view: 'list' });
-      this.flash(label + ': ' + current.name + (label === 'Approved' ? ' can now accept requests.' : ' notified.'));
+      if (Object.keys(s.scores).length !== 9) return this.flash('Score all nine rubric criteria.');
+      try {
+        await Tafseel.api.post('/teacher-applications/' + current.id + '/decision', {
+          decision:{ Approved:0, 'Changes Requested':1, Rejected:2 }[label],
+          scores:RUBRIC_KEYS.map((key, criterion) => ({ criterion, score:s.scores[key] })),
+          comment:s.comment || null, internalNotes:s.internalNotes || null
+        }, { 'If-Match':current.version });
+        await this.loadQueue();
+        this.setState({ needsReason:false, view:'list' });
+        this.flash(label + ': ' + current.name);
+      } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
     };
 
     return {

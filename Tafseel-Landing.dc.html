@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <a href="#main" style="position:absolute;inset-inline-start:-9999px;top:8px;background:var(--primary);color:var(--primary-ink);padding:8px 14px;border-radius:var(--r-sm);z-index:99" style-focus="inset-inline-start:8px">Skip to content</a>
@@ -206,7 +207,7 @@
               <div style="font-size:11.5px;color:var(--muted)">from</div>
               <div style="font-weight:700;font-size:15px">{{ t.price }}</div>
             </div>
-            <a href="Tafseel-Teacher-Profile.dc.html" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text);transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
+            <a href="Tafseel-Browse-Teachers.dc.html" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text);transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
           </div>
         </article>
       </sc-for>
@@ -383,6 +384,10 @@ class Component extends DCLogic {
       onQ: e => this.setState({ q: e.target.value }),
       onSearch: e => {
         e.preventDefault();
+        if (this.state.q.trim()) {
+          location.href = 'Tafseel-Browse-Teachers.dc.html?search=' + encodeURIComponent(this.state.q.trim());
+          return;
+        }
         this.flash(this.state.q ? `Searching teachers for “${this.state.q}”…` : 'Type a subject or topic to search.');
       },
       toggleTheme: () => Tafseel.toggleTheme(),

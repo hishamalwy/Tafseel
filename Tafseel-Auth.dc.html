@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sign in — Tafseel</title>
+  <link rel="stylesheet" href="css/tafseel.css">
+  <script src="js/tafseel.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/auth.js" defer></script>
+</head>
+<body>
+  <header class="tf-app-header">
+    <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
+    <button id="theme" class="tf-button tf-button-secondary" type="button">Theme</button>
+  </header>
+  <main class="tf-workflow">
+    <section class="tf-panel tf-panel-narrow" aria-labelledby="auth-title">
+      <h1 id="auth-title">Welcome to Tafseel</h1>
+      <p class="tf-muted">Use one secure account for requests, teaching, reviews, and messages.</p>
+      <div class="tf-auth-tabs" role="tablist">
+        <button id="login-tab" type="button" role="tab" aria-selected="true">Log in</button>
+        <button id="register-tab" type="button" role="tab" aria-selected="false">Create account</button>
+      </div>
+      <form id="login-form" class="tf-form">
+        <div class="tf-field"><label for="login-email">Email</label><input id="login-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="tf-field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required></div>
+        <button class="tf-button" type="submit">Log in</button>
+        <button id="forgot" class="tf-button tf-button-secondary" type="button">Send password reset email</button>
+      </form>
+      <form id="register-form" class="tf-form" hidden>
+        <div class="tf-field"><label for="full-name">Full name</label><input id="full-name" name="fullName" autocomplete="name" maxlength="200" required></div>
+        <div class="tf-field"><label for="register-email">Email</label><input id="register-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="tf-field"><label for="register-password">Password</label><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></div>
+        <div class="tf-field"><label for="role">I am joining as</label><select id="role" name="role"><option value="Student">Student</option><option value="Teacher">Teacher</option></select></div>
+        <button class="tf-button" type="submit">Create account</button>
+      </form>
+      <form id="reset-form" class="tf-form" hidden>
+        <div class="tf-field"><label for="reset-password">New password</label><input id="reset-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></div>
+        <button class="tf-button" type="submit">Reset password</button>
+      </form>
+      <p id="auth-status" class="tf-status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+</body>
+</html>

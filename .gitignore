@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+src/Tafseel.Api/appsettings.Local.json
+**/App_Data/
+artifacts/
+phase*-failure.log

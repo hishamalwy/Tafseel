@@ -1,33 +1,45 @@
 /* ============================================================
    Tafseel — design tokens, resets, motion
+   Brand System 02.0: Electric Violet + Warm Bone canvas, one
+   accent per purpose (violet=authority, cyan=sessions/data,
+   acid=selected detail, coral=people/warmth). Flat — no
+   gradients, no rotation, no heavy shadow.
    Loaded by every page. Component styling lives with the
    components themselves; this file holds only variables,
    element resets and keyframes.
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700;900&family=Noto+Serif+Arabic:wght@600;700;900&display=swap');
 :root{
   /* Typography */
   --font-sans:'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif;
   --font-ar:'IBM Plex Sans Arabic','Plus Jakarta Sans',system-ui,sans-serif;
+  --font-display:'Noto Serif Arabic','Noto Serif',serif;
   --font-mono:'IBM Plex Mono',ui-monospace,monospace;
 
   /* Surfaces & text — light mode */
-  --bg:oklch(0.990 0.004 95);
-  --bg-alt:oklch(0.965 0.006 95);
-  --surface:oklch(1 0 0);
-  --surface-2:oklch(0.972 0.005 95);
-  --border:oklch(0.905 0.006 95);
-  --border-strong:oklch(0.84 0.008 95);
-  --text:oklch(0.245 0.012 265);
-  --text-2:oklch(0.42 0.012 265);
-  --muted:oklch(0.565 0.012 265);
+  --bg:#F3F0E8;
+  --bg-alt:#ECE7DA;
+  --surface:#FFFFFF;
+  --surface-2:#F7F4EC;
+  --border:#DEDACB;
+  --border-strong:#C8C3AF;
+  --text:#121318;
+  --text-2:color-mix(in oklab, #121318 78%, transparent);
+  --muted:color-mix(in oklab, #121318 52%, transparent);
 
-  /* Brand */
-  --primary:oklch(0.505 0.145 262);
-  --primary-hover:oklch(0.45 0.148 262);
-  --primary-soft:oklch(0.955 0.025 262);
-  --primary-ink:oklch(1 0 0);
-  --accent:oklch(0.60 0.115 178);
-  --accent-soft:oklch(0.955 0.028 178);
+  /* Brand — Electric Violet (authority/primary), Live Cyan (sessions/data),
+     Focus Acid (selected detail, used sparingly), Human Coral (people/warmth) */
+  --primary:#5538F2;
+  --primary-hover:color-mix(in oklab, #5538F2 85%, black);
+  --primary-soft:color-mix(in oklab, #5538F2 10%, white);
+  --primary-ink:#FFFFFF;
+  --accent:#2AA9D4;
+  --accent-soft:color-mix(in oklab, #49C7F3 20%, white);
+  --highlight:#8A9E1E;
+  --highlight-soft:color-mix(in oklab, #D9FF43 30%, white);
+  --highlight-ink:#121318;
+  --warm:#E8493D;
+  --warm-soft:color-mix(in oklab, #FF6B5F 16%, white);
 
   /* Status */
   --success:oklch(0.585 0.125 155);
@@ -50,26 +62,31 @@
   --shadow-md:0 4px 16px -4px oklch(0.2 0.02 265 / .10), 0 1px 2px oklch(0.2 0.02 265 / .05);
   --shadow-lg:0 24px 48px -16px oklch(0.2 0.02 265 / .18), 0 2px 6px oklch(0.2 0.02 265 / .06);
 
-  /* Motion */
-  --t:180ms cubic-bezier(.2,.7,.3,1);
+  /* Motion — 180-320ms ease-out, scale/crop only, never rotation */
+  --t:220ms ease-out;
 }
 
 html[data-theme="dark"]{
-  --bg:oklch(0.185 0.014 265);
-  --bg-alt:oklch(0.215 0.015 265);
-  --surface:oklch(0.232 0.016 265);
-  --surface-2:oklch(0.268 0.017 265);
-  --border:oklch(0.315 0.018 265);
-  --border-strong:oklch(0.40 0.02 265);
-  --text:oklch(0.965 0.004 265);
-  --text-2:oklch(0.84 0.008 265);
-  --muted:oklch(0.695 0.012 265);
-  --primary:oklch(0.685 0.135 262);
-  --primary-hover:oklch(0.755 0.13 262);
-  --primary-soft:oklch(0.30 0.05 262);
-  --primary-ink:oklch(0.16 0.02 265);
-  --accent:oklch(0.72 0.11 178);
-  --accent-soft:oklch(0.30 0.045 178);
+  --bg:#121318;
+  --bg-alt:#181A21;
+  --surface:#1C1E26;
+  --surface-2:#242630;
+  --border:#33353F;
+  --border-strong:#454856;
+  --text:#F3F0E8;
+  --text-2:color-mix(in oklab, #F3F0E8 82%, transparent);
+  --muted:color-mix(in oklab, #F3F0E8 55%, transparent);
+  --primary:#8B7BFF;
+  --primary-hover:color-mix(in oklab, #8B7BFF 80%, white);
+  --primary-soft:color-mix(in oklab, #5538F2 30%, #1C1E26);
+  --primary-ink:#121318;
+  --accent:#49C7F3;
+  --accent-soft:color-mix(in oklab, #49C7F3 22%, #1C1E26);
+  --highlight:#D9FF43;
+  --highlight-soft:color-mix(in oklab, #D9FF43 20%, #1C1E26);
+  --highlight-ink:#121318;
+  --warm:#FF6B5F;
+  --warm-soft:color-mix(in oklab, #FF6B5F 20%, #1C1E26);
   --success:oklch(0.70 0.12 155);
   --success-soft:oklch(0.29 0.05 155);
   --warning:oklch(0.78 0.13 72);
@@ -91,6 +108,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
 h1,h2,h3,h4,h5,p,figure,blockquote{margin:0}
+h1,h2{font-family:var(--font-display)}
 table{border-collapse:collapse;width:100%}
 ::placeholder{color:var(--muted)}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -117,4 +135,45 @@ table{border-collapse:collapse;width:100%}
 }
 @media (max-width:640px){
   [data-hide-sm]{display:none !important}
+}
+
+/* Functional workflow pages */
+.tf-app-header{height:68px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding-inline:clamp(20px,5vw,64px);background:var(--surface)}
+.tf-brand{display:flex;align-items:center;gap:10px;color:var(--text);font-weight:800;font-size:18px}
+.tf-brand-mark{width:32px;height:32px;border-radius:9px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center}
+.tf-workflow{min-height:calc(100vh - 68px);display:grid;place-items:center;padding:32px 20px;background:var(--bg-alt)}
+.tf-panel{width:min(100%,760px);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-md);padding:clamp(22px,4vw,40px)}
+.tf-panel-narrow{width:min(100%,480px)}
+.tf-form{display:grid;gap:18px}
+.tf-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tf-field{display:grid;gap:7px}
+.tf-field label{font-size:13px;font-weight:700;color:var(--text-2)}
+.tf-field input,.tf-field select,.tf-field textarea{width:100%;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding:11px 12px;outline:none}
+.tf-field textarea{min-height:110px;resize:vertical}
+.tf-button{height:42px;border:0;border-radius:var(--r-sm);padding-inline:18px;background:var(--primary);color:var(--primary-ink);font-weight:700}
+.tf-button-secondary{border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}
+.tf-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tf-muted{color:var(--muted);font-size:14px;line-height:1.6}
+.tf-status{min-height:22px;font-size:13px;color:var(--muted)}
+.tf-status[data-kind="error"]{color:var(--error)}
+.tf-status[data-kind="success"]{color:var(--success)}
+.tf-auth-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;background:var(--surface-2);border-radius:var(--r-sm);margin-block:24px}
+.tf-auth-tabs button{height:38px;border:0;border-radius:7px;background:transparent;font-weight:700}
+.tf-auth-tabs button[aria-selected="true"]{background:var(--surface);box-shadow:var(--shadow-sm)}
+.tf-list{display:grid;gap:8px;margin-block:20px}
+.tf-list button{width:100%;padding:14px;text-align:start;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)}
+.tf-chat{width:min(1100px,100%);height:min(760px,calc(100vh - 110px));display:grid;grid-template-columns:320px 1fr;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-md)}
+.tf-chat-list{border-inline-end:1px solid var(--border);padding:18px;overflow:auto}
+.tf-chat-main{display:grid;grid-template-rows:auto 1fr auto;min-width:0}
+.tf-chat-title{padding:18px 20px;border-bottom:1px solid var(--border);font-weight:800}
+.tf-messages{padding:20px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.tf-message{max-width:75%;padding:10px 13px;border-radius:var(--r-md);background:var(--surface-2);line-height:1.45}
+.tf-message[data-mine="true"]{align-self:flex-end;background:var(--primary-soft)}
+.tf-composer{display:flex;gap:10px;padding:16px;border-top:1px solid var(--border)}
+.tf-composer input{flex:1;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding-inline:12px}
+@media (max-width:640px){
+  .tf-grid-2{grid-template-columns:1fr}
+  .tf-chat{grid-template-columns:1fr;height:auto}
+  .tf-chat-list{border-inline-end:0;border-bottom:1px solid var(--border);max-height:220px}
+  .tf-chat-main{min-height:520px}
 }

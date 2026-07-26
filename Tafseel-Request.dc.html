@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
@@ -279,7 +280,7 @@ class Component extends DCLogic {
     lang: Tafseel.lang, theme: Tafseel.theme, step: 1,
     service: 'rec', title: '', subject: 'Physics', topic: '', description: '',
     level: 'High school', difficulty: 'Standard', explLang: 'Arabic',
-    files: [{ name: 'exam-2024.pdf', size: '2.1 MB', kind: 'pdf' }, { name: 'notes.docx', size: '480 KB', kind: 'docx' }],
+    files: [],
     urgency: 'standard', deliveryDate: '2026-07-30', flexibleBudget: false, budget: 150,
     agreed: false, submitted: false, toast: ''
   };
@@ -295,7 +296,8 @@ class Component extends DCLogic {
 
   addFiles(fileList) {
     const added = Array.from(fileList || []).map(f => ({
-      name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', kind: (f.name.split('.').pop() || '').toLowerCase()
+      name: f.name, size: (f.size / 1024).toFixed(0) + ' KB',
+      kind: (f.name.split('.').pop() || '').toLowerCase(), raw: f
     }));
     if (added.length) this.setState({ files: this.state.files.concat(added) });
   }
@@ -403,9 +405,34 @@ class Component extends DCLogic {
       nextDisabled: !canNext(),
       nextLabel: s.step === 5 ? 'Submit request' : 'Continue →',
       nextStyle: 'height:40px;padding:0 22px;border:0;border-radius:var(--r-sm);font-weight:700;font-size:14px;background:var(--primary);color:var(--primary-ink);' + (!canNext() ? 'opacity:.5;cursor:not-allowed;' : ''),
-      onNext: () => {
+      onNext: async () => {
         if (!canNext()) { this.flash(s.step === 2 ? 'Fill in the title, topic and description to continue.' : 'Please accept the terms to submit.'); return; }
-        if (s.step === 5) { this.setState({ submitted: true }); return; }
+        if (s.step === 5) {
+          const query = new URLSearchParams(location.search);
+          const serviceId = query.get('serviceId');
+          if (!serviceId) return this.flash('Choose a teacher service before submitting.');
+          try {
+            let request = await Tafseel.api.post('/learning-requests', {
+              teacherServiceId:serviceId,
+              title:s.title,
+              description:s.description,
+              preferredDeliveryAt:new Date(s.deliveryDate + 'T23:59:00Z').toISOString(),
+              budget:s.flexibleBudget ? null : s.budget
+            });
+            for (const item of s.files.filter(x => x.raw)) {
+              const data = new FormData();
+              data.append('file', item.raw);
+              await Tafseel.api.upload('/learning-requests/' + request.id + '/attachments', data, { 'If-Match':request.version });
+              const mine = await Tafseel.api.get('/learning-requests/mine?pageSize=100');
+              request = mine.items.find(x => x.id === request.id) || request;
+            }
+            this.setState({ submitted: true });
+          } catch (error) {
+            if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
+            else this.flash(Tafseel.api.errorMessage(error));
+          }
+          return;
+        }
         this.setState({ step: s.step + 1 });
       }
     };

@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
@@ -46,7 +47,7 @@
   <nav aria-label="Breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:20px">
     <a href="Tafseel-Landing.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">Home</a><span>/</span>
     <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">Physics teachers</a><span>/</span>
-    <span style="color:var(--text-2);font-weight:500">Dr. Rana Al-Otaibi</span>
+    <span style="color:var(--text-2);font-weight:500">{{ teacherName }}</span>
   </nav>
 
   <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:24px;display:flex;gap:28px;flex-wrap:wrap">
@@ -57,7 +58,7 @@
 
     <div style="flex:1;min-width:280px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-        <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Dr. Rana Al-Otaibi</h1>
+        <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">{{ teacherName }}</h1>
         <span title="Verified teacher" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ Verified</span>
         <span style="display:inline-flex;align-items:center;height:26px;padding-inline:10px;border-radius:999px;background:var(--warning-soft);color:var(--warning);font-size:12.5px;font-weight:700">Top rated</span>
       </div>
@@ -73,7 +74,7 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" style="{{ favStyle }}">{{ favLabel }}</button>
         <button type="button" onClick="{{ onShare }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600">↗ Share</button>
-        <a href="Tafseel-Chat.dc.html" style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">✉ Message</a>
+        <a href="{{ chatHref }}" style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">✉ Message</a>
       </div>
     </div>
   </section>
@@ -253,7 +254,7 @@
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <a href="Tafseel-Request.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request this service</a>
+          <a href="{{ requestHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request this service</a>
           <a href="Tafseel-Request.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)">Book a live session</a>
           <a href="Tafseel-Chat.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)">Contact teacher</a>
         </div>
@@ -280,7 +281,7 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const SERVICES = [
+let SERVICES = [
   { id:'rec', icon:'▶', name:'Custom recorded explanation', desc:'Send your chapter, past paper or assignment brief and receive a recorded walkthrough built around it.', price:120, unit:'starting price', delivery:'2 days', revisions:'2 free revisions' },
   { id:'live', icon:'◉', name:'Live session', desc:'One-to-one video call with a shared whiteboard. Recording sent to you afterwards.', price:180, unit:'per hour', delivery:'Book within 48h', revisions:'Recording included' },
   { id:'exam', icon:'◷', name:'Exam revision', desc:'Focused revision on your syllabus and past papers, with a checklist of the mistakes that cost marks.', price:150, unit:'starting price', delivery:'3 days', revisions:'1 free revision' },
@@ -291,11 +292,24 @@ const SERVICES = [
 const AR = { tab_about:'نبذة', tab_samples:'نماذج الشرح', tab_services:'الخدمات', tab_avail:'المواعيد', tab_reviews:'التقييمات' };
 
 class Component extends DCLogic {
-  state = { lang: Tafseel.lang, theme: Tafseel.theme, tab: 'about', service: 'rec', slot: null, fav: false, toast: '' };
+  state = { lang: Tafseel.lang, theme: Tafseel.theme, tab: 'about', service: 'rec', slot: null, fav: false, toast: '', profile: null, liveReviews: [] };
 
   componentDidMount() {
     Tafseel.addDict(AR);
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    const teacherId = new URLSearchParams(location.search).get('teacherId');
+    if (!teacherId) return;
+    Promise.all([
+      Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId)),
+      Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews?pageSize=50')
+    ]).then(([profile, reviews]) => {
+      const liveServices = profile.services.filter(x => x.isActive).map(x => ({
+        id:x.id, icon:'video', name:x.title, desc:x.description, price:x.price,
+        unit:'starting price', delivery:x.deliveryHours + ' hours', revisions:x.revisions + ' revisions'
+      }));
+      if (liveServices.length) SERVICES = liveServices;
+      this.setState({ profile, liveReviews:reviews.items, service:SERVICES[0] ? SERVICES[0].id : '' });
+    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
   componentDidUpdate() { Tafseel.translate(); }
@@ -308,6 +322,7 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
+    const profile = s.profile;
     const sel = SERVICES.find(x => x.id === s.service) || SERVICES[0];
     const tab = key => ({
       selected: s.tab === key,
@@ -344,16 +359,34 @@ class Component extends DCLogic {
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      teacherName: profile ? profile.fullName : 'Teacher profile',
+      chatHref: profile ? 'Tafseel-Chat.dc.html?otherUserId=' + encodeURIComponent(profile.teacherId) : 'Tafseel-Auth.dc.html',
+      requestHref: profile && sel ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(profile.teacherId) + '&serviceId=' + encodeURIComponent(sel.id) : 'Tafseel-Auth.dc.html',
 
       fav: s.fav,
       favLabel: s.fav ? '♥ Saved' : '♡ Save teacher',
       favStyle: 'height:40px;padding:0 16px;border-radius:var(--r-sm);font-size:14px;font-weight:600;transition:all var(--t);' + (s.fav
         ? 'border:1px solid var(--error);background:var(--error-soft);color:var(--error);'
         : 'border:1px solid var(--border);background:var(--surface);color:var(--text);'),
-      onFav: () => { this.setState({ fav: !s.fav }); this.flash(s.fav ? 'Removed from saved teachers' : 'Saved to your teachers'); },
+      onFav: async () => {
+        if (!profile) return;
+        try {
+          await Tafseel.api.request('/favorite-teachers/' + encodeURIComponent(profile.teacherId), { method:s.fav ? 'DELETE' : 'PUT' });
+          this.setState({ fav: !s.fav });
+          this.flash(s.fav ? 'Removed from saved teachers' : 'Saved to your teachers');
+        } catch (error) {
+          if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
+          else this.flash(Tafseel.api.errorMessage(error));
+        }
+      },
       onShare: () => this.flash('Profile link copied to clipboard'),
 
-      headStats: [
+      headStats: profile ? [
+        { value: profile.rating + ' stars', label: profile.ratingCount + ' reviews' },
+        { value: String(profile.completedOrders), label: 'Requests completed' },
+        { value: '~' + Math.max(1, Math.round(profile.responseTimeMinutes / 60)) + ' hours', label: 'Average response' },
+        { value: profile.verified ? 'Verified' : 'Pending', label: 'Qualification' }
+      ] : [
         { value: '4.9 ★', label: '214 reviews' },
         { value: '640', label: 'Requests completed' },
         { value: '~1 hour', label: 'Average response' },
@@ -379,9 +412,14 @@ class Component extends DCLogic {
         { icon: '📜', title: 'Certified Online Instructor', meta: 'Advance HE — Fellowship', years: '2019' },
         { icon: '✦', title: 'Private tutoring & Tafseel', meta: '1,100+ students supported', years: '2021 – now' }
       ],
-      topics: ['Thermodynamics', 'Classical mechanics', 'Waves & oscillations', 'Electromagnetism', 'Kinematics', 'Past-paper technique', 'Lab report writing', 'University entrance prep'],
+      topics: profile ? profile.topics.map(x => x.name) : [],
 
-      samples: [
+      samples: profile ? profile.samples.map(x => ({
+        title:x.title,
+        duration:Math.floor(x.durationSeconds / 60) + ':' + String(x.durationSeconds % 60).padStart(2, '0'),
+        meta:'Teaching sample',
+        onWatch:() => location.href = '/api/v1/teachers/samples/' + x.id + '/content'
+      })) : [
         { title: 'Carnot cycle, explained with a real exam question', duration: '3:12', meta: 'Thermodynamics · Undergraduate', onWatch: () => this.flash('Playing sample video…') },
         { title: 'Free-body diagrams without the guesswork', duration: '2:48', meta: 'Mechanics · High school', onWatch: () => this.flash('Playing sample video…') },
         { title: 'Why your energy conservation answer loses marks', duration: '4:05', meta: 'Mechanics · Undergraduate', onWatch: () => this.flash('Playing sample video…') },
@@ -416,7 +454,11 @@ class Component extends DCLogic {
         { label: 'Value for money', score: '4.7', pct: 94 }
       ].map(b => ({ ...b, barStyle: 'display:block;height:100%;width:' + b.pct + '%;background:var(--primary);border-radius:99px' })),
 
-      reviews: [
+      reviews: s.liveReviews.length ? s.liveReviews.map(x => ({
+        initials:'ST', name:'Verified Student', service:'Completed order',
+        date:new Date(x.createdAt).toLocaleDateString(),
+        stars:'5/5', body:x.originalComment
+      })) : [
         { initials: 'NA', name: 'Noor Abdulaziz', service: 'Custom recorded explanation', date: '18 Jul 2026', stars: '★★★★★', body: 'I sent my thermodynamics past paper on Wednesday night and had a 22-minute walkthrough of every question I got wrong before Friday. She explains why the marking scheme wants a specific step, which nobody had done for me before.' },
         { initials: 'MS', name: 'Mohammed Sabri', service: 'Live session · 60 min', date: '9 Jul 2026', stars: '★★★★★', body: 'Booked a session two days before my final. Calm, extremely organised, and she noticed the exact concept I had misunderstood in the first ten minutes.' },
         { initials: 'AK', name: 'Amal Khoury', service: 'Exam revision', date: '2 Jul 2026', stars: '★★★★☆', body: 'Excellent content and very thorough. Delivery came a few hours later than the estimate, but she messaged me ahead of time to explain.' }

@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
 <script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -439,13 +440,13 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const PENDING = [
+let PENDING = [
   { id:'q1', student:'Bassel Younes', initials:'BY', subject:'Physics', topic:'Struggling with rotational dynamics before Thursday quiz', description:'I need someone to go through problems 4–9 in chapter 8 — mostly torque and angular momentum. I have the professor’s slides attached.', files:['ch8-slides.pdf', 'quiz-sample.docx'], budget:'SAR 130', deadline:'Thu, 30 Jul', urgency:'Before exam' },
   { id:'q2', student:'Reem Al-Ghamdi', initials:'RG', subject:'Physics', topic:'Lab report on simple pendulum — need feedback structure', description:'First-year lab report due Friday. I want feedback on my method and error analysis sections specifically.', files:['lab-report-draft.docx'], budget:'SAR 90', deadline:'Fri, 31 Jul', urgency:'Standard' },
   { id:'q3', student:'Fahad Al-Qahtani', initials:'FQ', subject:'Physics', topic:'Same-day help — exam is tomorrow morning', description:'I bombed my mock exam on thermodynamics. Need a condensed walkthrough of the formulas and when to use each one.', files:['mock-exam.pdf'], budget:'SAR 200', deadline:'Tonight', urgency:'Same day' }
 ];
 
-const ORDERS = [
+let ORDERS = [
   { id:'O-2291', title:'Mechanics revision pack', student:'Huda Al-Rashed', deadline:'27 Jul', price:'SAR 140', stage:'accepted' },
   { id:'O-2287', title:'Waves & oscillations explainer', student:'Tariq Hassan', deadline:'28 Jul', price:'SAR 120', stage:'progress' },
   { id:'O-2280', title:'Electromagnetism problem set', student:'Dana Kamal', deadline:'26 Jul', price:'SAR 150', stage:'ready' },
@@ -459,11 +460,42 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, section: 'overview',
     orderTab: 'all', declined: [], acceptModal: null,
-    finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: ''
+    finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: '',
+    balances: [], liveSessions: []
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    Tafseel.api.ready().then(session => {
+      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+      return Promise.all([
+        Tafseel.api.get('/learning-requests/assigned?pageSize=100'),
+        Tafseel.api.get('/orders/assigned?pageSize=100'),
+        Tafseel.api.get('/withdrawals/balances'),
+        Tafseel.api.get('/live-sessions/mine?pageSize=100')
+      ]);
+    }).then(data => {
+      if (!data) return;
+      PENDING = data[0].items.map(x => ({
+        id:x.id, student:x.studentId, initials:'ST', subject:'Request', topic:x.title,
+        description:x.description, files:x.attachments.map(a => a.originalName),
+        budget:x.budget ? 'SAR ' + x.budget : 'Flexible',
+        deadline:new Date(x.preferredDeliveryAt).toLocaleString(), urgency:'Standard', version:x.version
+      }));
+      const stages = ['accepted','ready','progress','ready','completed','completed'];
+      ORDERS = data[1].items.map(x => ({
+        id:x.id, title:'Order ' + x.id, student:x.studentId,
+        deadline:new Date(x.agreedDeliveryAt).toLocaleDateString(),
+        price:x.currency + ' ' + x.price, stage:stages[x.status], version:x.version
+      }));
+      this.setState({
+        declined:[], balances:data[2],
+        liveSessions:data[3].items.map(x => ({
+          id:x.id, student:x.studentId, topic:x.title,
+          when:new Date(x.startsAt).toLocaleString(), confirmed:x.status === 1
+        }))
+      });
+    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
 
@@ -597,8 +629,23 @@ class Component extends DCLogic {
           ...q,
           urgencyStyle: 'font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:' + bg + ';color:' + fg,
           onAccept: () => this.setState({ acceptModal: q, finalPrice: parseInt(q.budget.replace(/\D/g, '')) || 100 }),
-          onDecline: () => { this.setState({ declined: s.declined.concat(q.id) }); this.flash('Declined request from ' + q.student); },
-          onClarify: () => this.flash('Clarification question sent to ' + q.student)
+          onDecline: async () => {
+            const reason = prompt('Reason for declining this request:');
+            if (!reason) return;
+            try {
+              await Tafseel.api.post('/learning-requests/' + q.id + '/decline', { reason }, { 'If-Match':q.version });
+              this.setState({ declined:s.declined.concat(q.id) });
+              this.flash('Request declined');
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          },
+          onClarify: async () => {
+            const message = prompt('What clarification do you need?');
+            if (!message) return;
+            try {
+              await Tafseel.api.post('/learning-requests/' + q.id + '/request-clarification', { message }, { 'If-Match':q.version });
+              this.flash('Clarification requested');
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          }
         };
       }),
 
@@ -609,15 +656,52 @@ class Component extends DCLogic {
         actionLabel: STAGE_ACTION[o.stage],
         actionStyle: 'height:32px;padding:0 13px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
           (o.stage === 'ready' ? 'border:0;background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onAction: () => this.flash(STAGE_ACTION[o.stage] + ' — ' + o.title)
+        onAction: async () => {
+          try {
+            if (o.stage === 'accepted')
+              await Tafseel.api.post('/orders/' + o.id + '/start', null, { 'If-Match':o.version });
+            else if (o.stage === 'ready') {
+              const picker = document.createElement('input');
+              picker.type = 'file';
+              picker.onchange = async () => {
+                if (!picker.files[0]) return;
+                try {
+                  const data = new FormData();
+                  data.append('file', picker.files[0]);
+                  data.append('message', prompt('Delivery message:') || 'Delivery uploaded.');
+                  await Tafseel.api.upload('/orders/' + o.id + '/deliveries', data, { 'If-Match':o.version });
+                  this.flash('Delivery uploaded');
+                } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+              };
+              picker.click();
+              return;
+            }
+            this.flash(STAGE_ACTION[o.stage] + ' — ' + o.title);
+          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        }
       })),
 
-      earnings: [
-        { label: 'Available balance', value: 'SAR 2,140' },
-        { label: 'Pending balance', value: 'SAR 980' },
-        { label: 'Total earnings', value: 'SAR 41,260' }
-      ],
-      onWithdraw: () => this.flash('Withdrawal of SAR 2,140 requested — arrives in 2–3 business days'),
+      earnings: (s.balances.length ? s.balances.flatMap(b => [
+        { label: 'Available balance', value: b.currency + ' ' + b.available },
+        { label: 'Pending withdrawal', value: b.currency + ' ' + b.pendingWithdrawal },
+        { label: 'Tracked balance', value: b.currency + ' ' + (Number(b.available) + Number(b.pendingWithdrawal)) }
+      ]) : [
+        { label: 'Available balance', value: 'SAR 0' },
+        { label: 'Pending withdrawal', value: 'SAR 0' },
+        { label: 'Tracked balance', value: 'SAR 0' }
+      ]),
+      onWithdraw: async () => {
+        const balance = s.balances.find(x => x.available > 0);
+        if (!balance) return this.flash('No available balance to withdraw.');
+        const amount = Number(prompt('Amount to withdraw (' + balance.currency + '):', balance.available));
+        if (!amount) return;
+        try {
+          await Tafseel.api.post('/withdrawals', { amount, currency:balance.currency }, {
+            'Idempotency-Key':'withdrawal-' + Date.now()
+          });
+          this.flash('Withdrawal requested.');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
       transactions: [
         { desc: 'Payout — Noor Abdulaziz', amount: '+ SAR 102', color: 'var(--success)' },
         { desc: 'Withdrawal to bank ****4821', amount: '− SAR 1,800', color: 'var(--text)' },
@@ -625,10 +709,18 @@ class Component extends DCLogic {
         { desc: 'Platform commission', amount: '− SAR 18', color: 'var(--muted)' }
       ],
 
-      sessions: [
+      sessions: (s.liveSessions.length ? s.liveSessions : [
         { student: 'Omar’s student — Bassel Younes', topic: 'Rotational dynamics review · 60 min', when: 'Tonight · 20:30', onStart: () => this.flash('Opening session room…') },
         { student: 'Huda Al-Rashed', topic: 'Mechanics revision · 90 min', when: 'Thu 30 Jul · 17:00', onStart: () => this.flash('Session starts in 4 days') }
-      ],
+      ]).map(session => ({
+        ...session,
+        onStart: session.id && session.confirmed ? async () => {
+          try {
+            const join = await Tafseel.api.get('/live-sessions/' + session.id + '/join');
+            location.href = join.url;
+          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        } : (session.onStart || (() => this.flash('This session is not ready to join.')))
+      })),
 
       acceptModal: s.acceptModal,
       closeModal: () => this.setState({ acceptModal: null }),
@@ -636,10 +728,17 @@ class Component extends DCLogic {
       deliveryDate: s.deliveryDate, onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
       revisions: s.revisions, onRevisions: e => this.setState({ revisions: e.target.value }),
       notes: s.notes, onNotes: e => this.setState({ notes: e.target.value }),
-      confirmAccept: () => {
+      confirmAccept: async () => {
         const q = s.acceptModal;
-        this.setState({ acceptModal: null, declined: s.declined.concat(q.id) });
-        this.flash('Accepted ' + q.student + '’s request at SAR ' + s.finalPrice);
+        try {
+          await Tafseel.api.post('/learning-requests/' + q.id + '/accept', {
+            finalPrice:Number(s.finalPrice), currency:'SAR',
+            agreedDeliveryAt:new Date(s.deliveryDate + 'T23:59:00Z').toISOString(),
+            revisionAllowance:Number(s.revisions)
+          }, { 'If-Match':q.version, 'Idempotency-Key':'accept-' + q.id });
+          this.setState({ acceptModal:null, declined:s.declined.concat(q.id) });
+          this.flash('Request accepted at SAR ' + s.finalPrice);
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       }
     };
   }

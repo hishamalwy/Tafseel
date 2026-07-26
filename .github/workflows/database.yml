@@ -1,0 +1,72 @@
+name: Database
+on:
+  pull_request:
+    branches: [main]
+    paths: ['src/Tafseel.Infrastructure/Persistence/Migrations/**', 'src/**', '.github/workflows/database.yml']
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: tafseel-database-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  migrations:
+    name: migrations
+    runs-on: ubuntu-latest
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+        ports: ['1433:1433']
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\""
+          --health-interval 10s --health-timeout 5s --health-retries 20
+    env:
+      CI_SQL_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+      BASE_CONNECTION: Server=localhost,1433;User Id=sa;Password=${{ secrets.CI_SQL_PASSWORD }};Encrypt=True;TrustServerCertificate=True
+      Jwt__SigningKey: ci-only-signing-key-with-at-least-32-characters
+      Resend__ApiToken: ci-only-token
+      Payments__WebhookSecret: ci-only-webhook-secret-with-at-least-32-characters
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: test -n "$CI_SQL_PASSWORD" || { echo 'CI_SQL_PASSWORD is required'; exit 1; }
+      - run: dotnet tool restore && dotnet restore Tafseel.sln --locked-mode && dotnet build Tafseel.sln -c Release --no-restore
+      - name: Fresh database
+        run: dotnet ef database update --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build --connection "$BASE_CONNECTION;Database=TafseelMigrationFresh"
+      - name: Previous migration upgrade
+        shell: pwsh
+        run: |
+          $migrations = Get-ChildItem src/Tafseel.Infrastructure/Persistence/Migrations/*_*.cs |
+            Where-Object Name -NotMatch '\.Designer\.cs$' | Sort-Object Name
+          if ($migrations.Count -lt 2) { throw "At least two migrations are required for upgrade validation." }
+          $previous = $migrations[-2].BaseName
+          dotnet ef database update $previous --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build --connection "$env:BASE_CONNECTION;Database=TafseelMigrationUpgrade"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet ef database update --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build --connection "$env:BASE_CONNECTION;Database=TafseelMigrationUpgrade"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          "Previous migration: $previous" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+      - run: dotnet ef migrations has-pending-model-changes --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build
+      - run: dotnet ef migrations script --idempotent --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build -o artifacts/tafseel-idempotent.sql
+      - name: Destructive migration policy
+        shell: pwsh
+        run: |
+          $base = if ("${{ github.event_name }}" -eq "pull_request") { "${{ github.event.pull_request.base.sha }}" } else { "HEAD^" }
+          $changed = git diff --name-only $base HEAD -- src/Tafseel.Infrastructure/Persistence/Migrations |
+            Where-Object { $_ -match '\.cs$' -and $_ -notmatch '\.Designer\.cs$' }
+          foreach ($file in $changed) { ./scripts/ci/check-migration-safety.ps1 -Script $file }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: migration-${{ github.sha }}
+          path: artifacts/tafseel-idempotent.sql

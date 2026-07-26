@@ -1,0 +1,122 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+jobs:
+  build-and-test:
+    name: build-and-provider-neutral
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: dotnet tool restore
+      - run: dotnet restore Tafseel.sln --locked-mode
+      - run: dotnet format Tafseel.sln --verify-no-changes --no-restore
+      - run: dotnet build Tafseel.sln -c Release --no-restore
+      - name: Architecture
+        run: dotnet test tests/Tafseel.ArchitectureTests -c Release --no-build --logger "trx;LogFileName=architecture.trx" --results-directory TestResults/architecture
+      - name: Domain
+        run: dotnet test tests/Tafseel.Domain.Tests -c Release --no-build --collect "XPlat Code Coverage" --logger "trx;LogFileName=domain.trx" --results-directory TestResults/domain
+      - name: Application
+        run: dotnet test tests/Tafseel.Application.Tests -c Release --no-build --collect "XPlat Code Coverage" --logger "trx;LogFileName=application.trx" --results-directory TestResults/application
+      - name: Provider-neutral integration
+        run: dotnet test tests/Tafseel.IntegrationTests -c Release --no-build --filter "Category!=SqlServer" --collect "XPlat Code Coverage" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration
+      - name: JavaScript syntax
+        run: node scripts/ci/check-js.mjs
+      - name: Coverage summary
+        shell: pwsh
+        run: ./scripts/ci/coverage-summary.ps1
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## CI build and provider-neutral tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deterministic restore, format, build, project tests, coverage, and JavaScript checks executed." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ci-test-results-${{ github.run_id }}
+          path: TestResults
+          if-no-files-found: error
+  sql-server:
+    name: sql-server
+    runs-on: ubuntu-latest
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\""
+          --health-interval 10s --health-timeout 5s --health-retries 20
+    env:
+      CI_SQL_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+      TAFSEEL_SQLSERVER_TEST_CONNECTION: Server=localhost,1433;User Id=sa;Password=${{ secrets.CI_SQL_PASSWORD }};Encrypt=True;TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: test -n "$CI_SQL_PASSWORD" || { echo 'CI_SQL_PASSWORD is required'; exit 1; }
+      - run: dotnet restore Tafseel.sln --locked-mode
+      - run: dotnet build Tafseel.sln -c Release --no-restore
+      - run: dotnet test tests/Tafseel.IntegrationTests -c Release --no-build --filter "Category=SqlServer" --collect "XPlat Code Coverage" --logger "trx;LogFileName=sql-server.trx" --results-directory TestResults/sql-server
+      - name: SQL coverage summary
+        shell: pwsh
+        run: ./scripts/ci/coverage-summary.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: sql-test-results-${{ github.run_id }}
+          path: TestResults
+          if-no-files-found: error
+  publish:
+    name: publish-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: dotnet tool restore
+      - run: dotnet restore Tafseel.sln --locked-mode
+      - run: dotnet build Tafseel.sln -c Release --no-restore
+      - run: dotnet ef migrations has-pending-model-changes --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build
+        env:
+          Jwt__SigningKey: ci-only-signing-key-with-at-least-32-characters
+          Resend__ApiToken: ci-only-token
+          Payments__WebhookSecret: ci-only-webhook-secret-with-at-least-32-characters
+      - run: dotnet publish src/Tafseel.Api/Tafseel.Api.csproj -c Release --no-restore -o artifacts/publish
+      - shell: pwsh
+        run: ./scripts/ci/validate-publish.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: publish-smoke-${{ github.run_id }}
+          path: artifacts/publish

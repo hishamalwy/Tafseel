@@ -1,0 +1,14 @@
+.git
+.github
+.vs
+artifacts
+docs
+tests
+uploads
+**/bin
+**/obj
+**/App_Data
+*.user
+*.suo
+*failure.log
+src/Tafseel.Api/appsettings.Local.json

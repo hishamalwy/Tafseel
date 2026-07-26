@@ -1,0 +1,121 @@
+name: Docker
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      push:
+        type: boolean
+        default: false
+      version:
+        type: string
+        default: 0.0.0-ci
+permissions:
+  contents: read
+  packages: write
+jobs:
+  image:
+    name: image
+    runs-on: ubuntu-latest
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+        ports: ['1433:1433']
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\""
+          --health-interval 10s --health-timeout 5s --health-retries 20
+    env:
+      CI_SQL_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/tafseel
+      TEST_CONNECTION: Server=localhost,1433;Database=TafseelContainer;User Id=sa;Password=${{ secrets.CI_SQL_PASSWORD }};Encrypt=True;TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - run: test -n "$CI_SQL_PASSWORD" || { echo 'CI_SQL_PASSWORD is required'; exit 1; }
+      - run: dotnet tool restore && dotnet restore Tafseel.sln --locked-mode
+      - name: Migrate test database
+        run: dotnet ef database update --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --connection "$TEST_CONNECTION"
+        env:
+          Jwt__SigningKey: container-ci-signing-key-with-at-least-32-characters
+          Resend__ApiToken: ci-token
+          Payments__WebhookSecret: container-ci-webhook-key-with-at-least-32-characters
+      - name: Build image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: .
+          load: true
+          tags: tafseel:test
+          build-args: |
+            VERSION=${{ inputs.version || '0.0.0-ci' }}
+            REVISION=${{ github.sha }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+      - name: Vulnerability scan
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
+        with:
+          image-ref: tafseel:test
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Start hardened test container
+        run: |
+          docker run -d --name tafseel --network host --read-only --tmpfs /tmp:rw,noexec,nosuid,size=128m \
+            -e ASPNETCORE_ENVIRONMENT=Testing -e ASPNETCORE_HTTP_PORTS=8080 \
+            -e "ConnectionStrings__Tafseel=$TEST_CONNECTION" \
+            -e Jwt__SigningKey=container-ci-signing-key-with-at-least-32-characters \
+            -e Resend__ApiToken=ci-token \
+            -e Payments__WebhookSecret=container-ci-webhook-key-with-at-least-32-characters \
+            -e DataProtection__KeysPath=/tmp/keys -e FileStorage__RootPath=/tmp/data tafseel:test
+          for attempt in {1..30}; do curl -fsS http://localhost:8080/health/ready && break; sleep 2; done
+          curl -fsS http://localhost:8080/health/ready
+          curl -fsS http://localhost:8080/health/live
+          curl -fsS http://localhost:8080/app/Tafseel-Landing.dc.html >/dev/null
+          curl -fsS http://localhost:8080/app/Tafseel-Auth.dc.html >/dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app/appsettings.json)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app/unknown.js)" = 404
+      - name: Production must reject mock providers
+        run: |
+          id="$(docker run -d --network host \
+            -e ASPNETCORE_ENVIRONMENT=Production -e "ConnectionStrings__Tafseel=$TEST_CONNECTION" \
+            -e Jwt__SigningKey=production-ci-signing-key-with-at-least-32-characters \
+            -e Resend__ApiToken=ci-token -e Email__From='Tafseel <noreply@example.com>' \
+            -e Email__ConfirmationUrl=https://example.com/confirm -e Email__PasswordResetUrl=https://example.com/reset \
+            -e Payments__Provider=Mock -e Payments__WebhookSecret=production-ci-webhook-key-with-at-least-32-characters \
+            -e LiveSessions__Provider=Mock tafseel:test)"
+          sleep 8
+          if [ "$(docker inspect --format='{{.State.Running}}' "$id")" = true ]; then
+            docker logs "$id"; docker stop "$id"; docker rm "$id"
+            echo "Production accepted mock providers"; exit 1
+          fi
+          docker logs "$id"
+          docker rm "$id"
+      - name: Container logs
+        if: failure()
+        run: docker logs tafseel > container.log 2>&1 || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: failure()
+        with:
+          name: container-failure-${{ github.run_id }}
+          path: container.log
+      - name: Push immutable images
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.push
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker tag tafseel:test "$IMAGE:sha-${GITHUB_SHA}"
+          docker push "$IMAGE:sha-${GITHUB_SHA}"
+          if [ "${{ inputs.push }}" = "true" ]; then
+            docker tag tafseel:test "$IMAGE:${{ inputs.version }}"
+            docker push "$IMAGE:${{ inputs.version }}"
+          fi

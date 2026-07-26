@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Teacher application — Tafseel</title>
+  <link rel="stylesheet" href="css/tafseel.css">
+  <script src="js/tafseel.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/teacher-apply.js" defer></script>
+</head>
+<body>
+  <header class="tf-app-header">
+    <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
+    <a href="Tafseel-Teacher-Dashboard.dc.html">Teacher dashboard</a>
+  </header>
+  <main class="tf-workflow">
+    <section class="tf-panel" aria-labelledby="apply-title">
+      <h1 id="apply-title">Teacher qualification</h1>
+      <p class="tf-muted">Choose one subject-specific demo topic. Approval applies only to that subject.</p>
+      <div id="applications" class="tf-list" aria-live="polite"></div>
+      <form id="application-form" class="tf-form">
+        <div class="tf-grid-2">
+          <div class="tf-field"><label for="subject">Subject</label><select id="subject" required></select></div>
+          <div class="tf-field"><label for="topic">Qualification topic</label><select id="topic" required></select></div>
+          <div class="tf-field"><label for="city">City</label><input id="city" maxlength="150" required></div>
+          <div class="tf-field"><label for="years">Years of experience</label><input id="years" type="number" min="0" max="80" value="0" required></div>
+        </div>
+        <div class="tf-field"><label for="degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required></div>
+        <button class="tf-button" type="submit">Save application</button>
+      </form>
+      <form id="demo-form" class="tf-form" hidden>
+        <h2>Teaching demo</h2>
+        <div class="tf-grid-2">
+          <div class="tf-field"><label for="demo">Video file</label><input id="demo" type="file" accept="video/*" required></div>
+          <div class="tf-field"><label for="duration">Duration in seconds</label><input id="duration" type="number" min="1" max="600" value="180" required></div>
+        </div>
+        <div class="tf-actions">
+          <button class="tf-button" type="submit">Upload demo</button>
+          <button id="submit-application" class="tf-button tf-button-secondary" type="button">Submit for review</button>
+        </div>
+      </form>
+      <p id="apply-status" class="tf-status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+</body>
+</html>
