@@ -68,13 +68,30 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Verify Azure session
-        run: az account show --query '{subscription:id,tenant:tenantId}' --output none
+        shell: bash
+        run: |
+          set -euo pipefail
+          az account show --output none
+      - name: Create deployment package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ./artifacts/azure-publish
+          zip -r ../tafseel-azure.zip .
       - name: Deploy prebuilt package
-        uses: azure/webapps-deploy@b686016b4de8820a23519503685d8d03fbfa03a6
-        with:
-          app-name: tafseel-api-hisham
-          slot-name: Production
-          package: ./artifacts/azure-publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          az webapp deploy \
+            --resource-group tafseel-rg \
+            --name tafseel-api-hisham \
+            --src-path ./artifacts/tafseel-azure.zip \
+            --type zip \
+            --clean true \
+            --restart true \
+            --track-status true \
+            --timeout 600000 \
+            --output none
       - name: Post-deployment smoke tests
         shell: bash
         run: |
