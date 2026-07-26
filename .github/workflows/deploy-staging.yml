@@ -6,10 +6,6 @@ on:
         description: Validated main commit SHA
         required: true
         type: string
-permissions:
-  id-token: write
-  contents: read
-  checks: read
 concurrency:
   group: tafseel-staging-azure
   cancel-in-progress: true
@@ -18,17 +14,21 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   AZURE_CORE_OUTPUT: none
   DEPLOY_SHA: ${{ inputs.sha }}
-  AZURE_WEBAPP_NAME: tafseel-api-hisham
   APP_URL: ${{ vars.APP_URL }}
 jobs:
   deploy:
     name: staging-azure
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: staging
+    permissions:
+      contents: read
+      checks: read
+      id-token: write
     steps:
       - name: Validate requested revision
         shell: bash
-        run: '[[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full Git SHA is required."; exit 1; }'
+        run: '[[ "$DEPLOY_SHA" =~ ^[0-9A-Fa-f]{40}$ ]] || { echo "A full Git SHA is required."; exit 1; }'
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ inputs.sha }}
@@ -71,7 +71,7 @@ jobs:
       - name: Deploy prebuilt package
         uses: azure/webapps-deploy@b686016b4de8820a23519503685d8d03fbfa03a6
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-name: tafseel-api-hisham
           slot-name: Production
           package: ./artifacts/azure-publish
       - name: Post-deployment smoke tests
@@ -83,9 +83,9 @@ jobs:
             if curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null; then break; fi
             sleep 5
           done
-          curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null
           curl --fail --silent --show-error --max-time 20 "$APP_URL/health/live" >/dev/null
-          curl --fail --silent --show-error --location --max-time 20 "$APP_URL/" >/dev/null
+          curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null
+          curl --fail --silent --show-error --max-time 20 "$APP_URL/app/Tafseel-Landing.dc.html" >/dev/null
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "$APP_URL/api/v1/auth/me")" = 401
       - name: Deployment evidence
         if: always()

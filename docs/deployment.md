@@ -10,7 +10,7 @@ Run `Deploy Staging - Azure App Service` manually with a full Git SHA. The workf
 2. Requires successful CI, Security, Database, and Docker checks for that exact commit.
 3. Restores the locked solution, builds Release, and publishes `src/Tafseel.Api/Tafseel.Api.csproj`.
 4. Authenticates with Azure OIDC and deploys the prebuilt directory to the App Service `Production` slot.
-5. Tests `/`, `/health/live`, `/health/ready`, and anonymous access to `/api/v1/auth/me`.
+5. Tests `/health/live`, `/health/ready`, `/app/Tafseel-Landing.dc.html`, and anonymous access to `/api/v1/auth/me`.
 
 It does not run target-database migrations. Apply the reviewed idempotent SQL artifact to the Staging database before the first deployment. Application startup in `Staging` does not migrate the database.
 

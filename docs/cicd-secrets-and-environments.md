@@ -24,6 +24,8 @@ These are OIDC identifiers, not client secrets. Do not add a publish profile or 
 
 If Deployment Center has not yet created the identity because its generated workflow was canceled, create the user-assigned identity and federated credential manually with the values above, assign the scoped role, then copy the three identifiers into the GitHub Environment.
 
+Azure Staging does not read `DEPLOY_HOOK_URL`, `DEPLOY_HOOK_TOKEN`, `DATABASE_CONNECTION_STRING`, `SQL_*`, `SMOKE_EMAIL`, `SMOKE_PASSWORD`, `PROVIDER_SMOKE_URL`, or `PROVIDER_SMOKE_TOKEN`. Do not add them to the `staging` Environment.
+
 Runtime application secrets belong in Azure App Service Configuration, not GitHub:
 
 - `ConnectionStrings__Tafseel`
