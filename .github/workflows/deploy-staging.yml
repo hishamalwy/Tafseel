@@ -1,4 +1,4 @@
-name: Deploy Staging
+name: Deploy Staging - Azure App Service
 on:
   workflow_dispatch:
     inputs:
@@ -7,90 +7,91 @@ on:
         required: true
         type: string
 permissions:
+  id-token: write
   contents: read
   checks: read
 concurrency:
-  group: tafseel-staging
+  group: tafseel-staging-azure
   cancel-in-progress: true
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  AZURE_CORE_OUTPUT: none
+  DEPLOY_SHA: ${{ inputs.sha }}
+  AZURE_WEBAPP_NAME: tafseel-api-hisham
+  APP_URL: ${{ vars.APP_URL }}
 jobs:
   deploy:
-    name: staging
+    name: staging-azure
     runs-on: ubuntu-latest
     environment: staging
-    env:
-      DEPLOY_SHA: ${{ inputs.sha }}
-      IMAGE: ghcr.io/${{ github.repository_owner }}/tafseel
-      APP_URL: ${{ vars.APP_URL }}
-      ConnectionStrings__Tafseel: ${{ secrets.DATABASE_CONNECTION_STRING }}
-      Jwt__SigningKey: ${{ secrets.JWT_SIGNING_KEY }}
-      Resend__ApiToken: ${{ secrets.RESEND_API_TOKEN }}
-      Email__From: ${{ vars.EMAIL_FROM }}
-      Email__ConfirmationUrl: ${{ vars.EMAIL_CONFIRMATION_URL }}
-      Email__PasswordResetUrl: ${{ vars.EMAIL_PASSWORD_RESET_URL }}
-      Payments__Provider: ${{ vars.PAYMENTS_PROVIDER }}
-      Payments__WebhookSecret: ${{ secrets.PAYMENTS_WEBHOOK_SECRET }}
-      LiveSessions__Provider: ${{ vars.LIVE_SESSIONS_PROVIDER }}
-      FileStorage__Provider: ${{ vars.FILE_STORAGE_PROVIDER }}
-      DataProtection__KeysPath: ${{ vars.DATA_PROTECTION_KEYS_PATH }}
-      Cors__AllowedOrigins__0: ${{ vars.CORS_ORIGIN }}
-      SQL_SERVER: ${{ secrets.SQL_SERVER }}
-      SQL_DATABASE: ${{ secrets.SQL_DATABASE }}
-      SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
-      SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
-      DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
-      DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
-      SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
-      SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
-      PROVIDER_SMOKE_URL: ${{ secrets.PROVIDER_SMOKE_URL }}
-      PROVIDER_SMOKE_TOKEN: ${{ secrets.PROVIDER_SMOKE_TOKEN }}
     steps:
-      - name: Validate SHA
-        run: '[[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1'
+      - name: Validate requested revision
+        shell: bash
+        run: '[[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full Git SHA is required."; exit 1; }'
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ inputs.sha }}
-      - name: Verify required GitHub gates
+          fetch-depth: 0
+      - name: Verify main ancestry and required gates
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+          git fetch origin main
+          git merge-base --is-ancestor "$DEPLOY_SHA" origin/main ||
+            { echo "Requested revision is not on main."; exit 1; }
           required=("build-and-provider-neutral" "sql-server" "publish-smoke" "dependencies-and-secrets" "codeql-csharp" "codeql-javascript-typescript" "migrations" "image")
           checks="$(gh api "repos/$GITHUB_REPOSITORY/commits/$DEPLOY_SHA/check-runs?per_page=100")"
           for name in "${required[@]}"; do
             jq -e --arg n "$name" '[.check_runs[] | select(.name==$n and .conclusion=="success")] | length > 0' <<<"$checks" >/dev/null ||
               { echo "Required successful check missing: $name"; exit 1; }
           done
-      - name: Validate staging configuration
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - name: Restore
+        run: dotnet restore Tafseel.sln --locked-mode
+      - name: Build
+        run: dotnet build Tafseel.sln -c Release --no-restore
+      - name: Publish API and frontend assets
+        run: dotnet publish src/Tafseel.Api/Tafseel.Api.csproj -c Release --no-build -o ./artifacts/azure-publish
+      - name: Validate publish output
         shell: pwsh
-        run: ./scripts/ci/check-production-config.ps1
-      - name: Generate reviewed migration artifact
+        run: ./scripts/ci/validate-publish.ps1 -PublishDirectory ./artifacts/azure-publish
+      - name: Azure login with OIDC
+        uses: azure/login@1384c340ab2dda50fed2bee3041d1d87018aa5e8
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy prebuilt package
+        uses: azure/webapps-deploy@b686016b4de8820a23519503685d8d03fbfa03a6
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: Production
+          package: ./artifacts/azure-publish
+      - name: Post-deployment smoke tests
+        shell: bash
         run: |
-          dotnet tool restore
-          dotnet restore Tafseel.sln --locked-mode
-          dotnet ef migrations script --idempotent --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api -o tafseel-idempotent.sql
-      - name: Apply migration separately
-        run: |
-          test -n "$SQL_SERVER" && test -n "$SQL_DATABASE" && test -n "$SQL_USERNAME" && test -n "$SQL_PASSWORD"
-          docker run --rm -v "$PWD/tafseel-idempotent.sql:/work/migration.sql:ro" \
-            -e SQLCMDPASSWORD="$SQL_PASSWORD" mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04 \
-            /opt/mssql-tools18/bin/sqlcmd -C -b -S "$SQL_SERVER" -d "$SQL_DATABASE" -U "$SQL_USERNAME" -i /work/migration.sql
-      - name: Deploy immutable image through adapter
-        run: |
-          test -n "$DEPLOY_HOOK_URL" && test -n "$DEPLOY_HOOK_TOKEN"
-          curl --fail --silent --show-error --retry 2 -X POST "$DEPLOY_HOOK_URL" \
-            -H 'Content-Type: application/json' -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \
-            --data "{\"environment\":\"staging\",\"image\":\"$IMAGE:sha-$DEPLOY_SHA\",\"revision\":\"$DEPLOY_SHA\",\"strategy\":\"rolling\"}"
-      - name: Smoke tests
-        run: |
-          for attempt in {1..30}; do curl -fsS "$APP_URL/health/ready" && break; sleep 5; done
-          curl -fsS "$APP_URL/health/ready"
-          curl -fsS "$APP_URL/health/live"
-          curl -fsS "$APP_URL/app/Tafseel-Landing.dc.html" >/dev/null
-          test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/app/appsettings.json")" = 404
-          test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/v1/auth/me")" = 401
-          payload="$(jq -n --arg email "$SMOKE_EMAIL" --arg password "$SMOKE_PASSWORD" '{email:$email,password:$password}')"
-          token="$(curl -fsS -X POST "$APP_URL/api/v1/auth/login" -H 'Content-Type: application/json' --data "$payload" | jq -r .accessToken)"
-          test -n "$token" && curl -fsS "$APP_URL/api/v1/auth/me" -H "Authorization: Bearer $token" >/dev/null
-          curl -fsS -X POST "$PROVIDER_SMOKE_URL" -H "Authorization: Bearer $PROVIDER_SMOKE_TOKEN" >/dev/null
+          set -euo pipefail
+          test -n "$APP_URL" || { echo "staging APP_URL variable is required."; exit 1; }
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null; then break; fi
+            sleep 5
+          done
+          curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null
+          curl --fail --silent --show-error --max-time 20 "$APP_URL/health/live" >/dev/null
+          curl --fail --silent --show-error --location --max-time 20 "$APP_URL/" >/dev/null
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "$APP_URL/api/v1/auth/me")" = 401
       - name: Deployment evidence
         if: always()
-        run: echo "Staging revision \`$DEPLOY_SHA\`, image \`$IMAGE:sha-$DEPLOY_SHA\`, run \`$GITHUB_RUN_ID\`." >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        run: |
+          echo "## Azure staging deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Revision: \`$DEPLOY_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Environment: \`staging\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Database migrations were not executed by this workflow or application startup." >> "$GITHUB_STEP_SUMMARY"
