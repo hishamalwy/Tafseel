@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quality review — Tafseel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/tafseel.js"></script>
+</helmet>
+
+<div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
+  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
+    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
+      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
+      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+      <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">QA</span>
+    </a>
+    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="8">
+        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
+          <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
+          <span>{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </nav>
+  </aside>
+
+  <div style="display:flex;flex-direction:column;min-width:0">
+    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+      <div style="font-size:15px;font-weight:700" data-hide-sm="1">Quality review</div>
+      <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+        <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
+        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+        <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">SM</span>
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Sami Mattar</span>
+        </div>
+      </div>
+    </header>
+
+    <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+      <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">Teacher applications</h1>
+          <p style="color:var(--muted);font-size:14.5px">Every teacher demo is scored on the same rubric before it can go live.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+          <sc-for list="{{ summary }}" as="st" hint-placeholder-count="4">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+              <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">{{ st.label }}</div>
+              <div style="font-size:23px;font-weight:800;letter-spacing:-.02em">{{ st.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+            <h2 style="font-size:16px;font-weight:700">Applications queue</h2>
+            <div role="tablist" style="display:flex;gap:4px;flex-wrap:wrap">
+              <sc-for list="{{ statusTabs }}" as="tb" hint-placeholder-count="5">
+                <button type="button" role="tab" aria-selected="{{ tb.selected }}" onClick="{{ tb.onClick }}" style="{{ tb.style }}">{{ tb.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Teacher applications queue</caption>
+              <thead>
+                <tr style="background:var(--surface-2)">
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Teacher</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Subject</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Submitted</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Priority</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ applications }}" as="a" hint-placeholder-count="6">
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:14px 20px">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-2)">{{ a.initials }}</span>
+                        <span style="font-size:14px;font-weight:600">{{ a.name }}</span>
+                      </div>
+                    </td>
+                    <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2)">{{ a.subject }}</td>
+                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ a.submitted }}</td>
+                    <td style="padding:14px 12px"><span style="{{ a.priorityStyle }}">{{ a.priority }}</span></td>
+                    <td style="padding:14px 12px"><span style="{{ a.statusStyle }}">{{ a.status }}</span></td>
+                    <td style="padding:14px 20px;text-align:end">
+                      <button type="button" onClick="{{ a.onOpen }}" style="height:34px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">Review</button>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isReportsPage }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Reports</h1>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+            <sc-for list="{{ reportStats }}" as="r" hint-placeholder-count="4">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+                <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ r.label }}</div>
+                <div style="font-size:21px;font-weight:800">{{ r.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Applications reviewed per week</h2>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:100px">
+              <sc-for list="{{ reportChart }}" as="c" hint-placeholder-count="8">
+                <div title="{{ c.title }}" style="{{ c.style }}"></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettingsPage }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:480px">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+              <span>Email me when a new application is submitted</span>
+              <input type="checkbox" checked="{{ notifyNewApps }}" onChange="{{ onNotifyNewApps }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+              <span>Auto-assign applications to me</span>
+              <input type="checkbox" checked="{{ autoAssign }}" onChange="{{ onAutoAssign }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+            </label>
+            <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <button type="button" onClick="{{ backToList }}" style="border:0;background:none;color:var(--muted);font-size:13.5px;font-weight:600">← Back to queue</button>
+        </div>
+        <div data-stack="review" style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+            <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+              <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">
+                <span style="width:56px;height:56px;flex:none;border-radius:16px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px)"></span>
+                <div>
+                  <div style="font-size:18px;font-weight:800">{{ current.name }}</div>
+                  <div style="font-size:13.5px;color:var(--muted)">{{ current.subject }} · Applied {{ current.submitted }}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+                <sc-for list="{{ current.facts }}" as="f" hint-placeholder-count="6">
+                  <div>
+                    <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ f.k }}</div>
+                    <div style="font-size:14px;font-weight:600">{{ f.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+
+            <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+              <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Demo submission</h2>
+              <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px">Topic: {{ current.demoTopic }}</p>
+              <div style="position:relative;aspect-ratio:16/9;border-radius:var(--r-md);background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center;margin-bottom:12px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">demo video · 2:58</span>
+                <button type="button" onClick="{{ playDemo }}" aria-label="Play demo" style="position:absolute;width:52px;height:52px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);font-size:17px;box-shadow:var(--shadow-md)">▶</button>
+              </div>
+              <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
+                <span>Duration: 2:58 (max 3:00)</span>
+                <span>Format: MP4, 1080p</span>
+              </div>
+            </section>
+
+            <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+              <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">Evaluation rubric</h2>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <sc-for list="{{ rubric }}" as="r" hint-placeholder-count="9">
+                  <div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                      <span style="font-size:14px;font-weight:600">{{ r.label }}</span>
+                      <span style="font-family:var(--font-mono);font-size:13px;color:var(--muted)">{{ r.score }}/5</span>
+                    </div>
+                    <div style="display:flex;gap:6px">
+                      <sc-for list="{{ r.points }}" as="p" hint-placeholder-count="5">
+                        <button type="button" onClick="{{ p.onClick }}" aria-label="Score {{ p.n }}" aria-pressed="{{ p.active }}" style="{{ p.style }}">{{ p.n }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:14px;font-weight:700">Overall score</span>
+                <span style="font-size:20px;font-weight:800">{{ overallScore }} / 5</span>
+              </div>
+            </section>
+
+            <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+              <h2 style="font-size:16px;font-weight:700;margin-bottom:12px">Comments</h2>
+              <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+                <span style="font-size:13px;font-weight:600">Feedback to teacher (required to reject or request changes)</span>
+                <textarea value="{{ comment }}" onChange="{{ onComment }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;font-weight:600">Internal notes (not shared with teacher)</span>
+                <textarea value="{{ internalNotes }}" onChange="{{ onInternalNotes }}" rows="2" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+              </label>
+            </section>
+          </div>
+
+          <aside data-sticky="1" style="position:sticky;top:92px;display:flex;flex-direction:column;gap:14px">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+              <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Decision</h2>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button type="button" onClick="{{ onApprove }}" style="height:42px;border:0;background:var(--success);color:#fff;border-radius:var(--r-md);font-weight:700;font-size:14px">Approve</button>
+                <button type="button" onClick="{{ onRequestChanges }}" style="height:42px;border:1px solid var(--warning);background:var(--warning-soft);color:var(--warning);border-radius:var(--r-md);font-weight:700;font-size:14px">Request changes</button>
+                <button type="button" onClick="{{ onReject }}" style="height:42px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-md);font-weight:700;font-size:14px">Reject</button>
+              </div>
+              <sc-if value="{{ needsReason }}" hint-placeholder-val="{{ false }}">
+                <p style="margin-top:10px;font-size:12.5px;color:var(--error)">Add a comment above before rejecting or requesting changes.</p>
+              </sc-if>
+            </div>
+
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+              <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">Application history</h2>
+              <div style="display:flex;flex-direction:column;gap:0">
+                <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px;padding-block:10px;border-top:1px solid var(--border)">
+                    <span style="{{ h.dotStyle }}"></span>
+                    <div>
+                      <div style="font-size:13.5px;font-weight:600">{{ h.label }}</div>
+                      <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px">{{ h.time }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:340px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const RUBRIC_KEYS = ['Subject knowledge', 'Accuracy of information', 'Clarity of explanation', 'Communication skills', 'Teaching structure', 'Voice quality', 'Video quality', 'Student engagement', 'Professionalism'];
+
+const APPLICATIONS = [
+  { id:'a1', name:'Mona Rasheed', initials:'MR', subject:'Mathematics', submitted:'24 Jul', priority:'High', status:'Pending', demoTopic:'Factoring quadratics using the box method', facts:[
+    {k:'Email', v:'mona.rasheed@example.com'},{k:'City', v:'Jeddah, Saudi Arabia'},{k:'Experience', v:'5 years'},{k:'Degree', v:'BSc Mathematics, KAU'},{k:'Education level', v:'High school, Undergraduate'},{k:'Languages', v:'Arabic, English'}
+  ]},
+  { id:'a2', name:'Karim Aboul-Fotouh', initials:'KA', subject:'Programming', submitted:'23 Jul', priority:'Medium', status:'Pending', demoTopic:'Explaining recursion with a real interview question', facts:[
+    {k:'Email', v:'karim.af@example.com'},{k:'City', v:'Cairo, Egypt'},{k:'Experience', v:'7 years'},{k:'Degree', v:'BSc Computer Science, Cairo University'},{k:'Education level', v:'Undergraduate, Professional'},{k:'Languages', v:'Arabic, English'}
+  ]},
+  { id:'a3', name:'Widad Al-Harbi', initials:'WA', subject:'Chemistry', submitted:'22 Jul', priority:'Low', status:'Under Review', demoTopic:'Balancing redox reactions step by step', facts:[
+    {k:'Email', v:'widad.alharbi@example.com'},{k:'City', v:'Dammam, Saudi Arabia'},{k:'Experience', v:'3 years'},{k:'Degree', v:'MSc Chemistry, KFUPM'},{k:'Education level', v:'High school'},{k:'Languages', v:'Arabic'}
+  ]},
+  { id:'a4', name:'Peter Aziz', initials:'PA', subject:'Physics', submitted:'20 Jul', priority:'Medium', status:'Changes Requested', demoTopic:'Newton’s third law with everyday examples', facts:[
+    {k:'Email', v:'peter.aziz@example.com'},{k:'City', v:'Amman, Jordan'},{k:'Experience', v:'4 years'},{k:'Degree', v:'BSc Physics, University of Jordan'},{k:'Education level', v:'High school, Undergraduate'},{k:'Languages', v:'Arabic, English'}
+  ]},
+  { id:'a5', name:'Salma Idris', initials:'SI', subject:'Business', submitted:'19 Jul', priority:'Low', status:'Approved', demoTopic:'Reading a cash flow statement', facts:[
+    {k:'Email', v:'salma.idris@example.com'},{k:'City', v:'Dubai, UAE'},{k:'Experience', v:'9 years'},{k:'Degree', v:'MBA, AUS'},{k:'Education level', v:'Undergraduate, Professional'},{k:'Languages', v:'Arabic, English'}
+  ]},
+  { id:'a6', name:'Jamal Nasser', initials:'JN', subject:'Engineering', submitted:'17 Jul', priority:'Medium', status:'Rejected', demoTopic:'Shear force diagrams for simply supported beams', facts:[
+    {k:'Email', v:'jamal.nasser@example.com'},{k:'City', v:'Amman, Jordan'},{k:'Experience', v:'2 years'},{k:'Degree', v:'BSc Civil Engineering, JUST'},{k:'Education level', v:'Undergraduate'},{k:'Languages', v:'Arabic'}
+  ]}
+];
+
+const STATUS_TONE = {
+  'Pending': ['var(--warning-soft)', 'var(--warning)'], 'Under Review': ['var(--info-soft)', 'var(--info)'],
+  'Changes Requested': ['var(--warning-soft)', 'var(--warning)'], 'Approved': ['var(--success-soft)', 'var(--success)'], 'Rejected': ['var(--error-soft)', 'var(--error)']
+};
+const PRIORITY_TONE = { 'High': ['var(--error-soft)', 'var(--error)'], 'Medium': ['var(--warning-soft)', 'var(--warning)'], 'Low': ['var(--surface-2)', 'var(--muted)'] };
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false,
+    statusTab: 'all', view: 'list', page: 'overview', navKey: 'overview', currentId: null,
+    scores: {}, comment: '', internalNotes: '', needsReason: false, toast: '',
+    reviewersOnline: 4
+  };
+
+  componentDidMount() { this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme })); }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2800);
+  }
+
+  openApp(id) {
+    this.setState({ view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const NAV = [
+      ['overview','◱','Overview',0], ['pending','◷','Pending Applications',3], ['review','◍','Under Review',1],
+      ['changes','↺','Changes Requested',1], ['approved','✓','Approved Teachers',0], ['rejected','✕','Rejected Applications',0],
+      ['reports','▤','Reports',0], ['settings','⚙','Settings',0]
+    ];
+
+    const filtered = APPLICATIONS.filter(a => s.statusTab === 'all' || a.status.toLowerCase().replace(' ', '') === s.statusTab);
+    const current = APPLICATIONS.find(a => a.id === s.currentId) || APPLICATIONS[0];
+
+    const rubric = RUBRIC_KEYS.map(label => {
+      const score = s.scores[label] || 0;
+      return {
+        label, score,
+        points: [1, 2, 3, 4, 5].map(n => ({
+          n, active: score === n,
+          onClick: () => this.setState({ scores: { ...s.scores, [label]: n } }),
+          style: 'width:32px;height:32px;border-radius:var(--r-sm);font-size:13px;font-weight:700;transition:all var(--t);' +
+            (score === n ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border);background:var(--bg);color:var(--text-2);')
+        }))
+      };
+    });
+    const scored = Object.values(s.scores);
+    const overallScore = scored.length ? (scored.reduce((a, b) => a + b, 0) / scored.length).toFixed(1) : '0.0';
+
+    const decide = (label) => {
+      if ((label === 'Rejected' || label === 'Changes Requested') && !s.comment.trim()) {
+        this.setState({ needsReason: true });
+        return;
+      }
+      this.setState({ needsReason: false, view: 'list' });
+      this.flash(label + ': ' + current.name + (label === 'Approved' ? ' can now accept requests.' : ' notified.'));
+    };
+
+    return {
+      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+
+      drawerState: s.drawer ? 'open' : 'closed',
+      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
+
+      navItems: NAV.map(([key, icon, label, badge]) => ({
+        icon, label, badge: badge || 0,
+        current: s.navKey === key ? 'page' : 'false',
+        style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
+          (s.navKey === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
+        onClick: () => {
+          const tabMap = { pending:'pending', review:'underreview', changes:'changesrequested', approved:'approved', rejected:'rejected' };
+          this.setState({ drawer: false, navKey: key, page: tabMap[key] ? 'list' : key, statusTab: tabMap[key] || 'all', view: 'list' });
+        }
+      })),
+
+      isList: s.view === 'list' && (s.page || 'overview') !== 'reports' && (s.page || 'overview') !== 'settings',
+      isReportsPage: s.page === 'reports',
+      isSettingsPage: s.page === 'settings',
+
+      reportStats: [
+        { label: 'Applications reviewed (30d)', value: '142' }, { label: 'Approval rate', value: '82%' },
+        { label: 'Avg. review time', value: '38 min' }, { label: 'Active reviewers', value: '4' }
+      ],
+      reportChart: [18, 22, 26, 19, 31, 28, 34, 30].map((v, i, arr) => ({
+        title: v + ' reviews', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
+      })),
+
+      notifyNewApps: s.notifyNewApps ?? true, onNotifyNewApps: e => this.setState({ notifyNewApps: e.target.checked }),
+      autoAssign: s.autoAssign ?? false, onAutoAssign: e => this.setState({ autoAssign: e.target.checked }),
+      onSaveSettings: () => this.flash('Settings saved'),
+      isReview: s.view === 'review',
+      backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
+
+      summary: [
+        { label: 'Pending applications', value: '3' }, { label: 'Reviewed today', value: '7' },
+        { label: 'Approval rate', value: '82%' }, { label: 'Avg. review time', value: '38 min' }
+      ],
+
+      statusTabs: [
+        { key: 'all', label: 'All' }, { key: 'pending', label: 'Pending' }, { key: 'underreview', label: 'Under Review' },
+        { key: 'changesrequested', label: 'Changes Requested' }, { key: 'approved', label: 'Approved' }, { key: 'rejected', label: 'Rejected' }
+      ].map(t => ({
+        label: t.label, selected: s.statusTab === t.key,
+        style: 'padding:7px 12px;border:0;background:none;font-size:13px;font-weight:600;border-radius:var(--r-sm);transition:all var(--t);' +
+          (s.statusTab === t.key ? 'background:var(--primary-soft);color:var(--primary);' : 'color:var(--muted);'),
+        onClick: () => this.setState({ statusTab: t.key })
+      })),
+
+      applications: filtered.map(a => {
+        const [sbg, sfg] = STATUS_TONE[a.status];
+        const [pbg, pfg] = PRIORITY_TONE[a.priority];
+        return {
+          ...a,
+          priorityStyle: 'font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:' + pbg + ';color:' + pfg,
+          statusStyle: 'display:inline-flex;height:23px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + sbg + ';color:' + sfg,
+          onOpen: () => this.openApp(a.id)
+        };
+      }),
+
+      current, rubric, overallScore,
+      playDemo: () => this.flash('Playing demo submission…'),
+
+      comment: s.comment, onComment: e => this.setState({ comment: e.target.value, needsReason: false }),
+      internalNotes: s.internalNotes, onInternalNotes: e => this.setState({ internalNotes: e.target.value }),
+      needsReason: s.needsReason,
+      onApprove: () => decide('Approved'),
+      onRequestChanges: () => decide('Changes Requested'),
+      onReject: () => decide('Rejected'),
+
+      history: [
+        { label: 'Application submitted', time: current.submitted + ' · 09:12' },
+        { label: 'Assigned to Sami Mattar', time: current.submitted + ' · 09:40' },
+        { label: 'Demo video processed', time: current.submitted + ' · 10:05' },
+        { label: 'Awaiting your review', time: 'now' }
+      ].map((h, i, arr) => ({ ...h, dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--border-strong)') }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

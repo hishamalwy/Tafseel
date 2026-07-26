@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student dashboard — Tafseel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/tafseel.js"></script>
+</helmet>
+
+<div style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh" data-stack="app">
+
+  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="{{ sidebarStyle }}">
+    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
+      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
+      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+      <span style="font-family:var(--font-ar);font-size:12px;color:var(--muted)">تفصيل</span>
+    </a>
+    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="10">
+        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
+          <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
+          <span>{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="padding:16px;border-top:1px solid var(--border)">
+      <div style="background:var(--primary-soft);border-radius:var(--r-md);padding:14px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--primary);margin-bottom:5px">Exam week coming?</div>
+        <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:10px">Emergency sessions are available the night before.</div>
+        <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:12.5px;font-weight:700">Find a teacher →</a>
+      </div>
+    </div>
+  </aside>
+
+  <div style="display:flex;flex-direction:column;min-width:0">
+    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+      <div style="flex:1;max-width:420px;display:flex;align-items:center;gap:10px;height:38px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)" data-hide-sm="1">
+        <span aria-hidden="true" style="color:var(--muted);font-size:13px">⌕</span>
+        <label for="dash-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search your requests, teachers and files</label>
+        <input id="dash-q" data-i18n-ph="ph_dash_search" placeholder="Search requests, teachers, files…" style="flex:1;border:0;background:transparent;outline:none;font-size:14px;min-width:0" />
+      </div>
+      <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+        <button type="button" onClick="{{ toggleNotifs }}" aria-label="Notifications" style="position:relative;width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">
+          🔔
+          <sc-if value="{{ unread }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;top:-5px;inset-inline-end:-5px;min-width:17px;height:17px;padding-inline:4px;border-radius:999px;background:var(--error);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center">{{ unread }}</span>
+          </sc-if>
+        </button>
+        <a href="Tafseel-Chat.dc.html" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</a>
+        <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
+        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+        <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">NA</span>
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Noor Abdulaziz</span>
+        </div>
+      </div>
+    </header>
+
+    <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div>
+          <h1 data-i18n="dash_h" style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:5px">Welcome back, Noor</h1>
+          <p data-i18n="dash_p" style="color:var(--muted);font-size:14.5px">You have 2 deliveries waiting for your review and a session tonight.</p>
+        </div>
+        <a href="Tafseel-Request.dc.html" style="height:42px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">＋ New request</a>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px">
+        <sc-for list="{{ stats }}" as="st" hint-placeholder-count="4">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:13px;color:var(--muted);font-weight:500">{{ st.label }}</span>
+              <span style="width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:13px">{{ st.icon }}</span>
+            </div>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ st.value }}</div>
+            <div style="{{ st.deltaStyle }}">{{ st.delta }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start" data-stack="main">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <h2 style="font-size:16px;font-weight:700">Recent requests</h2>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.active }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Your recent explanation requests</caption>
+              <thead>
+                <tr style="background:var(--surface-2)">
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Request</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Teacher</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ requests }}" as="r" hint-placeholder-count="6">
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:14px 20px">
+                      <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
+                      <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
+                    </td>
+                    <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2);white-space:nowrap">{{ r.teacher }}</td>
+                    <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
+                    <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <sc-if value="{{ noRequests }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:52px 24px;text-align:center">
+              <div style="font-size:15px;font-weight:700;margin-bottom:6px">Nothing here yet</div>
+              <p style="font-size:14px;color:var(--muted);margin-bottom:16px">No requests with this status right now.</p>
+              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600">Browse teachers →</a>
+            </div>
+          </sc-if>
+          <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;color:var(--muted)">Showing {{ shownCount }} of 18 requests</span>
+            <a href="#" style="font-size:13.5px;font-weight:600">View all →</a>
+          </div>
+        </section>
+
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+            <h2 style="font-size:16px;font-weight:700;margin-bottom:14px">Upcoming live sessions</h2>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ sessions }}" as="se" hint-placeholder-count="2">
+                <article style="{{ se.cardStyle }}">
+                  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                    <span style="width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                    <div style="min-width:0">
+                      <div style="font-size:14px;font-weight:600">{{ se.teacher }}</div>
+                      <div style="font-size:12.5px;color:var(--muted)">{{ se.topic }}</div>
+                    </div>
+                    <span style="{{ se.countdownStyle }}">{{ se.countdown }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                    <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ se.when }}</span>
+                    <button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button>
+                  </div>
+                </article>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+              <h2 style="font-size:16px;font-weight:700">Learning activity</h2>
+              <span style="font-size:12.5px;color:var(--muted)">Last 12 weeks</span>
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Hours of explanation and live sessions delivered to you.</p>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:120px">
+              <sc-for list="{{ chart }}" as="c" hint-placeholder-count="12">
+                <div title="{{ c.title }}" style="{{ c.colStyle }}"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:8px">
+              <span>May</span><span>Jun</span><span>Jul</span>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <h2 style="font-size:16px;font-weight:700">Recommended for your subjects</h2>
+          <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:13.5px;font-weight:600">Browse all →</a>
+        </div>
+        <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:6px">
+          <sc-for list="{{ recommended }}" as="t" hint-placeholder-count="4">
+            <article style="flex:none;width:262px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
+              <div style="display:flex;gap:12px;margin-bottom:12px">
+                <span style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                <div style="min-width:0">
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
+                    <span title="Verified" style="flex:none;width:14px;height:14px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:8px;display:grid;place-items:center">✓</span>
+                  </div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:14px">
+                <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
+                <span style="color:var(--muted)">· from {{ t.price }}</span>
+              </div>
+              <a href="Tafseel-Teacher-Profile.dc.html" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">My requests</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-wrap:wrap">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+              <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.active }}" style="{{ f.style }}">{{ f.label }}</button>
+            </sc-for>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr style="background:var(--surface-2)">
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Request</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Teacher</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ allRequests }}" as="r" hint-placeholder-count="8">
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:14px 20px">
+                      <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
+                      <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
+                    </td>
+                    <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2);white-space:nowrap">{{ r.teacher }}</td>
+                    <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
+                    <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSessions }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Live sessions</h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+          <sc-for list="{{ allSessions }}" as="se" hint-placeholder-count="4">
+            <article style="{{ se.cardStyle }}">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                <span style="width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                <div style="min-width:0">
+                  <div style="font-size:14px;font-weight:600">{{ se.teacher }}</div>
+                  <div style="font-size:12.5px;color:var(--muted)">{{ se.topic }}</div>
+                </div>
+                <span style="{{ se.countdownStyle }}">{{ se.countdown }}</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ se.when }}</span>
+                <button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSaved }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Saved teachers</h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+          <sc-for list="{{ savedTeachers }}" as="t" hint-placeholder-count="4">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
+              <div style="display:flex;gap:12px;margin-bottom:12px">
+                <span style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                <div style="min-width:0">
+                  <div style="font-size:14.5px;font-weight:700">{{ t.name }}</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:14px">
+                <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
+                <span style="color:var(--muted)">· from {{ t.price }}</span>
+              </div>
+              <a href="Tafseel-Teacher-Profile.dc.html" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPayments }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Payments</h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
+          <sc-for list="{{ paymentStats }}" as="p" hint-placeholder-count="3">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+              <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ p.label }}</div>
+              <div style="font-size:21px;font-weight:800">{{ p.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border)"><h2 style="font-size:15px;font-weight:700">Transaction history</h2></div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ transactions }}" as="tx" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--border)">
+                <div>
+                  <div style="font-size:13.5px;font-weight:600">{{ tx.desc }}</div>
+                  <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px">{{ tx.date }}</div>
+                </div>
+                <span style="font-weight:700;font-size:14px">{{ tx.amount }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFiles }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Files</h1>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ studentFiles }}" as="f" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px">
+              <span style="width:36px;height:36px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:14px">{{ f.icon }}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13.5px;font-weight:600">{{ f.name }}</div>
+                <div style="font-size:12px;color:var(--muted)">{{ f.meta }}</div>
+              </div>
+              <button type="button" onClick="{{ f.onDownload }}" style="height:32px;padding:0 13px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Download</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviews }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">My reviews</h1>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ myReviews }}" as="rv" hint-placeholder-count="3">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
+              <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
+                <span style="font-size:14.5px;font-weight:700">{{ rv.teacher }}</span>
+                <span style="color:var(--warning);font-size:13px;letter-spacing:2px">{{ rv.stars }}</span>
+              </div>
+              <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:8px">{{ rv.body }}</p>
+              <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted)">{{ rv.date }}</div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isNotifPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">Notifications</h1>
+          <button type="button" onClick="{{ markAll }}" style="border:0;background:none;color:var(--primary);font-size:13.5px;font-weight:600">Mark all read</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
+            <button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}">
+              <span style="{{ n.dotStyle }}"></span>
+              <span style="flex:1;text-align:start">
+                <span style="display:block;font-size:14px;font-weight:600;margin-bottom:3px">{{ n.title }}</span>
+                <span style="display:block;font-size:13px;color:var(--muted);line-height:1.5">{{ n.body }}</span>
+                <span style="display:block;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:6px">{{ n.time }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMessages }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Messages</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <sc-for list="{{ conversations }}" as="c" hint-placeholder-count="4">
+            <a href="Tafseel-Chat.dc.html" style="display:flex;gap:14px;align-items:center;padding:16px 20px;border-top:1px solid var(--border);color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+              <span style="width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--text-2);flex:none">{{ c.initials }}</span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;gap:10px">
+                  <span style="font-size:14px;font-weight:700">{{ c.name }}</span>
+                  <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted)">{{ c.time }}</span>
+                </div>
+                <div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</div>
+              </div>
+              <sc-if value="{{ c.unread }}" hint-placeholder-val="{{ false }}">
+                <span style="width:9px;height:9px;border-radius:50%;background:var(--primary);flex:none"></span>
+              </sc-if>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:520px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Full name</span>
+            <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Email</span>
+            <input value="{{ settingsEmail }}" onChange="{{ onSettingsEmail }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+            <span>Email me about new deliveries</span>
+            <input type="checkbox" checked="{{ notifyDeliveries }}" onChange="{{ onNotifyDeliveries }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+            <span>Email me about live session reminders</span>
+            <input type="checkbox" checked="{{ notifySessions }}" onChange="{{ onNotifySessions }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          </label>
+          <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px;margin-top:6px">Save changes</button>
+        </div>
+      </div>
+    </sc-if>
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{ notifsOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .38);animation:tf-fade 160ms ease both" onClick="{{ closeNotifs }}">
+    <div role="dialog" aria-label="Notifications" onClick="{{ stop }}" style="position:absolute;inset-block:0;inset-inline-end:0;width:min(400px,92vw);background:var(--surface);border-inline-start:1px solid var(--border);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;animation:tf-rise 200ms ease both">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <h2 style="font-size:16px;font-weight:700">Notifications</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" onClick="{{ markAll }}" style="border:0;background:none;color:var(--primary);font-size:13px;font-weight:600">Mark all read</button>
+          <button type="button" onClick="{{ closeNotifs }}" aria-label="Close notifications" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">✕</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+        <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
+          <button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}">
+            <span style="{{ n.dotStyle }}"></span>
+            <span style="flex:1;text-align:start">
+              <span style="display:block;font-size:14px;font-weight:600;margin-bottom:3px">{{ n.title }}</span>
+              <span style="display:block;font-size:13px;color:var(--muted);line-height:1.5">{{ n.body }}</span>
+              <span style="display:block;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:6px">{{ n.time }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+/* Mock student data — mirrors GET /api/students/me/dashboard */
+const REQUESTS = [
+  { id:'R-4821', title:'Carnot cycle problems from my past exam', service:'Custom recorded explanation', teacher:'Dr. Rana Al-Otaibi', status:'Delivered', deadline:'26 Jul', amount:'SAR 120', group:'action' },
+  { id:'R-4809', title:'Binary search trees — traversal walkthrough', service:'Custom recorded explanation', teacher:'Omar Haddad', status:'In Progress', deadline:'28 Jul', amount:'SAR 150', group:'active' },
+  { id:'R-4795', title:'Statics assignment 3 guidance', service:'Assignment guidance', teacher:'Khalid Al-Sudairi', status:'Payment Required', deadline:'29 Jul', amount:'SAR 175', group:'action' },
+  { id:'R-4788', title:'Organic mechanisms revision before midterm', service:'Exam revision', teacher:'Dr. Yousef Karim', status:'Accepted', deadline:'31 Jul', amount:'SAR 150', group:'active' },
+  { id:'R-4771', title:'Linear algebra problem set 6', service:'Custom recorded explanation', teacher:'Layla Mansour', status:'Revision Requested', deadline:'27 Jul', amount:'SAR 95', group:'action' },
+  { id:'R-4740', title:'IELTS writing task 2 feedback', service:'Assignment guidance', teacher:'Sara Bin Nasser', status:'Completed', deadline:'12 Jul', amount:'SAR 85', group:'done' },
+  { id:'R-4712', title:'Genetics: pedigree analysis', service:'Custom recorded explanation', teacher:'Dr. Maha Fahmy', status:'Completed', deadline:'4 Jul', amount:'SAR 110', group:'done' },
+  { id:'R-4690', title:'Thesis methodology structure', service:'Project mentoring', teacher:'Tariq Zayed', status:'Pending Teacher Review', deadline:'2 Aug', amount:'SAR 420', group:'active' }
+];
+
+const STATUS_TONE = {
+  'Pending Teacher Review': ['var(--warning-soft)', 'var(--warning)'],
+  'Accepted': ['var(--info-soft)', 'var(--info)'],
+  'Payment Required': ['var(--error-soft)', 'var(--error)'],
+  'In Progress': ['var(--primary-soft)', 'var(--primary)'],
+  'Delivered': ['var(--accent-soft)', 'var(--accent)'],
+  'Revision Requested': ['var(--warning-soft)', 'var(--warning)'],
+  'Completed': ['var(--success-soft)', 'var(--success)'],
+  'Cancelled': ['var(--surface-2)', 'var(--muted)'],
+  'Disputed': ['var(--error-soft)', 'var(--error)']
+};
+
+const AR = {
+  dash_h:'أهلًا بعودتك، نور',
+  dash_p:'لديك تسليمان بانتظار مراجعتك وجلسة الليلة.',
+  ph_dash_search:'ابحث في الطلبات والمعلمين والملفات…'
+};
+
+const SAVED_TEACHERS = [
+  { name:'Dr. Rana Al-Otaibi', subject:'Physics · Thermodynamics', rating:'4.9', price:'SAR 120' },
+  { name:'Layla Mansour', subject:'Mathematics · Calculus II', rating:'4.8', price:'SAR 95' },
+  { name:'Omar Haddad', subject:'Programming · Data structures', rating:'5.0', price:'SAR 150' }
+];
+
+const PAYMENT_STATS = [
+  { label:'Total spending', value:'SAR 3,240' }, { label:'In escrow', value:'SAR 420' }, { label:'Refunded', value:'SAR 0' }
+];
+
+const TRANSACTIONS = [
+  { desc:'Payment held — Statics assignment 3', amount:'− SAR 175', date:'24 Jul 2026' },
+  { desc:'Released to Dr. Maha Fahmy', amount:'− SAR 110', date:'4 Jul 2026' },
+  { desc:'Released to Sara Bin Nasser', amount:'− SAR 85', date:'12 Jul 2026' },
+  { desc:'Refund — cancelled session', amount:'+ SAR 60', date:'29 Jun 2026' },
+  { desc:'Released to Layla Mansour', amount:'− SAR 95', date:'20 Jun 2026' },
+  { desc:'Released to Dr. Rana Al-Otaibi', amount:'− SAR 120', date:'2 Jun 2026' }
+];
+
+const STUDENT_FILES = [
+  { name:'exam-2024.pdf', meta:'Attached to R-4821 · 2.1 MB', icon:'📄' },
+  { name:'notes.docx', meta:'Attached to R-4821 · 480 KB', icon:'📝' },
+  { name:'lab-report-draft.docx', meta:'Attached to R-4788 · 310 KB', icon:'📝' },
+  { name:'thesis-outline.pdf', meta:'Attached to R-4690 · 1.4 MB', icon:'📄' },
+  { name:'quiz-sample.pptx', meta:'Attached to R-4795 · 2.8 MB', icon:'📊' }
+];
+
+const MY_REVIEWS = [
+  { teacher:'Dr. Maha Fahmy', stars:'★★★★★', body:'Explained pedigree analysis so clearly I finally understood dominant vs. recessive traits.', date:'5 Jul 2026' },
+  { teacher:'Sara Bin Nasser', stars:'★★★★☆', body:'Great feedback on my IELTS essay, though delivery was a few hours late.', date:'13 Jul 2026' }
+];
+
+const CONVERSATIONS = [
+  { initials:'RO', name:'Dr. Rana Al-Otaibi', preview:'Sure — I can walk through problem 6 in the live session tonight.', time:'10:42', unread:true },
+  { initials:'OH', name:'Omar Haddad', preview:'Delivered the revised explanation, let me know what you think!', time:'Yesterday', unread:true },
+  { initials:'KA', name:'Khalid Al-Sudairi', preview:'Accepted your request at SAR 175 — starting today.', time:'Mon', unread:false },
+  { initials:'LM', name:'Layla Mansour', preview:'Thanks for the review! Let me know if you need the next chapter.', time:'18 Jul', unread:false }
+];
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme,
+    section: 'overview', filter: 'all', drawer: false, notifsOpen: false,
+    read: [], toast: '',
+    settingsName: 'Noor Abdulaziz', settingsEmail: 'noor.a@example.com', notifyDeliveries: true, notifySessions: true
+  };
+
+  componentDidMount() {
+    Tafseel.addDict(AR);
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+  }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentDidUpdate() { Tafseel.translate(); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const NAV = [
+      ['overview', '◱', 'Overview', 0], ['requests', '◫', 'My Requests', 5], ['sessions', '◉', 'Live Sessions', 2],
+      ['messages', '✉', 'Messages', 3], ['saved', '♡', 'Saved Teachers', 0], ['payments', '▤', 'Payments', 0],
+      ['files', '⇩', 'Files', 0], ['reviews', '★', 'Reviews', 0], ['notifications', '🔔', 'Notifications', 0], ['settings', '⚙', 'Settings', 0]
+    ];
+
+    const NOTIFS = [
+      { id:1, title:'Delivery uploaded', body:'Dr. Rana Al-Otaibi delivered “Carnot cycle problems”. Review within 3 days.', time:'12 minutes ago' },
+      { id:2, title:'Payment required', body:'Khalid Al-Sudairi accepted your request at SAR 175. Pay to start the work.', time:'2 hours ago' },
+      { id:3, title:'Live session reminder', body:'Your session with Omar Haddad starts tonight at 20:30 (GMT+3).', time:'5 hours ago' },
+      { id:4, title:'Revision in progress', body:'Layla Mansour is working on your requested revision.', time:'Yesterday' },
+      { id:5, title:'Payment successful', body:'SAR 110 released to Dr. Maha Fahmy after your approval.', time:'4 Jul' }
+    ];
+
+    const groups = { all: null, action: 'action', active: 'active', done: 'done' };
+    const rows = REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).slice(0, 6);
+    const unread = NOTIFS.filter(n => !s.read.includes(n.id)).length;
+
+    const chartData = [3, 5, 2, 6, 4, 7, 5, 9, 6, 8, 11, 7];
+    const max = Math.max(...chartData);
+
+    return {
+      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+      stop: e => e.stopPropagation(),
+
+      drawerState: s.drawer ? 'open' : 'closed',
+      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
+      sidebarStyle: 'background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t);' +
+        (s.drawer ? '' : ''),
+
+      navItems: NAV.map(([key, icon, label, badge]) => ({
+        icon, label, badge: badge || 0,
+        current: s.section === key ? 'page' : 'false',
+        style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
+          (s.section === key
+            ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;'
+            : 'background:none;color:var(--text-2);font-weight:500;'),
+        onClick: () => this.setState({ section: key, drawer: false })
+      })),
+
+      isOverview: s.section === 'overview',
+      isRequests: s.section === 'requests',
+      isSessions: s.section === 'sessions',
+      isSaved: s.section === 'saved',
+      isPayments: s.section === 'payments',
+      isFiles: s.section === 'files',
+      isReviews: s.section === 'reviews',
+      isNotifPage: s.section === 'notifications',
+      isMessages: s.section === 'messages',
+      isSettings: s.section === 'settings',
+
+      allRequests: REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).map(r => {
+        const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
+        return { ...r, statusStyle: 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg };
+      }),
+
+      allSessions: [
+        { teacher: 'Omar Haddad', topic: 'Binary search trees · 60 min', when: 'Tonight · 20:30 GMT+3', countdown: 'in 4h 12m', urgent: true },
+        { teacher: 'Dr. Rana Al-Otaibi', topic: 'Thermodynamics revision · 90 min', when: 'Thu 30 Jul · 18:00 GMT+3', countdown: 'in 4 days', urgent: false },
+        { teacher: 'Dr. Yousef Karim', topic: 'Organic mechanisms revision · 60 min', when: 'Sat 1 Aug · 17:00 GMT+3', countdown: 'in 6 days', urgent: false },
+        { teacher: 'Tariq Zayed', topic: 'Thesis methodology · 90 min', when: 'Mon 3 Aug · 19:00 GMT+3', countdown: 'in 8 days', urgent: false }
+      ].map(se => ({
+        ...se,
+        cardStyle: 'border:1px solid ' + (se.urgent ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (se.urgent ? 'var(--primary-soft)' : 'var(--bg)'),
+        countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:' + (se.urgent ? 'var(--primary)' : 'var(--muted)'),
+        btnLabel: se.urgent ? 'Join session' : 'Reschedule',
+        btnStyle: 'height:32px;padding:0 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' + (se.urgent
+          ? 'border:0;background:var(--primary);color:var(--primary-ink);'
+          : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+        onJoin: () => this.flash(se.urgent ? 'Opening session room with ' + se.teacher + '…' : 'Reschedule request sent to ' + se.teacher)
+      })),
+
+      savedTeachers: SAVED_TEACHERS,
+      paymentStats: PAYMENT_STATS,
+      transactions: TRANSACTIONS,
+      studentFiles: STUDENT_FILES.map(f => ({ ...f, onDownload: () => this.flash('Downloading ' + f.name + '…') })),
+      myReviews: MY_REVIEWS,
+      conversations: CONVERSATIONS,
+
+      settingsName: s.settingsName, onSettingsName: e => this.setState({ settingsName: e.target.value }),
+      settingsEmail: s.settingsEmail, onSettingsEmail: e => this.setState({ settingsEmail: e.target.value }),
+      notifyDeliveries: s.notifyDeliveries, onNotifyDeliveries: e => this.setState({ notifyDeliveries: e.target.checked }),
+      notifySessions: s.notifySessions, onNotifySessions: e => this.setState({ notifySessions: e.target.checked }),
+      onSaveSettings: () => this.flash('Settings saved'),
+
+      stats: [
+        { label: 'Active requests', value: '4', icon: '◫', delta: '2 need your action', tone: 'warn' },
+        { label: 'Upcoming sessions', value: '2', icon: '◉', delta: 'Next tonight 20:30', tone: 'ok' },
+        { label: 'Completed lessons', value: '27', icon: '✓', delta: '+5 this month', tone: 'ok' },
+        { label: 'Total spending', value: 'SAR 3,240', icon: '▤', delta: 'SAR 420 in escrow', tone: 'muted' }
+      ].map(st => ({
+        ...st,
+        deltaStyle: 'font-size:12.5px;font-weight:600;color:' + (st.tone === 'warn' ? 'var(--warning)' : st.tone === 'ok' ? 'var(--success)' : 'var(--muted)')
+      })),
+
+      filters: [
+        { key: 'all', label: 'All' }, { key: 'action', label: 'Needs action' },
+        { key: 'active', label: 'In progress' }, { key: 'done', label: 'Completed' }
+      ].map(f => ({
+        label: f.label,
+        active: s.filter === f.key,
+        style: 'height:30px;padding-inline:11px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' +
+          (s.filter === f.key
+            ? 'border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);'
+            : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);'),
+        onClick: () => this.setState({ filter: f.key })
+      })),
+
+      requests: rows.map(r => {
+        const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
+        return { ...r, statusStyle: 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg };
+      }),
+      noRequests: rows.length === 0,
+      shownCount: rows.length,
+
+      sessions: [
+        { teacher: 'Omar Haddad', topic: 'Binary search trees · 60 min', when: 'Tonight · 20:30 GMT+3', countdown: 'in 4h 12m', urgent: true },
+        { teacher: 'Dr. Rana Al-Otaibi', topic: 'Thermodynamics revision · 90 min', when: 'Thu 30 Jul · 18:00 GMT+3', countdown: 'in 4 days', urgent: false }
+      ].map(se => ({
+        ...se,
+        cardStyle: 'border:1px solid ' + (se.urgent ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (se.urgent ? 'var(--primary-soft)' : 'var(--bg)'),
+        countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:' + (se.urgent ? 'var(--primary)' : 'var(--muted)'),
+        btnLabel: se.urgent ? 'Join session' : 'Reschedule',
+        btnStyle: 'height:32px;padding:0 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' + (se.urgent
+          ? 'border:0;background:var(--primary);color:var(--primary-ink);'
+          : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+        onJoin: () => this.flash(se.urgent ? 'Opening session room with ' + se.teacher + '…' : 'Reschedule request sent to ' + se.teacher)
+      })),
+
+      chart: chartData.map((v, i) => ({
+        title: v + ' hours',
+        colStyle: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === chartData.length - 2 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / max) * 100) + '%'
+      })),
+
+      recommended: [
+        { name: 'Dr. Faisal Nour', subject: 'Physics · Electromagnetism', rating: '4.7', price: 'SAR 240' },
+        { name: 'Layla Mansour', subject: 'Mathematics · Calculus II', rating: '4.8', price: 'SAR 95' },
+        { name: 'Nadia Selim', subject: 'Programming · JavaScript', rating: '4.6', price: 'SAR 135' },
+        { name: 'Dr. Maha Fahmy', subject: 'Biology · Genetics', rating: '4.9', price: 'SAR 110' }
+      ],
+
+      unread,
+      notifsOpen: s.notifsOpen,
+      toggleNotifs: () => this.setState({ notifsOpen: !s.notifsOpen }),
+      closeNotifs: () => this.setState({ notifsOpen: false }),
+      markAll: () => { this.setState({ read: NOTIFS.map(n => n.id) }); this.flash('All notifications marked as read'); },
+      notifications: NOTIFS.map(n => {
+        const isRead = s.read.includes(n.id);
+        return {
+          ...n,
+          style: 'display:flex;gap:12px;width:100%;padding:16px 20px;border:0;border-bottom:1px solid var(--border);text-align:start;background:' + (isRead ? 'transparent' : 'var(--primary-soft)'),
+          dotStyle: 'flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:' + (isRead ? 'var(--border-strong)' : 'var(--primary)'),
+          onClick: () => this.setState({ read: s.read.includes(n.id) ? s.read : s.read.concat(n.id) })
+        };
+      })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

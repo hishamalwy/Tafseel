@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dr. Rana Al-Otaibi — Physics teacher on Tafseel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/tafseel.js"></script>
+</helmet>
+
+<header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
+  <div style="max-width:1280px;margin-inline:auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:32px">
+    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);flex:none" aria-label="Tafseel home">
+      <span style="width:30px;height:30px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:15px">T</span>
+      <span style="display:flex;flex-direction:column;line-height:1">
+        <span style="font-weight:800;font-size:17px;letter-spacing:-.02em">Tafseel</span>
+        <span style="font-family:var(--font-ar);font-size:11px;color:var(--muted);margin-top:3px">تفصيل</span>
+      </span>
+    </a>
+    <nav aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Browse Teachers</a>
+      <a href="Tafseel-Landing.dc.html#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Subjects</a>
+      <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Become a Teacher</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:8px;flex:none">
+      <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+      <a href="Tafseel-Student-Dashboard.dc.html" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+        <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">NA</span>
+        Noor
+      </a>
+    </div>
+  </div>
+</header>
+
+<main style="max-width:1280px;margin-inline:auto;padding:24px 24px 96px">
+  <nav aria-label="Breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:20px">
+    <a href="Tafseel-Landing.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">Home</a><span>/</span>
+    <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">Physics teachers</a><span>/</span>
+    <span style="color:var(--text-2);font-weight:500">Dr. Rana Al-Otaibi</span>
+  </nav>
+
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:24px;display:flex;gap:28px;flex-wrap:wrap">
+    <div style="position:relative;flex:none">
+      <div style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center;font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:8px">teacher photo<br />132×132</div>
+      <span title="Online now" style="position:absolute;inset-block-end:6px;inset-inline-end:6px;width:18px;height:18px;border-radius:50%;border:3px solid var(--surface);background:var(--success)"></span>
+    </div>
+
+    <div style="flex:1;min-width:280px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Dr. Rana Al-Otaibi</h1>
+        <span title="Verified teacher" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ Verified</span>
+        <span style="display:inline-flex;align-items:center;height:26px;padding-inline:10px;border-radius:999px;background:var(--warning-soft);color:var(--warning);font-size:12.5px;font-weight:700">Top rated</span>
+      </div>
+      <p style="font-size:15.5px;color:var(--text-2);margin-bottom:14px">Physics · Thermodynamics &amp; Mechanics · Saudi Arabia · Teaches in Arabic and English</p>
+      <div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:18px">
+        <sc-for list="{{ headStats }}" as="h" hint-placeholder-count="4">
+          <div>
+            <div style="font-size:19px;font-weight:800;letter-spacing:-.02em">{{ h.value }}</div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ h.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" style="{{ favStyle }}">{{ favLabel }}</button>
+        <button type="button" onClick="{{ onShare }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600">↗ Share</button>
+        <a href="Tafseel-Chat.dc.html" style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">✉ Message</a>
+      </div>
+    </div>
+  </section>
+
+  <div data-stack="profile" style="display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:24px;align-items:start">
+    <div>
+      <div role="tablist" aria-label="Profile sections" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5">
+          <button type="button" role="tab" aria-selected="{{ tb.selected }}" onClick="{{ tb.onClick }}" style="{{ tb.style }}">{{ tb.label }}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:12px">About</h2>
+            <p style="font-size:15px;line-height:1.7;color:var(--text-2);margin-bottom:12px">I spent eleven years teaching physics — six of them as a university lecturer in Riyadh, five supporting students privately through the parts of the syllabus that quietly decide their grade.</p>
+            <p style="font-size:15px;line-height:1.7;color:var(--text-2)">Send me the actual chapter, the actual past paper, the actual assignment brief. I record an explanation that follows your material, in your language, at the level you are being examined at. Most students come back for the second half of the term.</p>
+          </section>
+
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Education &amp; experience</h2>
+            <div style="display:flex;flex-direction:column;gap:0">
+              <sc-for list="{{ timeline }}" as="tl" hint-placeholder-count="4">
+                <div style="display:flex;gap:16px;padding-block:14px;border-bottom:1px solid var(--border)">
+                  <div style="width:34px;height:34px;flex:none;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;color:var(--text-2)">{{ tl.icon }}</div>
+                  <div>
+                    <div style="font-size:15px;font-weight:600">{{ tl.title }}</div>
+                    <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ tl.meta }}</div>
+                  </div>
+                  <div style="margin-inline-start:auto;font-family:var(--font-mono);font-size:12px;color:var(--muted);white-space:nowrap">{{ tl.years }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:14px">Subjects &amp; topics</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ topics }}" as="tp" hint-placeholder-count="8">
+                <span style="font-size:13px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ tp }}</span>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">Teaching samples</h2>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:18px">Recorded by the teacher and scored by the Tafseel quality team before approval.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+            <sc-for list="{{ samples }}" as="sm" hint-placeholder-count="4">
+              <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
+                <div style="position:relative;aspect-ratio:16/9;background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center">
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">video thumbnail</span>
+                  <button type="button" onClick="{{ sm.onWatch }}" aria-label="Watch sample" style="position:absolute;width:44px;height:44px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);font-size:15px;box-shadow:var(--shadow-md)">▶</button>
+                  <span style="position:absolute;inset-block-end:8px;inset-inline-end:8px;font-family:var(--font-mono);font-size:11px;background:oklch(0.2 0.02 265 / .78);color:#fff;padding:3px 7px;border-radius:5px">{{ sm.duration }}</span>
+                </div>
+                <div style="padding:14px">
+                  <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">{{ sm.title }}</div>
+                  <div style="font-size:12.5px;color:var(--muted)">{{ sm.meta }}</div>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ services }}" as="sv" hint-placeholder-count="5">
+            <article style="{{ sv.cardStyle }}">
+              <div style="display:flex;gap:16px;align-items:flex-start">
+                <div style="width:40px;height:40px;flex:none;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:16px">{{ sv.icon }}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <h3 style="font-size:16.5px;font-weight:700">{{ sv.name }}</h3>
+                    <sc-if value="{{ sv.badge }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--error-soft);color:var(--error)">{{ sv.badge }}</span>
+                    </sc-if>
+                  </div>
+                  <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-top:6px">{{ sv.desc }}</p>
+                  <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--text-2)">
+                    <span>⏱ {{ sv.delivery }}</span>
+                    <span>↺ {{ sv.revisions }}</span>
+                  </div>
+                </div>
+                <div style="text-align:end;flex:none">
+                  <div style="font-size:18px;font-weight:800">{{ sv.price }}</div>
+                  <button type="button" onClick="{{ sv.onSelect }}" style="{{ sv.btnStyle }}">{{ sv.btnLabel }}</button>
+                </div>
+              </div>
+            </article>
+          </sc-for>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isAvailability }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+            <h2 style="font-size:18px;font-weight:700">Availability</h2>
+            <span style="font-size:13px;color:var(--muted)">Times shown in Arabia Standard Time (GMT+3)</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
+            <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+              <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:12px;background:var(--bg)">
+                <div style="font-size:13px;font-weight:700;margin-bottom:2px">{{ d.day }}</div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:10px">{{ d.date }}</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ d.slots }}" as="sl" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ sl.onClick }}" disabled="{{ sl.disabled }}" style="{{ sl.style }}">{{ sl.time }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isReviews }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex;flex-direction:column;gap:16px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px">
+            <div>
+              <div style="font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1">4.9</div>
+              <div style="color:var(--warning);font-size:15px;letter-spacing:3px;margin-block:6px">★★★★★</div>
+              <div style="font-size:13.5px;color:var(--muted)">Based on 214 completed orders</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="font-size:13px;color:var(--text-2);width:120px;flex:none">{{ b.label }}</span>
+                  <span style="flex:1;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden">
+                    <span style="{{ b.barStyle }}"></span>
+                  </span>
+                  <span style="font-size:13px;font-weight:700;width:28px;text-align:end">{{ b.score }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                <span style="width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12.5px;font-weight:700;color:var(--text-2)">{{ rv.initials }}</span>
+                <div style="flex:1">
+                  <div style="font-size:14.5px;font-weight:600">{{ rv.name }}</div>
+                  <div style="font-size:12.5px;color:var(--muted)">{{ rv.service }} · {{ rv.date }}</div>
+                </div>
+                <span style="color:var(--warning);font-size:13px;letter-spacing:2px">{{ rv.stars }}</span>
+              </div>
+              <p style="font-size:14.5px;line-height:1.65;color:var(--text-2)">{{ rv.body }}</p>
+            </article>
+          </sc-for>
+        </section>
+      </sc-if>
+    </div>
+
+    <aside data-sticky="1" style="position:sticky;top:92px;display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-md);padding:22px">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Selected service</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:4px">{{ selectedName }}</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px">
+          <span style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{ selectedPrice }}</span>
+          <span style="font-size:13px;color:var(--muted)">{{ selectedUnit }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;padding-block:14px;border-block:1px solid var(--border);margin-bottom:16px">
+          <sc-if value="{{ true }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;justify-content:space-between;font-size:13.5px">
+              <span style="color:var(--muted)">Estimated delivery</span><span style="font-weight:600">{{ selectedDelivery }}</span>
+            </div>
+          </sc-if>
+          <div style="display:flex;justify-content:space-between;font-size:13.5px">
+            <span style="color:var(--muted)">Revisions</span><span style="font-weight:600">{{ selectedRevisions }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13.5px">
+            <span style="color:var(--muted)">Response time</span><span style="font-weight:600">~1 hour</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="Tafseel-Request.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request this service</a>
+          <a href="Tafseel-Request.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)">Book a live session</a>
+          <a href="Tafseel-Chat.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)">Contact teacher</a>
+        </div>
+      </div>
+
+      <div style="background:var(--success-soft);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;gap:12px">
+        <span style="font-size:16px;color:var(--success)">🛡</span>
+        <div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--success);margin-bottom:3px">Protected payment</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5">Your payment is held by Tafseel and released only after you approve the delivery.</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;font-size:13px;color:var(--muted);line-height:1.55">
+        Contact details are shared only after a request is paid — keep the conversation on Tafseel so disputes stay covered.
+      </div>
+    </aside>
+  </div>
+</main>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const SERVICES = [
+  { id:'rec', icon:'▶', name:'Custom recorded explanation', desc:'Send your chapter, past paper or assignment brief and receive a recorded walkthrough built around it.', price:120, unit:'starting price', delivery:'2 days', revisions:'2 free revisions' },
+  { id:'live', icon:'◉', name:'Live session', desc:'One-to-one video call with a shared whiteboard. Recording sent to you afterwards.', price:180, unit:'per hour', delivery:'Book within 48h', revisions:'Recording included' },
+  { id:'exam', icon:'◷', name:'Exam revision', desc:'Focused revision on your syllabus and past papers, with a checklist of the mistakes that cost marks.', price:150, unit:'starting price', delivery:'3 days', revisions:'1 free revision' },
+  { id:'assign', icon:'✎', name:'Assignment guidance', desc:'Structured coaching through your assignment. I will not write it for you — you will be able to defend it.', price:110, unit:'starting price', delivery:'2 days', revisions:'2 free revisions' },
+  { id:'exam-night', icon:'⚡', name:'Exam night emergency session', desc:'Same-day 90-minute session for the night before your exam. Limited slots, premium rate.', price:320, unit:'per session', delivery:'Same day', revisions:'No revisions', badge:'Urgent' }
+];
+
+const AR = { tab_about:'نبذة', tab_samples:'نماذج الشرح', tab_services:'الخدمات', tab_avail:'المواعيد', tab_reviews:'التقييمات' };
+
+class Component extends DCLogic {
+  state = { lang: Tafseel.lang, theme: Tafseel.theme, tab: 'about', service: 'rec', slot: null, fav: false, toast: '' };
+
+  componentDidMount() {
+    Tafseel.addDict(AR);
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+  }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentDidUpdate() { Tafseel.translate(); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const sel = SERVICES.find(x => x.id === s.service) || SERVICES[0];
+    const tab = key => ({
+      selected: s.tab === key,
+      onClick: () => this.setState({ tab: key }),
+      style: 'padding:12px 16px;border:0;background:none;font-size:14.5px;font-weight:600;white-space:nowrap;transition:all var(--t);border-bottom:2px solid ' +
+        (s.tab === key ? 'var(--primary);color:var(--primary);' : 'transparent;color:var(--muted);')
+    });
+
+    const slotTimes = ['16:00', '17:30', '19:00', '20:30'];
+    const week = ['Sun 27', 'Mon 28', 'Tue 29', 'Wed 30', 'Thu 31', 'Fri 1', 'Sat 2'].map((label, di) => {
+      const [day, date] = label.split(' ');
+      return {
+        day, date: 'Jul ' + date,
+        slots: slotTimes.map((time, ti) => {
+          const disabled = (di + ti) % 4 === 0;
+          const id = di + '-' + ti;
+          const active = s.slot === id;
+          return {
+            time, disabled,
+            onClick: () => { this.setState({ slot: id }); this.flash('Held ' + day + ' ' + time + ' — confirm at checkout.'); },
+            style: 'height:32px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' + (disabled
+              ? 'border:1px dashed var(--border);background:transparent;color:var(--muted);opacity:.5;cursor:not-allowed;'
+              : active
+                ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
+                : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);')
+          };
+        })
+      };
+    });
+
+    return {
+      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+
+      fav: s.fav,
+      favLabel: s.fav ? '♥ Saved' : '♡ Save teacher',
+      favStyle: 'height:40px;padding:0 16px;border-radius:var(--r-sm);font-size:14px;font-weight:600;transition:all var(--t);' + (s.fav
+        ? 'border:1px solid var(--error);background:var(--error-soft);color:var(--error);'
+        : 'border:1px solid var(--border);background:var(--surface);color:var(--text);'),
+      onFav: () => { this.setState({ fav: !s.fav }); this.flash(s.fav ? 'Removed from saved teachers' : 'Saved to your teachers'); },
+      onShare: () => this.flash('Profile link copied to clipboard'),
+
+      headStats: [
+        { value: '4.9 ★', label: '214 reviews' },
+        { value: '640', label: 'Requests completed' },
+        { value: '~1 hour', label: 'Average response' },
+        { value: '11 yrs', label: 'Teaching experience' }
+      ],
+
+      tabs: [
+        { label: 'About', ...tab('about') },
+        { label: 'Teaching samples', ...tab('samples') },
+        { label: 'Services', ...tab('services') },
+        { label: 'Availability', ...tab('availability') },
+        { label: 'Reviews (214)', ...tab('reviews') }
+      ],
+      isAbout: s.tab === 'about',
+      isSamples: s.tab === 'samples',
+      isServices: s.tab === 'services',
+      isAvailability: s.tab === 'availability',
+      isReviews: s.tab === 'reviews',
+
+      timeline: [
+        { icon: '🎓', title: 'PhD, Applied Physics', meta: 'King Saud University, Riyadh', years: '2011 – 2015' },
+        { icon: '🏛', title: 'Lecturer, Department of Physics', meta: 'Princess Nourah University', years: '2015 – 2021' },
+        { icon: '📜', title: 'Certified Online Instructor', meta: 'Advance HE — Fellowship', years: '2019' },
+        { icon: '✦', title: 'Private tutoring & Tafseel', meta: '1,100+ students supported', years: '2021 – now' }
+      ],
+      topics: ['Thermodynamics', 'Classical mechanics', 'Waves & oscillations', 'Electromagnetism', 'Kinematics', 'Past-paper technique', 'Lab report writing', 'University entrance prep'],
+
+      samples: [
+        { title: 'Carnot cycle, explained with a real exam question', duration: '3:12', meta: 'Thermodynamics · Undergraduate', onWatch: () => this.flash('Playing sample video…') },
+        { title: 'Free-body diagrams without the guesswork', duration: '2:48', meta: 'Mechanics · High school', onWatch: () => this.flash('Playing sample video…') },
+        { title: 'Why your energy conservation answer loses marks', duration: '4:05', meta: 'Mechanics · Undergraduate', onWatch: () => this.flash('Playing sample video…') },
+        { title: 'Qualification demo — reviewed by quality team', duration: '3:00', meta: 'Approved 12 Mar 2026', onWatch: () => this.flash('Playing qualification demo…') }
+      ],
+
+      services: SERVICES.map(sv => ({
+        ...sv,
+        price: 'SAR ' + sv.price,
+        badge: sv.badge || '',
+        cardStyle: 'background:var(--surface);border:1px solid ' + (s.service === sv.id ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-lg);padding:20px;transition:all var(--t)',
+        btnLabel: s.service === sv.id ? 'Selected' : 'Select',
+        btnStyle: 'margin-top:10px;height:34px;padding:0 14px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' + (s.service === sv.id
+          ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
+          : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+        onSelect: () => { this.setState({ service: sv.id }); this.flash(sv.name + ' selected'); }
+      })),
+
+      selectedName: sel.name,
+      selectedPrice: 'SAR ' + sel.price,
+      selectedUnit: sel.unit,
+      selectedDelivery: sel.delivery,
+      selectedRevisions: sel.revisions,
+
+      week,
+
+      breakdown: [
+        { label: 'Clarity', score: '5.0', pct: 100 },
+        { label: 'Communication', score: '4.9', pct: 98 },
+        { label: 'Subject knowledge', score: '5.0', pct: 100 },
+        { label: 'Delivery time', score: '4.8', pct: 96 },
+        { label: 'Value for money', score: '4.7', pct: 94 }
+      ].map(b => ({ ...b, barStyle: 'display:block;height:100%;width:' + b.pct + '%;background:var(--primary);border-radius:99px' })),
+
+      reviews: [
+        { initials: 'NA', name: 'Noor Abdulaziz', service: 'Custom recorded explanation', date: '18 Jul 2026', stars: '★★★★★', body: 'I sent my thermodynamics past paper on Wednesday night and had a 22-minute walkthrough of every question I got wrong before Friday. She explains why the marking scheme wants a specific step, which nobody had done for me before.' },
+        { initials: 'MS', name: 'Mohammed Sabri', service: 'Live session · 60 min', date: '9 Jul 2026', stars: '★★★★★', body: 'Booked a session two days before my final. Calm, extremely organised, and she noticed the exact concept I had misunderstood in the first ten minutes.' },
+        { initials: 'AK', name: 'Amal Khoury', service: 'Exam revision', date: '2 Jul 2026', stars: '★★★★☆', body: 'Excellent content and very thorough. Delivery came a few hours later than the estimate, but she messaged me ahead of time to explain.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

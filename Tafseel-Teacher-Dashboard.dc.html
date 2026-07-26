@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teacher dashboard — Tafseel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/tafseel.js"></script>
+</helmet>
+
+<div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
+
+  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
+    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
+      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
+      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+      <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">Teach</span>
+    </a>
+    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="13">
+        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
+          <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
+          <span>{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="padding:16px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12.5px;color:var(--muted)">Response rate</span>
+        <span style="font-size:12.5px;font-weight:700;color:var(--success)">98%</span>
+      </div>
+      <div style="height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden">
+        <span style="display:block;height:100%;width:98%;background:var(--success);border-radius:99px"></span>
+      </div>
+    </div>
+  </aside>
+
+  <div style="display:flex;flex-direction:column;min-width:0">
+    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+      <div style="font-size:15px;font-weight:700" data-hide-sm="1">Teacher dashboard</div>
+      <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+        <a href="Tafseel-Chat.dc.html" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</a>
+        <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
+        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+        <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">RO</span>
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Dr. Rana Al-Otaibi</span>
+        </div>
+      </div>
+    </header>
+
+    <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:5px">Good evening, Rana</h1>
+          <p style="color:var(--muted);font-size:14.5px">3 new requests are waiting and one delivery is due tomorrow.</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <a href="#" style="height:42px;padding:0 18px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-md);font-weight:600;font-size:14px;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">Availability</a>
+          <button type="button" onClick="{{ scrollToRequests }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14px">Review new requests</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+        <sc-for list="{{ stats }}" as="st" hint-placeholder-count="6">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+            <div style="font-size:12.5px;color:var(--muted);font-weight:500;margin-bottom:10px">{{ st.label }}</div>
+            <div style="font-size:23px;font-weight:800;letter-spacing:-.02em">{{ st.value }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <section id="new-requests" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h2 style="font-size:16px;font-weight:700">New student requests</h2>
+          <span style="font-size:13px;color:var(--muted)">{{ pendingCount }} pending your response</span>
+        </div>
+        <sc-for list="{{ pending }}" as="q" hint-placeholder-count="3">
+          <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+            <div style="display:flex;gap:16px;flex-wrap:wrap">
+              <div style="flex:1;min-width:240px">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                  <span style="width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-2)">{{ q.initials }}</span>
+                  <span style="font-size:14.5px;font-weight:700">{{ q.student }}</span>
+                  <span style="font-size:12px;color:var(--muted)">· {{ q.subject }}</span>
+                  <span style="{{ q.urgencyStyle }}">{{ q.urgency }}</span>
+                </div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:6px">{{ q.topic }}</div>
+                <p style="font-size:13.5px;color:var(--text-2);line-height:1.55;margin-bottom:10px">{{ q.description }}</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <sc-for list="{{ q.files }}" as="fl" hint-placeholder-count="2">
+                    <span style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ fl }}</span>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="text-align:end;flex:none">
+                <div style="font-size:12px;color:var(--muted);margin-bottom:2px">Budget</div>
+                <div style="font-size:18px;font-weight:800;margin-bottom:10px">{{ q.budget }}</div>
+                <div style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">Due {{ q.deadline }}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap">
+              <button type="button" onClick="{{ q.onAccept }}" style="height:36px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Accept</button>
+              <button type="button" onClick="{{ q.onDecline }}" style="height:36px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Decline</button>
+              <button type="button" onClick="{{ q.onClarify }}" style="height:36px;padding:0 16px;border:1px solid var(--border);background:none;color:var(--text-2);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Request clarification</button>
+            </div>
+          </article>
+        </sc-for>
+      </section>
+
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <h2 style="font-size:16px;font-weight:700">Active orders</h2>
+          <div role="tablist" style="display:flex;gap:4px;flex-wrap:wrap">
+            <sc-for list="{{ orderTabs }}" as="ot" hint-placeholder-count="5">
+              <button type="button" role="tab" aria-selected="{{ ot.selected }}" onClick="{{ ot.onClick }}" style="{{ ot.style }}">{{ ot.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Your active orders</caption>
+            <thead>
+              <tr style="background:var(--surface-2)">
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Order</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Student</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
+                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Price</th>
+                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ orders }}" as="o" hint-placeholder-count="5">
+                <tr style="border-top:1px solid var(--border)">
+                  <td style="padding:14px 20px">
+                    <div style="font-size:14px;font-weight:600">{{ o.title }}</div>
+                    <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ o.id }}</div>
+                  </td>
+                  <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2);white-space:nowrap">{{ o.student }}</td>
+                  <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ o.deadline }}</td>
+                  <td style="padding:14px 12px;text-align:end;font-weight:700;font-size:14px;white-space:nowrap">{{ o.price }}</td>
+                  <td style="padding:14px 20px;text-align:end">
+                    <button type="button" onClick="{{ o.onAction }}" style="{{ o.actionStyle }}">{{ o.actionLabel }}</button>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <sc-if value="{{ noOrders }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">No orders in this stage right now.</div>
+        </sc-if>
+      </section>
+
+      <div data-stack="earn" style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px;align-items:start">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">Earnings</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:18px">
+            <sc-for list="{{ earnings }}" as="e" hint-placeholder-count="3">
+              <div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:6px">{{ e.label }}</div>
+                <div style="font-size:20px;font-weight:800;letter-spacing:-.02em">{{ e.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);margin-bottom:16px">
+            <div>
+              <div style="font-size:13px;color:var(--muted)">Platform commission (15%)</div>
+              <div style="font-size:15px;font-weight:700">SAR 612</div>
+            </div>
+            <button type="button" onClick="{{ onWithdraw }}" style="height:38px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Withdraw</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0">
+            <sc-for list="{{ transactions }}" as="tx" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-block:10px;border-top:1px solid var(--border);font-size:13.5px">
+                <span style="color:var(--text-2)">{{ tx.desc }}</span>
+                <span style="font-weight:700;color:{{ tx.color }}">{{ tx.amount }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:14px">Upcoming live sessions</h2>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ sessions }}" as="se" hint-placeholder-count="2">
+              <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:13px">
+                <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ se.student }}</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ se.topic }}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-2)">{{ se.when }}</span>
+                  <button type="button" onClick="{{ se.onStart }}" style="height:30px;padding:0 12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:12px;font-weight:600">Start</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">My services</h1>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ myServices }}" as="sv" hint-placeholder-count="5">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap">
+              <div>
+                <div style="font-size:15.5px;font-weight:700;margin-bottom:4px">{{ sv.name }}</div>
+                <div style="font-size:13px;color:var(--muted)">{{ sv.desc }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font-size:17px;font-weight:800">{{ sv.price }}</span>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
+                  <input type="checkbox" checked="{{ sv.active }}" onChange="{{ sv.onToggle }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+                  Active
+                </label>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Teaching samples</h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
+          <sc-for list="{{ teachingSamples }}" as="sm" hint-placeholder-count="4">
+            <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)">
+              <div style="position:relative;aspect-ratio:16/9;background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center">
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">video thumbnail</span>
+                <button type="button" onClick="{{ sm.onWatch }}" aria-label="Watch" style="position:absolute;width:40px;height:40px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink)">▶</button>
+              </div>
+              <div style="padding:12px">
+                <div style="font-size:14px;font-weight:600">{{ sm.title }}</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:3px">{{ sm.meta }}</div>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAvailability }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Availability</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px">
+            <sc-for list="{{ availDays }}" as="d" hint-placeholder-count="7">
+              <button type="button" onClick="{{ d.onClick }}" style="{{ d.style }}">{{ d.label }}</button>
+            </sc-for>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px;max-width:220px;margin-bottom:16px">
+            <span style="font-size:13px;font-weight:600">Time zone</span>
+            <select value="{{ timezone }}" onChange="{{ onTimezone }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <option>Arabia Standard Time (GMT+3)</option><option>Gulf Standard Time (GMT+4)</option><option>Egypt Standard Time (GMT+2)</option>
+            </select>
+          </label>
+          <button type="button" onClick="{{ onSaveAvailability }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save availability</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMessages }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Messages</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <sc-for list="{{ conversations }}" as="c" hint-placeholder-count="4">
+            <a href="Tafseel-Chat.dc.html" style="display:flex;gap:14px;align-items:center;padding:16px 20px;border-top:1px solid var(--border);color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+              <span style="width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--text-2);flex:none">{{ c.initials }}</span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;gap:10px">
+                  <span style="font-size:14px;font-weight:700">{{ c.name }}</span>
+                  <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted)">{{ c.time }}</span>
+                </div>
+                <div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</div>
+              </div>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviewsSection }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Reviews</h1>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ teacherReviews }}" as="rv" hint-placeholder-count="3">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
+              <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
+                <span style="font-size:14.5px;font-weight:700">{{ rv.student }}</span>
+                <span style="color:var(--warning);font-size:13px;letter-spacing:2px">{{ rv.stars }}</span>
+              </div>
+              <p style="font-size:13.5px;color:var(--text-2);line-height:1.6">{{ rv.body }}</p>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEarnings }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Earnings</h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px">
+          <sc-for list="{{ earnings }}" as="e" hint-placeholder-count="3">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+              <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ e.label }}</div>
+              <div style="font-size:21px;font-weight:800">{{ e.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border)"><h2 style="font-size:15px;font-weight:700">Transaction history</h2></div>
+          <sc-for list="{{ transactions }}" as="tx" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--border);font-size:13.5px">
+              <span style="color:var(--text-2)">{{ tx.desc }}</span>
+              <span style="font-weight:700;color:{{ tx.color }}">{{ tx.amount }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isWithdrawals }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Withdrawals</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+          <div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Available balance</div>
+            <div style="font-size:26px;font-weight:800">SAR 2,140</div>
+          </div>
+          <button type="button" onClick="{{ onWithdraw }}" style="height:44px;padding:0 20px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Withdraw to bank ****4821</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border)"><h2 style="font-size:15px;font-weight:700">Withdrawal history</h2></div>
+          <sc-for list="{{ withdrawalHistory }}" as="w" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--border);font-size:13.5px">
+              <span style="color:var(--text-2)">{{ w.date }}</span>
+              <span style="{{ w.statusStyle }}">{{ w.status }}</span>
+              <span style="font-weight:700">{{ w.amount }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:520px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Profile</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Short professional bio</span>
+            <textarea value="{{ profileBio }}" onChange="{{ onProfileBio }}" rows="4" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">LinkedIn profile</span>
+            <input value="{{ profileLinkedin }}" onChange="{{ onProfileLinkedin }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <button type="button" onClick="{{ onSaveProfile }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save profile</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:520px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+            <span>Email me about new requests</span>
+            <input type="checkbox" checked="{{ notifyNewRequests }}" onChange="{{ onNotifyNewRequests }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+            <span>SMS reminders for live sessions</span>
+            <input type="checkbox" checked="{{ notifySms }}" onChange="{{ onNotifySms }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          </label>
+          <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
+        </div>
+      </div>
+    </sc-if>
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{ acceptModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeModal }}">
+    <div role="dialog" aria-modal="true" aria-label="Accept request" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Accept request</h2>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">{{ acceptModal.topic }}</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Final price (SAR)</span>
+          <input type="number" value="{{ finalPrice }}" onChange="{{ onFinalPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Delivery date</span>
+          <input type="date" value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Number of revisions</span>
+          <select value="{{ revisions }}" onChange="{{ onRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+            <option value="0">No revisions</option>
+            <option value="1">1 revision</option>
+            <option value="2">2 revisions</option>
+            <option value="3">3 revisions</option>
+          </select>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Notes to student (optional)</span>
+          <textarea value="{{ notes }}" onChange="{{ onNotes }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onClick="{{ closeModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
+        <button type="button" onClick="{{ confirmAccept }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Accept request</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const PENDING = [
+  { id:'q1', student:'Bassel Younes', initials:'BY', subject:'Physics', topic:'Struggling with rotational dynamics before Thursday quiz', description:'I need someone to go through problems 4–9 in chapter 8 — mostly torque and angular momentum. I have the professor’s slides attached.', files:['ch8-slides.pdf', 'quiz-sample.docx'], budget:'SAR 130', deadline:'Thu, 30 Jul', urgency:'Before exam' },
+  { id:'q2', student:'Reem Al-Ghamdi', initials:'RG', subject:'Physics', topic:'Lab report on simple pendulum — need feedback structure', description:'First-year lab report due Friday. I want feedback on my method and error analysis sections specifically.', files:['lab-report-draft.docx'], budget:'SAR 90', deadline:'Fri, 31 Jul', urgency:'Standard' },
+  { id:'q3', student:'Fahad Al-Qahtani', initials:'FQ', subject:'Physics', topic:'Same-day help — exam is tomorrow morning', description:'I bombed my mock exam on thermodynamics. Need a condensed walkthrough of the formulas and when to use each one.', files:['mock-exam.pdf'], budget:'SAR 200', deadline:'Tonight', urgency:'Same day' }
+];
+
+const ORDERS = [
+  { id:'O-2291', title:'Mechanics revision pack', student:'Huda Al-Rashed', deadline:'27 Jul', price:'SAR 140', stage:'accepted' },
+  { id:'O-2287', title:'Waves & oscillations explainer', student:'Tariq Hassan', deadline:'28 Jul', price:'SAR 120', stage:'progress' },
+  { id:'O-2280', title:'Electromagnetism problem set', student:'Dana Kamal', deadline:'26 Jul', price:'SAR 150', stage:'ready' },
+  { id:'O-2274', title:'Free-body diagram walkthrough', student:'Ali Marzouq', deadline:'25 Jul', price:'SAR 95', stage:'revision' },
+  { id:'O-2260', title:'Thermodynamics past paper', student:'Noor Abdulaziz', deadline:'18 Jul', price:'SAR 120', stage:'completed' }
+];
+
+const STAGE_ACTION = { accepted:'Start work', progress:'Continue', ready:'Deliver', revision:'View revision', completed:'View' };
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, section: 'overview',
+    orderTab: 'all', declined: [], acceptModal: null,
+    finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: ''
+  };
+
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+  }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2800);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const NAV = [
+      ['overview','◱','Overview',0], ['new','✦','New Requests',3], ['orders','◫','Active Orders',5], ['sessions','◉','Live Sessions',2],
+      ['services','▤','My Services',0], ['samples','▶','Teaching Samples',0], ['availability','◷','Availability',0],
+      ['messages','✉','Messages',3], ['reviews','★','Reviews',0], ['earnings','$','Earnings',0], ['withdrawals','⇩','Withdrawals',0],
+      ['profile','◍','Profile',0], ['settings','⚙','Settings',0]
+    ];
+
+    const urgencyTone = { 'Standard':['var(--surface-2)','var(--text-2)'], 'Before exam':['var(--warning-soft)','var(--warning)'], 'Same day':['var(--error-soft)','var(--error)'] };
+
+    const orderTabs = [
+      { key:'all', label:'All' }, { key:'accepted', label:'Accepted' }, { key:'progress', label:'In Progress' },
+      { key:'ready', label:'Ready to Deliver' }, { key:'revision', label:'Revision' }, { key:'completed', label:'Completed' }
+    ].map(t => ({
+      label: t.label, selected: s.orderTab === t.key,
+      style: 'padding:7px 12px;border:0;background:none;font-size:13px;font-weight:600;border-radius:var(--r-sm);transition:all var(--t);' +
+        (s.orderTab === t.key ? 'background:var(--primary-soft);color:var(--primary);' : 'color:var(--muted);'),
+      onClick: () => this.setState({ orderTab: t.key })
+    }));
+
+    const filteredOrders = ORDERS.filter(o => s.orderTab === 'all' || o.stage === s.orderTab);
+
+    return {
+      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+      stop: e => e.stopPropagation(),
+
+      drawerState: s.drawer ? 'open' : 'closed',
+      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
+
+      navItems: NAV.map(([key, icon, label, badge]) => ({
+        icon, label, badge: badge || 0,
+        current: s.section === key ? 'page' : 'false',
+        style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
+          (s.section === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
+        onClick: () => {
+          const overviewAnchors = ['new', 'orders', 'sessions'];
+          this.setState({ drawer: false, section: overviewAnchors.includes(key) ? 'overview' : key });
+          if (key === 'new') setTimeout(() => document.getElementById('new-requests')?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }
+      })),
+
+      isOverview: s.section === 'overview' || !s.section,
+      isServices: s.section === 'services',
+      isSamples: s.section === 'samples',
+      isAvailability: s.section === 'availability',
+      isMessages: s.section === 'messages',
+      isReviewsSection: s.section === 'reviews',
+      isEarnings: s.section === 'earnings',
+      isWithdrawals: s.section === 'withdrawals',
+      isProfile: s.section === 'profile',
+      isSettings: s.section === 'settings',
+
+      myServices: [
+        { id:'rec', name:'Custom recorded explanation', desc:'2-day delivery, 2 revisions', price:'SAR 120' },
+        { id:'live', name:'Live session', desc:'60/90/120 minute video calls', price:'SAR 180/hr' },
+        { id:'exam', name:'Exam revision', desc:'3-day delivery, 1 revision', price:'SAR 150' },
+        { id:'assign', name:'Assignment guidance', desc:'2-day delivery, 2 revisions', price:'SAR 110' }
+      ].map((sv, i) => ({ ...sv, active: !(s.disabledServices||[]).includes(sv.id), onToggle: () => { const list = s.disabledServices||[]; const has = list.includes(sv.id); this.setState({ disabledServices: has ? list.filter(x=>x!==sv.id) : list.concat(sv.id) }); this.flash(sv.name + (has?' re-activated':' paused')); } })),
+
+      teachingSamples: [
+        { title: 'Carnot cycle, explained with a real exam question', meta: 'Thermodynamics · 3:12', onWatch: () => this.flash('Playing sample…') },
+        { title: 'Free-body diagrams without the guesswork', meta: 'Mechanics · 2:48', onWatch: () => this.flash('Playing sample…') },
+        { title: 'Why your energy conservation answer loses marks', meta: 'Mechanics · 4:05', onWatch: () => this.flash('Playing sample…') },
+        { title: 'Qualification demo — reviewed by quality team', meta: 'Approved 12 Mar 2026', onWatch: () => this.flash('Playing qualification demo…') }
+      ],
+
+      availDays: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => {
+        const active = (s.availDays || ['Sun','Mon','Tue','Wed','Thu']).includes(d);
+        return { label: d, style: 'height:40px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' + (active ? 'border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);' : 'border:1px solid var(--border);background:var(--bg);color:var(--muted);'),
+          onClick: () => { const list = s.availDays || ['Sun','Mon','Tue','Wed','Thu']; this.setState({ availDays: list.includes(d) ? list.filter(x=>x!==d) : list.concat(d) }); } };
+      }),
+      timezone: s.timezone || 'Arabia Standard Time (GMT+3)', onTimezone: e => this.setState({ timezone: e.target.value }),
+      onSaveAvailability: () => this.flash('Availability saved'),
+
+      conversations: [
+        { initials:'BY', name:'Bassel Younes', preview:'Thank you, that clarifies problem 6!', time:'11:20' },
+        { initials:'HR', name:'Huda Al-Rashed', preview:'Can we move the session to 6pm instead?', time:'Yesterday' },
+        { initials:'DK', name:'Dana Kamal', preview:'Delivery received, reviewing now.', time:'Mon' }
+      ],
+
+      teacherReviews: [
+        { student:'Noor Abdulaziz', stars:'★★★★★', body:'Sent my thermodynamics past paper on Wednesday night and had a walkthrough before Friday. Explains the marking scheme, not just the answer.' },
+        { student:'Mohammed Sabri', stars:'★★★★★', body:'Booked a session two days before my final. Calm and extremely organised.' }
+      ],
+
+      withdrawalHistory: [
+        { date:'20 Jul 2026', amount:'SAR 1,800', status:'Completed', statusStyle:'color:var(--success);font-weight:600' },
+        { date:'2 Jul 2026', amount:'SAR 2,400', status:'Completed', statusStyle:'color:var(--success);font-weight:600' },
+        { date:'14 Jun 2026', amount:'SAR 1,150', status:'Completed', statusStyle:'color:var(--success);font-weight:600' }
+      ],
+
+      profileBio: s.profileBio ?? 'PhD in Applied Physics with 11 years of teaching experience across university lecturing and private tutoring.',
+      onProfileBio: e => this.setState({ profileBio: e.target.value }),
+      profileLinkedin: s.profileLinkedin ?? 'linkedin.com/in/rana-alotaibi',
+      onProfileLinkedin: e => this.setState({ profileLinkedin: e.target.value }),
+      onSaveProfile: () => this.flash('Profile saved'),
+
+      notifyNewRequests: s.notifyNewRequests ?? true, onNotifyNewRequests: e => this.setState({ notifyNewRequests: e.target.checked }),
+      notifySms: s.notifySms ?? false, onNotifySms: e => this.setState({ notifySms: e.target.checked }),
+      onSaveSettings: () => this.flash('Settings saved'),
+
+      scrollToRequests: () => document.getElementById('new-requests') && document.getElementById('new-requests').scrollIntoView({ behavior: 'smooth' }),
+
+      stats: [
+        { label: 'New requests', value: String(PENDING.length - s.declined.length) },
+        { label: 'Active orders', value: '5' },
+        { label: 'Upcoming sessions', value: '2' },
+        { label: 'Earnings this month', value: 'SAR 4,080' },
+        { label: 'Rating', value: '4.9 ★' },
+        { label: 'Response rate', value: '98%' }
+      ],
+
+      pendingCount: PENDING.length - s.declined.length,
+      pending: PENDING.filter(q => !s.declined.includes(q.id)).map(q => {
+        const [bg, fg] = urgencyTone[q.urgency];
+        return {
+          ...q,
+          urgencyStyle: 'font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:' + bg + ';color:' + fg,
+          onAccept: () => this.setState({ acceptModal: q, finalPrice: parseInt(q.budget.replace(/\D/g, '')) || 100 }),
+          onDecline: () => { this.setState({ declined: s.declined.concat(q.id) }); this.flash('Declined request from ' + q.student); },
+          onClarify: () => this.flash('Clarification question sent to ' + q.student)
+        };
+      }),
+
+      orderTabs,
+      noOrders: filteredOrders.length === 0,
+      orders: filteredOrders.map(o => ({
+        ...o,
+        actionLabel: STAGE_ACTION[o.stage],
+        actionStyle: 'height:32px;padding:0 13px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
+          (o.stage === 'ready' ? 'border:0;background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+        onAction: () => this.flash(STAGE_ACTION[o.stage] + ' — ' + o.title)
+      })),
+
+      earnings: [
+        { label: 'Available balance', value: 'SAR 2,140' },
+        { label: 'Pending balance', value: 'SAR 980' },
+        { label: 'Total earnings', value: 'SAR 41,260' }
+      ],
+      onWithdraw: () => this.flash('Withdrawal of SAR 2,140 requested — arrives in 2–3 business days'),
+      transactions: [
+        { desc: 'Payout — Noor Abdulaziz', amount: '+ SAR 102', color: 'var(--success)' },
+        { desc: 'Withdrawal to bank ****4821', amount: '− SAR 1,800', color: 'var(--text)' },
+        { desc: 'Payout — Ali Marzouq', amount: '+ SAR 81', color: 'var(--success)' },
+        { desc: 'Platform commission', amount: '− SAR 18', color: 'var(--muted)' }
+      ],
+
+      sessions: [
+        { student: 'Omar’s student — Bassel Younes', topic: 'Rotational dynamics review · 60 min', when: 'Tonight · 20:30', onStart: () => this.flash('Opening session room…') },
+        { student: 'Huda Al-Rashed', topic: 'Mechanics revision · 90 min', when: 'Thu 30 Jul · 17:00', onStart: () => this.flash('Session starts in 4 days') }
+      ],
+
+      acceptModal: s.acceptModal,
+      closeModal: () => this.setState({ acceptModal: null }),
+      finalPrice: s.finalPrice, onFinalPrice: e => this.setState({ finalPrice: e.target.value }),
+      deliveryDate: s.deliveryDate, onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
+      revisions: s.revisions, onRevisions: e => this.setState({ revisions: e.target.value }),
+      notes: s.notes, onNotes: e => this.setState({ notes: e.target.value }),
+      confirmAccept: () => {
+        const q = s.acceptModal;
+        this.setState({ acceptModal: null, declined: s.declined.concat(q.id) });
+        this.flash('Accepted ' + q.student + '’s request at SAR ' + s.finalPrice);
+      }
+    };
+  }
+}
+
+</script>
+</body>
+</html>

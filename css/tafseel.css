@@ -1,0 +1,120 @@
+/* ============================================================
+   Tafseel — design tokens, resets, motion
+   Loaded by every page. Component styling lives with the
+   components themselves; this file holds only variables,
+   element resets and keyframes.
+   ============================================================ */
+:root{
+  /* Typography */
+  --font-sans:'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif;
+  --font-ar:'IBM Plex Sans Arabic','Plus Jakarta Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+
+  /* Surfaces & text — light mode */
+  --bg:oklch(0.990 0.004 95);
+  --bg-alt:oklch(0.965 0.006 95);
+  --surface:oklch(1 0 0);
+  --surface-2:oklch(0.972 0.005 95);
+  --border:oklch(0.905 0.006 95);
+  --border-strong:oklch(0.84 0.008 95);
+  --text:oklch(0.245 0.012 265);
+  --text-2:oklch(0.42 0.012 265);
+  --muted:oklch(0.565 0.012 265);
+
+  /* Brand */
+  --primary:oklch(0.505 0.145 262);
+  --primary-hover:oklch(0.45 0.148 262);
+  --primary-soft:oklch(0.955 0.025 262);
+  --primary-ink:oklch(1 0 0);
+  --accent:oklch(0.60 0.115 178);
+  --accent-soft:oklch(0.955 0.028 178);
+
+  /* Status */
+  --success:oklch(0.585 0.125 155);
+  --success-soft:oklch(0.955 0.035 155);
+  --warning:oklch(0.70 0.135 72);
+  --warning-soft:oklch(0.96 0.045 72);
+  --error:oklch(0.565 0.175 25);
+  --error-soft:oklch(0.958 0.03 25);
+  --info:oklch(0.58 0.12 240);
+  --info-soft:oklch(0.955 0.03 240);
+
+  /* Radius (8 / 12 / 16 / 24) */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px;
+
+  /* Spacing — 8px scale */
+  --s-1:8px; --s-2:16px; --s-3:24px; --s-4:32px; --s-5:40px; --s-6:48px; --s-8:64px; --s-10:80px;
+
+  /* Elevation */
+  --shadow-sm:0 1px 2px oklch(0.2 0.02 265 / .06);
+  --shadow-md:0 4px 16px -4px oklch(0.2 0.02 265 / .10), 0 1px 2px oklch(0.2 0.02 265 / .05);
+  --shadow-lg:0 24px 48px -16px oklch(0.2 0.02 265 / .18), 0 2px 6px oklch(0.2 0.02 265 / .06);
+
+  /* Motion */
+  --t:180ms cubic-bezier(.2,.7,.3,1);
+}
+
+html[data-theme="dark"]{
+  --bg:oklch(0.185 0.014 265);
+  --bg-alt:oklch(0.215 0.015 265);
+  --surface:oklch(0.232 0.016 265);
+  --surface-2:oklch(0.268 0.017 265);
+  --border:oklch(0.315 0.018 265);
+  --border-strong:oklch(0.40 0.02 265);
+  --text:oklch(0.965 0.004 265);
+  --text-2:oklch(0.84 0.008 265);
+  --muted:oklch(0.695 0.012 265);
+  --primary:oklch(0.685 0.135 262);
+  --primary-hover:oklch(0.755 0.13 262);
+  --primary-soft:oklch(0.30 0.05 262);
+  --primary-ink:oklch(0.16 0.02 265);
+  --accent:oklch(0.72 0.11 178);
+  --accent-soft:oklch(0.30 0.045 178);
+  --success:oklch(0.70 0.12 155);
+  --success-soft:oklch(0.29 0.05 155);
+  --warning:oklch(0.78 0.13 72);
+  --warning-soft:oklch(0.31 0.055 72);
+  --error:oklch(0.68 0.16 25);
+  --error-soft:oklch(0.30 0.06 25);
+  --info-soft:oklch(0.29 0.05 240);
+  --shadow-sm:0 1px 2px oklch(0 0 0 / .3);
+  --shadow-md:0 4px 16px -4px oklch(0 0 0 / .35);
+  --shadow-lg:0 24px 48px -16px oklch(0 0 0 / .5);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+html[dir="rtl"] body{font-family:var(--font-ar)}
+a{color:var(--primary);text-decoration:none;transition:color var(--t)}
+a:hover{color:var(--primary-hover)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
+h1,h2,h3,h4,h5,p,figure,blockquote{margin:0}
+table{border-collapse:collapse;width:100%}
+::placeholder{color:var(--muted)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid var(--bg)}
+
+@keyframes tf-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes tf-fade{from{opacity:0}to{opacity:1}}
+@keyframes tf-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes tf-shimmer{from{background-position:-400px 0}to{background-position:400px 0}}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ============================================================
+   Responsive behaviour
+   Layout is authored inline on each component; these rules only
+   collapse multi-column shells and turn sidebars into drawers.
+   Mobile <640 · Tablet 640–1024 · Desktop >1024
+   ============================================================ */
+@media (max-width:1024px){
+  [data-stack]{grid-template-columns:minmax(0,1fr) !important}
+  [data-sticky]{position:static !important;top:auto !important}
+  aside[data-drawer]{position:fixed !important;inset-block:0;inset-inline-start:0;width:264px;transform:translateX(-100%);transition:transform var(--t)}
+  html[dir="rtl"] aside[data-drawer]{transform:translateX(100%)}
+  aside[data-drawer="open"]{transform:none !important;box-shadow:var(--shadow-lg)}
+}
+@media (max-width:640px){
+  [data-hide-sm]{display:none !important}
+}

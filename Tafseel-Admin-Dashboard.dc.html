@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin — Tafseel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/tafseel.js"></script>
+</helmet>
+
+<div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
+  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
+    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
+      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
+      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+      <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">Admin</span>
+    </a>
+    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="18">
+        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
+          <span aria-hidden="true" style="width:16px;text-align:center;font-size:13px">{{ n.icon }}</span>
+          <span>{{ n.label }}</span>
+          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-inline-start:auto;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </nav>
+  </aside>
+
+  <div style="display:flex;flex-direction:column;min-width:0">
+    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+      <div style="font-size:15px;font-weight:700" data-hide-sm="1">Platform overview</div>
+      <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+        <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
+        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+        <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">AD</span>
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div>
+        <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">Platform overview</h1>
+        <p style="color:var(--muted);font-size:14.5px">Tafseel at a glance — 26 Jul 2026</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+        <sc-for list="{{ metrics }}" as="m" hint-placeholder-count="8">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:12.5px;color:var(--muted)">{{ m.label }}</span>
+              <span style="width:26px;height:26px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;font-size:12px">{{ m.icon }}</span>
+            </div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px">{{ m.value }}</div>
+            <div style="{{ m.deltaStyle }}">{{ m.delta }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div data-stack="charts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h2 style="font-size:15px;font-weight:700">Revenue growth</h2>
+            <span style="font-size:12.5px;color:var(--success);font-weight:600">+18% MoM</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
+            <sc-for list="{{ revenueChart }}" as="c" hint-placeholder-count="8">
+              <div title="{{ c.title }}" style="{{ c.style }}"></div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Orders by month</h2>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
+            <sc-for list="{{ ordersChart }}" as="c" hint-placeholder-count="8">
+              <div title="{{ c.title }}" style="{{ c.style }}"></div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Popular subjects</h2>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ subjectShare }}" as="sh" hint-placeholder-count="6">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">
+                  <span style="color:var(--text-2)">{{ sh.label }}</span><span style="font-weight:700">{{ sh.pct }}%</span>
+                </div>
+                <div style="height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden">
+                  <span style="{{ sh.barStyle }}"></span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">Teacher approval rate</h2>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px">Applications approved vs. rejected, last 6 months</p>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:96px">
+            <sc-for list="{{ approvalChart }}" as="c" hint-placeholder-count="6">
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;border-radius:5px;overflow:hidden">
+                <div title="Approved {{ c.approved }}%" style="background:var(--success);height:{{ c.approvedH }}%"></div>
+                <div title="Rejected {{ c.rejected }}%" style="background:var(--error-soft);height:{{ c.rejectedH }}%"></div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <h2 style="font-size:16px;font-weight:700">Users</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px;height:36px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+              <span aria-hidden="true" style="color:var(--muted);font-size:12px">⌕</span>
+              <input value="{{ userQ }}" onChange="{{ onUserQ }}" aria-label="Search users" placeholder="Search name or email" style="border:0;background:transparent;outline:none;font-size:13px;width:180px" />
+            </div>
+            <select value="{{ userRole }}" onChange="{{ onUserRole }}" aria-label="Filter by role" style="height:36px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:13px">
+              <option value="all">All roles</option>
+              <option value="Student">Students</option>
+              <option value="Teacher">Teachers</option>
+              <option value="Reviewer">Reviewers</option>
+            </select>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:10px 20px;background:var(--primary-soft);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:600;color:var(--primary)">{{ selectedCount }} selected</span>
+            <button type="button" onClick="{{ bulkSuspend }}" style="height:30px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Suspend</button>
+            <button type="button" onClick="{{ bulkActivate }}" style="height:30px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Activate</button>
+            <button type="button" onClick="{{ clearSelection }}" style="border:0;background:none;color:var(--muted);font-size:12.5px;font-weight:600">Clear</button>
+          </div>
+        </sc-if>
+
+        <div style="overflow-x:auto">
+          <table>
+            <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Platform users</caption>
+            <thead>
+              <tr style="background:var(--surface-2)">
+                <th scope="col" style="padding:11px 16px;width:36px"><input type="checkbox" checked="{{ allChecked }}" onChange="{{ onCheckAll }}" aria-label="Select all users" style="width:16px;height:16px;accent-color:var(--primary)" /></th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Name</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Role</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Joined</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
+                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ users }}" as="u" hint-placeholder-count="8">
+                <tr style="border-top:1px solid var(--border)">
+                  <td style="padding:12px 16px"><input type="checkbox" checked="{{ u.checked }}" onChange="{{ u.onCheck }}" aria-label="Select {{ u.name }}" style="width:16px;height:16px;accent-color:var(--primary)" /></td>
+                  <td style="padding:12px">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--text-2)">{{ u.initials }}</span>
+                      <div>
+                        <div style="font-size:13.5px;font-weight:600">{{ u.name }}</div>
+                        <div style="font-size:12px;color:var(--muted)">{{ u.email }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="padding:12px;font-size:13px;color:var(--text-2)">{{ u.role }}</td>
+                  <td style="padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap">{{ u.joined }}</td>
+                  <td style="padding:12px"><span style="{{ u.statusStyle }}">{{ u.status }}</span></td>
+                  <td style="padding:12px 20px;text-align:end;white-space:nowrap">
+                    <button type="button" onClick="{{ u.onToggle }}" style="height:30px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12px;font-weight:600">{{ u.toggleLabel }}</button>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <span style="font-size:13px;color:var(--muted)">Showing {{ users.length }} of 8,412 users</span>
+          <nav aria-label="Pagination" style="display:flex;gap:6px">
+            <sc-for list="{{ pages }}" as="p" hint-placeholder-count="4">
+              <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+            </sc-for>
+          </nav>
+        </div>
+      </section>
+
+      <div data-stack="pay" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Payments &amp; withdrawals</h2>
+          <div style="display:flex;flex-direction:column;gap:0">
+            <sc-for list="{{ paymentRows }}" as="pr" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-block:10px;border-top:1px solid var(--border);font-size:13.5px">
+                <span style="color:var(--text-2)">{{ pr.label }}</span><span style="font-weight:700">{{ pr.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Open disputes</h2>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ disputes }}" as="d" hint-placeholder-count="3">
+              <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:12px">
+                <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:4px">
+                  <span style="font-size:13.5px;font-weight:600">{{ d.title }}</span>
+                  <span style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">{{ d.amount }}</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted)">{{ d.meta }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isUsersPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ usersPageTitle }}</h1>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;height:36px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+              <span aria-hidden="true" style="color:var(--muted);font-size:12px">⌕</span>
+              <input value="{{ userQ }}" onChange="{{ onUserQ }}" aria-label="Search users" placeholder="Search name or email" style="border:0;background:transparent;outline:none;font-size:13px;width:200px" />
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr style="background:var(--surface-2)">
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Name</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Role</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Joined</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ pageUsers }}" as="u" hint-placeholder-count="6">
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:12px 20px">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--text-2)">{{ u.initials }}</span>
+                        <div>
+                          <div style="font-size:13.5px;font-weight:600">{{ u.name }}</div>
+                          <div style="font-size:12px;color:var(--muted)">{{ u.email }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding:12px;font-size:13px;color:var(--text-2)">{{ u.role }}</td>
+                    <td style="padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap">{{ u.joined }}</td>
+                    <td style="padding:12px"><span style="{{ u.statusStyle }}">{{ u.status }}</span></td>
+                    <td style="padding:12px 20px;text-align:end">
+                      <button type="button" onClick="{{ u.onToggle }}" style="height:30px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12px;font-weight:600">{{ u.toggleLabel }}</button>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCatalogPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">{{ catalogTitle }}</h1>
+          <button type="button" onClick="{{ onAddCatalog }}" style="height:38px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ catalogAddLabel }}</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ catalogItems }}" as="c" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px">
+              <div>
+                <div style="font-size:14.5px;font-weight:700">{{ c.name }}</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ c.meta }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;flex:none">
+                <button type="button" onClick="{{ c.onEdit }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Edit</button>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2)">
+                  <input type="checkbox" checked="{{ c.active }}" onChange="{{ c.onToggle }}" style="width:36px;height:21px;accent-color:var(--primary)" />
+                  Active
+                </label>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSimpleListPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ listTitle }}</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <sc-for list="{{ listItems }}" as="it" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 20px;border-top:1px solid var(--border)">
+              <div>
+                <div style="font-size:14px;font-weight:600">{{ it.title }}</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ it.meta }}</div>
+              </div>
+              <span style="{{ it.statusStyle }}">{{ it.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPaymentsPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Payments &amp; withdrawals</h1>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+          <sc-for list="{{ paymentRows }}" as="pr" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-block:10px;border-top:1px solid var(--border);font-size:13.5px">
+              <span style="color:var(--text-2)">{{ pr.label }}</span><span style="font-weight:700">{{ pr.value }}</span>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReportsPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Reports</h1>
+        <div data-stack="charts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Revenue growth</h2>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
+              <sc-for list="{{ revenueChart }}" as="c" hint-placeholder-count="8">
+                <div title="{{ c.title }}" style="{{ c.style }}"></div>
+              </sc-for>
+            </div>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Orders by month</h2>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
+              <sc-for list="{{ ordersChart }}" as="c" hint-placeholder-count="8">
+                <div title="{{ c.title }}" style="{{ c.style }}"></div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettingsPage }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:480px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Platform settings</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Platform commission rate (%)</span>
+            <input type="number" value="{{ commissionRate }}" onChange="{{ onCommissionRate }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;max-width:140px" />
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+            <span>Require quality review before teachers go live</span>
+            <input type="checkbox" checked="{{ requireReview }}" onChange="{{ onRequireReview }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
+            <span>Maintenance mode</span>
+            <input type="checkbox" checked="{{ maintenanceMode }}" onChange="{{ onMaintenanceMode }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          </label>
+          <button type="button" onClick="{{ onSavePlatformSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
+        </div>
+      </div>
+    </sc-if>
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const USERS = [
+  { id:1, name:'Noor Abdulaziz', email:'noor.a@example.com', role:'Student', joined:'12 Mar 2026', status:'Active' },
+  { id:2, name:'Dr. Rana Al-Otaibi', email:'rana.otaibi@example.com', role:'Teacher', joined:'3 Jan 2026', status:'Active' },
+  { id:3, name:'Sami Mattar', email:'sami.mattar@example.com', role:'Reviewer', joined:'20 Nov 2025', status:'Active' },
+  { id:4, name:'Omar Haddad', email:'omar.haddad@example.com', role:'Teacher', joined:'8 Feb 2026', status:'Active' },
+  { id:5, name:'Fahad Al-Qahtani', email:'fahad.q@example.com', role:'Student', joined:'2 Jul 2026', status:'Suspended' },
+  { id:6, name:'Layla Mansour', email:'layla.mansour@example.com', role:'Teacher', joined:'19 Sep 2025', status:'Active' },
+  { id:7, name:'Reem Al-Ghamdi', email:'reem.g@example.com', role:'Student', joined:'30 Jun 2026', status:'Active' },
+  { id:8, name:'Tariq Zayed', email:'tariq.zayed@example.com', role:'Teacher', joined:'14 Apr 2026', status:'Pending' }
+];
+
+const CATALOG_DATA = {
+  subjects: [
+    { id:'s1', name:'Mathematics', meta:'218 teachers · 6 education levels', active:true },
+    { id:'s2', name:'Physics', meta:'164 teachers · 5 education levels', active:true },
+    { id:'s3', name:'Chemistry', meta:'131 teachers · 4 education levels', active:true },
+    { id:'s4', name:'Biology', meta:'97 teachers · 4 education levels', active:true },
+    { id:'s5', name:'Programming', meta:'206 teachers · 3 education levels', active:true },
+    { id:'s6', name:'Business', meta:'118 teachers · 3 education levels', active:false }
+  ],
+  topics: [
+    { id:'t1', name:'Factoring quadratics using the box method', meta:'Mathematics · Standard difficulty', active:true },
+    { id:'t2', name:'Explaining recursion with a real interview question', meta:'Programming · Advanced difficulty', active:true },
+    { id:'t3', name:'Balancing redox reactions step by step', meta:'Chemistry · Standard difficulty', active:true },
+    { id:'t4', name:'Newton\u2019s third law with everyday examples', meta:'Physics · Introductory difficulty', active:false }
+  ],
+  services: [
+    { id:'sv1', name:'Custom recorded explanation', meta:'Available on all subjects', active:true },
+    { id:'sv2', name:'Live session', meta:'30/60/90/120 minute durations', active:true },
+    { id:'sv3', name:'Exam revision', meta:'Available on all subjects', active:true },
+    { id:'sv4', name:'Assignment guidance', meta:'Available on all subjects', active:true },
+    { id:'sv5', name:'Project mentoring', meta:'Available on 4 subjects', active:true },
+    { id:'sv6', name:'Exam night emergency session', meta:'Premium rate, limited slots', active:true }
+  ],
+  coupons: [
+    { id:'c1', name:'WELCOME20', meta:'20% off first request · expires 31 Aug 2026', active:true },
+    { id:'c2', name:'EXAMWEEK', meta:'SAR 30 off exam revision · expires 15 Aug 2026', active:true },
+    { id:'c3', name:'RAMADAN25', meta:'25% off all services · expired 10 Apr 2026', active:false }
+  ]
+};
+
+const LIST_DATA = {
+  requests: [
+    { title:'Carnot cycle problems from my past exam', meta:'Noor Abdulaziz \u00b7 Dr. Rana Al-Otaibi', status:'Delivered', tone:'accent' },
+    { title:'Binary search trees \u2014 traversal walkthrough', meta:'Noor Abdulaziz \u00b7 Omar Haddad', status:'In Progress', tone:'primary' },
+    { title:'Statics assignment 3 guidance', meta:'Noor Abdulaziz \u00b7 Khalid Al-Sudairi', status:'Payment Required', tone:'error' },
+    { title:'Rotational dynamics review', meta:'Bassel Younes \u00b7 Dr. Rana Al-Otaibi', status:'Accepted', tone:'info' },
+    { title:'IELTS writing task 2 feedback', meta:'Noor Abdulaziz \u00b7 Sara Bin Nasser', status:'Completed', tone:'success' }
+  ],
+  sessions: [
+    { title:'Binary search trees \u00b7 60 min', meta:'Noor Abdulaziz \u00b7 Omar Haddad \u00b7 Tonight 20:30', status:'Scheduled', tone:'primary' },
+    { title:'Thermodynamics revision \u00b7 90 min', meta:'Noor Abdulaziz \u00b7 Dr. Rana Al-Otaibi \u00b7 Thu 30 Jul', status:'Scheduled', tone:'primary' },
+    { title:'Mechanics revision \u00b7 60 min', meta:'Huda Al-Rashed \u00b7 Dr. Rana Al-Otaibi \u00b7 Completed 20 Jul', status:'Completed', tone:'success' }
+  ],
+  reviews: [
+    { title:'\u2605\u2605\u2605\u2605\u2605 \u2014 Dr. Maha Fahmy', meta:'Noor Abdulaziz \u00b7 5 Jul 2026', status:'Published', tone:'success' },
+    { title:'\u2605\u2605\u2605\u2605\u2606 \u2014 Sara Bin Nasser', meta:'Noor Abdulaziz \u00b7 13 Jul 2026', status:'Published', tone:'success' },
+    { title:'\u2605\u2605\u2606\u2606\u2606 \u2014 Ahmed Barakat', meta:'Flagged for review \u00b7 24 Jul 2026', status:'Flagged', tone:'warning' }
+  ],
+  disputes: [
+    { title:'Delivery quality \u2014 Order O-2201', meta:'Student vs. Ahmed Barakat \u00b7 SAR 150 \u00b7 opened 2 days ago', status:'Open', tone:'error' },
+    { title:'Missed live session', meta:'Student vs. Nadia Selim \u00b7 SAR 180 \u00b7 opened 1 day ago', status:'Open', tone:'error' },
+    { title:'Late delivery refund request', meta:'Student vs. Jamal Nasser \u00b7 SAR 95 \u00b7 opened 6 hours ago', status:'Open', tone:'error' }
+  ]
+};
+
+const TONE_STYLE = {
+  success:['var(--success-soft)','var(--success)'], primary:['var(--primary-soft)','var(--primary)'],
+  error:['var(--error-soft)','var(--error)'], info:['var(--info-soft)','var(--info)'],
+  warning:['var(--warning-soft)','var(--warning)'], accent:['var(--accent-soft)','var(--accent)']
+};
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
+    userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '',
+    commissionRate: 15, requireReview: true, maintenanceMode: false
+  };
+
+  componentDidMount() { this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme })); }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const NAV = [
+      ['overview','◱','Overview',0], ['users','◈','Users',0], ['students','◍','Students',0], ['teachers','✎','Teachers',0],
+      ['reviewers','◑','Quality Reviewers',0], ['applications','◷','Teacher Applications',3], ['subjects','∑','Subjects',0],
+      ['topics','◫','Topics',0], ['services','▤','Services',0], ['requests','⇩','Requests',0], ['sessions','◉','Live Sessions',0],
+      ['payments','$','Payments',0], ['withdrawals','⇧','Withdrawals',2], ['reviews','★','Reviews',0], ['disputes','⚠','Disputes',3],
+      ['coupons','%','Coupons',0], ['reports','▥','Reports',0], ['settings','⚙','Platform Settings',0]
+    ];
+
+    let filtered = USERS.map(u => ({ ...u, status: s.userOverrides[u.id] || u.status }))
+      .filter(u => s.userRole === 'all' || u.role === s.userRole)
+      .filter(u => !s.userQ.trim() || (u.name + u.email).toLowerCase().includes(s.userQ.trim().toLowerCase()));
+
+    const statusTone = { Active: ['var(--success-soft)', 'var(--success)'], Suspended: ['var(--error-soft)', 'var(--error)'], Pending: ['var(--warning-soft)', 'var(--warning)'] };
+
+    return {
+      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+
+      drawerState: s.drawer ? 'open' : 'closed',
+      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
+
+      navItems: NAV.map(([key, icon, label, badge]) => ({
+        icon, label, badge: badge || 0,
+        current: s.page === key ? 'page' : 'false',
+        style: 'display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:8px 12px;border:0;border-radius:var(--r-sm);font-size:13.5px;transition:all var(--t);' +
+          (s.page === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
+        onClick: () => {
+          this.setState({ drawer: false });
+          if (key === 'applications') { window.location.href = 'Tafseel-Quality-Dashboard.dc.html'; return; }
+          const roleMap = { users:'all', students:'Student', teachers:'Teacher', reviewers:'Reviewer' };
+          const catalogKeys = ['subjects', 'topics', 'services', 'coupons'];
+          const listKeys = ['requests', 'sessions', 'reviews', 'disputes'];
+          if (roleMap[key]) this.setState({ page: 'users', pageRole: roleMap[key] });
+          else if (catalogKeys.includes(key)) this.setState({ page: 'catalog', catalogKind: key });
+          else if (listKeys.includes(key)) this.setState({ page: 'list', listKind: key });
+          else this.setState({ page: key });
+        }
+      })),
+
+      isOverview: s.page === 'overview',
+      isUsersPage: s.page === 'users',
+      isCatalogPage: s.page === 'catalog',
+      isSimpleListPage: s.page === 'list',
+      isPaymentsPage: s.page === 'payments' || s.page === 'withdrawals',
+      isReportsPage: s.page === 'reports',
+      isSettingsPage: s.page === 'settings',
+
+      usersPageTitle: { all:'Users', Student:'Students', Teacher:'Teachers', Reviewer:'Quality reviewers' }[s.pageRole] || 'Users',
+      pageUsers: USERS.map(u => ({ ...u, status: s.userOverrides[u.id] || u.status }))
+        .filter(u => s.pageRole === 'all' || u.role === s.pageRole)
+        .filter(u => !s.userQ.trim() || (u.name + u.email).toLowerCase().includes(s.userQ.trim().toLowerCase()))
+        .map(u => {
+          const [bg, fg] = statusTone[u.status] || statusTone.Active;
+          return {
+            ...u, initials: u.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
+            statusStyle: 'display:inline-flex;height:22px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + bg + ';color:' + fg,
+            toggleLabel: u.status === 'Suspended' ? 'Activate' : 'Suspend',
+            onToggle: () => {
+              const next = u.status === 'Suspended' ? 'Active' : 'Suspended';
+              this.setState({ userOverrides: { ...s.userOverrides, [u.id]: next } });
+              this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+            }
+          };
+        }),
+
+      catalogTitle: { subjects:'Subjects', topics:'Demo topics', services:'Services', coupons:'Coupons' }[s.catalogKind],
+      catalogAddLabel: { subjects:'+ Add subject', topics:'+ Add topic', services:'+ Add service', coupons:'+ Add coupon' }[s.catalogKind],
+      onAddCatalog: () => this.flash('Opening ' + (s.catalogKind || 'item').slice(0, -1) + ' creation form\u2026'),
+      catalogItems: (CATALOG_DATA[s.catalogKind] || []).map(c => {
+        const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
+        return {
+          ...c, active,
+          onEdit: () => this.flash('Editing ' + c.name),
+          onToggle: () => { this.setState({ catalogOverrides: { ...s.catalogOverrides, [c.id]: !active } }); this.flash(c.name + (active ? ' deactivated' : ' activated')); }
+        };
+      }),
+
+      listTitle: { requests:'Requests', sessions:'Live sessions', reviews:'Reviews', disputes:'Disputes' }[s.listKind],
+      listItems: (LIST_DATA[s.listKind] || []).map(it => {
+        const [bg, fg] = TONE_STYLE[it.tone];
+        return { ...it, statusStyle: 'font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap;background:' + bg + ';color:' + fg };
+      }),
+
+      commissionRate: s.commissionRate, onCommissionRate: e => this.setState({ commissionRate: e.target.value }),
+      requireReview: s.requireReview, onRequireReview: e => this.setState({ requireReview: e.target.checked }),
+      maintenanceMode: s.maintenanceMode, onMaintenanceMode: e => this.setState({ maintenanceMode: e.target.checked }),
+      onSavePlatformSettings: () => this.flash('Platform settings saved'),
+
+      metrics: [
+        { label: 'Total users', value: '8,412', icon: '◈', delta: '+312 this month', tone: 'ok' },
+        { label: 'Active teachers', value: '1,240', icon: '✎', delta: '+48 this month', tone: 'ok' },
+        { label: 'Active students', value: '6,940', icon: '◍', delta: '+264 this month', tone: 'ok' },
+        { label: 'Pending applications', value: '3', icon: '◷', delta: 'Avg. 38 min review', tone: 'muted' },
+        { label: 'Total orders', value: '38,600', icon: '⇩', delta: '+1,180 this month', tone: 'ok' },
+        { label: 'Total revenue', value: 'SAR 4.08M', icon: '$', delta: '+18% MoM', tone: 'ok' },
+        { label: 'Platform commission', value: 'SAR 612K', icon: '%', delta: '15% take rate', tone: 'muted' },
+        { label: 'Open disputes', value: '3', icon: '⚠', delta: 'Needs attention', tone: 'warn' }
+      ].map(m => ({ ...m, deltaStyle: 'font-size:12px;font-weight:600;color:' + (m.tone === 'warn' ? 'var(--warning)' : m.tone === 'ok' ? 'var(--success)' : 'var(--muted)') })),
+
+      revenueChart: [210, 240, 265, 250, 290, 320, 355, 408].map((v, i, arr) => ({
+        title: 'SAR ' + v + 'K', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
+      })),
+      ordersChart: [3200, 3400, 3650, 3500, 3900, 4100, 4350, 4820].map((v, i, arr) => ({
+        title: v + ' orders', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--accent)' : 'var(--accent-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
+      })),
+      subjectShare: [
+        { label: 'Mathematics', pct: 22 }, { label: 'Programming', pct: 19 }, { label: 'Physics', pct: 16 },
+        { label: 'Chemistry', pct: 13 }, { label: 'Business', pct: 11 }, { label: 'Engineering', pct: 10 }
+      ].map(sh => ({ ...sh, barStyle: 'display:block;height:100%;width:' + sh.pct + '%;background:var(--primary);border-radius:99px' })),
+      approvalChart: [
+        { approved: 78, rejected: 22 }, { approved: 80, rejected: 20 }, { approved: 75, rejected: 25 },
+        { approved: 84, rejected: 16 }, { approved: 81, rejected: 19 }, { approved: 82, rejected: 18 }
+      ].map(c => ({ ...c, approvedH: c.approved, rejectedH: c.rejected })),
+
+      userQ: s.userQ, onUserQ: e => this.setState({ userQ: e.target.value }),
+      userRole: s.userRole, onUserRole: e => this.setState({ userRole: e.target.value }),
+
+      allChecked: filtered.length > 0 && filtered.every(u => s.selected.includes(u.id)),
+      onCheckAll: e => this.setState({ selected: e.target.checked ? filtered.map(u => u.id) : [] }),
+      hasSelection: s.selected.length > 0,
+      selectedCount: s.selected.length,
+      clearSelection: () => this.setState({ selected: [] }),
+      bulkSuspend: () => { const ov = { ...s.userOverrides }; s.selected.forEach(id => ov[id] = 'Suspended'); this.setState({ userOverrides: ov, selected: [] }); this.flash('Suspended ' + s.selected.length + ' users'); },
+      bulkActivate: () => { const ov = { ...s.userOverrides }; s.selected.forEach(id => ov[id] = 'Active'); this.setState({ userOverrides: ov, selected: [] }); this.flash('Activated ' + s.selected.length + ' users'); },
+
+      users: filtered.map(u => {
+        const [bg, fg] = statusTone[u.status] || statusTone.Active;
+        const checked = s.selected.includes(u.id);
+        return {
+          ...u,
+          initials: u.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
+          statusStyle: 'display:inline-flex;height:22px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + bg + ';color:' + fg,
+          checked,
+          onCheck: () => this.setState({ selected: checked ? s.selected.filter(id => id !== u.id) : s.selected.concat(u.id) }),
+          toggleLabel: u.status === 'Suspended' ? 'Activate' : 'Suspend',
+          onToggle: () => {
+            const next = u.status === 'Suspended' ? 'Active' : 'Suspended';
+            this.setState({ userOverrides: { ...s.userOverrides, [u.id]: next } });
+            this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+          }
+        };
+      }),
+
+      pages: [1, 2, 3, 4].map(n => ({
+        label: String(n),
+        style: 'width:32px;height:32px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' + (n === s.pagination
+          ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
+          : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);'),
+        onClick: () => this.setState({ pagination: n })
+      })),
+
+      paymentRows: [
+        { label: 'Student payments (30d)', value: 'SAR 512,400' }, { label: 'Teacher earnings (30d)', value: 'SAR 435,540' },
+        { label: 'Platform commission', value: 'SAR 76,860' }, { label: 'Pending withdrawals', value: 'SAR 61,200' }, { label: 'Refunds issued', value: 'SAR 4,120' }
+      ],
+      disputes: [
+        { title: 'Delivery quality — Order O-2201', amount: 'SAR 150', meta: 'Student vs. Ahmed Barakat · opened 2 days ago' },
+        { title: 'Missed live session', amount: 'SAR 180', meta: 'Student vs. Nadia Selim · opened 1 day ago' },
+        { title: 'Late delivery refund request', amount: 'SAR 95', meta: 'Student vs. Jamal Nasser · opened 6 hours ago' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
