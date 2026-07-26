@@ -1,11 +1,47 @@
+# Build outputs
 **/bin/
 **/obj/
+artifacts/
+TestResults/
+coverage/
+*.coverage
+*.coverage.*
+*.trx
+
+# IDEs and editors
 .vs/
 .idea/
+.vscode/
 *.user
 *.suo
-TestResults/
+*.swp
+*.tmp
+
+# Local AI tooling and downloaded skills
+.claude/
+.codex/
+
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
 src/Tafseel.Api/appsettings.Local.json
+
+# Runtime state and private/local uploads
 **/App_Data/
-artifacts/
-phase*-failure.log
+uploads/
+
+# Logs
+*.log
+
+# OS and generated thumbnails
+.DS_Store
+Thumbs.db
+Desktop.ini
+.thumbnail
+
+# Package and language caches
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
