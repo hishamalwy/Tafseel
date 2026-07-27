@@ -21,7 +21,7 @@
   <aside id="quality-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
-      <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span>
+      <span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span>
       <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">QA</span>
     </a>
     <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
@@ -92,23 +92,25 @@
                 </tr>
               </thead>
               <tbody>
-                <sc-for list="{{ applications }}" as="a" hint-placeholder-count="6">
-                  <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
-                    <td style="padding:14px 20px">
-                      <div style="display:flex;align-items:center;gap:10px">
-                        <span style="width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-2)">{{ a.initials }}</span>
-                        <span style="font-size:14px;font-weight:600">{{ a.name }}</span>
-                      </div>
-                    </td>
-                    <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2)">{{ a.subject }}</td>
-                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ a.submitted }}</td>
-                    <td style="padding:14px 12px"><span style="{{ a.priorityStyle }}">{{ a.priority }}</span></td>
-                    <td style="padding:14px 12px"><span style="{{ a.statusStyle }}">{{ a.status }}</span></td>
-                    <td style="padding:14px 20px;text-align:end">
-                      <button type="button" onClick="{{ a.onOpen }}" style="height:34px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">Review</button>
-                    </td>
-                  </tr>
-                </sc-for>
+                <sc-if value="{{ hasApplications }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ applications }}" as="a" hint-placeholder-count="0">
+                    <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
+                      <td style="padding:14px 20px">
+                        <div style="display:flex;align-items:center;gap:10px">
+                          <span style="width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-2)">{{ a.initials }}</span>
+                          <span style="font-size:14px;font-weight:600">{{ a.name }}</span>
+                        </div>
+                      </td>
+                      <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2)">{{ a.subject }}</td>
+                      <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ a.submitted }}</td>
+                      <td style="padding:14px 12px"><span style="{{ a.priorityStyle }}">{{ a.priority }}</span></td>
+                      <td style="padding:14px 12px"><span style="{{ a.statusStyle }}">{{ a.status }}</span></td>
+                      <td style="padding:14px 20px;text-align:end">
+                        <button type="button" onClick="{{ a.onOpen }}" style="height:34px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">Review</button>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </sc-if>
               </tbody>
             </table>
           </div>
@@ -154,6 +156,9 @@
       <sc-if value="{{ isSettingsPage }}" hint-placeholder-val="{{ false }}">
         <div style="max-width:480px">
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
+          <sc-if value="{{ prefsUnavailable }}" hint-placeholder-val="{{ false }}">
+            <p role="status" style="margin-bottom:14px;font-size:13.5px;color:var(--muted)" data-i18n="quality_prefs_unavailable">Notification preferences could not be loaded for this session.</p>
+          </sc-if>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
               <span>Email me when a new application is submitted</span>
@@ -183,7 +188,7 @@
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
-                <sc-for list="{{ current.facts }}" as="f" hint-placeholder-count="6">
+                <sc-for list="{{ current.facts }}" as="f" hint-placeholder-count="0">
                   <div>
                     <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ f.k }}</div>
                     <div style="font-size:14px;font-weight:600">{{ f.v }}</div>
@@ -257,15 +262,17 @@
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
               <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">Application history</h2>
               <div style="display:flex;flex-direction:column;gap:0">
-                <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
-                  <div style="display:flex;gap:12px;padding-block:10px;border-top:1px solid var(--border)">
-                    <span style="{{ h.dotStyle }}"></span>
-                    <div>
-                      <div style="font-size:13.5px;font-weight:600">{{ h.label }}</div>
-                      <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px">{{ h.time }}</div>
+                <sc-if value="{{ hasHistory }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ history }}" as="h" hint-placeholder-count="0">
+                    <div style="display:flex;gap:12px;padding-block:10px;border-top:1px solid var(--border)">
+                      <span style="{{ h.dotStyle }}"></span>
+                      <div>
+                        <div style="font-size:13.5px;font-weight:600">{{ h.label }}</div>
+                        <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px">{{ h.time }}</div>
+                      </div>
                     </div>
-                  </div>
-                </sc-for>
+                  </sc-for>
+                </sc-if>
               </div>
             </div>
           </aside>
@@ -320,26 +327,47 @@ class Component extends DCLogic {
   async loadQueue() {
     try {
       this.setState({ queueLoading: true, queueError: '' });
-      const [items, subjects, topics, preferences] = await Promise.all([
+      const [items, subjects, topics] = await Promise.all([
         Tafseel.api.get('/teacher-applications/queue'),
         Tafseel.api.get('/subjects'),
-        Tafseel.api.get('/topics?qualificationOnly=true'),
-        Tafseel.api.get('/notification-preferences')
+        Tafseel.api.get('/topics?qualificationOnly=true')
       ]);
+      let preferences = null;
+      try {
+        preferences = await Tafseel.api.get('/notification-preferences');
+      } catch (_) {
+        preferences = null;
+      }
       const status = ['Draft','Pending','Under Review','Changes Requested','Approved','Rejected','Withdrawn'];
       const priority = ['Low','Medium','High'];
-      APPLICATIONS = items.map(x => ({
-        id:x.id, name:x.teacherId, initials:'TR',
-        subject:(subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
-        submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '',
-        priority:priority[x.priority], status:status[x.status],
-        demoTopic:(topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
-        facts:[{ k:'Teacher ID', v:x.teacherId }], version:x.version, rawStatus:x.status
-      }));
+      APPLICATIONS = (Array.isArray(items) ? items : []).map(x => {
+        const statusLabel = status[x.status] || 'Pending';
+        const priorityLabel = priority[x.priority] || 'Medium';
+        const teacherLabel = typeof Tafseel.participantLabel === 'function'
+          ? Tafseel.participantLabel(x.teacherId)
+          : (x.teacherId || 'Teacher');
+        const initials = typeof Tafseel.participantInitials === 'function'
+          ? Tafseel.participantInitials(x.teacherId)
+          : 'TR';
+        return {
+          id: x.id,
+          name: teacherLabel,
+          initials,
+          subject: (subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
+          submitted: x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle: 'medium' }) : '—',
+          priority: priorityLabel,
+          status: statusLabel,
+          demoTopic: (topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
+          facts: [{ k: 'Teacher ID', v: x.teacherId || '—' }],
+          version: x.version,
+          rawStatus: x.status
+        };
+      });
       this.setState({
-        currentId:this.state.currentId,
-        notifyNewApps:preferences.emailEnabled,
-        inAppNotifications:preferences.inAppEnabled,
+        currentId: this.state.currentId,
+        notifyNewApps: preferences ? preferences.emailEnabled : (this.state.notifyNewApps ?? true),
+        inAppNotifications: preferences ? preferences.inAppEnabled : (this.state.inAppNotifications ?? true),
+        prefsUnavailable: !preferences,
         queueLoading: false,
         queueError: ''
       });
@@ -448,16 +476,18 @@ class Component extends DCLogic {
       reportChartReady: false,
 
       notifyNewApps: s.notifyNewApps ?? true, onNotifyNewApps: e => this.setState({ notifyNewApps: e.target.checked }),
+      prefsUnavailable: !!s.prefsUnavailable,
       onSaveSettings: async () => {
+        if (s.prefsUnavailable) return this.flash(Tafseel.t('quality_prefs_unavailable'));
         try {
           await Tafseel.api.put('/notification-preferences', {
-            emailEnabled:s.notifyNewApps,
-            inAppEnabled:s.inAppNotifications
+            emailEnabled: s.notifyNewApps,
+            inAppEnabled: s.inAppNotifications
           });
           this.flash('Settings saved');
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
-      isReview: s.view === 'review',
+      isReview: s.view === 'review' && !!current,
       backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
 
       summary: s.queueLoading ? [
@@ -484,11 +514,18 @@ class Component extends DCLogic {
       })),
 
       noApplications: !s.queueLoading && !s.queueError && filtered.length === 0,
+      hasApplications: filtered.length > 0,
       applications: filtered.map(a => {
-        const [sbg, sfg] = STATUS_TONE[a.status];
-        const [pbg, pfg] = PRIORITY_TONE[a.priority];
+        const [sbg, sfg] = STATUS_TONE[a.status] || STATUS_TONE.Pending;
+        const [pbg, pfg] = PRIORITY_TONE[a.priority] || PRIORITY_TONE.Medium;
         return {
           ...a,
+          initials: a.initials || '—',
+          name: a.name || '—',
+          subject: a.subject || '—',
+          submitted: a.submitted || '—',
+          priority: a.priority || '—',
+          status: a.status || '—',
           priorityStyle: 'font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:' + pbg + ';color:' + pfg,
           statusStyle: 'display:inline-flex;height:23px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + sbg + ';color:' + sfg,
           onOpen: () => this.openApp(a.id)
@@ -505,12 +542,14 @@ class Component extends DCLogic {
       onRequestChanges: () => decide('Changes Requested'),
       onReject: () => decide('Rejected'),
 
-      history: current ? [
-        { label: 'Application submitted', time: current.submitted + ' · 09:12' },
-        { label: 'Assigned to reviewer', time: current.submitted + ' · 09:40' },
-        { label: 'Demo video processed', time: current.submitted + ' · 10:05' },
-        { label: 'Awaiting your review', time: 'now' }
-      ].map((h, i, arr) => ({ ...h, dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--border-strong)') })) : []
+      hasHistory: !!(current && current.submitted),
+      history: current && current.submitted ? [
+        {
+          label: 'Application submitted',
+          time: current.submitted,
+          dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--primary)'
+        }
+      ] : []
     };
   }
 }

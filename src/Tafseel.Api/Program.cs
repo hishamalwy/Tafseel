@@ -263,11 +263,23 @@ app.MapGet("/app/js/vendor/{file}", (string file) =>
         : Results.NotFound());
 app.MapGet("/app/css/tafseel.css", () =>
     Results.File(Path.Combine(frontendRoot, "css", "tafseel.css"), "text/css; charset=utf-8"));
+app.MapGet("/app/assets/brand/{file}", (string file) =>
+    file is "tafseel-mark.png" or "tafseel-mark-dark.png" or "favicon.ico"
+        ? Results.File(
+            Path.Combine(frontendRoot, "assets", "brand", file),
+            file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ? "image/x-icon" : "image/png")
+        : Results.NotFound());
 app.MapGet("/app/assets/fonts/thmanyah-sans/{file}", (string file) =>
     file is "thmanyah-sans-light.woff2" or "thmanyah-sans-regular.woff2"
         or "thmanyah-sans-medium.woff2" or "thmanyah-sans-bold.woff2"
         or "thmanyah-sans-black.woff2"
         ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "thmanyah-sans", file), "font/woff2")
+        : Results.NotFound());
+app.MapGet("/app/assets/fonts/thmanyah-serif-display/{file}", (string file) =>
+    file is "thmanyah-serif-display-light.woff2" or "thmanyah-serif-display-regular.woff2"
+        or "thmanyah-serif-display-medium.woff2" or "thmanyah-serif-display-bold.woff2"
+        or "thmanyah-serif-display-black.woff2"
+        ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "thmanyah-serif-display", file), "font/woff2")
         : Results.NotFound());
 app.MapGet("/app/assets/fonts/inter/{file}", (string file) =>
     file is "inter-regular.woff2" or "inter-medium.woff2"

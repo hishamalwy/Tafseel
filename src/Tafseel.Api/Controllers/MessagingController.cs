@@ -11,28 +11,33 @@ using Tafseel.Application.Orders;
 namespace Tafseel.Api.Controllers;
 
 [ApiController, Route("api/v1")]
-[Authorize(Policy = Permissions.MessagesUse)]
+[Authorize]
 public sealed class MessagingController(
     IMessagingService messaging, INotificationService notifications) : ControllerBase
 {
+    [Authorize(Policy = Permissions.MessagesUse)]
     [HttpPost("conversations")]
     public Task<ConversationDto> Create(CreateConversation input, CancellationToken ct) =>
         messaging.CreateAsync(UserId(), input, ct);
 
+    [Authorize(Policy = Permissions.MessagesUse)]
     [HttpGet("conversations")]
     public Task<PagedResult<ConversationDto>> Conversations(
         int page = 1, int pageSize = 20, CancellationToken ct = default) =>
         messaging.GetConversationsAsync(UserId(), page, pageSize, ct);
 
+    [Authorize(Policy = Permissions.MessagesUse)]
     [HttpGet("conversations/{id:guid}/messages")]
     public Task<PagedResult<MessageDto>> Messages(
         Guid id, int page = 1, int pageSize = 50, CancellationToken ct = default) =>
         messaging.GetMessagesAsync(UserId(), id, page, pageSize, ct);
 
+    [Authorize(Policy = Permissions.MessagesUse)]
     [EnableRateLimiting("messaging"), HttpPost("conversations/{id:guid}/messages")]
     public Task<MessageDto> Send(Guid id, SendMessage input, CancellationToken ct) =>
         messaging.SendAsync(UserId(), id, input, ct);
 
+    [Authorize(Policy = Permissions.MessagesUse)]
     [HttpPost("conversations/{id:guid}/read")]
     public async Task<IActionResult> Read(
         Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
@@ -41,6 +46,7 @@ public sealed class MessagingController(
         return NoContent();
     }
 
+    [Authorize(Policy = Permissions.MessagesUse)]
     [EnableRateLimiting("upload"), RequestSizeLimit(50 * 1024 * 1024)]
     [HttpPost("messages/{id:guid}/attachments")]
     public async Task<AttachmentDto> Attachment(Guid id, IFormFile file, CancellationToken ct)
@@ -50,6 +56,7 @@ public sealed class MessagingController(
             UserId(), id, stream, file.FileName, file.ContentType, file.Length, ct);
     }
 
+    [Authorize(Policy = Permissions.MessagesUse)]
     [HttpGet("message-attachments/{id:guid}/content")]
     public async Task<IActionResult> AttachmentContent(Guid id, CancellationToken ct)
     {

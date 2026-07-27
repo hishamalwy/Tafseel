@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
@@ -22,10 +22,13 @@
     <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:auto">
       <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
         <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
-        <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span>
+        <span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span>
       </a>
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode">
+        <svg class="tf-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.3A8.5 8.5 0 0 1 9.7 3 7 7 0 1 0 21 14.3z"/></svg>
+        <svg class="tf-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0-5h1v3h-2V2zm0 17h1v3h-2v-3zM2 11h3v2H2v-2zm17 0h3v2h-3v-2zM4.2 4.2l2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zm14.1 14.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zM19.8 4.2l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1zM5.6 18.4l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg>
+      </button>
     </div>
 
     <div style="position:relative;z-index:1;max-width:400px;margin:0 auto;width:100%;padding-block:40px">
@@ -53,9 +56,16 @@
               </div>
               <div class="tf-field">
                 <label for="login-password">Password</label>
-                <div style="position:relative">
+                <div class="tf-password-wrap">
                   <input id="login-password" type="{{ passwordType }}" autocomplete="current-password" value="{{ password }}" onChange="{{ onPassword }}" onBlur="{{ onPasswordBlur }}" placeholder="••••••••" style="{{ loginPasswordFieldStyle }}" aria-invalid="{{ loginPasswordInvalid }}" />
-                  <button type="button" onClick="{{ toggleShowPassword }}" aria-label="{{ passwordToggleLabel }}" style="position:absolute;inset-inline-end:6px;top:6px;height:30px;padding-inline:9px;border:0;background:none;color:var(--primary);font-size:12.5px;font-weight:700">{{ passwordToggleLabel }}</button>
+                  <button type="button" class="tf-password-toggle" onClick="{{ toggleShowPassword }}" aria-label="{{ passwordToggleLabel }}">
+                    <sc-if value="{{ passwordHidden }}" hint-placeholder-val="{{ true }}">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </sc-if>
+                    <sc-if value="{{ passwordShown }}" hint-placeholder-val="{{ false }}">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                    </sc-if>
+                  </button>
                 </div>
                 <sc-if value="{{ loginPasswordFieldError }}" hint-placeholder-val="{{ false }}">
                   <span class="tf-field-help" role="alert" style="color:var(--error);font-weight:600">{{ loginPasswordFieldError }}</span>
@@ -63,6 +73,9 @@
               </div>
               <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
                 <p role="alert" style="font-size:13px;font-weight:600;color:var(--error);background:var(--error-soft);border-radius:var(--r-sm);padding:10px 12px;margin:0">{{ loginError }}</p>
+              </sc-if>
+              <sc-if value="{{ needsConfirmationResend }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ onResendConfirmation }}" disabled="{{ resendingConfirmation }}" style="font-size:13.5px;font-weight:700;border:0;background:none;padding:0;cursor:pointer;color:var(--primary);text-align:start" data-i18n="auth_resend_confirmation">Resend confirmation email</button>
               </sc-if>
               <div style="display:flex;align-items:center;justify-content:space-between">
                 <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2);font-weight:500">
@@ -89,22 +102,31 @@
         <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
           <div class="tf-auth-panel">
             <div class="tf-auth-copy" style="margin-bottom:20px">
-              <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em">Create your account</h1>
-              <p class="tf-muted">Choose how you want to use Tafseel.</p>
+              <h1 data-i18n="auto.4046b5818208" style="font-size:22px;font-weight:800;letter-spacing:-.02em">Create your account</h1>
+              <p class="tf-muted" data-i18n="auth_choose_usage">Choose how you want to use Tafseel.</p>
             </div>
 
-            <div class="tf-cols-2" style="gap:10px;margin-bottom:20px">
+            <div class="tf-auth-roles">
               <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="2">
-                <button type="button" onClick="{{ r.onClick }}" style="{{ r.style }}" aria-pressed="{{ r.active }}">
-                  <span style="{{ r.iconStyle }}">{{ r.icon }}</span>
-                  <span style="font-weight:700;font-size:13.5px;margin-top:9px">{{ r.label }}</span>
-                  <span style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4">{{ r.desc }}</span>
+                <button type="button" class="tf-auth-role" onClick="{{ r.onClick }}" aria-pressed="{{ r.active }}">
+                  <span class="tf-auth-role-icon" aria-hidden="true">
+                    <sc-if value="{{ r.isStudent }}" hint-placeholder-val="{{ true }}">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 .7 2.7 2 6 2s6-1.3 6-2v-5"/><path d="M22 10v6"/></svg>
+                    </sc-if>
+                    <sc-if value="{{ r.isTeacher }}" hint-placeholder-val="{{ false }}">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </sc-if>
+                  </span>
+                  <span class="tf-auth-role-copy">
+                    <span class="tf-auth-role-label">{{ r.label }}</span>
+                    <span class="tf-auth-role-desc">{{ r.desc }}</span>
+                  </span>
                 </button>
               </sc-for>
             </div>
 
             <sc-if value="{{ isTeacherRole }}" hint-placeholder-val="{{ false }}">
-              <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:16px;background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px">Teacher accounts go through a short application after sign-up: your background, a subject, and a 3-minute teaching demo reviewed by our quality team.</p>
+              <p data-i18n="auth_teacher_blurb" style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:16px;background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px">Teacher accounts go through a short application after sign-up: your background, a subject, and a 3-minute teaching demo reviewed by our quality team.</p>
             </sc-if>
 
             <form class="tf-form" onSubmit="{{ onRegister }}" style="gap:14px" novalidate>
@@ -125,22 +147,37 @@
               <div class="tf-grid-2" style="gap:12px">
                 <div class="tf-field">
                   <label for="reg-password">Password</label>
-                  <div style="position:relative">
+                  <div class="tf-password-wrap">
                     <input id="reg-password" type="{{ regPasswordType }}" autocomplete="new-password" value="{{ regPassword }}" onChange="{{ onRegPassword }}" onFocus="{{ onRegPasswordFocus }}" onBlur="{{ onRegPasswordBlur }}" style="{{ regPasswordFieldStyle }}" aria-invalid="{{ regPasswordInvalid }}" />
-                    <button type="button" onClick="{{ toggleRegShowPassword }}" aria-label="{{ regPasswordToggleLabel }}" style="position:absolute;inset-inline-end:4px;top:5px;height:28px;padding-inline:7px;border:0;background:none;color:var(--primary);font-size:11.5px;font-weight:700">{{ regPasswordToggleLabel }}</button>
+                    <button type="button" class="tf-password-toggle" onClick="{{ toggleRegShowPassword }}" aria-label="{{ regPasswordToggleLabel }}">
+                      <sc-if value="{{ regPasswordHidden }}" hint-placeholder-val="{{ true }}">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </sc-if>
+                      <sc-if value="{{ regPasswordShown }}" hint-placeholder-val="{{ false }}">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                      </sc-if>
+                    </button>
                   </div>
                 </div>
                 <div class="tf-field">
                   <label for="reg-confirm">Confirm password</label>
-                  <div style="position:relative">
+                  <div class="tf-password-wrap">
                     <input id="reg-confirm" type="{{ regPasswordType }}" autocomplete="new-password" value="{{ regConfirm }}" onChange="{{ onRegConfirm }}" onBlur="{{ onRegConfirmBlur }}" style="{{ regConfirmFieldStyle }}" aria-invalid="{{ regConfirmInvalid }}" />
+                    <button type="button" class="tf-password-toggle" onClick="{{ toggleRegShowPassword }}" aria-label="{{ regPasswordToggleLabel }}">
+                      <sc-if value="{{ regPasswordHidden }}" hint-placeholder-val="{{ true }}">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </sc-if>
+                      <sc-if value="{{ regPasswordShown }}" hint-placeholder-val="{{ false }}">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                      </sc-if>
+                    </button>
                   </div>
                 </div>
               </div>
 
               <sc-if value="{{ showRegPasswordHints }}" hint-placeholder-val="{{ false }}">
                 <div class="tf-auth-panel" style="display:grid;gap:6px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm)">
-                  <span style="font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">Password must contain</span>
+                  <span data-i18n="auth_password_must_contain" style="font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">Password must contain</span>
                   <sc-for list="{{ registerPasswordRules }}" as="rule" hint-placeholder-count="5">
                     <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:{{ rule.textColor }}">
                       <span style="{{ rule.badgeStyle }}">{{ rule.icon }}</span>{{ rule.label }}
@@ -185,19 +222,36 @@
             <form class="tf-form" onSubmit="{{ onReset }}" novalidate>
               <div class="tf-field">
                 <label for="reset-password">New password</label>
-                <div style="position:relative">
+                <div class="tf-password-wrap">
                   <input id="reset-password" type="{{ resetPasswordType }}" autocomplete="new-password" value="{{ resetPassword }}" onChange="{{ onResetPassword }}" onFocus="{{ onResetPasswordFocus }}" onBlur="{{ onResetPasswordBlur }}" style="{{ resetPasswordFieldStyle }}" aria-invalid="{{ resetPasswordInvalid }}" />
-                  <button type="button" onClick="{{ toggleResetShowPassword }}" aria-label="{{ resetPasswordToggleLabel }}" style="position:absolute;inset-inline-end:6px;top:6px;height:30px;padding-inline:9px;border:0;background:none;color:var(--primary);font-size:12.5px;font-weight:700">{{ resetPasswordToggleLabel }}</button>
+                  <button type="button" class="tf-password-toggle" onClick="{{ toggleResetShowPassword }}" aria-label="{{ resetPasswordToggleLabel }}">
+                    <sc-if value="{{ resetPasswordHidden }}" hint-placeholder-val="{{ true }}">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </sc-if>
+                    <sc-if value="{{ resetPasswordShown }}" hint-placeholder-val="{{ false }}">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                    </sc-if>
+                  </button>
                 </div>
               </div>
               <div class="tf-field">
                 <label for="reset-confirm">Confirm password</label>
-                <input id="reset-confirm" type="{{ resetPasswordType }}" autocomplete="new-password" value="{{ resetConfirm }}" onChange="{{ onResetConfirm }}" onBlur="{{ onResetConfirmBlur }}" style="{{ resetConfirmFieldStyle }}" aria-invalid="{{ resetConfirmInvalid }}" />
+                <div class="tf-password-wrap">
+                  <input id="reset-confirm" type="{{ resetPasswordType }}" autocomplete="new-password" value="{{ resetConfirm }}" onChange="{{ onResetConfirm }}" onBlur="{{ onResetConfirmBlur }}" style="{{ resetConfirmFieldStyle }}" aria-invalid="{{ resetConfirmInvalid }}" />
+                  <button type="button" class="tf-password-toggle" onClick="{{ toggleResetShowPassword }}" aria-label="{{ resetPasswordToggleLabel }}">
+                    <sc-if value="{{ resetPasswordHidden }}" hint-placeholder-val="{{ true }}">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </sc-if>
+                    <sc-if value="{{ resetPasswordShown }}" hint-placeholder-val="{{ false }}">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                    </sc-if>
+                  </button>
+                </div>
               </div>
 
               <sc-if value="{{ showResetPasswordHints }}" hint-placeholder-val="{{ false }}">
                 <div style="display:grid;gap:6px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm)">
-                  <span style="font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">Password must contain</span>
+                  <span data-i18n="auth_password_must_contain" style="font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">Password must contain</span>
                   <sc-for list="{{ resetPasswordRules }}" as="rule" hint-placeholder-count="5">
                     <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:{{ rule.textColor }}">
                       <span style="{{ rule.badgeStyle }}">{{ rule.icon }}</span>{{ rule.label }}
@@ -229,8 +283,8 @@
     <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,#D9FF43 22%,transparent),transparent);bottom:-140px;inset-inline-start:-120px"></div>
     <div style="max-width:380px;position:relative;z-index:1;text-align:center">
       <img data-tafseel-mark data-tafseel-mark-force="dark" src="assets/brand/tafseel-mark-dark.png" alt="Tafseel" width="92" height="92" style="display:block;margin:0 auto 32px;object-fit:contain;border-radius:var(--r-xl);box-shadow:0 24px 48px -16px rgb(0 0 0 / .55)" />
-      <h2 dir="rtl" lang="ar" translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:38px;line-height:1.4;letter-spacing:0;color:#F3F0E8;margin-bottom:14px">درسك على مقاسك.</h2>
-      <p style="font-family:var(--font-display);font-size:16px;font-weight:600;color:color-mix(in oklab,#F3F0E8 65%,transparent)">Education, tailored to you.</p>
+      <h2 dir="rtl" lang="ar" translate="no" style="font-weight:900;font-size:38px;line-height:1.4;letter-spacing:0;color:#F3F0E8;margin-bottom:14px">درسك على مقاسك.</h2>
+      <p class="tf-mursala" style="font-size:16px;font-weight:600;color:color-mix(in oklab,#F3F0E8 65%,transparent)">Education, tailored to you.</p>
     </div>
   </div>
 </div>
@@ -268,11 +322,11 @@ function passwordValid(pw) {
 function buildPasswordRules(pw) {
   var c = passwordChecks(pw);
   var items = [
-    { pass: c.length, label: '10–128 characters' },
-    { pass: c.upper, label: 'One uppercase letter (A–Z)' },
-    { pass: c.lower, label: 'One lowercase letter (a–z)' },
-    { pass: c.digit, label: 'One number (0–9)' },
-    { pass: c.special, label: 'One special character (!@#$…)' }
+    { pass: c.length, label: Tafseel.t('auth_password_rule_length') },
+    { pass: c.upper, label: Tafseel.t('auth_password_rule_upper') },
+    { pass: c.lower, label: Tafseel.t('auth_password_rule_lower') },
+    { pass: c.digit, label: Tafseel.t('auth_password_rule_digit') },
+    { pass: c.special, label: Tafseel.t('auth_password_rule_special') }
   ];
   return items.map(function (it) {
     return {
@@ -292,7 +346,7 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, mode: 'login', role: 'student',
     email: '', password: '', showPassword: false, remember: true, loginError: '', loggingIn: false,
-    emailTouched: false, passwordTouched: false,
+    emailTouched: false, passwordTouched: false, needsConfirmationResend: false, resendingConfirmation: false,
     fullName: '', regEmail: '', regPassword: '', regConfirm: '', agreeTerms: false, regError: '', registering: false,
     regShowPassword: false, fullNameTouched: false, regEmailTouched: false, regPasswordTouched: false,
     regPasswordFocused: false, regConfirmTouched: false,
@@ -364,22 +418,24 @@ class Component extends DCLogic {
       modeTabs: [{ id: 'login', label: 'Log in' }, { id: 'register', label: 'Sign up' }].map(m => ({
         label: m.label,
         active: s.mode === m.id,
-        onClick: () => this.setState({ mode: m.id, loginError: '', regError: '' })
+        onClick: () => this.setState({ mode: m.id, loginError: '', regError: '', needsConfirmationResend: false })
       })),
       isLogin: s.mode === 'login',
       isRegister: s.mode === 'register',
       isReset: s.mode === 'reset',
-      goRegister: e => { e.preventDefault(); this.setState({ mode: 'register' }); },
+      goRegister: e => { e.preventDefault(); this.setState({ mode: 'register', needsConfirmationResend: false }); },
       goLogin: e => { e.preventDefault(); this.setState({ mode: 'login' }); },
 
-      email: s.email, onEmail: e => this.setState({ email: e.target.value, loginError: '' }),
+      email: s.email, onEmail: e => this.setState({ email: e.target.value, loginError: '', needsConfirmationResend: false }),
       onEmailBlur: () => this.setState({ emailTouched: true }),
       loginEmailInvalid, loginEmailFieldError, loginEmailFieldStyle: fieldStyle(loginEmailInvalid),
       password: s.password, onPassword: e => this.setState({ password: e.target.value, loginError: '' }),
       onPasswordBlur: () => this.setState({ passwordTouched: true }),
       loginPasswordInvalid, loginPasswordFieldError, loginPasswordFieldStyle: fieldStyle(loginPasswordInvalid),
       passwordType: s.showPassword ? 'text' : 'password',
-      passwordToggleLabel: s.showPassword ? 'Hide' : 'Show',
+      passwordShown: !!s.showPassword,
+      passwordHidden: !s.showPassword,
+      passwordToggleLabel: s.showPassword ? Tafseel.t('auth_hide_password') : Tafseel.t('auth_show_password'),
       toggleShowPassword: () => this.setState({ showPassword: !s.showPassword }),
       remember: s.remember, onRemember: e => this.setState({ remember: e.target.checked }),
       onForgot: async () => {
@@ -391,6 +447,24 @@ class Component extends DCLogic {
         } catch (error) { this.setState({ loginError: Tafseel.api.errorMessage(error) }); }
       },
       loginError: s.loginError,
+      needsConfirmationResend: !!s.needsConfirmationResend,
+      resendingConfirmation: !!s.resendingConfirmation,
+      onResendConfirmation: async () => {
+        const target = EMAIL_RE.test(s.email) ? s.email : s.regEmail;
+        if (!EMAIL_RE.test(target)) {
+          this.setState({ loginError: Tafseel.t('auth_enter_email_to_resend') });
+          return;
+        }
+        if (s.resendingConfirmation) return;
+        this.setState({ resendingConfirmation: true, loginError: '' });
+        try {
+          await Tafseel.api.post('/auth/request-email-confirmation', { email: target });
+          this.flash(Tafseel.t('auth_confirmation_resent'));
+          this.setState({ resendingConfirmation: false, email: target });
+        } catch (error) {
+          this.setState({ loginError: Tafseel.api.errorMessage(error), resendingConfirmation: false });
+        }
+      },
       loggingIn: s.loggingIn,
       loginSubmitDisabled,
       loginButtonLabel: s.loggingIn ? 'Signing in…' : 'Log in',
@@ -399,25 +473,31 @@ class Component extends DCLogic {
         if (s.loggingIn) return;
         this.setState({ emailTouched: true, passwordTouched: true });
         if (!EMAIL_RE.test(s.email) || !s.password) { this.setState({ loginError: 'Enter a valid email and your password.' }); return; }
-        this.setState({ loginError: '', loggingIn: true });
+        this.setState({ loginError: '', loggingIn: true, needsConfirmationResend: false });
         try {
           const session = await Tafseel.api.login(s.email, s.password);
           location.href = destination(session);
         } catch (error) {
+          if (error && error.code === 'email_confirmation_required') {
+            this.setState({
+              loginError: Tafseel.t('auth_email_confirmation_required'),
+              needsConfirmationResend: true,
+              loggingIn: false
+            });
+            return;
+          }
           this.setState({ loginError: Tafseel.api.errorMessage(error), loggingIn: false });
         }
       },
 
       roleCards: [
-        { id: 'student', icon: '🎓', label: 'Join as Student', desc: 'Find teachers, request help' },
-        { id: 'teacher', icon: '✎', label: 'Apply as Teacher', desc: 'Teach and earn on Tafseel' }
+        { id: 'student', label: Tafseel.t('auth_role_student'), desc: Tafseel.t('auth_role_student_desc') },
+        { id: 'teacher', label: Tafseel.t('auth_role_teacher'), desc: Tafseel.t('auth_role_teacher_desc') }
       ].map(r => ({
         ...r,
         active: s.role === r.id,
-        style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:14px;border-radius:var(--r-md);transition:all var(--t);' +
-          (s.role === r.id ? 'border:1px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
-        iconStyle: 'width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;' +
-          (s.role === r.id ? 'background:var(--primary);color:var(--primary-ink);' : 'background:var(--surface-2);color:var(--text-2);'),
+        isStudent: r.id === 'student',
+        isTeacher: r.id === 'teacher',
         onClick: () => this.setState({ role: r.id })
       })),
       isStudentRole: s.role === 'student',
@@ -434,27 +514,31 @@ class Component extends DCLogic {
       onRegPasswordBlur: () => this.setState({ regPasswordFocused: false, regPasswordTouched: true }),
       regPasswordInvalid, regPasswordFieldStyle: fieldStyle(regPasswordInvalid),
       regPasswordType: s.regShowPassword ? 'text' : 'password',
-      regPasswordToggleLabel: s.regShowPassword ? 'Hide' : 'Show',
+      regPasswordShown: !!s.regShowPassword,
+      regPasswordHidden: !s.regShowPassword,
+      regPasswordToggleLabel: s.regShowPassword ? Tafseel.t('auth_hide_password') : Tafseel.t('auth_show_password'),
       toggleRegShowPassword: () => this.setState({ regShowPassword: !s.regShowPassword }),
       showRegPasswordHints,
       registerPasswordRules: buildPasswordRules(s.regPassword),
       regConfirm: s.regConfirm, onRegConfirm: e => this.setState({ regConfirm: e.target.value }),
       onRegConfirmBlur: () => this.setState({ regConfirmTouched: true }),
       regConfirmInvalid, regConfirmFieldStyle: fieldStyle(regConfirmInvalid),
-      regConfirmMatchText: s.regConfirm.length === 0 ? '' : (regConfirmMatches ? '✓ Passwords match' : '✗ Passwords do not match'),
+      regConfirmMatchText: s.regConfirm.length === 0 ? '' : (regConfirmMatches ? Tafseel.t('auth_passwords_match') : Tafseel.t('auth_passwords_mismatch')),
       regConfirmMatchColor: regConfirmMatches ? 'var(--success)' : 'var(--error)',
       agreeTerms: s.agreeTerms, onAgreeTerms: e => this.setState({ agreeTerms: e.target.checked }),
       regError: s.regError,
       registering: s.registering,
       registerSubmitDisabled,
-      registerButtonLabel: s.registering ? 'Creating account…' : (s.role === 'teacher' ? 'Create teacher account' : 'Create student account'),
+      registerButtonLabel: s.registering
+        ? Tafseel.t('auth_creating_account')
+        : Tafseel.t(s.role === 'teacher' ? 'auth_create_teacher' : 'auth_create_student'),
       onRegister: async e => {
         e.preventDefault();
         if (s.registering) return;
         this.setState({ fullNameTouched: true, regEmailTouched: true, regPasswordTouched: true, regConfirmTouched: true });
         if (!s.fullName.trim() || !EMAIL_RE.test(s.regEmail)) { this.setState({ regError: 'Enter your full name and a valid email.' }); return; }
-        if (!passwordValid(s.regPassword)) { this.setState({ regError: 'Your password does not meet all the requirements below.' }); return; }
-        if (s.regPassword !== s.regConfirm) { this.setState({ regError: 'Passwords do not match.' }); return; }
+        if (!passwordValid(s.regPassword)) { this.setState({ regError: Tafseel.t('auth_password_requirements_error') }); return; }
+        if (s.regPassword !== s.regConfirm) { this.setState({ regError: Tafseel.t('auth_passwords_do_not_match') }); return; }
         if (!s.agreeTerms) { this.setState({ regError: 'Please agree to the Terms of Service to continue.' }); return; }
         this.setState({ regError: '', registering: true });
         try {
@@ -465,10 +549,22 @@ class Component extends DCLogic {
           this.setState({
             mode: 'login', registering: false, email: s.regEmail, password: '',
             fullName: '', regEmail: '', regPassword: '', regConfirm: '', agreeTerms: false,
-            fullNameTouched: false, regEmailTouched: false, regPasswordTouched: false, regConfirmTouched: false
+            fullNameTouched: false, regEmailTouched: false, regPasswordTouched: false, regConfirmTouched: false,
+            needsConfirmationResend: true
           });
           this.flash('Account created. Check your email to confirm it, then log in.');
         } catch (error) {
+          // Account is already created when confirmation delivery fails (503).
+          if (error && error.code === 'confirmation_send_failed') {
+            this.setState({
+              mode: 'login', registering: false, email: s.regEmail, password: '',
+              fullName: '', regEmail: '', regPassword: '', regConfirm: '', agreeTerms: false,
+              fullNameTouched: false, regEmailTouched: false, regPasswordTouched: false, regConfirmTouched: false,
+              needsConfirmationResend: true, regError: ''
+            });
+            this.flash(Tafseel.t('auth_account_created_email_failed'));
+            return;
+          }
           this.setState({ regError: Tafseel.api.errorMessage(error), registering: false });
         }
       },
@@ -478,14 +574,16 @@ class Component extends DCLogic {
       onResetPasswordBlur: () => this.setState({ resetPasswordFocused: false, resetPasswordTouched: true }),
       resetPasswordInvalid, resetPasswordFieldStyle: fieldStyle(resetPasswordInvalid),
       resetPasswordType: s.resetShowPassword ? 'text' : 'password',
-      resetPasswordToggleLabel: s.resetShowPassword ? 'Hide' : 'Show',
+      resetPasswordShown: !!s.resetShowPassword,
+      resetPasswordHidden: !s.resetShowPassword,
+      resetPasswordToggleLabel: s.resetShowPassword ? Tafseel.t('auth_hide_password') : Tafseel.t('auth_show_password'),
       toggleResetShowPassword: () => this.setState({ resetShowPassword: !s.resetShowPassword }),
       showResetPasswordHints,
       resetPasswordRules: buildPasswordRules(s.resetPassword),
       resetConfirm: s.resetConfirm, onResetConfirm: e => this.setState({ resetConfirm: e.target.value, resetError: '' }),
       onResetConfirmBlur: () => this.setState({ resetConfirmTouched: true }),
       resetConfirmInvalid, resetConfirmFieldStyle: fieldStyle(resetConfirmInvalid),
-      resetConfirmMatchText: s.resetConfirm.length === 0 ? '' : (resetConfirmMatches ? '✓ Passwords match' : '✗ Passwords do not match'),
+      resetConfirmMatchText: s.resetConfirm.length === 0 ? '' : (resetConfirmMatches ? Tafseel.t('auth_passwords_match') : Tafseel.t('auth_passwords_mismatch')),
       resetConfirmMatchColor: resetConfirmMatches ? 'var(--success)' : 'var(--error)',
       resetError: s.resetError,
       resetting: s.resetting,
@@ -495,8 +593,8 @@ class Component extends DCLogic {
         e.preventDefault();
         if (s.resetting) return;
         this.setState({ resetPasswordTouched: true, resetConfirmTouched: true });
-        if (!passwordValid(s.resetPassword)) { this.setState({ resetError: 'Your password does not meet all the requirements below.' }); return; }
-        if (s.resetPassword !== s.resetConfirm) { this.setState({ resetError: 'Passwords do not match.' }); return; }
+        if (!passwordValid(s.resetPassword)) { this.setState({ resetError: Tafseel.t('auth_password_requirements_error') }); return; }
+        if (s.resetPassword !== s.resetConfirm) { this.setState({ resetError: Tafseel.t('auth_passwords_do_not_match') }); return; }
         this.setState({ resetError: '', resetting: true });
         try {
           await Tafseel.api.post('/auth/reset-password', {

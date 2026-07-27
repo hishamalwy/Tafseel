@@ -29,6 +29,8 @@
   --font-sans:var(--font-en);
   --font-display:'Thmanyah Serif Display',var(--font-ar),var(--font-en);
   --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  /* Thmanyah mursala — salt + ss01; keep Arabic shaping defaults intact */
+  --font-mursala-features:"liga" 1,"rlig" 1,"salt" 1,"ss01" 1;
 
   /* Surfaces & text — light mode */
   --bg:#F3F0E8;
@@ -125,7 +127,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
 h1,h2,h3,h4,h5,p,figure,blockquote{margin:0}
-h1,h2{font-family:var(--font-display)}
+/* Thmanyah Display + «الحروف المرسلة» on titles (AR + EN) */
+h1,h2,.tf-mursala{
+  font-family:var(--font-display);
+  font-feature-settings:var(--font-mursala-features);
+}
 table{border-collapse:collapse;width:100%}
 ::placeholder{color:var(--muted)}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -204,15 +210,46 @@ html[dir="rtl"] .tf-row-slide:hover{transform:translateX(-2px)}
 @keyframes tf-rotate-swap{0%{opacity:0;transform:translateY(55%)}100%{opacity:1;transform:none}}
 .tf-rotate-accent{color:var(--primary)}
 
-.tf-theme-toggle{position:relative;width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:inline-grid;place-items:center;overflow:hidden;cursor:pointer;transition:border-color var(--t),background var(--t),transform 150ms ease}
+.tf-theme-toggle{position:relative;width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:inline-grid;place-items:center;overflow:hidden;cursor:pointer;color:var(--text);flex:none;transition:border-color var(--t),background var(--t),transform 150ms ease}
 .tf-theme-toggle:hover{border-color:var(--border-strong);background:var(--surface-2)}
-.tf-theme-toggle svg{width:16px;height:16px;grid-area:1/1;transition:opacity 150ms ease,transform 280ms cubic-bezier(.2,.9,.3,1)}
+.tf-theme-toggle svg{width:16px;height:16px;grid-area:1/1;fill:currentColor;transition:opacity 150ms ease,transform 280ms cubic-bezier(.2,.9,.3,1)}
 .tf-theme-toggle .tf-icon-sun{opacity:0;transform:rotate(-90deg) scale(.7)}
 .tf-theme-toggle .tf-icon-moon{opacity:1;transform:none}
 html[data-theme="dark"] .tf-theme-toggle .tf-icon-sun{opacity:1;transform:none}
 html[data-theme="dark"] .tf-theme-toggle .tf-icon-moon{opacity:0;transform:rotate(90deg) scale(.7)}
+/* Fallback when DC re-renders wipe injected SVGs */
+.tf-theme-toggle:empty::before{
+  content:"☾";
+  font-size:16px;line-height:1;color:var(--text);
+}
+html[data-theme="dark"] .tf-theme-toggle:empty::before{content:"☀"}
 .tf-lang-toggle,.tf-theme-toggle{transition:opacity 150ms ease,border-color var(--t),background var(--t)}
 .tf-control-fade{animation:tf-fade 150ms ease}
+
+/* Auth role picker — full-width rows, site-scale type */
+.tf-auth-roles{display:grid;gap:10px;margin-bottom:20px}
+.tf-auth-role{
+  display:flex;align-items:center;gap:14px;width:100%;
+  padding:16px 18px;border-radius:var(--r-md);text-align:start;
+  transition:border-color var(--t),background var(--t),box-shadow var(--t);
+  border:1px solid var(--border);background:var(--bg);cursor:pointer;
+}
+.tf-auth-role[aria-pressed="true"]{
+  border-color:var(--primary);background:var(--primary-soft);
+  box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 35%,transparent);
+}
+.tf-auth-role-icon{
+  width:44px;height:44px;border-radius:12px;flex:none;
+  display:grid;place-items:center;
+  background:var(--surface-2);color:var(--text-2);
+}
+.tf-auth-role-icon svg{display:block;width:22px;height:22px}
+.tf-auth-role[aria-pressed="true"] .tf-auth-role-icon{
+  background:var(--primary);color:var(--primary-ink);
+}
+.tf-auth-role-copy{display:grid;gap:4px;min-width:0;flex:1}
+.tf-auth-role-label{font-family:var(--font-display);font-weight:800;font-size:16px;line-height:1.3;color:var(--text)}
+.tf-auth-role-desc{font-size:13.5px;line-height:1.45;color:var(--muted);font-weight:500}
 
 /* Full-bleed page track: viewport width, no centered max-width column.
    Side inset comes only from padding-inline (keep tight). Inline styles on
@@ -284,9 +321,48 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
    the row has nowhere to shrink and forces a horizontal scrollbar — which reads
    as clipped/missing header content (or a phantom empty strip) at common
    embedded-preview and small-laptop-window widths. Hide the mid-priority nav +
-   login link before that point so the row always fits. */
+   login link before that point so the row always fits — and surface the
+   hamburger + slide-down public menu instead. */
+[data-public-menu-toggle]{display:none}
+[data-public-menu]{display:none}
 @media (max-width:860px){
   [data-hide-sm]{display:none !important}
+  [data-public-menu-toggle]{
+    display:inline-grid !important;place-items:center;width:36px;height:36px;
+    border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);
+    color:var(--text);font-size:16px;line-height:1;cursor:pointer;flex:none;
+    transition:border-color var(--t),background var(--t),color var(--t)
+  }
+  [data-public-menu-toggle]:hover{border-color:var(--border-strong);background:var(--surface-2)}
+  [data-public-menu-toggle][aria-expanded="true"]{
+    background:var(--primary-soft);border-color:var(--primary);color:var(--primary)
+  }
+  [data-public-menu="open"]{
+    display:block;border-bottom:1px solid var(--border);
+    background:var(--surface);box-shadow:var(--shadow-md);
+    padding:8px clamp(12px,1.6vw,20px) 16px;animation:tf-fade 160ms ease both
+  }
+  [data-public-menu] nav{
+    display:flex;flex-direction:column;gap:2px;padding-block:4px
+  }
+  [data-public-menu] nav a{
+    display:flex;align-items:center;min-height:44px;padding:10px 12px;border-radius:var(--r-sm);
+    color:var(--text) !important;font-size:15px;font-weight:600
+  }
+  [data-public-menu] nav a:hover,
+  [data-public-menu] nav a[aria-current="page"]{
+    background:var(--surface-2);color:var(--text) !important
+  }
+  [data-public-menu] .tf-public-menu-actions{
+    display:flex;flex-direction:column;gap:8px;padding-top:10px;margin-top:6px;
+    border-top:1px solid var(--border)
+  }
+  [data-public-menu] .tf-public-menu-actions a{
+    display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+    padding:0 16px;border-radius:var(--r-sm);font-size:14px;font-weight:600
+  }
+  [data-public-menu] .tf-public-menu-login{border:1px solid var(--border);background:var(--surface);color:var(--text) !important}
+  [data-public-menu] .tf-public-menu-start{background:var(--primary);color:var(--primary-ink) !important}
 }
 @media (max-width:640px){
   [data-public-header]{gap:12px !important;padding-inline:16px !important}
@@ -308,6 +384,17 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 .tf-field input:focus,.tf-field select:focus,.tf-field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 18%,transparent)}
 .tf-field-help{font-size:12px;line-height:1.5;color:var(--muted)}
 .tf-field textarea{min-height:110px;resize:vertical}
+.tf-password-wrap{position:relative}
+.tf-password-wrap input{padding-inline-end:44px}
+.tf-password-toggle{
+  position:absolute;inset-inline-end:4px;top:50%;transform:translateY(-50%);
+  width:36px;height:36px;display:grid;place-items:center;
+  border:0;background:none;padding:0;border-radius:var(--r-sm);
+  color:var(--muted);cursor:pointer;line-height:0;
+}
+.tf-password-toggle:hover,.tf-password-toggle:focus-visible{color:var(--primary);outline:none}
+.tf-password-toggle:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 18%,transparent)}
+.tf-password-toggle svg{display:block;width:20px;height:20px;pointer-events:none}
 .tf-button{height:42px;border:0;border-radius:var(--r-sm);padding-inline:18px;background:var(--primary);color:var(--primary-ink);font-weight:700}
 .tf-button:disabled{cursor:wait;opacity:.65}
 .tf-button-secondary{border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}

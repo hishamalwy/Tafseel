@@ -23,7 +23,7 @@
   <div data-public-header class="tf-shell" style="height:68px;display:flex;align-items:center;gap:32px">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);flex:none" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="30" height="30" style="flex:none;object-fit:contain" />
-      <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:19px;letter-spacing:0">تفصيل</span>
+      <span translate="no" class="tf-mursala" style="font-weight:900;font-size:19px;letter-spacing:0">تفصيــل</span>
     </a>
     <nav data-hide-sm class="tf-nav-track" aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
       <a class="tf-nav-link" href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Browse Teachers</a>
@@ -32,11 +32,25 @@
       <a class="tf-nav-link" href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Become a Teacher</a>
       <a class="tf-nav-link" href="#why" data-i18n="nav_about" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">About</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:8px;flex:none">
+    <div style="display:flex;align-items:center;gap:8px;flex:none;margin-inline-start:auto">
       <button type="button" class="tf-lang-toggle tf-control-fade" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <a data-hide-sm href="Tafseel-Auth.dc.html" data-i18n="nav_login" style="padding:8px 12px;font-size:14px;font-weight:600;color:var(--text-2)" style-hover="color:var(--text)">Log in</a>
       <a data-hide-sm href="Tafseel-Auth.dc.html" data-i18n="nav_start" class="tf-press" style="height:38px;padding:0 18px;display:inline-flex;align-items:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:14px;font-weight:600;box-shadow:var(--shadow-sm)" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Get started</a>
+      <button type="button" data-public-menu-toggle aria-controls="landing-public-menu" aria-expanded="false">☰</button>
+    </div>
+  </div>
+  <div id="landing-public-menu" data-public-menu="closed" class="tf-shell">
+    <nav aria-label="Primary">
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a>
+      <a href="#subjects" data-i18n="nav_subjects">Subjects</a>
+      <a href="#how" data-i18n="nav_how">How It Works</a>
+      <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach">Become a Teacher</a>
+      <a href="#why" data-i18n="nav_about">About</a>
+    </nav>
+    <div class="tf-public-menu-actions">
+      <a href="Tafseel-Auth.dc.html" data-i18n="nav_login" class="tf-public-menu-login">Log in</a>
+      <a href="Tafseel-Auth.dc.html" data-i18n="nav_start" class="tf-public-menu-start">Get started</a>
     </div>
   </div>
 </header>
@@ -302,7 +316,7 @@
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="26" height="26" style="flex:none;object-fit:contain" />
-        <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:17px;letter-spacing:0">تفصيل</span>
+        <span translate="no" class="tf-mursala" style="font-weight:900;font-size:17px;letter-spacing:0">تفصيــل</span>
       </div>
       <p data-i18n="foot_tag" style="font-size:14px;color:var(--muted);line-height:1.6;max-width:280px;margin-bottom:18px">Education, tailored to you. Personalized explanations from verified teachers.</p>
       <div style="display:flex;gap:8px">

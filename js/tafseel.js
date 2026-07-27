@@ -82,14 +82,20 @@
     },
 
     updateBrandMarks: function () {
+      if (this._updatingMarks) return;
       var light = 'assets/brand/tafseel-mark.png';
       var dark = 'assets/brand/tafseel-mark-dark.png';
       var theme = this.theme;
-      document.querySelectorAll('img[data-tafseel-mark]').forEach(function (img) {
-        var force = (img.getAttribute('data-tafseel-mark-force') || '').toLowerCase();
-        var next = force === 'dark' ? dark : force === 'light' ? light : (theme === 'dark' ? dark : light);
-        if (img.getAttribute('src') !== next) img.setAttribute('src', next);
-      });
+      this._updatingMarks = true;
+      try {
+        document.querySelectorAll('img[data-tafseel-mark]').forEach(function (img) {
+          var force = (img.getAttribute('data-tafseel-mark-force') || '').toLowerCase();
+          var next = force === 'dark' ? dark : force === 'light' ? light : (theme === 'dark' ? dark : light);
+          if (img.getAttribute('src') !== next) img.setAttribute('src', next);
+        });
+      } finally {
+        this._updatingMarks = false;
+      }
     },
     setTheme: function (theme) {
       if (['light', 'dark'].includes(theme)) {
@@ -289,12 +295,42 @@
       if (!window.MutationObserver || !document.documentElement) return;
       var self = this;
       this._observer = new MutationObserver(function (changes) {
+        var needsMarks = false;
+        var needsControls = false;
         changes.forEach(function (change) {
           if (change.type === 'characterData') self.translate(change.target);
           change.addedNodes.forEach(function (node) { self.translate(node); });
+          if (change.type === 'attributes' && change.attributeName === 'src' &&
+              change.target && change.target.matches && change.target.matches('img[data-tafseel-mark]')) {
+            needsMarks = true;
+          }
+          change.addedNodes.forEach(function (node) {
+            if (!node || node.nodeType !== 1) return;
+            if ((node.matches && node.matches('img[data-tafseel-mark]')) ||
+                (node.querySelectorAll && node.querySelectorAll('img[data-tafseel-mark]').length)) {
+              needsMarks = true;
+            }
+            if ((node.matches && node.matches('.tf-theme-toggle, [data-tafseel-theme]')) ||
+                (node.querySelectorAll && node.querySelectorAll('.tf-theme-toggle, [data-tafseel-theme]').length)) {
+              needsControls = true;
+            }
+          });
+          if (change.type === 'childList' && change.target && change.target.matches &&
+              change.target.matches('.tf-theme-toggle, [data-tafseel-theme]') &&
+              !change.target.querySelector('.tf-icon-moon')) {
+            needsControls = true;
+          }
         });
+        if (needsMarks) self.updateBrandMarks();
+        if (needsControls) self.updateControls();
       });
-      this._observer.observe(document.documentElement, { childList: true, characterData: true, subtree: true });
+      this._observer.observe(document.documentElement, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src']
+      });
     },
 
     updateControls: function () {
@@ -315,6 +351,11 @@
         button.setAttribute('aria-label', self.localizeText('Toggle dark mode') || 'Toggle dark mode');
       });
       document.querySelectorAll('.tf-nav-track').forEach(function (nav) { self.bindNavInk(nav); });
+      document.querySelectorAll('[data-public-menu-toggle]').forEach(function (button) {
+        button.setAttribute('aria-label', self.t('admin_toggle_nav'));
+        button.setAttribute('title', self.t('admin_toggle_nav'));
+        if (!button.textContent.trim()) button.textContent = '☰';
+      });
       document.querySelectorAll('[data-escrow-flow]').forEach(function (el) { self.observeEscrow(el); });
       document.querySelectorAll('[data-count-up]').forEach(function (el) {
         var raw = el.getAttribute('data-count-up');
@@ -326,6 +367,70 @@
           format: function (v) { return self.number(v); }
         });
       });
+    },
+
+    setPublicMenu: function (menu, toggle, open) {
+      if (!menu) return;
+      menu.setAttribute('data-public-menu', open ? 'open' : 'closed');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.textContent = open ? '✕' : '☰';
+      }
+      if (!open) return;
+      var first = menu.querySelector('a, button');
+      if (first) setTimeout(function () { first.focus(); }, 0);
+    },
+
+    closeAllPublicMenus: function () {
+      var self = this;
+      document.querySelectorAll('[data-public-menu="open"]').forEach(function (menu) {
+        var id = menu.id;
+        var toggle = id
+          ? document.querySelector('[data-public-menu-toggle][aria-controls="' + id + '"]')
+          : document.querySelector('[data-public-menu-toggle][aria-expanded="true"]');
+        self.setPublicMenu(menu, toggle, false);
+      });
+    },
+
+    bindPublicMenus: function () {
+      if (this._publicMenuBound) return;
+      this._publicMenuBound = true;
+      var self = this;
+
+      document.addEventListener('click', function (e) {
+        var toggle = e.target.closest('[data-public-menu-toggle]');
+        if (toggle) {
+          e.preventDefault();
+          e.stopPropagation();
+          var id = toggle.getAttribute('aria-controls');
+          var menu = id ? document.getElementById(id) : null;
+          if (!menu) {
+            var header = toggle.closest('header');
+            menu = header ? header.querySelector('[data-public-menu]') : null;
+          }
+          if (!menu) return;
+          var open = menu.getAttribute('data-public-menu') !== 'open';
+          if (open) self.closeAllPublicMenus();
+          self.setPublicMenu(menu, toggle, open);
+          return;
+        }
+        if (e.target.closest('[data-public-menu] a')) {
+          self.closeAllPublicMenus();
+          return;
+        }
+        if (!e.target.closest('[data-public-menu]') && !e.target.closest('[data-public-menu-toggle]')) {
+          self.closeAllPublicMenus();
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') self.closeAllPublicMenus();
+      });
+
+      var mq = window.matchMedia('(max-width: 860px)');
+      var onMq = function () { if (!mq.matches) self.closeAllPublicMenus(); };
+      if (mq.addEventListener) mq.addEventListener('change', onMq);
+      else if (mq.addListener) mq.addListener(onMq);
     },
 
     bindControls: function () {
@@ -340,6 +445,7 @@
         button.dataset.bound = 'true';
         button.addEventListener('click', function () { self.toggleTheme(); });
       });
+      this.bindPublicMenus();
       this.updateControls();
     },
 

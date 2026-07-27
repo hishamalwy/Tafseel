@@ -170,7 +170,12 @@ public static class DependencyInjection
             .Validate(options => !string.IsNullOrWhiteSpace(options.ApiToken), "Resend:ApiToken is required.")
             .ValidateOnStart();
         services.AddTransient<IResend, ResendClient>();
-        services.AddTransient<IEmailSender, ResendEmailSender>();
+        // Development uses a local outbox so register/confirm works without a real Resend token.
+        // Testing replaces IEmailSender in the web factory; Production/Staging keep Resend.
+        if (environment.IsDevelopment())
+            services.AddTransient<IEmailSender, DevelopmentEmailSender>();
+        else
+            services.AddTransient<IEmailSender, ResendEmailSender>();
         return services;
     }
 
