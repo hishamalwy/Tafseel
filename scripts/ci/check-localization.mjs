@@ -110,7 +110,13 @@ const root = {
 };
 const storage = new Map([["tafseel-lang", "en"]]);
 const runtimeContext = {
-  window: { TafseelLocales: locales, MutationObserver: class { observe() {} } },
+  window: {
+    TafseelLocales: locales,
+    MutationObserver: class { observe() {} },
+    matchMedia() {
+      return { matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} };
+    }
+  },
   document: {
     body: {},
     title: "Sign in — Tafseel",

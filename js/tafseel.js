@@ -427,10 +427,12 @@
         if (e.key === 'Escape') self.closeAllPublicMenus();
       });
 
-      var mq = window.matchMedia('(max-width: 860px)');
-      var onMq = function () { if (!mq.matches) self.closeAllPublicMenus(); };
-      if (mq.addEventListener) mq.addEventListener('change', onMq);
-      else if (mq.addListener) mq.addListener(onMq);
+      if (typeof window.matchMedia === 'function') {
+        var mq = window.matchMedia('(max-width: 860px)');
+        var onMq = function () { if (!mq.matches) self.closeAllPublicMenus(); };
+        if (mq.addEventListener) mq.addEventListener('change', onMq);
+        else if (mq.addListener) mq.addListener(onMq);
+      }
     },
 
     bindControls: function () {
@@ -499,17 +501,19 @@
       };
       document.addEventListener('keydown', component._tfDrawerOnKeydown);
 
-      component._tfDrawerMq = window.matchMedia('(max-width: 1024px)');
-      component._tfDrawerOnMq = function () {
-        var compact = !!component._tfDrawerMq.matches;
-        component.setState({ compactNav: compact, drawer: compact ? component.state.drawer : false });
-        if (!compact) document.body.style.overflow = '';
-      };
-      if (component._tfDrawerMq.addEventListener)
-        component._tfDrawerMq.addEventListener('change', component._tfDrawerOnMq);
-      else if (component._tfDrawerMq.addListener)
-        component._tfDrawerMq.addListener(component._tfDrawerOnMq);
-      component.setState({ compactNav: !!component._tfDrawerMq.matches });
+      if (typeof window.matchMedia === 'function') {
+        component._tfDrawerMq = window.matchMedia('(max-width: 1024px)');
+        component._tfDrawerOnMq = function () {
+          var compact = !!component._tfDrawerMq.matches;
+          component.setState({ compactNav: compact, drawer: compact ? component.state.drawer : false });
+          if (!compact) document.body.style.overflow = '';
+        };
+        if (component._tfDrawerMq.addEventListener)
+          component._tfDrawerMq.addEventListener('change', component._tfDrawerOnMq);
+        else if (component._tfDrawerMq.addListener)
+          component._tfDrawerMq.addListener(component._tfDrawerOnMq);
+        component.setState({ compactNav: !!component._tfDrawerMq.matches });
+      }
     },
 
     uninstallDashboardDrawer: function (component) {
