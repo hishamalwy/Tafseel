@@ -203,7 +203,10 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(3)");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("LiveSessionBookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("PaymentId")
@@ -219,11 +222,17 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PaymentId");
 
-                    b.HasIndex("OrderId", "Type");
+                    b.HasIndex("LiveSessionBookingId", "Type")
+                        .HasFilter("[LiveSessionBookingId] IS NOT NULL");
+
+                    b.HasIndex("OrderId", "Type")
+                        .HasFilter("[OrderId] IS NOT NULL");
 
                     b.ToTable("EscrowEntries", t =>
                         {
                             t.HasCheckConstraint("CK_EscrowEntries_Amount", "[Amount] > 0");
+
+                            t.HasCheckConstraint("CK_EscrowEntries_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
 
                             t.HasCheckConstraint("CK_EscrowEntries_Type", "[Type] BETWEEN 0 AND 2");
                         });
@@ -386,7 +395,10 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("LiveSessionBookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Provider")
@@ -421,8 +433,13 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LiveSessionBookingId")
+                        .IsUnique()
+                        .HasFilter("[LiveSessionBookingId] IS NOT NULL");
+
                     b.HasIndex("OrderId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[OrderId] IS NOT NULL");
 
                     b.HasIndex("Provider", "ProviderReference")
                         .IsUnique();
@@ -437,6 +454,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_Payments_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
 
                             t.HasCheckConstraint("CK_Payments_Status", "[Status] BETWEEN 0 AND 3");
+
+                            t.HasCheckConstraint("CK_Payments_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
                         });
                 });
 
@@ -2600,10 +2619,52 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                 {
                     b.HasBaseType("Tafseel.Domain.Catalog.CatalogItem");
 
+                    b.Property<string>("AllowedDurationsCsv")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("MaxPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MinPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("RequiresScheduling")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("TeacherSelectable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasFilter("[Code] IS NOT NULL");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique();
@@ -2611,6 +2672,12 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.ToTable("ServiceCatalogItems", t =>
                         {
                             t.HasCheckConstraint("CK_ServiceCatalogItem_NormalizedName", "[NormalizedName] <> ''");
+
+                            t.HasCheckConstraint("CK_ServiceCatalogItems_Code", "[Code] <> ''");
+
+                            t.HasCheckConstraint("CK_ServiceCatalogItems_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
+
+                            t.HasCheckConstraint("CK_ServiceCatalogItems_PriceBounds", "([MinPrice] IS NULL OR [MinPrice] > 0) AND ([MaxPrice] IS NULL OR [MaxPrice] > 0) AND ([MinPrice] IS NULL OR [MaxPrice] IS NULL OR [MinPrice] <= [MaxPrice])");
                         });
                 });
 
@@ -2753,11 +2820,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Finance.EscrowEntry", b =>
                 {
+                    b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
+                        .WithMany()
+                        .HasForeignKey("LiveSessionBookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.Orders.Order", null)
                         .WithMany()
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Domain.Finance.Payment", null)
                         .WithMany()
@@ -2783,11 +2854,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Finance.Payment", b =>
                 {
+                    b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
+                        .WithMany()
+                        .HasForeignKey("LiveSessionBookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.Orders.Order", null)
                         .WithOne()
                         .HasForeignKey("Tafseel.Domain.Finance.Payment", "OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()

@@ -16,6 +16,18 @@ It does not run target-database migrations. Apply the reviewed idempotent SQL ar
 
 The Free F1 Staging app may use mock payment/live-session providers and `/home` local persistence for demonstration. It must not be promoted to Production, scaled to multiple instances, or treated as durable file storage.
 
+Staging initializes these idempotent demo accounts only when `ASPNETCORE_ENVIRONMENT=Staging`:
+
+```text
+admin@gmail.com   Admin
+student@gmail.com Student
+teacher@gmail.com Teacher
+quality@gmail.com QualityReviewer
+Password: @Admin123
+```
+
+These credentials are public staging/demo credentials. Never reuse them, their password, or their accounts in Production.
+
 Configure these Azure App Service application settings before deployment:
 
 ```text

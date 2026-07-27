@@ -84,6 +84,25 @@
       if (currentUser) return currentUser;
       try { return await refresh(); } catch (_) { return null; }
     },
+    requireSession: async function (redirect) {
+      var session = await this.ready();
+      if (!session) {
+        location.replace(redirect || 'Tafseel-Auth.dc.html');
+        return null;
+      }
+      return session;
+    },
+    requireRoles: async function (roles, redirect) {
+      var session = await this.requireSession(redirect);
+      if (!session) return null;
+      var allowed = Array.isArray(roles) ? roles : [roles];
+      var ok = (session.roles || []).some(function (role) { return allowed.indexOf(role) >= 0; });
+      if (!ok) {
+        location.replace(redirect || 'Tafseel-Auth.dc.html');
+        return null;
+      }
+      return session;
+    },
     me: function () { return currentUser; },
     logout: async function () {
       try { await request('/auth/logout', { method: 'POST', noRefresh: true }); } finally {

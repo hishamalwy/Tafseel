@@ -10,11 +10,9 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin — Tafseel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
-<script src="js/tafseel.js"></script>
+  <script src="js/locales.js"></script>
+  <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
 </helmet>
 
@@ -199,7 +197,7 @@
           </table>
         </div>
         <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-          <span style="font-size:13px;color:var(--muted)">Showing {{ users.length }} of 8,412 users</span>
+          <span style="font-size:13px;color:var(--muted)">Showing {{ users.length }} of {{ usersTotal }} users</span>
           <nav aria-label="Pagination" style="display:flex;gap:6px">
             <sc-for list="{{ pages }}" as="p" hint-placeholder-count="4">
               <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
@@ -226,7 +224,7 @@
               <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:12px">
                 <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:4px">
                   <span style="font-size:13.5px;font-weight:600">{{ d.title }}</span>
-                  <span style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">{{ d.amount }}</span>
+                  <span style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">{{ d.status }}</span>
                 </div>
                 <div style="font-size:12.5px;color:var(--muted)">{{ d.meta }}</div>
               </div>
@@ -389,76 +387,93 @@
   </div>
 </div>
 
+<sc-if value="{{ catalogModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeCatalogModal }}">
+    <div role="dialog" aria-modal="true" aria-label="{{ catalogModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ catalogModalTitle }}</h2>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+        <sc-if value="{{ isTopicModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Subject</span>
+            <select value="{{ catalogSubjectId }}" onChange="{{ onCatalogSubjectId }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <option value="">Choose a subject</option>
+              <sc-for list="{{ subjectOptions }}" as="sub" hint-placeholder-count="4">
+                <option value="{{ sub.id }}">{{ sub.name }}</option>
+              </sc-for>
+            </select>
+          </label>
+        </sc-if>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Name</span>
+          <input value="{{ catalogName }}" onChange="{{ onCatalogName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+        </label>
+        <sc-if value="{{ isSubjectModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Icon</span>
+            <input value="{{ catalogIcon }}" onChange="{{ onCatalogIcon }}" placeholder="e.g. ∑" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+        </sc-if>
+        <sc-if value="{{ isTopicModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Difficulty</span>
+            <select value="{{ catalogDifficulty }}" onChange="{{ onCatalogDifficulty }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <option value="Introductory">Introductory</option>
+              <option value="Standard">Standard</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </label>
+        </sc-if>
+        <sc-if value="{{ isServiceModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Detail (optional)</span>
+            <input value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+        </sc-if>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onClick="{{ closeCatalogModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
+        <button type="button" onClick="{{ confirmAddCatalog }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ catalogModalTitle }}</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ editModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeEditModal }}">
+    <div role="dialog" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">Edit</h2>
+      <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
+        <span style="font-size:13px;font-weight:600">Name</span>
+        <input value="{{ editName }}" onChange="{{ onEditName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+      </label>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onClick="{{ closeEditModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
+        <button type="button" onClick="{{ confirmEditCatalog }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Save</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
   <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-let USERS = [
-  { id:1, name:'Noor Abdulaziz', email:'noor.a@example.com', role:'Student', joined:'12 Mar 2026', status:'Active' },
-  { id:2, name:'Dr. Rana Al-Otaibi', email:'rana.otaibi@example.com', role:'Teacher', joined:'3 Jan 2026', status:'Active' },
-  { id:3, name:'Sami Mattar', email:'sami.mattar@example.com', role:'Reviewer', joined:'20 Nov 2025', status:'Active' },
-  { id:4, name:'Omar Haddad', email:'omar.haddad@example.com', role:'Teacher', joined:'8 Feb 2026', status:'Active' },
-  { id:5, name:'Fahad Al-Qahtani', email:'fahad.q@example.com', role:'Student', joined:'2 Jul 2026', status:'Suspended' },
-  { id:6, name:'Layla Mansour', email:'layla.mansour@example.com', role:'Teacher', joined:'19 Sep 2025', status:'Active' },
-  { id:7, name:'Reem Al-Ghamdi', email:'reem.g@example.com', role:'Student', joined:'30 Jun 2026', status:'Active' },
-  { id:8, name:'Tariq Zayed', email:'tariq.zayed@example.com', role:'Teacher', joined:'14 Apr 2026', status:'Pending' }
-];
+let USERS = [];
 
 const CATALOG_DATA = {
-  subjects: [
-    { id:'s1', name:'Mathematics', meta:'218 teachers · 6 education levels', active:true },
-    { id:'s2', name:'Physics', meta:'164 teachers · 5 education levels', active:true },
-    { id:'s3', name:'Chemistry', meta:'131 teachers · 4 education levels', active:true },
-    { id:'s4', name:'Biology', meta:'97 teachers · 4 education levels', active:true },
-    { id:'s5', name:'Programming', meta:'206 teachers · 3 education levels', active:true },
-    { id:'s6', name:'Business', meta:'118 teachers · 3 education levels', active:false }
-  ],
-  topics: [
-    { id:'t1', name:'Factoring quadratics using the box method', meta:'Mathematics · Standard difficulty', active:true },
-    { id:'t2', name:'Explaining recursion with a real interview question', meta:'Programming · Advanced difficulty', active:true },
-    { id:'t3', name:'Balancing redox reactions step by step', meta:'Chemistry · Standard difficulty', active:true },
-    { id:'t4', name:'Newton\u2019s third law with everyday examples', meta:'Physics · Introductory difficulty', active:false }
-  ],
-  services: [
-    { id:'sv1', name:'Custom recorded explanation', meta:'Available on all subjects', active:true },
-    { id:'sv2', name:'Live session', meta:'30/60/90/120 minute durations', active:true },
-    { id:'sv3', name:'Exam revision', meta:'Available on all subjects', active:true },
-    { id:'sv4', name:'Assignment guidance', meta:'Available on all subjects', active:true },
-    { id:'sv5', name:'Project mentoring', meta:'Available on 4 subjects', active:true },
-    { id:'sv6', name:'Exam night emergency session', meta:'Premium rate, limited slots', active:true }
-  ],
-  coupons: [
-    { id:'c1', name:'WELCOME20', meta:'20% off first request · expires 31 Aug 2026', active:true },
-    { id:'c2', name:'EXAMWEEK', meta:'SAR 30 off exam revision · expires 15 Aug 2026', active:true },
-    { id:'c3', name:'RAMADAN25', meta:'25% off all services · expired 10 Apr 2026', active:false }
-  ]
+  subjects: [],
+  topics: [],
+  services: [],
+  coupons: []
 };
 
 const LIST_DATA = {
-  requests: [
-    { title:'Carnot cycle problems from my past exam', meta:'Noor Abdulaziz \u00b7 Dr. Rana Al-Otaibi', status:'Delivered', tone:'accent' },
-    { title:'Binary search trees \u2014 traversal walkthrough', meta:'Noor Abdulaziz \u00b7 Omar Haddad', status:'In Progress', tone:'primary' },
-    { title:'Statics assignment 3 guidance', meta:'Noor Abdulaziz \u00b7 Khalid Al-Sudairi', status:'Payment Required', tone:'error' },
-    { title:'Rotational dynamics review', meta:'Bassel Younes \u00b7 Dr. Rana Al-Otaibi', status:'Accepted', tone:'info' },
-    { title:'IELTS writing task 2 feedback', meta:'Noor Abdulaziz \u00b7 Sara Bin Nasser', status:'Completed', tone:'success' }
-  ],
-  sessions: [
-    { title:'Binary search trees \u00b7 60 min', meta:'Noor Abdulaziz \u00b7 Omar Haddad \u00b7 Tonight 20:30', status:'Scheduled', tone:'primary' },
-    { title:'Thermodynamics revision \u00b7 90 min', meta:'Noor Abdulaziz \u00b7 Dr. Rana Al-Otaibi \u00b7 Thu 30 Jul', status:'Scheduled', tone:'primary' },
-    { title:'Mechanics revision \u00b7 60 min', meta:'Huda Al-Rashed \u00b7 Dr. Rana Al-Otaibi \u00b7 Completed 20 Jul', status:'Completed', tone:'success' }
-  ],
-  reviews: [
-    { title:'\u2605\u2605\u2605\u2605\u2605 \u2014 Dr. Maha Fahmy', meta:'Noor Abdulaziz \u00b7 5 Jul 2026', status:'Published', tone:'success' },
-    { title:'\u2605\u2605\u2605\u2605\u2606 \u2014 Sara Bin Nasser', meta:'Noor Abdulaziz \u00b7 13 Jul 2026', status:'Published', tone:'success' },
-    { title:'\u2605\u2605\u2606\u2606\u2606 \u2014 Ahmed Barakat', meta:'Flagged for review \u00b7 24 Jul 2026', status:'Flagged', tone:'warning' }
-  ],
-  disputes: [
-    { title:'Delivery quality \u2014 Order O-2201', meta:'Student vs. Ahmed Barakat \u00b7 SAR 150 \u00b7 opened 2 days ago', status:'Open', tone:'error' },
-    { title:'Missed live session', meta:'Student vs. Nadia Selim \u00b7 SAR 180 \u00b7 opened 1 day ago', status:'Open', tone:'error' },
-    { title:'Late delivery refund request', meta:'Student vs. Jamal Nasser \u00b7 SAR 95 \u00b7 opened 6 hours ago', status:'Open', tone:'error' }
-  ]
+  requests: [],
+  sessions: [],
+  reviews: [],
+  disputes: []
 };
 
 const TONE_STYLE = {
@@ -471,13 +486,25 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
     userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '',
-    commissionRate: 15, requireReview: true, maintenanceMode: false
+    commissionRate: 15, requireReview: true, maintenanceMode: false,
+    catalogModal: false, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
+    editModal: null, editName: '', usersTotal: 0, liveWithdrawals: []
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
-    Tafseel.api.ready().then(session => {
-      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+    // Prevent demo fallbacks from appearing if any admin API call fails.
+    USERS = [];
+    CATALOG_DATA.subjects = [];
+    CATALOG_DATA.topics = [];
+    CATALOG_DATA.services = [];
+    CATALOG_DATA.coupons = [];
+    LIST_DATA.requests = [];
+    LIST_DATA.sessions = [];
+    LIST_DATA.reviews = [];
+    LIST_DATA.disputes = [];
+    Tafseel.api.requireRoles(['Admin']).then(session => {
+      if (!session) return;
       return Promise.all([
         Tafseel.api.get('/admin/users?pageSize=100'),
         Tafseel.api.get('/admin/metrics'),
@@ -501,7 +528,7 @@ class Component extends DCLogic {
         title:'Order ' + x.orderId, meta:x.reason, status:x.status === 2 ? 'Resolved' : 'Open',
         tone:x.status === 2 ? 'success' : 'error'
       }));
-      this.setState({ liveMetrics:data[1], liveWithdrawals:data[6].items, userOverrides:{} });
+      this.setState({ liveMetrics:data[1], liveWithdrawals:data[6].items, usersTotal:data[0].totalCount, userOverrides:{} });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
@@ -510,6 +537,28 @@ class Component extends DCLogic {
     this.setState({ toast: msg });
     clearTimeout(this._t);
     this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+
+  async setSelectedSuspension(suspended) {
+    const ids = [...this.state.selected];
+    const updated = [];
+    let failure = '';
+    try {
+      for (const id of ids) {
+        await Tafseel.api.put('/admin/users/' + encodeURIComponent(id) + '/suspension', { suspended });
+        updated.push(id);
+      }
+    } catch (error) {
+      failure = Tafseel.api.errorMessage(error);
+    } finally {
+      const overrides = { ...this.state.userOverrides };
+      updated.forEach(id => overrides[id] = suspended ? 'Suspended' : 'Active');
+      this.setState({ userOverrides:overrides, selected:ids.filter(id => !updated.includes(id)) });
+      this.flash(failure || Tafseel.t(
+        suspended ? 'admin_bulk_suspended' : 'admin_bulk_activated',
+        { count:updated.length }
+      ));
+    }
   }
 
   async processWithdrawal(item, approve) {
@@ -541,11 +590,12 @@ class Component extends DCLogic {
     const statusTone = { Active: ['var(--success-soft)', 'var(--success)'], Suspended: ['var(--error-soft)', 'var(--error)'], Pending: ['var(--warning-soft)', 'var(--warning)'] };
 
     return {
-      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langLabel: Tafseel.t('language_target'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      stop: e => e.stopPropagation(),
 
       drawerState: s.drawer ? 'open' : 'closed',
       toggleDrawer: () => this.setState({ drawer: !s.drawer }),
@@ -599,12 +649,15 @@ class Component extends DCLogic {
 
       catalogTitle: { subjects:'Subjects', topics:'Demo topics', services:'Services', coupons:'Coupons' }[s.catalogKind],
       catalogAddLabel: { subjects:'+ Add subject', topics:'+ Add topic', services:'+ Add service', coupons:'+ Add coupon' }[s.catalogKind],
-      onAddCatalog: () => this.flash('Opening ' + (s.catalogKind || 'item').slice(0, -1) + ' creation form\u2026'),
+      onAddCatalog: () => {
+        if (s.catalogKind === 'coupons') return this.flash('Coupons are not enabled in the backend.');
+        this.setState({ catalogModal: true, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '' });
+      },
       catalogItems: (CATALOG_DATA[s.catalogKind] || []).map(c => {
         const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
         return {
           ...c, active,
-          onEdit: () => this.flash('Editing ' + c.name),
+          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: c.meta }, editName: c.name }),
           onToggle: async () => {
             if (s.catalogKind === 'coupons') return this.flash('Coupons are not enabled in the backend.');
             try {
@@ -615,6 +668,53 @@ class Component extends DCLogic {
           }
         };
       }),
+
+      catalogModal: s.catalogModal,
+      isSubjectModal: s.catalogKind === 'subjects',
+      isTopicModal: s.catalogKind === 'topics',
+      isServiceModal: s.catalogKind === 'services',
+      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', services:'Add service' }[s.catalogKind],
+      catalogName: s.catalogName, onCatalogName: e => this.setState({ catalogName: e.target.value }),
+      catalogIcon: s.catalogIcon, onCatalogIcon: e => this.setState({ catalogIcon: e.target.value }),
+      catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
+      catalogSubjectId: s.catalogSubjectId, onCatalogSubjectId: e => this.setState({ catalogSubjectId: e.target.value }),
+      catalogDifficulty: s.catalogDifficulty, onCatalogDifficulty: e => this.setState({ catalogDifficulty: e.target.value }),
+      subjectOptions: CATALOG_DATA.subjects.map(sub => ({ id: sub.id, name: sub.name })),
+      closeCatalogModal: () => this.setState({ catalogModal: false }),
+      confirmAddCatalog: async () => {
+        try {
+          let created;
+          if (s.catalogKind === 'subjects') {
+            if (!s.catalogName.trim() || !s.catalogIcon.trim()) return this.flash('Name and icon are required.');
+            created = await Tafseel.api.post('/admin/subjects', { name: s.catalogName, icon: s.catalogIcon });
+          } else if (s.catalogKind === 'topics') {
+            if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash('Subject and name are required.');
+            created = await Tafseel.api.post('/admin/topics', { subjectId: s.catalogSubjectId, name: s.catalogName, difficulty: s.catalogDifficulty });
+          } else if (s.catalogKind === 'services') {
+            if (!s.catalogName.trim()) return this.flash('Name is required.');
+            created = await Tafseel.api.post('/admin/services', { name: s.catalogName, detail: s.catalogDetail || null });
+          } else return;
+          CATALOG_DATA[s.catalogKind] = [...(CATALOG_DATA[s.catalogKind] || []), { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
+          this.setState({ catalogModal: false });
+          this.flash(created.name + ' added.');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
+
+      editModal: !!s.editModal,
+      editName: s.editName, onEditName: e => this.setState({ editName: e.target.value }),
+      closeEditModal: () => this.setState({ editModal: null }),
+      confirmEditCatalog: async () => {
+        if (!s.editModal || !s.editName.trim()) return this.flash('Name is required.');
+        try {
+          await Tafseel.api.put('/admin/catalog/' + s.editModal.kind + '/' + s.editModal.id, {
+            name: s.editName, detail: s.editModal.detail || null
+          });
+          CATALOG_DATA[s.editModal.kind] = (CATALOG_DATA[s.editModal.kind] || []).map(c =>
+            c.id === s.editModal.id ? { ...c, name: s.editName } : c);
+          this.setState({ editModal: null });
+          this.flash('Saved.');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
 
       listTitle: { requests:'Requests', sessions:'Live sessions', reviews:'Reviews', disputes:'Disputes' }[s.listKind],
       listItems: (LIST_DATA[s.listKind] || []).map(it => {
@@ -637,14 +737,14 @@ class Component extends DCLogic {
         { label:'Platform revenue', value:'SAR ' + s.liveMetrics.platformRevenue, icon:'%', delta:'Ledger balance', tone:'muted' },
         { label:'Open disputes', value:String(s.liveMetrics.openDisputes), icon:'⚠', delta:'Needs attention', tone:'warn' }
       ] : [
-        { label: 'Total users', value: '8,412', icon: '◈', delta: '+312 this month', tone: 'ok' },
-        { label: 'Active teachers', value: '1,240', icon: '✎', delta: '+48 this month', tone: 'ok' },
-        { label: 'Active students', value: '6,940', icon: '◍', delta: '+264 this month', tone: 'ok' },
-        { label: 'Pending applications', value: '3', icon: '◷', delta: 'Avg. 38 min review', tone: 'muted' },
-        { label: 'Total orders', value: '38,600', icon: '⇩', delta: '+1,180 this month', tone: 'ok' },
-        { label: 'Total revenue', value: 'SAR 4.08M', icon: '$', delta: '+18% MoM', tone: 'ok' },
-        { label: 'Platform commission', value: 'SAR 612K', icon: '%', delta: '15% take rate', tone: 'muted' },
-        { label: 'Open disputes', value: '3', icon: '⚠', delta: 'Needs attention', tone: 'warn' }
+        { label: 'Total users', value: '—', icon: '◈', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Active teachers', value: '—', icon: '✎', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Active students', value: '—', icon: '◍', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Pending applications', value: '—', icon: '◷', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Total orders', value: '—', icon: '⇩', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Confirmed payments', value: '—', icon: '$', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Platform revenue', value: '—', icon: '%', delta: 'No admin metrics yet', tone: 'muted' },
+        { label: 'Open disputes', value: '—', icon: '⚠', delta: 'No admin metrics yet', tone: 'muted' }
       ].map(m => ({ ...m, deltaStyle: 'font-size:12px;font-weight:600;color:' + (m.tone === 'warn' ? 'var(--warning)' : m.tone === 'ok' ? 'var(--success)' : 'var(--muted)') })),
 
       withdrawals: (s.liveWithdrawals || []).map(w => ({
@@ -653,20 +753,14 @@ class Component extends DCLogic {
         reject:async () => this.processWithdrawal(w, false)
       })),
 
-      revenueChart: [210, 240, 265, 250, 290, 320, 355, 408].map((v, i, arr) => ({
-        title: 'SAR ' + v + 'K', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
+      revenueChart: [0].map((v, i) => ({
+        title: 'No revenue data', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === 0 ? 'var(--primary-soft)' : 'var(--primary)') + ';height:0%'
       })),
-      ordersChart: [3200, 3400, 3650, 3500, 3900, 4100, 4350, 4820].map((v, i, arr) => ({
-        title: v + ' orders', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--accent)' : 'var(--accent-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
+      ordersChart: [0].map((v, i) => ({
+        title: 'No order data', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === 0 ? 'var(--accent-soft)' : 'var(--accent)') + ';height:0%'
       })),
-      subjectShare: [
-        { label: 'Mathematics', pct: 22 }, { label: 'Programming', pct: 19 }, { label: 'Physics', pct: 16 },
-        { label: 'Chemistry', pct: 13 }, { label: 'Business', pct: 11 }, { label: 'Engineering', pct: 10 }
-      ].map(sh => ({ ...sh, barStyle: 'display:block;height:100%;width:' + sh.pct + '%;background:var(--primary);border-radius:99px' })),
-      approvalChart: [
-        { approved: 78, rejected: 22 }, { approved: 80, rejected: 20 }, { approved: 75, rejected: 25 },
-        { approved: 84, rejected: 16 }, { approved: 81, rejected: 19 }, { approved: 82, rejected: 18 }
-      ].map(c => ({ ...c, approvedH: c.approved, rejectedH: c.rejected })),
+      subjectShare: [],
+      approvalChart: [],
 
       userQ: s.userQ, onUserQ: e => this.setState({ userQ: e.target.value }),
       userRole: s.userRole, onUserRole: e => this.setState({ userRole: e.target.value }),
@@ -676,8 +770,8 @@ class Component extends DCLogic {
       hasSelection: s.selected.length > 0,
       selectedCount: s.selected.length,
       clearSelection: () => this.setState({ selected: [] }),
-      bulkSuspend: () => { const ov = { ...s.userOverrides }; s.selected.forEach(id => ov[id] = 'Suspended'); this.setState({ userOverrides: ov, selected: [] }); this.flash('Suspended ' + s.selected.length + ' users'); },
-      bulkActivate: () => { const ov = { ...s.userOverrides }; s.selected.forEach(id => ov[id] = 'Active'); this.setState({ userOverrides: ov, selected: [] }); this.flash('Activated ' + s.selected.length + ' users'); },
+      bulkSuspend: () => this.setSelectedSuspension(true),
+      bulkActivate: () => this.setSelectedSuspension(false),
 
       users: filtered.map(u => {
         const [bg, fg] = statusTone[u.status] || statusTone.Active;
@@ -708,15 +802,13 @@ class Component extends DCLogic {
         onClick: () => this.setState({ pagination: n })
       })),
 
+      usersTotal: s.usersTotal || users.length,
       paymentRows: [
-        { label: 'Student payments (30d)', value: 'SAR 512,400' }, { label: 'Teacher earnings (30d)', value: 'SAR 435,540' },
-        { label: 'Platform commission', value: 'SAR 76,860' }, { label: 'Pending withdrawals', value: 'SAR 61,200' }, { label: 'Refunds issued', value: 'SAR 4,120' }
+        { label: 'Confirmed payments', value: 'SAR ' + Number(s.liveMetrics?.confirmedPayments || 0).toLocaleString() },
+        { label: 'Platform revenue', value: 'SAR ' + Number(s.liveMetrics?.platformRevenue || 0).toLocaleString() },
+        { label: 'Pending withdrawals', value: 'SAR ' + (s.liveWithdrawals || []).reduce((sum, w) => sum + w.amount, 0).toLocaleString() }
       ],
-      disputes: [
-        { title: 'Delivery quality — Order O-2201', amount: 'SAR 150', meta: 'Student vs. Ahmed Barakat · opened 2 days ago' },
-        { title: 'Missed live session', amount: 'SAR 180', meta: 'Student vs. Nadia Selim · opened 1 day ago' },
-        { title: 'Late delivery refund request', amount: 'SAR 95', meta: 'Student vs. Jamal Nasser · opened 6 hours ago' }
-      ]
+      disputes: LIST_DATA.disputes.filter(d => d.status === 'Open').slice(0, 3)
     };
   }
 }

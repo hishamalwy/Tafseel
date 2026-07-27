@@ -211,8 +211,8 @@ app.Use(async (context, next) =>
     headers.Append("X-Frame-Options", "DENY");
     headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
     headers.Append("Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' wss:; " +
+        "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; " +
+        "font-src 'self'; img-src 'self' data:; connect-src 'self' wss:; " +
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
     if (context.Request.Path.StartsWithSegments("/api"))
     {
@@ -244,7 +244,7 @@ var frontendPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     "Tafseel-Landing.dc.html", "Tafseel-Browse-Teachers.dc.html", "Tafseel-Teacher-Profile.dc.html",
     "Tafseel-Request.dc.html", "Tafseel-Student-Dashboard.dc.html", "Tafseel-Teacher-Dashboard.dc.html",
     "Tafseel-Quality-Dashboard.dc.html", "Tafseel-Admin-Dashboard.dc.html", "Tafseel-Auth.dc.html",
-    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Chat.dc.html"
+    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Chat.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html"
 };
 app.MapGet("/", () => Results.Redirect("/app/Tafseel-Landing.dc.html"));
 app.MapGet("/app/{file}", (string file) =>
@@ -254,7 +254,7 @@ app.MapGet("/app/{file}", (string file) =>
 app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
-    file is "tafseel.js" or "api.js" or "auth.js" or "teacher-apply.js" or "chat.js"
+    file is "locales.js" or "tafseel.js" or "api.js" or "auth.js" or "teacher-apply.js" or "chat.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
 app.MapGet("/app/js/vendor/{file}", (string file) =>
@@ -263,6 +263,17 @@ app.MapGet("/app/js/vendor/{file}", (string file) =>
         : Results.NotFound());
 app.MapGet("/app/css/tafseel.css", () =>
     Results.File(Path.Combine(frontendRoot, "css", "tafseel.css"), "text/css; charset=utf-8"));
+app.MapGet("/app/assets/fonts/thmanyah-sans/{file}", (string file) =>
+    file is "thmanyah-sans-light.woff2" or "thmanyah-sans-regular.woff2"
+        or "thmanyah-sans-medium.woff2" or "thmanyah-sans-bold.woff2"
+        or "thmanyah-sans-black.woff2"
+        ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "thmanyah-sans", file), "font/woff2")
+        : Results.NotFound());
+app.MapGet("/app/assets/fonts/inter/{file}", (string file) =>
+    file is "inter-regular.woff2" or "inter-medium.woff2"
+        or "inter-semibold.woff2" or "inter-bold.woff2"
+        ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "inter", file), "font/woff2")
+        : Results.NotFound());
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {

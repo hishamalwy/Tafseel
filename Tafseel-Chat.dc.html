@@ -1,35 +1,35 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Messages — Tafseel</title>
-  <link rel="stylesheet" href="css/tafseel.css">
-  <script src="js/tafseel.js" defer></script>
-  <script src="js/api.js" defer></script>
-  <script src="js/chat.js" defer></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messages — Tafseel</title>
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
 </head>
 <body>
-  <header class="tf-app-header">
-    <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
-    <a href="Tafseel-Student-Dashboard.dc.html">Dashboard</a>
-  </header>
-  <main class="tf-workflow">
-    <section class="tf-chat" aria-label="Messages">
-      <aside class="tf-chat-list">
-        <h1>Messages</h1>
-        <div id="conversations" class="tf-list"></div>
-      </aside>
-      <div class="tf-chat-main">
-        <div id="chat-title" class="tf-chat-title">Choose a conversation</div>
-        <div id="messages" class="tf-messages" aria-live="polite"></div>
-        <form id="composer" class="tf-composer">
-          <label for="message" hidden>Message</label>
-          <input id="message" maxlength="4000" autocomplete="off" placeholder="Write a message…" required>
-          <button class="tf-button" type="submit">Send</button>
-        </form>
-      </div>
-    </section>
-  </main>
+<header class="tf-app-header">
+  <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
+  <div class="tf-actions">
+    <button class="tf-button tf-button-secondary" data-tafseel-language type="button" aria-label="Switch language">العربية</button>
+    <button class="tf-button tf-button-secondary" data-tafseel-theme type="button" aria-label="Theme">Theme</button>
+  </div>
+</header>
+<main class="tf-workflow" style="place-items:stretch;padding:20px">
+  <div class="tf-chat">
+    <div class="tf-chat-list" id="conversations"></div>
+    <div class="tf-chat-main">
+      <div class="tf-chat-title" id="chat-title">Messages</div>
+      <div class="tf-messages" id="messages"></div>
+      <form class="tf-composer" id="composer">
+        <input id="message" type="text" placeholder="Write a message" autocomplete="off" />
+        <button class="tf-button" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+</main>
+<script src="js/chat.js"></script>
 </body>
 </html>

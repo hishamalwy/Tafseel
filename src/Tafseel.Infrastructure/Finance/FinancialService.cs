@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Tafseel.Application.Finance;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.Finance;
+using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Orders;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Messaging;
@@ -43,6 +44,36 @@ internal sealed class FinancialService(
         return new(Map(payment), initiation.CheckoutReference);
     }
 
+    public async Task<PaymentInitiationDto> InitiateLiveSessionPaymentAsync(
+        string studentId, Guid liveSessionBookingId, string idempotencyKey, CancellationToken ct)
+    {
+        idempotencyKey = RequiredKey(idempotencyKey);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockAsync($"payment-init-session:{liveSessionBookingId}", ct);
+        var existing = await db.Payments.SingleOrDefaultAsync(
+            x => x.LiveSessionBookingId == liveSessionBookingId, ct);
+        if (existing is not null)
+        {
+            if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
+                throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
+            return new(Map(existing), existing.ProviderReference);
+        }
+        var booking = await db.LiveSessionBookings.SingleOrDefaultAsync(
+                x => x.Id == liveSessionBookingId && x.StudentId == studentId, ct)
+            ?? throw new DomainException("live_session_not_owned", "Live session was not found.");
+        if (booking.Status != LiveSessionStatus.AwaitingPayment)
+            throw new DomainException("payment_not_allowed", "This live session cannot be paid.");
+        var initiation = await provider.InitiateAsync(booking.Id, booking.TotalPrice, booking.Currency, ct);
+        var payment = Payment.ForLiveSession(booking.Id, studentId, booking.TotalPrice, booking.Currency,
+            provider.Name, initiation.ProviderReference, idempotencyKey, clock.GetUtcNow());
+        db.AddRange(payment,
+            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, clock.GetUtcNow()),
+            Audit("LiveSessionPaymentInitiated", studentId, "Payment", payment.Id.ToString(), idempotencyKey));
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return new(Map(payment), initiation.CheckoutReference);
+    }
+
     public async Task ProcessWebhookAsync(
         ReadOnlyMemory<byte> payload, string signature, CancellationToken ct)
     {
@@ -72,24 +103,44 @@ internal sealed class FinancialService(
         var changed = payment.Confirm(message.Amount, message.Currency, now);
         if (changed)
         {
-            var order = await db.Orders.SingleAsync(x => x.Id == payment.OrderId, ct);
-            order.ConfirmPayment(now);
             var clearing = await AccountAsync(LedgerAccountKind.ProviderClearing, "", payment.Currency, ct);
             var escrow = await AccountAsync(LedgerAccountKind.EscrowHeld, "", payment.Currency, ct);
-            db.AddRange(
-                new LedgerEntry($"payment:{payment.Id}:capture", clearing.Id, escrow.Id,
-                    payment.Amount, payment.Currency, "Payment", payment.Id.ToString(), now),
-                new EscrowEntry(payment.Id, payment.OrderId, EscrowEntryType.Held,
-                    payment.Amount, payment.Currency, $"payment:{payment.Id}:hold", now),
-                new PaymentAttempt(payment.Id, payment.ProviderReference,
-                    PaymentAttemptStatus.Succeeded, null, now),
-                Audit("PaymentConfirmed", provider.Name, "Payment", payment.Id.ToString(), message.EventId));
-            await notifications.QueueAsync(order.StudentId, "PaymentConfirmed", "Payment confirmed",
-                "Your payment is protected in escrow.", $"/orders/{order.Id}",
-                $"payment:{payment.Id}:confirmed:student", true, ct);
-            await notifications.QueueAsync(order.TeacherId, "PaymentConfirmed", "Order funded",
-                "The Student payment is confirmed.", $"/orders/{order.Id}",
-                $"payment:{payment.Id}:confirmed:teacher", true, ct);
+            db.Add(new LedgerEntry($"payment:{payment.Id}:capture", clearing.Id, escrow.Id,
+                payment.Amount, payment.Currency, "Payment", payment.Id.ToString(), now));
+            db.Add(new PaymentAttempt(payment.Id, payment.ProviderReference,
+                PaymentAttemptStatus.Succeeded, null, now));
+            if (payment.OrderId is Guid orderId)
+            {
+                var order = await db.Orders.SingleAsync(x => x.Id == orderId, ct);
+                order.ConfirmPayment(now);
+                db.AddRange(
+                    new EscrowEntry(payment.Id, order.Id, EscrowEntryType.Held,
+                        payment.Amount, payment.Currency, $"payment:{payment.Id}:hold", now),
+                    Audit("PaymentConfirmed", provider.Name, "Payment", payment.Id.ToString(), message.EventId));
+                await notifications.QueueAsync(order.StudentId, "PaymentConfirmed", "Payment confirmed",
+                    "Your payment is protected in escrow.", $"/orders/{order.Id}",
+                    $"payment:{payment.Id}:confirmed:student", true, ct);
+                await notifications.QueueAsync(order.TeacherId, "PaymentConfirmed", "Order funded",
+                    "The Student payment is confirmed.", $"/orders/{order.Id}",
+                    $"payment:{payment.Id}:confirmed:teacher", true, ct);
+            }
+            else if (payment.LiveSessionBookingId is Guid bookingId)
+            {
+                var booking = await db.LiveSessionBookings.SingleAsync(x => x.Id == bookingId, ct);
+                booking.ConfirmPayment(provider.Name, now);
+                db.AddRange(
+                    EscrowEntry.ForLiveSession(payment.Id, booking.Id, EscrowEntryType.Held,
+                        payment.Amount, payment.Currency, $"payment:{payment.Id}:hold", now),
+                    Audit("LiveSessionPaymentConfirmed", provider.Name, "Payment", payment.Id.ToString(), message.EventId));
+                await notifications.QueueAsync(booking.StudentId, "PaymentConfirmed", "Payment confirmed",
+                    "Your live-session payment is protected in escrow.", $"/live-sessions/{booking.Id}",
+                    $"payment:{payment.Id}:confirmed:student", true, ct);
+                await notifications.QueueAsync(booking.TeacherId, "PaymentConfirmed", "Session funded",
+                    "The Student live-session payment is confirmed.", $"/live-sessions/{booking.Id}",
+                    $"payment:{payment.Id}:confirmed:teacher", true, ct);
+            }
+            else
+                throw new DomainException("invalid_payment", "Payment target is missing.");
         }
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -97,12 +148,22 @@ internal sealed class FinancialService(
 
     public async Task<PaymentDto> GetPaymentAsync(string userId, Guid paymentId, CancellationToken ct)
     {
-        var payment = await (
-            from p in db.Payments.AsNoTracking()
-            join o in db.Orders.AsNoTracking() on p.OrderId equals o.Id
-            where p.Id == paymentId && (o.StudentId == userId || o.TeacherId == userId)
-            select p).SingleOrDefaultAsync(ct)
+        var payment = await db.Payments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == paymentId, ct)
             ?? throw new DomainException("payment_not_owned", "Payment was not found.");
+        if (payment.OrderId is Guid orderId)
+        {
+            var owned = await db.Orders.AsNoTracking().AnyAsync(
+                o => o.Id == orderId && (o.StudentId == userId || o.TeacherId == userId), ct);
+            if (!owned) throw new DomainException("payment_not_owned", "Payment was not found.");
+        }
+        else if (payment.LiveSessionBookingId is Guid bookingId)
+        {
+            var owned = await db.LiveSessionBookings.AsNoTracking().AnyAsync(
+                b => b.Id == bookingId && (b.StudentId == userId || b.TeacherId == userId), ct);
+            if (!owned) throw new DomainException("payment_not_owned", "Payment was not found.");
+        }
+        else
+            throw new DomainException("payment_not_owned", "Payment was not found.");
         return Map(payment);
     }
 
@@ -143,11 +204,16 @@ internal sealed class FinancialService(
             throw new DomainException("refund_conflict", "Payment has already been refunded.");
         var payment = await db.Payments.SingleOrDefaultAsync(x => x.Id == paymentId, ct)
             ?? throw new DomainException("payment_not_found", "Payment was not found.");
+        if (payment.LiveSessionBookingId is not null)
+            throw new DomainException("live_session_refund_unsupported",
+                "Live-session refunds require dispute settlement rules that are not configured.");
+        if (payment.OrderId is not Guid orderId)
+            throw new DomainException("payment_not_found", "Payment was not found.");
         if (await db.EscrowEntries.AnyAsync(
                 x => x.PaymentId == paymentId && x.Type == EscrowEntryType.Released, ct))
             throw new DomainException("refund_after_release_forbidden",
                 "Released escrow requires a dispute settlement, not a direct refund.");
-        var order = await db.Orders.SingleAsync(x => x.Id == payment.OrderId, ct);
+        var order = await db.Orders.SingleAsync(x => x.Id == orderId, ct);
         var refund = await RefundCoreAsync(payment, order, adminId, idempotencyKey, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -387,7 +453,7 @@ internal sealed class FinancialService(
         return value;
     }
     private static PaymentDto Map(Payment x) =>
-        new(x.Id, x.OrderId, x.Amount, x.Currency, x.Provider, x.ProviderReference, x.Status, x.CreatedAt);
+        new(x.Id, x.OrderId, x.LiveSessionBookingId, x.Amount, x.Currency, x.Provider, x.ProviderReference, x.Status, x.CreatedAt);
     private static RefundDto Map(Refund x) =>
         new(x.Id, x.PaymentId, x.OrderId, x.Amount, x.Currency, x.CreatedAt);
     private static WithdrawalDto Map(WithdrawalRequest x) =>

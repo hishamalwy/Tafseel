@@ -84,12 +84,18 @@ public sealed class Pass3CatalogAndValidationTests(SqlServerTafseelApiFactory fa
     {
         using var client = await AdminClient();
         var name = $"Global {Guid.NewGuid():N}";
+        object FirstPayload() => route == "services"
+            ? new { name = $" {name} ", detail = firstDetail, code = $"svc-{Guid.NewGuid():N}" }
+            : new { name = $" {name} ", detail = firstDetail };
+        object SecondPayload() => route == "services"
+            ? new { name = name.ToUpperInvariant(), detail = secondDetail, code = $"svc-{Guid.NewGuid():N}" }
+            : new { name = name.ToUpperInvariant(), detail = secondDetail };
         Assert.Equal(HttpStatusCode.Created,
             (await client.PostAsJsonAsync($"/api/v1/admin/{route}",
-                new { name = $" {name} ", detail = firstDetail })).StatusCode);
+                FirstPayload())).StatusCode);
         await AssertProblem(
             await client.PostAsJsonAsync($"/api/v1/admin/{route}",
-                new { name = name.ToUpperInvariant(), detail = secondDetail }),
+                SecondPayload()),
             HttpStatusCode.Conflict,
             "catalog_name_conflict");
     }

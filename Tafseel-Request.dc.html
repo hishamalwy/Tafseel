@@ -10,17 +10,15 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Request an explanation — Tafseel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
   <div style="max-width:920px;margin-inline:auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
-    <a href="Tafseel-Teacher-Profile.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
+    <a href="{{ profileHref }}" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
       <span style="width:26px;height:26px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:13px">T</span>
       <span style="font-weight:800;font-size:15.5px;letter-spacing:-.02em">Tafseel</span>
     </a>
@@ -34,211 +32,179 @@
 </header>
 
 <main style="max-width:920px;margin-inline:auto;padding:32px 24px 80px">
-  <nav aria-label="Request progress" style="display:flex;align-items:center;gap:0;margin-bottom:36px">
-    <sc-for list="{{ progressSteps }}" as="p" hint-placeholder-count="5">
-      <div style="display:flex;align-items:center;flex:1">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none">
-          <span style="{{ p.circleStyle }}">{{ p.icon }}</span>
-          <span style="{{ p.labelStyle }}">{{ p.label }}</span>
-        </div>
-        <sc-if value="{{ p.hasLine }}" hint-placeholder-val="{{ true }}">
-          <span style="{{ p.lineStyle }}"></span>
-        </sc-if>
-      </div>
-    </sc-for>
-  </nav>
+  <sc-if value="{{ showUnavailable }}" hint-placeholder-val="{{ false }}">
+    <div class="tf-unavailable" role="status">
+      <p style="margin:0 0 12px">{{ unavailableMessage }}</p>
+      <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--primary);font-weight:700;text-decoration:underline">Browse Teachers</a>
+    </div>
+  </sc-if>
 
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:32px;box-shadow:var(--shadow-sm)">
+  <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ true }}">
+    <div class="tf-unavailable" role="status">Loading request options…</div>
+  </sc-if>
 
-    <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
-      <div>
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">What kind of help do you need?</h1>
-        <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Requesting from <strong style="color:var(--text-2)">Dr. Rana Al-Otaibi</strong> · Physics</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-          <sc-for list="{{ serviceTypes }}" as="sv" hint-placeholder-count="5">
-            <button type="button" onClick="{{ sv.onClick }}" style="{{ sv.style }}">
-              <span style="font-size:20px">{{ sv.icon }}</span>
-              <span style="font-weight:700;font-size:15px;margin-top:10px">{{ sv.name }}</span>
-              <span style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">{{ sv.desc }}</span>
-            </button>
-          </sc-for>
-        </div>
-      </div>
-    </sc-if>
-
-    <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Describe your request</h1>
-        <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">The more specific you are, the closer the first draft will be.</p>
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13.5px;font-weight:600">Request title</span>
-            <input value="{{ title }}" onChange="{{ onTitle }}" placeholder="e.g. Explain Carnot cycle problems from my past exam" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
-          </label>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Subject</span>
-              <select value="{{ subject }}" onChange="{{ onSubject }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px">
-                <option>Physics</option><option>Mathematics</option><option>Chemistry</option><option>Biology</option><option>Programming</option>
-              </select>
-            </label>
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Topic</span>
-              <input value="{{ topic }}" onChange="{{ onTopic }}" placeholder="e.g. Thermodynamics" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
-            </label>
+  <sc-if value="{{ showForm }}" hint-placeholder-val="{{ false }}">
+    <nav aria-label="Request progress" style="display:flex;align-items:center;gap:0;margin-bottom:36px">
+      <sc-for list="{{ progressSteps }}" as="p" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;flex:1">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none">
+            <span style="{{ p.circleStyle }}">{{ p.icon }}</span>
+            <span style="{{ p.labelStyle }}">{{ p.label }}</span>
           </div>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13.5px;font-weight:600">Detailed description</span>
-            <textarea value="{{ description }}" onChange="{{ onDescription }}" rows="4" placeholder="What exactly should the explanation cover? Attach the exam questions or chapters if relevant." style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
-          </label>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Education level</span>
-              <select value="{{ level }}" onChange="{{ onLevel }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px">
-                <option>High school</option><option>Undergraduate</option><option>Postgraduate</option><option>Professional</option>
-              </select>
-            </label>
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Difficulty level</span>
-              <select value="{{ difficulty }}" onChange="{{ onDifficulty }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px">
-                <option>Introductory</option><option>Standard</option><option>Advanced</option>
-              </select>
-            </label>
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Explanation language</span>
-              <select value="{{ explLang }}" onChange="{{ onExplLang }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px">
-                <option>Arabic</option><option>English</option><option>Either</option>
-              </select>
-            </label>
-          </div>
-        </div>
-      </div>
-    </sc-if>
-
-    <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Upload your files</h1>
-        <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">PDF, Word, images, PowerPoint and ZIP up to 25 MB each.</p>
-        <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:36px 20px;text-align:center;cursor:pointer;background:var(--bg)" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}">
-          <input type="file" multiple="{{ true }}" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
-          <div style="width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 12px;font-size:18px;color:var(--muted)">⇧</div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:4px">Drag &amp; drop files here</div>
-          <div style="font-size:13px;color:var(--muted)">or click to browse your device</div>
-        </label>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-          <sc-for list="{{ files }}" as="f" hint-placeholder-count="2">
-            <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;background:var(--surface)">
-              <span style="width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:13px">{{ f.icon }}</span>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</div>
-                <div style="font-size:12px;color:var(--muted)">{{ f.size }}</div>
-                <div style="height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px">
-                  <span style="{{ f.progressStyle }}"></span>
-                </div>
-              </div>
-              <button type="button" onClick="{{ f.onRemove }}" aria-label="Remove {{ f.name }}" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);flex:none">✕</button>
-            </div>
-          </sc-for>
-          <sc-if value="{{ noFiles }}" hint-placeholder-val="{{ false }}">
-            <p style="font-size:13px;color:var(--muted);text-align:center">No files added yet — you can also continue without any.</p>
+          <sc-if value="{{ p.hasLine }}" hint-placeholder-val="{{ true }}">
+            <span style="{{ p.lineStyle }}"></span>
           </sc-if>
         </div>
-      </div>
-    </sc-if>
+      </sc-for>
+    </nav>
 
-    <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Deadline &amp; budget</h1>
-        <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Urgent requests reach teachers with a premium rate and faster response.</p>
-        <div style="display:flex;flex-direction:column;gap:20px">
-          <div>
-            <span style="font-size:13.5px;font-weight:600;display:block;margin-bottom:10px">Urgency</span>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
-              <sc-for list="{{ urgencies }}" as="u" hint-placeholder-count="4">
-                <button type="button" onClick="{{ u.onClick }}" style="{{ u.style }}">
-                  <span style="font-weight:700;font-size:14px">{{ u.label }}</span>
-                  <span style="font-size:12px;color:var(--muted);margin-top:3px">{{ u.meta }}</span>
-                </button>
-              </sc-for>
-            </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:32px;box-shadow:var(--shadow-sm)">
+
+      <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">What kind of help do you need?</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">{{ teacherIntro }}</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+            <sc-for list="{{ serviceTypes }}" as="sv" hint-placeholder-count="5">
+              <button type="button" onClick="{{ sv.onClick }}" style="{{ sv.style }}">
+                <span style="font-size:20px">{{ sv.icon }}</span>
+                <span style="font-weight:700;font-size:15px;margin-top:10px">{{ sv.name }}</span>
+                <span style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">{{ sv.desc }}</span>
+                <span style="font-size:12px;color:var(--text-2);margin-top:8px;font-weight:600">{{ sv.price }}</span>
+              </button>
+            </sc-for>
           </div>
-          <label style="display:flex;flex-direction:column;gap:6px;max-width:260px">
-            <span style="font-size:13.5px;font-weight:600">Preferred delivery date</span>
-            <input type="date" value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Describe your request</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">The more specific you are, the closer the first draft will be.</p>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13.5px;font-weight:600">Request title</span>
+              <input value="{{ title }}" onChange="{{ onTitle }}" placeholder="e.g. Explain Carnot cycle problems from my past exam" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13.5px;font-weight:600">Detailed description</span>
+              <textarea value="{{ description }}" onChange="{{ onDescription }}" rows="5" placeholder="What exactly should the explanation cover? Attach the exam questions or chapters if relevant." style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
+            </label>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Upload your files</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">PDF, Word, images, PowerPoint and ZIP up to 25 MB each.</p>
+          <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:36px 20px;text-align:center;cursor:pointer;background:var(--bg)" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}">
+            <input type="file" multiple="{{ true }}" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
+            <div style="width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 12px;font-size:18px;color:var(--muted)">⇧</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px">Drag &amp; drop files here</div>
+            <div style="font-size:13px;color:var(--muted)">or click to browse your device</div>
           </label>
-          <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <span style="font-size:13.5px;font-weight:600">Your budget</span>
-              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
-                <input type="checkbox" checked="{{ flexibleBudget }}" onChange="{{ onFlexible }}" style="width:16px;height:16px;accent-color:var(--primary)" />
-                Flexible — let the teacher propose a price
-              </label>
-            </div>
-            <sc-if value="{{ notFlexible }}" hint-placeholder-val="{{ true }}">
-              <div style="display:flex;align-items:center;gap:12px">
-                <input type="range" min="50" max="500" step="10" value="{{ budget }}" onChange="{{ onBudget }}" style="flex:1;accent-color:var(--primary)" />
-                <span style="font-family:var(--font-mono);font-size:14.5px;font-weight:700;width:90px;text-align:end">SAR {{ budget }}</span>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+            <sc-for list="{{ files }}" as="f" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;background:var(--surface)">
+                <span style="width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:13px">{{ f.icon }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</div>
+                  <div style="font-size:12px;color:var(--muted)">{{ f.size }}</div>
+                </div>
+                <button type="button" onClick="{{ f.onRemove }}" aria-label="Remove file" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);flex:none">✕</button>
               </div>
+            </sc-for>
+            <sc-if value="{{ noFiles }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13px;color:var(--muted);text-align:center">No files added yet — you can also continue without any.</p>
             </sc-if>
           </div>
         </div>
-      </div>
-    </sc-if>
+      </sc-if>
 
-    <sc-if value="{{ isStep5 }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Review your request</h1>
-        <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Confirm the details below — your teacher will respond within their usual response time.</p>
-
-        <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-            <span style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+      <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Deadline &amp; budget</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Set when you need the explanation and your budget preference.</p>
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <label style="display:flex;flex-direction:column;gap:6px;max-width:260px">
+              <span style="font-size:13.5px;font-weight:600">Preferred delivery date</span>
+              <input type="date" value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" min="{{ minDeliveryDate }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+            </label>
             <div>
-              <div style="font-size:14.5px;font-weight:700">Dr. Rana Al-Otaibi</div>
-              <div style="font-size:12.5px;color:var(--muted)">Physics · Replies in ~1 hour</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:13.5px;font-weight:600">Your budget</span>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
+                  <input type="checkbox" checked="{{ flexibleBudget }}" onChange="{{ onFlexible }}" style="width:16px;height:16px;accent-color:var(--primary)" />
+                  Flexible — let the teacher propose a price
+                </label>
+              </div>
+              <sc-if value="{{ notFlexible }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <input type="range" min="{{ budgetMin }}" max="{{ budgetMax }}" step="10" value="{{ budget }}" onChange="{{ onBudget }}" style="flex:1;accent-color:var(--primary)" />
+                  <span style="font-family:var(--font-mono);font-size:14.5px;font-weight:700;width:90px;text-align:end">{{ budgetLabel }}</span>
+                </div>
+              </sc-if>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">
-            <sc-for list="{{ summary }}" as="s" hint-placeholder-count="6">
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isStep5 }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Review your request</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Confirm the details below — your teacher will respond within their usual response time.</p>
+
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+              <span style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
               <div>
-                <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ s.k }}</div>
-                <div style="font-size:14px;font-weight:600">{{ s.v }}</div>
+                <div style="font-size:14.5px;font-weight:700">{{ teacherName }}</div>
+                <div style="font-size:12.5px;color:var(--muted)">{{ teacherMeta }}</div>
               </div>
-            </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">
+              <sc-for list="{{ summary }}" as="s" hint-placeholder-count="6">
+                <div>
+                  <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ s.k }}</div>
+                  <div style="font-size:14px;font-weight:600">{{ s.v }}</div>
+                </div>
+              </sc-for>
+            </div>
           </div>
-        </div>
 
-        <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
-          <h2 style="font-size:14.5px;font-weight:700;margin-bottom:12px">Price summary</h2>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="4">
-              <div style="display:flex;justify-content:space-between;font-size:13.5px">
-                <span style="color:var(--text-2)">{{ pl.label }}</span><span style="{{ pl.style }}">{{ pl.value }}</span>
-              </div>
-            </sc-for>
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
+            <h2 style="font-size:14.5px;font-weight:700;margin-bottom:12px">Price summary</h2>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="4">
+                <div style="display:flex;justify-content:space-between;font-size:13.5px">
+                  <span style="color:var(--text-2)">{{ pl.label }}</span><span style="{{ pl.style }}">{{ pl.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:16px;font-weight:800">
+              <span>Total</span><span>{{ totalLabel }}</span>
+            </div>
           </div>
-          <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:16px;font-weight:800">
-            <span>Total</span><span>SAR {{ total }}</span>
+
+          <div style="background:var(--success-soft);border-radius:var(--r-md);padding:14px 16px;display:flex;gap:10px;margin-bottom:20px">
+            <span style="color:var(--success)">🛡</span>
+            <span style="font-size:13px;color:var(--text-2);line-height:1.5">Your payment is protected until the service is completed — held by Tafseel and released only after you approve the delivery.</span>
           </div>
-        </div>
 
-        <div style="background:var(--success-soft);border-radius:var(--r-md);padding:14px 16px;display:flex;gap:10px;margin-bottom:20px">
-          <span style="color:var(--success)">🛡</span>
-          <span style="font-size:13px;color:var(--text-2);line-height:1.5">Your payment is protected until the service is completed — held by Tafseel and released only after you approve the delivery.</span>
+          <label style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text-2)">
+            <input type="checkbox" checked="{{ agreed }}" onChange="{{ onAgree }}" style="width:17px;height:17px;margin-top:1px;accent-color:var(--primary)" />
+            <span>I agree that this request follows Tafseel's academic integrity policy and the teacher may decline if it falls outside their scope.</span>
+          </label>
         </div>
+      </sc-if>
 
-        <label style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text-2)">
-          <input type="checkbox" checked="{{ agreed }}" onChange="{{ onAgree }}" style="width:17px;height:17px;margin-top:1px;accent-color:var(--primary)" />
-          <span>I agree that this request follows Tafseel’s academic integrity policy and the teacher may decline if it falls outside their scope.</span>
-        </label>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
+        <button type="button" onClick="{{ onBack }}" disabled="{{ isFirst }}" style="{{ backStyle }}">← Back</button>
+        <button type="button" onClick="{{ onNext }}" disabled="{{ nextDisabled }}" style="{{ nextStyle }}">{{ nextLabel }}</button>
       </div>
-    </sc-if>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
-      <button type="button" onClick="{{ onBack }}" disabled="{{ isFirst }}" style="{{ backStyle }}">← Back</button>
-      <button type="button" onClick="{{ onNext }}" disabled="{{ nextDisabled }}" style="{{ nextStyle }}">{{ nextLabel }}</button>
     </div>
-  </div>
+  </sc-if>
 </main>
 
 <sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
@@ -246,8 +212,8 @@
     <div role="dialog" aria-modal="true" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:32px;text-align:center">
       <div style="width:56px;height:56px;border-radius:50%;background:var(--success-soft);color:var(--success);display:grid;place-items:center;font-size:24px;margin:0 auto 18px">✓</div>
       <h2 style="font-size:19px;font-weight:800;margin-bottom:8px">Request sent</h2>
-      <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:22px">Dr. Rana Al-Otaibi usually replies within an hour. You'll get a notification the moment she responds.</p>
-      <a href="Tafseel-Student-Dashboard.dc.html" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Go to my dashboard</a>
+      <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:22px">{{ successMessage }}</p>
+      <a href="{{ dashboardHref }}" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Go to my dashboard</a>
     </div>
   </div>
 </sc-if>
@@ -258,35 +224,91 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const SERVICE_TYPES = [
-  { id:'rec', icon:'▶', name:'Recorded explanation', desc:'A video built around your exact material' },
-  { id:'live', icon:'◉', name:'Live explanation', desc:'One-to-one video call with a whiteboard' },
-  { id:'exam', icon:'◷', name:'Exam revision', desc:'Focused pass on past papers and weak spots' },
-  { id:'assign', icon:'✎', name:'Assignment guidance', desc:'Coaching through your assignment, not ghostwriting' },
-  { id:'project', icon:'◈', name:'Project help', desc:'Multi-session support for a larger piece of work' }
-];
-
-const URGENCY = [
-  { id:'standard', label:'Standard', meta:'3–5 days', fee:0 },
-  { id:'fast', label:'Fast', meta:'24–48 hours', fee:25 },
-  { id:'exam', label:'Before exam', meta:'Priority queue', fee:40 },
-  { id:'sameday', label:'Same day', meta:'Within hours', fee:80 }
-];
-
 const FILE_ICONS = { pdf:'📄', docx:'📝', doc:'📝', png:'🖼', jpg:'🖼', jpeg:'🖼', pptx:'📊', zip:'🗂' };
+
+function t(key, values) { return Tafseel.t(key, values); }
+
+function ymd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function serviceIcon(title, description) {
+  const text = (title || '') + ' ' + (description || '');
+  if (/urgent|emergency|طارئ/i.test(text)) return '⚡';
+  if (/exam|اختبار|revision|مراجعة/i.test(text)) return '◷';
+  if (/assign|واجب|guidance/i.test(text)) return '✎';
+  return '▶';
+}
+
+function activeServices(services) {
+  return (services || []).filter(s => s && s.canRequest);
+}
+
+function pickService(services, preferredId) {
+  const active = activeServices(services);
+  if (!active.length) return null;
+  if (preferredId) {
+    const match = active.find(s => String(s.id) === String(preferredId));
+    if (match) return match;
+  }
+  return active[0];
+}
+
+function toDeliveryAt(dateStr) {
+  const parts = (dateStr || '').split('-').map(Number);
+  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) {
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() + 3);
+    fallback.setHours(23, 59, 0, 0);
+    return fallback.toISOString();
+  }
+  return new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 0, 0).toISOString();
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes) || 0;
+  if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(1) + ' MB';
+  return Math.max(1, Math.round(size / 1024)) + ' KB';
+}
 
 class Component extends DCLogic {
   state = {
-    lang: Tafseel.lang, theme: Tafseel.theme, step: 1,
-    service: 'rec', title: '', subject: 'Physics', topic: '', description: '',
-    level: 'High school', difficulty: 'Standard', explLang: 'Arabic',
-    files: [],
-    urgency: 'standard', deliveryDate: '2026-07-30', flexibleBudget: false, budget: 150,
-    agreed: false, submitted: false, toast: ''
+    lang: Tafseel.lang, theme: Tafseel.theme,
+    teacherId: '', preferredServiceId: '',
+    missingTeacherId: false, loading: true, noServices: false, loadError: '',
+    profile: null, service: null, serviceId: '',
+    step: 1, title: '', description: '',
+    files: [], flexibleBudget: true, budget: 150,
+    deliveryDate: '', agreed: false, submitting: false,
+    submitted: false, createdRequestId: '', toast: ''
   };
 
-  componentDidMount() { this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme })); }
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    const query = new URLSearchParams(location.search);
+    const teacherId = (query.get('teacherId') || '').trim();
+    const preferredServiceId = (query.get('teacherServiceId') || '').trim();
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 3);
+    if (!teacherId) {
+      this.setState({ missingTeacherId: true, loading: false, deliveryDate: ymd(defaultDate) });
+      return;
+    }
+    this.setState({ teacherId, preferredServiceId, deliveryDate: ymd(defaultDate) });
+    Tafseel.api.requireRoles(['Student']).then(session => {
+      if (!session) return;
+      return this.loadTeacher();
+    }).catch(error => {
+      this.setState({ loading: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    });
+  }
+
   componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentDidUpdate() { Tafseel.translate(); }
 
   flash(msg) {
     this.setState({ toast: msg });
@@ -294,28 +316,117 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
   }
 
+  money(amount, currency) {
+    const cur = currency || (this.state.service && this.state.service.currency) || 'SAR';
+    const rounded = Math.round((Number(amount) || 0) * 100) / 100;
+    return cur + ' ' + Tafseel.number(rounded, { maximumFractionDigits: 2 });
+  }
+
+  async loadTeacher() {
+    this.setState({ loading: true, noServices: false, loadError: '' });
+    try {
+      const profile = await Tafseel.api.get('/teachers/' + encodeURIComponent(this.state.teacherId));
+      const services = activeServices(profile.services);
+      const service = pickService(services, this.state.preferredServiceId);
+      if (!service) {
+        this.setState({
+          profile, service: null, serviceId: '', noServices: true, loadError: '',
+          loading: false, step: 1
+        });
+        return;
+      }
+      const budget = Math.max(50, Math.round(Number(service.price) || 150));
+      this.setState({
+        profile, service, serviceId: String(service.id), noServices: false, loadError: '',
+        loading: false, budget, flexibleBudget: true, step: 1
+      });
+    } catch (error) {
+      const message = Tafseel.api.errorMessage(error);
+      this.setState({
+        loading: false, noServices: true, loadError: message, profile: null, service: null, serviceId: ''
+      });
+      this.flash(message);
+    }
+  }
+
   addFiles(fileList) {
-    const added = Array.from(fileList || []).map(f => ({
-      name: f.name, size: (f.size / 1024).toFixed(0) + ' KB',
-      kind: (f.name.split('.').pop() || '').toLowerCase(), raw: f
+    const added = Array.from(fileList || []).map(file => ({
+      file, name: file.name, size: formatFileSize(file.size),
+      kind: (file.name.split('.').pop() || '').toLowerCase()
     }));
     if (added.length) this.setState({ files: this.state.files.concat(added) });
   }
 
+  selectedService() {
+    const s = this.state;
+    if (!s.service) return null;
+    if (s.serviceId && String(s.service.id) !== String(s.serviceId)) {
+      const match = activeServices(s.profile && s.profile.services).find(x => String(x.id) === String(s.serviceId));
+      return match || s.service;
+    }
+    return s.service;
+  }
+
+  buildDescription() {
+    return this.state.description.trim();
+  }
+
+  async submitRequest() {
+    const s = this.state;
+    if (s.submitting) return;
+    const service = this.selectedService();
+    if (!service) {
+      this.flash(t('req_no_services'));
+      return;
+    }
+    this.setState({ submitting: true });
+    try {
+      const payload = {
+        teacherServiceId: service.id,
+        title: s.title.trim(),
+        description: this.buildDescription(),
+        preferredDeliveryAt: toDeliveryAt(s.deliveryDate),
+        budget: s.flexibleBudget ? null : Number(s.budget)
+      };
+      const created = await Tafseel.api.post('/learning-requests', payload);
+      if (s.files.length && created && created.id && created.version) {
+        for (const item of s.files) {
+          if (!item.file) continue;
+          try {
+            const form = new FormData();
+            form.append('file', item.file, item.file.name);
+            await Tafseel.api.upload('/learning-requests/' + created.id + '/attachments', form, {
+              'If-Match': created.version
+            });
+          } catch (_) { /* request succeeded; attachments are optional */ }
+        }
+      }
+      this.setState({
+        submitting: false,
+        submitted: true,
+        createdRequestId: created && created.id ? String(created.id) : ''
+      });
+    } catch (error) {
+      this.setState({ submitting: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
   renderVals() {
     const s = this.state;
-    const STEPS = ['Service type', 'Details', 'Files', 'Deadline & budget', 'Review'];
-    const urgencyInfo = URGENCY.find(u => u.id === s.urgency);
-    const baseBudget = s.flexibleBudget ? 150 : s.budget;
-    const urgencyFee = Math.round(baseBudget * (urgencyInfo.fee / 100));
-    const platformFee = Math.round((baseBudget + urgencyFee) * 0.08);
-    const total = baseBudget + urgencyFee + platformFee;
+    const service = this.selectedService();
+    const profile = s.profile;
+    const showUnavailable = s.missingTeacherId || (!s.loading && s.noServices);
+    const showLoading = !s.missingTeacherId && s.loading;
+    const showForm = !showUnavailable && !showLoading && !!service;
 
-    const progressSteps = STEPS.map((label, i) => {
+    const stepKeys = ['req_step_service', 'req_step_details', 'req_step_files', 'req_step_deadline', 'req_step_review'];
+    const progressSteps = stepKeys.map((key, i) => {
       const n = i + 1;
       const state = n < s.step ? 'done' : n === s.step ? 'active' : 'upcoming';
       return {
-        label, hasLine: i < STEPS.length - 1,
+        label: t(key),
+        hasLine: i < stepKeys.length - 1,
         icon: state === 'done' ? '✓' : String(n),
         circleStyle: 'width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;transition:all var(--t);' +
           (state === 'upcoming' ? 'border:1px solid var(--border);background:var(--surface);color:var(--muted);'
@@ -326,11 +437,36 @@ class Component extends DCLogic {
       };
     });
 
+    const subjects = profile && profile.subjects ? profile.subjects.map(x => x.name).filter(Boolean) : [];
+    const replyHours = profile ? Math.max(1, Math.round((profile.responseTimeMinutes || 60) / 60)) : 1;
+    const teacherName = profile ? (profile.fullName || '') : '';
+    const teacherMeta = [
+      subjects[0] || (service && service.title) || '',
+      t('req_replies_in', { hours: String(replyHours) })
+    ].filter(Boolean).join(' · ');
+    const teacherIntro = profile
+      ? t('req_requesting_from', { name: teacherName, subject: subjects[0] || (service && service.title) || '—' })
+      : '';
+
+    const servicePrice = service ? Number(service.price) || 0 : 0;
+    const currency = service ? service.currency || 'SAR' : 'SAR';
+    const total = servicePrice;
+    const budgetMin = Math.max(50, Math.round(servicePrice * 0.5));
+    const budgetMax = Math.max(budgetMin + 50, Math.round(servicePrice * 3));
+
     const canNext = () => {
-      if (s.step === 2) return s.title.trim() && s.topic.trim() && s.description.trim();
-      if (s.step === 5) return s.agreed;
+      if (s.step === 1) return !!s.serviceId;
+      if (s.step === 2) return s.title.trim() && s.description.trim();
+      if (s.step === 4) return !!s.deliveryDate;
+      if (s.step === 5) return s.agreed && !s.submitting;
       return true;
     };
+
+    const deliveryLabel = s.deliveryDate
+      ? Tafseel.date(s.deliveryDate, { dateStyle: 'medium' })
+      : '—';
+    const budgetSummary = s.flexibleBudget ? t('req_flexible') : this.money(s.budget, currency);
+    const totalLabel = s.flexibleBudget ? t('req_flexible') : this.money(total, currency);
 
     return {
       langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
@@ -338,24 +474,36 @@ class Component extends DCLogic {
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      profileHref: s.teacherId
+        ? 'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(s.teacherId)
+        : 'Tafseel-Browse-Teachers.dc.html',
+
+      showUnavailable,
+      unavailableMessage: s.missingTeacherId
+        ? t('req_missing_teacher')
+        : (s.loadError || t('req_no_services')),
+      showLoading,
+      showForm,
 
       progressSteps,
       isStep1: s.step === 1, isStep2: s.step === 2, isStep3: s.step === 3, isStep4: s.step === 4, isStep5: s.step === 5,
 
-      serviceTypes: SERVICE_TYPES.map(sv => ({
-        ...sv,
+      teacherIntro,
+      serviceTypes: activeServices(profile && profile.services).map(sv => ({
+        icon: serviceIcon(sv.title, sv.description),
+        name: sv.title,
+        desc: sv.description,
+        price: this.money(sv.price, sv.currency),
         style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:18px;border-radius:var(--r-md);transition:all var(--t);' +
-          (s.service === sv.id ? 'border:1px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
-        onClick: () => this.setState({ service: sv.id })
+          (String(s.serviceId) === String(sv.id) ? 'border:1px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+        onClick: () => {
+          const budget = Math.max(50, Math.round(Number(sv.price) || 150));
+          this.setState({ serviceId: String(sv.id), service: sv, budget });
+        }
       })),
 
       title: s.title, onTitle: e => this.setState({ title: e.target.value }),
-      subject: s.subject, onSubject: e => this.setState({ subject: e.target.value }),
-      topic: s.topic, onTopic: e => this.setState({ topic: e.target.value }),
       description: s.description, onDescription: e => this.setState({ description: e.target.value }),
-      level: s.level, onLevel: e => this.setState({ level: e.target.value }),
-      difficulty: s.difficulty, onDifficulty: e => this.setState({ difficulty: e.target.value }),
-      explLang: s.explLang, onExplLang: e => this.setState({ explLang: e.target.value }),
 
       onDragOver: e => e.preventDefault(),
       onDrop: e => { e.preventDefault(); this.addFiles(e.dataTransfer.files); },
@@ -364,75 +512,57 @@ class Component extends DCLogic {
       files: s.files.map((f, i) => ({
         name: f.name, size: f.size,
         icon: FILE_ICONS[f.kind] || '📁',
-        progressStyle: 'display:block;height:100%;width:100%;background:var(--success);border-radius:99px',
         onRemove: () => this.setState({ files: s.files.filter((_, idx) => idx !== i) })
       })),
 
-      urgencies: URGENCY.map(u => ({
-        label: u.label, meta: u.meta,
-        style: 'display:flex;flex-direction:column;align-items:flex-start;padding:13px;border-radius:var(--r-sm);transition:all var(--t);' +
-          (s.urgency === u.id ? 'border:1px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
-        onClick: () => this.setState({ urgency: u.id })
-      })),
-      deliveryDate: s.deliveryDate, onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
-      flexibleBudget: s.flexibleBudget, onFlexible: e => this.setState({ flexibleBudget: e.target.checked }),
+      deliveryDate: s.deliveryDate,
+      minDeliveryDate: ymd(new Date()),
+      onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
+      flexibleBudget: s.flexibleBudget,
+      onFlexible: e => this.setState({ flexibleBudget: e.target.checked }),
       notFlexible: !s.flexibleBudget,
-      budget: s.budget, onBudget: e => this.setState({ budget: Number(e.target.value) }),
+      budget: s.budget,
+      budgetMin,
+      budgetMax,
+      budgetLabel: this.money(s.budget, currency),
+      onBudget: e => this.setState({ budget: Number(e.target.value) }),
 
+      teacherName,
+      teacherMeta,
       summary: [
-        { k: 'Service type', v: SERVICE_TYPES.find(sv => sv.id === s.service).name },
-        { k: 'Title', v: s.title || '—' },
-        { k: 'Subject / topic', v: s.subject + ' · ' + (s.topic || '—') },
-        { k: 'Level', v: s.level },
-        { k: 'Files attached', v: s.files.length + ' file(s)' },
-        { k: 'Urgency', v: urgencyInfo.label + ' (' + urgencyInfo.meta + ')' }
+        { k: t('req_summary_service'), v: service ? service.title : '—' },
+        { k: t('req_summary_title'), v: s.title || '—' },
+        { k: t('req_summary_delivery'), v: deliveryLabel },
+        { k: t('req_summary_budget'), v: budgetSummary },
+        { k: t('req_summary_files'), v: t('req_files_count', { n: String(s.files.length) }) }
       ],
       priceLines: [
-        { label: 'Service price', value: 'SAR ' + baseBudget, style: '' },
-        { label: 'Urgency fee', value: urgencyFee ? '+ SAR ' + urgencyFee : 'None', style: '' },
-        { label: 'Platform fee (8%)', value: 'SAR ' + platformFee, style: '' },
-        { label: 'Discount', value: 'None', style: 'color:var(--muted)' }
+        { label: t('req_service_price'), value: this.money(servicePrice, currency), style: '' },
       ],
-      total,
+      totalLabel,
 
       agreed: s.agreed, onAgree: e => this.setState({ agreed: e.target.checked }),
       submitted: s.submitted,
+      successMessage: t('req_success_body', { name: teacherName, hours: String(replyHours) }),
+      dashboardHref: 'Tafseel-Student-Dashboard.dc.html?section=requests' +
+        (s.createdRequestId ? '&requestCreated=' + encodeURIComponent(s.createdRequestId) : ''),
 
       isFirst: s.step === 1,
       backStyle: 'height:40px;padding:0 18px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;' + (s.step === 1 ? 'opacity:.4;cursor:not-allowed;' : 'color:var(--text);'),
       onBack: () => s.step > 1 && this.setState({ step: s.step - 1 }),
 
       nextDisabled: !canNext(),
-      nextLabel: s.step === 5 ? 'Submit request' : 'Continue →',
+      nextLabel: s.step === 5 ? (s.submitting ? t('req_submitting') : t('req_submit')) : t('req_continue'),
       nextStyle: 'height:40px;padding:0 22px;border:0;border-radius:var(--r-sm);font-weight:700;font-size:14px;background:var(--primary);color:var(--primary-ink);' + (!canNext() ? 'opacity:.5;cursor:not-allowed;' : ''),
-      onNext: async () => {
-        if (!canNext()) { this.flash(s.step === 2 ? 'Fill in the title, topic and description to continue.' : 'Please accept the terms to submit.'); return; }
-        if (s.step === 5) {
-          const query = new URLSearchParams(location.search);
-          const serviceId = query.get('serviceId');
-          if (!serviceId) return this.flash('Choose a teacher service before submitting.');
-          try {
-            let request = await Tafseel.api.post('/learning-requests', {
-              teacherServiceId:serviceId,
-              title:s.title,
-              description:s.description,
-              preferredDeliveryAt:new Date(s.deliveryDate + 'T23:59:00Z').toISOString(),
-              budget:s.flexibleBudget ? null : s.budget
-            });
-            for (const item of s.files.filter(x => x.raw)) {
-              const data = new FormData();
-              data.append('file', item.raw);
-              await Tafseel.api.upload('/learning-requests/' + request.id + '/attachments', data, { 'If-Match':request.version });
-              const mine = await Tafseel.api.get('/learning-requests/mine?pageSize=100');
-              request = mine.items.find(x => x.id === request.id) || request;
-            }
-            this.setState({ submitted: true });
-          } catch (error) {
-            if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
-            else this.flash(Tafseel.api.errorMessage(error));
-          }
+      onNext: () => {
+        if (!canNext()) {
+          if (s.step === 1) return this.flash(t('req_select_service'));
+          if (s.step === 2) return this.flash(t('req_fill_details'));
+          if (s.step === 4) return this.flash(t('req_pick_delivery'));
+          if (s.step === 5) return this.flash(t('req_accept_terms'));
           return;
         }
+        if (s.step === 5) return this.submitRequest();
         this.setState({ step: s.step + 1 });
       }
     };

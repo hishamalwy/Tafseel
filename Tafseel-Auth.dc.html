@@ -1,46 +1,328 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Sign in — Tafseel</title>
-  <link rel="stylesheet" href="css/tafseel.css">
-  <script src="js/tafseel.js" defer></script>
-  <script src="js/api.js" defer></script>
-  <script src="js/auth.js" defer></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
 </head>
 <body>
-  <header class="tf-app-header">
-    <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
-    <button id="theme" class="tf-button tf-button-secondary" type="button">Theme</button>
-  </header>
-  <main class="tf-workflow">
-    <section class="tf-panel tf-panel-narrow" aria-labelledby="auth-title">
-      <h1 id="auth-title">Welcome to Tafseel</h1>
-      <p class="tf-muted">Use one secure account for requests, teaching, reviews, and messages.</p>
-      <div class="tf-auth-tabs" role="tablist">
-        <button id="login-tab" type="button" role="tab" aria-selected="true">Log in</button>
-        <button id="register-tab" type="button" role="tab" aria-selected="false">Create account</button>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Log in — Tafseel</title>
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+</helmet>
+
+<div style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr" data-stack="auth">
+  <div style="display:flex;flex-direction:column;padding:40px;min-width:0">
+    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);margin-bottom:auto" aria-label="Tafseel home">
+      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
+      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+    </a>
+
+    <div style="max-width:380px;margin:0 auto;width:100%;padding-block:40px">
+      <div style="display:flex;gap:4px;background:var(--surface-2);border-radius:var(--r-md);padding:4px;margin-bottom:28px">
+        <sc-for list="{{ modeTabs }}" as="m" hint-placeholder-count="2">
+          <button type="button" onClick="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+        </sc-for>
       </div>
-      <form id="login-form" class="tf-form">
-        <div class="tf-field"><label for="login-email">Email</label><input id="login-email" name="email" type="email" autocomplete="email" required></div>
-        <div class="tf-field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required></div>
-        <button class="tf-button" type="submit">Log in</button>
-        <button id="forgot" class="tf-button tf-button-secondary" type="button">Send password reset email</button>
-      </form>
-      <form id="register-form" class="tf-form" hidden>
-        <div class="tf-field"><label for="full-name">Full name</label><input id="full-name" name="fullName" autocomplete="name" maxlength="200" required></div>
-        <div class="tf-field"><label for="register-email">Email</label><input id="register-email" name="email" type="email" autocomplete="email" required></div>
-        <div class="tf-field"><label for="register-password">Password</label><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></div>
-        <div class="tf-field"><label for="role">I am joining as</label><select id="role" name="role"><option value="Student">Student</option><option value="Teacher">Teacher</option></select></div>
-        <button class="tf-button" type="submit">Create account</button>
-      </form>
-      <form id="reset-form" class="tf-form" hidden>
-        <div class="tf-field"><label for="reset-password">New password</label><input id="reset-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></div>
-        <button class="tf-button" type="submit">Reset password</button>
-      </form>
-      <p id="auth-status" class="tf-status" role="status" aria-live="polite"></p>
-    </section>
-  </main>
+
+      <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1 style="font-size:23px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Welcome back</h1>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:24px">Log in to manage your requests and sessions.</p>
+
+          <form onSubmit="{{ onLogin }}" style="display:flex;flex-direction:column;gap:14px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Email</span>
+              <input type="email" value="{{ email }}" onChange="{{ onEmail }}" placeholder="you@example.com" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Password</span>
+              <div style="position:relative">
+                <input type="{{ passwordType }}" value="{{ password }}" onChange="{{ onPassword }}" placeholder="••••••••" style="height:42px;width:100%;padding-inline:12px;padding-inline-end:44px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+                <button type="button" onClick="{{ toggleShowPassword }}" aria-label="Show password" style="position:absolute;inset-inline-end:6px;top:6px;width:30px;height:30px;border:0;background:none;color:var(--muted);font-size:14px">{{ eyeIcon }}</button>
+              </div>
+            </label>
+            <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
+              <p role="alert" style="font-size:13px;font-weight:600;color:var(--error);background:var(--error-soft);border-radius:var(--r-sm);padding:10px 12px">{{ loginError }}</p>
+            </sc-if>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2)">
+                <input type="checkbox" checked="{{ remember }}" onChange="{{ onRemember }}" style="width:16px;height:16px;accent-color:var(--primary)" />
+                Remember me
+              </label>
+              <button type="button" onClick="{{ onForgot }}" style="font-size:13.5px;font-weight:600;border:0;background:none;padding:0;cursor:pointer;color:var(--primary)">Forgot password?</button>
+            </div>
+            <button type="submit" disabled="{{ loggingIn }}" style="height:44px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14.5px;margin-top:4px">{{ loginButtonLabel }}</button>
+          </form>
+          <p style="text-align:center;font-size:13.5px;color:var(--muted);margin-top:20px">Don't have an account? <button type="button" onClick="{{ goRegister }}" style="border:0;background:none;padding:0;cursor:pointer;font-weight:600;color:var(--primary)">Sign up</button></p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:23px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Create your account</h1>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:20px">Choose how you want to use Tafseel.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px">
+            <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="2">
+              <button type="button" onClick="{{ r.onClick }}" style="{{ r.style }}">
+                <span style="font-size:18px">{{ r.icon }}</span>
+                <span style="font-weight:700;font-size:14px;margin-top:8px">{{ r.label }}</span>
+                <span style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4">{{ r.desc }}</span>
+              </button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ isTeacherRole }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:16px">Teacher accounts go through a short application after sign-up: your background, a subject, and a 3-minute teaching demo reviewed by our quality team.</p>
+          </sc-if>
+
+          <form onSubmit="{{ onRegister }}" style="display:flex;flex-direction:column;gap:12px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Full name</span>
+              <input value="{{ fullName }}" onChange="{{ onFullName }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Email</span>
+              <input type="email" value="{{ regEmail }}" onChange="{{ onRegEmail }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;font-weight:600">Password</span>
+                <input type="password" value="{{ regPassword }}" onChange="{{ onRegPassword }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;font-weight:600">Confirm password</span>
+                <input type="password" value="{{ regConfirm }}" onChange="{{ onRegConfirm }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+              </label>
+            </div>
+            <sc-if value="{{ regError }}" hint-placeholder-val="{{ false }}">
+              <p role="alert" style="font-size:13px;font-weight:600;color:var(--error);background:var(--error-soft);border-radius:var(--r-sm);padding:10px 12px">{{ regError }}</p>
+            </sc-if>
+            <label style="display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--text-2)">
+              <input type="checkbox" checked="{{ agreeTerms }}" onChange="{{ onAgreeTerms }}" style="width:16px;height:16px;margin-top:1px;accent-color:var(--primary)" />
+              <span>I agree to the Terms of Service and Privacy Policy</span>
+            </label>
+            <button type="submit" disabled="{{ registering }}" style="height:44px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14.5px;margin-top:4px">{{ registerButtonLabel }}</button>
+          </form>
+
+          <p style="text-align:center;font-size:13.5px;color:var(--muted);margin-top:20px">Already have an account? <button type="button" onClick="{{ goLogin }}" style="border:0;background:none;padding:0;cursor:pointer;font-weight:600;color:var(--primary)">Log in</button></p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReset }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:23px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Choose a new password</h1>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:24px">Set a strong password for your Tafseel account.</p>
+          <form onSubmit="{{ onReset }}" style="display:flex;flex-direction:column;gap:14px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">New password</span>
+              <input type="password" value="{{ resetPassword }}" onChange="{{ onResetPassword }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Confirm password</span>
+              <input type="password" value="{{ resetConfirm }}" onChange="{{ onResetConfirm }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <sc-if value="{{ resetError }}" hint-placeholder-val="{{ false }}">
+              <p role="alert" style="font-size:13px;font-weight:600;color:var(--error);background:var(--error-soft);border-radius:var(--r-sm);padding:10px 12px">{{ resetError }}</p>
+            </sc-if>
+            <button type="submit" disabled="{{ resetting }}" style="height:44px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14.5px;margin-top:4px">{{ resetButtonLabel }}</button>
+          </form>
+          <p style="text-align:center;font-size:13.5px;color:var(--muted);margin-top:20px"><button type="button" onClick="{{ goLogin }}" style="border:0;background:none;padding:0;cursor:pointer;font-weight:600;color:var(--primary)">Back to login</button></p>
+        </div>
+      </sc-if>
+    </div>
+    <span style="margin-top:auto"></span>
+  </div>
+
+  <div data-hide-sm="1" style="background:var(--primary-soft);display:flex;align-items:center;justify-content:center;padding:40px;position:relative;overflow:hidden">
+    <div style="max-width:380px;position:relative;z-index:1">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:22px;margin-bottom:20px">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+          <span style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+          <div>
+            <div style="font-weight:700;font-size:14.5px">Dr. Rana Al-Otaibi</div>
+            <div style="font-size:12.5px;color:var(--muted)">Physics · 4.9 ★ (214)</div>
+          </div>
+        </div>
+        <div style="font-size:13.5px;color:var(--text-2);line-height:1.6">"Sent my past exam and had a walkthrough of every question I got wrong before Friday."</div>
+      </div>
+      <h2 style="font-family:var(--font-display);font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.25;color:var(--text)">Education, tailored to you.</h2>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+function destination(session) {
+  var roles = session.roles || [];
+  if (roles.includes('Admin')) return 'Tafseel-Admin-Dashboard.dc.html';
+  if (roles.includes('QualityReviewer')) return 'Tafseel-Quality-Dashboard.dc.html';
+  if (roles.includes('Teacher')) return 'Tafseel-Teacher-Dashboard.dc.html';
+  return 'Tafseel-Student-Dashboard.dc.html';
+}
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme, mode: 'login', role: 'student',
+    email: '', password: '', showPassword: false, remember: true, loginError: '', loggingIn: false,
+    fullName: '', regEmail: '', regPassword: '', regConfirm: '', agreeTerms: false, regError: '', registering: false,
+    resetPassword: '', resetConfirm: '', resetError: '', resetting: false, resetEmail: '', resetToken: '',
+    toast: ''
+  };
+
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    const query = new URLSearchParams(location.search);
+    const mode = query.get('mode');
+    const email = query.get('email') || '';
+    const token = query.get('token') || '';
+    if (mode === 'reset' && email && token) {
+      this.setState({ mode: 'reset', resetEmail: email, resetToken: token });
+    } else if (mode === 'register') {
+      this.setState({ mode: 'register' });
+    } else if (mode === 'confirm' && email && token) {
+      Tafseel.api.post('/auth/confirm-email', { email, token })
+        .then(() => { history.replaceState(null, '', location.pathname); this.flash('Email confirmed. You can log in now.'); })
+        .catch(error => this.flash(Tafseel.api.errorMessage(error)));
+    }
+  }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 3200);
+  }
+
+  renderVals() {
+    const s = this.state;
+    return {
+      langLabel: Tafseel.t('language_target'),
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+
+      modeTabs: [{ id: 'login', label: 'Log in' }, { id: 'register', label: 'Sign up' }].map(m => ({
+        label: m.label,
+        style: 'flex:1;height:36px;border:0;border-radius:var(--r-sm);font-size:13.5px;font-weight:700;transition:all var(--t);' +
+          (s.mode === m.id ? 'background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);' : 'background:none;color:var(--muted);'),
+        onClick: () => this.setState({ mode: m.id, loginError: '', regError: '' })
+      })),
+      isLogin: s.mode === 'login',
+      isRegister: s.mode === 'register',
+      isReset: s.mode === 'reset',
+      goRegister: e => { e.preventDefault(); this.setState({ mode: 'register' }); },
+      goLogin: e => { e.preventDefault(); this.setState({ mode: 'login' }); },
+
+      email: s.email, onEmail: e => this.setState({ email: e.target.value, loginError: '' }),
+      password: s.password, onPassword: e => this.setState({ password: e.target.value, loginError: '' }),
+      passwordType: s.showPassword ? 'text' : 'password',
+      eyeIcon: s.showPassword ? '🙈' : '👁',
+      toggleShowPassword: () => this.setState({ showPassword: !s.showPassword }),
+      remember: s.remember, onRemember: e => this.setState({ remember: e.target.checked }),
+      onForgot: async () => {
+        if (!s.email.includes('@')) { this.setState({ loginError: 'Enter your email above first, then tap "Forgot password?".' }); return; }
+        try {
+          await Tafseel.api.post('/auth/forgot-password', { email: s.email });
+          this.flash('If that account exists, a reset email is on its way.');
+        } catch (error) { this.setState({ loginError: Tafseel.api.errorMessage(error) }); }
+      },
+      loginError: s.loginError,
+      loggingIn: s.loggingIn,
+      loginButtonLabel: s.loggingIn ? 'Signing in…' : 'Log in',
+      onLogin: async e => {
+        e.preventDefault();
+        if (s.loggingIn) return;
+        this.setState({ loginError: '', loggingIn: true });
+        try {
+          const session = await Tafseel.api.login(s.email, s.password);
+          location.href = destination(session);
+        } catch (error) {
+          this.setState({ loginError: Tafseel.api.errorMessage(error), loggingIn: false });
+        }
+      },
+
+      roleCards: [
+        { id: 'student', icon: '🎓', label: 'Join as Student', desc: 'Find teachers, request help' },
+        { id: 'teacher', icon: '✎', label: 'Apply as Teacher', desc: 'Teach and earn on Tafseel' }
+      ].map(r => ({
+        ...r,
+        style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:14px;border-radius:var(--r-md);transition:all var(--t);' +
+          (s.role === r.id ? 'border:1px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+        onClick: () => this.setState({ role: r.id })
+      })),
+      isStudentRole: s.role === 'student',
+      isTeacherRole: s.role === 'teacher',
+
+      fullName: s.fullName, onFullName: e => this.setState({ fullName: e.target.value }),
+      regEmail: s.regEmail, onRegEmail: e => this.setState({ regEmail: e.target.value }),
+      regPassword: s.regPassword, onRegPassword: e => this.setState({ regPassword: e.target.value }),
+      regConfirm: s.regConfirm, onRegConfirm: e => this.setState({ regConfirm: e.target.value }),
+      agreeTerms: s.agreeTerms, onAgreeTerms: e => this.setState({ agreeTerms: e.target.checked }),
+      regError: s.regError,
+      registering: s.registering,
+      registerButtonLabel: s.registering ? 'Creating account…' : (s.role === 'teacher' ? 'Create teacher account' : 'Create student account'),
+      onRegister: async e => {
+        e.preventDefault();
+        if (s.registering) return;
+        if (!s.fullName.trim() || !s.regEmail.includes('@')) { this.setState({ regError: 'Enter your full name and a valid email.' }); return; }
+        if (s.regPassword.length < 6 || s.regPassword !== s.regConfirm) { this.setState({ regError: 'Passwords must match and be at least 6 characters.' }); return; }
+        if (!s.agreeTerms) { this.setState({ regError: 'Please agree to the Terms of Service to continue.' }); return; }
+        this.setState({ regError: '', registering: true });
+        try {
+          await Tafseel.api.register({
+            fullName: s.fullName, email: s.regEmail, password: s.regPassword,
+            role: s.role === 'teacher' ? 'Teacher' : 'Student'
+          });
+          this.setState({
+            mode: 'login', registering: false, email: s.regEmail, password: '',
+            fullName: '', regEmail: '', regPassword: '', regConfirm: '', agreeTerms: false
+          });
+          this.flash('Account created. Check your email to confirm it, then log in.');
+        } catch (error) {
+          this.setState({ regError: Tafseel.api.errorMessage(error), registering: false });
+        }
+      },
+
+      resetPassword: s.resetPassword, onResetPassword: e => this.setState({ resetPassword: e.target.value, resetError: '' }),
+      resetConfirm: s.resetConfirm, onResetConfirm: e => this.setState({ resetConfirm: e.target.value, resetError: '' }),
+      resetError: s.resetError,
+      resetting: s.resetting,
+      resetButtonLabel: s.resetting ? 'Saving…' : 'Save new password',
+      onReset: async e => {
+        e.preventDefault();
+        if (s.resetting) return;
+        if (s.resetPassword.length < 6 || s.resetPassword !== s.resetConfirm) {
+          this.setState({ resetError: 'Passwords must match and be at least 6 characters.' });
+          return;
+        }
+        this.setState({ resetError: '', resetting: true });
+        try {
+          await Tafseel.api.post('/auth/reset-password', {
+            email: s.resetEmail, token: s.resetToken, password: s.resetPassword
+          });
+          history.replaceState(null, '', location.pathname);
+          this.setState({ mode: 'login', resetting: false, resetPassword: '', resetConfirm: '' });
+          this.flash('Password reset. You can log in now.');
+        } catch (error) {
+          this.setState({ resetError: Tafseel.api.errorMessage(error), resetting: false });
+        }
+      }
+    };
+  }
+}
+
+</script>
 </body>
 </html>

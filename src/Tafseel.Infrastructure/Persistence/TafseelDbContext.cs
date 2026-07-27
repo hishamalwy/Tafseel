@@ -101,6 +101,19 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         builder.Entity<TeachingLanguage>().Property(x => x.Code).HasMaxLength(10);
         builder.Entity<TeachingLanguage>().HasIndex(x => x.Code).IsUnique();
         builder.Entity<ServiceCatalogItem>().Property(x => x.Description).HasMaxLength(1000);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.Code).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().HasIndex(x => x.Code).IsUnique();
+        builder.Entity<ServiceCatalogItem>().Property(x => x.Type).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.AllowedDurationsCsv).HasMaxLength(100).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.MinPrice).HasPrecision(18, 2);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.MaxPrice).HasPrecision(18, 2);
+        builder.Entity<ServiceCatalogItem>().ToTable(table =>
+        {
+            table.HasCheckConstraint("CK_ServiceCatalogItems_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
+            table.HasCheckConstraint("CK_ServiceCatalogItems_PriceBounds",
+                "([MinPrice] IS NULL OR [MinPrice] > 0) AND ([MaxPrice] IS NULL OR [MaxPrice] > 0) AND ([MinPrice] IS NULL OR [MaxPrice] IS NULL OR [MinPrice] <= [MaxPrice])");
+            table.HasCheckConstraint("CK_ServiceCatalogItems_Code", "[Code] <> ''");
+        });
 
         builder.Entity<TeacherApplication>(application =>
         {
@@ -468,16 +481,22 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             payment.Property(x => x.ProviderReference).HasMaxLength(200);
             payment.Property(x => x.InitiationIdempotencyKey).HasMaxLength(100);
             payment.Property(x => x.RowVersion).IsRowVersion();
-            payment.HasIndex(x => x.OrderId).IsUnique();
+            payment.HasIndex(x => x.OrderId).IsUnique().HasFilter("[OrderId] IS NOT NULL");
+            payment.HasIndex(x => x.LiveSessionBookingId).IsUnique().HasFilter("[LiveSessionBookingId] IS NOT NULL");
             payment.HasIndex(x => new { x.Provider, x.ProviderReference }).IsUnique();
             payment.HasIndex(x => new { x.StudentId, x.InitiationIdempotencyKey }).IsUnique();
-            payment.HasOne<Order>().WithOne().HasForeignKey<Payment>(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+            payment.HasOne<Order>().WithOne().HasForeignKey<Payment>(x => x.OrderId).IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            payment.HasOne<LiveSessionBooking>().WithMany().HasForeignKey(x => x.LiveSessionBookingId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             payment.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             payment.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_Payments_Amount", "[Amount] > 0");
                 table.HasCheckConstraint("CK_Payments_Status", "[Status] BETWEEN 0 AND 3");
                 table.HasCheckConstraint("CK_Payments_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
+                table.HasCheckConstraint("CK_Payments_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
             });
         });
         builder.Entity<PaymentAttempt>(attempt =>
@@ -504,13 +523,19 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             entry.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
             entry.Property(x => x.BusinessKey).HasMaxLength(200);
             entry.HasIndex(x => x.BusinessKey).IsUnique();
-            entry.HasIndex(x => new { x.OrderId, x.Type });
+            entry.HasIndex(x => new { x.OrderId, x.Type }).HasFilter("[OrderId] IS NOT NULL");
+            entry.HasIndex(x => new { x.LiveSessionBookingId, x.Type }).HasFilter("[LiveSessionBookingId] IS NOT NULL");
             entry.HasOne<Payment>().WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.Restrict);
-            entry.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+            entry.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            entry.HasOne<LiveSessionBooking>().WithMany().HasForeignKey(x => x.LiveSessionBookingId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             entry.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_EscrowEntries_Amount", "[Amount] > 0");
                 table.HasCheckConstraint("CK_EscrowEntries_Type", "[Type] BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_EscrowEntries_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
             });
         });
         builder.Entity<LedgerAccount>(account =>

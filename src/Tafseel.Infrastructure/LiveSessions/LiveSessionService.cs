@@ -24,26 +24,28 @@ internal sealed class LiveSessionService(
     TimeProvider clock) : ILiveSessionService
 {
     private readonly LiveSessionOptions _options = options.Value;
+    private const string LiveSessionCatalogCode = "live_session";
     private static readonly LiveSessionStatus[] ReservingStatuses =
         [LiveSessionStatus.AwaitingPayment, LiveSessionStatus.Confirmed];
 
     public async Task<IReadOnlyCollection<BookableSlotDto>> GetSlotsAsync(
-        string teacherId, DateOnly from, int days, int durationMinutes,
+        string teacherId, Guid? teacherServiceId, DateOnly from, int days, int durationMinutes,
         string studentTimeZoneId, CancellationToken ct)
     {
-        RequireDuration(durationMinutes);
         days = Math.Clamp(days, 1, 31);
+        var service = await RequireBookableServiceAsync(teacherId, teacherServiceId, ct);
+        RequireDuration(service.Type, durationMinutes);
         var studentZone = Zone(studentTimeZoneId);
         var rules = await db.TeacherAvailabilityRules.AsNoTracking()
-            .Where(x => x.TeacherId == teacherId).ToArrayAsync(ct);
+            .Where(x => x.TeacherId == service.Service.TeacherId).ToArrayAsync(ct);
         if (rules.Length == 0) return [];
         var rangeStart = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddDays(-1);
         var rangeEnd = rangeStart.AddDays(days + 2);
         var exceptions = await db.TeacherAvailabilityExceptions.AsNoTracking()
-            .Where(x => x.TeacherId == teacherId && x.StartsAt < rangeEnd && x.EndsAt > rangeStart)
+            .Where(x => x.TeacherId == service.Service.TeacherId && x.StartsAt < rangeEnd && x.EndsAt > rangeStart)
             .ToArrayAsync(ct);
         var bookings = await db.LiveSessionBookings.AsNoTracking()
-            .Where(x => x.TeacherId == teacherId && ReservingStatuses.Contains(x.Status)
+            .Where(x => x.TeacherId == service.Service.TeacherId && ReservingStatuses.Contains(x.Status)
                 && x.StartsAt < rangeEnd && x.EndsAt > rangeStart)
             .ToArrayAsync(ct);
         var now = clock.GetUtcNow();
@@ -75,30 +77,22 @@ internal sealed class LiveSessionService(
 
     public async Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct)
     {
-        RequireDuration(input.DurationMinutes);
         var startsAt = ToUtc(input.LocalStart, input.StudentTimeZoneId);
         var endsAt = startsAt.AddMinutes(input.DurationMinutes);
-        var service = await db.TeacherServices.AsNoTracking().SingleOrDefaultAsync(x =>
-                x.Id == input.TeacherServiceId && x.IsActive
-                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId && type.IsActive)
-                && db.TeacherSubjectQualifications.Any(q =>
-                    q.TeacherId == x.TeacherId && q.SubjectId == x.SubjectId)
-                && db.TeacherProfiles.Any(profile =>
-                    profile.TeacherId == x.TeacherId && profile.IsPublished), ct)
-            ?? throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
-        if (service.TeacherId == studentId)
+        var service = await RequireBookableServiceAsync(null, input.TeacherServiceId, ct);
+        RequireDuration(service.Type, input.DurationMinutes);
+        if (service.Service.TeacherId == studentId)
             throw new DomainException("self_booking_forbidden", "A student cannot book themselves.");
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         try
         {
-            await LockScheduleAsync(service.TeacherId, ct);
-            var teacherZone = await RequireAvailableAsync(service.TeacherId, startsAt, endsAt, null, ct);
-            await RequireNoConflictAsync(service.TeacherId, startsAt, endsAt, null, ct);
-            var basePrice = service.Price * input.DurationMinutes / 60m;
+            await LockScheduleAsync(service.Service.TeacherId, ct);
+            var teacherZone = await RequireAvailableAsync(service.Service.TeacherId, startsAt, endsAt, null, ct);
+            await RequireNoConflictAsync(service.Service.TeacherId, startsAt, endsAt, null, ct);
+            var basePrice = service.Service.Price * input.DurationMinutes / 60m;
             var booking = new LiveSessionBooking(
-                studentId, service.TeacherId, service.Id, input.Title, input.Notes ?? "",
-                startsAt, endsAt, input.StudentTimeZoneId, teacherZone, basePrice, service.Currency,
+                studentId, service.Service.TeacherId, service.Service.Id, input.Title, input.Notes ?? "",
+                startsAt, endsAt, input.StudentTimeZoneId, teacherZone, basePrice, service.Service.Currency,
                 input.Emergency ? _options.EmergencyPremiumPercent : 0,
                 _options.CancellationWindowHours,
                 Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), clock.GetUtcNow());
@@ -315,10 +309,53 @@ internal sealed class LiveSessionService(
         catch (InvalidTimeZoneException) { throw new DomainException("invalid_time_zone", "The time zone is not supported."); }
     }
 
-    private static void RequireDuration(int minutes)
+    private static void RequireDuration(Domain.Catalog.ServiceCatalogItem type, int minutes)
     {
-        if (minutes is not (30 or 60 or 90 or 120))
+        if (!type.SupportsDuration(minutes))
             throw new DomainException("invalid_session_duration", "Session duration must be 30, 60, 90, or 120 minutes.");
+    }
+
+    private async Task<(TeacherService Service, Domain.Catalog.ServiceCatalogItem Type)> RequireBookableServiceAsync(
+        string? teacherId,
+        Guid? teacherServiceId,
+        CancellationToken ct)
+    {
+        if (teacherServiceId is null && string.IsNullOrWhiteSpace(teacherId))
+            throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
+
+        var row = await (
+            from service in db.TeacherServices.AsNoTracking()
+            join type in db.ServiceCatalogItems.AsNoTracking() on service.ServiceCatalogItemId equals type.Id
+            where (teacherServiceId == null || service.Id == teacherServiceId)
+                && (teacherId == null || service.TeacherId == teacherId)
+                && (teacherServiceId != null || type.Code == LiveSessionCatalogCode)
+            select new { service, type })
+            .SingleOrDefaultAsync(ct)
+            ?? throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
+
+        if (!string.Equals(row.type.Code, LiveSessionCatalogCode, StringComparison.Ordinal)
+            || !row.type.RequiresScheduling)
+            throw new DomainException("service_not_live_session", "Only the live_session catalog service can create a live session.");
+        if (!row.type.IsActive)
+            throw new DomainException("catalog_service_inactive", "The live session catalog service is disabled.");
+        if (!row.type.IsPublic || !row.type.TeacherSelectable)
+            throw new DomainException("catalog_service_unavailable", "The live session catalog service is not available for booking.");
+        if (!row.service.IsActive)
+            throw new DomainException("teacher_service_inactive", "The teacher has disabled this live session service.");
+        if (row.type.MinPrice.HasValue && row.service.Price < row.type.MinPrice.Value
+            || row.type.MaxPrice.HasValue && row.service.Price > row.type.MaxPrice.Value)
+            throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
+
+        var eligible = await db.TeacherProfiles.AsNoTracking().AnyAsync(profile =>
+                profile.TeacherId == row.service.TeacherId
+                && profile.IsPublished
+                && db.Subjects.Any(subject => subject.Id == row.service.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q =>
+                    q.TeacherId == row.service.TeacherId && q.SubjectId == row.service.SubjectId), ct);
+        if (!eligible)
+            throw new DomainException("teacher_not_approved", "An active approved subject qualification is required.");
+
+        return (row.service, row.type);
     }
 
     private static string SafeName(string fileName) =>

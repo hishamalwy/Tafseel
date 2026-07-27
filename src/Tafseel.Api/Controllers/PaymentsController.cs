@@ -18,6 +18,13 @@ public sealed class PaymentsController(IFinancialService finance) : ControllerBa
         Guid orderId, [FromHeader(Name = "Idempotency-Key"), Required] string key, CancellationToken ct) =>
         await finance.InitiateOrderPaymentAsync(UserId(), orderId, key, ct);
 
+    [Authorize(Policy = Permissions.PaymentsViewOwn), EnableRateLimiting("payment")]
+    [HttpPost("payments/live-sessions/{liveSessionBookingId:guid}")]
+    public async Task<PaymentInitiationDto> InitiateLiveSession(
+        Guid liveSessionBookingId, [FromHeader(Name = "Idempotency-Key"), Required] string key,
+        CancellationToken ct) =>
+        await finance.InitiateLiveSessionPaymentAsync(UserId(), liveSessionBookingId, key, ct);
+
     [Authorize(Policy = Permissions.PaymentsViewOwn), HttpGet("payments/{id:guid}")]
     public Task<PaymentDto> Get(Guid id, CancellationToken ct) =>
         finance.GetPaymentAsync(UserId(), id, ct);

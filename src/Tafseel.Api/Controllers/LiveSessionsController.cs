@@ -15,10 +15,10 @@ public sealed class LiveSessionsController(ILiveSessionService sessions) : Contr
 {
     [AllowAnonymous, HttpGet("teachers/{teacherId}/slots")]
     public Task<IReadOnlyCollection<BookableSlotDto>> Slots(
-        string teacherId, [FromQuery] DateOnly from, [FromQuery] int days,
+        string teacherId, [FromQuery] Guid? teacherServiceId, [FromQuery] DateOnly from, [FromQuery] int days,
         [FromQuery] int durationMinutes, [FromQuery, Required] string studentTimeZoneId,
         CancellationToken ct) =>
-        sessions.GetSlotsAsync(teacherId, from, days, durationMinutes, studentTimeZoneId, ct);
+        sessions.GetSlotsAsync(teacherId, teacherServiceId, from, days, durationMinutes, studentTimeZoneId, ct);
 
     [Authorize(Policy = Permissions.SessionsBook), HttpPost]
     public async Task<IActionResult> Book(BookLiveSession input, CancellationToken ct)

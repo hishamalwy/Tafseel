@@ -9,11 +9,9 @@
 <x-dc>
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Dr. Rana Al-Otaibi — Physics teacher on Tafseel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<title>{{ pageTitle }}</title>
 <link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
 </helmet>
@@ -35,36 +33,57 @@
     <div style="display:flex;align-items:center;gap:8px;flex:none">
       <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
       <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
-      <a href="Tafseel-Student-Dashboard.dc.html" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
-        <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">NA</span>
-        Noor
+      <a href="{{ accountHref }}" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+        <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">{{ accountInitials }}</span>
+        {{ accountLabel }}
       </a>
     </div>
   </div>
 </header>
 
 <main style="max-width:1280px;margin-inline:auto;padding:24px 24px 96px">
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="tf-skeleton" style="height:18px;width:240px"></div>
+      <div class="tf-skeleton" style="height:160px;border-radius:var(--r-xl)"></div>
+      <div class="tf-skeleton" style="height:320px;border-radius:var(--r-lg)"></div>
+      <p class="tf-empty" data-i18n="tp_loading">Loading teacher profile…</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isUnavailable }}" hint-placeholder-val="{{ false }}">
+    <div class="tf-unavailable" style="max-width:560px;margin:48px auto;text-align:center">
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px" data-i18n="tp_unavailable">This teacher profile is unavailable.</div>
+      <div data-i18n="tp_unavailable_hint">The link may be incomplete, or the teacher is not published yet.</div>
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="display:inline-flex;margin-top:18px;height:40px;padding:0 18px;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14px">Browse Teachers</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
   <nav aria-label="Breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:20px">
-    <a href="Tafseel-Landing.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">Home</a><span>/</span>
-    <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">Physics teachers</a><span>/</span>
+    <a href="Tafseel-Landing.dc.html" data-i18n="tp_home" style="color:var(--muted)" style-hover="color:var(--text)">Home</a><span>/</span>
+    <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">{{ breadcrumbSubject }}</a><span>/</span>
     <span style="color:var(--text-2);font-weight:500">{{ teacherName }}</span>
   </nav>
 
   <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:24px;display:flex;gap:28px;flex-wrap:wrap">
     <div style="position:relative;flex:none">
-      <div style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center;font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:8px">teacher photo<br />132×132</div>
-      <span title="Online now" style="position:absolute;inset-block-end:6px;inset-inline-end:6px;width:18px;height:18px;border-radius:50%;border:3px solid var(--surface);background:var(--success)"></span>
+      <div style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center;font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:8px"><span data-i18n="tp_photo">teacher photo</span><br />132×132</div>
     </div>
 
     <div style="flex:1;min-width:280px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">{{ teacherName }}</h1>
-        <span title="Verified teacher" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ Verified</span>
-        <span style="display:inline-flex;align-items:center;height:26px;padding-inline:10px;border-radius:999px;background:var(--warning-soft);color:var(--warning);font-size:12.5px;font-weight:700">Top rated</span>
+        <sc-if value="{{ verified }}" hint-placeholder-val="{{ true }}">
+          <span title="Verified teacher" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ <span data-i18n="tp_verified">Verified</span></span>
+        </sc-if>
+        <sc-if value="{{ topRated }}" hint-placeholder-val="{{ false }}">
+          <span style="display:inline-flex;align-items:center;height:26px;padding-inline:10px;border-radius:999px;background:var(--warning-soft);color:var(--warning);font-size:12.5px;font-weight:700" data-i18n="tp_top_rated">Top rated</span>
+        </sc-if>
       </div>
-      <p style="font-size:15.5px;color:var(--text-2);margin-bottom:14px">Physics · Thermodynamics &amp; Mechanics · Saudi Arabia · Teaches in Arabic and English</p>
+      <p style="font-size:15.5px;color:var(--text-2);margin-bottom:14px">{{ teacherMeta }}</p>
       <div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:18px">
-        <sc-for list="{{ headStats }}" as="h" hint-placeholder-count="4">
+        <sc-for list="{{ headStats }}" as="h" hint-placeholder-count="3">
           <div>
             <div style="font-size:19px;font-weight:800;letter-spacing:-.02em">{{ h.value }}</div>
             <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ h.label }}</div>
@@ -73,8 +92,8 @@
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" style="{{ favStyle }}">{{ favLabel }}</button>
-        <button type="button" onClick="{{ onShare }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600">↗ Share</button>
-        <a href="{{ chatHref }}" style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">✉ Message</a>
+        <button type="button" onClick="{{ onShare }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600">↗ <span data-i18n="tp_share">Share</span></button>
+        <a href="{{ chatHref }}" style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">✉ <span data-i18n="tp_message">Message</span></a>
       </div>
     </div>
   </section>
@@ -90,13 +109,20 @@
       <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ true }}">
         <div style="display:flex;flex-direction:column;gap:24px">
           <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:12px">About</h2>
-            <p style="font-size:15px;line-height:1.7;color:var(--text-2);margin-bottom:12px">I spent eleven years teaching physics — six of them as a university lecturer in Riyadh, five supporting students privately through the parts of the syllabus that quietly decide their grade.</p>
-            <p style="font-size:15px;line-height:1.7;color:var(--text-2)">Send me the actual chapter, the actual past paper, the actual assignment brief. I record an explanation that follows your material, in your language, at the level you are being examined at. Most students come back for the second half of the term.</p>
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:12px" data-i18n="tp_about">About</h2>
+            <sc-for list="{{ bioParagraphs }}" as="bp" hint-placeholder-count="2">
+              <p style="font-size:15px;line-height:1.7;color:var(--text-2);margin-bottom:12px">{{ bp }}</p>
+            </sc-for>
+            <sc-if value="{{ bioEmpty }}" hint-placeholder-val="{{ false }}">
+              <p class="tf-empty" data-i18n="tp_bio_empty">No bio published yet.</p>
+            </sc-if>
           </section>
 
           <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Education &amp; experience</h2>
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:16px" data-i18n="tp_education_experience">Education &amp; experience</h2>
+            <sc-if value="{{ timelineEmpty }}" hint-placeholder-val="{{ false }}">
+              <p class="tf-empty" data-i18n="tp_timeline_empty">No education or experience listed yet.</p>
+            </sc-if>
             <div style="display:flex;flex-direction:column;gap:0">
               <sc-for list="{{ timeline }}" as="tl" hint-placeholder-count="4">
                 <div style="display:flex;gap:16px;padding-block:14px;border-bottom:1px solid var(--border)">
@@ -112,7 +138,10 @@
           </section>
 
           <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:14px">Subjects &amp; topics</h2>
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:14px" data-i18n="tp_subjects_topics">Subjects &amp; topics</h2>
+            <sc-if value="{{ topicsEmpty }}" hint-placeholder-val="{{ false }}">
+              <p class="tf-empty" data-i18n="tp_topics_empty">No subjects or topics listed yet.</p>
+            </sc-if>
             <div style="display:flex;flex-wrap:wrap;gap:8px">
               <sc-for list="{{ topics }}" as="tp" hint-placeholder-count="8">
                 <span style="font-size:13px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ tp }}</span>
@@ -124,8 +153,11 @@
 
       <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-          <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">Teaching samples</h2>
-          <p style="font-size:14px;color:var(--muted);margin-bottom:18px">Recorded by the teacher and scored by the Tafseel quality team before approval.</p>
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:6px" data-i18n="tp_samples_title">Teaching samples</h2>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:18px" data-i18n="tp_samples_blurb">Recorded by the teacher and scored by the Tafseel quality team before approval.</p>
+          <sc-if value="{{ samplesEmpty }}" hint-placeholder-val="{{ false }}">
+            <p class="tf-empty" data-i18n="tp_samples_empty">No teaching samples published yet.</p>
+          </sc-if>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
             <sc-for list="{{ samples }}" as="sm" hint-placeholder-count="4">
               <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
@@ -146,6 +178,9 @@
 
       <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
         <section style="display:flex;flex-direction:column;gap:14px">
+          <sc-if value="{{ servicesEmpty }}" hint-placeholder-val="{{ false }}">
+            <p class="tf-empty" data-i18n="tp_services_empty">No services available.</p>
+          </sc-if>
           <sc-for list="{{ services }}" as="sv" hint-placeholder-count="5">
             <article style="{{ sv.cardStyle }}">
               <div style="display:flex;gap:16px;align-items:flex-start">
@@ -176,17 +211,20 @@
       <sc-if value="{{ isAvailability }}" hint-placeholder-val="{{ false }}">
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-            <h2 style="font-size:18px;font-weight:700">Availability</h2>
-            <span style="font-size:13px;color:var(--muted)">Times shown in Arabia Standard Time (GMT+3)</span>
+            <h2 style="font-size:18px;font-weight:700" data-i18n="tp_availability_title">Availability</h2>
+            <span style="font-size:13px;color:var(--muted)">{{ availabilityNote }}</span>
           </div>
+          <sc-if value="{{ availabilityEmpty }}" hint-placeholder-val="{{ false }}">
+            <p class="tf-empty" data-i18n="tp_availability_empty">This teacher has not published weekly availability yet.</p>
+          </sc-if>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
             <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
               <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:12px;background:var(--bg)">
                 <div style="font-size:13px;font-weight:700;margin-bottom:2px">{{ d.day }}</div>
                 <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:10px">{{ d.date }}</div>
                 <div style="display:flex;flex-direction:column;gap:6px">
-                  <sc-for list="{{ d.slots }}" as="sl" hint-placeholder-count="3">
-                    <button type="button" onClick="{{ sl.onClick }}" disabled="{{ sl.disabled }}" style="{{ sl.style }}">{{ sl.time }}</button>
+                  <sc-for list="{{ d.slots }}" as="sl" hint-placeholder-count="2">
+                    <div style="{{ sl.style }}">{{ sl.time }}</div>
                   </sc-for>
                 </div>
               </div>
@@ -199,9 +237,9 @@
         <section style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px">
             <div>
-              <div style="font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1">4.9</div>
-              <div style="color:var(--warning);font-size:15px;letter-spacing:3px;margin-block:6px">★★★★★</div>
-              <div style="font-size:13.5px;color:var(--muted)">Based on 214 completed orders</div>
+              <div style="font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1">{{ ratingValue }}</div>
+              <div style="color:var(--warning);font-size:15px;letter-spacing:3px;margin-block:6px">{{ ratingStars }}</div>
+              <div style="font-size:13.5px;color:var(--muted)">{{ reviewsSummary }}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:9px">
               <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5">
@@ -215,6 +253,9 @@
               </sc-for>
             </div>
           </div>
+          <sc-if value="{{ reviewsEmpty }}" hint-placeholder-val="{{ false }}">
+            <p class="tf-empty" data-i18n="tp_reviews_empty">No reviews yet.</p>
+          </sc-if>
           <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
@@ -234,45 +275,51 @@
 
     <aside data-sticky="1" style="position:sticky;top:92px;display:flex;flex-direction:column;gap:14px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-md);padding:22px">
-        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Selected service</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px" data-i18n="tp_selected_service">Selected service</div>
         <div style="font-size:17px;font-weight:700;margin-bottom:4px">{{ selectedName }}</div>
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px">
           <span style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{ selectedPrice }}</span>
           <span style="font-size:13px;color:var(--muted)">{{ selectedUnit }}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:9px;padding-block:14px;border-block:1px solid var(--border);margin-bottom:16px">
-          <sc-if value="{{ true }}" hint-placeholder-val="{{ true }}">
-            <div style="display:flex;justify-content:space-between;font-size:13.5px">
-              <span style="color:var(--muted)">Estimated delivery</span><span style="font-weight:600">{{ selectedDelivery }}</span>
-            </div>
-          </sc-if>
           <div style="display:flex;justify-content:space-between;font-size:13.5px">
-            <span style="color:var(--muted)">Revisions</span><span style="font-weight:600">{{ selectedRevisions }}</span>
+            <span style="color:var(--muted)" data-i18n="tp_estimated_delivery">Estimated delivery</span><span style="font-weight:600">{{ selectedDelivery }}</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13.5px">
-            <span style="color:var(--muted)">Response time</span><span style="font-weight:600">~1 hour</span>
+            <span style="color:var(--muted)" data-i18n="tp_revisions">Revisions</span><span style="font-weight:600">{{ selectedRevisions }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13.5px">
+            <span style="color:var(--muted)" data-i18n="tp_response_time">Response time</span><span style="font-weight:600">{{ responseLabel }}</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <a href="{{ requestHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request this service</a>
-          <a href="Tafseel-Request.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)">Book a live session</a>
-          <a href="Tafseel-Chat.dc.html" style="height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)">Contact teacher</a>
+          <sc-if value="{{ canRequest }}" hint-placeholder-val="{{ true }}">
+            <a href="{{ requestHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)" data-i18n="tp_request_service">Request this service</a>
+          </sc-if>
+          <sc-if value="{{ canBook }}" hint-placeholder-val="{{ true }}">
+            <a href="{{ bookHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)" data-i18n="tp_book_live">Book a live session</a>
+          </sc-if>
+          <sc-if value="{{ showBookUnavailable }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-unavailable" data-i18n="tp_book_unavailable">Live sessions are not available for this teacher right now.</div>
+          </sc-if>
+          <a href="{{ chatHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)" data-i18n="tp_contact">Contact teacher</a>
         </div>
       </div>
 
       <div style="background:var(--success-soft);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;gap:12px">
         <span style="font-size:16px;color:var(--success)">🛡</span>
         <div>
-          <div style="font-size:13.5px;font-weight:700;color:var(--success);margin-bottom:3px">Protected payment</div>
-          <div style="font-size:13px;color:var(--text-2);line-height:1.5">Your payment is held by Tafseel and released only after you approve the delivery.</div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--success);margin-bottom:3px" data-i18n="tp_protected_payment">Protected payment</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5" data-i18n="tp_protected_blurb">Your payment is held by Tafseel and released only after you approve the delivery.</div>
         </div>
       </div>
 
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;font-size:13px;color:var(--muted);line-height:1.55">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;font-size:13px;color:var(--muted);line-height:1.55" data-i18n="tp_privacy_note">
         Contact details are shared only after a request is paid — keep the conversation on Tafseel so disputes stay covered.
       </div>
     </aside>
   </div>
+  </sc-if>
 </main>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
@@ -281,36 +328,130 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-let SERVICES = [
-  { id:'rec', icon:'▶', name:'Custom recorded explanation', desc:'Send your chapter, past paper or assignment brief and receive a recorded walkthrough built around it.', price:120, unit:'starting price', delivery:'2 days', revisions:'2 free revisions' },
-  { id:'live', icon:'◉', name:'Live session', desc:'One-to-one video call with a shared whiteboard. Recording sent to you afterwards.', price:180, unit:'per hour', delivery:'Book within 48h', revisions:'Recording included' },
-  { id:'exam', icon:'◷', name:'Exam revision', desc:'Focused revision on your syllabus and past papers, with a checklist of the mistakes that cost marks.', price:150, unit:'starting price', delivery:'3 days', revisions:'1 free revision' },
-  { id:'assign', icon:'✎', name:'Assignment guidance', desc:'Structured coaching through your assignment. I will not write it for you — you will be able to defend it.', price:110, unit:'starting price', delivery:'2 days', revisions:'2 free revisions' },
-  { id:'exam-night', icon:'⚡', name:'Exam night emergency session', desc:'Same-day 90-minute session for the night before your exam. Limited slots, premium rate.', price:320, unit:'per session', delivery:'Same day', revisions:'No revisions', badge:'Urgent' }
-];
+const STAFF_ROLES = ['Teacher', 'Admin', 'QualityReviewer'];
 
-const AR = { tab_about:'نبذة', tab_samples:'نماذج الشرح', tab_services:'الخدمات', tab_avail:'المواعيد', tab_reviews:'التقييمات' };
+function readTeacherId() {
+  const q = new URLSearchParams(location.search);
+  return String(q.get('id') || q.get('teacherId') || '').trim();
+}
+
+function initials(name) {
+  return String(name || '')
+    .split(/\s+/).filter(Boolean).slice(0, 2)
+    .map(p => p[0].toUpperCase()).join('') || '·';
+}
+
+function formatTime(value) {
+  const text = String(value || '');
+  const parts = text.split(':');
+  if (parts.length >= 2) return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+  return text;
+}
+
+function formatDateOnly(value) {
+  if (!value) return '';
+  try { return Tafseel.date(value, { dateStyle: 'medium' }); }
+  catch (_) { return String(value); }
+}
+
+function formatCredentialYears(from, to) {
+  const a = from ? String(from).slice(0, 4) : '';
+  const b = to ? String(to).slice(0, 4) : (a ? Tafseel.t('tp_now') : '');
+  if (a && b) return a + ' – ' + b;
+  return a || b || '';
+}
+
+function formatDelivery(hours) {
+  const h = Number(hours) || 0;
+  if (h <= 0) return '—';
+  if (h <= 24) return Tafseel.t('tp_delivery_same_day');
+  const days = Math.max(1, Math.round(h / 24));
+  return days + ' ' + (days === 1 ? Tafseel.t('tp_day') : Tafseel.t('tp_days'));
+}
+
+function formatRevisions(n) {
+  const count = Number(n) || 0;
+  if (count <= 0) return Tafseel.t('tp_no_revisions');
+  return count + ' ' + Tafseel.t('tp_free_revisions');
+}
+
+function formatResponse(minutes) {
+  const m = Number(minutes) || 0;
+  if (m <= 0) return '—';
+  if (m < 60) return '~' + m + ' ' + Tafseel.t('tp_minutes');
+  const hours = Math.max(1, Math.round(m / 60));
+  return '~' + hours + ' ' + (hours === 1 ? Tafseel.t('tp_hour') : Tafseel.t('tp_hours'));
+}
+
+function formatDuration(seconds) {
+  const s = Math.max(0, Number(seconds) || 0);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m + ':' + String(r).padStart(2, '0');
+}
+
+function formatMoney(currency, price) {
+  const code = (currency || 'SAR').toUpperCase();
+  if (code === 'SAR' && Tafseel.money) {
+    try { return Tafseel.money(price); } catch (_) {}
+  }
+  return code + ' ' + Tafseel.number(price);
+}
+
+function serviceIcon(service) {
+  const code = String(service.serviceCatalogCode || '').toLowerCase();
+  if (code === 'live_session' || service.requiresScheduling) return '◉';
+  if (code === 'exam_revision') return '◷';
+  if (code === 'assignment_guidance') return '✎';
+  return '▶';
+}
+
+function isBookableLiveService(service) {
+  return !!(service
+    && service.canBook
+    && String(service.serviceCatalogCode || '').toLowerCase() === 'live_session');
+}
+
+function canBookByRole(session) {
+  if (!session) return true;
+  const roles = session.roles || [];
+  if (roles.some(r => STAFF_ROLES.includes(r))) return false;
+  return roles.includes('Student');
+}
+
+function dashboardFor(session) {
+  const roles = session?.roles || [];
+  if (roles.includes('Admin')) return 'Tafseel-Admin-Dashboard.dc.html';
+  if (roles.includes('QualityReviewer')) return 'Tafseel-Quality-Dashboard.dc.html';
+  if (roles.includes('Teacher')) return 'Tafseel-Teacher-Dashboard.dc.html';
+  return 'Tafseel-Student-Dashboard.dc.html';
+}
+
+function dayLabel(dayOfWeek) {
+  const base = new Date(Date.UTC(2024, 0, 7 + Number(dayOfWeek)));
+  return new Intl.DateTimeFormat(Tafseel.lang === 'ar' ? 'ar-SA' : 'en-US', { weekday: 'short', timeZone: 'UTC' }).format(base);
+}
 
 class Component extends DCLogic {
-  state = { lang: Tafseel.lang, theme: Tafseel.theme, tab: 'about', service: 'rec', slot: null, fav: false, toast: '', profile: null, liveReviews: [] };
+  state = {
+    lang: Tafseel.lang,
+    theme: Tafseel.theme,
+    status: 'loading',
+    teacherId: '',
+    profile: null,
+    reviews: [],
+    session: null,
+    tab: 'about',
+    serviceId: '',
+    fav: false,
+    toast: ''
+  };
 
   componentDidMount() {
-    Tafseel.addDict(AR);
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
-    const teacherId = new URLSearchParams(location.search).get('teacherId');
-    if (!teacherId) return;
-    Promise.all([
-      Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId)),
-      Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews?pageSize=50')
-    ]).then(([profile, reviews]) => {
-      const liveServices = profile.services.filter(x => x.isActive).map(x => ({
-        id:x.id, icon:'video', name:x.title, desc:x.description, price:x.price,
-        unit:'starting price', delivery:x.deliveryHours + ' hours', revisions:x.revisions + ' revisions'
-      }));
-      if (liveServices.length) SERVICES = liveServices;
-      this.setState({ profile, liveReviews:reviews.items, service:SERVICES[0] ? SERVICES[0].id : '' });
-    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
+    this.load();
   }
+
   componentWillUnmount() { Tafseel.offChange(this._sub); }
   componentDidUpdate() { Tafseel.translate(); }
 
@@ -320,10 +461,78 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
   }
 
+  async load() {
+    const teacherId = readTeacherId();
+    if (!teacherId) {
+      this.setState({ status: 'unavailable', teacherId: '', profile: null, reviews: [] });
+      return;
+    }
+    this.setState({ status: 'loading', teacherId });
+    try {
+      const session = await Tafseel.api.ready();
+      const [profile, reviewsPage] = await Promise.all([
+        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId)),
+        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews' + Tafseel.api.query({ pageSize: 50 }))
+      ]);
+      let fav = false;
+      if (session && (session.roles || []).includes('Student')) {
+        try {
+          const favorites = await Tafseel.api.get('/favorite-teachers');
+          fav = (favorites || []).some(t => t.teacherId === teacherId);
+        } catch (_) { fav = false; }
+      }
+      const services = profile.services || [];
+      const preferredBook = services.find(isBookableLiveService) || null;
+      const preferredRequest = services.find(x => x && x.canRequest) || preferredBook;
+      this.setState({
+        status: 'ready',
+        session,
+        profile,
+        reviews: (reviewsPage && reviewsPage.items) || [],
+        fav,
+        serviceId: preferredRequest ? preferredRequest.id : ''
+      });
+    } catch (error) {
+      this.setState({ status: 'unavailable', profile: null, reviews: [] });
+      if (error && error.status && error.status !== 404)
+        this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  async toggleFavorite() {
+    const s = this.state;
+    const session = s.session || Tafseel.api.me();
+    if (!session || !(session.roles || []).includes('Student')) {
+      location.href = 'Tafseel-Auth.dc.html';
+      return;
+    }
+    const next = !s.fav;
+    this.setState({ fav: next });
+    try {
+      await Tafseel.api.request('/favorite-teachers/' + encodeURIComponent(s.teacherId), {
+        method: next ? 'PUT' : 'DELETE'
+      });
+      this.flash(next ? Tafseel.t('tp_fav_saved') : Tafseel.t('tp_fav_removed'));
+    } catch (error) {
+      this.setState({ fav: !next });
+      if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
+      else this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
   renderVals() {
     const s = this.state;
+    const t = key => Tafseel.t(key);
     const profile = s.profile;
-    const sel = SERVICES.find(x => x.id === s.service) || SERVICES[0];
+    const services = (profile && profile.services) || [];
+    const selected = services.find(x => x.id === s.serviceId) || null;
+    const bookService = services.find(isBookableLiveService) || null;
+    const availability = (profile && profile.availability) || [];
+    const roleOk = canBookByRole(s.session);
+    const canBook = !!(bookService && roleOk);
+    const showBookUnavailable = s.status === 'ready' && roleOk && services.length > 0 && !canBook;
+    const canRequest = !!(selected && selected.canRequest);
+
     const tab = key => ({
       selected: s.tab === key,
       onClick: () => this.setState({ tab: key }),
@@ -331,74 +540,161 @@ class Component extends DCLogic {
         (s.tab === key ? 'var(--primary);color:var(--primary);' : 'transparent;color:var(--muted);')
     });
 
-    const slotTimes = ['16:00', '17:30', '19:00', '20:30'];
-    const week = ['Sun 27', 'Mon 28', 'Tue 29', 'Wed 30', 'Thu 31', 'Fri 1', 'Sat 2'].map((label, di) => {
-      const [day, date] = label.split(' ');
+    const teacherName = profile ? profile.fullName : '';
+    const subjects = ((profile && profile.subjects) || []).map(x => x.name).filter(Boolean);
+    const languages = ((profile && profile.languages) || []).map(x => x.name).filter(Boolean);
+    const topics = [
+      ...subjects,
+      ...((profile && profile.topics) || []).map(x => x.name)
+    ].filter(Boolean);
+    const metaParts = [];
+    if (subjects.length) metaParts.push(subjects.join(' · '));
+    if (profile && (profile.city || profile.country))
+      metaParts.push([profile.city, profile.country].filter(Boolean).join(', '));
+    if (languages.length) metaParts.push(t('tp_teaches_in') + ' ' + languages.join(', '));
+
+    const rating = profile ? Number(profile.rating) || 0 : 0;
+    const ratingCount = profile ? Number(profile.ratingCount) || 0 : 0;
+    const completed = profile ? Number(profile.completedOrders) || 0 : 0;
+    const responseMins = profile ? Number(profile.responseTimeMinutes) || 0 : 0;
+
+    const bioText = (profile && profile.bio || '').trim();
+    const bioParagraphs = bioText ? bioText.split(/\n+/).map(p => p.trim()).filter(Boolean) : [];
+
+    const timeline = [];
+    ((profile && profile.certifications) || []).forEach(c => {
+      timeline.push({
+        icon: '🎓',
+        title: c.title,
+        meta: c.organization,
+        years: formatCredentialYears(c.from, c.to)
+      });
+    });
+    ((profile && profile.experience) || []).forEach(e => {
+      timeline.push({
+        icon: '🏛',
+        title: e.title,
+        meta: e.organization,
+        years: formatCredentialYears(e.from, e.to)
+      });
+    });
+
+    const byDay = {};
+    for (let i = 0; i < 7; i++) byDay[i] = [];
+    availability.forEach(rule => {
+      const day = Number(rule.dayOfWeek);
+      if (day >= 0 && day <= 6) byDay[day].push(rule);
+    });
+    const week = [0, 1, 2, 3, 4, 5, 6]
+      .filter(di => (byDay[di] || []).length > 0)
+      .map(di => {
+        const rules = byDay[di];
+        return {
+          day: dayLabel(di),
+          date: rules[0].timeZoneId || (profile && profile.timeZoneId) || '',
+          slots: rules.map(rule => ({
+            time: formatTime(rule.start) + ' – ' + formatTime(rule.end),
+            style: 'min-height:32px;padding:6px 8px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--text-2);text-align:center;'
+          }))
+        };
+      });
+
+    const reviewItems = s.reviews || [];
+    const avg = (getter) => {
+      if (!reviewItems.length) return 0;
+      return reviewItems.reduce((sum, r) => sum + (Number(getter(r)) || 0), 0) / reviewItems.length;
+    };
+    const breakdownDefs = [
+      { key: 'explanationClarity', label: t('tp_clarity') },
+      { key: 'communication', label: t('tp_communication') },
+      { key: 'subjectKnowledge', label: t('tp_subject_knowledge') },
+      { key: 'onTimeDelivery', label: t('tp_delivery_time') },
+      { key: 'valueForMoney', label: t('tp_value') }
+    ];
+    const breakdown = breakdownDefs.map(def => {
+      const score = reviewItems.length ? avg(r => r[def.key]) : 0;
+      const pct = Math.max(0, Math.min(100, Math.round((score / 5) * 100)));
       return {
-        day, date: 'Jul ' + date,
-        slots: slotTimes.map((time, ti) => {
-          const disabled = (di + ti) % 4 === 0;
-          const id = di + '-' + ti;
-          const active = s.slot === id;
-          return {
-            time, disabled,
-            onClick: () => { this.setState({ slot: id }); this.flash('Held ' + day + ' ' + time + ' — confirm at checkout.'); },
-            style: 'height:32px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' + (disabled
-              ? 'border:1px dashed var(--border);background:transparent;color:var(--muted);opacity:.5;cursor:not-allowed;'
-              : active
-                ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
-                : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);')
-          };
-        })
+        label: def.label,
+        score: reviewItems.length ? score.toFixed(1) : '—',
+        barStyle: 'display:block;height:100%;width:' + pct + '%;background:var(--primary);border-radius:99px'
       };
     });
 
+    const stars = n => '★'.repeat(Math.max(0, Math.min(5, Math.round(Number(n) || 0)))) +
+      '☆'.repeat(Math.max(0, 5 - Math.round(Number(n) || 0)));
+
+    const session = s.session;
+    const accountLabel = session ? session.fullName : t('tp_login');
+    const accountHref = session ? dashboardFor(session) : 'Tafseel-Auth.dc.html';
+    const accountInitials = session ? initials(session.fullName) : '?';
+
+    const pageTitle = teacherName
+      ? teacherName + ' ' + t('tp_page_title_suffix')
+      : t('tp_page_title_fallback');
+
     return {
-      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langLabel: t('language_target'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
-      teacherName: profile ? profile.fullName : 'Teacher profile',
-      chatHref: profile ? 'Tafseel-Chat.dc.html?otherUserId=' + encodeURIComponent(profile.teacherId) : 'Tafseel-Auth.dc.html',
-      requestHref: profile && sel ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(profile.teacherId) + '&serviceId=' + encodeURIComponent(sel.id) : 'Tafseel-Auth.dc.html',
+      pageTitle,
+
+      isLoading: s.status === 'loading',
+      isUnavailable: s.status === 'unavailable',
+      isReady: s.status === 'ready',
+
+      accountHref,
+      accountLabel,
+      accountInitials,
+
+      teacherName,
+      teacherMeta: metaParts.join(' · ') || (profile && profile.headline) || '',
+      breadcrumbSubject: subjects[0] ? subjects[0] + ' ' + t('tp_teachers_suffix') : t('nav_browse'),
+      verified: !!(profile && profile.verified),
+      topRated: rating >= 4.8 && ratingCount >= 20,
+
+      headStats: profile ? [
+        { value: rating.toFixed(1) + ' ★', label: ratingCount + ' ' + t('tp_stat_reviews') },
+        { value: String(completed), label: t('tp_stat_completed') },
+        { value: formatResponse(responseMins), label: t('tp_stat_response') }
+      ] : [],
 
       fav: s.fav,
-      favLabel: s.fav ? '♥ Saved' : '♡ Save teacher',
+      favLabel: s.fav ? '♥ ' + t('tp_saved') : '♡ ' + t('tp_save'),
       favStyle: 'height:40px;padding:0 16px;border-radius:var(--r-sm);font-size:14px;font-weight:600;transition:all var(--t);' + (s.fav
         ? 'border:1px solid var(--error);background:var(--error-soft);color:var(--error);'
         : 'border:1px solid var(--border);background:var(--surface);color:var(--text);'),
-      onFav: async () => {
-        if (!profile) return;
+      onFav: () => this.toggleFavorite(),
+      onShare: async () => {
         try {
-          await Tafseel.api.request('/favorite-teachers/' + encodeURIComponent(profile.teacherId), { method:s.fav ? 'DELETE' : 'PUT' });
-          this.setState({ fav: !s.fav });
-          this.flash(s.fav ? 'Removed from saved teachers' : 'Saved to your teachers');
-        } catch (error) {
-          if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
-          else this.flash(Tafseel.api.errorMessage(error));
+          await navigator.clipboard.writeText(location.href);
+          this.flash(t('tp_share_copied'));
+        } catch (_) {
+          this.flash(t('tp_share_copied'));
         }
       },
-      onShare: () => this.flash('Profile link copied to clipboard'),
 
-      headStats: profile ? [
-        { value: profile.rating + ' stars', label: profile.ratingCount + ' reviews' },
-        { value: String(profile.completedOrders), label: 'Requests completed' },
-        { value: '~' + Math.max(1, Math.round(profile.responseTimeMinutes / 60)) + ' hours', label: 'Average response' },
-        { value: profile.verified ? 'Verified' : 'Pending', label: 'Qualification' }
-      ] : [
-        { value: '4.9 ★', label: '214 reviews' },
-        { value: '640', label: 'Requests completed' },
-        { value: '~1 hour', label: 'Average response' },
-        { value: '11 yrs', label: 'Teaching experience' }
-      ],
+      chatHref: 'Tafseel-Chat.dc.html?otherUserId=' + encodeURIComponent(s.teacherId),
+      requestHref: selected
+        ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
+          '&teacherServiceId=' + encodeURIComponent(selected.id)
+        : 'Tafseel-Request.dc.html',
+      bookHref: bookService
+        ? 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
+          '&teacherServiceId=' + encodeURIComponent(bookService.id)
+        : 'Tafseel-Book-Session.dc.html',
+      canRequest,
+      canBook,
+      showBookUnavailable,
 
       tabs: [
-        { label: 'About', ...tab('about') },
-        { label: 'Teaching samples', ...tab('samples') },
-        { label: 'Services', ...tab('services') },
-        { label: 'Availability', ...tab('availability') },
-        { label: 'Reviews (214)', ...tab('reviews') }
+        { label: t('tp_tab_about'), ...tab('about') },
+        { label: t('tp_tab_samples'), ...tab('samples') },
+        { label: t('tp_tab_services'), ...tab('services') },
+        { label: t('tp_tab_availability'), ...tab('availability') },
+        { label: t('tp_tab_reviews') + (ratingCount ? ' (' + ratingCount + ')' : ''), ...tab('reviews') }
       ],
       isAbout: s.tab === 'about',
       isSamples: s.tab === 'samples',
@@ -406,63 +702,68 @@ class Component extends DCLogic {
       isAvailability: s.tab === 'availability',
       isReviews: s.tab === 'reviews',
 
-      timeline: [
-        { icon: '🎓', title: 'PhD, Applied Physics', meta: 'King Saud University, Riyadh', years: '2011 – 2015' },
-        { icon: '🏛', title: 'Lecturer, Department of Physics', meta: 'Princess Nourah University', years: '2015 – 2021' },
-        { icon: '📜', title: 'Certified Online Instructor', meta: 'Advance HE — Fellowship', years: '2019' },
-        { icon: '✦', title: 'Private tutoring & Tafseel', meta: '1,100+ students supported', years: '2021 – now' }
-      ],
-      topics: profile ? profile.topics.map(x => x.name) : [],
+      bioParagraphs,
+      bioEmpty: bioParagraphs.length === 0,
+      timeline,
+      timelineEmpty: timeline.length === 0,
+      topics,
+      topicsEmpty: topics.length === 0,
 
-      samples: profile ? profile.samples.map(x => ({
-        title:x.title,
-        duration:Math.floor(x.durationSeconds / 60) + ':' + String(x.durationSeconds % 60).padStart(2, '0'),
-        meta:'Teaching sample',
-        onWatch:() => location.href = '/api/v1/teachers/samples/' + x.id + '/content'
-      })) : [
-        { title: 'Carnot cycle, explained with a real exam question', duration: '3:12', meta: 'Thermodynamics · Undergraduate', onWatch: () => this.flash('Playing sample video…') },
-        { title: 'Free-body diagrams without the guesswork', duration: '2:48', meta: 'Mechanics · High school', onWatch: () => this.flash('Playing sample video…') },
-        { title: 'Why your energy conservation answer loses marks', duration: '4:05', meta: 'Mechanics · Undergraduate', onWatch: () => this.flash('Playing sample video…') },
-        { title: 'Qualification demo — reviewed by quality team', duration: '3:00', meta: 'Approved 12 Mar 2026', onWatch: () => this.flash('Playing qualification demo…') }
-      ],
-
-      services: SERVICES.map(sv => ({
-        ...sv,
-        price: 'SAR ' + sv.price,
-        badge: sv.badge || '',
-        cardStyle: 'background:var(--surface);border:1px solid ' + (s.service === sv.id ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-lg);padding:20px;transition:all var(--t)',
-        btnLabel: s.service === sv.id ? 'Selected' : 'Select',
-        btnStyle: 'margin-top:10px;height:34px;padding:0 14px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' + (s.service === sv.id
-          ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
-          : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onSelect: () => { this.setState({ service: sv.id }); this.flash(sv.name + ' selected'); }
+      samples: ((profile && profile.samples) || []).map(sm => ({
+        title: sm.title,
+        duration: formatDuration(sm.durationSeconds),
+        meta: sm.publishedAt ? formatDateOnly(sm.publishedAt) : '',
+        onWatch: () => window.open('/api/v1/teachers/samples/' + sm.id + '/content', '_blank', 'noopener')
       })),
+      samplesEmpty: !((profile && profile.samples) || []).length,
 
-      selectedName: sel.name,
-      selectedPrice: 'SAR ' + sel.price,
-      selectedUnit: sel.unit,
-      selectedDelivery: sel.delivery,
-      selectedRevisions: sel.revisions,
+      services: services.map(sv => {
+        const urgent = /urgent|emergency|طارئ/i.test((sv.title || '') + ' ' + (sv.description || ''));
+        return {
+          id: sv.id,
+          icon: serviceIcon(sv),
+          name: sv.title,
+          desc: sv.description,
+          price: formatMoney(sv.currency, sv.price),
+          delivery: formatDelivery(sv.deliveryHours),
+          revisions: formatRevisions(sv.revisions),
+          badge: urgent ? t('tp_urgent') : '',
+          cardStyle: 'background:var(--surface);border:1px solid ' + (selected && selected.id === sv.id ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-lg);padding:20px;transition:all var(--t)',
+          btnLabel: selected && selected.id === sv.id ? t('tp_selected') : t('tp_select'),
+          btnStyle: 'margin-top:10px;height:34px;padding:0 14px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' + (selected && selected.id === sv.id
+            ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
+            : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+          onSelect: () => this.setState({ serviceId: sv.id })
+        };
+      }),
+      servicesEmpty: services.length === 0,
+
+      selectedName: selected ? selected.title : t('tp_no_service_selected'),
+      selectedPrice: selected ? formatMoney(selected.currency, selected.price) : '—',
+      selectedUnit: selected ? (selected.requiresScheduling ? t('tp_per_session') : t('tp_starting_price')) : '',
+      selectedDelivery: selected ? formatDelivery(selected.deliveryHours) : '—',
+      selectedRevisions: selected ? formatRevisions(selected.revisions) : '—',
+      responseLabel: formatResponse(responseMins),
 
       week,
+      availabilityEmpty: availability.length === 0,
+      availabilityNote: (profile && profile.timeZoneId)
+        ? t('tp_timezone_note') + ' · ' + profile.timeZoneId
+        : t('tp_timezone_note'),
 
-      breakdown: [
-        { label: 'Clarity', score: '5.0', pct: 100 },
-        { label: 'Communication', score: '4.9', pct: 98 },
-        { label: 'Subject knowledge', score: '5.0', pct: 100 },
-        { label: 'Delivery time', score: '4.8', pct: 96 },
-        { label: 'Value for money', score: '4.7', pct: 94 }
-      ].map(b => ({ ...b, barStyle: 'display:block;height:100%;width:' + b.pct + '%;background:var(--primary);border-radius:99px' })),
-
-      reviews: s.liveReviews.length ? s.liveReviews.map(x => ({
-        initials:'ST', name:'Verified Student', service:'Completed order',
-        date:new Date(x.createdAt).toLocaleDateString(),
-        stars:'5/5', body:x.originalComment
-      })) : [
-        { initials: 'NA', name: 'Noor Abdulaziz', service: 'Custom recorded explanation', date: '18 Jul 2026', stars: '★★★★★', body: 'I sent my thermodynamics past paper on Wednesday night and had a 22-minute walkthrough of every question I got wrong before Friday. She explains why the marking scheme wants a specific step, which nobody had done for me before.' },
-        { initials: 'MS', name: 'Mohammed Sabri', service: 'Live session · 60 min', date: '9 Jul 2026', stars: '★★★★★', body: 'Booked a session two days before my final. Calm, extremely organised, and she noticed the exact concept I had misunderstood in the first ten minutes.' },
-        { initials: 'AK', name: 'Amal Khoury', service: 'Exam revision', date: '2 Jul 2026', stars: '★★★★☆', body: 'Excellent content and very thorough. Delivery came a few hours later than the estimate, but she messaged me ahead of time to explain.' }
-      ]
+      ratingValue: rating ? rating.toFixed(1) : '—',
+      ratingStars: stars(rating || 0),
+      reviewsSummary: Tafseel.t('tp_reviews_based_on', { n: String(ratingCount || completed || reviewItems.length) }),
+      breakdown,
+      reviews: reviewItems.map(rv => ({
+        initials: '★',
+        name: t('tp_verified_student'),
+        service: Number(rv.overallScore || 0).toFixed(1) + ' ★',
+        date: formatDateOnly(rv.createdAt),
+        stars: stars(rv.overallScore),
+        body: rv.originalComment || ''
+      })),
+      reviewsEmpty: reviewItems.length === 0
     };
   }
 }

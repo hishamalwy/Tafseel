@@ -6,7 +6,7 @@ using Tafseel.Application.Common;
 namespace Tafseel.Application.Finance;
 
 public sealed record PaymentDto(
-    Guid Id, Guid OrderId, decimal Amount, string Currency, string Provider,
+    Guid Id, Guid? OrderId, Guid? LiveSessionBookingId, decimal Amount, string Currency, string Provider,
     string ProviderReference, PaymentStatus Status, DateTimeOffset CreatedAt);
 public sealed record PaymentInitiationDto(PaymentDto Payment, string CheckoutReference);
 public sealed record MockWebhookEvent(
@@ -50,6 +50,8 @@ public interface IFinancialService
 {
     Task<PaymentInitiationDto> InitiateOrderPaymentAsync(
         string studentId, Guid orderId, string idempotencyKey, CancellationToken ct);
+    Task<PaymentInitiationDto> InitiateLiveSessionPaymentAsync(
+        string studentId, Guid liveSessionBookingId, string idempotencyKey, CancellationToken ct);
     Task ProcessWebhookAsync(ReadOnlyMemory<byte> payload, string signature, CancellationToken ct);
     Task<PaymentDto> GetPaymentAsync(string userId, Guid paymentId, CancellationToken ct);
     Task<RefundDto> RefundAsync(string adminId, Guid paymentId, string idempotencyKey, CancellationToken ct);

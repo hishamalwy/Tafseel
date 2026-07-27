@@ -176,7 +176,7 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Finance Subject " + suffix, "code");
-        var type = new ServiceCatalogItem("Finance Service " + suffix, "Explanation");
+        var type = new ServiceCatalogItem("Finance Service " + suffix, "Explanation", "svc_" + suffix);
         var service = new TeacherService(teacher.Id, subject.Id, type.Id, "Financial order",
             "Order used to prove ledger behavior.", 100, "SAR", 24, 1, factory.Clock.GetUtcNow());
         var request = new LearningRequest(student.Id, teacher.Id, service.Id, "Financial request",

@@ -1,7 +1,9 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Tafseel.Application.Common;
+using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Marketplace;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
@@ -13,8 +15,10 @@ namespace Tafseel.Infrastructure.Marketplace;
 internal sealed class MarketplaceService(
     TafseelDbContext db,
     IFileStorageService files,
+    IOptions<LiveSessionOptions> liveSessionOptions,
     TimeProvider clock) : IMarketplaceService
 {
+    private readonly LiveSessionOptions _liveSessionOptions = liveSessionOptions.Value;
     private static readonly string[] Sorts =
         ["recommended", "highest-rated", "lowest-price", "highest-price", "fastest-response", "most-experienced"];
 
@@ -188,7 +192,9 @@ internal sealed class MarketplaceService(
             input.Price, input.Currency, input.DeliveryHours, input.Revisions, clock.GetUtcNow());
         db.Add(service);
         await db.SaveChangesAsync(ct);
-        return Map(service);
+        var type = await db.ServiceCatalogItems.AsNoTracking().SingleAsync(
+            x => x.Id == service.ServiceCatalogItemId, ct);
+        return Map(service, type, profilePublished: false, hasActiveQualification: true, hasAvailability: false);
     }
 
     public async Task UpdateServiceAsync(string teacherId, Guid id, TeacherServiceInput input, string version, CancellationToken ct)
@@ -274,7 +280,7 @@ internal sealed class MarketplaceService(
         {
             throw new DomainException("availability_conflict", "The availability rule conflicts with an existing rule.");
         }
-        catch (SqlException exception) when (exception.Number == 1205)
+        catch (Exception exception) when (exception.GetBaseException() is SqlException { Number: 1205 })
         {
             throw new DomainException("availability_conflict", "The availability rule conflicts with a concurrent update.");
         }
@@ -426,16 +432,28 @@ internal sealed class MarketplaceService(
             .Join(db.TeachingLanguages, x => x.LanguageId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
         var levels = await db.TeacherEducationLevels.AsNoTracking().Where(x => x.TeacherId == teacherId)
             .Join(db.EducationLevels, x => x.EducationLevelId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
-        var servicesQuery = db.TeacherServices.AsNoTracking().Where(x => x.TeacherId == teacherId);
+        var hasActiveQualification = subjects.Length > 0;
+        var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking().AnyAsync(x => x.TeacherId == teacherId, ct);
+        var servicesQuery =
+            from ts in db.TeacherServices.AsNoTracking()
+            join type in db.ServiceCatalogItems.AsNoTracking()
+                on ts.ServiceCatalogItemId equals type.Id
+            where ts.TeacherId == teacherId
+            select new { ts, type };
         var samplesQuery = db.TeacherTeachingSamples.AsNoTracking().Where(x => x.TeacherId == teacherId);
         if (publicOnly)
         {
-            servicesQuery = servicesQuery.Where(x => x.IsActive
-                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId && type.IsActive));
+            servicesQuery = servicesQuery.Where(x => x.ts.IsActive
+                && db.Subjects.Any(subject => subject.Id == x.ts.SubjectId && subject.IsActive)
+                && x.type.IsActive
+                && x.type.IsPublic
+                && x.type.TeacherSelectable);
             samplesQuery = samplesQuery.Where(x => x.PublishedAt != null);
         }
-        var services = (await servicesQuery.ToArrayAsync(ct)).Select(Map).ToArray();
+        var services = (await servicesQuery.ToArrayAsync(ct))
+            .OrderBy(x => x.type.DisplayOrder).ThenBy(x => x.ts.CreatedAt)
+            .Select(x => Map(x.ts, x.type, profile.IsPublished, hasActiveQualification, hasAvailability))
+            .ToArray();
         var samples = (await samplesQuery.ToArrayAsync(ct)).Select(Map).ToArray();
         var rules = (await db.TeacherAvailabilityRules.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
         var exceptions = (await db.TeacherAvailabilityExceptions.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
@@ -445,11 +463,14 @@ internal sealed class MarketplaceService(
             teacherId, await TeacherNameAsync(teacherId, ct), profile.Headline, profile.Bio, profile.Country,
             profile.City, profile.TimeZoneId, subjects.Length > 0, profile.AverageRating, profile.RatingCount,
             profile.CompletedOrders, profile.ResponseTimeMinutes, subjects, topics, languages, levels,
-            services, samples, rules, exceptions, certifications, experience);
+            services, samples, rules, exceptions, certifications, experience,
+            new LiveSessionBookingPolicyDto(
+                _liveSessionOptions.EmergencyPremiumPercent,
+                _liveSessionOptions.CancellationWindowHours));
     }
 
     private static TeacherProfileDto EmptyProfile(string teacherId, string name) =>
-        new(teacherId, name, "", "", "", "", "UTC", false, 0, 0, 0, 0, [], [], [], [], [], [], [], [], [], []);
+        new(teacherId, name, "", "", "", "", "UTC", false, 0, 0, 0, 0, [], [], [], [], [], [], [], [], [], [], null);
 
     private async Task<TeacherProfile> OwnedProfileAsync(string teacherId, CancellationToken ct) =>
         await db.TeacherProfiles.SingleOrDefaultAsync(x => x.TeacherId == teacherId, ct)
@@ -482,9 +503,48 @@ internal sealed class MarketplaceService(
     private async Task<string> TeacherNameAsync(string teacherId, CancellationToken ct) =>
         await db.Users.AsNoTracking().Where(x => x.Id == teacherId).Select(x => x.FullName).SingleAsync(ct);
 
-    private static TeacherServiceDto Map(TeacherService x) =>
-        new(x.Id, x.SubjectId, x.ServiceCatalogItemId, x.Title, x.Description, x.Price, x.Currency,
-            x.DeliveryHours, x.Revisions, x.IsActive, Convert.ToBase64String(x.RowVersion));
+    private static TeacherServiceDto Map(
+        TeacherService x,
+        Domain.Catalog.ServiceCatalogItem type,
+        bool profilePublished,
+        bool hasActiveQualification,
+        bool hasAvailability)
+    {
+        var canRequest = x.IsActive && type.IsActive && type.IsPublic && type.TeacherSelectable && !type.RequiresScheduling;
+        var canBook = x.IsActive
+            && type.IsActive
+            && type.IsPublic
+            && type.TeacherSelectable
+            && type.RequiresScheduling
+            && string.Equals(type.Code, "live_session", StringComparison.Ordinal)
+            && profilePublished
+            && hasActiveQualification
+            && hasAvailability;
+        return new(
+            x.Id,
+            x.SubjectId,
+            x.ServiceCatalogItemId,
+            type.Code,
+            type.Type,
+            x.Title,
+            x.Description,
+            x.Price,
+            x.Currency,
+            x.DeliveryHours,
+            x.Revisions,
+            x.IsActive,
+            type.IsActive,
+            type.IsPublic,
+            type.TeacherSelectable,
+            type.RequiresScheduling,
+            type.AllowedDurations,
+            type.MinPrice,
+            type.MaxPrice,
+            type.DisplayOrder,
+            canRequest,
+            canBook,
+            Convert.ToBase64String(x.RowVersion));
+    }
     private static TeachingSampleDto Map(TeacherTeachingSample x) =>
         new(x.Id, x.SubjectId, x.TopicId, x.Title, x.DurationSeconds, x.PublishedAt);
     private static AvailabilityRuleDto Map(TeacherAvailabilityRule x) =>

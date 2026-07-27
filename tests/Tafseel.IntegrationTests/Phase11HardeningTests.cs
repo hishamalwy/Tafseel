@@ -13,8 +13,11 @@ public sealed class Phase11HardeningTests(SqlServerTafseelApiFactory factory)
         frontend.EnsureSuccessStatusCode();
         Assert.Equal("nosniff", frontend.Headers.GetValues("X-Content-Type-Options").Single());
         Assert.Equal("DENY", frontend.Headers.GetValues("X-Frame-Options").Single());
-        Assert.Contains("frame-ancestors 'none'",
-            frontend.Headers.GetValues("Content-Security-Policy").Single());
+        var csp = frontend.Headers.GetValues("Content-Security-Policy").Single();
+        Assert.Contains("frame-ancestors 'none'", csp);
+        Assert.Contains("font-src 'self'", csp);
+        Assert.DoesNotContain("fonts.googleapis.com", csp);
+        Assert.DoesNotContain("fonts.gstatic.com", csp);
         Assert.Contains("camera=()",
             frontend.Headers.GetValues("Permissions-Policy").Single());
 

@@ -10,7 +10,7 @@ public sealed class FinanceTests
     [Fact]
     public void Payment_confirmation_is_exact_and_idempotent()
     {
-        var payment = Payment();
+        var payment = CreatePayment();
         Assert.Throws<DomainException>(() => payment.Confirm(107.99m, "SAR", Now));
         Assert.True(payment.Confirm(108m, "sar", Now));
         Assert.False(payment.Confirm(108m, "SAR", Now));
@@ -35,6 +35,16 @@ public sealed class FinanceTests
         Assert.Throws<DomainException>(() => item.Reject(Now.AddMinutes(3)));
     }
 
-    private static Payment Payment() =>
+    [Fact]
+    public void Live_session_payment_requires_booking_target()
+    {
+        var bookingId = Guid.NewGuid();
+        var payment = Payment.ForLiveSession(bookingId, "student", 90, "SAR", "Mock", "ref", "key", Now);
+        Assert.Null(payment.OrderId);
+        Assert.Equal(bookingId, payment.LiveSessionBookingId);
+        Assert.True(payment.Confirm(90, "SAR", Now));
+    }
+
+    private static Payment CreatePayment() =>
         new(Guid.NewGuid(), "student", 108, "SAR", "Mock", "ref", "key", Now);
 }

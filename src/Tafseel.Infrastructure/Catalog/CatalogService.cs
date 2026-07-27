@@ -10,7 +10,9 @@ namespace Tafseel.Infrastructure.Catalog;
 internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : ICatalogService
 {
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetSubjectsAsync(bool includeInactive, CancellationToken ct) =>
-        await Query(db.Subjects, includeInactive).Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Icon, null)).ToArrayAsync(ct);
+        await Query(db.Subjects, includeInactive)
+            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Icon, null, null, null, null, null, null, null, null, null, null))
+            .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetTopicsAsync(Guid? subjectId, bool qualificationOnly, bool includeInactive, CancellationToken ct)
     {
@@ -20,7 +22,9 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
             if (!includeInactive)
                 query = query.Where(x => db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
-            return await query.Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Instructions, x.SubjectId)).ToArrayAsync(ct);
+            return await query.Select(x => new CatalogItemDto(
+                x.Id, x.Name, x.IsActive, x.Instructions, x.SubjectId, null, null, null, null, null, null, null, null, null))
+                .ToArrayAsync(ct);
         }
         else
         {
@@ -28,18 +32,69 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
             if (!includeInactive)
                 query = query.Where(x => db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
-            return await query.Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId)).ToArrayAsync(ct);
+            return await query.Select(x => new CatalogItemDto(
+                x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, null, null, null, null, null, null, null, null, null))
+                .ToArrayAsync(ct);
         }
     }
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken ct) =>
-        await Query(db.EducationLevels, includeInactive).Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null)).ToArrayAsync(ct);
+        await Query(db.EducationLevels, includeInactive)
+            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, null, null, null, null, null, null, null, null, null))
+            .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetLanguagesAsync(bool includeInactive, CancellationToken ct) =>
-        await Query(db.TeachingLanguages, includeInactive).Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Code, null)).ToArrayAsync(ct);
+        await Query(db.TeachingLanguages, includeInactive)
+            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Code, null, null, null, null, null, null, null, null, null, null))
+            .ToArrayAsync(ct);
 
-    public async Task<IReadOnlyCollection<CatalogItemDto>> GetServicesAsync(bool includeInactive, CancellationToken ct) =>
-        await Query(db.ServiceCatalogItems, includeInactive).Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Description, null)).ToArrayAsync(ct);
+    public async Task<IReadOnlyCollection<CatalogItemDto>> GetServicesAsync(bool includeInactive, CancellationToken ct)
+    {
+        // Project mapped scalars inside LINQ (EF-translatable). AllowedDurations is derived from CSV after materialization.
+        var rows = await Query(db.ServiceCatalogItems, includeInactive)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.IsActive,
+                x.Description,
+                x.Code,
+                x.Type,
+                x.IsPublic,
+                x.TeacherSelectable,
+                x.RequiresScheduling,
+                x.AllowedDurationsCsv,
+                x.MinPrice,
+                x.MaxPrice,
+                x.DisplayOrder
+            })
+            .ToArrayAsync(ct);
+
+        return rows.Select(x => new CatalogItemDto(
+            x.Id,
+            x.Name,
+            x.IsActive,
+            x.Description,
+            null,
+            x.Code,
+            x.Type,
+            x.IsPublic,
+            x.TeacherSelectable,
+            x.RequiresScheduling,
+            ParseDurations(x.AllowedDurationsCsv),
+            x.MinPrice,
+            x.MaxPrice,
+            x.DisplayOrder)).ToArray();
+    }
+
+    private static IReadOnlyCollection<int>? ParseDurations(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return [];
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(int.Parse)
+            .ToArray();
+    }
 
     public Task<CatalogItemDto> CreateSubjectAsync(SubjectInput input, CancellationToken ct) =>
         AddAsync(new Subject(input.Name, input.Icon), x => new(x.Id, x.Name, x.IsActive, x.Icon), ct);
@@ -66,8 +121,23 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
             x => new(x.Id, x.Name, x.IsActive, x.Code), ct);
 
     public Task<CatalogItemDto> CreateServiceAsync(NamedCatalogInput input, CancellationToken ct) =>
-        AddAsync(new ServiceCatalogItem(input.Name, input.Detail ?? ""),
-            x => new(x.Id, x.Name, x.IsActive, x.Description), ct);
+        AddAsync(
+            new ServiceCatalogItem(
+                input.Name,
+                input.Detail ?? "",
+                input.Code ?? throw new DomainException("service_code_required", "Service code is required."),
+                input.Type,
+                input.IsPublic ?? true,
+                input.TeacherSelectable ?? true,
+                input.RequiresScheduling ?? false,
+                input.AllowedDurations,
+                input.MinPrice,
+                input.MaxPrice,
+                input.DisplayOrder ?? 0),
+            x => new(
+                x.Id, x.Name, x.IsActive, x.Description, null, x.Code, x.Type, x.IsPublic,
+                x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations, x.MinPrice, x.MaxPrice, x.DisplayOrder),
+            ct);
 
     public async Task UpdateAsync(string type, Guid id, NamedCatalogInput input, CancellationToken ct)
     {
@@ -91,8 +161,22 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
                 (await Required(db.TeachingLanguages, id, ct)).Update(input.Name, input.Detail ?? "");
                 break;
             case "services":
-                (await Required(db.ServiceCatalogItems, id, ct)).Update(input.Name, input.Detail ?? "");
-                break;
+                {
+                    var service = await Required(db.ServiceCatalogItems, id, ct);
+                    service.Update(
+                        input.Name,
+                        input.Detail ?? "",
+                        string.IsNullOrWhiteSpace(input.Code) ? service.Code : input.Code,
+                        string.IsNullOrWhiteSpace(input.Type) ? service.Type : input.Type,
+                        input.IsPublic ?? service.IsPublic,
+                        input.TeacherSelectable ?? service.TeacherSelectable,
+                        input.RequiresScheduling ?? service.RequiresScheduling,
+                        input.AllowedDurations ?? service.AllowedDurations,
+                        input.MinPrice ?? service.MinPrice,
+                        input.MaxPrice ?? service.MaxPrice,
+                        input.DisplayOrder ?? service.DisplayOrder);
+                    break;
+                }
             default:
                 throw new DomainException("invalid_catalog_type", "Unknown catalog type.");
         }
@@ -148,12 +232,30 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
                     entry.State == EntityState.Added ? "Catalog item created." : "Catalog item updated.");
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException exception)
         {
+            if (IsUniqueCodeViolation(exception))
+                throw new DomainException(
+                    "catalog_code_duplicate",
+                    "A service catalog item with the same code already exists.");
             throw new DomainException(
                 "catalog_name_conflict",
                 "A catalog item with the same normalized name already exists in this scope.");
         }
+    }
+
+    private static bool IsUniqueCodeViolation(DbUpdateException exception)
+    {
+        for (var current = exception.InnerException; current is not null; current = current.InnerException)
+        {
+            var message = current.Message;
+            if (message.Contains("IX_ServiceCatalogItems_Code", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("ServiceCatalogItems_Code", StringComparison.OrdinalIgnoreCase)
+                || (message.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase)
+                    && message.Contains("Code", StringComparison.OrdinalIgnoreCase)))
+                return true;
+        }
+        return false;
     }
 
     private static async Task<T> Required<T>(DbSet<T> set, Guid id, CancellationToken ct) where T : CatalogItem =>

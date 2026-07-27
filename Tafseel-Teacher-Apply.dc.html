@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Teacher application — Tafseel</title>
   <link rel="stylesheet" href="css/tafseel.css">
+  <script src="js/locales.js" defer></script>
   <script src="js/tafseel.js" defer></script>
   <script src="js/api.js" defer></script>
   <script src="js/teacher-apply.js" defer></script>
@@ -12,7 +13,10 @@
 <body>
   <header class="tf-app-header">
     <a class="tf-brand" href="Tafseel-Landing.dc.html"><span class="tf-brand-mark">T</span> Tafseel</a>
-    <a href="Tafseel-Teacher-Dashboard.dc.html">Teacher dashboard</a>
+    <div class="tf-actions">
+      <a href="Tafseel-Teacher-Dashboard.dc.html">Teacher dashboard</a>
+      <button class="tf-button tf-button-secondary" data-tafseel-language data-i18n="language_target" type="button" aria-label="Switch language">العربية</button>
+    </div>
   </header>
   <main class="tf-workflow">
     <section class="tf-panel" aria-labelledby="apply-title">

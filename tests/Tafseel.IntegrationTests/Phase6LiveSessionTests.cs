@@ -166,14 +166,21 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Session Subject " + suffix, "code");
-        var type = new ServiceCatalogItem("Live Session " + suffix, "Live explanation");
+        var type = await db.ServiceCatalogItems.AsTracking().FirstOrDefaultAsync(x => x.Code == "live_session");
+        if (type is null)
+        {
+            type = new ServiceCatalogItem("Live Session", "Live explanation", "live_session");
+            db.Add(type);
+        }
+        else if (!type.IsActive)
+            type.SetActive(true);
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Live teacher", "Teacher profile for session tests.", "Egypt", "Cairo",
             "Egypt Standard Time", 10, factory.Clock.GetUtcNow());
         profile.Publish(factory.Clock.GetUtcNow());
         var service = new TeacherService(teacher.Id, subject.Id, type.Id, "Live explanation",
             "A private live explanation session.", 120, "SAR", 24, 0, factory.Clock.GetUtcNow());
-        db.AddRange(subject, type, profile, service,
+        db.AddRange(subject, profile, service,
             new TeacherSubjectQualification(teacher.Id, subject.Id, factory.Clock.GetUtcNow()),
             new TeacherAvailabilityRule(teacher.Id, localDate.DayOfWeek,
                 new TimeOnly(9, 0), new TimeOnly(15, 0), "Egypt Standard Time", 30));
@@ -227,6 +234,8 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         return await client.SendAsync(request);
     }
 
+    private const string WebhookSecret = "integration-tests-only-payment-webhook-secret";
+
     private async Task ConfirmAsync(Guid id)
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -234,6 +243,58 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         var booking = await db.LiveSessionBookings.SingleAsync(x => x.Id == id);
         booking.ConfirmPayment("mock-payment", factory.Clock.GetUtcNow());
         await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Live_session_payment_initiation_and_webhook_confirm_booking()
+    {
+        var data = await SeedAsync();
+        var student = await ClientForAsync(data.FirstStudent.Email);
+        var localDate = data.LocalDate.ToString("yyyy-MM-dd");
+        var slot = JsonDocument.Parse(await factory.CreateClient().GetStringAsync(
+            $"/api/v1/live-sessions/teachers/{data.Teacher.Id}/slots?from={localDate}" +
+            "&days=1&durationMinutes=30&studentTimeZoneId=UTC")).RootElement.EnumerateArray().First();
+        var start = slot.GetProperty("startsAt").GetDateTimeOffset();
+        var booked = await BookAsync(
+            student, data.ServiceId,
+            DateTime.SpecifyKind(start.UtcDateTime, DateTimeKind.Unspecified), "UTC", emergency: false);
+        booked.EnsureSuccessStatusCode();
+        var bookingId = JsonDocument.Parse(await booked.Content.ReadAsStringAsync()).RootElement.GetProperty("id").GetGuid();
+
+        var initiate = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/payments/live-sessions/{bookingId}");
+        initiate.Headers.TryAddWithoutValidation("Idempotency-Key", "live-pay-" + bookingId);
+        var initiation = await student.SendAsync(initiate);
+        initiation.EnsureSuccessStatusCode();
+        var paymentJson = JsonDocument.Parse(await initiation.Content.ReadAsStringAsync()).RootElement
+            .GetProperty("payment");
+        Assert.Equal(bookingId, paymentJson.GetProperty("liveSessionBookingId").GetGuid());
+        Assert.True(paymentJson.GetProperty("orderId").ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+        var reference = paymentJson.GetProperty("providerReference").GetString()!;
+        var amount = paymentJson.GetProperty("amount").GetDecimal();
+        var currency = paymentJson.GetProperty("currency").GetString()!;
+
+        var payload = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            eventId = "live-event-" + bookingId,
+            providerReference = reference,
+            amount,
+            currency,
+            succeeded = true
+        });
+        var signature = Convert.ToHexString(
+            System.Security.Cryptography.HMACSHA256.HashData(Encoding.UTF8.GetBytes(WebhookSecret), payload));
+        var webhook = new HttpRequestMessage(HttpMethod.Post, "/api/v1/payments/webhooks/mock")
+        {
+            Content = new ByteArrayContent(payload)
+        };
+        webhook.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        webhook.Headers.TryAddWithoutValidation("X-Mock-Signature", signature);
+        (await factory.CreateClient().SendAsync(webhook)).EnsureSuccessStatusCode();
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        Assert.Equal(LiveSessionStatus.Confirmed,
+            await db.LiveSessionBookings.Where(x => x.Id == bookingId).Select(x => x.Status).SingleAsync());
     }
 
     private async Task<string> VersionAsync(Guid id)

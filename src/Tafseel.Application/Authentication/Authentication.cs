@@ -51,6 +51,8 @@ public interface IAuthenticationService
     Task<AuthenticationResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken);
     Task RevokeAsync(string refreshToken, CancellationToken cancellationToken);
     Task<CurrentUser?> GetUserAsync(string userId, CancellationToken cancellationToken);
+    Task<CurrentUser?> UpdateFullNameAsync(
+        string userId, string fullName, CancellationToken cancellationToken);
     Task RequestEmailConfirmationAsync(string email, CancellationToken cancellationToken);
     Task<AuthenticationError> ConfirmEmailAsync(string email, string token, CancellationToken cancellationToken);
     Task RequestPasswordResetAsync(string email, CancellationToken cancellationToken);

@@ -103,6 +103,25 @@ public sealed class AuthController(
         return user is null ? NotFound() : Ok(user);
     }
 
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(
+        UpdateProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                [nameof(request.FullName)] = ["Full name is required."]
+            }));
+
+        var userId = User.FindFirstValue("sub");
+        var user = userId is null
+            ? null
+            : await authentication.UpdateFullNameAsync(userId, request.FullName, cancellationToken);
+        return user is null ? NotFound() : Ok(user);
+    }
+
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [HttpPost("forgot-password")]
@@ -133,10 +152,10 @@ public sealed class AuthController(
         if (!result.Succeeded)
             return result.Error switch
             {
-                AuthenticationError.InvalidCredentials or AuthenticationError.InvalidRefreshToken =>
-                    Error(401, result.Error == AuthenticationError.InvalidCredentials
-                        ? "invalid_credentials"
-                        : "refresh_token_invalid", "Authentication failed"),
+                AuthenticationError.InvalidCredentials =>
+                    Error(401, "invalid_credentials", "Incorrect email or password."),
+                AuthenticationError.InvalidRefreshToken =>
+                    Error(401, "refresh_token_invalid", "Authentication failed"),
                 AuthenticationError.RefreshTokenExpired =>
                     Error(401, "refresh_token_expired", "Authentication failed"),
                 AuthenticationError.RefreshTokenReused =>
@@ -197,6 +216,9 @@ public sealed record RegisterRequest(
 public sealed record LoginRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MaxLength(128)] string Password);
+
+public sealed record UpdateProfileRequest(
+    [Required, MaxLength(200)] string FullName);
 
 public sealed record ForgotPasswordRequest(
     [Required, EmailAddress, MaxLength(256)] string Email);

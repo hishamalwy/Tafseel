@@ -10,11 +10,9 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Quality review — Tafseel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
-<script src="js/tafseel.js"></script>
+  <script src="js/locales.js"></script>
+  <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
 </helmet>
 
@@ -145,8 +143,8 @@
               <input type="checkbox" checked="{{ notifyNewApps }}" onChange="{{ onNotifyNewApps }}" style="width:38px;height:22px;accent-color:var(--primary)" />
             </label>
             <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-              <span>Auto-assign applications to me</span>
-              <input type="checkbox" checked="{{ autoAssign }}" onChange="{{ onAutoAssign }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+              <span>Auto-assign applications to me (not available)</span>
+              <input type="checkbox" disabled style="width:38px;height:22px;accent-color:var(--primary)" />
             </label>
             <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
           </div>
@@ -305,8 +303,8 @@ class Component extends DCLogic {
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
-    Tafseel.api.ready().then(session => {
-      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+    Tafseel.api.requireRoles(['QualityReviewer']).then(session => {
+      if (!session) return;
       return this.loadQueue();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -319,22 +317,27 @@ class Component extends DCLogic {
   }
 
   async loadQueue() {
-    const [items, subjects, topics] = await Promise.all([
+    const [items, subjects, topics, preferences] = await Promise.all([
       Tafseel.api.get('/teacher-applications/queue'),
       Tafseel.api.get('/subjects'),
-      Tafseel.api.get('/topics?qualificationOnly=true')
+      Tafseel.api.get('/topics?qualificationOnly=true'),
+      Tafseel.api.get('/notification-preferences')
     ]);
     const status = ['Draft','Pending','Under Review','Changes Requested','Approved','Rejected','Withdrawn'];
     const priority = ['Low','Medium','High'];
     APPLICATIONS = items.map(x => ({
       id:x.id, name:x.teacherId, initials:'TR',
       subject:(subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
-      submitted:x.submittedAt ? new Date(x.submittedAt).toLocaleDateString() : '',
+      submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '',
       priority:priority[x.priority], status:status[x.status],
       demoTopic:(topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
       facts:[{ k:'Teacher ID', v:x.teacherId }], version:x.version, rawStatus:x.status
     }));
-    this.setState({ currentId:this.state.currentId });
+    this.setState({
+      currentId:this.state.currentId,
+      notifyNewApps:preferences.emailEnabled,
+      inAppNotifications:preferences.inAppEnabled
+    });
   }
 
   async openApp(id) {
@@ -395,7 +398,7 @@ class Component extends DCLogic {
     };
 
     return {
-      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langLabel: Tafseel.t('language_target'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
@@ -428,8 +431,15 @@ class Component extends DCLogic {
       })),
 
       notifyNewApps: s.notifyNewApps ?? true, onNotifyNewApps: e => this.setState({ notifyNewApps: e.target.checked }),
-      autoAssign: s.autoAssign ?? false, onAutoAssign: e => this.setState({ autoAssign: e.target.checked }),
-      onSaveSettings: () => this.flash('Settings saved'),
+      onSaveSettings: async () => {
+        try {
+          await Tafseel.api.put('/notification-preferences', {
+            emailEnabled:s.notifyNewApps,
+            inAppEnabled:s.inAppNotifications
+          });
+          this.flash('Settings saved');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
       isReview: s.view === 'review',
       backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
 

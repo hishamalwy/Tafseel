@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -186,6 +187,21 @@ internal sealed class AuthenticationService(
         var user = await users.FindByIdAsync(userId);
         if (user is null)
             return null;
+
+        return new(user.Id, user.Email!, user.FullName, (await users.GetRolesAsync(user)).ToArray());
+    }
+
+    public async Task<CurrentUser?> UpdateFullNameAsync(
+        string userId, string fullName, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return null;
+
+        user.FullName = fullName.Trim();
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new ValidationException(string.Join("; ", result.Errors.Select(x => x.Description)));
 
         return new(user.Id, user.Email!, user.FullName, (await users.GetRolesAsync(user)).ToArray());
     }

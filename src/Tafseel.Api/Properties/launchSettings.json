@@ -16,7 +16,10 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5089",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Jwt__SigningKey": "local-dev-only-signing-key-not-a-real-secret-32chars",
+        "Payments__WebhookSecret": "local-dev-only-webhook-secret-not-real-32chars",
+        "Resend__ApiToken": "local-dev-dummy-token"
       }
     },
     "https": {
@@ -26,7 +29,10 @@
       "launchUrl": "swagger",
       "applicationUrl": "https://localhost:7272;http://localhost:5089",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Jwt__SigningKey": "local-dev-only-signing-key-not-a-real-secret-32chars",
+        "Payments__WebhookSecret": "local-dev-only-webhook-secret-not-real-32chars",
+        "Resend__ApiToken": "local-dev-dummy-token"
       }
     },
     "IIS Express": {
@@ -34,7 +40,10 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Jwt__SigningKey": "local-dev-only-signing-key-not-a-real-secret-32chars",
+        "Payments__WebhookSecret": "local-dev-only-webhook-secret-not-real-32chars",
+        "Resend__ApiToken": "local-dev-dummy-token"
       }
     }
   }

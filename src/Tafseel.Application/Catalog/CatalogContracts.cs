@@ -3,7 +3,21 @@ using Tafseel.Application.Common;
 
 namespace Tafseel.Application.Catalog;
 
-public sealed record CatalogItemDto(Guid Id, string Name, bool IsActive, string? Detail = null, Guid? ParentId = null);
+public sealed record CatalogItemDto(
+    Guid Id,
+    string Name,
+    bool IsActive,
+    string? Detail = null,
+    Guid? ParentId = null,
+    string? Code = null,
+    string? Type = null,
+    bool? IsPublic = null,
+    bool? TeacherSelectable = null,
+    bool? RequiresScheduling = null,
+    IReadOnlyCollection<int>? AllowedDurations = null,
+    decimal? MinPrice = null,
+    decimal? MaxPrice = null,
+    int? DisplayOrder = null);
 public sealed record SubjectInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
     [param: Required, NotWhiteSpace, StringLength(100)] string Icon);
@@ -31,7 +45,16 @@ public sealed record QualificationTopicInput(
 public sealed record NamedCatalogInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
     [param: StringLength(2000)] string? Detail = null,
-    [param: Range(30, 600)] int? MaxVideoSeconds = null);
+    [param: Range(30, 600)] int? MaxVideoSeconds = null,
+    [param: StringLength(50)] string? Code = null,
+    [param: StringLength(50)] string? Type = null,
+    bool? IsPublic = null,
+    bool? TeacherSelectable = null,
+    bool? RequiresScheduling = null,
+    int[]? AllowedDurations = null,
+    [param: Range(typeof(decimal), "0.01", "1000000")] decimal? MinPrice = null,
+    [param: Range(typeof(decimal), "0.01", "1000000")] decimal? MaxPrice = null,
+    [param: Range(0, 10000)] int? DisplayOrder = null);
 
 public interface ICatalogService
 {

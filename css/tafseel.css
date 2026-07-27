@@ -8,12 +8,21 @@
    components themselves; this file holds only variables,
    element resets and keyframes.
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700;900&family=Noto+Serif+Arabic:wght@600;700;900&display=swap');
+@font-face{font-family:'Thmanyah Sans';src:url('../assets/fonts/thmanyah-sans/thmanyah-sans-light.woff2') format('woff2');font-style:normal;font-weight:300;font-display:swap}
+@font-face{font-family:'Thmanyah Sans';src:url('../assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:'Thmanyah Sans';src:url('../assets/fonts/thmanyah-sans/thmanyah-sans-medium.woff2') format('woff2');font-style:normal;font-weight:500 600;font-display:swap}
+@font-face{font-family:'Thmanyah Sans';src:url('../assets/fonts/thmanyah-sans/thmanyah-sans-bold.woff2') format('woff2');font-style:normal;font-weight:700 800;font-display:swap}
+@font-face{font-family:'Thmanyah Sans';src:url('../assets/fonts/thmanyah-sans/thmanyah-sans-black.woff2') format('woff2');font-style:normal;font-weight:900;font-display:swap}
+@font-face{font-family:'Inter';src:url('../assets/fonts/inter/inter-regular.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:'Inter';src:url('../assets/fonts/inter/inter-medium.woff2') format('woff2');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:'Inter';src:url('../assets/fonts/inter/inter-semibold.woff2') format('woff2');font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:'Inter';src:url('../assets/fonts/inter/inter-bold.woff2') format('woff2');font-style:normal;font-weight:700;font-display:swap}
 :root{
-  /* Typography */
-  --font-sans:'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif;
-  --font-ar:'IBM Plex Sans Arabic','Plus Jakarta Sans',system-ui,sans-serif;
-  --font-display:'Noto Serif Arabic','Noto Serif',serif;
+  /* Typography — Inter (EN, self-hosted) + Thmanyah Sans (AR, self-hosted). No CDN. */
+  --font-en:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-ar:'Thmanyah Sans',Arial,sans-serif;
+  --font-sans:var(--font-en);
+  --font-display:var(--font-en);
   --font-mono:'IBM Plex Mono',ui-monospace,monospace;
 
   /* Surfaces & text — light mode */
@@ -100,8 +109,11 @@ html[data-theme="dark"]{
 }
 
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;text-wrap:pretty}
-html[dir="rtl"] body{font-family:var(--font-ar)}
+html[lang="en"]{--font-sans:var(--font-en);--font-display:var(--font-en)}
+html[lang="ar"]{--font-sans:var(--font-ar);--font-display:var(--font-ar)}
+html[lang="ar"] body{letter-spacing:normal;line-height:1.6}
 a{color:var(--primary);text-decoration:none;transition:color var(--t)}
 a:hover{color:var(--primary-hover)}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -135,6 +147,7 @@ table{border-collapse:collapse;width:100%}
 }
 @media (max-width:640px){
   [data-hide-sm]{display:none !important}
+  [data-public-header]{gap:12px !important;padding-inline:16px !important}
 }
 
 /* Functional workflow pages */
@@ -145,13 +158,20 @@ table{border-collapse:collapse;width:100%}
 .tf-panel{width:min(100%,760px);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-md);padding:clamp(22px,4vw,40px)}
 .tf-panel-narrow{width:min(100%,480px)}
 .tf-form{display:grid;gap:18px}
+.tf-auth-copy{display:grid;gap:6px}
+.tf-auth-panel{animation:tf-fade 160ms ease-out}
 .tf-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .tf-field{display:grid;gap:7px}
 .tf-field label{font-size:13px;font-weight:700;color:var(--text-2)}
 .tf-field input,.tf-field select,.tf-field textarea{width:100%;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding:11px 12px;outline:none}
+.tf-field input:focus,.tf-field select:focus,.tf-field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 18%,transparent)}
+.tf-field-help{font-size:12px;line-height:1.5;color:var(--muted)}
 .tf-field textarea{min-height:110px;resize:vertical}
 .tf-button{height:42px;border:0;border-radius:var(--r-sm);padding-inline:18px;background:var(--primary);color:var(--primary-ink);font-weight:700}
+.tf-button:disabled{cursor:wait;opacity:.65}
 .tf-button-secondary{border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}
+.tf-button-link{justify-self:center;border:0;background:transparent;color:var(--primary);font-weight:700;padding:4px 8px}
+.tf-button-link:hover{text-decoration:underline}
 .tf-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .tf-muted{color:var(--muted);font-size:14px;line-height:1.6}
 .tf-status{min-height:22px;font-size:13px;color:var(--muted)}
@@ -160,10 +180,16 @@ table{border-collapse:collapse;width:100%}
 .tf-auth-tabs{display:grid;grid-template-columns:1fr 1fr;padding:4px;background:var(--surface-2);border-radius:var(--r-sm);margin-block:24px}
 .tf-auth-tabs button{height:38px;border:0;border-radius:7px;background:transparent;font-weight:700}
 .tf-auth-tabs button[aria-selected="true"]{background:var(--surface);box-shadow:var(--shadow-sm)}
+@media (max-width:640px){
+  .tf-workflow{place-items:start center;padding:20px 12px}
+  .tf-panel{padding:24px 20px;border-radius:var(--r-lg)}
+}
 .tf-list{display:grid;gap:8px;margin-block:20px}
 .tf-list button{width:100%;padding:14px;text-align:start;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)}
 .tf-chat{width:min(1100px,100%);height:min(760px,calc(100vh - 110px));display:grid;grid-template-columns:320px 1fr;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-md)}
 .tf-chat-list{border-inline-end:1px solid var(--border);padding:18px;overflow:auto}
+.tf-chat-list button{width:100%;padding:12px;margin-bottom:8px;text-align:start;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)}
+.tf-chat-list button:hover{border-color:var(--border-strong);background:var(--surface-2)}
 .tf-chat-main{display:grid;grid-template-rows:auto 1fr auto;min-width:0}
 .tf-chat-title{padding:18px 20px;border-bottom:1px solid var(--border);font-weight:800}
 .tf-messages{padding:20px;overflow:auto;display:flex;flex-direction:column;gap:10px}
@@ -171,6 +197,11 @@ table{border-collapse:collapse;width:100%}
 .tf-message[data-mine="true"]{align-self:flex-end;background:var(--primary-soft)}
 .tf-composer{display:flex;gap:10px;padding:16px;border-top:1px solid var(--border)}
 .tf-composer input{flex:1;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding-inline:12px}
+.tf-empty{padding:24px;color:var(--muted);font-size:14px;line-height:1.55;text-align:center}
+.tf-unavailable{border:1px dashed var(--border-strong);border-radius:var(--r-md);padding:16px;background:var(--surface-2);color:var(--text-2);font-size:13.5px;line-height:1.5}
+.tf-badge{display:inline-flex;align-items:center;height:24px;padding-inline:8px;border-radius:var(--r-sm);font-size:11.5px;font-weight:700;background:var(--primary-soft);color:var(--primary)}
+.tf-skeleton{background:linear-gradient(90deg,var(--surface-2) 25%,var(--bg-alt) 50%,var(--surface-2) 75%);background-size:400px 100%;animation:tf-shimmer 1.2s linear infinite;border-radius:var(--r-sm);min-height:14px}
+button:disabled,a[aria-disabled="true"]{opacity:.5;cursor:not-allowed;pointer-events:none}
 @media (max-width:640px){
   .tf-grid-2{grid-template-columns:1fr}
   .tf-chat{grid-template-columns:1fr;height:auto}

@@ -22,11 +22,25 @@ public sealed class Payment
     private Payment() { }
     public Payment(Guid orderId, string studentId, decimal amount, string currency,
         string provider, string providerReference, string idempotencyKey, DateTimeOffset now)
+        : this(orderId, null, studentId, amount, currency, provider, providerReference, idempotencyKey, now)
+    {
+    }
+
+    public static Payment ForLiveSession(
+        Guid liveSessionBookingId, string studentId, decimal amount, string currency,
+        string provider, string providerReference, string idempotencyKey, DateTimeOffset now) =>
+        new(null, liveSessionBookingId, studentId, amount, currency, provider, providerReference, idempotencyKey, now);
+
+    private Payment(Guid? orderId, Guid? liveSessionBookingId, string studentId, decimal amount, string currency,
+        string provider, string providerReference, string idempotencyKey, DateTimeOffset now)
     {
         if (amount <= 0 || currency?.Trim().Length != 3)
             throw new DomainException("invalid_payment", "Payment terms are invalid.");
+        if (orderId.HasValue == liveSessionBookingId.HasValue)
+            throw new DomainException("invalid_payment", "Payment must target exactly one payable.");
         Id = Guid.NewGuid();
         OrderId = orderId;
+        LiveSessionBookingId = liveSessionBookingId;
         StudentId = Required(studentId, 450);
         Amount = Money(amount);
         Currency = currency.Trim().ToUpperInvariant();
@@ -37,7 +51,8 @@ public sealed class Payment
         CreatedAt = UpdatedAt = now;
     }
     public Guid Id { get; private set; }
-    public Guid OrderId { get; private set; }
+    public Guid? OrderId { get; private set; }
+    public Guid? LiveSessionBookingId { get; private set; }
     public string StudentId { get; private set; } = "";
     public decimal Amount { get; private set; }
     public string Currency { get; private set; } = "";
@@ -56,7 +71,7 @@ public sealed class Payment
         if (Status == PaymentStatus.Confirmed) return false;
         if (Status != PaymentStatus.Pending || Money(amount) != Amount
             || !string.Equals(currency, Currency, StringComparison.OrdinalIgnoreCase))
-            throw new DomainException("payment_mismatch", "Provider payment does not match the order.");
+            throw new DomainException("payment_mismatch", "Provider payment does not match the payable.");
         Status = PaymentStatus.Confirmed;
         ConfirmedAt = UpdatedAt = now;
         return true;
@@ -127,15 +142,30 @@ public sealed class EscrowEntry
     private EscrowEntry() { }
     public EscrowEntry(Guid paymentId, Guid orderId, EscrowEntryType type, decimal amount,
         string currency, string businessKey, DateTimeOffset createdAt)
+        : this(paymentId, orderId, null, type, amount, currency, businessKey, createdAt)
+    {
+    }
+
+    public static EscrowEntry ForLiveSession(
+        Guid paymentId, Guid liveSessionBookingId, EscrowEntryType type, decimal amount,
+        string currency, string businessKey, DateTimeOffset createdAt) =>
+        new(paymentId, null, liveSessionBookingId, type, amount, currency, businessKey, createdAt);
+
+    private EscrowEntry(Guid paymentId, Guid? orderId, Guid? liveSessionBookingId, EscrowEntryType type,
+        decimal amount, string currency, string businessKey, DateTimeOffset createdAt)
     {
         if (amount <= 0) throw new DomainException("invalid_escrow", "Escrow amount must be positive.");
-        Id = Guid.NewGuid(); PaymentId = paymentId; OrderId = orderId; Type = type;
+        if (orderId.HasValue == liveSessionBookingId.HasValue)
+            throw new DomainException("invalid_escrow", "Escrow must target exactly one payable.");
+        Id = Guid.NewGuid(); PaymentId = paymentId; OrderId = orderId;
+        LiveSessionBookingId = liveSessionBookingId; Type = type;
         Amount = Payment.Money(amount); Currency = Payment.Required(currency, 3).ToUpperInvariant();
         BusinessKey = Payment.Required(businessKey, 200); CreatedAt = createdAt;
     }
     public Guid Id { get; private set; }
     public Guid PaymentId { get; private set; }
-    public Guid OrderId { get; private set; }
+    public Guid? OrderId { get; private set; }
+    public Guid? LiveSessionBookingId { get; private set; }
     public EscrowEntryType Type { get; private set; }
     public decimal Amount { get; private set; }
     public string Currency { get; private set; } = "";

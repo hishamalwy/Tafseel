@@ -1,95 +1,212 @@
-/* ============================================================
-   Tafseel — shared frontend runtime (vanilla JS, no framework)
-   Owns: theme persistence, language direction, i18n swapping.
-   Pages register their own dictionaries with Tafseel.addDict().
-   Replaceable with a real i18n/API layer later.
-   ============================================================ */
+/* Tafseel shared preferences, localization, direction, and locale formatting. */
 (function () {
-  /* Helmet scripts can re-execute on remount; never rebuild a live singleton. */
+  'use strict';
   if (window.Tafseel && window.Tafseel.__ready) return;
 
   var LS_THEME = 'tafseel-theme';
   var LS_LANG = 'tafseel-lang';
+  var locales = window.TafseelLocales || { en: {}, ar: {} };
+  var indexes = { en: new Map(), ar: new Map() };
 
-  var NAV_AR = {
-    nav_browse: 'تصفح المعلمين',
-    nav_subjects: 'المواد',
-    nav_how: 'كيف يعمل',
-    nav_teach: 'انضم كمعلم',
-    nav_about: 'من نحن',
-    nav_login: 'تسجيل الدخول',
-    nav_start: 'ابدأ الآن'
-  };
+  Object.keys(locales).forEach(function (locale) {
+    Object.keys(locales[locale]).forEach(function (key) {
+      indexes[locale].set(locales[locale][key], key);
+    });
+  });
+
+  function normalized(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function keyFor(value) {
+    var text = normalized(value);
+    return indexes.en.get(text) || indexes.ar.get(text);
+  }
+
+  function replaceText(node, value) {
+    var source = node.nodeValue;
+    var start = source.match(/^\s*/)[0];
+    var end = source.match(/\s*$/)[0];
+    var next = start + value + end;
+    if (source !== next) node.nodeValue = next;
+  }
 
   var Tafseel = {
-    dict: Object.assign({}, NAV_AR),
+    __ready: true,
     theme: 'light',
     lang: 'en',
     _subs: [],
+    _observer: null,
 
-    /* Read persisted preferences and apply them to <html>. */
     init: function () {
       try {
         this.theme = localStorage.getItem(LS_THEME) || 'light';
         this.lang = localStorage.getItem(LS_LANG) || 'en';
-      } catch (e) {}
+      } catch (_) {}
+      if (!['light', 'dark'].includes(this.theme)) this.theme = 'light';
+      if (!['en', 'ar'].includes(this.lang)) this.lang = 'en';
       this.apply(false);
+      this.observe();
       return this;
     },
 
     apply: function (persist) {
-      var r = document.documentElement;
-      r.setAttribute('data-theme', this.theme);
-      r.setAttribute('dir', this.lang === 'ar' ? 'rtl' : 'ltr');
-      r.setAttribute('lang', this.lang);
+      var root = document.documentElement;
+      root.setAttribute('data-theme', this.theme);
+      root.setAttribute('lang', this.lang);
+      root.setAttribute('dir', this.lang === 'ar' ? 'rtl' : 'ltr');
       if (persist !== false) {
         try {
           localStorage.setItem(LS_THEME, this.theme);
           localStorage.setItem(LS_LANG, this.lang);
-        } catch (e) {}
+        } catch (_) {}
       }
-      this.translate();
-      this._subs.forEach(function (fn) { fn(); });
-      document.dispatchEvent(new CustomEvent('tafseel:change', { detail: { theme: this.theme, lang: this.lang } }));
+      this.translate(document);
+      this.updateControls();
+      this._subs.slice().forEach(function (subscriber) { subscriber(); });
+      document.dispatchEvent(new CustomEvent('tafseel:change', {
+        detail: { theme: this.theme, lang: this.lang }
+      }));
     },
 
-    setTheme: function (t) { this.theme = t; this.apply(); },
+    setTheme: function (theme) {
+      if (['light', 'dark'].includes(theme)) {
+        this.theme = theme;
+        this.apply();
+      }
+    },
     toggleTheme: function () { this.setTheme(this.theme === 'dark' ? 'light' : 'dark'); },
-    setLang: function (l) { this.lang = l; this.apply(); },
+    setLang: function (lang) {
+      if (['en', 'ar'].includes(lang)) {
+        this.lang = lang;
+        this.apply();
+      }
+    },
     toggleLang: function () { this.setLang(this.lang === 'ar' ? 'en' : 'ar'); },
 
-    /* Pages call this with their own {key: arabicString} map. */
-    addDict: function (d) { Object.assign(this.dict, d); this.translate(); return this; },
+    t: function (keyOrEnglish, values) {
+      var key = locales.en[keyOrEnglish] !== undefined ? keyOrEnglish : keyFor(keyOrEnglish);
+      if (!key || locales[this.lang][key] === undefined) return '⟦missing:' + keyOrEnglish + '⟧';
+      return Object.keys(values || {}).reduce(function (text, name) {
+        return text.replaceAll('{' + name + '}', values[name]);
+      }, locales[this.lang][key]);
+    },
 
-    /* Swap the text of every [data-i18n] node. English source text is
-       cached on first pass so switching back needs no dictionary. */
-    translate: function () {
-      var ar = this.lang === 'ar';
-      var dict = this.dict;
-      document.querySelectorAll('[data-i18n]').forEach(function (el) {
-        var key = el.getAttribute('data-i18n');
-        if (el.dataset.en === undefined) el.dataset.en = el.textContent;
-        var next = ar ? (dict[key] !== undefined ? dict[key] : el.dataset.en) : el.dataset.en;
-        if (el.textContent !== next) el.textContent = next;
+    localizeText: function (value) {
+      var key = keyFor(value);
+      return key && locales[this.lang][key] !== undefined ? locales[this.lang][key] : value;
+    },
+
+    translate: function (scope) {
+      if (!scope || !document.body) return;
+      var self = this;
+      var root = scope === document ? document.documentElement : scope;
+
+      if (root.nodeType === Node.TEXT_NODE) {
+        var directKey = keyFor(root.nodeValue);
+        if (directKey) replaceText(root, locales[this.lang][directKey]);
+        return;
+      }
+
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      var node;
+      while ((node = walker.nextNode())) {
+        var parent = node.parentElement;
+        if (!parent || parent.closest('script,style,code,pre,[translate="no"],[data-i18n-skip]')) continue;
+        var key = keyFor(node.nodeValue);
+        if (key) replaceText(node, locales[self.lang][key]);
+      }
+
+      root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(function (element) {
+        ['placeholder', 'title', 'aria-label'].forEach(function (attribute) {
+          if (!element.hasAttribute(attribute)) return;
+          var key = keyFor(element.getAttribute(attribute));
+          if (key) element.setAttribute(attribute, locales[self.lang][key]);
+        });
       });
-      document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
-        var key = el.getAttribute('data-i18n-ph');
-        if (el.dataset.enPh === undefined) el.dataset.enPh = el.placeholder || '';
-        el.placeholder = ar ? (dict[key] || el.dataset.enPh) : el.dataset.enPh;
+
+      root.querySelectorAll('[data-i18n]').forEach(function (element) {
+        var requested = element.getAttribute('data-i18n');
+        var key = locales.en[requested] !== undefined ? requested : keyFor(element.textContent);
+        if (key) element.textContent = locales[self.lang][key];
+      });
+      root.querySelectorAll('[data-i18n-ph]').forEach(function (element) {
+        var requested = element.getAttribute('data-i18n-ph');
+        var key = locales.en[requested] !== undefined ? requested : keyFor(element.placeholder);
+        if (key) element.placeholder = locales[self.lang][key];
+      });
+
+      if (scope === document) {
+        var titleKey = keyFor(document.title);
+        if (titleKey) document.title = locales[this.lang][titleKey];
+      }
+    },
+
+    observe: function () {
+      if (!window.MutationObserver || !document.documentElement) return;
+      var self = this;
+      this._observer = new MutationObserver(function (changes) {
+        changes.forEach(function (change) {
+          if (change.type === 'characterData') self.translate(change.target);
+          change.addedNodes.forEach(function (node) { self.translate(node); });
+        });
+      });
+      this._observer.observe(document.documentElement, { childList: true, characterData: true, subtree: true });
+    },
+
+    updateControls: function () {
+      var self = this;
+      document.querySelectorAll('[data-tafseel-language]').forEach(function (button) {
+        button.textContent = self.t('language_target');
+        button.setAttribute('aria-label', self.localizeText('Switch language'));
+      });
+      document.querySelectorAll('[data-tafseel-theme]').forEach(function (button) {
+        button.textContent = self.localizeText('Theme');
       });
     },
 
-    onChange: function (fn) { this._subs.push(fn); return fn; },
-    offChange: function (fn) { this._subs = this._subs.filter(function (f) { return f !== fn; }); },
+    bindControls: function () {
+      var self = this;
+      document.querySelectorAll('[data-tafseel-language]').forEach(function (button) {
+        if (button.dataset.bound) return;
+        button.dataset.bound = 'true';
+        button.addEventListener('click', function () { self.toggleLang(); });
+      });
+      document.querySelectorAll('[data-tafseel-theme]').forEach(function (button) {
+        if (button.dataset.bound) return;
+        button.dataset.bound = 'true';
+        button.addEventListener('click', function () { self.toggleTheme(); });
+      });
+      this.updateControls();
+    },
 
-    t: function (en, ar) { return this.lang === 'ar' ? ar : en; },
+    onChange: function (subscriber) { this._subs.push(subscriber); return subscriber; },
+    offChange: function (subscriber) {
+      this._subs = this._subs.filter(function (candidate) { return candidate !== subscriber; });
+    },
 
-    /* Currency helper — Saudi Riyal, swap here for other markets. */
-    money: function (n) {
-      return this.lang === 'ar' ? n.toLocaleString('ar-EG') + ' ر.س' : 'SAR ' + n.toLocaleString('en-US');
+    number: function (value, options) {
+      return new Intl.NumberFormat(this.lang === 'ar' ? 'ar-SA' : 'en-US', options).format(value);
+    },
+    date: function (value, options) {
+      return new Intl.DateTimeFormat(this.lang === 'ar' ? 'ar-SA' : 'en-US', options || {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(new Date(value));
+    },
+    money: function (value) {
+      return this.number(value, { style: 'currency', currency: 'SAR', currencyDisplay: 'symbol' });
     }
   };
 
   window.Tafseel = Tafseel.init();
-  window.Tafseel.__ready = true;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      Tafseel.bindControls();
+      Tafseel.translate(document);
+    }, { once: true });
+  } else {
+    Tafseel.bindControls();
+    Tafseel.translate(document);
+  }
 })();

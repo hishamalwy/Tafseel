@@ -6,11 +6,30 @@ $required = @(
   "frontend/Tafseel-Auth.dc.html",
   "frontend/Tafseel-Teacher-Apply.dc.html",
   "frontend/Tafseel-Chat.dc.html",
+  "frontend/Tafseel-Browse-Teachers.dc.html",
+  "frontend/Tafseel-Teacher-Profile.dc.html",
+  "frontend/Tafseel-Request.dc.html",
+  "frontend/Tafseel-Book-Session.dc.html",
+  "frontend/Tafseel-Payment.dc.html",
+  "frontend/Tafseel-Student-Dashboard.dc.html",
+  "frontend/Tafseel-Teacher-Dashboard.dc.html",
+  "frontend/Tafseel-Quality-Dashboard.dc.html",
+  "frontend/Tafseel-Admin-Dashboard.dc.html",
+  "frontend/js/locales.js",
   "frontend/js/api.js",
   "frontend/js/vendor/react.production.min.js",
   "frontend/js/vendor/react-dom.production.min.js",
   "frontend/js/vendor/babel.min.js",
-  "frontend/css/tafseel.css"
+  "frontend/css/tafseel.css",
+  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-light.woff2",
+  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2",
+  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-medium.woff2",
+  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-bold.woff2",
+  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-black.woff2",
+  "frontend/assets/fonts/inter/inter-regular.woff2",
+  "frontend/assets/fonts/inter/inter-medium.woff2",
+  "frontend/assets/fonts/inter/inter-semibold.woff2",
+  "frontend/assets/fonts/inter/inter-bold.woff2"
 )
 $missing = $required | Where-Object { -not (Test-Path (Join-Path $PublishDirectory $_)) }
 if ($missing) { throw "Publish output is missing: $($missing -join ', ')" }

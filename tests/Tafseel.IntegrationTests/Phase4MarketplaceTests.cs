@@ -234,7 +234,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Subject " + suffix, "code");
         var otherSubject = new Subject("Other " + suffix, "code");
-        var serviceType = new ServiceCatalogItem("Explanation " + suffix, "Custom explanation");
+        var serviceType = new ServiceCatalogItem("Explanation " + suffix, "Custom explanation", "svc_" + suffix);
         var topic = new Topic(subject.Id, "Topic " + suffix, "Intermediate");
         var language = new TeachingLanguage("Language " + suffix, suffix[..8]);
         var educationLevel = new EducationLevel("Level " + suffix);

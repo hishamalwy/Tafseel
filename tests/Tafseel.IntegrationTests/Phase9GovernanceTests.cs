@@ -195,7 +195,7 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Governance Subject " + suffix, "code");
-        var type = new ServiceCatalogItem("Governance Service " + suffix, "Explanation");
+        var type = new ServiceCatalogItem("Governance Service " + suffix, "Explanation", "svc_" + suffix);
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Governance teacher", "Teacher profile used by governance tests.",
             "Egypt", "Cairo", "Egypt Standard Time", 10, factory.Clock.GetUtcNow());

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Book a live session — Tafseel</title>
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+</helmet>
+
+<header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
+  <div style="max-width:1080px;margin-inline:auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
+    <a href="{{ homeHref }}" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
+      <span style="width:26px;height:26px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:13px">T</span>
+      <span style="font-weight:800;font-size:15.5px;letter-spacing:-.02em">Tafseel</span>
+    </a>
+    <span style="color:var(--muted);font-size:14px">/ Book a live session</span>
+    <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+      <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:34px;padding:0 11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ langLabel }}</button>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">{{ themeIcon }}</button>
+    </div>
+  </div>
+</header>
+
+<main style="max-width:1080px;margin-inline:auto;padding:32px 24px 80px">
+  <sc-if value="{{ showUnavailable }}" hint-placeholder-val="{{ false }}">
+    <div class="tf-unavailable" role="status">
+      <p style="margin:0 0 12px">{{ unavailableMessage }}</p>
+      <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--primary);font-weight:700;text-decoration:underline">Browse Teachers</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ true }}">
+    <div class="tf-unavailable" role="status">Loading session options…</div>
+  </sc-if>
+
+  <sc-if value="{{ showBooking }}" hint-placeholder-val="{{ false }}">
+    <div data-stack="book" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <div style="display:flex;gap:14px;align-items:center">
+            <span style="width:48px;height:48px;flex:none;border-radius:14px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+            <div>
+              <div style="font-size:15.5px;font-weight:700">{{ teacherName }}</div>
+              <div style="font-size:12.5px;color:var(--muted)">{{ teacherMeta }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h1 style="font-size:19px;font-weight:800;letter-spacing:-.02em;margin-bottom:16px">Session details</h1>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13.5px;font-weight:600">Session title</span>
+              <input value="{{ title }}" onChange="{{ onTitle }}" placeholder="e.g. Rotational dynamics review before Thursday quiz" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13.5px;font-weight:600">Topic</span>
+              <input value="{{ topic }}" onChange="{{ onTopic }}" placeholder="e.g. Torque and angular momentum" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+            </label>
+            <div>
+              <span style="font-size:13.5px;font-weight:600;display:block;margin-bottom:8px">Duration</span>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                <sc-for list="{{ durations }}" as="d" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ d.onClick }}" style="{{ d.style }}">{{ d.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--primary);border-radius:var(--r-lg);padding:20px;display:flex;gap:14px;align-items:center">
+          <span style="font-size:20px">⚡</span>
+          <div style="flex:1">
+            <div style="font-size:14.5px;font-weight:700">Exam Night Emergency Session</div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:2px">Same-day 90-minute session, premium rate — for the night before your exam.</div>
+          </div>
+          <button type="button" onClick="{{ onEmergency }}" style="{{ emergencyStyle }}">{{ emergencyLabel }}</button>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Pick a time</h2>
+          <label style="display:flex;flex-direction:column;gap:6px;max-width:260px;margin-bottom:16px">
+            <span style="font-size:13px;font-weight:600">Your time zone</span>
+            <input value="{{ timezone }}" onChange="{{ onTimezone }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <sc-if value="{{ slotsLoading }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-unavailable" role="status" style="margin-bottom:12px">Loading session options…</div>
+          </sc-if>
+          <sc-if value="{{ showNoSlots }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-unavailable" role="status" style="margin-bottom:12px">No available slots for this duration and time zone.</div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
+            <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+              <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:12px;background:var(--bg)">
+                <div style="font-size:13px;font-weight:700;margin-bottom:2px">{{ d.day }}</div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:10px">{{ d.date }}</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ d.slots }}" as="sl" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ sl.onClick }}" disabled="{{ sl.disabled }}" style="{{ sl.style }}">{{ sl.time }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">Session notes and files</h2>
+          <textarea value="{{ notes }}" onChange="{{ onNotes }}" rows="3" placeholder="What should the teacher prepare for this session?" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical;margin-bottom:12px"></textarea>
+          <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-md);padding:20px;text-align:center;cursor:pointer;background:var(--bg)">
+            <input type="file" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
+            <span style="font-size:13.5px;color:var(--text-2)">⇧ Drag a file here or click to upload</span>
+          </label>
+          <sc-if value="{{ fileName }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--text-2)">
+              <span>📎 {{ fileName }}</span>
+              <button type="button" onClick="{{ removeFile }}" aria-label="Remove file" style="border:0;background:none;color:var(--muted)">✕</button>
+            </div>
+          </sc-if>
+        </section>
+      </div>
+
+      <aside data-sticky="1" style="position:sticky;top:92px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+        <h2 style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:14px">Price summary</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="2">
+            <div style="display:flex;justify-content:space-between;font-size:13.5px">
+              <span style="color:var(--text-2)">{{ pl.label }}</span><span>{{ pl.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);font-size:17px;font-weight:800;margin-bottom:18px">
+          <span>Total</span><span>{{ totalLabel }}</span>
+        </div>
+        <sc-if value="{{ selectedSlotLabel }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12.5px;color:var(--text-2);margin-bottom:14px;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2)"><span>Selected:</span> {{ selectedSlotLabel }}</div>
+        </sc-if>
+        <button type="button" onClick="{{ onConfirm }}" disabled="{{ confirming }}" style="{{ confirmStyle }}">{{ confirmLabel }}</button>
+      </aside>
+    </div>
+  </sc-if>
+</main>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+function ymd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function parseLocal(value) {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const clean = value.replace(/Z$/i, '').replace(/([+-]\d{2}:\d{2})$/, '');
+    const match = clean.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!match) return new Date(value);
+    return new Date(+match[1], +match[2] - 1, +match[3], +match[4], +match[5], +(match[6] || 0));
+  }
+  return new Date(value);
+}
+
+function toLocalIso(value) {
+  if (typeof value === 'string') {
+    return value.replace(/Z$/i, '').replace(/([+-]\d{2}:\d{2})$/, '').slice(0, 19);
+  }
+  const d = parseLocal(value);
+  if (!d || Number.isNaN(d.getTime())) return value;
+  return ymd(d) + 'T' + String(d.getHours()).padStart(2, '0') + ':' +
+    String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+}
+
+function pickService(services, preferredId) {
+  const active = (services || []).filter(s =>
+    s && s.canBook && String(s.serviceCatalogCode || '').toLowerCase() === 'live_session');
+  if (!active.length) return null;
+  if (preferredId) {
+    return active.find(s => String(s.id) === String(preferredId)) || null;
+  }
+  return active[0];
+}
+
+function detectTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch (_) {
+    return 'UTC';
+  }
+}
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme,
+    teacherId: '', preferredServiceId: '',
+    missingTeacherId: false, loading: true, slotsLoading: false, confirming: false,
+    noBookableService: false, loadError: '', profile: null, service: null, slots: [],
+    title: '', topic: '', duration: 60, emergency: false,
+    timezone: detectTimeZone(), slotKey: '', slotLocalStart: '', slotLabel: '',
+    notes: '', fileName: '', toast: ''
+  };
+
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    const query = new URLSearchParams(location.search);
+    const teacherId = (query.get('teacherId') || '').trim();
+    const preferredServiceId = (query.get('teacherServiceId') || '').trim();
+    if (!teacherId) {
+      this.setState({ missingTeacherId: true, loading: false, teacherId: '', preferredServiceId });
+      return;
+    }
+    this.setState({ teacherId, preferredServiceId });
+    Tafseel.api.requireRoles(['Student']).then(session => {
+      if (!session) return;
+      return this.loadTeacher();
+    }).catch(error => {
+      this.setState({ loading: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    });
+  }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentDidUpdate() { Tafseel.translate(); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+
+  async loadTeacher() {
+    this.setState({ loading: true, noBookableService: false, loadError: '' });
+    try {
+      const profile = await Tafseel.api.get('/teachers/' + encodeURIComponent(this.state.teacherId));
+      const service = pickService(profile.services, this.state.preferredServiceId);
+      if (!service) {
+        this.setState({ profile, service: null, noBookableService: true, loadError: '', loading: false, slots: [] });
+        return;
+      }
+      const allowedDurations = Array.isArray(service.allowedDurations) && service.allowedDurations.length
+        ? service.allowedDurations
+        : [60];
+      this.setState({
+        profile,
+        service,
+        duration: allowedDurations[0],
+        noBookableService: false,
+        loadError: '',
+        loading: false
+      });
+      await this.loadSlots();
+    } catch (error) {
+      const message = Tafseel.api.errorMessage(error);
+      this.setState({ loading: false, noBookableService: true, loadError: message, profile: null, service: null });
+      this.flash(message);
+    }
+  }
+
+  async loadSlots() {
+    const s = this.state;
+    if (!s.teacherId || !s.service) return;
+    this.setState({ slotsLoading: true, slotKey: '', slotLocalStart: '', slotLabel: '' });
+    try {
+      const from = ymd(new Date());
+      const slots = await Tafseel.api.get('/live-sessions/teachers/' + encodeURIComponent(s.teacherId) + '/slots' +
+        Tafseel.api.query({
+          teacherServiceId: s.service.id,
+          from,
+          days: 7,
+          durationMinutes: s.duration,
+          studentTimeZoneId: s.timezone
+        }));
+      this.setState({ slots: Array.isArray(slots) ? slots : [], slotsLoading: false });
+    } catch (error) {
+      this.setState({ slots: [], slotsLoading: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  setDuration(duration) {
+    if (this.state.duration === duration && !this.state.emergency) return;
+    this.setState({ duration, emergency: false }, () => this.loadSlots());
+  }
+
+  setTimezone(timezone) {
+    if (!String(timezone || '').trim() || this.state.timezone === timezone) return;
+    this.setState({ timezone }, () => this.loadSlots());
+  }
+
+  money(amount, currency) {
+    const cur = currency || (this.state.service && this.state.service.currency) || 'SAR';
+    const rounded = Math.round((Number(amount) || 0) * 100) / 100;
+    return cur + ' ' + Tafseel.number(rounded, { maximumFractionDigits: 2 });
+  }
+
+  buildWeek() {
+    const s = this.state;
+    const locale = s.lang === 'ar' ? 'ar-SA' : 'en-US';
+    const dayFmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const dateFmt = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' });
+    const timeFmt = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    const start = new Date();
+    start.setHours(12, 0, 0, 0);
+    const byDay = {};
+    (s.slots || []).forEach(slot => {
+      const local = parseLocal(slot.studentLocalStart);
+      if (!local || Number.isNaN(local.getTime())) return;
+      const key = ymd(local);
+      (byDay[key] || (byDay[key] = [])).push(slot);
+    });
+    return Array.from({ length: 7 }, (_, offset) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + offset);
+      const key = ymd(day);
+      const daySlots = (byDay[key] || []).map((slot, index) => {
+        const local = parseLocal(slot.studentLocalStart);
+        const localIso = toLocalIso(slot.studentLocalStart);
+        const id = key + '-' + index + '-' + localIso;
+        const active = s.slotKey === id;
+        const label = dayFmt.format(local) + ' ' + timeFmt.format(local);
+        return {
+          time: timeFmt.format(local),
+          disabled: false,
+          onClick: () => this.setState({ slotKey: id, slotLocalStart: localIso, slotLabel: label }),
+          style: 'height:32px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' + (active
+            ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
+            : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);')
+        };
+      });
+      return { day: dayFmt.format(day), date: dateFmt.format(day), slots: daySlots };
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const showUnavailable = s.missingTeacherId || (!s.loading && s.noBookableService);
+    const showLoading = !s.missingTeacherId && s.loading;
+    const showBooking = !showUnavailable && !showLoading && !!s.service;
+    const service = s.service;
+    const profile = s.profile;
+    const policy = profile && profile.liveSessionBookingPolicy ? profile.liveSessionBookingPolicy : null;
+    const durations = service && Array.isArray(service.allowedDurations) && service.allowedDurations.length
+      ? service.allowedDurations
+      : [];
+    const rate = service ? Number(service.price) || 0 : 0;
+    const currency = service ? service.currency || 'SAR' : 'SAR';
+    const base = rate * s.duration / 60;
+    const emergencyPremiumPercent = policy ? Number(policy.emergencyPremiumPercent) || 0 : 0;
+    const premium = s.emergency ? base * (emergencyPremiumPercent / 100) : 0;
+    const total = base + premium;
+    const subjects = profile && profile.subjects ? profile.subjects.map(x => x.name).filter(Boolean) : [];
+    const rating = profile && profile.rating ? Number(profile.rating).toFixed(1) : '';
+    const replyHours = profile ? Math.max(1, Math.round((profile.responseTimeMinutes || 60) / 60)) : 1;
+    const teacherMeta = [
+      subjects[0] || (service && service.title) || '',
+      rating ? rating + ' ★' : '',
+      'Replies in ~' + replyHours + 'h'
+    ].filter(Boolean).join(' · ');
+    const week = showBooking ? this.buildWeek() : [];
+    const slotCount = (s.slots || []).length;
+
+    return {
+      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+      homeHref: s.teacherId
+        ? 'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(s.teacherId)
+        : 'Tafseel-Browse-Teachers.dc.html',
+
+      showUnavailable,
+      unavailableMessage: s.missingTeacherId
+        ? 'A teacher is required to book a live session.'
+        : (s.loadError || 'This teacher has no bookable live session right now.'),
+      showLoading,
+      showBooking,
+      slotsLoading: s.slotsLoading,
+      showNoSlots: showBooking && !s.slotsLoading && slotCount === 0,
+
+      teacherName: profile ? (profile.fullName || '') : '',
+      teacherMeta,
+
+      title: s.title, onTitle: e => this.setState({ title: e.target.value }),
+      topic: s.topic, onTopic: e => this.setState({ topic: e.target.value }),
+      durations: durations.map(d => ({
+        label: d + ' min',
+        style: 'height:38px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' +
+          (s.duration === d && !s.emergency ? 'border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);' : 'border:1px solid var(--border);background:var(--bg);color:var(--text-2);'),
+        onClick: () => this.setDuration(d)
+      })),
+
+      emergencyLabel: s.emergency ? 'Selected' : 'Select',
+      emergencyStyle: 'height:36px;padding:0 16px;border-radius:var(--r-sm);font-weight:700;font-size:13px;' + (s.emergency
+        ? 'border:0;background:var(--primary);color:var(--primary-ink);'
+        : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+      onEmergency: () => this.setState({ emergency: !s.emergency }),
+
+      timezone: s.timezone,
+      onTimezone: e => this.setTimezone(e.target.value),
+      week,
+      selectedSlotLabel: s.slotLabel || '',
+
+      notes: s.notes, onNotes: e => this.setState({ notes: e.target.value }),
+      fileName: s.fileName,
+      onFilePick: e => {
+        const f = e.target.files && e.target.files[0];
+        this._file = f || null;
+        this.setState({ fileName: f ? f.name : '' });
+      },
+      removeFile: () => { this._file = null; this.setState({ fileName: '' }); },
+
+      priceLines: [
+        { label: 'Base price', value: this.money(base, currency) }
+      ].concat(s.emergency ? [{ label: 'Emergency premium', value: this.money(premium, currency) }] : []),
+      totalLabel: this.money(total, currency),
+      confirming: s.confirming,
+      confirmLabel: s.confirming ? 'Booking…' : 'Confirm booking',
+      confirmStyle: 'height:46px;width:100%;border:0;border-radius:var(--r-md);font-weight:700;font-size:14.5px;' +
+        (s.confirming
+          ? 'background:var(--border);color:var(--muted);cursor:wait;'
+          : 'background:var(--primary);color:var(--primary-ink);'),
+      onConfirm: () => this.confirmBooking()
+    };
+  }
+
+  async confirmBooking() {
+    const s = this.state;
+    if (s.confirming) return;
+    if (!s.title.trim() || !s.topic.trim()) {
+      this.flash('Add a session title and topic first.');
+      return;
+    }
+    if (!s.slotLocalStart) {
+      this.flash('Pick an available time slot to continue.');
+      return;
+    }
+    if (!s.service) {
+      this.flash('This teacher has no bookable live session right now.');
+      return;
+    }
+    this.setState({ confirming: true });
+    try {
+      const notes = [s.topic.trim(), s.notes.trim()].filter(Boolean).join('\n\n');
+      const booking = await Tafseel.api.post('/live-sessions', {
+        teacherServiceId: s.service.id,
+        title: s.title.trim(),
+        notes,
+        localStart: toLocalIso(s.slotLocalStart),
+        studentTimeZoneId: s.timezone,
+        durationMinutes: s.duration,
+        emergency: !!s.emergency
+      });
+      if (this._file && booking && booking.id && booking.version) {
+        try {
+          const form = new FormData();
+          form.append('file', this._file, this._file.name);
+          await Tafseel.api.upload('/live-sessions/' + booking.id + '/attachments', form, {
+            'If-Match': booking.version
+          });
+        } catch (_) { /* booking succeeded; attachment is optional */ }
+      }
+      location.href = 'Tafseel-Payment.dc.html?liveSessionId=' + encodeURIComponent(booking.id);
+    } catch (error) {
+      this.setState({ confirming: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+}
+
+</script>
+</body>
+</html>

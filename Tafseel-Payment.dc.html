@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Checkout — Tafseel</title>
+<link rel="stylesheet" href="css/tafseel.css" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+</helmet>
+
+<header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
+  <div style="max-width:920px;margin-inline:auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
+    <a href="Tafseel-Student-Dashboard.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
+      <span style="width:26px;height:26px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:13px">T</span>
+      <span style="font-weight:800;font-size:15.5px;letter-spacing:-.02em">Tafseel</span>
+    </a>
+    <span style="color:var(--muted);font-size:14px">/ Checkout</span>
+    <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+      <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:34px;padding:0 11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ langLabel }}</button>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">{{ themeIcon }}</button>
+    </div>
+  </div>
+</header>
+
+<main style="max-width:920px;margin-inline:auto;padding:32px 24px 80px">
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:440px;margin:60px auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px">
+      <p style="font-size:14.5px;color:var(--muted)">Loading checkout…</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isUnavailable }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:440px;margin:60px auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px">
+      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px">Checkout unavailable</h1>
+      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px">This page needs a valid order or live session. Open an item from your Student Dashboard to continue.</p>
+      <a href="Tafseel-Student-Dashboard.dc.html" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Go to Student Dashboard</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showCheckout }}" hint-placeholder-val="{{ false }}">
+    <div data-stack="checkout" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h1 style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">Complete your payment</h1>
+          <p style="color:var(--muted);font-size:13.5px;margin-bottom:18px">Held securely by Tafseel until you approve the delivery.</p>
+          <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:var(--r-md);padding:14px;background:var(--bg)">
+            <span style="width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+            <div style="min-width:0">
+              <div style="font-size:14px;font-weight:700">{{ itemTitle }}</div>
+              <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ itemSubtitle }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:10px">Secure checkout</h2>
+          <p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:0">We start a secure payment with the provider. Confirmation arrives via webhook — Tafseel never collects card details on this page.</p>
+        </section>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:8px" data-i18n="pay_discount_code">Discount code</h2>
+          <p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0" data-i18n="pay_coupon_unavailable">Coupon codes are not available yet. The payment API does not expose coupon validation or application.</p>
+        </section>
+      </div>
+
+      <aside data-sticky="1" style="position:sticky;top:92px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+        <h2 style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:14px">Order summary</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="3">
+            <div style="display:flex;justify-content:space-between;font-size:13.5px">
+              <span style="color:var(--text-2)">{{ pl.label }}</span><span>{{ pl.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);font-size:17px;font-weight:800;margin-bottom:18px">
+          <span>Total</span><span>{{ totalLabel }}</span>
+        </div>
+        <button type="button" onClick="{{ onPay }}" disabled="{{ submitting }}" style="height:46px;width:100%;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:15px;opacity:{{ payOpacity }};cursor:{{ payCursor }}">{{ payLabel }}</button>
+        <div style="margin-top:14px;background:var(--success-soft);border-radius:var(--r-md);padding:12px 14px;display:flex;gap:9px">
+          <span style="color:var(--success)">🛡</span>
+          <span style="font-size:12.5px;color:var(--text-2);line-height:1.5">Your payment is protected until the service is completed.</span>
+        </div>
+      </aside>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:480px;margin:60px auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--success-soft);color:var(--success);display:grid;place-items:center;font-size:24px;margin:0 auto 18px">✓</div>
+      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px">Payment initiated</h1>
+      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:8px">Checkout reference: <strong style="color:var(--text-2);font-family:var(--font-mono)">{{ checkoutReference }}</strong></p>
+      <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:24px">Payment confirmation comes from the provider webhook. Check Sessions and Payments on your Student Dashboard.</p>
+      <a href="Tafseel-Student-Dashboard.dc.html" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Go to Student Dashboard</a>
+    </div>
+  </sc-if>
+</main>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function money(currency, amount) {
+  const cur = currency || 'SAR';
+  const n = Number(amount);
+  const text = Number.isFinite(n) ? n.toFixed(2).replace(/\.00$/, '') : String(amount ?? '');
+  return cur + ' ' + text;
+}
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang, theme: Tafseel.theme,
+    loading: true, unavailable: false, submitting: false,
+    kind: null, itemId: null, item: null,
+    checkoutReference: '', toast: '',
+    idempotencyKey: ''
+  };
+
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    this.bootstrap();
+  }
+  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentDidUpdate() { Tafseel.translate(); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 3200);
+  }
+
+  async bootstrap() {
+    try {
+      const session = await Tafseel.api.requireRoles(['Student']);
+      if (!session) return;
+
+      const query = new URLSearchParams(location.search);
+      const orderId = (query.get('orderId') || '').trim();
+      const liveSessionId = (query.get('liveSessionId') || '').trim();
+      const hasOrder = GUID.test(orderId);
+      const hasSession = GUID.test(liveSessionId);
+
+      if (!hasOrder && !hasSession) {
+        this.setState({ loading: false, unavailable: true });
+        return;
+      }
+
+      if (hasOrder) {
+        const page = await Tafseel.api.get('/orders/mine?pageSize=100');
+        const item = (page.items || []).find(x => String(x.id).toLowerCase() === orderId.toLowerCase());
+        if (!item) {
+          this.setState({ loading: false, unavailable: true });
+          return;
+        }
+        this.setState({
+          loading: false, unavailable: false,
+          kind: 'order', itemId: item.id, item,
+          idempotencyKey: 'payment-order-' + item.id
+        });
+        return;
+      }
+
+      const page = await Tafseel.api.get('/live-sessions/mine?pageSize=100');
+      const item = (page.items || []).find(x => String(x.id).toLowerCase() === liveSessionId.toLowerCase());
+      if (!item) {
+        this.setState({ loading: false, unavailable: true });
+        return;
+      }
+      this.setState({
+        loading: false, unavailable: false,
+        kind: 'liveSession', itemId: item.id, item,
+        idempotencyKey: 'payment-session-' + item.id
+      });
+    } catch (error) {
+      this.setState({ loading: false, unavailable: true });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  async pay() {
+    const s = this.state;
+    if (s.submitting || !s.itemId || !s.kind) return;
+    this.setState({ submitting: true });
+    try {
+      const path = s.kind === 'order'
+        ? '/payments/orders/' + s.itemId
+        : '/payments/live-sessions/' + s.itemId;
+      const result = await Tafseel.api.post(path, null, {
+        'Idempotency-Key': s.idempotencyKey || ('payment-' + s.itemId)
+      });
+      this.setState({
+        submitting: false,
+        checkoutReference: result.checkoutReference || (result.payment && result.payment.providerReference) || ''
+      });
+    } catch (error) {
+      this.setState({ submitting: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  buildSummary(item, kind) {
+    if (!item) return { title: '', subtitle: '', lines: [], totalLabel: '' };
+    if (kind === 'order') {
+      const currency = item.currency || 'SAR';
+      return {
+        title: Tafseel.t('pay_order_title'),
+        subtitle: Tafseel.t('pay_order_id_label') + ' ' + item.id,
+        lines: [
+          { label: Tafseel.t('pay_service_price'), value: money(currency, item.price) },
+          { label: Tafseel.t('pay_platform_fee'), value: money(currency, item.studentFeeAmount) }
+        ],
+        totalLabel: money(currency, item.studentTotal)
+      };
+    }
+    const currency = item.currency || 'SAR';
+    const lines = [
+      { label: Tafseel.t('pay_base_price'), value: money(currency, item.basePrice) }
+    ];
+    if (Number(item.emergencyPremiumAmount) > 0) {
+      lines.push({
+        label: Tafseel.t('pay_emergency_premium'),
+        value: money(currency, item.emergencyPremiumAmount)
+      });
+    }
+    return {
+      title: item.title || Tafseel.t('pay_live_session_title'),
+      subtitle: Tafseel.t('pay_live_session_subtitle'),
+      lines,
+      totalLabel: money(currency, item.totalPrice)
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const initiated = !!s.checkoutReference;
+    const summary = this.buildSummary(s.item, s.kind);
+
+    return {
+      langLabel: Tafseel.t('language_target'),
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+
+      isLoading: s.loading,
+      isUnavailable: !s.loading && s.unavailable && !initiated,
+      showCheckout: !s.loading && !s.unavailable && !initiated && !!s.item,
+      showSuccess: initiated,
+
+      itemTitle: summary.title,
+      itemSubtitle: summary.subtitle,
+      priceLines: summary.lines,
+      totalLabel: summary.totalLabel,
+      checkoutReference: s.checkoutReference,
+
+      submitting: s.submitting,
+      payLabel: s.submitting ? Tafseel.t('pay_submitting') : Tafseel.t('pay_securely'),
+      payOpacity: s.submitting ? '0.65' : '1',
+      payCursor: s.submitting ? 'wait' : 'pointer',
+      onPay: () => this.pay()
+    };
+  }
+}
+
+</script>
+</body>
+</html>

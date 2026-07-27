@@ -55,7 +55,8 @@ public sealed record TeacherProfileDto(
     IReadOnlyCollection<AvailabilityRuleDto> Availability,
     IReadOnlyCollection<AvailabilityExceptionDto> AvailabilityExceptions,
     IReadOnlyCollection<CredentialDto> Certifications,
-    IReadOnlyCollection<CredentialDto> Experience);
+    IReadOnlyCollection<CredentialDto> Experience,
+    LiveSessionBookingPolicyDto? LiveSessionBookingPolicy);
 
 public sealed record NamedItemDto(Guid Id, string Name);
 public sealed record UpdateTeacherProfile(
@@ -77,8 +78,33 @@ public sealed record TeacherServiceInput(
     [param: Range(0, 20)] int Revisions);
 
 public sealed record TeacherServiceDto(
-    Guid Id, Guid SubjectId, Guid ServiceCatalogItemId, string Title, string Description,
-    decimal Price, string Currency, int DeliveryHours, int Revisions, bool IsActive, string Version);
+    Guid Id,
+    Guid SubjectId,
+    Guid ServiceCatalogItemId,
+    string ServiceCatalogCode,
+    string ServiceCatalogType,
+    string Title,
+    string Description,
+    decimal Price,
+    string Currency,
+    int DeliveryHours,
+    int Revisions,
+    bool IsActive,
+    bool IsCatalogActive,
+    bool IsPublic,
+    bool TeacherSelectable,
+    bool RequiresScheduling,
+    IReadOnlyCollection<int> AllowedDurations,
+    decimal? MinPrice,
+    decimal? MaxPrice,
+    int DisplayOrder,
+    bool CanRequest,
+    bool CanBook,
+    string Version);
+
+public sealed record LiveSessionBookingPolicyDto(
+    decimal EmergencyPremiumPercent,
+    int CancellationWindowHours);
 
 public sealed record TeachingSampleDto(
     Guid Id, Guid SubjectId, Guid? TopicId, string Title, int DurationSeconds, DateTimeOffset? PublishedAt);

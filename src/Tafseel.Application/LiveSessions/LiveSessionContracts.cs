@@ -32,7 +32,7 @@ public sealed record JoinSessionDto(string Url, DateTimeOffset ValidFrom, DateTi
 public interface ILiveSessionService
 {
     Task<IReadOnlyCollection<BookableSlotDto>> GetSlotsAsync(
-        string teacherId, DateOnly from, int days, int durationMinutes, string studentTimeZoneId, CancellationToken ct);
+        string teacherId, Guid? teacherServiceId, DateOnly from, int days, int durationMinutes, string studentTimeZoneId, CancellationToken ct);
     Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct);
     Task<PagedResult<LiveSessionDto>> GetMineAsync(string userId, int page, int pageSize, CancellationToken ct);
     Task RescheduleAsync(string userId, Guid id, RescheduleLiveSession input, string version, CancellationToken ct);

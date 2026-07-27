@@ -10,16 +10,14 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Browse teachers — Tafseel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
-<script src="js/tafseel.js"></script>
+  <script src="js/locales.js"></script>
+  <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
-  <div style="max-width:1440px;margin-inline:auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:32px">
+  <div data-public-header style="max-width:1440px;margin-inline:auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:32px">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);flex:none" aria-label="Tafseel home">
       <span style="width:30px;height:30px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:15px">T</span>
       <span style="display:flex;flex-direction:column;line-height:1">
@@ -27,7 +25,7 @@
         <span style="font-family:var(--font-ar);font-size:11px;color:var(--muted);margin-top:3px">تفصيل</span>
       </span>
     </a>
-    <nav aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
+    <nav data-hide-sm aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
       <a href="Tafseel-Browse-Teachers.dc.html" aria-current="page" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);background:var(--surface-2);color:var(--text);font-size:14px;font-weight:600">Browse Teachers</a>
       <a href="Tafseel-Landing.dc.html#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Subjects</a>
       <a href="Tafseel-Landing.dc.html#how" data-i18n="nav_how" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">How It Works</a>
@@ -36,7 +34,7 @@
     <div style="display:flex;align-items:center;gap:8px;flex:none">
       <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t)" style-hover="border-color:var(--border-strong);background:var(--surface-2)">{{ langLabel }}</button>
       <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px;transition:all var(--t)" style-hover="border-color:var(--border-strong);background:var(--surface-2)">{{ themeIcon }}</button>
-      <a href="Tafseel-Student-Dashboard.dc.html" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+      <a data-hide-sm href="Tafseel-Student-Dashboard.dc.html" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
         <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">NA</span>
         Noor
       </a>
@@ -269,14 +267,6 @@ let TEACHERS = [
   { id:12, name:'Ahmed Barakat', subject:'Chemistry', level:'Rising talent', years:'3 yrs experience', exp:3, rating:4.4, reviews:41, completed:'86 requests', bio:'Teaching assistant covering general and analytical chemistry for first-year students.', skills:['General chem','Titrations','Stoichiometry'], response:'Replies in ~45m', responseMins:45, languages:'Arabic', langs:['Arabic'], price:65, online:true, verified:false, thisWeek:true, levels:['High school','Undergraduate'], services:['Custom explanation','Assignment guidance'] }
 ];
 
-const AR = {
-  browse_h:'اعثر على معلمك',
-  browse_count:'معلمًا موثقًا يطابقون بحثك',
-  browse_sort:'ترتيب حسب',
-  filters_h:'عوامل التصفية',
-  filters_clear:'مسح الكل',
-  ph_search:'اسم المعلم أو الموضوع أو كلمة مفتاحية'
-};
 
 const CHIP_BASE = 'height:32px;padding-inline:12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);';
 
@@ -289,7 +279,6 @@ class Component extends DCLogic {
   };
 
   componentDidMount() {
-    Tafseel.addDict(AR);
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     const query = new URLSearchParams(location.search);
     this.setState({ q: query.get('search') || '' });
@@ -304,7 +293,7 @@ class Component extends DCLogic {
           responseMins:t.responseTimeMinutes, languages:'', langs:[],
           price:t.startingPrice || 0, online:false, verified:t.verified, thisWeek:false,
           levels:[], services:[],
-          profileHref:'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(t.teacherId)
+          profileHref:'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId)
         }));
         this.setState({ page: 1 });
       })
@@ -378,7 +367,7 @@ class Component extends DCLogic {
     const compared = TEACHERS.filter(t => s.compare.includes(t.id));
 
     return {
-      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langLabel: Tafseel.t('language_target'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
@@ -423,7 +412,7 @@ class Component extends DCLogic {
 
       results: shown.map(t => ({
         ...t,
-        profileHref: t.profileHref || ('Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(t.id)),
+        profileHref: t.profileHref || ('Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.id)),
         priceLabel: 'SAR ' + t.price,
         onlineLabel: t.online ? 'Online now' : 'Offline',
         dotStyle: 'position:absolute;inset-block-end:-2px;inset-inline-end:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);background:' + (t.online ? 'var(--success)' : 'var(--border-strong)'),

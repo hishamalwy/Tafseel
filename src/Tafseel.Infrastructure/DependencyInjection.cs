@@ -183,6 +183,53 @@ public static class DependencyInjection
                 if (!result.Succeeded)
                     throw new InvalidOperationException($"Required Identity role '{role}' could not be created.");
             }
+
+        if (scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true)
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
+            (string Role, string Email, string FullName)[] stagingUsers =
+            [
+                (Roles.Admin, "admin@gmail.com", "Tafseel Admin"),
+                (Roles.Student, "student@gmail.com", "Tafseel Student"),
+                (Roles.Teacher, "teacher@gmail.com", "Tafseel Teacher"),
+                (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer")
+            ];
+
+            foreach (var account in stagingUsers)
+            {
+                var user = await users.FindByEmailAsync(account.Email);
+                if (user is null)
+                {
+                    user = new ApplicationUser
+                    {
+                        UserName = account.Email,
+                        Email = account.Email,
+                        FullName = account.FullName,
+                        EmailConfirmed = true
+                    };
+                    user.PasswordHash = hasher.HashPassword(user, "@Admin123");
+                    var created = await users.CreateAsync(user);
+                    if (!created.Succeeded)
+                        throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be created.");
+                }
+                else if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    var confirmed = await users.UpdateAsync(user);
+                    if (!confirmed.Succeeded)
+                        throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be confirmed.");
+                }
+
+                if (!await users.IsInRoleAsync(user, account.Role))
+                {
+                    var assigned = await users.AddToRoleAsync(user, account.Role);
+                    if (!assigned.Succeeded)
+                        throw new InvalidOperationException(
+                            $"Staging demo user '{account.Email}' could not be assigned to '{account.Role}'.");
+                }
+            }
+        }
         await transaction.CommitAsync();
     }
 

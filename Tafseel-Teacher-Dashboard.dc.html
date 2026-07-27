@@ -10,11 +10,9 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Teacher dashboard — Tafseel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/tafseel.css" />
-<script src="js/tafseel.js"></script>
+  <script src="js/locales.js"></script>
+  <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
 </helmet>
 
@@ -72,7 +70,7 @@
           <p style="color:var(--muted);font-size:14.5px">3 new requests are waiting and one delivery is due tomorrow.</p>
         </div>
         <div style="display:flex;gap:10px">
-          <a href="#" style="height:42px;padding:0 18px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-md);font-weight:600;font-size:14px;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">Availability</a>
+          <button type="button" onClick="{{ goAvailability }}" style="height:42px;padding:0 18px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-md);font-weight:600;font-size:14px;color:var(--text);background:var(--surface)" style-hover="background:var(--surface-2);color:var(--text)">Availability</button>
           <button type="button" onClick="{{ scrollToRequests }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14px">Review new requests</button>
         </div>
       </div>
@@ -181,8 +179,8 @@
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);margin-bottom:16px">
             <div>
-              <div style="font-size:13px;color:var(--muted)">Platform commission (15%)</div>
-              <div style="font-size:15px;font-weight:700">SAR 612</div>
+              <div style="font-size:13px;color:var(--muted)">{{ earningsSummaryLabel }}</div>
+              <div style="font-size:15px;font-weight:700">{{ earningsSummaryValue }}</div>
             </div>
             <button type="button" onClick="{{ onWithdraw }}" style="height:38px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Withdraw</button>
           </div>
@@ -217,7 +215,13 @@
 
     <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">My services</h1>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">My services</h1>
+          <button type="button" onClick="{{ openAddService }}" style="height:38px;padding:0 14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13.5px">+ Add service</button>
+        </div>
+        <sc-if value="{{ hasNoServices }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:14px;color:var(--muted);padding:28px 4px">No services yet.</p>
+        </sc-if>
         <div style="display:flex;flex-direction:column;gap:14px">
           <sc-for list="{{ myServices }}" as="sv" hint-placeholder-count="5">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap">
@@ -225,8 +229,9 @@
                 <div style="font-size:15.5px;font-weight:700;margin-bottom:4px">{{ sv.name }}</div>
                 <div style="font-size:13px;color:var(--muted)">{{ sv.desc }}</div>
               </div>
-              <div style="display:flex;align-items:center;gap:14px">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
                 <span style="font-size:17px;font-weight:800">{{ sv.price }}</span>
+                <button type="button" onClick="{{ sv.onEdit }}" style="height:34px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">Edit</button>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
                   <input type="checkbox" checked="{{ sv.active }}" onChange="{{ sv.onToggle }}" style="width:38px;height:22px;accent-color:var(--primary)" />
                   Active
@@ -270,7 +275,7 @@
           <label style="display:flex;flex-direction:column;gap:6px;max-width:220px;margin-bottom:16px">
             <span style="font-size:13px;font-weight:600">Time zone</span>
             <select value="{{ timezone }}" onChange="{{ onTimezone }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
-              <option>Arabia Standard Time (GMT+3)</option><option>Gulf Standard Time (GMT+4)</option><option>Egypt Standard Time (GMT+2)</option>
+              <option value="Asia/Riyadh">Arabia Standard Time (GMT+3)</option><option value="Asia/Dubai">Gulf Standard Time (GMT+4)</option><option value="Africa/Cairo">Egypt Standard Time (GMT+2)</option>
             </select>
           </label>
           <button type="button" onClick="{{ onSaveAvailability }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save availability</button>
@@ -344,9 +349,9 @@
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
           <div>
             <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Available balance</div>
-            <div style="font-size:26px;font-weight:800">SAR 2,140</div>
+            <div style="font-size:26px;font-weight:800">{{ withdrawalAvailableText }}</div>
           </div>
-          <button type="button" onClick="{{ onWithdraw }}" style="height:44px;padding:0 20px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Withdraw to bank ****4821</button>
+          <button type="button" onClick="{{ onWithdraw }}" style="height:44px;padding:0 20px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">{{ withdrawalButtonLabel }}</button>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border)"><h2 style="font-size:15px;font-weight:700">Withdrawal history</h2></div>
@@ -370,8 +375,22 @@
             <textarea value="{{ profileBio }}" onChange="{{ onProfileBio }}" rows="4" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">LinkedIn profile</span>
-            <input value="{{ profileLinkedin }}" onChange="{{ onProfileLinkedin }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span style="font-size:13px;font-weight:600">Professional headline</span>
+            <input value="{{ profileHeadline }}" onChange="{{ onProfileHeadline }}" maxlength="200" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <div class="tf-grid-2">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Country</span>
+              <input value="{{ profileCountry }}" onChange="{{ onProfileCountry }}" maxlength="100" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">City</span>
+              <input value="{{ profileCity }}" onChange="{{ onProfileCity }}" maxlength="150" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Expected response time (minutes)</span>
+            <input type="number" min="0" max="43200" value="{{ profileResponseMinutes }}" onChange="{{ onProfileResponseMinutes }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <button type="button" onClick="{{ onSaveProfile }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save profile</button>
         </div>
@@ -383,11 +402,11 @@
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-            <span>Email me about new requests</span>
+            <span>Email notifications</span>
             <input type="checkbox" checked="{{ notifyNewRequests }}" onChange="{{ onNotifyNewRequests }}" style="width:38px;height:22px;accent-color:var(--primary)" />
           </label>
           <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-            <span>SMS reminders for live sessions</span>
+            <span>In-app notifications</span>
             <input type="checkbox" checked="{{ notifySms }}" onChange="{{ onNotifySms }}" style="width:38px;height:22px;accent-color:var(--primary)" />
           </label>
           <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
@@ -434,25 +453,77 @@
   </div>
 </sc-if>
 
+<sc-if value="{{ serviceModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeServiceModal }}">
+    <div role="dialog" aria-modal="true" aria-label="{{ serviceModalTitle }}" onClick="{{ stop }}" style="width:min(520px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both;max-height:min(90vh,720px);overflow:auto">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ serviceModalTitle }}</h2>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+        <sc-if value="{{ serviceModalCreate }}" hint-placeholder-val="{{ true }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Subject</span>
+            <select value="{{ svcSubjectId }}" onChange="{{ onSvcSubjectId }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <option value="">Choose a subject</option>
+              <sc-for list="{{ subjectOptions }}" as="sub" hint-placeholder-count="4">
+                <option value="{{ sub.id }}">{{ sub.name }}</option>
+              </sc-for>
+            </select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Service type</span>
+            <select value="{{ svcCatalogId }}" onChange="{{ onSvcCatalogId }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <option value="">Choose a service type</option>
+              <sc-for list="{{ serviceTypeOptions }}" as="st" hint-placeholder-count="4">
+                <option value="{{ st.id }}">{{ st.name }}</option>
+              </sc-for>
+            </select>
+          </label>
+        </sc-if>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Title</span>
+          <input value="{{ svcTitle }}" onChange="{{ onSvcTitle }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">Description</span>
+          <textarea value="{{ svcDescription }}" onChange="{{ onSvcDescription }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Price</span>
+            <input type="number" min="0.01" step="0.01" value="{{ svcPrice }}" onChange="{{ onSvcPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Currency</span>
+            <input value="{{ svcCurrency }}" readonly style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px;color:var(--muted)" />
+          </label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Delivery hours</span>
+            <input type="number" min="1" max="8760" value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Revisions</span>
+            <input type="number" min="0" max="20" value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onClick="{{ closeServiceModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
+        <button type="button" onClick="{{ confirmServiceModal }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Save service</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
   <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-let PENDING = [
-  { id:'q1', student:'Bassel Younes', initials:'BY', subject:'Physics', topic:'Struggling with rotational dynamics before Thursday quiz', description:'I need someone to go through problems 4–9 in chapter 8 — mostly torque and angular momentum. I have the professor’s slides attached.', files:['ch8-slides.pdf', 'quiz-sample.docx'], budget:'SAR 130', deadline:'Thu, 30 Jul', urgency:'Before exam' },
-  { id:'q2', student:'Reem Al-Ghamdi', initials:'RG', subject:'Physics', topic:'Lab report on simple pendulum — need feedback structure', description:'First-year lab report due Friday. I want feedback on my method and error analysis sections specifically.', files:['lab-report-draft.docx'], budget:'SAR 90', deadline:'Fri, 31 Jul', urgency:'Standard' },
-  { id:'q3', student:'Fahad Al-Qahtani', initials:'FQ', subject:'Physics', topic:'Same-day help — exam is tomorrow morning', description:'I bombed my mock exam on thermodynamics. Need a condensed walkthrough of the formulas and when to use each one.', files:['mock-exam.pdf'], budget:'SAR 200', deadline:'Tonight', urgency:'Same day' }
-];
+let PENDING = [];
 
-let ORDERS = [
-  { id:'O-2291', title:'Mechanics revision pack', student:'Huda Al-Rashed', deadline:'27 Jul', price:'SAR 140', stage:'accepted' },
-  { id:'O-2287', title:'Waves & oscillations explainer', student:'Tariq Hassan', deadline:'28 Jul', price:'SAR 120', stage:'progress' },
-  { id:'O-2280', title:'Electromagnetism problem set', student:'Dana Kamal', deadline:'26 Jul', price:'SAR 150', stage:'ready' },
-  { id:'O-2274', title:'Free-body diagram walkthrough', student:'Ali Marzouq', deadline:'25 Jul', price:'SAR 95', stage:'revision' },
-  { id:'O-2260', title:'Thermodynamics past paper', student:'Noor Abdulaziz', deadline:'18 Jul', price:'SAR 120', stage:'completed' }
-];
+let ORDERS = [];
 
 const STAGE_ACTION = { accepted:'Start work', progress:'Continue', ready:'Deliver', revision:'View revision', completed:'View' };
 
@@ -461,18 +532,32 @@ class Component extends DCLogic {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, section: 'overview',
     orderTab: 'all', declined: [], acceptModal: null,
     finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: '',
-    balances: [], liveSessions: []
+    balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
+    subjectsCatalog: [], servicesCatalog: [],
+    serviceModal: null,
+    svcSubjectId: '', svcCatalogId: '', svcTitle: '', svcDescription: '',
+    svcPrice: 120, svcCurrency: 'SAR', svcDeliveryHours: 48, svcRevisions: 2
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
-    Tafseel.api.ready().then(session => {
-      if (!session) return location.href = 'Tafseel-Auth.dc.html';
+    // Prevent demo fallbacks from appearing if any marketplace/requests API call fails.
+    PENDING = [];
+    ORDERS = [];
+    Tafseel.api.requireRoles(['Teacher']).then(session => {
+      if (!session) return;
+      this._session = session;
       return Promise.all([
         Tafseel.api.get('/learning-requests/assigned?pageSize=100'),
         Tafseel.api.get('/orders/assigned?pageSize=100'),
         Tafseel.api.get('/withdrawals/balances'),
-        Tafseel.api.get('/live-sessions/mine?pageSize=100')
+        Tafseel.api.get('/live-sessions/mine?pageSize=100'),
+        Tafseel.api.get('/teachers/me').catch(() => null),
+        Tafseel.api.get('/notification-preferences'),
+        Tafseel.api.get('/teachers/' + encodeURIComponent(session.userId) + '/reviews?pageSize=50'),
+        Tafseel.api.get('/conversations?pageSize=50'),
+        Tafseel.api.get('/subjects'),
+        Tafseel.api.get('/services')
       ]);
     }).then(data => {
       if (!data) return;
@@ -480,19 +565,34 @@ class Component extends DCLogic {
         id:x.id, student:x.studentId, initials:'ST', subject:'Request', topic:x.title,
         description:x.description, files:x.attachments.map(a => a.originalName),
         budget:x.budget ? 'SAR ' + x.budget : 'Flexible',
-        deadline:new Date(x.preferredDeliveryAt).toLocaleString(), urgency:'Standard', version:x.version
+        deadline:Tafseel.date(x.preferredDeliveryAt), urgency:'Standard', version:x.version
       }));
       const stages = ['accepted','ready','progress','ready','completed','completed'];
       ORDERS = data[1].items.map(x => ({
         id:x.id, title:'Order ' + x.id, student:x.studentId,
-        deadline:new Date(x.agreedDeliveryAt).toLocaleDateString(),
+        deadline:Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }),
         price:x.currency + ' ' + x.price, stage:stages[x.status], version:x.version
       }));
+      const profile = data[4];
+      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       this.setState({
-        declined:[], balances:data[2],
+        declined:[], balances:data[2], profile,
+        profileBio:profile ? profile.bio : '',
+        profileHeadline:profile ? profile.headline : '',
+        profileCountry:profile ? profile.country : '',
+        profileCity:profile ? profile.city : '',
+        profileResponseMinutes:profile ? profile.responseTimeMinutes : 60,
+        timezone:profile ? profile.timeZoneId : 'Asia/Riyadh',
+        availDays:profile ? [...new Set(profile.availability.map(x => dayNames[x.dayOfWeek]))] : ['Sun','Mon','Tue','Wed','Thu'],
+        notifyNewRequests:data[5].emailEnabled,
+        notifySms:data[5].inAppEnabled,
+        liveReviews:data[6].items,
+        liveConversations:data[7].items,
+        subjectsCatalog:data[8] || [],
+        servicesCatalog:data[9] || [],
         liveSessions:data[3].items.map(x => ({
           id:x.id, student:x.studentId, topic:x.title,
-          when:new Date(x.startsAt).toLocaleString(), confirmed:x.status === 1
+          when:Tafseel.date(x.startsAt), confirmed:x.status === 1
         }))
       });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
@@ -507,6 +607,11 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
+    const trackedCurrency = (s.balances && s.balances.length ? s.balances[0].currency : 'SAR') || 'SAR';
+    const trackedTotal = (s.balances || []).reduce((acc, b) => acc + Number(b.available) + Number(b.pendingWithdrawal), 0);
+    const withdrawalBalance = (s.balances || []).find(x => Number(x.available) > 0) || (s.balances || [])[0] || { currency: 'SAR', available: 0 };
+    const withdrawalAvailableText = withdrawalBalance.currency + ' ' + Tafseel.number(withdrawalBalance.available);
+    const withdrawalButtonLabel = Number(withdrawalBalance.available) > 0 ? 'Withdraw' : 'No available balance';
     const NAV = [
       ['overview','◱','Overview',0], ['new','✦','New Requests',3], ['orders','◫','Active Orders',5], ['sessions','◉','Live Sessions',2],
       ['services','▤','My Services',0], ['samples','▶','Teaching Samples',0], ['availability','◷','Availability',0],
@@ -529,12 +634,17 @@ class Component extends DCLogic {
     const filteredOrders = ORDERS.filter(o => s.orderTab === 'all' || o.stage === s.orderTab);
 
     return {
-      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langLabel: Tafseel.t('language_target'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
       stop: e => e.stopPropagation(),
+      earningsSummaryLabel: 'Tracked balance',
+      earningsSummaryValue: trackedCurrency + ' ' + Tafseel.number(trackedTotal),
+      withdrawalAvailableText,
+      withdrawalButtonLabel,
+      goAvailability: () => this.setState({ drawer: false, section: 'availability' }),
 
       drawerState: s.drawer ? 'open' : 'closed',
       toggleDrawer: () => this.setState({ drawer: !s.drawer }),
@@ -562,64 +672,193 @@ class Component extends DCLogic {
       isProfile: s.section === 'profile',
       isSettings: s.section === 'settings',
 
-      myServices: [
-        { id:'rec', name:'Custom recorded explanation', desc:'2-day delivery, 2 revisions', price:'SAR 120' },
-        { id:'live', name:'Live session', desc:'60/90/120 minute video calls', price:'SAR 180/hr' },
-        { id:'exam', name:'Exam revision', desc:'3-day delivery, 1 revision', price:'SAR 150' },
-        { id:'assign', name:'Assignment guidance', desc:'2-day delivery, 2 revisions', price:'SAR 110' }
-      ].map((sv, i) => ({ ...sv, active: !(s.disabledServices||[]).includes(sv.id), onToggle: () => { const list = s.disabledServices||[]; const has = list.includes(sv.id); this.setState({ disabledServices: has ? list.filter(x=>x!==sv.id) : list.concat(sv.id) }); this.flash(sv.name + (has?' re-activated':' paused')); } })),
+      myServices: (s.profile && s.profile.services ? s.profile.services : []).map(sv => ({
+        id:sv.id, name:sv.title,
+        desc:sv.deliveryHours + ' hour delivery · ' + sv.revisions + ' revisions',
+        price:sv.currency + ' ' + sv.price,
+        active:sv.isActive,
+        version:sv.version,
+        raw:sv,
+        onEdit: () => this.setState({
+          serviceModal: { mode: 'edit', service: sv },
+          svcSubjectId: sv.subjectId,
+          svcCatalogId: sv.serviceCatalogItemId,
+          svcTitle: sv.title,
+          svcDescription: sv.description,
+          svcPrice: sv.price,
+          svcCurrency: sv.currency || 'SAR',
+          svcDeliveryHours: sv.deliveryHours,
+          svcRevisions: sv.revisions
+        }),
+        onToggle: async () => {
+          if (!s.profile || !sv.version) return;
+          try {
+            await Tafseel.api.put('/teachers/me/services/' + sv.id + '/active',
+              { active:!sv.isActive }, { 'If-Match':sv.version });
+            const profile = await Tafseel.api.get('/teachers/me');
+            this.setState({ profile });
+            this.flash(sv.title + (sv.isActive ? ' paused' : ' re-activated'));
+          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        }
+      })),
+      hasNoServices: !(s.profile && s.profile.services && s.profile.services.length),
+      openAddService: () => this.setState({
+        serviceModal: { mode: 'create' },
+        svcSubjectId: '', svcCatalogId: '', svcTitle: '', svcDescription: '',
+        svcPrice: 120, svcCurrency: 'SAR', svcDeliveryHours: 48, svcRevisions: 2
+      }),
+      serviceModal: !!s.serviceModal,
+      serviceModalCreate: !s.serviceModal || s.serviceModal.mode === 'create',
+      serviceModalTitle: s.serviceModal && s.serviceModal.mode === 'edit' ? 'Edit service' : 'Add service',
+      closeServiceModal: () => this.setState({ serviceModal: null }),
+      subjectOptions: (s.subjectsCatalog || []).map(x => ({ id: x.id, name: x.name })),
+      serviceTypeOptions: (s.servicesCatalog || [])
+        .filter(x => x.teacherSelectable !== false)
+        .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0) || String(a.name).localeCompare(String(b.name)))
+        .map(x => ({ id: x.id, name: x.name })),
+      svcSubjectId: s.svcSubjectId, onSvcSubjectId: e => this.setState({ svcSubjectId: e.target.value }),
+      svcCatalogId: s.svcCatalogId, onSvcCatalogId: e => this.setState({ svcCatalogId: e.target.value }),
+      svcTitle: s.svcTitle, onSvcTitle: e => this.setState({ svcTitle: e.target.value }),
+      svcDescription: s.svcDescription, onSvcDescription: e => this.setState({ svcDescription: e.target.value }),
+      svcPrice: s.svcPrice, onSvcPrice: e => this.setState({ svcPrice: e.target.value }),
+      svcCurrency: s.svcCurrency || 'SAR',
+      svcDeliveryHours: s.svcDeliveryHours, onSvcDeliveryHours: e => this.setState({ svcDeliveryHours: e.target.value }),
+      svcRevisions: s.svcRevisions, onSvcRevisions: e => this.setState({ svcRevisions: e.target.value }),
+      confirmServiceModal: async () => {
+        const title = String(s.svcTitle || '').trim();
+        const description = String(s.svcDescription || '').trim();
+        const price = Number(s.svcPrice);
+        const deliveryHours = Number(s.svcDeliveryHours);
+        const revisions = Number(s.svcRevisions);
+        if (!title) return this.flash('Title is required.');
+        if (!(price > 0)) return this.flash('Price must be greater than zero.');
+        try {
+          if (s.serviceModal && s.serviceModal.mode === 'edit') {
+            const existing = s.serviceModal.service;
+            if (!description) return this.flash('Description is required.');
+            if (!(deliveryHours >= 1)) return this.flash('Delivery hours are required.');
+            if (!(revisions >= 0)) return this.flash('Revisions are required.');
+            await Tafseel.api.put('/teachers/me/services/' + existing.id, {
+              subjectId: existing.subjectId,
+              serviceCatalogItemId: existing.serviceCatalogItemId,
+              title,
+              description,
+              price,
+              currency: existing.currency || 'SAR',
+              deliveryHours,
+              revisions
+            }, { 'If-Match': existing.version });
+            this.flash('Service saved');
+          } else {
+            if (!s.svcSubjectId || !s.svcCatalogId) return this.flash('Subject and service type are required.');
+            if (!description) return this.flash('Description is required.');
+            if (!(deliveryHours >= 1)) return this.flash('Delivery hours are required.');
+            if (!(revisions >= 0)) return this.flash('Revisions are required.');
+            await Tafseel.api.post('/teachers/me/services', {
+              subjectId: s.svcSubjectId,
+              serviceCatalogItemId: s.svcCatalogId,
+              title,
+              description,
+              price,
+              currency: 'SAR',
+              deliveryHours,
+              revisions
+            });
+            this.flash('Service created');
+          }
+          const profile = await Tafseel.api.get('/teachers/me');
+          this.setState({ profile, serviceModal: null });
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
 
-      teachingSamples: [
-        { title: 'Carnot cycle, explained with a real exam question', meta: 'Thermodynamics · 3:12', onWatch: () => this.flash('Playing sample…') },
-        { title: 'Free-body diagrams without the guesswork', meta: 'Mechanics · 2:48', onWatch: () => this.flash('Playing sample…') },
-        { title: 'Why your energy conservation answer loses marks', meta: 'Mechanics · 4:05', onWatch: () => this.flash('Playing sample…') },
-        { title: 'Qualification demo — reviewed by quality team', meta: 'Approved 12 Mar 2026', onWatch: () => this.flash('Playing qualification demo…') }
-      ],
+      teachingSamples: s.profile ? s.profile.samples.map(sample => ({
+        title:sample.title,
+        meta:Math.floor(sample.durationSeconds / 60) + ':' + String(sample.durationSeconds % 60).padStart(2, '0'),
+        onWatch:() => window.open('/api/v1/teachers/samples/' + sample.id + '/content', '_blank', 'noopener')
+      })) : [],
 
       availDays: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => {
         const active = (s.availDays || ['Sun','Mon','Tue','Wed','Thu']).includes(d);
         return { label: d, style: 'height:40px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' + (active ? 'border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);' : 'border:1px solid var(--border);background:var(--bg);color:var(--muted);'),
           onClick: () => { const list = s.availDays || ['Sun','Mon','Tue','Wed','Thu']; this.setState({ availDays: list.includes(d) ? list.filter(x=>x!==d) : list.concat(d) }); } };
       }),
-      timezone: s.timezone || 'Arabia Standard Time (GMT+3)', onTimezone: e => this.setState({ timezone: e.target.value }),
-      onSaveAvailability: () => this.flash('Availability saved'),
+      timezone: s.timezone || 'Asia/Riyadh', onTimezone: e => this.setState({ timezone: e.target.value }),
+      onSaveAvailability: async () => {
+        if (!s.profile) return;
+        const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const selected = new Set(s.availDays || []);
+        try {
+          for (const rule of s.profile.availability)
+            if (!selected.has(names[rule.dayOfWeek]))
+              await Tafseel.api.delete('/teachers/me/availability/rules/' + rule.id);
+          const existing = new Set(s.profile.availability.map(x => names[x.dayOfWeek]));
+          for (const day of selected)
+            if (!existing.has(day))
+              await Tafseel.api.post('/teachers/me/availability/rules', {
+                dayOfWeek:names.indexOf(day), start:'17:00:00', end:'21:00:00',
+                timeZoneId:s.timezone, slotMinutes:60
+              });
+          const profile = await Tafseel.api.get('/teachers/me');
+          this.setState({ profile });
+          this.flash('Availability saved');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
 
-      conversations: [
-        { initials:'BY', name:'Bassel Younes', preview:'Thank you, that clarifies problem 6!', time:'11:20' },
-        { initials:'HR', name:'Huda Al-Rashed', preview:'Can we move the session to 6pm instead?', time:'Yesterday' },
-        { initials:'DK', name:'Dana Kamal', preview:'Delivery received, reviewing now.', time:'Mon' }
-      ],
+      conversations: s.liveConversations.length ? s.liveConversations.map(c => ({
+        initials:'··', name:c.participantIds.find(id => id !== this._session?.userId) || 'Conversation',
+        preview:c.latestMessage?.body || 'No messages yet', time:Tafseel.date(c.updatedAt)
+      })) : [],
 
-      teacherReviews: [
-        { student:'Noor Abdulaziz', stars:'★★★★★', body:'Sent my thermodynamics past paper on Wednesday night and had a walkthrough before Friday. Explains the marking scheme, not just the answer.' },
-        { student:'Mohammed Sabri', stars:'★★★★★', body:'Booked a session two days before my final. Calm and extremely organised.' }
-      ],
+      teacherReviews: s.liveReviews.length ? s.liveReviews.map(review => ({
+        student:'Verified student',
+        stars:'★'.repeat(Math.round(review.overallScore)),
+        body:review.originalComment
+      })) : [],
 
-      withdrawalHistory: [
-        { date:'20 Jul 2026', amount:'SAR 1,800', status:'Completed', statusStyle:'color:var(--success);font-weight:600' },
-        { date:'2 Jul 2026', amount:'SAR 2,400', status:'Completed', statusStyle:'color:var(--success);font-weight:600' },
-        { date:'14 Jun 2026', amount:'SAR 1,150', status:'Completed', statusStyle:'color:var(--success);font-weight:600' }
-      ],
+      withdrawalHistory: [],
 
-      profileBio: s.profileBio ?? 'PhD in Applied Physics with 11 years of teaching experience across university lecturing and private tutoring.',
+      profileBio: s.profileBio ?? '',
       onProfileBio: e => this.setState({ profileBio: e.target.value }),
-      profileLinkedin: s.profileLinkedin ?? 'linkedin.com/in/rana-alotaibi',
-      onProfileLinkedin: e => this.setState({ profileLinkedin: e.target.value }),
-      onSaveProfile: () => this.flash('Profile saved'),
+      profileHeadline: s.profileHeadline ?? '', onProfileHeadline: e => this.setState({ profileHeadline:e.target.value }),
+      profileCountry: s.profileCountry ?? '', onProfileCountry: e => this.setState({ profileCountry:e.target.value }),
+      profileCity: s.profileCity ?? '', onProfileCity: e => this.setState({ profileCity:e.target.value }),
+      profileResponseMinutes: s.profileResponseMinutes ?? 0,
+      onProfileResponseMinutes: e => this.setState({ profileResponseMinutes:e.target.value }),
+      onSaveProfile: async () => {
+        try {
+          await Tafseel.api.put('/teachers/me', {
+            headline:s.profileHeadline, bio:s.profileBio,
+            country:s.profileCountry, city:s.profileCity,
+            timeZoneId:s.timezone || s.profile?.timeZoneId || 'Asia/Riyadh',
+            responseTimeMinutes:Number(s.profileResponseMinutes)
+          });
+          const profile = await Tafseel.api.get('/teachers/me');
+          this.setState({ profile });
+          this.flash('Profile saved');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
 
       notifyNewRequests: s.notifyNewRequests ?? true, onNotifyNewRequests: e => this.setState({ notifyNewRequests: e.target.checked }),
       notifySms: s.notifySms ?? false, onNotifySms: e => this.setState({ notifySms: e.target.checked }),
-      onSaveSettings: () => this.flash('Settings saved'),
+      onSaveSettings: async () => {
+        try {
+          await Tafseel.api.put('/notification-preferences', {
+            inAppEnabled:s.notifySms,
+            emailEnabled:s.notifyNewRequests
+          });
+          this.flash('Settings saved');
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
 
       scrollToRequests: () => document.getElementById('new-requests') && document.getElementById('new-requests').scrollIntoView({ behavior: 'smooth' }),
 
       stats: [
         { label: 'New requests', value: String(PENDING.length - s.declined.length) },
-        { label: 'Active orders', value: '5' },
-        { label: 'Upcoming sessions', value: '2' },
-        { label: 'Earnings this month', value: 'SAR 4,080' },
-        { label: 'Rating', value: '4.9 ★' },
-        { label: 'Response rate', value: '98%' }
+        { label: 'Active orders', value: String(ORDERS.filter(x => x.stage !== 'completed').length) },
+        { label: 'Upcoming sessions', value: String(s.liveSessions.length) },
+        { label: 'Earnings this month', value: '—' },
+        { label: 'Rating', value: (s.profile ? s.profile.rating : '—') + ' ★' },
+        { label: 'Response time', value: s.profile ? s.profile.responseTimeMinutes + ' min' : '—' }
       ],
 
       pendingCount: PENDING.length - s.declined.length,
@@ -702,24 +941,16 @@ class Component extends DCLogic {
           this.flash('Withdrawal requested.');
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
-      transactions: [
-        { desc: 'Payout — Noor Abdulaziz', amount: '+ SAR 102', color: 'var(--success)' },
-        { desc: 'Withdrawal to bank ****4821', amount: '− SAR 1,800', color: 'var(--text)' },
-        { desc: 'Payout — Ali Marzouq', amount: '+ SAR 81', color: 'var(--success)' },
-        { desc: 'Platform commission', amount: '− SAR 18', color: 'var(--muted)' }
-      ],
+      transactions: [],
 
-      sessions: (s.liveSessions.length ? s.liveSessions : [
-        { student: 'Omar’s student — Bassel Younes', topic: 'Rotational dynamics review · 60 min', when: 'Tonight · 20:30', onStart: () => this.flash('Opening session room…') },
-        { student: 'Huda Al-Rashed', topic: 'Mechanics revision · 90 min', when: 'Thu 30 Jul · 17:00', onStart: () => this.flash('Session starts in 4 days') }
-      ]).map(session => ({
+      sessions: (s.liveSessions || []).map(session => ({
         ...session,
         onStart: session.id && session.confirmed ? async () => {
           try {
             const join = await Tafseel.api.get('/live-sessions/' + session.id + '/join');
             location.href = join.url;
           } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-        } : (session.onStart || (() => this.flash('This session is not ready to join.')))
+        } : (() => this.flash('This session is not ready to join.'))
       })),
 
       acceptModal: s.acceptModal,

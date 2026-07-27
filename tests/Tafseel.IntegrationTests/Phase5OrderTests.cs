@@ -218,7 +218,7 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Order Subject " + suffix, "code");
-        var type = new ServiceCatalogItem("Order Service " + suffix, "Explanation");
+        var type = new ServiceCatalogItem("Order Service " + suffix, "Explanation", "svc_" + suffix);
         db.AddRange(subject, type,
             new TeacherSubjectQualification(teacher.Id, subject.Id, DateTimeOffset.UtcNow));
         var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);
