@@ -108,6 +108,117 @@ for (const name of topBindings) {
     throw new Error(`${adminPage} template binds {{ ${name} }} but renderVals does not return it — would remain unresolved in production.`);
 }
 
+for (const required of ["drawer", "drawerState", "drawerExpanded", "toggleDrawer", "closeDrawer", "headerStyle", "navItems"]) {
+  if (!adminKeys.has(required))
+    throw new Error(`${adminPage} renderVals must return '${required}' for drawer/nav integrity.`);
+}
+
+if (!/navKey/.test(adminLogic))
+  throw new Error(`${adminPage} must track navKey so remapped sections (users/catalog/list) still highlight the clicked nav item.`);
+
+if (/Teacher Applications/.test(adminLogic) || /applications['"]\s*,\s*['"]◷/.test(adminLogic) || /Tafseel-Quality-Dashboard\.dc\.html/.test(adminLogic))
+  throw new Error(`${adminPage} must not link Teacher Applications into Admin nav (QualityReviewer owns /teacher-applications/queue).`);
+
+if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(\s*\)\s*\{/.test(adminLogic))
+  throw new Error(`${adminPage} must expose navigateTo + toggleDrawer methods that read live this.state (not a stale renderVals closure).`);
+
+// Smoke: every Admin nav key switches section state and keeps matching active styling; drawer toggles open/closed.
+{
+  const smoke = `
+    const document = {
+      body: { style: { overflow: '' } },
+      getElementById() { return null; },
+      querySelector() { return null; },
+      addEventListener() {},
+      removeEventListener() {}
+    };
+    const Tafseel = {
+      lang: 'en', theme: 'light',
+      t: (k) => k === 'language_target' ? 'العربية' : k,
+      toggleTheme() {}, toggleLang() {},
+      api: { errorMessage: (e) => String(e && e.message || e) }
+    };
+    class DCLogic {}
+    ${adminLogic}
+    USERS = [];
+    const c = new Component();
+    c.setState = function (patch) { this.state = { ...this.state, ...patch }; };
+    c.state = { ...c.state, usersLoading: false, usersLoadError: '', usersTotal: 0, liveWithdrawals: [], catalogErrors: {} };
+    const expected = {
+      overview: { page: 'overview' },
+      users: { page: 'users', pageRole: 'all' },
+      students: { page: 'users', pageRole: 'Student' },
+      teachers: { page: 'users', pageRole: 'Teacher' },
+      reviewers: { page: 'users', pageRole: 'Reviewer' },
+      subjects: { page: 'catalog', catalogKind: 'subjects' },
+      topics: { page: 'catalog', catalogKind: 'topics' },
+      services: { page: 'catalog', catalogKind: 'services' },
+      coupons: { page: 'catalog', catalogKind: 'coupons' },
+      requests: { page: 'list', listKind: 'requests' },
+      sessions: { page: 'list', listKind: 'sessions' },
+      reviews: { page: 'list', listKind: 'reviews' },
+      disputes: { page: 'list', listKind: 'disputes' },
+      payments: { page: 'payments' },
+      withdrawals: { page: 'withdrawals' },
+      reports: { page: 'reports' },
+      settings: { page: 'settings' }
+    };
+    const vals0 = c.renderVals();
+    if (!Array.isArray(vals0.navItems) || vals0.navItems.length !== Object.keys(expected).length)
+      throw new Error('navItems length must match supported Admin section keys');
+    if (vals0.navItems.some(n => n.key === 'applications' || /application/i.test(n.label || '')))
+      throw new Error('Teacher Applications must not appear in Admin navItems');
+    for (const item of vals0.navItems) {
+      const want = expected[item.key];
+      if (!want) throw new Error('unexpected nav key: ' + item.key);
+      c.navigateTo(item.key);
+      for (const [field, value] of Object.entries(want)) {
+        if (c.state[field] !== value)
+          throw new Error(item.key + ' should set ' + field + '=' + value + ' got ' + c.state[field]);
+      }
+      if (c.state.navKey !== item.key) throw new Error(item.key + ' must set navKey');
+      if (c.state.drawer !== false) throw new Error(item.key + ' must close drawer');
+      const vals = c.renderVals();
+      const active = vals.navItems.find(n => n.key === item.key);
+      if (!active || active.current !== 'page')
+        throw new Error(item.key + ' must show aria-current=page when selected');
+      if (!String(active.style || '').includes('var(--primary)'))
+        throw new Error(item.key + ' must use active nav styling when selected');
+      const others = vals.navItems.filter(n => n.key !== item.key && n.current === 'page');
+      if (others.length)
+        throw new Error(item.key + ' left other nav items active: ' + others.map(n => n.key).join(','));
+      if (item.key === 'overview' && vals.isOverview !== true) throw new Error('overview section flag');
+      if (item.key === 'users' && vals.isUsersPage !== true) throw new Error('users section flag');
+      if (item.key === 'students' && (vals.isUsersPage !== true || vals.usersPageTitle !== 'Students'))
+        throw new Error('students must open users page filtered to Students');
+      if (item.key === 'subjects' && vals.isCatalogPage !== true) throw new Error('subjects catalog flag');
+      if (item.key === 'requests' && vals.isSimpleListPage !== true) throw new Error('requests list flag');
+      if (item.key === 'payments' && vals.isPaymentsPage !== true) throw new Error('payments flag');
+      if (item.key === 'withdrawals' && vals.isPaymentsPage !== true) throw new Error('withdrawals flag');
+      if (item.key === 'reports' && vals.isReportsPage !== true) throw new Error('reports flag');
+      if (item.key === 'settings' && vals.isSettingsPage !== true) throw new Error('settings flag');
+    }
+    c.state = { ...c.state, drawer: false };
+    c.toggleDrawer();
+    if (c.state.drawer !== true) throw new Error('toggleDrawer must open when closed');
+    let valsOpen = c.renderVals();
+    if (valsOpen.drawer !== true || valsOpen.drawerState !== 'open' || valsOpen.drawerExpanded !== 'true')
+      throw new Error('open drawer must export drawer/drawerState/drawerExpanded');
+    if (!String(valsOpen.headerStyle || '').includes('z-index:46'))
+      throw new Error('open drawer must raise header above sidebar so toggle stays clickable');
+    c.toggleDrawer();
+    if (c.state.drawer !== false) throw new Error('toggleDrawer must close when open');
+    let valsClosed = c.renderVals();
+    if (valsClosed.drawer !== false || valsClosed.drawerState !== 'closed')
+      throw new Error('closed drawer must export drawer=false / drawerState=closed');
+  `;
+  try {
+    new Function(smoke)();
+  } catch (error) {
+    throw new Error(`${adminPage} nav/drawer integrity smoke failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 // Smoke: renderVals must not throw when USERS is empty (Admin Dashboard empty result).
 {
   const smoke = `

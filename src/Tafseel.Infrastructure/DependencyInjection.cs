@@ -20,6 +20,7 @@ using Tafseel.Application.Messaging;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Orders;
 using Tafseel.Application.TeacherApplications;
+using Tafseel.Domain.Catalog;
 using Tafseel.Infrastructure.Catalog;
 using Tafseel.Infrastructure.Email;
 using Tafseel.Infrastructure.Finance;
@@ -202,6 +203,21 @@ public static class DependencyInjection
                     if (!result.Succeeded)
                         throw new InvalidOperationException($"Required Identity role '{role}' could not be created.");
                 }
+
+            // Canonical services back real business logic (e.g. LiveSessionService/MarketplaceService key off
+            // Code == "live_session") and must exist idempotently in every environment, not just staging demo data.
+            (string Name, string Description, string Code, int DisplayOrder)[] canonicalServices =
+            [
+                ("Custom recorded explanation", "A recorded video walking through your exact topic, step by step.", "recorded_explanation", 10),
+                ("Assignment guidance", "Coaching through your assignment, not ghostwriting.", "assignment_guidance", 20),
+                ("Exam revision", "Focused revision on your syllabus and past papers.", "exam_revision", 30),
+                ("Live session", "One-to-one video call with a shared whiteboard.", "live_session", 40)
+            ];
+            foreach (var service in canonicalServices)
+                if (!await db.ServiceCatalogItems.AnyAsync(x => x.Code == service.Code))
+                    db.Add(new ServiceCatalogItem(
+                        service.Name, service.Description, service.Code, displayOrder: service.DisplayOrder));
+            await db.SaveChangesAsync();
 
             if (scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true)
             {

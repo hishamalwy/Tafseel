@@ -138,12 +138,14 @@ table{border-collapse:collapse;width:100%}
    collapse multi-column shells and turn sidebars into drawers.
    Mobile <640 · Tablet 640–1024 · Desktop >1024
    ============================================================ */
+[data-drawer-overlay]{display:none}
 @media (max-width:1024px){
   [data-stack]{grid-template-columns:minmax(0,1fr) !important}
   [data-sticky]{position:static !important;top:auto !important}
   aside[data-drawer]{position:fixed !important;inset-block:0;inset-inline-start:0;width:264px;transform:translateX(-100%);transition:transform var(--t)}
   html[dir="rtl"] aside[data-drawer]{transform:translateX(100%)}
   aside[data-drawer="open"]{transform:none !important;box-shadow:var(--shadow-lg)}
+  [data-drawer-overlay="open"]{display:block;position:fixed;inset:0;z-index:44;background:oklch(0.2 0.02 265 / .42);animation:tf-fade 160ms ease both}
 }
 @media (max-width:640px){
   [data-hide-sm]{display:none !important}

@@ -17,15 +17,15 @@
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
-  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
+  <aside id="admin-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
       <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
       <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
       <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">Admin</span>
     </a>
     <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
-      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="18">
-        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="17">
+        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}" style-hover="{{ n.hoverStyle }}" style-active="{{ n.activeStyle }}">
           <span aria-hidden="true" style="width:16px;text-align:center;font-size:13px">{{ n.icon }}</span>
           <span>{{ n.label }}</span>
           <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
@@ -36,9 +36,13 @@
     </nav>
   </aside>
 
+  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+    <div data-drawer-overlay="open" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
+  </sc-if>
+
   <div style="display:flex;flex-direction:column;min-width:0">
-    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
-      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+    <header style="{{ headerStyle }}">
+      <button id="admin-drawer-toggle" type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" aria-expanded="{{ drawerExpanded }}" aria-controls="admin-sidebar" style="{{ drawerToggleStyle }}">☰</button>
       <div style="font-size:15px;font-weight:700" data-hide-sm="1">Platform overview</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
         <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
@@ -47,6 +51,7 @@
           <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">AD</span>
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Admin</span>
         </div>
+        <button type="button" onClick="{{ onLogout }}" aria-label="Log out" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--error)" style-hover="background:var(--error-soft);border-color:var(--error);">{{ logoutLabel }}</button>
       </div>
     </header>
 
@@ -208,11 +213,13 @@
         </div>
         <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
           <span style="font-size:13px;color:var(--muted)">Showing {{ usersShown }} of {{ usersTotal }} users</span>
-          <nav aria-label="Pagination" style="display:flex;gap:6px">
-            <sc-for list="{{ pages }}" as="p" hint-placeholder-count="4">
-              <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
-            </sc-for>
-          </nav>
+          <sc-if value="{{ hasPagination }}" hint-placeholder-val="{{ false }}">
+            <nav aria-label="Pagination" style="display:flex;gap:6px">
+              <sc-for list="{{ pages }}" as="p" hint-placeholder-count="4">
+                <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+              </sc-for>
+            </nav>
+          </sc-if>
         </div>
         </sc-if>
       </section>
@@ -265,7 +272,10 @@
           <sc-if value="{{ usersEmpty }}" hint-placeholder-val="{{ false }}">
             <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ usersEmptyLabel }}</div>
           </sc-if>
-          <sc-if value="{{ usersReady }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ pageUsersEmpty }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ pageUsersEmptyLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ pageUsersReady }}" hint-placeholder-val="{{ true }}">
           <div style="overflow-x:auto">
             <table>
               <thead>
@@ -300,6 +310,15 @@
               </tbody>
             </table>
           </div>
+          <sc-if value="{{ hasPagination }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+              <nav aria-label="Pagination" style="display:flex;gap:6px">
+                <sc-for list="{{ pages }}" as="p" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+                </sc-for>
+              </nav>
+            </div>
+          </sc-if>
           </sc-if>
         </section>
       </div>
@@ -307,10 +326,13 @@
 
     <sc-if value="{{ isCatalogPage }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap">
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">{{ catalogTitle }}</h1>
-          <button type="button" onClick="{{ onAddCatalog }}" style="height:38px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ catalogAddLabel }}</button>
+          <button type="button" onClick="{{ onAddCatalog }}" disabled="{{ catalogAddDisabled }}" aria-disabled="{{ catalogAddDisabled }}" style="height:38px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ catalogAddLabel }}</button>
         </div>
+        <sc-if value="{{ catalogNote }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">{{ catalogNote }}</p>
+        </sc-if>
         <sc-if value="{{ catalogLoadError }}" hint-placeholder-val="{{ false }}">
           <div role="alert" style="padding:18px;margin-bottom:12px;border:1px solid var(--error);border-radius:var(--r-md);color:var(--error);font-size:14px">{{ catalogLoadError }}</div>
         </sc-if>
@@ -486,6 +508,13 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 let USERS = [];
+const ADMIN_PAGE_SIZE = 8;
+function paginate(list, page) {
+  const count = list.length === 0 ? 0 : Math.max(1, Math.ceil(list.length / ADMIN_PAGE_SIZE));
+  const current = count === 0 ? 1 : Math.min(Math.max(1, page), count);
+  const start = (current - 1) * ADMIN_PAGE_SIZE;
+  return { count, current, slice: list.slice(start, start + ADMIN_PAGE_SIZE) };
+}
 
 const CATALOG_DATA = {
   subjects: [],
@@ -509,7 +538,7 @@ const TONE_STYLE = {
 
 class Component extends DCLogic {
   state = {
-    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
+    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, navKey: 'overview', page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
     userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '',
     commissionRate: 15, requireReview: true, maintenanceMode: false,
     catalogModal: false, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
@@ -519,6 +548,10 @@ class Component extends DCLogic {
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    this._onKeydown = e => {
+      if (e.key === 'Escape' && this.state.drawer) this.closeDrawer();
+    };
+    document.addEventListener('keydown', this._onKeydown);
     // Prevent demo fallbacks from appearing if any admin API call fails.
     USERS = [];
     CATALOG_DATA.subjects = [];
@@ -569,7 +602,15 @@ class Component extends DCLogic {
       const mapCatalog = (payload) => (payload || []).map(x => ({ id:x.id, name:x.name, meta:x.detail || '', active:x.isActive }));
       CATALOG_DATA.subjects = mapCatalog(settled(2));
       CATALOG_DATA.topics = mapCatalog(settled(3));
-      CATALOG_DATA.services = mapCatalog(settled(4));
+      CATALOG_DATA.services = (settled(4) || []).map(x => ({
+        id:x.id, name:x.name, active:x.isActive,
+        meta:[
+          'code: ' + (x.code || '—'),
+          x.teacherSelectable ? Tafseel.t('admin_service_teacher_selectable') : Tafseel.t('admin_service_teacher_hidden'),
+          x.requiresScheduling ? Tafseel.t('admin_service_scheduling_required') : Tafseel.t('admin_service_no_scheduling')
+        ].join(' · '),
+        code: x.code, detail: x.detail || ''
+      }));
       const catalogErrors = {};
       if (failed(2)) catalogErrors.subjects = Tafseel.api.errorMessage(failed(2));
       if (failed(3)) catalogErrors.topics = Tafseel.api.errorMessage(failed(3));
@@ -604,7 +645,55 @@ class Component extends DCLogic {
       this.flash(message);
     });
   }
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentWillUnmount() {
+    Tafseel.offChange(this._sub);
+    document.removeEventListener('keydown', this._onKeydown);
+    document.body.style.overflow = '';
+  }
+
+  openDrawer() {
+    this.setState({ drawer: true });
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      if (!this.state.drawer) return;
+      const first = document.querySelector('#admin-sidebar nav button');
+      if (first) first.focus();
+    }, 0);
+  }
+
+  closeDrawer() {
+    this.setState({ drawer: false });
+    document.body.style.overflow = '';
+    const toggle = document.getElementById('admin-drawer-toggle');
+    if (toggle) toggle.focus();
+  }
+
+  toggleDrawer() {
+    if (this.state.drawer) this.closeDrawer();
+    else this.openDrawer();
+  }
+
+  /** Resolve which section a nav key opens (page/pageRole/catalogKind/listKind). */
+  navigateTo(key) {
+    const roleMap = { users: 'all', students: 'Student', teachers: 'Teacher', reviewers: 'Reviewer' };
+    const catalogKeys = ['subjects', 'topics', 'services', 'coupons'];
+    const listKeys = ['requests', 'sessions', 'reviews', 'disputes'];
+    const patch = { drawer: false, navKey: key, pagination: 1 };
+    document.body.style.overflow = '';
+    if (roleMap[key]) {
+      patch.page = 'users';
+      patch.pageRole = roleMap[key];
+    } else if (catalogKeys.includes(key)) {
+      patch.page = 'catalog';
+      patch.catalogKind = key;
+    } else if (listKeys.includes(key)) {
+      patch.page = 'list';
+      patch.listKind = key;
+    } else {
+      patch.page = key;
+    }
+    this.setState(patch);
+  }
 
   flash(msg) {
     this.setState({ toast: msg });
@@ -648,17 +737,33 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
+    // Application review queue belongs on the Quality Reviewer dashboard, not Admin nav.
     const NAV = [
-      ['overview','◱','Overview',0], ['users','◈','Users',0], ['students','◍','Students',0], ['teachers','✎','Teachers',0],
-      ['reviewers','◑','Quality Reviewers',0], ['applications','◷','Teacher Applications',3], ['subjects','∑','Subjects',0],
-      ['topics','◫','Topics',0], ['services','▤','Services',0], ['requests','⇩','Requests',0], ['sessions','◉','Live Sessions',0],
-      ['payments','$','Payments',0], ['withdrawals','⇧','Withdrawals',2], ['reviews','★','Reviews',0], ['disputes','⚠','Disputes',3],
-      ['coupons','%','Coupons',0], ['reports','▥','Reports',0], ['settings','⚙','Platform Settings',0]
+      ['overview','◱','Overview'], ['users','◈','Users'], ['students','◍','Students'], ['teachers','✎','Teachers'],
+      ['reviewers','◑','Quality Reviewers'], ['subjects','∑','Subjects'],
+      ['topics','◫','Topics'], ['services','▤','Services'], ['requests','⇩','Requests'], ['sessions','◉','Live Sessions'],
+      ['payments','$','Payments'], ['withdrawals','⇧','Withdrawals'], ['reviews','★','Reviews'], ['disputes','⚠','Disputes'],
+      ['coupons','%','Coupons'], ['reports','▥','Reports'], ['settings','⚙','Platform Settings']
     ];
+    // Real counts only — no static demo badges. Zero/blank until the backing data has actually loaded.
+    const openDisputeCount = LIST_DATA.disputes.filter(d => d.status === 'Open').length;
+    const NAV_BADGES = {
+      withdrawals: (s.liveWithdrawals || []).length,
+      disputes: openDisputeCount
+    };
+    const activeNav = s.navKey || s.page || 'overview';
 
     let filtered = USERS.map(u => ({ ...u, status: s.userOverrides[u.id] || u.status }))
       .filter(u => s.userRole === 'all' || u.role === s.userRole)
       .filter(u => !s.userQ.trim() || (u.name + u.email).toLowerCase().includes(s.userQ.trim().toLowerCase()));
+
+    const pageRoleFiltered = USERS.map(u => ({ ...u, status: s.userOverrides[u.id] || u.status }))
+      .filter(u => s.pageRole === 'all' || u.role === s.pageRole)
+      .filter(u => !s.userQ.trim() || (u.name + u.email).toLowerCase().includes(s.userQ.trim().toLowerCase()));
+
+    const overviewPaging = paginate(filtered, s.pagination);
+    const pageRolePaging = paginate(pageRoleFiltered, s.pagination);
+    const activePaging = s.page === 'users' ? pageRolePaging : overviewPaging;
 
     const statusTone = { Active: ['var(--success-soft)', 'var(--success)'], Suspended: ['var(--error-soft)', 'var(--error)'], Pending: ['var(--warning-soft)', 'var(--warning)'] };
 
@@ -669,26 +774,29 @@ class Component extends DCLogic {
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
       stop: e => e.stopPropagation(),
+      logoutLabel: Tafseel.t('admin_logout'),
+      onLogout: async () => {
+        try { await Tafseel.api.logout(); } finally { location.href = 'Tafseel-Auth.dc.html'; }
+      },
 
+      drawer: !!s.drawer,
       drawerState: s.drawer ? 'open' : 'closed',
-      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
+      drawerExpanded: s.drawer ? 'true' : 'false',
+      toggleDrawer: () => this.toggleDrawer(),
+      closeDrawer: () => this.closeDrawer(),
+      headerStyle: 'position:sticky;top:0;z-index:' + (s.drawer ? '46' : '40') +
+        ';background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px',
+      drawerToggleStyle: 'width:36px;height:36px;border:1px solid var(--border);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;' +
+        (s.drawer ? 'background:var(--primary-soft);border-color:var(--primary);color:var(--primary);' : 'background:var(--surface);color:var(--text);'),
 
-      navItems: NAV.map(([key, icon, label, badge]) => ({
-        icon, label, badge: badge || 0,
-        current: s.page === key ? 'page' : 'false',
-        style: 'display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:8px 12px;border:0;border-radius:var(--r-sm);font-size:13.5px;transition:all var(--t);' +
-          (s.page === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
-        onClick: () => {
-          this.setState({ drawer: false });
-          if (key === 'applications') { window.location.href = 'Tafseel-Quality-Dashboard.dc.html'; return; }
-          const roleMap = { users:'all', students:'Student', teachers:'Teacher', reviewers:'Reviewer' };
-          const catalogKeys = ['subjects', 'topics', 'services', 'coupons'];
-          const listKeys = ['requests', 'sessions', 'reviews', 'disputes'];
-          if (roleMap[key]) this.setState({ page: 'users', pageRole: roleMap[key] });
-          else if (catalogKeys.includes(key)) this.setState({ page: 'catalog', catalogKind: key });
-          else if (listKeys.includes(key)) this.setState({ page: 'list', listKind: key });
-          else this.setState({ page: key });
-        }
+      navItems: NAV.map(([key, icon, label]) => ({
+        key, icon, label, badge: NAV_BADGES[key] || 0,
+        current: activeNav === key ? 'page' : 'false',
+        style: 'display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:8px 12px;border:0;border-radius:var(--r-sm);font-size:13.5px;transition:all var(--t);cursor:pointer;' +
+          (activeNav === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
+        hoverStyle: activeNav === key ? '' : 'background:var(--surface-2);color:var(--text);',
+        activeStyle: 'background:var(--primary-soft);color:var(--primary);',
+        onClick: () => this.navigateTo(key)
       })),
 
       isOverview: s.page === 'overview',
@@ -700,9 +808,7 @@ class Component extends DCLogic {
       isSettingsPage: s.page === 'settings',
 
       usersPageTitle: { all:'Users', Student:'Students', Teacher:'Teachers', Reviewer:'Quality reviewers' }[s.pageRole] || 'Users',
-      pageUsers: USERS.map(u => ({ ...u, status: s.userOverrides[u.id] || u.status }))
-        .filter(u => s.pageRole === 'all' || u.role === s.pageRole)
-        .filter(u => !s.userQ.trim() || (u.name + u.email).toLowerCase().includes(s.userQ.trim().toLowerCase()))
+      pageUsers: pageRolePaging.slice
         .map(u => {
           const [bg, fg] = statusTone[u.status] || statusTone.Active;
           return {
@@ -721,18 +827,25 @@ class Component extends DCLogic {
         }),
 
       catalogTitle: { subjects:'Subjects', topics:'Demo topics', services:'Services', coupons:'Coupons' }[s.catalogKind],
-      catalogAddLabel: { subjects:'+ Add subject', topics:'+ Add topic', services:'+ Add service', coupons:'+ Add coupon' }[s.catalogKind],
+      catalogAddLabel: {
+        subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'),
+        services: Tafseel.t('admin_services_managed_auto'), coupons: Tafseel.t('admin_not_available_yet')
+      }[s.catalogKind],
+      catalogAddDisabled: s.catalogKind === 'services' || s.catalogKind === 'coupons',
+      catalogNote: s.catalogKind === 'services' ? Tafseel.t('admin_services_note')
+        : s.catalogKind === 'coupons' ? Tafseel.t('admin_coupons_note') : '',
       onAddCatalog: () => {
-        if (s.catalogKind === 'coupons') return this.flash('Coupons are not enabled in the backend.');
+        if (s.catalogKind === 'coupons') return this.flash(Tafseel.t('admin_coupons_note'));
+        if (s.catalogKind === 'services') return this.flash(Tafseel.t('admin_services_note'));
         this.setState({ catalogModal: true, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '' });
       },
       catalogItems: (CATALOG_DATA[s.catalogKind] || []).map(c => {
         const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
         return {
           ...c, active,
-          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: c.meta }, editName: c.name }),
+          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta }, editName: c.name }),
           onToggle: async () => {
-            if (s.catalogKind === 'coupons') return this.flash('Coupons are not enabled in the backend.');
+            if (s.catalogKind === 'coupons') return this.flash(Tafseel.t('admin_coupons_note'));
             try {
               await Tafseel.api.patch('/admin/catalog/' + s.catalogKind + '/' + c.id + '/active', { isActive:!active });
               this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
@@ -853,12 +966,15 @@ class Component extends DCLogic {
       usersLoading: !!s.usersLoading,
       usersLoadingLabel: Tafseel.t('admin_users_loading'),
       usersEmptyLabel: Tafseel.t('admin_users_empty'),
+      pageUsersEmptyLabel: Tafseel.t('admin_users_no_match'),
       usersLoadError: s.usersLoadError || '',
       usersEmpty: !s.usersLoading && !s.usersLoadError && USERS.length === 0,
       usersReady: !s.usersLoading && !s.usersLoadError && USERS.length > 0,
+      pageUsersEmpty: !s.usersLoading && !s.usersLoadError && USERS.length > 0 && pageRoleFiltered.length === 0,
+      pageUsersReady: !s.usersLoading && !s.usersLoadError && pageRoleFiltered.length > 0,
       catalogLoadError: (s.catalogErrors && s.catalogErrors[s.catalogKind]) || '',
 
-      users: filtered.map(u => {
+      users: overviewPaging.slice.map(u => {
         const [bg, fg] = statusTone[u.status] || statusTone.Active;
         const checked = s.selected.includes(u.id);
         return {
@@ -879,13 +995,14 @@ class Component extends DCLogic {
         };
       }),
 
-      pages: [1, 2, 3, 4].map(n => ({
+      hasPagination: activePaging.count > 1,
+      pages: activePaging.count > 1 ? Array.from({ length: activePaging.count }, (_, i) => i + 1).map(n => ({
         label: String(n),
-        style: 'width:32px;height:32px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' + (n === s.pagination
+        style: 'width:32px;height:32px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' + (n === activePaging.current
           ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
           : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);'),
         onClick: () => this.setState({ pagination: n })
-      })),
+      })) : [],
 
       usersShown: filtered.length,
       usersTotal: s.usersTotal || filtered.length,
