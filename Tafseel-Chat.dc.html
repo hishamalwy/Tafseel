@@ -1,34 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Messages — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<script src="js/vendor/signalr.min.js"></script>
 </head>
 <body>
+<a class="tf-skip" href="#chat-main">Skip to messages</a>
 <header class="tf-app-header">
   <a class="tf-brand" href="Tafseel-Landing.dc.html"><img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="26" height="26" style="flex:none;object-fit:contain" /><span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span></a>
   <div class="tf-actions">
+    <a id="chat-dashboard" class="tf-button tf-button-secondary" href="Tafseel-Landing.dc.html">Back to dashboard</a>
     <button class="tf-button tf-button-secondary tf-lang-toggle" data-tafseel-language type="button" aria-label="Switch language"></button>
-    <button class="tf-button tf-button-secondary" data-tafseel-theme type="button" aria-label="Theme">Theme</button>
+    <button class="tf-button tf-button-secondary tf-theme-toggle" data-tafseel-theme type="button" aria-label="Toggle dark mode"></button>
   </div>
 </header>
-<main class="tf-workflow" style="place-items:stretch;padding:20px">
-  <div class="tf-chat">
-    <div class="tf-chat-list" id="conversations"></div>
-    <div class="tf-chat-main">
-      <div class="tf-chat-title" id="chat-title">Messages</div>
-      <div class="tf-messages" id="messages"></div>
+<main id="chat-main" class="tf-workflow" style="place-items:stretch;padding:16px;align-content:stretch">
+  <p id="chat-status" class="tf-status" role="status" aria-live="polite"></p>
+  <div id="chat-shell" class="tf-chat" data-pane="list">
+    <aside class="tf-chat-list" aria-label="Conversations">
+      <h1 class="tf-sr-only">Conversations</h1>
+      <div id="conversations" aria-live="polite"></div>
+    </aside>
+    <section class="tf-chat-main" aria-label="Message thread">
+      <div class="tf-chat-title-row">
+        <button type="button" id="chat-back" class="tf-icon-button tf-chat-back" aria-label="Back to conversations">←</button>
+        <div class="tf-chat-title" id="chat-title" style="padding:0;border:0;flex:1;min-width:0">Messages</div>
+        <button type="button" id="chat-retry" class="tf-button-link" hidden>Retry</button>
+      </div>
+      <div class="tf-messages" id="messages" aria-live="polite"></div>
       <form class="tf-composer" id="composer">
-        <input id="message" type="text" placeholder="Write a message" autocomplete="off" />
-        <button class="tf-button" type="submit">Send</button>
+        <label class="tf-sr-only" for="message">Write a message</label>
+        <input id="message" type="text" placeholder="Write a message" autocomplete="off" maxlength="4000" />
+        <button class="tf-button" id="send-btn" type="submit">Send</button>
       </form>
-    </div>
+    </section>
   </div>
 </main>
 <script src="js/chat.js"></script>

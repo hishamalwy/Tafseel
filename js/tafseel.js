@@ -37,6 +37,7 @@
     lang: 'en',
     _subs: [],
     _observer: null,
+    _navInkRoots: [],
 
     init: function () {
       try {
@@ -47,6 +48,13 @@
       if (!['en', 'ar'].includes(this.lang)) this.lang = 'en';
       this.apply(false);
       this.observe();
+      var self = this;
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && typeof setTimeout === 'function') {
+        window.addEventListener('resize', function () {
+          clearTimeout(self._navInkResizeTimer);
+          self._navInkResizeTimer = setTimeout(function () { self.refreshNavInk(); }, 120);
+        });
+      }
       return this;
     },
 
@@ -64,6 +72,9 @@
       this.translate(document);
       this.updateControls();
       this.updateBrandMarks();
+      // dir flips (lang toggle) and re-translated labels both change where the
+      // active link physically sits — recompute right away.
+      this.refreshNavInk();
       this._subs.slice().forEach(function (subscriber) { subscriber(); });
       document.dispatchEvent(new CustomEvent('tafseel:change', {
         detail: { theme: this.theme, lang: this.lang }
@@ -119,9 +130,17 @@
       return leaving ? 'tf-toast is-leaving' : 'tf-toast';
     },
 
+    /* Positions the sliding underline under the active/hovered nav link.
+       Deliberately direction-agnostic: getBoundingClientRect() always returns
+       physical (viewport) coordinates, in both ltr and rtl, so the offset
+       between the track and the link (t.left - r.left) is already correct on
+       screen — it must NOT be negated or re-derived for rtl (see the
+       matching .tf-nav-ink rule in tafseel.css, which is anchored at
+       physical left:0 for the same reason). Doing that math with
+       direction-aware left/offsetLeft assumptions is what used to send the
+       ink to the mirrored side of the track on rtl pages. */
     bindNavInk: function (root) {
-      if (!root || root.dataset.navInkBound) return;
-      root.dataset.navInkBound = 'true';
+      if (!root) return;
       var ink = root.querySelector('.tf-nav-ink');
       if (!ink) {
         ink = document.createElement('span');
@@ -140,13 +159,31 @@
         return root.querySelector('a.is-active, button.is-active, [aria-current="page"], [aria-selected="true"]')
           || root.querySelector('a, button.tf-nav-link');
       }
+      root._tfNavActive = active;
+      root._tfMoveNavInk = function (el) { moveTo(el || active()); };
+      if (root.dataset.navInkBound) { root._tfMoveNavInk(); return; }
+      root.dataset.navInkBound = 'true';
       root.addEventListener('mouseover', function (e) {
         var el = e.target.closest('a, button.tf-nav-link');
         if (el && root.contains(el)) moveTo(el);
       });
       root.addEventListener('mouseleave', function () { moveTo(active()); });
+      // Hash/anchor nav (e.g. the Landing page) has no real "active" page —
+      // follow the clicked item immediately instead of leaving the ink
+      // sitting wherever the first link happened to be.
+      root.addEventListener('click', function (e) {
+        var el = e.target.closest('a, button.tf-nav-link');
+        if (el && root.contains(el)) moveTo(el);
+      });
+      if (!Tafseel._navInkRoots.includes(root)) Tafseel._navInkRoots.push(root);
       moveTo(active());
-      root._tfMoveNavInk = moveTo;
+    },
+
+    refreshNavInk: function () {
+      this._navInkRoots.slice().forEach(function (root) {
+        if (!document.documentElement.contains(root)) return;
+        if (root._tfMoveNavInk) root._tfMoveNavInk();
+      });
     },
 
     countUp: function (el, to, opts) {
@@ -309,6 +346,115 @@
     onChange: function (subscriber) { this._subs.push(subscriber); return subscriber; },
     offChange: function (subscriber) {
       this._subs = this._subs.filter(function (candidate) { return candidate !== subscriber; });
+    },
+
+    /**
+     * Canonical dashboard drawer helpers (Admin / Student / Teacher / Quality).
+     * Desktop: static sidebar. Mobile ≤1024: off-canvas drawer with overlay,
+     * Escape, body scroll lock, focus return, and aria-expanded.
+     */
+    installDashboardDrawer: function (component, options) {
+      options = options || {};
+      var sidebarId = options.sidebarId || 'dash-sidebar';
+      var toggleId = options.toggleId || 'dash-drawer-toggle';
+      if (!component.state) component.state = {};
+      if (typeof component.state.drawer !== 'boolean') component.state.drawer = false;
+      if (typeof component.state.compactNav !== 'boolean') component.state.compactNav = false;
+
+      component.openDrawer = function () {
+        if (!this.state.compactNav) return;
+        this.setState({ drawer: true });
+        document.body.style.overflow = 'hidden';
+        var self = this;
+        setTimeout(function () {
+          if (!self.state.drawer) return;
+          var first = document.querySelector('#' + sidebarId + ' nav button, #' + sidebarId + ' nav a');
+          if (first) first.focus();
+        }, 0);
+      };
+
+      component.closeDrawer = function () {
+        this.setState({ drawer: false });
+        document.body.style.overflow = '';
+        var toggle = document.getElementById(toggleId);
+        if (toggle && this.state.compactNav) toggle.focus();
+      };
+
+      component.toggleDrawer = function (e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (!this.state.compactNav) return;
+        if (this.state.drawer) this.closeDrawer();
+        else this.openDrawer();
+      };
+
+      component._tfDrawerOnKeydown = function (e) {
+        if (e.key === 'Escape' && component.state.drawer) component.closeDrawer();
+      };
+      document.addEventListener('keydown', component._tfDrawerOnKeydown);
+
+      component._tfDrawerMq = window.matchMedia('(max-width: 1024px)');
+      component._tfDrawerOnMq = function () {
+        var compact = !!component._tfDrawerMq.matches;
+        component.setState({ compactNav: compact, drawer: compact ? component.state.drawer : false });
+        if (!compact) document.body.style.overflow = '';
+      };
+      if (component._tfDrawerMq.addEventListener)
+        component._tfDrawerMq.addEventListener('change', component._tfDrawerOnMq);
+      else if (component._tfDrawerMq.addListener)
+        component._tfDrawerMq.addListener(component._tfDrawerOnMq);
+      component.setState({ compactNav: !!component._tfDrawerMq.matches });
+    },
+
+    uninstallDashboardDrawer: function (component) {
+      if (component._tfDrawerOnKeydown)
+        document.removeEventListener('keydown', component._tfDrawerOnKeydown);
+      if (component._tfDrawerMq && component._tfDrawerOnMq) {
+        if (component._tfDrawerMq.removeEventListener)
+          component._tfDrawerMq.removeEventListener('change', component._tfDrawerOnMq);
+        else if (component._tfDrawerMq.removeListener)
+          component._tfDrawerMq.removeListener(component._tfDrawerOnMq);
+      }
+      document.body.style.overflow = '';
+    },
+
+    drawerRenderVals: function (component) {
+      var s = component.state || {};
+      var open = !!s.drawer;
+      return {
+        drawer: open,
+        drawerState: open ? 'open' : 'closed',
+        drawerExpanded: open ? 'true' : 'false',
+        drawerToggleLabel: this.t('admin_toggle_nav'),
+        headerElevated: open ? 'elevated' : 'default',
+        drawerToggleStyle: 'width:36px;height:36px;border:1px solid var(--border);border-radius:var(--r-sm);place-items:center;font-size:14px;' +
+          (open ? 'background:var(--primary-soft);border-color:var(--primary);color:var(--primary);' : 'background:var(--surface);color:var(--text);'),
+        toggleDrawer: function (e) { component.toggleDrawer(e); },
+        closeDrawer: function () { component.closeDrawer(); }
+      };
+    },
+
+    /** Safe conversation label when API exposes only participant IDs (no display names). */
+    participantLabel: function (participantId) {
+      var id = String(participantId || '').trim();
+      if (!id) return this.t('chat_conversation');
+      var short = id.length > 8 ? id.slice(0, 8) : id;
+      return this.t('chat_participant', { id: short });
+    },
+
+    participantInitials: function (participantId) {
+      var id = String(participantId || '').replace(/[^a-zA-Z0-9]/g, '');
+      if (id.length >= 2) return id.slice(0, 2).toUpperCase();
+      return '··';
+    },
+
+    dashboardHrefForSession: function (session) {
+      var roles = (session && session.roles) || [];
+      if (roles.indexOf('Admin') >= 0) return 'Tafseel-Admin-Dashboard.dc.html';
+      if (roles.indexOf('QualityReviewer') >= 0) return 'Tafseel-Quality-Dashboard.dc.html';
+      if (roles.indexOf('Teacher') >= 0) return 'Tafseel-Teacher-Dashboard.dc.html';
+      if (roles.indexOf('Student') >= 0) return 'Tafseel-Student-Dashboard.dc.html';
+      return 'Tafseel-Landing.dc.html';
     },
 
     number: function (value, options) {

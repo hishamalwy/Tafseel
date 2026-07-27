@@ -153,21 +153,12 @@ table{border-collapse:collapse;width:100%}
 .tf-glow-cta::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none}
 @media (prefers-reduced-motion: reduce){.tf-blob-drift,.tf-float,.tf-glow-cta::before{animation:none}}
 
-/* Scroll-in reveals — opt in with [data-reveal] (single element, default rises;
-   ="left"/="right" slides in from a side) or [data-reveal-group] (staggers direct children). */
-[data-reveal]{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
-[data-reveal="left"]{transform:translateX(-36px)}
-[data-reveal="right"]{transform:translateX(36px)}
-[data-reveal].is-in{opacity:1;transform:none}
-[data-reveal-group]>*{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}
-[data-reveal-group].is-in>*{opacity:1;transform:none}
-[data-reveal-group].is-in>*:nth-child(1){transition-delay:.02s}
-[data-reveal-group].is-in>*:nth-child(2){transition-delay:.08s}
-[data-reveal-group].is-in>*:nth-child(3){transition-delay:.14s}
-[data-reveal-group].is-in>*:nth-child(4){transition-delay:.2s}
-[data-reveal-group].is-in>*:nth-child(5){transition-delay:.26s}
-[data-reveal-group].is-in>*:nth-child(6){transition-delay:.32s}
-[data-reveal-group].is-in>*:nth-child(n+7){transition-delay:.36s}
+/* [data-reveal] / [data-reveal-group] used to be scroll-in reveal hooks driven by a
+   separate reveal.js (IntersectionObserver adding `.is-in`). That script was a single
+   point of failure — if it 404s or never loads, content stayed at opacity:0 forever.
+   Removed the dependency: content is plain and visible unconditionally now. The
+   attributes are kept as harmless markers in the markup rather than ripped out. */
+[data-reveal],[data-reveal-group]>*{opacity:1;transform:none}
 
 .tf-marquee-mask{-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);overflow:hidden}
 .tf-marquee-track{display:flex;width:max-content;animation:tf-marquee 68s linear infinite}
@@ -223,13 +214,26 @@ html[data-theme="dark"] .tf-theme-toggle .tf-icon-moon{opacity:0;transform:rotat
 .tf-lang-toggle,.tf-theme-toggle{transition:opacity 150ms ease,border-color var(--t),background var(--t)}
 .tf-control-fade{animation:tf-fade 150ms ease}
 
+/* Full-bleed page track: viewport width, no centered max-width column.
+   Side inset comes only from padding-inline (keep tight). Inline styles on
+   .tf-shell must use padding-block / padding-top/bottom — never the padding
+   shorthand with horizontal px, or it overrides this and recreates gutters. */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+.tf-shell{width:100% !important;max-width:none !important;margin-inline:0 !important;box-sizing:border-box;padding-inline:clamp(12px,1.6vw,20px)}
+
 .tf-nav-track{position:relative;display:flex;align-items:center;gap:4px}
 .tf-nav-track a,.tf-nav-track button.tf-nav-link{position:relative;z-index:1}
-.tf-nav-ink{position:absolute;inset-block-end:0;height:2px;border-radius:99px;background:var(--primary);width:var(--tf-nav-w,0px);transform:translateX(var(--tf-nav-x,0px));transition:width 220ms cubic-bezier(.2,.9,.3,1),transform 220ms cubic-bezier(.2,.9,.3,1);pointer-events:none}
-html[dir="rtl"] .tf-nav-ink{transform:translateX(calc(-1 * var(--tf-nav-x,0px)))}
+/* Anchored to the track's physical left edge (left:0, not an inline-start
+   logical property) on purpose: bindNavInk() measures with
+   getBoundingClientRect(), which always returns physical/viewport
+   coordinates regardless of dir. Pinning the base position to physical
+   left:0 means the JS-computed translateX (also physical px) lines up with
+   the active/hovered link in both ltr and rtl without any direction-specific
+   sign flip — a flip here was what previously sent the ink to the mirrored
+   (wrong) side on rtl pages. */
+.tf-nav-ink{position:absolute;left:0;inset-block-end:0;height:2px;border-radius:99px;background:var(--primary);width:var(--tf-nav-w,0px);transform:translateX(var(--tf-nav-x,0px));transition:width 220ms cubic-bezier(.2,.9,.3,1),transform 220ms cubic-bezier(.2,.9,.3,1);pointer-events:none}
 
-.tf-escrow-step{opacity:0;transform:translateY(8px);transition:opacity .45s ease,transform .45s ease}
-.tf-escrow-step.is-in{opacity:1;transform:none}
+.tf-escrow-step{opacity:1;transform:none;transition:opacity .45s ease,transform .45s ease}
 .tf-escrow-rail{position:relative;padding-inline-start:2px}
 .tf-escrow-rail::before{content:"";position:absolute;inset-inline-start:9px;top:10px;bottom:10px;width:2px;background:var(--border);border-radius:99px}
 .tf-escrow-rail::after{content:"";position:absolute;inset-inline-start:9px;top:10px;width:2px;height:var(--tf-escrow-progress,0%);background:var(--primary);border-radius:99px;transition:height 700ms cubic-bezier(.16,1,.3,1)}
@@ -275,8 +279,16 @@ html[dir="rtl"] .tf-nav-ink{transform:translateX(calc(-1 * var(--tf-nav-x,0px)))
   /* Keep the header (and hamburger) above the open drawer so the toggle can close it. */
   [data-admin-header="elevated"]{z-index:46 !important}
 }
-@media (max-width:640px){
+/* Header nav + login/theme/lang/CTA controls need ~841px of min-content width to
+   lay out without wrapping. Below that (and above the true mobile breakpoint),
+   the row has nowhere to shrink and forces a horizontal scrollbar — which reads
+   as clipped/missing header content (or a phantom empty strip) at common
+   embedded-preview and small-laptop-window widths. Hide the mid-priority nav +
+   login link before that point so the row always fits. */
+@media (max-width:860px){
   [data-hide-sm]{display:none !important}
+}
+@media (max-width:640px){
   [data-public-header]{gap:12px !important;padding-inline:16px !important}
 }
 
@@ -385,4 +397,120 @@ button:disabled,a[aria-disabled="true"]{opacity:.5;cursor:not-allowed;pointer-ev
   .tf-chat{grid-template-columns:1fr;height:auto}
   .tf-chat-list{border-inline-end:0;border-bottom:1px solid var(--border);max-height:220px}
   .tf-chat-main{min-height:520px}
+}
+
+/* ============================================================
+   Layout system — semantic reusable classes (prefer over one-offs)
+   ============================================================ */
+:root{
+  --bp-sm:640px;
+  --bp-md:860px;
+  --bp-lg:1024px;
+  --page-pad:clamp(16px,3vw,28px);
+  --touch-min:44px;
+}
+.tf-skip{
+  position:absolute;inset-inline-start:12px;top:12px;z-index:100;
+  padding:10px 14px;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);
+  font-weight:700;font-size:13px;transform:translateY(-140%);transition:transform 160ms ease;
+}
+.tf-skip:focus,.tf-skip:focus-visible{transform:none;outline:2px solid var(--highlight);outline-offset:2px}
+.tf-page{width:100%;max-width:100%;padding:var(--page-pad);display:flex;flex-direction:column;gap:var(--s-3)}
+.tf-container{width:100%;max-width:100%;box-sizing:border-box}
+.tf-stack{display:flex;flex-direction:column;gap:var(--s-2)}
+.tf-stack-lg{gap:var(--s-3)}
+.tf-cluster{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.tf-section{display:flex;flex-direction:column;gap:14px}
+.tf-main{min-width:0;flex:1}
+.tf-dashboard-shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.tf-sidebar-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:var(--s-3);align-items:start}
+.tf-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.tf-grid-3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.tf-stat-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr))}
+.tf-filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.tf-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface)}
+.tf-table{width:100%;min-width:560px;border-collapse:collapse}
+.tf-table th,.tf-table td{padding:10px 12px;text-align:start;border-bottom:1px solid var(--border);font-size:13.5px}
+.tf-table th{font-size:12px;font-weight:700;color:var(--muted);background:var(--surface-2)}
+.tf-table tr:last-child td{border-bottom:0}
+.tf-pagination{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.tf-alert{border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;background:var(--surface-2);font-size:13.5px;line-height:1.5}
+.tf-alert[data-kind="error"]{border-color:color-mix(in oklab,var(--error) 35%,var(--border));background:var(--error-soft);color:var(--error)}
+.tf-alert[data-kind="success"]{border-color:color-mix(in oklab,var(--success) 35%,var(--border));background:var(--success-soft);color:var(--success)}
+.tf-alert[data-kind="warning"]{border-color:color-mix(in oklab,var(--warning) 35%,var(--border));background:var(--warning-soft)}
+.tf-icon-button{width:var(--touch-min);height:var(--touch-min);min-width:var(--touch-min);min-height:var(--touch-min);border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:inline-grid;place-items:center}
+.tf-icon-button:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.tf-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Rigid authoring helpers — stack unmarked multi-column grids on small screens */
+.tf-cols-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tf-cols-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tf-cols-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:640px){
+  .tf-cols-2,.tf-cols-3,.tf-cols-4,.tf-grid-3,.tf-sidebar-layout{grid-template-columns:minmax(0,1fr)}
+  .tf-stat-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr))}
+  .tf-dashboard-shell{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:1024px){
+  .tf-dashboard-shell{grid-template-columns:minmax(0,1fr)}
+  .tf-sidebar-layout{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Drawer: elevate any dashboard header while open (Admin + role dashboards) */
+[data-admin-header="elevated"],
+[data-dash-header="elevated"]{z-index:46 !important}
+
+/* Chat — mobile list/detail panes */
+.tf-chat{
+  width:min(1100px,100%);
+  height:min(760px,calc(100dvh - 110px));
+  display:grid;
+  grid-template-columns:minmax(240px,320px) minmax(0,1fr);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  overflow:hidden;
+  box-shadow:var(--shadow-md);
+}
+.tf-chat[data-pane="list"] .tf-chat-main{display:none}
+.tf-chat[data-pane="thread"] .tf-chat-list{display:none}
+.tf-chat-item{
+  width:100%;padding:12px;margin-bottom:8px;text-align:start;
+  border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);
+  display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center;
+}
+.tf-chat-item[aria-current="true"],.tf-chat-item.is-active{
+  border-color:var(--primary);background:var(--primary-soft);
+}
+.tf-chat-avatar{
+  width:40px;height:40px;border-radius:50%;background:var(--primary-soft);color:var(--primary);
+  display:grid;place-items:center;font-size:12px;font-weight:800;flex:none;
+}
+.tf-chat-item-meta{min-width:0}
+.tf-chat-item-meta strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tf-chat-unread{
+  display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;
+  padding-inline:5px;border-radius:999px;background:var(--primary);color:var(--primary-ink);
+  font-size:10.5px;font-weight:700;margin-inline-start:6px;
+}
+.tf-chat-title-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.tf-chat-back{display:none}
+.tf-composer button:disabled{opacity:.65;cursor:wait}
+.tf-message[data-failed="true"]{outline:1px dashed var(--error)}
+.tf-message-meta{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+@media (max-width:860px){
+  .tf-chat{grid-template-columns:1fr;height:calc(100dvh - 96px);border-radius:var(--r-lg)}
+  .tf-chat[data-pane="list"] .tf-chat-list{display:block;max-height:none;border-bottom:0}
+  .tf-chat[data-pane="list"] .tf-chat-main{display:none}
+  .tf-chat[data-pane="thread"] .tf-chat-list{display:none}
+  .tf-chat[data-pane="thread"] .tf-chat-main{display:grid;min-height:0}
+  .tf-chat-back{display:inline-grid}
+  .tf-chat-main{min-height:0}
+  .tf-composer{padding-bottom:max(16px,env(safe-area-inset-bottom))}
+}
+@media (min-width:861px){
+  .tf-chat[data-pane] .tf-chat-list,
+  .tf-chat[data-pane] .tf-chat-main{display:revert}
+  .tf-chat .tf-chat-list{display:block}
+  .tf-chat .tf-chat-main{display:grid}
 }

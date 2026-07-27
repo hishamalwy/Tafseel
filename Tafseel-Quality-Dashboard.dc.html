@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +18,7 @@
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
-  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
+  <aside id="quality-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
       <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span>
@@ -37,9 +37,11 @@
     </nav>
   </aside>
 
+  <div data-drawer-overlay="{{ drawerState }}" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
+
   <div style="display:flex;flex-direction:column;min-width:0">
-    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
-      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+    <header data-dash-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button id="quality-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="quality-sidebar" style="{{ drawerToggleStyle }}">☰</button>
       <div style="font-size:15px;font-weight:700" data-hide-sm="1">Quality review</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
@@ -110,6 +112,12 @@
               </tbody>
             </table>
           </div>
+          <sc-if value="{{ queueLoading }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">Loading applications…</div>
+          </sc-if>
+          <sc-if value="{{ queueError }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-empty-enter" role="alert" style="padding:48px 24px;text-align:center;color:var(--error);font-size:14px">{{ queueError }}</div>
+          </sc-if>
           <sc-if value="{{ noApplications }}" hint-placeholder-val="{{ false }}">
             <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px" data-i18n="quality_queue_empty">No applications in this queue.</div>
           </sc-if>
@@ -129,11 +137,16 @@
           </div>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
             <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Applications reviewed per week</h2>
-            <div style="display:flex;align-items:flex-end;gap:8px;height:100px">
-              <sc-for list="{{ reportChart }}" as="c" hint-placeholder-count="8">
-                <div title="{{ c.title }}" style="{{ c.style }}"></div>
-              </sc-for>
-            </div>
+            <sc-if value="{{ reportChartEmpty }}" hint-placeholder-val="{{ true }}">
+              <p class="tf-empty">Weekly review analytics are not available yet.</p>
+            </sc-if>
+            <sc-if value="{{ reportChartReady }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:flex-end;gap:8px;height:100px">
+                <sc-for list="{{ reportChart }}" as="c" hint-placeholder-count="8">
+                  <div title="{{ c.title }}" style="{{ c.style }}"></div>
+                </sc-for>
+              </div>
+            </sc-if>
           </div>
         </div>
       </sc-if>
@@ -270,26 +283,7 @@
 <script type="text/x-dc" data-dc-script data-props="{}">
 const RUBRIC_KEYS = ['Subject knowledge', 'Accuracy of information', 'Clarity of explanation', 'Communication skills', 'Teaching structure', 'Voice quality', 'Video quality', 'Student engagement', 'Professionalism'];
 
-let APPLICATIONS = [
-  { id:'a1', name:'Mona Rasheed', initials:'MR', subject:'Mathematics', submitted:'24 Jul', priority:'High', status:'Pending', demoTopic:'Factoring quadratics using the box method', facts:[
-    {k:'Email', v:'mona.rasheed@example.com'},{k:'City', v:'Jeddah, Saudi Arabia'},{k:'Experience', v:'5 years'},{k:'Degree', v:'BSc Mathematics, KAU'},{k:'Education level', v:'High school, Undergraduate'},{k:'Languages', v:'Arabic, English'}
-  ]},
-  { id:'a2', name:'Karim Aboul-Fotouh', initials:'KA', subject:'Programming', submitted:'23 Jul', priority:'Medium', status:'Pending', demoTopic:'Explaining recursion with a real interview question', facts:[
-    {k:'Email', v:'karim.af@example.com'},{k:'City', v:'Cairo, Egypt'},{k:'Experience', v:'7 years'},{k:'Degree', v:'BSc Computer Science, Cairo University'},{k:'Education level', v:'Undergraduate, Professional'},{k:'Languages', v:'Arabic, English'}
-  ]},
-  { id:'a3', name:'Widad Al-Harbi', initials:'WA', subject:'Chemistry', submitted:'22 Jul', priority:'Low', status:'Under Review', demoTopic:'Balancing redox reactions step by step', facts:[
-    {k:'Email', v:'widad.alharbi@example.com'},{k:'City', v:'Dammam, Saudi Arabia'},{k:'Experience', v:'3 years'},{k:'Degree', v:'MSc Chemistry, KFUPM'},{k:'Education level', v:'High school'},{k:'Languages', v:'Arabic'}
-  ]},
-  { id:'a4', name:'Peter Aziz', initials:'PA', subject:'Physics', submitted:'20 Jul', priority:'Medium', status:'Changes Requested', demoTopic:'Newton’s third law with everyday examples', facts:[
-    {k:'Email', v:'peter.aziz@example.com'},{k:'City', v:'Amman, Jordan'},{k:'Experience', v:'4 years'},{k:'Degree', v:'BSc Physics, University of Jordan'},{k:'Education level', v:'High school, Undergraduate'},{k:'Languages', v:'Arabic, English'}
-  ]},
-  { id:'a5', name:'Salma Idris', initials:'SI', subject:'Business', submitted:'19 Jul', priority:'Low', status:'Approved', demoTopic:'Reading a cash flow statement', facts:[
-    {k:'Email', v:'salma.idris@example.com'},{k:'City', v:'Dubai, UAE'},{k:'Experience', v:'9 years'},{k:'Degree', v:'MBA, AUS'},{k:'Education level', v:'Undergraduate, Professional'},{k:'Languages', v:'Arabic, English'}
-  ]},
-  { id:'a6', name:'Jamal Nasser', initials:'JN', subject:'Engineering', submitted:'17 Jul', priority:'Medium', status:'Rejected', demoTopic:'Shear force diagrams for simply supported beams', facts:[
-    {k:'Email', v:'jamal.nasser@example.com'},{k:'City', v:'Amman, Jordan'},{k:'Experience', v:'2 years'},{k:'Degree', v:'BSc Civil Engineering, JUST'},{k:'Education level', v:'Undergraduate'},{k:'Languages', v:'Arabic'}
-  ]}
-];
+let APPLICATIONS = [];
 
 const STATUS_TONE = {
   'Pending': ['var(--warning-soft)', 'var(--warning)'], 'Under Review': ['var(--info-soft)', 'var(--info)'],
@@ -299,20 +293,24 @@ const PRIORITY_TONE = { 'High': ['var(--error-soft)', 'var(--error)'], 'Medium':
 
 class Component extends DCLogic {
   state = {
-    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false,
+    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false,
     statusTab: 'all', view: 'list', page: 'overview', navKey: 'overview', currentId: null,
     scores: {}, comment: '', internalNotes: '', needsReason: false, toast: '', toastLeaving: false,
-    reviewersOnline: 4
+    queueLoading: true, queueError: ''
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    Tafseel.installDashboardDrawer(this, { sidebarId: 'quality-sidebar', toggleId: 'quality-drawer-toggle' });
     Tafseel.api.requireRoles(['QualityReviewer']).then(session => {
       if (!session) return;
       return this.loadQueue();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentWillUnmount() {
+    Tafseel.uninstallDashboardDrawer(this);
+    Tafseel.offChange(this._sub);
+  }
   componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   flash(msg) {
@@ -320,27 +318,35 @@ class Component extends DCLogic {
   }
 
   async loadQueue() {
-    const [items, subjects, topics, preferences] = await Promise.all([
-      Tafseel.api.get('/teacher-applications/queue'),
-      Tafseel.api.get('/subjects'),
-      Tafseel.api.get('/topics?qualificationOnly=true'),
-      Tafseel.api.get('/notification-preferences')
-    ]);
-    const status = ['Draft','Pending','Under Review','Changes Requested','Approved','Rejected','Withdrawn'];
-    const priority = ['Low','Medium','High'];
-    APPLICATIONS = items.map(x => ({
-      id:x.id, name:x.teacherId, initials:'TR',
-      subject:(subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
-      submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '',
-      priority:priority[x.priority], status:status[x.status],
-      demoTopic:(topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
-      facts:[{ k:'Teacher ID', v:x.teacherId }], version:x.version, rawStatus:x.status
-    }));
-    this.setState({
-      currentId:this.state.currentId,
-      notifyNewApps:preferences.emailEnabled,
-      inAppNotifications:preferences.inAppEnabled
-    });
+    try {
+      this.setState({ queueLoading: true, queueError: '' });
+      const [items, subjects, topics, preferences] = await Promise.all([
+        Tafseel.api.get('/teacher-applications/queue'),
+        Tafseel.api.get('/subjects'),
+        Tafseel.api.get('/topics?qualificationOnly=true'),
+        Tafseel.api.get('/notification-preferences')
+      ]);
+      const status = ['Draft','Pending','Under Review','Changes Requested','Approved','Rejected','Withdrawn'];
+      const priority = ['Low','Medium','High'];
+      APPLICATIONS = items.map(x => ({
+        id:x.id, name:x.teacherId, initials:'TR',
+        subject:(subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
+        submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '',
+        priority:priority[x.priority], status:status[x.status],
+        demoTopic:(topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
+        facts:[{ k:'Teacher ID', v:x.teacherId }], version:x.version, rawStatus:x.status
+      }));
+      this.setState({
+        currentId:this.state.currentId,
+        notifyNewApps:preferences.emailEnabled,
+        inAppNotifications:preferences.inAppEnabled,
+        queueLoading: false,
+        queueError: ''
+      });
+    } catch (error) {
+      APPLICATIONS = [];
+      this.setState({ queueLoading: false, queueError: Tafseel.api.errorMessage(error) });
+    }
   }
 
   async openApp(id) {
@@ -358,14 +364,17 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
+    const pendingCount = APPLICATIONS.filter(a => a.status === 'Pending').length;
+    const underReviewCount = APPLICATIONS.filter(a => a.status === 'Under Review').length;
+    const changesCount = APPLICATIONS.filter(a => a.status === 'Changes Requested').length;
     const NAV = [
-      ['overview','◱','Overview',0], ['pending','◷','Pending Applications',3], ['review','◍','Under Review',1],
-      ['changes','↺','Changes Requested',1], ['approved','✓','Approved Teachers',0], ['rejected','✕','Rejected Applications',0],
+      ['overview','◱','Overview',0], ['pending','◷','Pending Applications',pendingCount], ['review','◍','Under Review',underReviewCount],
+      ['changes','↺','Changes Requested',changesCount], ['approved','✓','Approved Teachers',0], ['rejected','✕','Rejected Applications',0],
       ['reports','▤','Reports',0], ['settings','⚙','Settings',0]
     ];
 
     const filtered = APPLICATIONS.filter(a => s.statusTab === 'all' || a.status.toLowerCase().replace(' ', '') === s.statusTab);
-    const current = APPLICATIONS.find(a => a.id === s.currentId) || APPLICATIONS[0];
+    const current = APPLICATIONS.find(a => a.id === s.currentId) || filtered[0] || null;
 
     const rubric = RUBRIC_KEYS.map(label => {
       const score = s.scores[label] || 0;
@@ -383,6 +392,7 @@ class Component extends DCLogic {
     const overallScore = scored.length ? (scored.reduce((a, b) => a + b, 0) / scored.length).toFixed(1) : '0.0';
 
     const decide = async (label) => {
+      if (!current) return this.flash('No application selected.');
       if ((label === 'Rejected' || label === 'Changes Requested') && !s.comment.trim()) {
         this.setState({ needsReason: true });
         return;
@@ -400,7 +410,15 @@ class Component extends DCLogic {
       } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
     };
 
+    const navTo = (key) => {
+      const tabMap = { pending:'pending', review:'underreview', changes:'changesrequested', approved:'approved', rejected:'rejected' };
+      this.setState({ navKey: key, page: tabMap[key] ? 'list' : key, statusTab: tabMap[key] || 'all', view: 'list' });
+      if (typeof this.closeDrawer === 'function') this.closeDrawer();
+      else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
+    };
+
     return {
+      ...Tafseel.drawerRenderVals(this),
       langLabel: Tafseel.t('language_target'),
       langSwitchLabel: Tafseel.t('admin_switch_language'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
@@ -409,18 +427,12 @@ class Component extends DCLogic {
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
 
-      drawerState: s.drawer ? 'open' : 'closed',
-      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
-
       navItems: NAV.map(([key, icon, label, badge]) => ({
         icon, label, badge: badge || 0,
         current: s.navKey === key ? 'page' : 'false',
         style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
           (s.navKey === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
-        onClick: () => {
-          const tabMap = { pending:'pending', review:'underreview', changes:'changesrequested', approved:'approved', rejected:'rejected' };
-          this.setState({ drawer: false, navKey: key, page: tabMap[key] ? 'list' : key, statusTab: tabMap[key] || 'all', view: 'list' });
-        }
+        onClick: () => navTo(key)
       })),
 
       isList: s.view === 'list' && (s.page || 'overview') !== 'reports' && (s.page || 'overview') !== 'settings',
@@ -428,12 +440,12 @@ class Component extends DCLogic {
       isSettingsPage: s.page === 'settings',
 
       reportStats: [
-        { label: 'Applications reviewed (30d)', value: '142' }, { label: 'Approval rate', value: '82%' },
-        { label: 'Avg. review time', value: '38 min' }, { label: 'Active reviewers', value: '4' }
+        { label: 'Applications reviewed (30d)', value: '—' }, { label: 'Approval rate', value: '—' },
+        { label: 'Avg. review time', value: '—' }
       ],
-      reportChart: [18, 22, 26, 19, 31, 28, 34, 30].map((v, i, arr) => ({
-        title: v + ' reviews', style: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / Math.max(...arr)) * 100) + '%'
-      })),
+      reportChart: [],
+      reportChartEmpty: true,
+      reportChartReady: false,
 
       notifyNewApps: s.notifyNewApps ?? true, onNotifyNewApps: e => this.setState({ notifyNewApps: e.target.checked }),
       onSaveSettings: async () => {
@@ -448,10 +460,18 @@ class Component extends DCLogic {
       isReview: s.view === 'review',
       backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
 
-      summary: [
-        { label: 'Pending applications', value: '3' }, { label: 'Reviewed today', value: '7' },
-        { label: 'Approval rate', value: '82%' }, { label: 'Avg. review time', value: '38 min' }
+      summary: s.queueLoading ? [
+        { label: 'Pending applications', value: '…' }, { label: 'In queue', value: '…' },
+        { label: 'Approval rate', value: '—' }, { label: 'Avg. review time', value: '—' }
+      ] : [
+        { label: 'Pending applications', value: String(pendingCount) },
+        { label: 'In queue', value: String(APPLICATIONS.length) },
+        { label: 'Approval rate', value: '—' },
+        { label: 'Avg. review time', value: '—' }
       ],
+
+      queueLoading: s.queueLoading,
+      queueError: s.queueError,
 
       statusTabs: [
         { key: 'all', label: 'All' }, { key: 'pending', label: 'Pending' }, { key: 'underreview', label: 'Under Review' },
@@ -463,7 +483,7 @@ class Component extends DCLogic {
         onClick: () => this.setState({ statusTab: t.key })
       })),
 
-      noApplications: filtered.length === 0,
+      noApplications: !s.queueLoading && !s.queueError && filtered.length === 0,
       applications: filtered.map(a => {
         const [sbg, sfg] = STATUS_TONE[a.status];
         const [pbg, pfg] = PRIORITY_TONE[a.priority];
@@ -485,12 +505,12 @@ class Component extends DCLogic {
       onRequestChanges: () => decide('Changes Requested'),
       onReject: () => decide('Rejected'),
 
-      history: [
+      history: current ? [
         { label: 'Application submitted', time: current.submitted + ' · 09:12' },
-        { label: 'Assigned to Sami Mattar', time: current.submitted + ' · 09:40' },
+        { label: 'Assigned to reviewer', time: current.submitted + ' · 09:40' },
         { label: 'Demo video processed', time: current.submitted + ' · 10:05' },
         { label: 'Awaiting your review', time: 'now' }
-      ].map((h, i, arr) => ({ ...h, dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--border-strong)') }))
+      ].map((h, i, arr) => ({ ...h, dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:' + (i === arr.length - 1 ? 'var(--primary)' : 'var(--border-strong)') })) : []
     };
   }
 }

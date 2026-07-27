@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,7 @@
 </head>
 <body>
 <x-dc>
+<a class="tf-skip" href="#student-main" data-i18n="skip_to_content">Skip to main content</a>
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Student dashboard — Tafseel</title>
@@ -19,7 +20,7 @@
 
 <div style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh" data-stack="app">
 
-  <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="{{ sidebarStyle }}">
+  <aside id="student-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
       <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span>
@@ -44,9 +45,11 @@
     </div>
   </aside>
 
+  <div data-drawer-overlay="{{ drawerState }}" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
+
   <div style="display:flex;flex-direction:column;min-width:0">
-    <header style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
-      <button type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">☰</button>
+    <header data-dash-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button id="student-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="student-sidebar" style="{{ drawerToggleStyle }}">☰</button>
       <div style="flex:1;max-width:420px;display:flex;align-items:center;gap:10px;height:38px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)" data-hide-sm="1">
         <span aria-hidden="true" style="color:var(--muted);font-size:13px">⌕</span>
         <label for="dash-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search your requests, teachers and files</label>
@@ -69,7 +72,7 @@
       </div>
     </header>
 
-    <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+    <main id="student-main" style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
     <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;flex-direction:column;gap:22px">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
@@ -172,17 +175,19 @@
           <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
               <h2 style="font-size:16px;font-weight:700">Learning activity</h2>
-              <span style="font-size:12.5px;color:var(--muted)">Last 12 weeks</span>
+              <span style="font-size:12.5px;color:var(--muted)">{{ activityTrendLabel }}</span>
             </div>
             <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Hours of explanation and live sessions delivered to you.</p>
-            <div style="display:flex;align-items:flex-end;gap:6px;height:120px">
-              <sc-for list="{{ chart }}" as="c" hint-placeholder-count="12">
-                <div title="{{ c.title }}" style="{{ c.colStyle }}"></div>
-              </sc-for>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:8px">
-              <span>May</span><span>Jun</span><span>Jul</span>
-            </div>
+            <sc-if value="{{ activityChartEmpty }}" hint-placeholder-val="{{ true }}">
+              <p class="tf-empty" role="status">{{ activityChartLabel }}</p>
+            </sc-if>
+            <sc-if value="{{ activityChartReady }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:flex-end;gap:6px;height:120px">
+                <sc-for list="{{ chart }}" as="c" hint-placeholder-count="12">
+                  <div title="{{ c.title }}" style="{{ c.colStyle }}"></div>
+                </sc-for>
+              </div>
+            </sc-if>
           </section>
         </div>
       </div>
@@ -497,7 +502,7 @@ const CONVERSATIONS = [];
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
-    section: 'overview', filter: 'all', drawer: false, notifsOpen: false,
+    section: 'overview', filter: 'all', drawer: false, compactNav: false, notifsOpen: false,
     read: [], toast: '', toastLeaving: false, liveNotifs: [], liveSessions: [],
     liveConversations: [],
     settingsName: 'Noor Abdulaziz', settingsEmail: 'noor.a@example.com', notifyDeliveries: true, notifySessions: true
@@ -513,6 +518,7 @@ class Component extends DCLogic {
       const shortId = created.length > 8 ? created.slice(0, 8) + '…' : created;
       this.flash(Tafseel.t('dash_request_created', { id: shortId }));
     }
+    Tafseel.installDashboardDrawer(this, { sidebarId: 'student-sidebar', toggleId: 'student-drawer-toggle' });
     Tafseel.api.requireRoles(['Student']).then(session => {
       if (!session) return;
       this._session = session;
@@ -560,7 +566,10 @@ class Component extends DCLogic {
       });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentWillUnmount() {
+    Tafseel.uninstallDashboardDrawer(this);
+    Tafseel.offChange(this._sub);
+  }
   componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   flash(msg) {
@@ -591,22 +600,30 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
+    const NOTIFS = s.liveNotifs || [];
+    const unread = NOTIFS.filter(n => !(s.read || []).includes(n.id)).length;
+    const requestCount = (typeof REQUESTS !== 'undefined' ? REQUESTS : []).length;
+    const sessionCount = (s.liveSessions || []).length;
+    const unreadMessages = (s.liveConversations || []).reduce((n, c) => n + (c.unreadCount || 0), 0);
     const NAV = [
-      ['overview', '◱', 'Overview', 0], ['requests', '◫', 'My Requests', 5], ['sessions', '◉', 'Live Sessions', 2],
-      ['messages', '✉', 'Messages', 3], ['saved', '♡', 'Saved Teachers', 0], ['payments', '▤', 'Payments', 0],
-      ['files', '⇩', 'Files', 0], ['reviews', '★', 'Reviews', 0], ['notifications', '🔔', 'Notifications', 0], ['settings', '⚙', 'Settings', 0]
+      ['overview', '◱', 'Overview', 0], ['requests', '◫', 'My Requests', requestCount], ['sessions', '◉', 'Live Sessions', sessionCount],
+      ['messages', '✉', 'Messages', unreadMessages], ['saved', '♡', 'Saved Teachers', 0], ['payments', '▤', 'Payments', 0],
+      ['files', '⇩', 'Files', 0], ['reviews', '★', 'Reviews', 0], ['notifications', '🔔', 'Notifications', unread], ['settings', '⚙', 'Settings', 0]
     ];
-
-    const NOTIFS = s.liveNotifs;
 
     const groups = { all: null, action: 'action', active: 'active', done: 'done' };
     const rows = REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).slice(0, 6);
-    const unread = NOTIFS.filter(n => !s.read.includes(n.id)).length;
 
-    const chartData = [3, 5, 2, 6, 4, 7, 5, 9, 6, 8, 11, 7];
-    const max = Math.max(...chartData);
+    // Activity chart requires a dedicated analytics endpoint — do not invent weekly bars.
+
+    const navTo = (key) => {
+      this.setState({ section: key });
+      if (typeof this.closeDrawer === 'function') this.closeDrawer();
+      else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
+    };
 
     return {
+      ...Tafseel.drawerRenderVals(this),
       langLabel: Tafseel.t('language_target'),
       langSwitchLabel: Tafseel.t('admin_switch_language'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
@@ -617,11 +634,6 @@ class Component extends DCLogic {
       stop: e => e.stopPropagation(),
       goRequests: () => this.setState({ section: 'requests' }),
 
-      drawerState: s.drawer ? 'open' : 'closed',
-      toggleDrawer: () => this.setState({ drawer: !s.drawer }),
-      sidebarStyle: 'background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t);' +
-        (s.drawer ? '' : ''),
-
       navItems: NAV.map(([key, icon, label, badge]) => ({
         icon, label, badge: badge || 0,
         current: s.section === key ? 'page' : 'false',
@@ -629,7 +641,7 @@ class Component extends DCLogic {
           (s.section === key
             ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;'
             : 'background:none;color:var(--text-2);font-weight:500;'),
-        onClick: () => this.setState({ section: key, drawer: false })
+        onClick: () => navTo(key)
       })),
 
       isOverview: s.section === 'overview',
@@ -679,13 +691,16 @@ class Component extends DCLogic {
       transactions: TRANSACTIONS,
       studentFiles: STUDENT_FILES.map(f => ({ ...f, onDownload: () => this.flash('Downloading ' + f.name + '…') })),
       myReviews: MY_REVIEWS,
-      conversations: s.liveConversations.length ? s.liveConversations.map(c => ({
-        initials:'··',
-        name:c.participantIds.find(id => id !== this._session?.userId) || 'Conversation',
-        preview:c.latestMessage?.body || 'No messages yet',
-        time:Tafseel.date(c.updatedAt),
-        unread:false
-      })) : CONVERSATIONS,
+      conversations: s.liveConversations.map(c => {
+        const peerId = (c.participantIds || []).find(id => id !== this._session?.userId) || (c.participantIds || [])[0];
+        return {
+          initials: Tafseel.participantInitials(peerId),
+          name: Tafseel.participantLabel(peerId),
+          preview: c.latestMessage?.body || 'No messages yet',
+          time: Tafseel.date(c.updatedAt),
+          unread: false
+        };
+      }),
 
       settingsName: s.settingsName, onSettingsName: e => this.setState({ settingsName: e.target.value }),
       settingsEmail: s.settingsEmail,
@@ -704,14 +719,20 @@ class Component extends DCLogic {
       },
 
       stats: [
-        { label: 'Active requests', value: String(REQUESTS.filter(x => x.group !== 'done').length), icon: '◫', delta: REQUESTS.length ? 'Live API data' : 'No request data yet', tone: REQUESTS.length ? 'ok' : 'muted' },
-        { label: 'Upcoming sessions', value: String(s.liveSessions.length), icon: '◉', delta: s.liveSessions.length ? 'Live API data' : 'No booked sessions', tone: s.liveSessions.length ? 'ok' : 'muted' },
-        { label: 'Completed lessons', value: String(REQUESTS.filter(x => x.group === 'done').length), icon: '✓', delta: REQUESTS.length ? 'Completed requests and orders' : 'No completions yet', tone: REQUESTS.length ? 'ok' : 'muted' },
-        { label: 'Total spending', value: '—', icon: '▤', delta: 'Not exposed by current student APIs', tone: 'muted' }
+        { label: 'Active requests', value: String(REQUESTS.filter(x => x.group !== 'done').length), icon: '◫', delta: '', tone: 'muted' },
+        { label: 'Upcoming sessions', value: String(s.liveSessions.length), icon: '◉', delta: '', tone: 'muted' },
+        { label: 'Completed lessons', value: String(REQUESTS.filter(x => x.group === 'done').length), icon: '✓', delta: '', tone: 'muted' },
+        { label: 'Total spending', value: '—', icon: '▤', delta: Tafseel.t('trend_unavailable'), tone: 'muted' }
       ].map(st => ({
         ...st,
         deltaStyle: 'font-size:12.5px;font-weight:600;color:' + (st.tone === 'warn' ? 'var(--warning)' : st.tone === 'ok' ? 'var(--success)' : 'var(--muted)')
       })),
+
+      chart: [],
+      activityChartEmpty: true,
+      activityChartReady: false,
+      activityTrendLabel: Tafseel.t('trend_unavailable'),
+      activityChartLabel: Tafseel.t('chart_unavailable'),
 
       filters: [
         { key: 'all', label: 'All' }, { key: 'action', label: 'Needs action' },
@@ -735,6 +756,7 @@ class Component extends DCLogic {
           statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
         };
       }),
+
       noRequests: rows.length === 0,
       shownCount: rows.length,
 
@@ -753,11 +775,6 @@ class Component extends DCLogic {
             location.href = join.url;
           } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
         }
-      })),
-
-      chart: chartData.map((v, i) => ({
-        title: v + ' hours',
-        colStyle: 'flex:1;border-radius:5px 5px 2px 2px;background:' + (i === chartData.length - 2 ? 'var(--primary)' : 'var(--primary-soft)') + ';height:' + Math.round((v / max) * 100) + '%'
       })),
 
       recommended: [],

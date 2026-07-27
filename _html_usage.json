@@ -1,0 +1,492 @@
+{
+  "classes": {
+    "is-in": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-actions": [
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-app-header": [
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-auth-copy": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "tf-auth-panel": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "tf-auth-tabs": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "tf-brand": [
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-button": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-button-secondary": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-cascade": [
+      "Tafseel-Browse-Teachers.dc.html"
+    ],
+    "tf-chat": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tf-chat-list": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tf-chat-main": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tf-chat-title": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tf-check-draw": [
+      "Tafseel-Payment.dc.html"
+    ],
+    "tf-chip-pop": [
+      "Tafseel-Browse-Teachers.dc.html"
+    ],
+    "tf-composer": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tf-control-fade": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-empty": [
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tf-empty-enter": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "tf-escrow-rail": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-escrow-step": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-field": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-field-help": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "tf-form": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-grid-2": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Teacher-Apply.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "tf-hero-stagger": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-lang-toggle": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Apply.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tf-lift": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-list": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-marquee-mask": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-marquee-track": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-messages": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tf-modal-enter": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "tf-muted": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-nav-link": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-nav-track": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-panel": [
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-panel-narrow": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "tf-press": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-price-flash": [
+      "Tafseel-Payment.dc.html"
+    ],
+    "tf-rotate-accent": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-rotate-word": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-row-slide": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "tf-section-swap": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "tf-shell": [
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tf-skeleton": [
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tf-social-icon": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "tf-status": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tf-theme-toggle": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tf-unavailable": [
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tf-workflow": [
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ]
+  },
+  "ids": {
+    "admin-drawer-toggle": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "admin-sidebar": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "application-form": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "applications": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "apply-status": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "apply-title": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "chat-title": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "city": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "composer": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "conversations": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "dash-q": [
+      "Tafseel-Student-Dashboard.dc.html"
+    ],
+    "degree": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "demo": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "demo-form": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "duration": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "f-q": [
+      "Tafseel-Browse-Teachers.dc.html"
+    ],
+    "hero-q": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "how": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "login-email": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "login-password": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "main": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "message": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "messages": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "new-requests": [
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "pricing": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "reg-confirm": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reg-email": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reg-fullname": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reg-password": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reset-confirm": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reset-password": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "settings-email-note": [
+      "Tafseel-Student-Dashboard.dc.html"
+    ],
+    "sort": [
+      "Tafseel-Browse-Teachers.dc.html"
+    ],
+    "subject": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "subjects": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "submit-application": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "topic": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "why": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "years": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ]
+  },
+  "data_attrs": {
+    "admin-header": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "count-format": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "count-up": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "dc-script": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "drawer": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "drawer-overlay": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "drawer-toggle": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "escrow-flow": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "fade": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "hide-sm": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "i18n": [
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "i18n-ph": [
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Student-Dashboard.dc.html"
+    ],
+    "i18n-placeholder": [
+      "Tafseel-Payment.dc.html"
+    ],
+    "network": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "props": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "public-header": [
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html"
+    ],
+    "reveal": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "reveal-group": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "size": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "stack": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "sticky": [
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tafseel-language": [
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "tafseel-mark": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Auth.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Chat.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Request.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Apply.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "tafseel-mark-force": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "tafseel-theme": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "tick": [
+      "Tafseel-Landing.dc.html"
+    ]
+  },
+  "dynamic_class_exprs": {
+    "{{ sl.className }}": [
+      "Tafseel-Book-Session.dc.html"
+    ],
+    "{{ sv.cardClass }}": [
+      "Tafseel-Teacher-Profile.dc.html"
+    ],
+    "{{ toastClass }}": [
+      "Tafseel-Admin-Dashboard.dc.html",
+      "Tafseel-Book-Session.dc.html",
+      "Tafseel-Browse-Teachers.dc.html",
+      "Tafseel-Landing.dc.html",
+      "Tafseel-Payment.dc.html",
+      "Tafseel-Quality-Dashboard.dc.html",
+      "Tafseel-Student-Dashboard.dc.html",
+      "Tafseel-Teacher-Dashboard.dc.html",
+      "Tafseel-Teacher-Profile.dc.html"
+    ]
+  }
+}

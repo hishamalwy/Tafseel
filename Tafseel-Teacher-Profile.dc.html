@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +18,7 @@
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
-  <div style="max-width:1280px;margin-inline:auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:32px">
+  <div class="tf-shell" style="height:68px;display:flex;align-items:center;gap:32px">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);flex:none" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="30" height="30" style="flex:none;object-fit:contain" />
       <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:19px;letter-spacing:0">تفصيل</span>
@@ -39,7 +39,7 @@
   </div>
 </header>
 
-<main style="max-width:1280px;margin-inline:auto;padding:24px 24px 96px">
+<main class="tf-shell" style="padding-block:24px 96px">
   <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="tf-skeleton" style="height:18px;width:240px"></div>

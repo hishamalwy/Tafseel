@@ -20,6 +20,7 @@ $required = @(
   "frontend/js/vendor/react.production.min.js",
   "frontend/js/vendor/react-dom.production.min.js",
   "frontend/js/vendor/babel.min.js",
+  "frontend/js/vendor/signalr.min.js",
   "frontend/css/tafseel.css",
   "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-light.woff2",
   "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2",

@@ -333,4 +333,78 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
   }
 }
 
+// Canonical drawer pattern on role dashboards (Admin remains separately smoke-tested above).
+for (const [page, ids] of [
+  ["Tafseel-Student-Dashboard.dc.html", ["student-sidebar", "student-drawer-toggle"]],
+  ["Tafseel-Teacher-Dashboard.dc.html", ["teacher-sidebar", "teacher-drawer-toggle"]],
+  ["Tafseel-Quality-Dashboard.dc.html", ["quality-sidebar", "quality-drawer-toggle"]],
+  ["Tafseel-Admin-Dashboard.dc.html", ["admin-sidebar", "admin-drawer-toggle"]]
+]) {
+  const source = readFileSync(page, "utf8");
+  if (!source.includes('data-drawer-overlay="{{ drawerState }}"'))
+    throw new Error(`${page} must include data-drawer-overlay bound to drawerState.`);
+  if (!source.includes('data-drawer-toggle'))
+    throw new Error(`${page} must mark the hamburger with data-drawer-toggle.`);
+  for (const id of ids) {
+    if (!source.includes(`id="${id}"`))
+      throw new Error(`${page} must define id="${id}".`);
+  }
+  if (!/installDashboardDrawer|compactNav/.test(source) && !page.includes("Admin"))
+    throw new Error(`${page} must install the shared dashboard drawer (or Admin compactNav).`);
+}
+
+const browse = readFileSync("Tafseel-Browse-Teachers.dc.html", "utf8");
+if (/let\s+TEACHERS\s*=\s*\[\s*\{/.test(browse))
+  throw new Error("Browse Teachers must not seed mock teacher rows — start from [].");
+if (!/teachersLoading/.test(browse))
+  throw new Error("Browse Teachers must expose teachersLoading.");
+
+const quality = readFileSync("Tafseel-Quality-Dashboard.dc.html", "utf8");
+if (/let\s+APPLICATIONS\s*=\s*\[\s*\{/.test(quality))
+  throw new Error("Quality Dashboard must not seed mock applications — start from [].");
+if (!/queueLoading/.test(quality))
+  throw new Error("Quality Dashboard must expose queueLoading.");
+
+const chat = readFileSync("Tafseel-Chat.dc.html", "utf8");
+if (!chat.includes("js/vendor/signalr.min.js"))
+  throw new Error("Chat page must load the vendored SignalR client.");
+if (!existsSync("js/vendor/signalr.min.js"))
+  throw new Error("Missing vendored SignalR client: js/vendor/signalr.min.js");
+if (existsSync("js/auth.js"))
+  throw new Error("js/auth.js was removed as dead code — do not restore without a page that loads it.");
+
+const landing = readFileSync("Tafseel-Landing.dc.html", "utf8");
+if (/grid-template-columns\s*:\s*repeat\(\s*3\s*,/.test(landing) && !/tf-stat-grid|tf-cols-3|auto-fit/.test(landing))
+  throw new Error("Landing must not keep an unmarked rigid repeat(3) grid.");
+if (/grid-template-columns\s*:\s*repeat\(\s*2\s*,/.test(landing) && !landing.includes("tf-cols-2") && !landing.includes("data-stack"))
+  throw new Error("Landing must not keep an unmarked rigid repeat(2) reasons grid.");
+
+// Ban known illustrative analytics / fake trend patterns across published pages + page scripts.
+const analyticsBanned = [
+  [/\+18%\s*MoM/i, "+18% MoM illustrative trend"],
+  [/\+\d+%\s*MoM/i, "invented MoM percentage trend"],
+  [/1,240\s+teachers/i, "hardcoded teacher census"],
+  [/revenueChart\s*:\s*\[\s*0\s*\]/, "placeholder zero-height revenue chart"],
+  [/ordersChart\s*:\s*\[\s*0\s*\]/, "placeholder zero-height orders chart"],
+  [/chartData\s*=\s*\[[^\]]*[1-9]/, "hardcoded student activity chart series"],
+  [/reportChart\s*:\s*\[[^\]]*[1-9]/, "hardcoded quality report chart series"]
+];
+for (const page of pages) {
+  const source = readFileSync(page, "utf8");
+  for (const [pattern, label] of analyticsBanned) {
+    if (pattern.test(source))
+      throw new Error(`${page} still contains illustrative analytics (${label}). Use localized unavailable states instead.`);
+  }
+}
+if (!/trend_unavailable/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "utf8")))
+  throw new Error("Admin overview must expose Tafseel.t('trend_unavailable') when analytics APIs are absent.");
+if (!/chartsEmpty/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "utf8")))
+  throw new Error("Admin overview must gate charts behind chartsEmpty / chartsReady.");
+
+const css = readFileSync("css/tafseel.css", "utf8");
+for (const token of [".tf-page", ".tf-grid", ".tf-table-wrap", ".tf-stat-grid", ".tf-skip", ".tf-dashboard-shell"]) {
+  if (!css.includes(token))
+    throw new Error(`css/tafseel.css missing layout system class: ${token}`);
+}
+
 console.log(`Frontend integrity validation passed for ${pages.length} entry points.`);

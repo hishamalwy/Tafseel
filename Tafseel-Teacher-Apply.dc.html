@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Teacher application — Tafseel</title>
   <link rel="stylesheet" href="css/tafseel.css">
   <link rel="icon" href="assets/brand/favicon.ico">
@@ -12,37 +12,39 @@
   <script src="js/teacher-apply.js" defer></script>
 </head>
 <body>
+  <a class="tf-skip" href="#apply-main">Skip to main content</a>
   <header class="tf-app-header">
     <a class="tf-brand" href="Tafseel-Landing.dc.html"><img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="26" height="26" style="flex:none;object-fit:contain" /><span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span></a>
     <div class="tf-actions">
-      <a href="Tafseel-Teacher-Dashboard.dc.html">Teacher dashboard</a>
+      <a href="Tafseel-Teacher-Dashboard.dc.html" data-i18n="apply_teacher_dashboard">Teacher dashboard</a>
       <button class="tf-button tf-button-secondary tf-lang-toggle" data-tafseel-language type="button" aria-label="Switch language"></button>
+      <button class="tf-button tf-button-secondary tf-theme-toggle" data-tafseel-theme type="button" aria-label="Toggle dark mode"></button>
     </div>
   </header>
-  <main class="tf-workflow">
+  <main id="apply-main" class="tf-workflow">
     <section class="tf-panel" aria-labelledby="apply-title">
-      <h1 id="apply-title">Teacher qualification</h1>
-      <p class="tf-muted">Choose one subject-specific demo topic. Approval applies only to that subject.</p>
+      <h1 id="apply-title" data-i18n="apply_title">Teacher qualification</h1>
+      <p class="tf-muted" data-i18n="apply_intro">Choose one subject-specific demo topic. Approval applies only to that subject.</p>
       <div id="applications" class="tf-list" aria-live="polite"></div>
       <form id="application-form" class="tf-form">
         <div class="tf-grid-2">
-          <div class="tf-field"><label for="subject">Subject</label><select id="subject" required></select></div>
-          <div class="tf-field"><label for="topic">Qualification topic</label><select id="topic" required></select></div>
-          <div class="tf-field"><label for="city">City</label><input id="city" maxlength="150" required></div>
-          <div class="tf-field"><label for="years">Years of experience</label><input id="years" type="number" min="0" max="80" value="0" required></div>
+          <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
+          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required></select></div>
+          <div class="tf-field"><label for="city" data-i18n="apply_city">City</label><input id="city" maxlength="150" required autocomplete="address-level2"></div>
+          <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" value="0" required></div>
         </div>
-        <div class="tf-field"><label for="degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required></div>
-        <button class="tf-button" type="submit">Save application</button>
+        <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required></div>
+        <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save">Save application</button>
       </form>
       <form id="demo-form" class="tf-form" hidden>
-        <h2>Teaching demo</h2>
+        <h2 data-i18n="apply_demo_title">Teaching demo</h2>
         <div class="tf-grid-2">
-          <div class="tf-field"><label for="demo">Video file</label><input id="demo" type="file" accept="video/*" required></div>
-          <div class="tf-field"><label for="duration">Duration in seconds</label><input id="duration" type="number" min="1" max="600" value="180" required></div>
+          <div class="tf-field"><label for="demo" data-i18n="apply_demo_file">Video file</label><input id="demo" type="file" accept="video/*" required></div>
+          <div class="tf-field"><label for="duration" data-i18n="apply_duration">Duration in seconds</label><input id="duration" type="number" min="1" max="600" value="180" required></div>
         </div>
         <div class="tf-actions">
-          <button class="tf-button" type="submit">Upload demo</button>
-          <button id="submit-application" class="tf-button tf-button-secondary" type="button">Submit for review</button>
+          <button class="tf-button" type="submit" id="upload-demo" data-i18n="apply_upload_demo">Upload demo</button>
+          <button id="submit-application" class="tf-button tf-button-secondary" type="button" data-i18n="apply_submit_review">Submit for review</button>
         </div>
       </form>
       <p id="apply-status" class="tf-status" role="status" aria-live="polite"></p>

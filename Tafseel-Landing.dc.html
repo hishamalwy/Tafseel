@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,23 +15,22 @@
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
-<script src="js/reveal.js"></script>
 </helmet>
 
 <a href="#main" style="position:absolute;inset-inline-start:-9999px;top:8px;background:var(--primary);color:var(--primary-ink);padding:8px 14px;border-radius:var(--r-sm);z-index:99" style-focus="inset-inline-start:8px">Skip to content</a>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
-  <div data-public-header style="max-width:1320px;margin-inline:auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:32px">
+  <div data-public-header class="tf-shell" style="height:68px;display:flex;align-items:center;gap:32px">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);flex:none" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="30" height="30" style="flex:none;object-fit:contain" />
       <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:19px;letter-spacing:0">تفصيل</span>
     </a>
     <nav data-hide-sm class="tf-nav-track" aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
-      <a class="tf-nav-link" href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Browse Teachers</a>
-      <a class="tf-nav-link" href="#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Subjects</a>
-      <a class="tf-nav-link" href="#how" data-i18n="nav_how" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">How It Works</a>
-      <a class="tf-nav-link" href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Become a Teacher</a>
-      <a class="tf-nav-link" href="#why" data-i18n="nav_about" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">About</a>
+      <a class="tf-nav-link" href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Browse Teachers</a>
+      <a class="tf-nav-link" href="#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Subjects</a>
+      <a class="tf-nav-link" href="#how" data-i18n="nav_how" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">How It Works</a>
+      <a class="tf-nav-link" href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Become a Teacher</a>
+      <a class="tf-nav-link" href="#why" data-i18n="nav_about" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">About</a>
     </nav>
     <div style="display:flex;align-items:center;gap:8px;flex:none">
       <button type="button" class="tf-lang-toggle tf-control-fade" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
@@ -44,7 +43,7 @@
 
 <main id="main">
 
-  <section data-stack="hero" style="position:relative;overflow:hidden;max-width:1320px;margin-inline:auto;padding:clamp(48px,7vw,88px) 24px 72px;display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:64px;align-items:start">
+  <section data-stack="hero" class="tf-shell" style="position:relative;overflow:hidden;padding-block:clamp(48px,7vw,88px) 72px;display:grid;grid-template-columns:1.05fr 0.95fr;gap:64px;align-items:start">
     <div style="position:absolute;z-index:0;width:520px;height:520px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,var(--primary) 16%,transparent),transparent);top:-220px;inset-inline-end:-140px;pointer-events:none"></div>
     <div style="position:absolute;z-index:0;width:340px;height:340px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,#D9FF43 16%,transparent),transparent);top:240px;inset-inline-start:-100px;pointer-events:none"></div>
     <div class="tf-hero-stagger" style="position:relative;z-index:1">
@@ -68,7 +67,7 @@
         <span style="font-size:13px;color:var(--muted)">{{ heroNote }}</span>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px solid var(--border);padding-top:24px;max-width:580px">
+      <div class="tf-stat-grid" style="border-top:1px solid var(--border);padding-top:24px;max-width:580px">
         <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
           <div>
             <div data-count-up="{{ s.countUp }}" data-count-format="{{ s.format }}" style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{ s.value }}</div>
@@ -130,7 +129,7 @@
     </div>
   </section>
 
-  <section id="subjects" style="max-width:1320px;margin-inline:auto;padding:64px 24px">
+  <section id="subjects" class="tf-shell" style="padding-block:64px">
     <div style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
       <div>
         <h2 data-i18n="subj_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Popular subjects</h2>
@@ -151,7 +150,7 @@
   </section>
 
   <section id="how" style="background:var(--bg-alt);border-block:1px solid var(--border);margin-top:40px">
-    <div style="max-width:1320px;margin-inline:auto;padding:80px 24px">
+    <div class="tf-shell" style="padding-block:80px">
       <h2 data-i18n="how_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">How Tafseel works</h2>
       <p data-i18n="how_p" style="color:var(--muted);font-size:16px;margin-bottom:40px">Four steps from “I don’t get this chapter” to a explanation made for you.</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
@@ -166,7 +165,7 @@
     </div>
   </section>
 
-  <section style="max-width:1320px;margin-inline:auto;padding:80px 24px">
+  <section class="tf-shell" style="padding-block:80px">
     <div style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
       <div>
         <h2 data-i18n="feat_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Featured teachers</h2>
@@ -215,7 +214,7 @@
     </div>
   </section>
 
-  <section id="pricing" style="max-width:1320px;margin-inline:auto;padding:16px 24px 80px">
+  <section id="pricing" class="tf-shell" style="padding-block:16px 80px">
     <h2 data-i18n="svc_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Six ways to get help</h2>
     <p data-i18n="svc_p" style="color:var(--muted);font-size:16px;margin-bottom:28px">Pick the format that fits the week you’re having.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px" data-reveal-group>
@@ -233,7 +232,7 @@
   </section>
 
   <section id="why" style="background:var(--bg-alt);border-block:1px solid var(--border)">
-    <div style="max-width:1320px;margin-inline:auto;padding:80px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px">
+    <div class="tf-shell" style="padding-block:80px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px">
       <div data-reveal="left">
         <h2 data-i18n="why_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:12px">Why students trust Tafseel</h2>
         <p data-i18n="why_p" style="color:var(--muted);font-size:16px;line-height:1.65;margin-bottom:24px">We review every teacher before they can accept a single request, and we hold every payment until you say the work is done.</p>
@@ -248,7 +247,7 @@
           <div style="margin-top:14px;padding:12px;border-radius:var(--r-md);background:var(--success-soft);color:var(--success);font-size:13px;font-weight:600">Your payment is protected until the service is completed.</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-content:start" data-reveal-group>
+      <div class="tf-cols-2" style="align-content:start" data-reveal-group>
         <sc-for list="{{ reasons }}" as="r" hint-placeholder-count="6">
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
             <div style="width:34px;height:34px;border-radius:9px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:15px;margin-bottom:12px">{{ r.icon }}</div>
@@ -261,7 +260,7 @@
   </section>
 
   <section style="padding:80px 0" data-reveal>
-    <h2 data-i18n="test_h" style="max-width:1320px;margin-inline:auto;padding:0 24px;font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:28px">What students say</h2>
+    <h2 data-i18n="test_h" class="tf-shell" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:28px">What students say</h2>
     <div class="tf-marquee-mask">
       <div class="tf-marquee-track" style="gap:16px">
         <sc-for list="{{ testimonialLoop }}" as="tm" hint-placeholder-count="16">
@@ -281,7 +280,7 @@
     </div>
   </section>
 
-  <section style="max-width:1320px;margin-inline:auto;padding:0 24px 88px">
+  <section class="tf-shell" style="padding-block:0 88px">
     <div style="position:relative;overflow:hidden;border-radius:var(--r-xl);border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-md);padding:clamp(28px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px" data-reveal>
       <div style="position:absolute;z-index:0;width:340px;height:340px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,var(--primary) 12%,transparent),transparent);top:-160px;inset-inline-end:-100px;pointer-events:none"></div>
       <div style="position:relative;z-index:1;border-inline-end:1px solid var(--border);padding-inline-end:48px">
@@ -299,7 +298,7 @@
 </main>
 
 <footer style="border-top:1px solid var(--border);background:var(--bg-alt)">
-  <div style="max-width:1320px;margin-inline:auto;padding:56px 24px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:40px">
+  <div class="tf-shell" style="padding-block:56px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:40px">
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="26" height="26" style="flex:none;object-fit:contain" />
@@ -323,7 +322,7 @@
       </div>
     </sc-for>
   </div>
-  <div style="max-width:1320px;margin-inline:auto;padding:20px 24px 40px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div class="tf-shell" style="padding-block:20px 40px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
     <span style="font-size:13px;color:var(--muted)">© 2026 Tafseel. All rights reserved.</span>
     <div style="display:flex;align-items:center;gap:16px">
       <span style="font-size:13px;color:var(--muted)">Privacy</span>
@@ -414,6 +413,34 @@ class Component extends DCLogic {
       { quote: ar ? 'قارنت بين ثلاث معلمات بالتقييمات ونماذج الشرح قبل ما أختار. الاختيار كان واضح وسريع.' : 'I compared three teachers by their ratings and sample videos before picking one. The choice was fast and obvious.', initials: 'RA', name: 'Rawan Ali', meta: ar ? 'ثانوية عامة، علمي' : 'High school, science track' },
       { quote: ar ? 'طلبت مراجعة قبل الامتحان بيوم واحد واستلمت الرد خلال ساعتين. مكنتش متوقعة السرعة دي.' : 'I requested a review one day before my exam and got a reply within two hours. I didn’t expect it to be this fast.', initials: 'OB', name: 'Omar Bakr', meta: ar ? 'طالب طب، السنة الرابعة' : 'Medicine, 4th year' }
     ];
+    // Static marketing fallbacks — shown only while /subjects, /teachers or /services
+    // return nothing (API still loading, empty catalog, or request failed). Never used
+    // to fabricate live counts (see heroPill/stats, which stay honest "—"/null-driven).
+    const fallbackSubjects = [
+      { icon: '∑', name: ar ? 'الرياضيات' : 'Mathematics', desc: ar ? 'التفاضل والجبر الخطي والإحصاء' : 'Calculus, linear algebra, statistics', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: '⚛', name: ar ? 'الفيزياء' : 'Physics', desc: ar ? 'الميكانيكا والديناميكا والكهرومغناطيسية' : 'Mechanics, thermodynamics, E&M', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: '⚗', name: ar ? 'الكيمياء' : 'Chemistry', desc: ar ? 'العضوية وغير العضوية والتحليلية' : 'Organic, inorganic, analytical', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: '🧬', name: ar ? 'الأحياء' : 'Biology', desc: ar ? 'الخلية والوراثة وعلم وظائف الأعضاء' : 'Cell biology, genetics, physiology', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: '{}', name: ar ? 'البرمجة' : 'Programming', desc: ar ? 'الخوارزميات وقواعد البيانات وتطوير الويب' : 'Algorithms, databases, web dev', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: 'Aa', name: ar ? 'اللغة الإنجليزية' : 'English', desc: ar ? 'الكتابة الأكاديمية وIELTS والمحادثة' : 'Academic writing, IELTS, speaking', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: '◱', name: ar ? 'إدارة الأعمال' : 'Business', desc: ar ? 'المحاسبة والتمويل والتسويق' : 'Accounting, finance, marketing', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
+      { icon: '⚙', name: ar ? 'الهندسة' : 'Engineering', desc: ar ? 'الدوائر والاستاتيكا وCAD' : 'Circuits, statics, CAD', count: ar ? 'استكشف المعلمين' : 'Explore teachers' }
+    ].map(subject => ({
+      ...subject,
+      onOpen: event => {
+        event.preventDefault();
+        location.href = 'Tafseel-Browse-Teachers.dc.html?search=' + encodeURIComponent(subject.name);
+      }
+    }));
+    const fallbackTeachers = [];
+    const fallbackServices = [
+      { icon: '▶', name: ar ? 'شرح مسجّل مخصص' : 'Custom explanation', desc: ar ? 'فيديو مسجل يشرح موضوعك تحديدًا خطوة بخطوة.' : 'A recorded video walking through your exact topic, step by step.', price: ar ? 'من 95 ريال' : 'from SAR 95' },
+      { icon: '✎', name: ar ? 'إرشاد الواجبات' : 'Assignment guidance', desc: ar ? 'توجيه منهجي لحل واجبك دون كتابته نيابة عنك.' : 'Structured guidance on your assignment — coaching, not ghostwriting.', price: ar ? 'من 80 ريال' : 'from SAR 80' },
+      { icon: '◷', name: ar ? 'مراجعة الاختبار' : 'Exam revision', desc: ar ? 'مراجعة مكثفة للأخطاء الشائعة والأسئلة السابقة.' : 'Focused revision on past papers and the mistakes that cost marks.', price: ar ? 'من 110 ريال' : 'from SAR 110' },
+      { icon: '◉', name: ar ? 'جلسة مباشرة' : 'Live session', desc: ar ? 'مكالمة فيديو فردية مع سبورة مشتركة.' : 'One-to-one video call with a shared whiteboard.', price: ar ? 'من 160 ريال/ساعة' : 'from SAR 160/hr' },
+      { icon: '◈', name: ar ? 'إرشاد المشاريع' : 'Project mentoring', desc: ar ? 'متابعة متعددة الجلسات لمشروع التخرج أو البحث.' : 'Multi-session support for capstone projects and research.', price: ar ? 'من 420 ريال' : 'from SAR 420' },
+      { icon: '⇩', name: ar ? 'شرح جاهز للتحميل' : 'Recorded explanation', desc: ar ? 'شروحات جاهزة يمكنك تحميلها ومشاهدتها متى شئت.' : 'Ready-made explanations you can download and rewatch anytime.', price: ar ? 'من 45 ريال' : 'from SAR 45' }
+    ];
     return {
       langLabel: Tafseel.t('language_target'),
       langSwitchLabel: Tafseel.t('admin_switch_language'),
@@ -459,7 +486,7 @@ class Component extends DCLogic {
         { value: '—', countUp: '', format: '', label: ar ? 'طلب مكتمل' : 'Requests completed' },
         { value: '—', countUp: '', format: '', label: ar ? 'متوسط التقييم' : 'Average rating' }
       ],
-      subjects: this.state.liveSubjects || [],
+      subjects: this.state.liveSubjects && this.state.liveSubjects.length ? this.state.liveSubjects : fallbackSubjects,
       steps: [
         { n: '01', title: ar ? 'اختر مادتك' : 'Choose a subject', body: ar ? 'حدد المادة والمستوى الدراسي، من الثانوية إلى الدراسات العليا.' : 'Pick your subject and level, from high school to postgrad.' },
         { n: '02', title: ar ? 'قارن المعلمين' : 'Compare teachers', body: ar ? 'شاهد نماذج الشرح، واقرأ التقييمات، وقارن الأسعار وأوقات الرد.' : 'Watch teaching samples, read reviews, compare prices and response times.' },
@@ -467,7 +494,7 @@ class Component extends DCLogic {
         { n: '04', title: ar ? 'تعلّم بطريقتك' : 'Learn your way', body: ar ? 'استلم شرحًا مسجلًا مخصصًا أو احجز جلسة مباشرة.' : 'Get a custom recorded explanation or book a live session.' }
       ],
       teachers: this.state.liveTeachers || [],
-      services: this.state.liveServices && this.state.liveServices.length ? this.state.liveServices : [],
+      services: this.state.liveServices && this.state.liveServices.length ? this.state.liveServices : fallbackServices,
       escrow: [
         { n: '1', text: ar ? 'يدفع الطالب عند قبول العرض' : 'Student pays when the offer is accepted' },
         { n: '2', text: ar ? 'تحتفظ المنصة بالمبلغ بأمان' : 'Tafseel holds the payment securely' },

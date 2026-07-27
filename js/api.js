@@ -104,6 +104,8 @@
       return session;
     },
     me: function () { return currentUser; },
+    /** In-memory access token for authenticated realtime clients (never log or persist). */
+    accessToken: function () { return accessToken || ''; },
     logout: async function () {
       try { await request('/auth/logout', { method: 'POST', noRefresh: true }); } finally {
         accessToken = '';

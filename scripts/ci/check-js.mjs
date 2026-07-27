@@ -23,6 +23,10 @@ for (const [file, expectedHash] of vendorScripts) {
 }
 execFileSync(process.execPath, ["--check", "support.js"], { stdio: "inherit" });
 
+if (!existsSync("js/vendor/signalr.min.js"))
+  throw new Error("Missing vendored SignalR client: js/vendor/signalr.min.js");
+execFileSync(process.execPath, ["--check", "js/vendor/signalr.min.js"], { stdio: "inherit" });
+
 for (const file of readdirSync(".").filter(x => x.endsWith(".dc.html"))) {
   const source = readFileSync(file, "utf8");
   const match = source.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/);

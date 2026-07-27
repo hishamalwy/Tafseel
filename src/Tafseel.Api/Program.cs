@@ -254,11 +254,11 @@ app.MapGet("/app/{file}", (string file) =>
 app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
-    file is "locales.js" or "tafseel.js" or "api.js" or "auth.js" or "teacher-apply.js" or "chat.js"
+    file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
 app.MapGet("/app/js/vendor/{file}", (string file) =>
-    file is "react.production.min.js" or "react-dom.production.min.js" or "babel.min.js"
+    file is "react.production.min.js" or "react-dom.production.min.js" or "babel.min.js" or "signalr.min.js"
         ? Results.File(Path.Combine(frontendRoot, "js", "vendor", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
 app.MapGet("/app/css/tafseel.css", () =>

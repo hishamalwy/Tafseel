@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -93,7 +93,7 @@
               <p class="tf-muted">Choose how you want to use Tafseel.</p>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+            <div class="tf-cols-2" style="gap:10px;margin-bottom:20px">
               <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="2">
                 <button type="button" onClick="{{ r.onClick }}" style="{{ r.style }}" aria-pressed="{{ r.active }}">
                   <span style="{{ r.iconStyle }}">{{ r.icon }}</span>

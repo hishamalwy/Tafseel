@@ -1,0 +1,199 @@
+{
+  "total_selectors": 208,
+  "css_classes_count": 67,
+  "css_ids_count": 0,
+  "missing_in_css_classes": {
+    "is-in": [
+      "Tafseel-Landing.dc.html"
+    ]
+  },
+  "missing_in_css_ids": {
+    "admin-drawer-toggle": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "admin-sidebar": [
+      "Tafseel-Admin-Dashboard.dc.html"
+    ],
+    "application-form": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "applications": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "apply-status": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "apply-title": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "chat-title": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "city": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "composer": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "conversations": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "dash-q": [
+      "Tafseel-Student-Dashboard.dc.html"
+    ],
+    "degree": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "demo": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "demo-form": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "duration": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "f-q": [
+      "Tafseel-Browse-Teachers.dc.html"
+    ],
+    "hero-q": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "how": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "login-email": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "login-password": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "main": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "message": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "messages": [
+      "Tafseel-Chat.dc.html"
+    ],
+    "new-requests": [
+      "Tafseel-Teacher-Dashboard.dc.html"
+    ],
+    "pricing": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "reg-confirm": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reg-email": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reg-fullname": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reg-password": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reset-confirm": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "reset-password": [
+      "Tafseel-Auth.dc.html"
+    ],
+    "settings-email-note": [
+      "Tafseel-Student-Dashboard.dc.html"
+    ],
+    "sort": [
+      "Tafseel-Browse-Teachers.dc.html"
+    ],
+    "subject": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "subjects": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "submit-application": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "topic": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ],
+    "why": [
+      "Tafseel-Landing.dc.html"
+    ],
+    "years": [
+      "Tafseel-Teacher-Apply.dc.html"
+    ]
+  },
+  "dead_css_classes": {
+    "is-leaving": [
+      ".tf-toast.is-leaving (line 184)"
+    ],
+    "is-picked": [
+      ".tf-slot-once.is-picked (line 175)",
+      ".tf-hero-stagger>*,.tf-cascade>*,.tf-empty-enter,.tf-price-flash,.tf-modal-enter,.tf-chip-pop.is-pop,.tf-slot-once.is-picked,.tf-check-draw path (line 255)"
+    ],
+    "is-pop": [
+      ".tf-chip-pop.is-pop (line 173)",
+      ".tf-hero-stagger>*,.tf-cascade>*,.tf-empty-enter,.tf-price-flash,.tf-modal-enter,.tf-chip-pop.is-pop,.tf-slot-once.is-picked,.tf-check-draw path (line 255)"
+    ],
+    "is-selected": [
+      ".tf-service-card.is-selected (line 252)"
+    ],
+    "tf-badge": [
+      ".tf-badge (line 391)"
+    ],
+    "tf-blob-drift": [
+      ".tf-blob-drift (line 141)",
+      ".tf-blob-drift,.tf-float,.tf-glow-cta,.tf-marquee-track (line 145)",
+      ".tf-blob-drift (line 148)",
+      ".tf-blob-drift,.tf-float,.tf-glow-cta::before (line 154)"
+    ],
+    "tf-button-link": [
+      ".tf-button-link (line 313)",
+      ".tf-button-link:hover (line 314)"
+    ],
+    "tf-float": [
+      ".tf-float (line 142)",
+      ".tf-blob-drift,.tf-float,.tf-glow-cta,.tf-marquee-track (line 145)",
+      ".tf-float (line 150)",
+      ".tf-blob-drift,.tf-float,.tf-glow-cta::before (line 154)"
+    ],
+    "tf-glow-cta": [
+      ".tf-glow-cta (line 143)",
+      ".tf-blob-drift,.tf-float,.tf-glow-cta,.tf-marquee-track (line 145)",
+      ".tf-glow-cta (line 151)",
+      ".tf-glow-cta::before (line 152)",
+      ".tf-blob-drift,.tf-float,.tf-glow-cta::before (line 154)"
+    ],
+    "tf-icon-moon": [
+      ".tf-theme-toggle .tf-icon-moon (line 210)",
+      "html[data-theme=\"dark\"] .tf-theme-toggle .tf-icon-moon (line 212)"
+    ],
+    "tf-icon-sun": [
+      ".tf-theme-toggle .tf-icon-sun (line 209)",
+      "html[data-theme=\"dark\"] .tf-theme-toggle .tf-icon-sun (line 211)"
+    ],
+    "tf-message": [
+      ".tf-message (line 336)",
+      ".tf-message[data-mine=\"true\"] (line 337)"
+    ],
+    "tf-nav-ink": [
+      ".tf-nav-ink (line 225)"
+    ],
+    "tf-service-card": [
+      ".tf-service-card (line 250)",
+      ".tf-service-card.is-selected (line 252)"
+    ],
+    "tf-slot-once": [
+      ".tf-slot-once.is-picked (line 175)",
+      ".tf-hero-stagger>*,.tf-cascade>*,.tf-empty-enter,.tf-price-flash,.tf-modal-enter,.tf-chip-pop.is-pop,.tf-slot-once.is-picked,.tf-check-draw path (line 255)"
+    ],
+    "tf-toast": [
+      ".tf-toast (line 183)",
+      ".tf-toast.is-leaving (line 184)"
+    ]
+  },
+  "dead_css_ids": {}
+}

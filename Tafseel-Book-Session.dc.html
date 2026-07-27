@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +18,7 @@
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
-  <div style="max-width:1080px;margin-inline:auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
+  <div class="tf-shell" style="height:64px;display:flex;align-items:center;gap:16px">
     <a href="{{ homeHref }}" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
       <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:17px;letter-spacing:0">تفصيل</span>
@@ -31,7 +31,7 @@
   </div>
 </header>
 
-<main style="max-width:1080px;margin-inline:auto;padding:32px 24px 80px">
+<main class="tf-shell" style="padding-block:32px 80px">
   <sc-if value="{{ showUnavailable }}" hint-placeholder-val="{{ false }}">
     <div class="tf-unavailable" role="status">
       <p style="margin:0 0 12px">{{ unavailableMessage }}</p>
@@ -69,7 +69,7 @@
             </label>
             <div>
               <span style="font-size:13.5px;font-weight:600;display:block;margin-bottom:8px">Duration</span>
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <div class="tf-cols-4" style="gap:8px">
                 <sc-for list="{{ durations }}" as="d" hint-placeholder-count="4">
                   <button type="button" onClick="{{ d.onClick }}" style="{{ d.style }}">{{ d.label }}</button>
                 </sc-for>
