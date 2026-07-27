@@ -59,13 +59,20 @@ jobs:
           "Previous migration: $previous" | Out-File -Append $env:GITHUB_STEP_SUMMARY
       - run: dotnet ef migrations has-pending-model-changes --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build
       - run: dotnet ef migrations script --idempotent --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build -o artifacts/tafseel-idempotent.sql
+      - name: Migration safety unit tests
+        shell: pwsh
+        run: ./scripts/ci/tests/check-migration-safety.tests.ps1
       - name: Destructive migration policy
         shell: pwsh
         run: |
           $base = if ("${{ github.event_name }}" -eq "pull_request") { "${{ github.event.pull_request.base.sha }}" } else { "HEAD^" }
           $changed = git diff --name-only $base HEAD -- src/Tafseel.Infrastructure/Persistence/Migrations |
             Where-Object { $_ -match '\.cs$' -and $_ -notmatch '\.Designer\.cs$' }
-          foreach ($file in $changed) { ./scripts/ci/check-migration-safety.ps1 -Script $file }
+          foreach ($file in $changed) {
+            Write-Host "Checking $file"
+            ./scripts/ci/check-migration-safety.ps1 -Script $file
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: migration-${{ github.sha }}

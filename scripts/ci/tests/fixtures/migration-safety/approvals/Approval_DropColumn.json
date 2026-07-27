@@ -1,0 +1,13 @@
+{
+  "approvals": [
+    {
+      "migration": "Approval_DropColumn",
+      "operations": [
+        "DropColumn:Payments.TempFlag"
+      ],
+      "reason": "Fixture-only justified drop of disposable temporary column.",
+      "approvedBy": "migration-safety-tests",
+      "approvedAt": "2026-07-27"
+    }
+  ]
+}
