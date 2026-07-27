@@ -112,7 +112,7 @@
           <span style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Price up to</span>
           <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ maxPriceLabel }}</span>
         </div>
-        <input type="range" min="60" max="400" step="10" value="{{ maxPrice }}" onChange="{{ onPrice }}" aria-label="Maximum starting price" style="width:100%;accent-color:var(--primary)" />
+        <input type="range" min="60" max="400" step="10" sc-camel-value="{{ maxPrice }}" onChange="{{ onPrice }}" aria-label="Maximum starting price" style="width:100%;accent-color:var(--primary)" />
         <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px">
           <span>SAR 60</span><span>SAR 400+</span>
         </div>

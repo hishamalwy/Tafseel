@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,8 +30,32 @@ public sealed class ApiExceptionHandler(
             _ => (500, "unexpected_error", "An unexpected error occurred.")
         };
 
-        if (status == 500)
-            logger.LogError(exception, "Unhandled request exception");
+        var correlationId = context.Items[CorrelationIdMiddleware.HeaderName] as string;
+        var dbDetail = DescribeDatabaseException(exception);
+        if (status >= 500 || dbDetail is not null)
+        {
+            logger.LogError(
+                exception,
+                "API request failed. Status={Status} Code={Code} TraceId={TraceId} CorrelationId={CorrelationId} Path={Path} DatabaseException={DatabaseException}",
+                status,
+                code,
+                context.TraceIdentifier,
+                correlationId,
+                context.Request.Path.Value,
+                dbDetail ?? "(none)");
+        }
+        else if (exception is DbUpdateException)
+        {
+            logger.LogWarning(
+                exception,
+                "Database update conflict. Status={Status} Code={Code} TraceId={TraceId} CorrelationId={CorrelationId} Path={Path} DatabaseException={DatabaseException}",
+                status,
+                code,
+                context.TraceIdentifier,
+                correlationId,
+                context.Request.Path.Value,
+                dbDetail ?? exception.Message);
+        }
 
         context.Response.StatusCode = status;
         return await problemDetails.TryWriteAsync(new ProblemDetailsContext
@@ -44,5 +69,26 @@ public sealed class ApiExceptionHandler(
             },
             Exception = exception
         });
+    }
+
+    private static string? DescribeDatabaseException(Exception exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is Microsoft.Data.SqlClient.SqlException sql)
+                return $"SqlException #{sql.Number}: {sql.Message}";
+
+            if (current is DbException db)
+                return $"{db.GetType().Name}: {db.Message}";
+        }
+
+        // EF often surfaces missing-column / schema mismatches with an InvalidOperationException.
+        if (exception is InvalidOperationException invalid
+            && (invalid.Message.Contains("Invalid column", StringComparison.OrdinalIgnoreCase)
+                || invalid.Message.Contains("Invalid object", StringComparison.OrdinalIgnoreCase)
+                || invalid.InnerException is DbException))
+            return $"InvalidOperationException: {invalid.Message}";
+
+        return null;
     }
 }

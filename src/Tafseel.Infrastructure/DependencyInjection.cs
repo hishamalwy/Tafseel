@@ -2,9 +2,12 @@ using System.Net.Mail;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Resend;
 using Tafseel.Application.Authentication;
 using Tafseel.Application.Authorization;
@@ -41,6 +44,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<TafseelDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("Tafseel")));
+        // EnableRetryOnFailure omitted globally: existing user-initiated transactions would conflict
+        // unless every call site uses CreateExecutionStrategy(). Startup uses IdentityStartupRetry.
         services.AddHttpContextAccessor();
         var keysPath = configuration["DataProtection:KeysPath"] ?? "App_Data/keys";
         if (!Path.IsPathRooted(keysPath))
@@ -169,68 +174,84 @@ public static class DependencyInjection
 
     public static async Task InitializeIdentityAsync(this IServiceProvider services, bool migrate = false)
     {
+        var logger = services.GetService<ILoggerFactory>()?.CreateLogger("Tafseel.Infrastructure.IdentityStartup")
+            ?? NullLogger.Instance;
+
+        // Bounded startup retry; NonRetryingExecutionStrategy keeps the explicit transaction a single unit.
+        await IdentityStartupRetry.ExecuteAsync(
+            () => InitializeIdentityCoreAsync(services, migrate),
+            logger);
+    }
+
+    private static async Task InitializeIdentityCoreAsync(IServiceProvider services, bool migrate)
+    {
         await using var scope = services.CreateAsyncScope();
         if (migrate)
             await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Database.MigrateAsync();
 
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        await using var transaction = await db.Database.BeginTransactionAsync();
-        var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in Roles.All)
-            if (!await roles.RoleExistsAsync(role))
-            {
-                var result = await roles.CreateAsync(new IdentityRole(role));
-                if (!result.Succeeded)
-                    throw new InvalidOperationException($"Required Identity role '{role}' could not be created.");
-            }
-
-        if (scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true)
+        var strategy = new NonRetryingExecutionStrategy(db);
+        await strategy.ExecuteAsync(async () =>
         {
-            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
-            (string Role, string Email, string FullName)[] stagingUsers =
-            [
-                (Roles.Admin, "admin@gmail.com", "Tafseel Admin"),
-                (Roles.Student, "student@gmail.com", "Tafseel Student"),
-                (Roles.Teacher, "teacher@gmail.com", "Tafseel Teacher"),
-                (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer")
-            ];
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            foreach (var role in Roles.All)
+                if (!await roles.RoleExistsAsync(role))
+                {
+                    var result = await roles.CreateAsync(new IdentityRole(role));
+                    if (!result.Succeeded)
+                        throw new InvalidOperationException($"Required Identity role '{role}' could not be created.");
+                }
 
-            foreach (var account in stagingUsers)
+            if (scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true)
             {
-                var user = await users.FindByEmailAsync(account.Email);
-                if (user is null)
-                {
-                    user = new ApplicationUser
-                    {
-                        UserName = account.Email,
-                        Email = account.Email,
-                        FullName = account.FullName,
-                        EmailConfirmed = true
-                    };
-                    user.PasswordHash = hasher.HashPassword(user, "@Admin123");
-                    var created = await users.CreateAsync(user);
-                    if (!created.Succeeded)
-                        throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be created.");
-                }
-                else if (!user.EmailConfirmed)
-                {
-                    user.EmailConfirmed = true;
-                    var confirmed = await users.UpdateAsync(user);
-                    if (!confirmed.Succeeded)
-                        throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be confirmed.");
-                }
+                var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
+                (string Role, string Email, string FullName)[] stagingUsers =
+                [
+                    (Roles.Admin, "admin@gmail.com", "Tafseel Admin"),
+                    (Roles.Student, "student@gmail.com", "Tafseel Student"),
+                    (Roles.Teacher, "teacher@gmail.com", "Tafseel Teacher"),
+                    (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer")
+                ];
 
-                if (!await users.IsInRoleAsync(user, account.Role))
+                foreach (var account in stagingUsers)
                 {
-                    var assigned = await users.AddToRoleAsync(user, account.Role);
-                    if (!assigned.Succeeded)
-                        throw new InvalidOperationException(
-                            $"Staging demo user '{account.Email}' could not be assigned to '{account.Role}'.");
+                    var user = await users.FindByEmailAsync(account.Email);
+                    if (user is null)
+                    {
+                        user = new ApplicationUser
+                        {
+                            UserName = account.Email,
+                            Email = account.Email,
+                            FullName = account.FullName,
+                            EmailConfirmed = true
+                        };
+                        user.PasswordHash = hasher.HashPassword(user, "@Admin123");
+                        var created = await users.CreateAsync(user);
+                        if (!created.Succeeded)
+                            throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be created.");
+                    }
+                    else if (!user.EmailConfirmed)
+                    {
+                        user.EmailConfirmed = true;
+                        var confirmed = await users.UpdateAsync(user);
+                        if (!confirmed.Succeeded)
+                            throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be confirmed.");
+                    }
+
+                    if (!await users.IsInRoleAsync(user, account.Role))
+                    {
+                        var assigned = await users.AddToRoleAsync(user, account.Role);
+                        if (!assigned.Succeeded)
+                            throw new InvalidOperationException(
+                                $"Staging demo user '{account.Email}' could not be assigned to '{account.Role}'.");
+                    }
                 }
             }
-        }
-        await transaction.CommitAsync();
+
+            await transaction.CommitAsync();
+        });
     }
 
     private static bool ValidFrontendUrl(string value, bool requireHttps) =>

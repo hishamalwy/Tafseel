@@ -390,7 +390,7 @@
           </div>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Expected response time (minutes)</span>
-            <input type="number" min="0" max="43200" value="{{ profileResponseMinutes }}" onChange="{{ onProfileResponseMinutes }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <input type="number" min="0" max="43200" sc-camel-value="{{ profileResponseMinutes }}" onChange="{{ onProfileResponseMinutes }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <button type="button" onClick="{{ onSaveProfile }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save profile</button>
         </div>
@@ -425,11 +425,11 @@
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
         <label style="display:flex;flex-direction:column;gap:6px">
           <span style="font-size:13px;font-weight:600">Final price (SAR)</span>
-          <input type="number" value="{{ finalPrice }}" onChange="{{ onFinalPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          <input type="number" sc-camel-value="{{ finalPrice }}" onChange="{{ onFinalPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
         <label style="display:flex;flex-direction:column;gap:6px">
           <span style="font-size:13px;font-weight:600">Delivery date</span>
-          <input type="date" value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          <input type="date" sc-camel-value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
         <label style="display:flex;flex-direction:column;gap:6px">
           <span style="font-size:13px;font-weight:600">Number of revisions</span>
@@ -489,7 +489,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Price</span>
-            <input type="number" min="0.01" step="0.01" value="{{ svcPrice }}" onChange="{{ onSvcPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <input type="number" min="0.01" step="0.01" sc-camel-value="{{ svcPrice }}" onChange="{{ onSvcPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Currency</span>
@@ -499,11 +499,11 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Delivery hours</span>
-            <input type="number" min="1" max="8760" value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <input type="number" min="1" max="8760" sc-camel-value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Revisions</span>
-            <input type="number" min="0" max="20" value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <input type="number" min="0" max="20" sc-camel-value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
         </div>
       </div>

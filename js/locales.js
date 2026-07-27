@@ -1364,7 +1364,10 @@
   "live_no_messages": "No messages yet",
   "quality_auto_assign_unavailable": "Auto-assign applications to me (not available)",
   "admin_bulk_suspended": "Suspended {count} users",
-  "admin_bulk_activated": "Activated {count} users"
+  "admin_bulk_activated": "Activated {count} users",
+  "admin_users_loading": "Loading users…",
+  "admin_users_empty": "No users returned.",
+  "admin_session_required": "Admin session required."
 ,
   "auth_title2": "Log in — Tafseel",
   "auth_welcome_back": "Welcome back",
@@ -2970,7 +2973,10 @@
   "live_no_messages": "لا توجد رسائل بعد",
   "quality_auto_assign_unavailable": "التعيين التلقائي للطلبات لي (غير متاح)",
   "admin_bulk_suspended": "تم تعليق {count} مستخدمًا",
-  "admin_bulk_activated": "تم تفعيل {count} مستخدمًا"
+  "admin_bulk_activated": "تم تفعيل {count} مستخدمًا",
+  "admin_users_loading": "جاري تحميل المستخدمين…",
+  "admin_users_empty": "لم يُرجع أي مستخدمين.",
+  "admin_session_required": "يلزم تسجيل دخول المسؤول."
 ,
   "auth_title2": "تسجيل الدخول — تفصيل",
   "auth_welcome_back": "مرحبًا بعودتك",
