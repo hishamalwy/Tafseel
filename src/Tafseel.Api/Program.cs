@@ -257,6 +257,10 @@ app.MapGet("/app/js/{file}", (string file) =>
     file is "tafseel.js" or "api.js" or "auth.js" or "teacher-apply.js" or "chat.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
+app.MapGet("/app/js/vendor/{file}", (string file) =>
+    file is "react.production.min.js" or "react-dom.production.min.js" or "babel.min.js"
+        ? Results.File(Path.Combine(frontendRoot, "js", "vendor", file), "text/javascript; charset=utf-8")
+        : Results.NotFound());
 app.MapGet("/app/css/tafseel.css", () =>
     Results.File(Path.Combine(frontendRoot, "css", "tafseel.css"), "text/css; charset=utf-8"));
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
