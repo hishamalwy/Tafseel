@@ -11,6 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Teacher dashboard — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
+<link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
@@ -20,8 +21,8 @@
 
   <aside aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
-      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
-      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
+      <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span>
       <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">Teach</span>
     </a>
     <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
@@ -52,8 +53,8 @@
       <div style="font-size:15px;font-weight:700" data-hide-sm="1">Teacher dashboard</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
         <a href="Tafseel-Chat.dc.html" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</a>
-        <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
-        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+        <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
           <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">RO</span>
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Dr. Rana Al-Otaibi</span>
@@ -145,7 +146,7 @@
             </thead>
             <tbody>
               <sc-for list="{{ orders }}" as="o" hint-placeholder-count="5">
-                <tr style="border-top:1px solid var(--border)">
+                <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                   <td style="padding:14px 20px">
                     <div style="font-size:14px;font-weight:600">{{ o.title }}</div>
                     <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ o.id }}</div>
@@ -162,7 +163,7 @@
           </table>
         </div>
         <sc-if value="{{ noOrders }}" hint-placeholder-val="{{ false }}">
-          <div style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">No orders in this stage right now.</div>
+          <div class="tf-empty-enter" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">No orders in this stage right now.</div>
         </sc-if>
       </section>
 
@@ -220,7 +221,7 @@
           <button type="button" onClick="{{ openAddService }}" style="height:38px;padding:0 14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13.5px">+ Add service</button>
         </div>
         <sc-if value="{{ hasNoServices }}" hint-placeholder-val="{{ false }}">
-          <p style="font-size:14px;color:var(--muted);padding:28px 4px">No services yet.</p>
+          <p class="tf-empty-enter" style="font-size:14px;color:var(--muted);padding:28px 4px">No services yet.</p>
         </sc-if>
         <div style="display:flex;flex-direction:column;gap:14px">
           <sc-for list="{{ myServices }}" as="sv" hint-placeholder-count="5">
@@ -419,7 +420,7 @@
 
 <sc-if value="{{ acceptModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeModal }}">
-    <div role="dialog" aria-modal="true" aria-label="Accept request" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both">
+    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Accept request" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Accept request</h2>
       <p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">{{ acceptModal.topic }}</p>
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
@@ -455,7 +456,7 @@
 
 <sc-if value="{{ serviceModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeServiceModal }}">
-    <div role="dialog" aria-modal="true" aria-label="{{ serviceModalTitle }}" onClick="{{ stop }}" style="width:min(520px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both;max-height:min(90vh,720px);overflow:auto">
+    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ serviceModalTitle }}" onClick="{{ stop }}" style="width:min(520px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;max-height:min(90vh,720px);overflow:auto">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ serviceModalTitle }}</h2>
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
         <sc-if value="{{ serviceModalCreate }}" hint-placeholder-val="{{ true }}">
@@ -516,7 +517,7 @@
 </sc-if>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
@@ -531,7 +532,7 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, section: 'overview',
     orderTab: 'all', declined: [], acceptModal: null,
-    finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: '',
+    finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: '', toastLeaving: false,
     balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
     subjectsCatalog: [], servicesCatalog: [],
     serviceModal: null,
@@ -598,11 +599,10 @@ class Component extends DCLogic {
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   flash(msg) {
-    this.setState({ toast: msg });
-    clearTimeout(this._t);
-    this._t = setTimeout(() => this.setState({ toast: '' }), 2800);
+    Tafseel.flash(this, msg, 2800);
   }
 
   renderVals() {
@@ -635,10 +635,12 @@ class Component extends DCLogic {
 
     return {
       langLabel: Tafseel.t('language_target'),
+      langSwitchLabel: Tafseel.t('admin_switch_language'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      toastClass: Tafseel.toastClass(s.toastLeaving),
       stop: e => e.stopPropagation(),
       earningsSummaryLabel: 'Tracked balance',
       earningsSummaryValue: trackedCurrency + ' ' + Tafseel.number(trackedTotal),

@@ -11,6 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
+<link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
@@ -19,8 +20,8 @@
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
   <aside id="admin-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
     <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
-      <span style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:14px">T</span>
-      <span style="font-weight:800;font-size:16px;letter-spacing:-.02em">Tafseel</span>
+      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
+      <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:18px;letter-spacing:0">تفصيل</span>
       <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">Admin</span>
     </a>
     <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
@@ -36,17 +37,15 @@
     </nav>
   </aside>
 
-  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
-    <div data-drawer-overlay="open" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
-  </sc-if>
+  <div data-drawer-overlay="{{ drawerState }}" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
 
   <div style="display:flex;flex-direction:column;min-width:0">
-    <header style="{{ headerStyle }}">
-      <button id="admin-drawer-toggle" type="button" onClick="{{ toggleDrawer }}" aria-label="Toggle navigation" aria-expanded="{{ drawerExpanded }}" aria-controls="admin-sidebar" style="{{ drawerToggleStyle }}">☰</button>
+    <header data-admin-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
+      <button id="admin-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="admin-sidebar" style="{{ drawerToggleStyle }}">☰</button>
       <div style="font-size:15px;font-weight:700" data-hide-sm="1">Platform overview</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-        <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ langLabel }}</button>
-        <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:15px">{{ themeIcon }}</button>
+        <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
           <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">AD</span>
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Admin</span>
@@ -55,7 +54,7 @@
       </div>
     </header>
 
-    <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+    <main class="tf-section-swap" data-fade="{{ contentFade }}" style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
     <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;flex-direction:column;gap:22px">
       <div>
@@ -171,7 +170,7 @@
           <div role="alert" style="padding:28px 20px;font-size:14px;color:var(--error)">{{ usersLoadError }}</div>
         </sc-if>
         <sc-if value="{{ usersEmpty }}" hint-placeholder-val="{{ false }}">
-          <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ usersEmptyLabel }}</div>
+          <div role="status" class="tf-empty-enter" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ usersEmptyLabel }}</div>
         </sc-if>
         <sc-if value="{{ usersReady }}" hint-placeholder-val="{{ true }}">
         <div style="overflow-x:auto">
@@ -189,7 +188,7 @@
             </thead>
             <tbody>
               <sc-for list="{{ users }}" as="u" hint-placeholder-count="8">
-                <tr style="border-top:1px solid var(--border)">
+                <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                   <td style="padding:12px 16px"><input type="checkbox" checked="{{ u.checked }}" onChange="{{ u.onCheck }}" aria-label="Select {{ u.name }}" style="width:16px;height:16px;accent-color:var(--primary)" /></td>
                   <td style="padding:12px">
                     <div style="display:flex;align-items:center;gap:10px">
@@ -270,10 +269,10 @@
             <div role="alert" style="padding:28px 20px;font-size:14px;color:var(--error)">{{ usersLoadError }}</div>
           </sc-if>
           <sc-if value="{{ usersEmpty }}" hint-placeholder-val="{{ false }}">
-            <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ usersEmptyLabel }}</div>
+            <div role="status" class="tf-empty-enter" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ usersEmptyLabel }}</div>
           </sc-if>
           <sc-if value="{{ pageUsersEmpty }}" hint-placeholder-val="{{ false }}">
-            <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ pageUsersEmptyLabel }}</div>
+            <div role="status" class="tf-empty-enter" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ pageUsersEmptyLabel }}</div>
           </sc-if>
           <sc-if value="{{ pageUsersReady }}" hint-placeholder-val="{{ true }}">
           <div style="overflow-x:auto">
@@ -289,7 +288,7 @@
               </thead>
               <tbody>
                 <sc-for list="{{ pageUsers }}" as="u" hint-placeholder-count="6">
-                  <tr style="border-top:1px solid var(--border)">
+                  <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                     <td style="padding:12px 20px">
                       <div style="display:flex;align-items:center;gap:10px">
                         <span style="width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--text-2)">{{ u.initials }}</span>
@@ -336,6 +335,9 @@
         <sc-if value="{{ catalogLoadError }}" hint-placeholder-val="{{ false }}">
           <div role="alert" style="padding:18px;margin-bottom:12px;border:1px solid var(--error);border-radius:var(--r-md);color:var(--error);font-size:14px">{{ catalogLoadError }}</div>
         </sc-if>
+        <sc-if value="{{ catalogEmpty }}" hint-placeholder-val="{{ false }}">
+          <div role="status" class="tf-empty-enter" style="padding:28px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;color:var(--muted)">{{ catalogEmptyLabel }}</div>
+        </sc-if>
         <div style="display:flex;flex-direction:column;gap:10px">
           <sc-for list="{{ catalogItems }}" as="c" hint-placeholder-count="6">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px">
@@ -360,28 +362,54 @@
       <div>
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ listTitle }}</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
-          <sc-for list="{{ listItems }}" as="it" hint-placeholder-count="6">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 20px;border-top:1px solid var(--border)">
-              <div>
-                <div style="font-size:14px;font-weight:600">{{ it.title }}</div>
-                <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ it.meta }}</div>
+          <sc-if value="{{ listLoading }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ listLoadingLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ listLoadError }}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="padding:28px 20px;font-size:14px;color:var(--error)">{{ listLoadError }}</div>
+          </sc-if>
+          <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="tf-empty-enter" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ listEmptyLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ listReady }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ listItems }}" as="it" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 20px;border-top:1px solid var(--border)">
+                <div>
+                  <div style="font-size:14px;font-weight:600">{{ it.title }}</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ it.meta }}</div>
+                </div>
+                <span style="{{ it.statusStyle }}">{{ it.status }}</span>
               </div>
-              <span style="{{ it.statusStyle }}">{{ it.status }}</span>
-            </div>
-          </sc-for>
+            </sc-for>
+          </sc-if>
         </div>
       </div>
     </sc-if>
 
     <sc-if value="{{ isPaymentsPage }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Payments &amp; withdrawals</h1>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ paymentsTitle }}</h1>
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
           <sc-for list="{{ paymentRows }}" as="pr" hint-placeholder-count="5">
             <div style="display:flex;align-items:center;justify-content:space-between;padding-block:10px;border-top:1px solid var(--border);font-size:13.5px">
               <span style="color:var(--text-2)">{{ pr.label }}</span><span style="font-weight:700">{{ pr.value }}</span>
             </div>
           </sc-for>
+          <sc-if value="{{ hasWithdrawals }}" hint-placeholder-val="{{ false }}">
+            <h2 style="font-size:15px;font-weight:700;margin:18px 0 8px">{{ withdrawalsTitle }}</h2>
+            <sc-for list="{{ withdrawals }}" as="w" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;border-top:1px solid var(--border);font-size:13.5px">
+                <span style="color:var(--text-2)">{{ w.teacher }} · {{ w.amount }}</span>
+                <span style="display:flex;gap:8px">
+                  <button type="button" onClick="{{ w.reject }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:0 10px">Reject</button>
+                  <button type="button" onClick="{{ w.approve }}" style="height:32px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);padding:0 10px">Approve</button>
+                </span>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ showPaymentsEmptyNote }}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="tf-empty-enter" style="padding:14px 0 4px;font-size:14px;color:var(--muted)">{{ paymentsEmptyLabel }}</div>
+          </sc-if>
         </section>
       </div>
     </sc-if>
@@ -436,7 +464,7 @@
 
 <sc-if value="{{ catalogModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeCatalogModal }}">
-    <div role="dialog" aria-modal="true" aria-label="{{ catalogModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both">
+    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ catalogModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ catalogModalTitle }}</h2>
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
         <sc-if value="{{ isTopicModal }}" hint-placeholder-val="{{ false }}">
@@ -472,8 +500,34 @@
         </sc-if>
         <sc-if value="{{ isServiceModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Detail (optional)</span>
+            <span style="font-size:13px;font-weight:600">{{ serviceCodeLabel }}</span>
+            <input value="{{ catalogCode }}" onChange="{{ onCatalogCode }}" placeholder="live_session" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;font-family:var(--font-mono)" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ serviceDetailLabel }}</span>
             <input value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--text-2)">
+            <span>{{ serviceSchedulingLabel }}</span>
+            <input type="checkbox" checked="{{ catalogRequiresScheduling }}" onChange="{{ onCatalogRequiresScheduling }}" style="width:36px;height:21px;accent-color:var(--primary)" />
+          </label>
+        </sc-if>
+        <sc-if value="{{ isCouponModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ couponCodeLabel }}</span>
+            <input value="{{ catalogCode }}" onChange="{{ onCatalogCode }}" placeholder="WELCOME20" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;font-family:var(--font-mono)" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ couponTypeLabel }}</span>
+            <select value="{{ catalogDiscountType }}" onChange="{{ onCatalogDiscountType }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <sc-for list="{{ couponTypeOptions }}" as="opt" hint-placeholder-count="2">
+                <option value="{{ opt.value }}">{{ opt.label }}</option>
+              </sc-for>
+            </select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ couponValueLabel }}</span>
+            <input type="number" min="0.01" step="0.01" sc-camel-value="{{ catalogDiscountValue }}" onChange="{{ onCatalogDiscountValue }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;max-width:160px" />
           </label>
         </sc-if>
       </div>
@@ -487,7 +541,7 @@
 
 <sc-if value="{{ editModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeEditModal }}">
-    <div role="dialog" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;animation:tf-rise 200ms ease both">
+    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">Edit</h2>
       <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
         <span style="font-size:13px;font-weight:600">Name</span>
@@ -502,7 +556,7 @@
 </sc-if>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
@@ -538,12 +592,13 @@ const TONE_STYLE = {
 
 class Component extends DCLogic {
   state = {
-    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, navKey: 'overview', page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
-    userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '',
+    lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, navKey: 'overview', page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
+    userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '', toastLeaving: false, contentFade: 'in',
     commissionRate: 15, requireReview: true, maintenanceMode: false,
     catalogModal: false, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
+    catalogCode: '', catalogRequiresScheduling: false, catalogDiscountType: '0', catalogDiscountValue: 10,
     editModal: null, editName: '', usersTotal: 0, liveWithdrawals: [],
-    usersLoading: true, usersLoadError: '', catalogErrors: {}
+    usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
 
   componentDidMount() {
@@ -552,6 +607,14 @@ class Component extends DCLogic {
       if (e.key === 'Escape' && this.state.drawer) this.closeDrawer();
     };
     document.addEventListener('keydown', this._onKeydown);
+    this._mq = window.matchMedia('(max-width: 1024px)');
+    this._onMq = () => {
+      const compact = !!this._mq.matches;
+      this.setState({ compactNav: compact, drawer: compact ? this.state.drawer : false });
+      if (!compact) document.body.style.overflow = '';
+    };
+    this._mq.addEventListener('change', this._onMq);
+    this.setState({ compactNav: !!this._mq.matches });
     // Prevent demo fallbacks from appearing if any admin API call fails.
     USERS = [];
     CATALOG_DATA.subjects = [];
@@ -562,10 +625,10 @@ class Component extends DCLogic {
     LIST_DATA.sessions = [];
     LIST_DATA.reviews = [];
     LIST_DATA.disputes = [];
-    this.setState({ usersLoading: true, usersLoadError: '', catalogErrors: {} });
+    this.setState({ usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: true, listErrors: {} });
     Tafseel.api.requireRoles(['Admin']).then(session => {
       if (!session) {
-        this.setState({ usersLoading: false, usersLoadError: Tafseel.t('admin_session_required') });
+        this.setState({ usersLoading: false, usersLoadError: Tafseel.t('admin_session_required'), listLoading: false });
         return null;
       }
       return Promise.allSettled([
@@ -575,7 +638,8 @@ class Component extends DCLogic {
         Tafseel.api.get('/admin/catalog/topics'),
         Tafseel.api.get('/admin/catalog/services'),
         Tafseel.api.get('/admin/disputes?pageSize=100'),
-        Tafseel.api.get('/admin/withdrawals?status=0&pageSize=100')
+        Tafseel.api.get('/admin/withdrawals?status=0&pageSize=100'),
+        Tafseel.api.get('/admin/coupons')
       ]);
     }).then(results => {
       if (!results) return;
@@ -616,19 +680,34 @@ class Component extends DCLogic {
       if (failed(3)) catalogErrors.topics = Tafseel.api.errorMessage(failed(3));
       if (failed(4)) catalogErrors.services = Tafseel.api.errorMessage(failed(4));
 
+      const couponsPayload = settled(7);
+      if (couponsPayload) {
+        CATALOG_DATA.coupons = (couponsPayload || []).map(x => ({
+          id: x.id, name: x.name, active: x.isActive, version: x.version,
+          meta: x.code + ' · ' + (x.discountType === 1 ? ('SAR ' + x.discountValue) : (x.discountValue + '%'))
+            + (x.expiresAt ? (' · exp ' + Tafseel.date(x.expiresAt, { dateStyle: 'medium' })) : ''),
+          code: x.code, discountType: x.discountType, discountValue: x.discountValue
+        }));
+      } else if (failed(7)) {
+        catalogErrors.coupons = Tafseel.api.errorMessage(failed(7));
+      }
+
       const disputesPayload = settled(5);
+      const listErrors = {};
       if (disputesPayload) {
         LIST_DATA.disputes = (disputesPayload.items || []).map(x => ({
           title:'Order ' + x.orderId, meta:x.reason, status:x.status === 2 ? 'Resolved' : 'Open',
           tone:x.status === 2 ? 'success' : 'error'
         }));
+      } else if (failed(5)) {
+        listErrors.disputes = Tafseel.api.errorMessage(failed(5));
+        errors.push(listErrors.disputes);
       }
-      if (failed(5)) errors.push(Tafseel.api.errorMessage(failed(5)));
 
       const withdrawalsPayload = settled(6);
       if (failed(6)) errors.push(Tafseel.api.errorMessage(failed(6)));
 
-      const firstCatalogError = catalogErrors.services || catalogErrors.subjects || catalogErrors.topics || '';
+      const firstCatalogError = catalogErrors.services || catalogErrors.subjects || catalogErrors.topics || catalogErrors.coupons || '';
       this.setState({
         liveMetrics: metrics || null,
         liveWithdrawals: withdrawalsPayload ? (withdrawalsPayload.items || []) : [],
@@ -636,22 +715,28 @@ class Component extends DCLogic {
         userOverrides: {},
         usersLoading: false,
         usersLoadError: usersErr ? Tafseel.api.errorMessage(usersErr) : '',
-        catalogErrors
+        catalogErrors,
+        listLoading: false,
+        listErrors
       });
       if (firstCatalogError || errors.length) this.flash(firstCatalogError || errors[0]);
     }).catch(error => {
       const message = Tafseel.api.errorMessage(error);
-      this.setState({ usersLoading: false, usersLoadError: message, catalogErrors: {} });
+      this.setState({ usersLoading: false, usersLoadError: message, catalogErrors: {}, listLoading: false, listErrors: {} });
       this.flash(message);
     });
   }
   componentWillUnmount() {
     Tafseel.offChange(this._sub);
     document.removeEventListener('keydown', this._onKeydown);
+    if (this._mq && this._onMq) this._mq.removeEventListener('change', this._onMq);
+    clearTimeout(this._contentTimer);
     document.body.style.overflow = '';
   }
+  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   openDrawer() {
+    if (!this.state.compactNav) return;
     this.setState({ drawer: true });
     document.body.style.overflow = 'hidden';
     setTimeout(() => {
@@ -665,10 +750,13 @@ class Component extends DCLogic {
     this.setState({ drawer: false });
     document.body.style.overflow = '';
     const toggle = document.getElementById('admin-drawer-toggle');
-    if (toggle) toggle.focus();
+    if (toggle && this.state.compactNav) toggle.focus();
   }
 
-  toggleDrawer() {
+  toggleDrawer(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (!this.state.compactNav) return;
     if (this.state.drawer) this.closeDrawer();
     else this.openDrawer();
   }
@@ -692,13 +780,14 @@ class Component extends DCLogic {
     } else {
       patch.page = key;
     }
-    this.setState(patch);
+    // Apply nav sync; fade restart is visual-only so integrity smokes stay deterministic.
+    this.setState({ ...patch, contentFade: 'out' });
+    clearTimeout(this._contentTimer);
+    this._contentTimer = setTimeout(() => this.setState({ contentFade: 'in' }), 40);
   }
 
   flash(msg) {
-    this.setState({ toast: msg });
-    clearTimeout(this._t);
-    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+    Tafseel.flash(this, msg);
   }
 
   async setSelectedSuspension(suspended) {
@@ -769,10 +858,15 @@ class Component extends DCLogic {
 
     return {
       langLabel: Tafseel.t('language_target'),
+      langSwitchLabel: Tafseel.t('admin_switch_language'),
+      showSaudiFlag: s.lang !== 'ar',
+      showUkFlag: s.lang === 'ar',
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      toastClass: Tafseel.toastClass(s.toastLeaving),
+      contentFade: s.contentFade,
       stop: e => e.stopPropagation(),
       logoutLabel: Tafseel.t('admin_logout'),
       onLogout: async () => {
@@ -782,11 +876,11 @@ class Component extends DCLogic {
       drawer: !!s.drawer,
       drawerState: s.drawer ? 'open' : 'closed',
       drawerExpanded: s.drawer ? 'true' : 'false',
-      toggleDrawer: () => this.toggleDrawer(),
+      drawerToggleLabel: Tafseel.t('admin_toggle_nav'),
+      headerElevated: s.drawer ? 'elevated' : 'default',
+      toggleDrawer: (e) => this.toggleDrawer(e),
       closeDrawer: () => this.closeDrawer(),
-      headerStyle: 'position:sticky;top:0;z-index:' + (s.drawer ? '46' : '40') +
-        ';background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px',
-      drawerToggleStyle: 'width:36px;height:36px;border:1px solid var(--border);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;' +
+      drawerToggleStyle: 'width:36px;height:36px;border:1px solid var(--border);border-radius:var(--r-sm);place-items:center;font-size:14px;' +
         (s.drawer ? 'background:var(--primary-soft);border-color:var(--primary);color:var(--primary);' : 'background:var(--surface);color:var(--text);'),
 
       navItems: NAV.map(([key, icon, label]) => ({
@@ -829,25 +923,29 @@ class Component extends DCLogic {
       catalogTitle: { subjects:'Subjects', topics:'Demo topics', services:'Services', coupons:'Coupons' }[s.catalogKind],
       catalogAddLabel: {
         subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'),
-        services: Tafseel.t('admin_services_managed_auto'), coupons: Tafseel.t('admin_not_available_yet')
+        services: Tafseel.t('admin_add_service'), coupons: Tafseel.t('admin_add_coupon')
       }[s.catalogKind],
-      catalogAddDisabled: s.catalogKind === 'services' || s.catalogKind === 'coupons',
-      catalogNote: s.catalogKind === 'services' ? Tafseel.t('admin_services_note')
-        : s.catalogKind === 'coupons' ? Tafseel.t('admin_coupons_note') : '',
+      catalogAddDisabled: false,
+      catalogNote: '',
       onAddCatalog: () => {
-        if (s.catalogKind === 'coupons') return this.flash(Tafseel.t('admin_coupons_note'));
-        if (s.catalogKind === 'services') return this.flash(Tafseel.t('admin_services_note'));
-        this.setState({ catalogModal: true, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '' });
+        this.setState({
+          catalogModal: true, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
+          catalogDetail: '', catalogCode: '', catalogRequiresScheduling: s.catalogKind === 'services',
+          catalogDiscountType: '0', catalogDiscountValue: 10
+        });
       },
       catalogItems: (CATALOG_DATA[s.catalogKind] || []).map(c => {
         const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
         return {
           ...c, active,
-          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta }, editName: c.name }),
+          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta, version: c.version }, editName: c.name }),
           onToggle: async () => {
-            if (s.catalogKind === 'coupons') return this.flash(Tafseel.t('admin_coupons_note'));
             try {
-              await Tafseel.api.patch('/admin/catalog/' + s.catalogKind + '/' + c.id + '/active', { isActive:!active });
+              if (s.catalogKind === 'coupons') {
+                await Tafseel.api.patch('/admin/coupons/' + c.id + '/active', { isActive: !active });
+              } else {
+                await Tafseel.api.patch('/admin/catalog/' + s.catalogKind + '/' + c.id + '/active', { isActive:!active });
+              }
               this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
               this.flash(c.name + (active ? ' deactivated' : ' activated'));
             } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
@@ -859,10 +957,31 @@ class Component extends DCLogic {
       isSubjectModal: s.catalogKind === 'subjects',
       isTopicModal: s.catalogKind === 'topics',
       isServiceModal: s.catalogKind === 'services',
-      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', services:'Add service' }[s.catalogKind],
+      isCouponModal: s.catalogKind === 'coupons',
+      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', services:'Add service', coupons:'Add coupon' }[s.catalogKind],
       catalogName: s.catalogName, onCatalogName: e => this.setState({ catalogName: e.target.value }),
       catalogIcon: s.catalogIcon, onCatalogIcon: e => this.setState({ catalogIcon: e.target.value }),
       catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
+      catalogCode: s.catalogCode || '', onCatalogCode: e => this.setState({ catalogCode: e.target.value }),
+      catalogRequiresScheduling: !!s.catalogRequiresScheduling,
+      onCatalogRequiresScheduling: e => this.setState({ catalogRequiresScheduling: e.target.checked }),
+      catalogDiscountType: String(s.catalogDiscountType ?? '0'),
+      onCatalogDiscountType: e => this.setState({ catalogDiscountType: e.target.value }),
+      catalogDiscountValue: Number.isFinite(Number(s.catalogDiscountValue)) ? Number(s.catalogDiscountValue) : 10,
+      onCatalogDiscountValue: e => {
+        const next = Number(e.target.value);
+        this.setState({ catalogDiscountValue: Number.isFinite(next) ? next : 10 });
+      },
+      serviceCodeLabel: Tafseel.t('admin_service_code'),
+      serviceDetailLabel: Tafseel.t('admin_service_detail'),
+      serviceSchedulingLabel: Tafseel.t('admin_service_requires_scheduling'),
+      couponCodeLabel: Tafseel.t('admin_coupon_code'),
+      couponTypeLabel: Tafseel.t('admin_coupon_type'),
+      couponValueLabel: Tafseel.t('admin_coupon_value'),
+      couponTypeOptions: [
+        { value: '0', label: Tafseel.t('admin_coupon_type_percent') },
+        { value: '1', label: Tafseel.t('admin_coupon_type_fixed') }
+      ],
       catalogSubjectId: s.catalogSubjectId, onCatalogSubjectId: e => this.setState({ catalogSubjectId: e.target.value }),
       catalogDifficulty: s.catalogDifficulty, onCatalogDifficulty: e => this.setState({ catalogDifficulty: e.target.value }),
       subjectOptions: CATALOG_DATA.subjects.map(sub => ({ id: sub.id, name: sub.name })),
@@ -873,14 +992,44 @@ class Component extends DCLogic {
           if (s.catalogKind === 'subjects') {
             if (!s.catalogName.trim() || !s.catalogIcon.trim()) return this.flash('Name and icon are required.');
             created = await Tafseel.api.post('/admin/subjects', { name: s.catalogName, icon: s.catalogIcon });
+            CATALOG_DATA.subjects = [...CATALOG_DATA.subjects, { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
           } else if (s.catalogKind === 'topics') {
             if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash('Subject and name are required.');
             created = await Tafseel.api.post('/admin/topics', { subjectId: s.catalogSubjectId, name: s.catalogName, difficulty: s.catalogDifficulty });
+            CATALOG_DATA.topics = [...CATALOG_DATA.topics, { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
           } else if (s.catalogKind === 'services') {
-            if (!s.catalogName.trim()) return this.flash('Name is required.');
-            created = await Tafseel.api.post('/admin/services', { name: s.catalogName, detail: s.catalogDetail || null });
+            if (!s.catalogName.trim() || !(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_service_code_required'));
+            created = await Tafseel.api.post('/admin/services', {
+              name: s.catalogName,
+              detail: s.catalogDetail || null,
+              code: s.catalogCode.trim().toLowerCase(),
+              requiresScheduling: !!s.catalogRequiresScheduling,
+              teacherSelectable: true,
+              isPublic: true,
+              allowedDurations: s.catalogRequiresScheduling ? [30, 60, 90, 120] : null
+            });
+            CATALOG_DATA.services = [...CATALOG_DATA.services, {
+              id: created.id, name: created.name, active: created.isActive, code: created.code, detail: created.detail || '',
+              meta: [
+                'code: ' + (created.code || '—'),
+                created.teacherSelectable ? Tafseel.t('admin_service_teacher_selectable') : Tafseel.t('admin_service_teacher_hidden'),
+                created.requiresScheduling ? Tafseel.t('admin_service_scheduling_required') : Tafseel.t('admin_service_no_scheduling')
+              ].join(' · ')
+            }];
+          } else if (s.catalogKind === 'coupons') {
+            if (!s.catalogName.trim() || !(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_coupon_required'));
+            created = await Tafseel.api.post('/admin/coupons', {
+              name: s.catalogName,
+              code: s.catalogCode,
+              discountType: Number(s.catalogDiscountType) || 0,
+              discountValue: Number(s.catalogDiscountValue) || 0,
+              expiresAt: null
+            });
+            CATALOG_DATA.coupons = [...CATALOG_DATA.coupons, {
+              id: created.id, name: created.name, active: created.isActive, version: created.version, code: created.code,
+              meta: created.code + ' · ' + (created.discountType === 1 ? ('SAR ' + created.discountValue) : (created.discountValue + '%'))
+            }];
           } else return;
-          CATALOG_DATA[s.catalogKind] = [...(CATALOG_DATA[s.catalogKind] || []), { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
           this.setState({ catalogModal: false });
           this.flash(created.name + ' added.');
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
@@ -902,11 +1051,28 @@ class Component extends DCLogic {
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
 
-      listTitle: { requests:'Requests', sessions:'Live sessions', reviews:'Reviews', disputes:'Disputes' }[s.listKind],
+      listTitle: { requests: Tafseel.t('admin_list_requests'), sessions: Tafseel.t('admin_list_sessions'), reviews: Tafseel.t('admin_list_reviews'), disputes: Tafseel.t('admin_list_disputes') }[s.listKind],
       listItems: (LIST_DATA[s.listKind] || []).map(it => {
-        const [bg, fg] = TONE_STYLE[it.tone];
+        const [bg, fg] = TONE_STYLE[it.tone] || TONE_STYLE.info;
         return { ...it, statusStyle: 'font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap;background:' + bg + ';color:' + fg };
       }),
+      listLoading: !!s.listLoading,
+      listLoadingLabel: Tafseel.t('admin_list_loading'),
+      listLoadError: (s.listErrors && s.listErrors[s.listKind]) || '',
+      listEmpty: !s.listLoading && !(s.listErrors && s.listErrors[s.listKind]) && (LIST_DATA[s.listKind] || []).length === 0,
+      listEmptyLabel: {
+        requests: Tafseel.t('admin_empty_requests'),
+        sessions: Tafseel.t('admin_empty_sessions'),
+        reviews: Tafseel.t('admin_empty_reviews'),
+        disputes: Tafseel.t('admin_empty_disputes')
+      }[s.listKind] || Tafseel.t('admin_empty_generic'),
+      listReady: !s.listLoading && !(s.listErrors && s.listErrors[s.listKind]) && (LIST_DATA[s.listKind] || []).length > 0,
+
+      paymentsTitle: Tafseel.t('admin_payments_title'),
+      showPaymentsEmptyNote: !(s.liveWithdrawals || []).length && !(s.liveMetrics && Number(s.liveMetrics.confirmedPayments) > 0),
+      paymentsEmptyLabel: Tafseel.t('admin_empty_payments'),
+      withdrawalsTitle: Tafseel.t('admin_withdrawals_title'),
+      hasWithdrawals: (s.liveWithdrawals || []).length > 0,
 
       commissionRate: Number.isFinite(Number(s.commissionRate)) ? Number(s.commissionRate) : 15,
       onCommissionRate: e => {
@@ -973,6 +1139,13 @@ class Component extends DCLogic {
       pageUsersEmpty: !s.usersLoading && !s.usersLoadError && USERS.length > 0 && pageRoleFiltered.length === 0,
       pageUsersReady: !s.usersLoading && !s.usersLoadError && pageRoleFiltered.length > 0,
       catalogLoadError: (s.catalogErrors && s.catalogErrors[s.catalogKind]) || '',
+      catalogEmpty: !(s.catalogErrors && s.catalogErrors[s.catalogKind]) && (CATALOG_DATA[s.catalogKind] || []).length === 0,
+      catalogEmptyLabel: {
+        subjects: Tafseel.t('admin_empty_subjects'),
+        topics: Tafseel.t('admin_empty_topics'),
+        services: Tafseel.t('admin_empty_services'),
+        coupons: Tafseel.t('admin_empty_coupons')
+      }[s.catalogKind] || Tafseel.t('admin_empty_generic'),
 
       users: overviewPaging.slice.map(u => {
         const [bg, fg] = statusTone[u.status] || statusTone.Active;

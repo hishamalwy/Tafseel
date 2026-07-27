@@ -29,7 +29,9 @@ $required = @(
   "frontend/assets/fonts/inter/inter-regular.woff2",
   "frontend/assets/fonts/inter/inter-medium.woff2",
   "frontend/assets/fonts/inter/inter-semibold.woff2",
-  "frontend/assets/fonts/inter/inter-bold.woff2"
+  "frontend/assets/fonts/inter/inter-bold.woff2",
+  "frontend/assets/brand/tafseel-mark.png",
+  "frontend/assets/brand/tafseel-mark-dark.png"
 )
 $missing = $required | Where-Object { -not (Test-Path (Join-Path $PublishDirectory $_)) }
 if ($missing) { throw "Publish output is missing: $($missing -join ', ')" }

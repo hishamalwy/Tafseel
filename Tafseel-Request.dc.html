@@ -11,6 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Request an explanation — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
+<link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
@@ -19,13 +20,13 @@
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
   <div style="max-width:920px;margin-inline:auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
     <a href="{{ profileHref }}" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
-      <span style="width:26px;height:26px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:13px">T</span>
-      <span style="font-weight:800;font-size:15.5px;letter-spacing:-.02em">Tafseel</span>
+      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
+      <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:17px;letter-spacing:0">تفصيل</span>
     </a>
     <span style="color:var(--muted);font-size:14px">/ Request an explanation</span>
     <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-      <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:34px;padding:0 11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ langLabel }}</button>
-      <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">{{ themeIcon }}</button>
+      <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <a href="Tafseel-Student-Dashboard.dc.html" aria-label="Cancel and return to dashboard" style="font-size:13.5px;color:var(--muted);font-weight:600" style-hover="color:var(--text)">Save &amp; exit</a>
     </div>
   </div>
@@ -470,6 +471,7 @@ class Component extends DCLogic {
 
     return {
       langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langSwitchLabel: Tafseel.t('admin_switch_language'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),

@@ -63,12 +63,23 @@
       }
       this.translate(document);
       this.updateControls();
+      this.updateBrandMarks();
       this._subs.slice().forEach(function (subscriber) { subscriber(); });
       document.dispatchEvent(new CustomEvent('tafseel:change', {
         detail: { theme: this.theme, lang: this.lang }
       }));
     },
 
+    updateBrandMarks: function () {
+      var light = 'assets/brand/tafseel-mark.png';
+      var dark = 'assets/brand/tafseel-mark-dark.png';
+      var theme = this.theme;
+      document.querySelectorAll('img[data-tafseel-mark]').forEach(function (img) {
+        var force = (img.getAttribute('data-tafseel-mark-force') || '').toLowerCase();
+        var next = force === 'dark' ? dark : force === 'light' ? light : (theme === 'dark' ? dark : light);
+        if (img.getAttribute('src') !== next) img.setAttribute('src', next);
+      });
+    },
     setTheme: function (theme) {
       if (['light', 'dark'].includes(theme)) {
         this.theme = theme;
@@ -83,6 +94,101 @@
       }
     },
     toggleLang: function () { this.setLang(this.lang === 'ar' ? 'en' : 'ar'); },
+
+    themeToggleHtml: function () {
+      return ''
+        + '<svg class="tf-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.3A8.5 8.5 0 0 1 9.7 3 7 7 0 1 0 21 14.3z"/></svg>'
+        + '<svg class="tf-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0-5h1v3h-2V2zm0 17h1v3h-2v-3zM2 11h3v2H2v-2zm17 0h3v2h-3v-2zM4.2 4.2l2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zm14.1 14.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zM19.8 4.2l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1zM5.6 18.4l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg>';
+    },
+
+    /** Toast with enter + exit fade. component must expose setState({ toast, toastLeaving }). */
+    flash: function (component, msg, holdMs) {
+      holdMs = holdMs == null ? 2600 : holdMs;
+      component.setState({ toast: msg, toastLeaving: false });
+      clearTimeout(component._toastTimer);
+      clearTimeout(component._toastExitTimer);
+      component._toastTimer = setTimeout(function () {
+        component.setState({ toastLeaving: true });
+        component._toastExitTimer = setTimeout(function () {
+          component.setState({ toast: '', toastLeaving: false });
+        }, 180);
+      }, holdMs);
+    },
+
+    toastClass: function (leaving) {
+      return leaving ? 'tf-toast is-leaving' : 'tf-toast';
+    },
+
+    bindNavInk: function (root) {
+      if (!root || root.dataset.navInkBound) return;
+      root.dataset.navInkBound = 'true';
+      var ink = root.querySelector('.tf-nav-ink');
+      if (!ink) {
+        ink = document.createElement('span');
+        ink.className = 'tf-nav-ink';
+        ink.setAttribute('aria-hidden', 'true');
+        root.appendChild(ink);
+      }
+      function moveTo(el) {
+        if (!el || !root.contains(el)) return;
+        var r = root.getBoundingClientRect();
+        var t = el.getBoundingClientRect();
+        root.style.setProperty('--tf-nav-x', (t.left - r.left) + 'px');
+        root.style.setProperty('--tf-nav-w', t.width + 'px');
+      }
+      function active() {
+        return root.querySelector('a.is-active, button.is-active, [aria-current="page"], [aria-selected="true"]')
+          || root.querySelector('a, button.tf-nav-link');
+      }
+      root.addEventListener('mouseover', function (e) {
+        var el = e.target.closest('a, button.tf-nav-link');
+        if (el && root.contains(el)) moveTo(el);
+      });
+      root.addEventListener('mouseleave', function () { moveTo(active()); });
+      moveTo(active());
+      root._tfMoveNavInk = moveTo;
+    },
+
+    countUp: function (el, to, opts) {
+      if (!el) return;
+      opts = opts || {};
+      var duration = opts.duration || 900;
+      var start = performance.now();
+      var from = 0;
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced || !Number.isFinite(to)) {
+        el.textContent = opts.format ? opts.format(to) : String(to);
+        return;
+      }
+      function frame(now) {
+        var t = Math.min(1, (now - start) / duration);
+        var eased = 1 - Math.pow(1 - t, 3);
+        var val = Math.round(from + (to - from) * eased);
+        el.textContent = opts.format ? opts.format(val) : String(val);
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    },
+
+    observeEscrow: function (root) {
+      if (!root || root.dataset.escrowBound) return;
+      root.dataset.escrowBound = 'true';
+      var steps = Array.prototype.slice.call(root.querySelectorAll('.tf-escrow-step'));
+      if (!steps.length) return;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          steps.forEach(function (step, i) {
+            setTimeout(function () {
+              step.classList.add('is-in');
+              root.style.setProperty('--tf-escrow-progress', ((i + 1) / steps.length * 100) + '%');
+            }, i * 140);
+          });
+          io.disconnect();
+        });
+      }, { threshold: 0.35 });
+      io.observe(root);
+    },
 
     t: function (keyOrEnglish, values) {
       var key = locales.en[keyOrEnglish] !== undefined ? keyOrEnglish : keyFor(keyOrEnglish);
@@ -156,12 +262,32 @@
 
     updateControls: function () {
       var self = this;
+      var langAria = self.t('admin_switch_language');
       document.querySelectorAll('[data-tafseel-language]').forEach(function (button) {
-        button.textContent = self.t('language_target');
-        button.setAttribute('aria-label', self.localizeText('Switch language'));
+        button.classList.add('tf-lang-toggle');
+        button.textContent = '';
+        button.removeAttribute('data-i18n');
+        button.setAttribute('aria-label', langAria);
+        button.setAttribute('title', langAria);
       });
-      document.querySelectorAll('[data-tafseel-theme]').forEach(function (button) {
-        button.textContent = self.localizeText('Theme');
+      document.querySelectorAll('[data-tafseel-theme], .tf-theme-toggle').forEach(function (button) {
+        if (!button.querySelector('.tf-icon-moon')) {
+          button.classList.add('tf-theme-toggle');
+          button.innerHTML = self.themeToggleHtml();
+        }
+        button.setAttribute('aria-label', self.localizeText('Toggle dark mode') || 'Toggle dark mode');
+      });
+      document.querySelectorAll('.tf-nav-track').forEach(function (nav) { self.bindNavInk(nav); });
+      document.querySelectorAll('[data-escrow-flow]').forEach(function (el) { self.observeEscrow(el); });
+      document.querySelectorAll('[data-count-up]').forEach(function (el) {
+        var raw = el.getAttribute('data-count-up');
+        if (!raw || raw === '' || raw === 'null' || raw === '—' || el.dataset.counted === raw) return;
+        var num = Number(raw);
+        if (!Number.isFinite(num)) return;
+        el.dataset.counted = raw;
+        self.countUp(el, num, {
+          format: function (v) { return self.number(v); }
+        });
       });
     },
 

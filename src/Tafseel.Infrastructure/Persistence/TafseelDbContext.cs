@@ -44,6 +44,8 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentAttempt> PaymentAttempts => Set<PaymentAttempt>();
     public DbSet<PaymentWebhookRecord> PaymentWebhookRecords => Set<PaymentWebhookRecord>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<CouponRedemption> CouponRedemptions => Set<CouponRedemption>();
     public DbSet<EscrowEntry> EscrowEntries => Set<EscrowEntry>();
     public DbSet<LedgerAccount> LedgerAccounts => Set<LedgerAccount>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
@@ -515,6 +517,39 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             record.Property(x => x.PayloadHash).HasMaxLength(64).IsUnicode(false);
             record.Property(x => x.ProviderReference).HasMaxLength(200);
             record.HasIndex(x => new { x.Provider, x.EventId }).IsUnique();
+        });
+        builder.Entity<Coupon>(coupon =>
+        {
+            coupon.Property(x => x.Id).ValueGeneratedNever();
+            coupon.Property(x => x.Name).HasMaxLength(200);
+            coupon.Property(x => x.Code).HasMaxLength(40).IsUnicode(false);
+            coupon.Property(x => x.DiscountValue).HasPrecision(18, 2);
+            coupon.Property(x => x.RowVersion).IsRowVersion();
+            coupon.HasIndex(x => x.Code).IsUnique();
+            coupon.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Coupons_DiscountType", "[DiscountType] BETWEEN 0 AND 1");
+                table.HasCheckConstraint("CK_Coupons_DiscountValue", "[DiscountValue] > 0");
+                table.HasCheckConstraint("CK_Coupons_Code", "[Code] <> ''");
+            });
+        });
+        builder.Entity<CouponRedemption>(redemption =>
+        {
+            redemption.Property(x => x.Id).ValueGeneratedNever();
+            redemption.Property(x => x.StudentId).HasMaxLength(450);
+            redemption.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+            redemption.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
+            redemption.HasIndex(x => x.PaymentId).IsUnique();
+            redemption.HasIndex(x => new { x.CouponId, x.StudentId });
+            redemption.HasOne<Coupon>().WithMany().HasForeignKey(x => x.CouponId).OnDelete(DeleteBehavior.Restrict);
+            redemption.HasOne<Payment>().WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.Restrict);
+            redemption.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
+            redemption.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_CouponRedemptions_DiscountAmount", "[DiscountAmount] > 0");
+                table.HasCheckConstraint("CK_CouponRedemptions_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+            });
         });
         builder.Entity<EscrowEntry>(entry =>
         {

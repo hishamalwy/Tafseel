@@ -73,7 +73,7 @@ for (const page of pages) {
 const css = readFileSync("css/tafseel.css", "utf8");
 for (const required of [
   "--font-ar:'Thmanyah Sans'",
-  "--font-en:Inter",
+  "--font-en:'Thmanyah Sans',Inter",
   'html[lang="ar"]',
   'html[lang="en"]'
 ]) {

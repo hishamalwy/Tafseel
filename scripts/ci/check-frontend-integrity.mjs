@@ -108,23 +108,40 @@ for (const name of topBindings) {
     throw new Error(`${adminPage} template binds {{ ${name} }} but renderVals does not return it — would remain unresolved in production.`);
 }
 
-for (const required of ["drawer", "drawerState", "drawerExpanded", "toggleDrawer", "closeDrawer", "headerStyle", "navItems"]) {
+for (const required of ["drawer", "drawerState", "drawerExpanded", "toggleDrawer", "closeDrawer", "navItems", "showSaudiFlag", "showUkFlag", "langSwitchLabel"]) {
   if (!adminKeys.has(required))
-    throw new Error(`${adminPage} renderVals must return '${required}' for drawer/nav integrity.`);
+    throw new Error(`${adminPage} renderVals must return '${required}' for drawer/nav/flag integrity.`);
 }
+
+if (!/class\s*=\s*["'][^"']*tf-lang-toggle/.test(adminMarkup))
+  throw new Error(`${adminPage} language control must use .tf-lang-toggle (Saudi/UK flag), not text labels.`);
+
+if (/\{\{\s*langLabel\s*\}\}/.test(adminMarkup))
+  throw new Error(`${adminPage} must not render {{ langLabel }} text; use flag toggle instead.`);
 
 if (!/navKey/.test(adminLogic))
   throw new Error(`${adminPage} must track navKey so remapped sections (users/catalog/list) still highlight the clicked nav item.`);
 
+if (!/compactNav/.test(adminLogic) || !/matchMedia/.test(adminLogic))
+  throw new Error(`${adminPage} must use matchMedia compactNav so the hamburger only toggles below 1024px.`);
+
 if (/Teacher Applications/.test(adminLogic) || /applications['"]\s*,\s*['"]◷/.test(adminLogic) || /Tafseel-Quality-Dashboard\.dc\.html/.test(adminLogic))
   throw new Error(`${adminPage} must not link Teacher Applications into Admin nav (QualityReviewer owns /teacher-applications/queue).`);
 
-if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(\s*\)\s*\{/.test(adminLogic))
+if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(/.test(adminLogic))
   throw new Error(`${adminPage} must expose navigateTo + toggleDrawer methods that read live this.state (not a stale renderVals closure).`);
+
+if (!/admin_empty_sessions/.test(adminLogic) || !/listEmpty/.test(adminLogic))
+  throw new Error(`${adminPage} must expose honest empty states for list pages including live sessions.`);
+
+if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
+  throw new Error(`${adminPage} must wire coupons and service create against real admin APIs.`);
 
 // Smoke: every Admin nav key switches section state and keeps matching active styling; drawer toggles open/closed.
 {
   const smoke = `
+    const setTimeout = (fn) => { fn(); return 1; };
+    const clearTimeout = () => {};
     const document = {
       body: { style: { overflow: '' } },
       getElementById() { return null; },
@@ -132,9 +149,14 @@ if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(\s*\)\s*\{/.test(a
       addEventListener() {},
       removeEventListener() {}
     };
+    const window = {
+      matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; }
+    };
     const Tafseel = {
       lang: 'en', theme: 'light',
       t: (k) => k === 'language_target' ? 'العربية' : k,
+      toastClass: (leaving) => leaving ? 'tf-toast is-leaving' : 'tf-toast',
+      flash() {},
       toggleTheme() {}, toggleLang() {},
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
@@ -200,17 +222,32 @@ if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(\s*\)\s*\{/.test(a
     }
     c.state = { ...c.state, drawer: false };
     c.toggleDrawer();
-    if (c.state.drawer !== true) throw new Error('toggleDrawer must open when closed');
+    if (c.state.drawer !== false) throw new Error('toggleDrawer must no-op when compactNav is false');
+    c.state = { ...c.state, compactNav: true, drawer: false };
+    c.toggleDrawer();
+    if (c.state.drawer !== true) throw new Error('toggleDrawer must open when compact and closed');
     let valsOpen = c.renderVals();
     if (valsOpen.drawer !== true || valsOpen.drawerState !== 'open' || valsOpen.drawerExpanded !== 'true')
       throw new Error('open drawer must export drawer/drawerState/drawerExpanded');
-    if (!String(valsOpen.headerStyle || '').includes('z-index:46'))
-      throw new Error('open drawer must raise header above sidebar so toggle stays clickable');
+    if (valsOpen.headerElevated !== 'elevated')
+      throw new Error('open drawer must elevate admin header for toggle stacking');
     c.toggleDrawer();
     if (c.state.drawer !== false) throw new Error('toggleDrawer must close when open');
     let valsClosed = c.renderVals();
     if (valsClosed.drawer !== false || valsClosed.drawerState !== 'closed')
       throw new Error('closed drawer must export drawer=false / drawerState=closed');
+    c.state = { ...c.state, lang: 'en' };
+    const enFlags = c.renderVals();
+    if (enFlags.showSaudiFlag !== true || enFlags.showUkFlag !== false)
+      throw new Error('EN UI must show Saudi flag as language target');
+    c.state = { ...c.state, lang: 'ar' };
+    const arFlags = c.renderVals();
+    if (arFlags.showUkFlag !== true || arFlags.showSaudiFlag !== false)
+      throw new Error('AR UI must show UK flag as language target');
+    c.navigateTo('sessions');
+    const sessionVals = c.renderVals();
+    if (sessionVals.listEmpty !== true || !String(sessionVals.listEmptyLabel || '').length)
+      throw new Error('empty live sessions must expose localized empty copy');
   `;
   try {
     new Function(smoke)();
@@ -225,6 +262,8 @@ if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(\s*\)\s*\{/.test(a
     const Tafseel = {
       lang: 'en', theme: 'light',
       t: (k) => k === 'language_target' ? 'العربية' : k === 'admin_users_loading' ? 'Loading users…' : k === 'admin_users_empty' ? 'No users returned.' : k,
+      toastClass: (leaving) => leaving ? 'tf-toast is-leaving' : 'tf-toast',
+      flash() {},
       toggleTheme() {}, toggleLang() {},
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
@@ -257,6 +296,8 @@ if (!/navigateTo\s*\(/.test(adminLogic) || !/toggleDrawer\s*\(\s*\)\s*\{/.test(a
     const Tafseel = {
       lang: 'en', theme: 'dark',
       t: (k) => k === 'language_target' ? 'EN' : k === 'admin_users_loading' ? 'Loading users…' : k === 'admin_users_empty' ? 'No users returned.' : k,
+      toastClass: (leaving) => leaving ? 'tf-toast is-leaving' : 'tf-toast',
+      flash() {},
       toggleTheme() {}, toggleLang() {},
       api: { errorMessage: (e) => String(e && e.message || e) }
     };

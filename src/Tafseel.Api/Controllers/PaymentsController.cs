@@ -15,15 +15,20 @@ public sealed class PaymentsController(IFinancialService finance) : ControllerBa
     [Authorize(Policy = Permissions.PaymentsViewOwn), EnableRateLimiting("payment")]
     [HttpPost("payments/orders/{orderId:guid}")]
     public async Task<PaymentInitiationDto> Initiate(
-        Guid orderId, [FromHeader(Name = "Idempotency-Key"), Required] string key, CancellationToken ct) =>
-        await finance.InitiateOrderPaymentAsync(UserId(), orderId, key, ct);
+        Guid orderId,
+        [FromHeader(Name = "Idempotency-Key"), Required] string key,
+        [FromBody] ApplyCouponRequest? body,
+        CancellationToken ct) =>
+        await finance.InitiateOrderPaymentAsync(UserId(), orderId, key, body?.CouponCode, ct);
 
     [Authorize(Policy = Permissions.PaymentsViewOwn), EnableRateLimiting("payment")]
     [HttpPost("payments/live-sessions/{liveSessionBookingId:guid}")]
     public async Task<PaymentInitiationDto> InitiateLiveSession(
-        Guid liveSessionBookingId, [FromHeader(Name = "Idempotency-Key"), Required] string key,
+        Guid liveSessionBookingId,
+        [FromHeader(Name = "Idempotency-Key"), Required] string key,
+        [FromBody] ApplyCouponRequest? body,
         CancellationToken ct) =>
-        await finance.InitiateLiveSessionPaymentAsync(UserId(), liveSessionBookingId, key, ct);
+        await finance.InitiateLiveSessionPaymentAsync(UserId(), liveSessionBookingId, key, body?.CouponCode, ct);
 
     [Authorize(Policy = Permissions.PaymentsViewOwn), HttpGet("payments/{id:guid}")]
     public Task<PaymentDto> Get(Guid id, CancellationToken ct) =>

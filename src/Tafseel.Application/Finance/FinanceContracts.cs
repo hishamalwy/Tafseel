@@ -49,9 +49,9 @@ public interface IPaymentProvider
 public interface IFinancialService
 {
     Task<PaymentInitiationDto> InitiateOrderPaymentAsync(
-        string studentId, Guid orderId, string idempotencyKey, CancellationToken ct);
+        string studentId, Guid orderId, string idempotencyKey, string? couponCode, CancellationToken ct);
     Task<PaymentInitiationDto> InitiateLiveSessionPaymentAsync(
-        string studentId, Guid liveSessionBookingId, string idempotencyKey, CancellationToken ct);
+        string studentId, Guid liveSessionBookingId, string idempotencyKey, string? couponCode, CancellationToken ct);
     Task ProcessWebhookAsync(ReadOnlyMemory<byte> payload, string signature, CancellationToken ct);
     Task<PaymentDto> GetPaymentAsync(string userId, Guid paymentId, CancellationToken ct);
     Task<RefundDto> RefundAsync(string adminId, Guid paymentId, string idempotencyKey, CancellationToken ct);

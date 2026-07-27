@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<ILiveSessionService, LiveSessionService>();
         services.AddScoped<IFinancialService, FinancialService>();
+        services.AddScoped<ICouponService, CouponService>();
         services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();

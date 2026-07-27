@@ -11,6 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Book a live session — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
+<link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
@@ -19,13 +20,13 @@
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
   <div style="max-width:1080px;margin-inline:auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
     <a href="{{ homeHref }}" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
-      <span style="width:26px;height:26px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-weight:800;font-size:13px">T</span>
-      <span style="font-weight:800;font-size:15.5px;letter-spacing:-.02em">Tafseel</span>
+      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
+      <span translate="no" style="font-family:var(--font-ar);font-weight:900;font-size:17px;letter-spacing:0">تفصيل</span>
     </a>
     <span style="color:var(--muted);font-size:14px">/ Book a live session</span>
     <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-      <button type="button" onClick="{{ toggleLang }}" aria-label="Switch language" style="height:34px;padding:0 11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ langLabel }}</button>
-      <button type="button" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">{{ themeIcon }}</button>
+      <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
     </div>
   </div>
 </header>
@@ -105,7 +106,7 @@
                 <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:10px">{{ d.date }}</div>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <sc-for list="{{ d.slots }}" as="sl" hint-placeholder-count="3">
-                    <button type="button" onClick="{{ sl.onClick }}" disabled="{{ sl.disabled }}" style="{{ sl.style }}">{{ sl.time }}</button>
+                    <button type="button" class="{{ sl.className }}" onClick="{{ sl.onClick }}" disabled="{{ sl.disabled }}" style="{{ sl.style }}">{{ sl.time }}</button>
                   </sc-for>
                 </div>
               </div>
@@ -151,7 +152,7 @@
 </main>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;animation:tf-rise 220ms ease both;max-width:320px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
@@ -210,7 +211,7 @@ class Component extends DCLogic {
     noBookableService: false, loadError: '', profile: null, service: null, slots: [],
     title: '', topic: '', duration: 60, emergency: false,
     timezone: detectTimeZone(), slotKey: '', slotLocalStart: '', slotLabel: '',
-    notes: '', fileName: '', toast: ''
+    notes: '', fileName: '', toast: '', toastLeaving: false
   };
 
   componentDidMount() {
@@ -232,12 +233,10 @@ class Component extends DCLogic {
     });
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
-  componentDidUpdate() { Tafseel.translate(); }
+  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   flash(msg) {
-    this.setState({ toast: msg });
-    clearTimeout(this._t);
-    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+    Tafseel.flash(this, msg);
   }
 
   async loadTeacher() {
@@ -332,6 +331,7 @@ class Component extends DCLogic {
         const label = dayFmt.format(local) + ' ' + timeFmt.format(local);
         return {
           time: timeFmt.format(local),
+          className: 'tf-slot-once' + (active ? ' is-picked' : ''),
           disabled: false,
           onClick: () => this.setState({ slotKey: id, slotLocalStart: localIso, slotLabel: label }),
           style: 'height:32px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' + (active
@@ -373,10 +373,12 @@ class Component extends DCLogic {
 
     return {
       langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
+      langSwitchLabel: Tafseel.t('admin_switch_language'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      toastClass: Tafseel.toastClass(s.toastLeaving),
       homeHref: s.teacherId
         ? 'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(s.teacherId)
         : 'Tafseel-Browse-Teachers.dc.html',

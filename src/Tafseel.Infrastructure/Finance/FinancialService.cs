@@ -12,11 +12,11 @@ using Tafseel.Infrastructure.Messaging;
 namespace Tafseel.Infrastructure.Finance;
 
 internal sealed class FinancialService(
-    TafseelDbContext db, IPaymentProvider provider,
+    TafseelDbContext db, IPaymentProvider provider, ICouponService coupons,
     NotificationWriter notifications, TimeProvider clock) : IFinancialService
 {
     public async Task<PaymentInitiationDto> InitiateOrderPaymentAsync(
-        string studentId, Guid orderId, string idempotencyKey, CancellationToken ct)
+        string studentId, Guid orderId, string idempotencyKey, string? couponCode, CancellationToken ct)
     {
         idempotencyKey = RequiredKey(idempotencyKey);
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
@@ -33,19 +33,24 @@ internal sealed class FinancialService(
             ?? throw new DomainException("order_not_owned", "Order was not found.");
         if (order.Status != OrderStatus.AwaitingPayment || order.PaymentStatus != OrderPaymentStatus.Pending)
             throw new DomainException("payment_not_allowed", "This order cannot be paid.");
-        var initiation = await provider.InitiateAsync(order.Id, order.StudentTotal, order.Currency, ct);
-        var payment = new Payment(order.Id, studentId, order.StudentTotal, order.Currency,
-            provider.Name, initiation.ProviderReference, idempotencyKey, clock.GetUtcNow());
+        var now = clock.GetUtcNow();
+        var (coupon, discount, charge) = await coupons
+            .ResolveForPaymentAsync(couponCode, order.StudentTotal, order.Currency, now, ct);
+        var initiation = await provider.InitiateAsync(order.Id, charge, order.Currency, ct);
+        var payment = new Payment(order.Id, studentId, charge, order.Currency,
+            provider.Name, initiation.ProviderReference, idempotencyKey, now);
         db.AddRange(payment,
-            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, clock.GetUtcNow()),
+            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, now),
             Audit("PaymentInitiated", studentId, "Payment", payment.Id.ToString(), idempotencyKey));
+        if (coupon is not null)
+            db.Add(new CouponRedemption(coupon.Id, studentId, payment.Id, order.Id, null, discount, order.Currency, now));
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return new(Map(payment), initiation.CheckoutReference);
     }
 
     public async Task<PaymentInitiationDto> InitiateLiveSessionPaymentAsync(
-        string studentId, Guid liveSessionBookingId, string idempotencyKey, CancellationToken ct)
+        string studentId, Guid liveSessionBookingId, string idempotencyKey, string? couponCode, CancellationToken ct)
     {
         idempotencyKey = RequiredKey(idempotencyKey);
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
@@ -63,12 +68,18 @@ internal sealed class FinancialService(
             ?? throw new DomainException("live_session_not_owned", "Live session was not found.");
         if (booking.Status != LiveSessionStatus.AwaitingPayment)
             throw new DomainException("payment_not_allowed", "This live session cannot be paid.");
-        var initiation = await provider.InitiateAsync(booking.Id, booking.TotalPrice, booking.Currency, ct);
-        var payment = Payment.ForLiveSession(booking.Id, studentId, booking.TotalPrice, booking.Currency,
-            provider.Name, initiation.ProviderReference, idempotencyKey, clock.GetUtcNow());
+        var now = clock.GetUtcNow();
+        var (coupon, discount, charge) = await coupons
+            .ResolveForPaymentAsync(couponCode, booking.TotalPrice, booking.Currency, now, ct);
+        var initiation = await provider.InitiateAsync(booking.Id, charge, booking.Currency, ct);
+        var payment = Payment.ForLiveSession(booking.Id, studentId, charge, booking.Currency,
+            provider.Name, initiation.ProviderReference, idempotencyKey, now);
         db.AddRange(payment,
-            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, clock.GetUtcNow()),
+            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, now),
             Audit("LiveSessionPaymentInitiated", studentId, "Payment", payment.Id.ToString(), idempotencyKey));
+        if (coupon is not null)
+            db.Add(new CouponRedemption(
+                coupon.Id, studentId, payment.Id, null, booking.Id, discount, booking.Currency, now));
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return new(Map(payment), initiation.CheckoutReference);
