@@ -18,7 +18,7 @@ public sealed class EmailTemplateTests
             "https://tafseel.example/app/");
 
         Assert.Contains("font-family:'Thmanyah Sans'", html);
-        Assert.Contains("https://tafseel.example/app/assets/brand/tafseel-mark.png", html);
+        Assert.Contains("https://tafseel.example/app/assets/brand/tafseel-mark-dark.png", html);
         Assert.Contains("&lt;heading&gt;", html);
         Assert.DoesNotContain("<heading>", html);
     }
