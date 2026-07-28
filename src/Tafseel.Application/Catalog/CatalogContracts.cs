@@ -25,7 +25,8 @@ public sealed record CatalogItemDto(
     int? MaxVideoSeconds = null,
     string? EvaluationGuidance = null,
     string? EvaluationGuidanceAr = null,
-    IReadOnlyCollection<CatalogResourceDto>? Resources = null);
+    IReadOnlyCollection<CatalogResourceDto>? Resources = null,
+    string? NameAr = null);
 public sealed record CatalogResourceDto(
     Guid Id, string DisplayName, string DisplayNameAr, string? Url,
     int DisplayOrder, bool IsRequired, bool IsFile);
@@ -38,7 +39,8 @@ public sealed record QualificationLinkResourceInput(
 public sealed record CatalogFile(Stream Content, string ContentType, string FileName);
 public sealed record SubjectInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
-    [param: Required, NotWhiteSpace, StringLength(100)] string Icon);
+    [param: Required, NotWhiteSpace, StringLength(100)] string Icon,
+    [param: StringLength(200)] string NameAr = "");
 public sealed record TopicInput(
     Guid SubjectId,
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
@@ -83,7 +85,8 @@ public sealed record NamedCatalogInput(
     int[]? AllowedDurations = null,
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal? MinPrice = null,
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal? MaxPrice = null,
-    [param: Range(0, 10000)] int? DisplayOrder = null);
+    [param: Range(0, 10000)] int? DisplayOrder = null,
+    [param: StringLength(200)] string? NameAr = null);
 
 public interface ICatalogService
 {

@@ -79,14 +79,15 @@
     var instructions = ar && item.instructionsAr ? item.instructionsAr : item.detail;
     var resources = (item.resources || []).map(function (r) {
       var name = ar && r.displayNameAr ? r.displayNameAr : r.displayName;
-      return r.url ? '<li><a href="' + escape(r.url) + '" target="_blank" rel="noopener">' + escape(name) + '</a></li>'
+      var label = r.isFile ? t('apply_open_pdf') + ': ' + name : name;
+      return r.url ? '<li><a href="' + escape(r.url) + '" target="_blank" rel="noopener">' + escape(label) + '</a></li>'
         : '<li>' + escape(name) + '</li>';
     }).join('');
     card.innerHTML = '<h2>' + escape(title) + '</h2><p>' + escape(instructions || '') + '</p>' +
       '<div class="tf-assignment-meta"><span>Minimum ' + escape(item.minVideoSeconds || 30) + 's</span>' +
       '<span>Expected ' + escape(item.expectedVideoSeconds || item.maxVideoSeconds || 180) + 's</span>' +
       '<span>Maximum ' + escape(item.maxVideoSeconds || 180) + 's</span></div>' +
-      (resources ? '<h3>Resources</h3><ul>' + resources + '</ul>' : '');
+      (resources ? '<h3>' + escape(t('apply_assignment_resources')) + '</h3><ul>' + resources + '</ul>' : '');
     card.hidden = false;
     var duration = document.getElementById('duration');
     duration.min = item.minVideoSeconds || 30;

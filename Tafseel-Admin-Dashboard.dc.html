@@ -377,7 +377,12 @@
           <sc-for list="{{ catalogItems }}" as="c" hint-placeholder-count="6">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px">
               <div>
-                <div style="font-size:14.5px;font-weight:700">{{ c.name }}</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:14.5px;font-weight:700">{{ c.name }}</span>
+                  <sc-if value="{{ c.nameAr }}" hint-placeholder-val="{{ false }}">
+                    <span dir="rtl" style="font-size:13px;color:var(--text-2)">{{ c.nameAr }}</span>
+                  </sc-if>
+                </div>
                 <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ c.meta }}</div>
               </div>
               <div style="display:flex;align-items:center;gap:12px;flex:none">
@@ -527,9 +532,15 @@
           </label>
         </sc-if>
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Name</span>
+          <span style="font-size:13px;font-weight:600">Name (English)</span>
           <input value="{{ catalogName }}" onChange="{{ onCatalogName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
+        <sc-if value="{{ isNameArModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">الاسم بالعربي (Arabic name)</span>
+            <input dir="rtl" value="{{ catalogNameAr }}" onChange="{{ onCatalogNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+        </sc-if>
         <sc-if value="{{ isSubjectModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Icon</span>
@@ -605,7 +616,7 @@
       <label style="display:flex;flex-direction:column;gap:6px;margin-top:12px"><span>Safe URL</span><input type="url" value="{{ resourceUrl }}" onChange="{{ onResourceUrl }}" /></label>
       <div class="tf-actions" style="margin-top:12px"><button class="tf-button" type="button" onClick="{{ addLinkResource }}">Add link</button></div>
       <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
-      <label style="display:flex;flex-direction:column;gap:6px"><span>Reference file</span><input id="assignment-resource-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.ppt,.pptx,.doc,.docx,.txt" /></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span data-i18n="admin_resource_file">Assignment PDF</span><input id="assignment-resource-file" type="file" accept=".pdf,application/pdf" /></label>
       <div class="tf-actions" style="margin-top:12px">
         <button class="tf-button" type="button" onClick="{{ uploadAssignmentResource }}">Upload file</button>
         <button class="tf-button tf-button-secondary" type="button" onClick="{{ closeResourceModal }}">Close</button>
@@ -618,10 +629,16 @@
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeEditModal }}">
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">Edit</h2>
-      <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
-        <span style="font-size:13px;font-weight:600">Name</span>
+      <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <span style="font-size:13px;font-weight:600">Name (English)</span>
         <input value="{{ editName }}" onChange="{{ onEditName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
       </label>
+      <sc-if value="{{ editShowNameAr }}" hint-placeholder-val="{{ false }}">
+        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
+          <span style="font-size:13px;font-weight:600">الاسم بالعربي (Arabic name)</span>
+          <input dir="rtl" value="{{ editNameAr }}" onChange="{{ onEditNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+        </label>
+      </sc-if>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button type="button" onClick="{{ closeEditModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
         <button type="button" onClick="{{ confirmEditCatalog }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Save</button>
@@ -671,10 +688,10 @@ class Component extends DCLogic {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, navKey: 'overview', page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
     userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '', toastLeaving: false, contentFade: 'in',
     commissionRate: 15, requireReview: true, maintenanceMode: false,
-    catalogModal: false, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
+    catalogModal: false, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
     catalogCode: '', catalogRequiresScheduling: false, catalogDiscountType: '0', catalogDiscountValue: 10,
     resourceModal: null, resourceName: '', resourceUrl: '',
-    editModal: null, editName: '', usersTotal: 0, liveWithdrawals: [],
+    editModal: null, editName: '', editNameAr: '', usersTotal: 0, liveWithdrawals: [],
     usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
 
@@ -742,14 +759,14 @@ class Component extends DCLogic {
       const metrics = settled(1);
       if (failed(1)) errors.push(Tafseel.api.errorMessage(failed(1)));
 
-      const mapCatalog = (payload) => (payload || []).map(x => ({ id:x.id, name:x.name, meta:x.detail || '', active:x.isActive }));
+      const mapCatalog = (payload) => (payload || []).map(x => ({ id:x.id, name:x.name, nameAr:x.nameAr || '', meta:x.detail || '', active:x.isActive }));
       CATALOG_DATA.subjects = mapCatalog(settled(2));
       CATALOG_DATA.topics = mapCatalog(settled(3));
       CATALOG_DATA.assignments = (settled(8) || []).map(x => ({
         id:x.id, name:x.name, meta:x.detail || '', active:x.isActive, resources:x.resources || []
       }));
       CATALOG_DATA.services = (settled(4) || []).map(x => ({
-        id:x.id, name:x.name, active:x.isActive,
+        id:x.id, name:x.name, nameAr:x.nameAr || '', active:x.isActive,
         meta:[
           'code: ' + (x.code || '—'),
           x.teacherSelectable ? Tafseel.t('admin_service_teacher_selectable') : Tafseel.t('admin_service_teacher_hidden'),
@@ -913,7 +930,7 @@ class Component extends DCLogic {
     const NAV = [
       ['overview','◱','Overview'], ['users','◈','Users'], ['students','◍','Students'], ['teachers','✎','Teachers'],
       ['reviewers','◑','Quality Reviewers'], ['subjects','∑','Subjects'],
-      ['topics','◫','Topics'], ['assignments','▣','Qualification assignments'], ['services','▤','Services'], ['requests','⇩','Requests'], ['sessions','◉','Live Sessions'],
+      ['topics','◫','Topics'], ['assignments','▣',Tafseel.t('admin_qualification_assignments')], ['services','▤','Services'], ['requests','⇩','Requests'], ['sessions','◉','Live Sessions'],
       ['payments','$','Payments'], ['withdrawals','⇧','Withdrawals'], ['reviews','★','Reviews'], ['disputes','⚠','Disputes'],
       ['coupons','%','Coupons'], ['reports','▥','Reports'], ['settings','⚙','Platform Settings']
     ];
@@ -1003,16 +1020,16 @@ class Component extends DCLogic {
           };
         }),
 
-      catalogTitle: { subjects:'Subjects', topics:'Topics', assignments:'Qualification assignments', services:'Services', coupons:'Coupons' }[s.catalogKind],
+      catalogTitle: { subjects:'Subjects', topics:'Topics', assignments:Tafseel.t('admin_qualification_assignments'), services:'Services', coupons:'Coupons' }[s.catalogKind],
       catalogAddLabel: {
-        subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'), assignments:'Add assignment',
+        subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'), assignments:Tafseel.t('admin_add_assignment'),
         services: Tafseel.t('admin_add_service'), coupons: Tafseel.t('admin_add_coupon')
       }[s.catalogKind],
       catalogAddDisabled: false,
       catalogNote: '',
       onAddCatalog: () => {
         this.setState({
-          catalogModal: true, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
+          catalogModal: true, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
           catalogDetail: '', catalogCode: '', catalogRequiresScheduling: s.catalogKind === 'services',
           catalogDiscountType: '0', catalogDiscountValue: 10
         });
@@ -1023,7 +1040,7 @@ class Component extends DCLogic {
           ...c, active,
           canManageResources: s.catalogKind === 'assignments',
           onResources: () => this.setState({ resourceModal:c, resourceName:'', resourceUrl:'' }),
-          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta, version: c.version }, editName: c.name }),
+          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta, version: c.version }, editName: c.name, editNameAr: c.nameAr || '' }),
           onToggle: async () => {
             try {
               if (s.catalogKind === 'coupons') {
@@ -1059,10 +1076,11 @@ class Component extends DCLogic {
       },
       uploadAssignmentResource: async () => {
         const file = document.getElementById('assignment-resource-file')?.files?.[0];
-        if (!s.resourceModal || !file || !s.resourceName.trim()) return this.flash('Choose a file and display name.');
+        if (!s.resourceModal || !file) return this.flash(Tafseel.t('admin_choose_assignment_pdf'));
+        const resourceName = s.resourceName.trim() || file.name;
         const data = new FormData();
-        data.append('file', file); data.append('displayName', s.resourceName); data.append('displayNameAr', '');
-        data.append('displayOrder', String((s.resourceModal.resources || []).length)); data.append('isRequired', 'false');
+        data.append('file', file); data.append('displayName', resourceName); data.append('displayNameAr', '');
+        data.append('displayOrder', String((s.resourceModal.resources || []).length)); data.append('isRequired', 'true');
         try {
           const created = await Tafseel.api.upload('/admin/qualification-topics/' + s.resourceModal.id + '/resources/file', data);
           const resources = [...(s.resourceModal.resources || []), created];
@@ -1078,8 +1096,10 @@ class Component extends DCLogic {
       isSubjectScopedModal: s.catalogKind === 'topics' || s.catalogKind === 'assignments',
       isServiceModal: s.catalogKind === 'services',
       isCouponModal: s.catalogKind === 'coupons',
-      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', assignments:'Add qualification assignment', services:'Add service', coupons:'Add coupon' }[s.catalogKind],
+      isNameArModal: s.catalogKind === 'subjects' || s.catalogKind === 'services',
+      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', assignments:Tafseel.t('admin_add_qualification_assignment'), services:'Add service', coupons:'Add coupon' }[s.catalogKind],
       catalogName: s.catalogName, onCatalogName: e => this.setState({ catalogName: e.target.value }),
+      catalogNameAr: s.catalogNameAr || '', onCatalogNameAr: e => this.setState({ catalogNameAr: e.target.value }),
       catalogIcon: s.catalogIcon, onCatalogIcon: e => this.setState({ catalogIcon: e.target.value }),
       catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
       catalogCode: s.catalogCode || '', onCatalogCode: e => this.setState({ catalogCode: e.target.value }),
@@ -1110,9 +1130,10 @@ class Component extends DCLogic {
         try {
           let created;
           if (s.catalogKind === 'subjects') {
-            if (!s.catalogName.trim() || !s.catalogIcon.trim()) return this.flash('Name and icon are required.');
-            created = await Tafseel.api.post('/admin/subjects', { name: s.catalogName, icon: s.catalogIcon });
-            CATALOG_DATA.subjects = [...CATALOG_DATA.subjects, { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
+            if (!s.catalogName.trim() || !s.catalogIcon.trim() || !(s.catalogNameAr || '').trim())
+              return this.flash('English name, Arabic name, and icon are required.');
+            created = await Tafseel.api.post('/admin/subjects', { name: s.catalogName, icon: s.catalogIcon, nameAr: s.catalogNameAr || '' });
+            CATALOG_DATA.subjects = [...CATALOG_DATA.subjects, { id: created.id, name: created.name, nameAr: created.nameAr || '', meta: created.detail || '', active: created.isActive }];
           } else if (s.catalogKind === 'topics') {
             if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash('Subject and name are required.');
             created = await Tafseel.api.post('/admin/topics', { subjectId: s.catalogSubjectId, name: s.catalogName, difficulty: s.catalogDifficulty });
@@ -1128,9 +1149,12 @@ class Component extends DCLogic {
               id: created.id, name: created.name, meta: created.detail || '', active: created.isActive
             }];
           } else if (s.catalogKind === 'services') {
-            if (!s.catalogName.trim() || !(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_service_code_required'));
+            if (!s.catalogName.trim() || !(s.catalogNameAr || '').trim())
+              return this.flash('English name and Arabic name are required.');
+            if (!(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_service_code_required'));
             created = await Tafseel.api.post('/admin/services', {
               name: s.catalogName,
+              nameAr: s.catalogNameAr || '',
               detail: s.catalogDetail || null,
               code: s.catalogCode.trim().toLowerCase(),
               requiresScheduling: !!s.catalogRequiresScheduling,
@@ -1139,7 +1163,7 @@ class Component extends DCLogic {
               allowedDurations: s.catalogRequiresScheduling ? [30, 60, 90, 120] : null
             });
             CATALOG_DATA.services = [...CATALOG_DATA.services, {
-              id: created.id, name: created.name, active: created.isActive, code: created.code, detail: created.detail || '',
+              id: created.id, name: created.name, nameAr: created.nameAr || '', active: created.isActive, code: created.code, detail: created.detail || '',
               meta: [
                 'code: ' + (created.code || '—'),
                 created.teacherSelectable ? Tafseel.t('admin_service_teacher_selectable') : Tafseel.t('admin_service_teacher_hidden'),
@@ -1166,17 +1190,19 @@ class Component extends DCLogic {
       },
 
       editModal: !!s.editModal,
+      editShowNameAr: !!s.editModal && (s.editModal.kind === 'subjects' || s.editModal.kind === 'services'),
       editName: s.editName, onEditName: e => this.setState({ editName: e.target.value }),
+      editNameAr: s.editNameAr || '', onEditNameAr: e => this.setState({ editNameAr: e.target.value }),
       closeEditModal: () => this.setState({ editModal: null }),
       confirmEditCatalog: async () => {
         if (!s.editModal || !s.editName.trim()) return this.flash('Name is required.');
         try {
           const kind = s.editModal.kind === 'assignments' ? 'qualification-topics' : s.editModal.kind;
           await Tafseel.api.put('/admin/catalog/' + kind + '/' + s.editModal.id, {
-            name: s.editName, detail: s.editModal.detail || null
+            name: s.editName, detail: s.editModal.detail || null, nameAr: s.editNameAr || ''
           });
           CATALOG_DATA[s.editModal.kind] = (CATALOG_DATA[s.editModal.kind] || []).map(c =>
-            c.id === s.editModal.id ? { ...c, name: s.editName } : c);
+            c.id === s.editModal.id ? { ...c, name: s.editName, nameAr: s.editNameAr || '' } : c);
           this.setState({ editModal: null });
           this.flash('Saved.');
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }

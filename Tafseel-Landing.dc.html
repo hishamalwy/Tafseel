@@ -499,6 +499,7 @@ class Component extends DCLogic {
       liveSubjects:subjects.slice(0, 8).map((subject, index) => ({
         icon:['∑','⚛','⚗','🧬','{}','Aa','◱','⚙'][index] || '•',
         name:subject.name,
+        nameAr:subject.nameAr || '',
         desc:subject.detail || 'Explore personalized learning in this subject',
         count:'Explore teachers',
         onOpen:event => {
@@ -523,6 +524,7 @@ class Component extends DCLogic {
       liveServices:(services || []).slice(0, 6).map((sv, index) => ({
         icon:['▶','✎','◷','◉','◈','⇩'][index % 6],
         name:sv.name,
+        nameAr:sv.nameAr || '',
         desc:sv.detail || sv.name,
         price:''
       })),
@@ -791,7 +793,9 @@ class Component extends DCLogic {
           body: ar ? 'بعد التسليم، تأكد أن الشرح غطّى النقاط المطلوبة. إذا احتجت توضيحًا إضافيًا، اطلبه قبل اعتماد الخدمة.' : 'After delivery, confirm the explanation covered the needed points. If you need an extra clarification, request it before approving the service.'
         }
       ],
-      subjects: this.state.liveSubjects && this.state.liveSubjects.length ? this.state.liveSubjects : fallbackSubjects,
+      subjects: this.state.liveSubjects && this.state.liveSubjects.length
+        ? this.state.liveSubjects.map(x => ({ ...x, name: ar && x.nameAr ? x.nameAr : x.name }))
+        : fallbackSubjects,
       steps: [
         { n: '01', title: ar ? 'حدّد احتياجك' : 'Define Your Needs', body: ar ? 'حدّد المادة أو التخصص، وارفع السلايدات، الأسئلة، أو الأجزاء التي تحتاج شرحها.' : 'Select your subject or specialization, then upload your slides, questions, or the topics you need help with.' },
         { n: '02', title: ar ? 'قارن واستقر' : 'Compare & Decide', body: ar ? 'شاهد نماذج الشرح، وقارن التقييمات، واختر المعلم الأنسب لأسلوب تعلمك.' : 'Watch sample lessons, compare ratings, and choose the tutor that best matches your learning style.' },
@@ -799,7 +803,9 @@ class Component extends DCLogic {
         { n: '04', title: ar ? 'استلم وافهم' : 'Learn with Confidence', body: ar ? 'استلم فيديو شرح مخصص أو احجز جلسة مباشرة، ولا يُحوّل المبلغ للمعلم إلا بعد رضاك عن الخدمة.' : 'Receive a personalized video explanation or book a live session. Your payment is only released to the tutor once you\'re satisfied.' }
       ],
       teachers: this.state.liveTeachers || [],
-      services: this.state.liveServices && this.state.liveServices.length ? this.state.liveServices : fallbackServices,
+      services: this.state.liveServices && this.state.liveServices.length
+        ? this.state.liveServices.map(x => ({ ...x, name: ar && x.nameAr ? x.nameAr : x.name }))
+        : fallbackServices,
       escrow: [
         { n: '1', text: ar ? 'يدفع الطالب عند قبول العرض' : 'Student pays when the offer is accepted' },
         { n: '2', text: ar ? 'تحتفظ المنصة بالمبلغ بأمان' : 'Tafseel holds the payment securely' },

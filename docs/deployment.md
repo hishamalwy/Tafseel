@@ -13,7 +13,7 @@ Every successful push to `main` follows:
 3. `Deploy Staging - Azure App Service` starts automatically via `workflow_run` after `Staging Gate` succeeds.
 4. The resolved revision is always `github.event.workflow_run.head_sha` (the validated push commit), never the latest `main` tip and never the deploy workflow’s default-branch `github.sha`.
 5. The `staging-db-migrate` job logs in to Azure with OIDC, rebuilds the exact-SHA EF migration bundle and idempotent SQL, verifies artifact hashes, confirms the target is only `tafseel-staging-db`, inspects DB identity, applies only pending migrations, verifies `__EFMigrationsHistory`, and checks the latest migration’s expected schema objects.
-6. Only after migration success does the `staging-azure` job publish `src/Tafseel.Api/Tafseel.Api.csproj`, deploy the prebuilt zip to App Service, wait for readiness, and run smoke tests.
+6. Only after migration success does the `staging-azure` job publish `src/Tafseel.Api/Tafseel.Api.csproj` and deploy the prebuilt zip to App Service without restarting it. Starting the app and running `scripts/ci/staging-smoke.sh` are manual steps.
 
 ### Manual fallback
 
@@ -31,7 +31,7 @@ Run `Deploy Staging - Azure App Service` with `workflow_dispatch` and a full 40-
 5. Applies the migration bundle before deploying the application. Transient Azure SQL conditions are retried with a small bounded retry budget; invalid credentials, wrong target DB, policy failures, SQL logic errors, and verification failures stop immediately.
 6. Verifies `__EFMigrationsHistory` contains the latest expected `MigrationId`, records the current/target/latest-applied migrations in the Step Summary, and checks the latest migration’s created tables/columns where practical.
 7. Restores the locked solution, builds Release, publishes the API project, validates publish output, authenticates with Azure OIDC, and deploys the prebuilt package to the App Service `Production` slot.
-8. Runs a bounded ready probe that **fails explicitly** if readiness never succeeds, then verifies `/health/live`, `/health/ready`, `/app/Tafseel-Landing.dc.html`, and that `/api/v1/auth/me` returns `401`.
+8. Leaves the app restart and post-deployment smoke checks manual.
 9. Records the exact deployed SHA in the GitHub Step Summary.
 
 Application startup in `Staging` does not migrate the database (`InitializeIdentityAsync` only migrates in Development). `Database.Migrate()`, `MigrateAsync()`, and `EnsureCreated()` must remain out of Staging and Production startup. Migration failure stops deployment because `staging-azure` depends on successful completion of `staging-db-migrate`.

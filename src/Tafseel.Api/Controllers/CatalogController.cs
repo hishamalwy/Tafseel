@@ -58,13 +58,13 @@ public sealed class CatalogController(ICatalogService catalog) : ControllerBase
     [HttpPost("admin/qualification-topics/{id:guid}/resources/file")]
     public async Task<IActionResult> AddQualificationFile(
         Guid id, IFormFile file, [FromForm] string displayName,
-        [FromForm] string displayNameAr, [FromForm] int displayOrder,
+        [FromForm] string? displayNameAr, [FromForm] int displayOrder,
         [FromForm] bool isRequired, CancellationToken ct)
     {
         await using var stream = file.OpenReadStream();
         return Created("", await catalog.AddFileResourceAsync(
             id, stream, file.FileName, file.ContentType, file.Length,
-            displayName, displayNameAr, displayOrder, isRequired, ct));
+            displayName, displayNameAr ?? "", displayOrder, isRequired, ct));
     }
 
     [Authorize, HttpGet("qualification-resources/{id:guid}/content")]

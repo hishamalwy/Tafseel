@@ -57,7 +57,8 @@ internal sealed class LocalFileStorageService(IOptions<FileStorageOptions> optio
         if (size is <= 0 || size > _options.MaxAttachmentBytes)
             throw new DomainException("invalid_file_size", "Attachment file size is invalid.");
         if (category is not ("request-attachments" or "order-deliveries"
-            or "live-session-attachments" or "message-attachments" or "dispute-evidence"))
+            or "live-session-attachments" or "message-attachments" or "dispute-evidence"
+            or "qualification-resources"))
             throw new DomainException("invalid_storage_category", "Storage category is invalid.");
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         var expected = extension switch

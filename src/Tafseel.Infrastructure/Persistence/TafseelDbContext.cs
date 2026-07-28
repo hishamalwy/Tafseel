@@ -880,6 +880,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         {
             item.Property(x => x.Id).ValueGeneratedNever();
             item.Property(x => x.Name).HasMaxLength(200);
+            item.Property(x => x.NameAr).HasMaxLength(200);
             item.Property(x => x.NormalizedName).HasMaxLength(200);
             item.ToTable(table =>
                 table.HasCheckConstraint($"CK_{typeof(T).Name}_NormalizedName", "[NormalizedName] <> ''"));

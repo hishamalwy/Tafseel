@@ -113,6 +113,8 @@ Assert-True "deploy runs migrations before staging deploy" (
 Assert-True "deploy validates fixed staging database target" ($deployText -match 'EXPECTED_DATABASE_NAME:\s*tafseel-staging-db')
 Assert-True "deploy keeps production manual elsewhere" ($deployText -notmatch 'environment:\s*production')
 Assert-True "deploy concurrency cancels in progress" ($deployText -match 'cancel-in-progress:\s*true')
+Assert-True "prebuilt deployment does not restart the app" ($deployText -match '--restart\s+false')
+Assert-True "post-deployment smoke is manual" ($deployText -notmatch '\./scripts/ci/staging-smoke\.sh')
 
 $gateText = Get-Content -LiteralPath $gateWorkflow -Raw
 Assert-True "staging gate listens on main push" ($gateText -match 'branches:\s*\[main\]')

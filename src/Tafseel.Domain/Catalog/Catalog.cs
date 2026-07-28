@@ -17,23 +17,25 @@ public abstract class CatalogItem
 {
     protected CatalogItem() { }
 
-    protected CatalogItem(string name)
+    protected CatalogItem(string name, string nameAr = "")
     {
         Id = Guid.NewGuid();
-        Rename(name);
+        Rename(name, nameAr);
     }
 
     public Guid Id { get; private init; }
     public string Name { get; private set; } = "";
+    public string NameAr { get; private set; } = "";
     public string NormalizedName { get; private set; } = "";
     public bool IsActive { get; private set; } = true;
 
-    public void Rename(string name)
+    public void Rename(string name, string? nameAr = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("catalog_name_required", "Name is required.");
         Name = CatalogNameNormalizer.Display(name);
         NormalizedName = CatalogNameNormalizer.Key(name);
+        if (nameAr is not null) NameAr = CatalogNameNormalizer.Display(nameAr);
     }
 
     public void SetActive(bool active) => IsActive = active;
@@ -42,9 +44,9 @@ public abstract class CatalogItem
 public sealed class Subject : CatalogItem
 {
     private Subject() { }
-    public Subject(string name, string icon) : base(name) => Icon = icon.Trim();
+    public Subject(string name, string icon, string nameAr = "") : base(name, nameAr) => Icon = icon.Trim();
     public string Icon { get; private set; } = "";
-    public void Update(string name, string icon) { Rename(name); Icon = icon.Trim(); }
+    public void Update(string name, string icon, string? nameAr = null) { Rename(name, nameAr); Icon = icon.Trim(); }
 }
 
 public sealed class Topic : CatalogItem
@@ -189,7 +191,8 @@ public sealed class ServiceCatalogItem : CatalogItem
         IReadOnlyCollection<int>? allowedDurations = null,
         decimal? minPrice = null,
         decimal? maxPrice = null,
-        int displayOrder = 0) : base(name)
+        int displayOrder = 0,
+        string nameAr = "") : base(name, nameAr)
     {
         Description = description.Trim();
         SetCode(code);
@@ -222,9 +225,10 @@ public sealed class ServiceCatalogItem : CatalogItem
         IReadOnlyCollection<int>? allowedDurations,
         decimal? minPrice,
         decimal? maxPrice,
-        int displayOrder)
+        int displayOrder,
+        string? nameAr = null)
     {
-        Rename(name);
+        Rename(name, nameAr);
         Description = description.Trim();
         var normalized = NormalizeCode(code);
         if (!string.Equals(Code, normalized, StringComparison.Ordinal))

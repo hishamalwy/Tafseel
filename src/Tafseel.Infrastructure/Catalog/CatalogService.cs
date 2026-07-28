@@ -14,7 +14,7 @@ internal sealed class CatalogService(
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetSubjectsAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.Subjects, includeInactive)
             .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Icon, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, x.NameAr))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetTopicsAsync(Guid? subjectId, bool qualificationOnly, bool includeInactive, CancellationToken ct)
@@ -53,7 +53,7 @@ internal sealed class CatalogService(
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
             return await query.Select(x => new CatalogItemDto(
                 x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null))
                 .ToArrayAsync(ct);
         }
     }
@@ -61,13 +61,13 @@ internal sealed class CatalogService(
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.EducationLevels, includeInactive)
             .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetLanguagesAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.TeachingLanguages, includeInactive)
             .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, x.Code, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetServicesAsync(bool includeInactive, CancellationToken ct)
@@ -89,7 +89,8 @@ internal sealed class CatalogService(
                 x.AllowedDurationsCsv,
                 x.MinPrice,
                 x.MaxPrice,
-                x.DisplayOrder
+                x.DisplayOrder,
+                x.NameAr
             })
             .ToArrayAsync(ct);
 
@@ -107,7 +108,8 @@ internal sealed class CatalogService(
             ParseDurations(x.AllowedDurationsCsv),
             x.MinPrice,
             x.MaxPrice,
-            x.DisplayOrder)).ToArray();
+            x.DisplayOrder,
+            NameAr: x.NameAr)).ToArray();
     }
 
     private static IReadOnlyCollection<int>? ParseDurations(string? csv)
@@ -119,7 +121,7 @@ internal sealed class CatalogService(
     }
 
     public Task<CatalogItemDto> CreateSubjectAsync(SubjectInput input, CancellationToken ct) =>
-        AddAsync(new Subject(input.Name, input.Icon), x => new(x.Id, x.Name, x.IsActive, x.Icon), ct);
+        AddAsync(new Subject(input.Name, input.Icon, input.NameAr), x => new(x.Id, x.Name, x.IsActive, x.Icon, NameAr: x.NameAr), ct);
 
     public async Task<CatalogItemDto> CreateTopicAsync(TopicInput input, CancellationToken ct)
     {
@@ -163,10 +165,12 @@ internal sealed class CatalogService(
                 input.AllowedDurations,
                 input.MinPrice,
                 input.MaxPrice,
-                input.DisplayOrder ?? 0),
+                input.DisplayOrder ?? 0,
+                input.NameAr ?? ""),
             x => new(
                 x.Id, x.Name, x.IsActive, x.Description, null, x.Code, x.Type, x.IsPublic,
-                x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations, x.MinPrice, x.MaxPrice, x.DisplayOrder),
+                x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations, x.MinPrice, x.MaxPrice, x.DisplayOrder,
+                NameAr: x.NameAr),
             ct);
 
     public async Task UpdateAsync(string type, Guid id, NamedCatalogInput input, CancellationToken ct)
@@ -174,7 +178,7 @@ internal sealed class CatalogService(
         switch (type.ToLowerInvariant())
         {
             case "subjects":
-                (await Required(db.Subjects, id, ct)).Update(input.Name, input.Detail ?? "");
+                (await Required(db.Subjects, id, ct)).Update(input.Name, input.Detail ?? "", input.NameAr);
                 break;
             case "topics":
                 (await Required(db.Topics, id, ct)).Update(input.Name, input.Detail ?? "");
@@ -204,7 +208,8 @@ internal sealed class CatalogService(
                         input.AllowedDurations ?? service.AllowedDurations,
                         input.MinPrice ?? service.MinPrice,
                         input.MaxPrice ?? service.MaxPrice,
-                        input.DisplayOrder ?? service.DisplayOrder);
+                        input.DisplayOrder ?? service.DisplayOrder,
+                        input.NameAr);
                     break;
                 }
             default:

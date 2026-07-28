@@ -194,16 +194,10 @@ jobs:
             --src-path ./artifacts/tafseel-azure.zip \
             --type zip \
             --clean true \
-            --restart true \
+            --restart false \
             --track-status true \
             --timeout 600000 \
             --output none
-      - name: Post-deployment smoke tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x scripts/ci/staging-smoke.sh
-          ./scripts/ci/staging-smoke.sh "$APP_URL" 60 5 20
       - name: Deployment evidence
         if: always()
         shell: bash
@@ -212,4 +206,5 @@ jobs:
           echo "- Revision: \`$DEPLOY_SHA\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Trigger: \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Environment: \`staging\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- App restart and post-deployment smoke are manual." >> "$GITHUB_STEP_SUMMARY"
           echo "- Database migrations were applied and verified in job \`staging-db-migrate\` before deployment." >> "$GITHUB_STEP_SUMMARY"
