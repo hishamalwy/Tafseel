@@ -227,7 +227,7 @@
                   <td style="padding:12px 16px"><input type="checkbox" checked="{{ u.checked }}" onChange="{{ u.onCheck }}" aria-label="Select {{ u.name }}" style="width:16px;height:16px;accent-color:var(--primary)" /></td>
                   <td style="padding:12px">
                     <div style="display:flex;align-items:center;gap:10px">
-                      <span style="width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--text-2)">{{ u.initials }}</span>
+                      <img src="{{ defaultAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                       <div>
                         <div style="font-size:13.5px;font-weight:600">{{ u.name }}</div>
                         <div style="font-size:12px;color:var(--muted)">{{ u.email }}</div>
@@ -326,7 +326,7 @@
                   <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                     <td style="padding:12px 20px">
                       <div style="display:flex;align-items:center;gap:10px">
-                        <span style="width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--text-2)">{{ u.initials }}</span>
+                        <img src="{{ defaultAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                         <div>
                           <div style="font-size:13.5px;font-weight:600">{{ u.name }}</div>
                           <div style="font-size:12px;color:var(--muted)">{{ u.email }}</div>
@@ -964,6 +964,7 @@ class Component extends DCLogic {
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
+      defaultAvatar: Tafseel.defaultAvatar,
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
       contentFade: s.contentFade,

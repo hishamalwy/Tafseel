@@ -26,7 +26,7 @@
     root.innerHTML = conversations.length ? conversations.map(function (x) {
       var person = other(x);
       var latest = x.latestMessage && x.latestMessage.body || 'No messages yet';
-      return '<button class="tf-chat-item" data-conversation="' + esc(x.id) + '" aria-current="' + String(active && active.id === x.id) + '"><span class="tf-chat-avatar">' + esc(person.initials) + '</span><span><strong>' + esc(person.displayName) + '</strong><small class="tf-muted" style="display:block">' + esc(person.role || '') + '</small><span class="tf-muted">' + esc(latest) + '</span></span></button>';
+      return '<button class="tf-chat-item" data-conversation="' + esc(x.id) + '" aria-current="' + String(active && active.id === x.id) + '"><img class="tf-chat-avatar" src="' + esc(Tafseel.defaultAvatar) + '" alt=""><span><strong>' + esc(person.displayName) + '</strong><small class="tf-muted" style="display:block">' + esc(person.role || '') + '</small><span class="tf-muted">' + esc(latest) + '</span></span></button>';
     }).join('') : '<p class="tf-chat-empty">No conversations yet</p>';
     root.querySelectorAll('[data-conversation]').forEach(function (button) {
       button.onclick = function () { select(button.dataset.conversation); };

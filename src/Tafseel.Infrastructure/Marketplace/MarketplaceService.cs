@@ -152,7 +152,8 @@ internal sealed class MarketplaceService(
                     .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray(),
                 db.TeacherLanguages.Where(language => language.TeacherId == x.profile.TeacherId)
                     .Join(db.TeachingLanguages, language => language.LanguageId, item => item.Id, (_, item) => item.Name)
-                    .ToArray()))
+                    .ToArray(),
+                x.user.FullNameEnglish))
             .ToArrayAsync(ct);
         return new(rows, page, pageSize, count);
     }
@@ -447,7 +448,8 @@ internal sealed class MarketplaceService(
                     .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray(),
                 db.TeacherLanguages.Where(language => language.TeacherId == profile.TeacherId)
                     .Join(db.TeachingLanguages, language => language.LanguageId, item => item.Id, (_, item) => item.Name)
-                    .ToArray()))
+                    .ToArray(),
+                user.FullNameEnglish))
             .ToArrayAsync(ct);
         return cards;
     }
@@ -560,7 +562,7 @@ internal sealed class MarketplaceService(
                 _liveSessionOptions.EmergencyPremiumPercent,
                 _liveSessionOptions.CancellationWindowHours),
             profileComplete, eligible, blockers, profile.IsPublished && eligible,
-            subjects.Select(x => x.Id).ToArray());
+            subjects.Select(x => x.Id).ToArray(), user.FullNameEnglish);
     }
 
     private static TeacherProfileDto EmptyProfile(string teacherId, string name) =>

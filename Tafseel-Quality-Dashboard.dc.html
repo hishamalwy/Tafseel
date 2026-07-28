@@ -100,7 +100,7 @@
                     <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                       <td style="padding:14px 20px">
                         <div style="display:flex;align-items:center;gap:10px">
-                          <span style="width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-2)">{{ a.initials }}</span>
+                          <img src="{{ defaultAvatar }}" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                           <span style="font-size:14px;font-weight:600">{{ a.name }}</span>
                         </div>
                       </td>
@@ -472,6 +472,7 @@ class Component extends DCLogic {
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
+      defaultAvatar: Tafseel.defaultAvatar,
       logoutLabel: Tafseel.t('admin_logout'),
       onLogout: async () => {
         try { await Tafseel.api.logout(); } finally { location.href = 'Tafseel-Auth.dc.html'; }

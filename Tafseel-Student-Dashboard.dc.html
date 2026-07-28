@@ -69,8 +69,8 @@
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">NA</span>
-          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Noor Abdulaziz</span>
+          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
         </div>
       </div>
     </header>
@@ -404,7 +404,7 @@
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <sc-for list="{{ conversations }}" as="c" hint-placeholder-count="4">
             <button type="button" onClick="{{ openChat }}" style="display:flex;width:100%;gap:14px;align-items:center;padding:16px 20px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start">
-              <span style="width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--text-2);flex:none">{{ c.initials }}</span>
+              <img src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover;flex:none" />
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;gap:10px">
                   <span style="font-size:14px;font-weight:700">{{ c.name }}</span>
@@ -422,12 +422,21 @@
     </sc-if>
 
     <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
-      <div style="max-width:520px">
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
+      <div style="max-width:560px;display:flex;flex-direction:column;gap:16px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+            <span style="font-size:13px;color:var(--muted)">{{ accountDefaultPhoto }}</span>
+          </div>
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Full name</span>
-            <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span style="font-size:13px;font-weight:600">{{ accountPrimaryName }}</span>
+            <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" maxlength="200" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountEnglishName }}</span>
+            <input value="{{ settingsNameEnglish }}" onChange="{{ onSettingsNameEnglish }}" maxlength="200" dir="ltr" autocomplete="name" aria-describedby="student-english-name-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span id="student-english-name-note" style="font-size:12px;color:var(--muted)">{{ accountEnglishHint }}</span>
           </label>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Email</span>
@@ -442,7 +451,24 @@
             <span>In-app notifications</span>
             <input type="checkbox" checked="{{ notifySessions }}" onChange="{{ onNotifySessions }}" style="width:38px;height:22px;accent-color:var(--primary)" />
           </label>
-          <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px;margin-top:6px">Save changes</button>
+          <button type="button" onClick="{{ onSaveSettings }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px;margin-top:6px">{{ accountSaveProfile }}</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
+            <input type="password" value="{{ currentPassword }}" onChange="{{ onCurrentPassword }}" autocomplete="current-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountNewPassword }}</span>
+            <input type="password" value="{{ newPassword }}" onChange="{{ onNewPassword }}" minlength="10" autocomplete="new-password" aria-describedby="student-password-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span id="student-password-note" style="font-size:12px;color:var(--muted)">{{ accountPasswordHint }}</span>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountConfirmPassword }}</span>
+            <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPassword }}" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
         </div>
       </div>
     </sc-if>
@@ -509,7 +535,9 @@ class Component extends DCLogic {
     section: 'overview', filter: 'all', drawer: false, compactNav: false, notifsOpen: false,
     read: [], toast: '', toastLeaving: false, liveNotifs: [], liveSessions: [],
     liveConversations: [],
-    settingsName: 'Noor Abdulaziz', settingsEmail: 'noor.a@example.com', notifyDeliveries: true, notifySessions: true
+    settingsName: '', settingsNameEnglish: '', settingsEmail: '',
+    currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
+    notifyDeliveries: true, notifySessions: true
   };
 
   componentDidMount() {
@@ -526,7 +554,11 @@ class Component extends DCLogic {
     Tafseel.api.requireRoles(['Student']).then(session => {
       if (!session) return;
       this._session = session;
-      this.setState({ settingsName:session.fullName, settingsEmail:session.email });
+      this.setState({
+        settingsName:session.fullName || '',
+        settingsNameEnglish:session.fullNameEnglish || '',
+        settingsEmail:session.email || ''
+      });
       return Promise.all([
         Tafseel.api.get('/learning-requests/mine?pageSize=100'),
         Tafseel.api.get('/orders/mine?pageSize=100'),
@@ -553,7 +585,7 @@ class Component extends DCLogic {
         kind:'order', rawStatus:x.status, paymentStatus:x.paymentStatus, version:x.version
       })));
       SAVED_TEACHERS = favorites.map(x => ({
-        name:x.fullName, subject:x.subjects.join(' · '), rating:String(x.rating),
+        name:Tafseel.userName(x), subject:x.subjects.join(' · '), rating:String(x.rating),
         price:(x.currency || 'SAR') + ' ' + (x.startingPrice || 0)
       }));
       this.setState({ liveNotifs:notifications.items.map(x => ({
@@ -663,6 +695,8 @@ class Component extends DCLogic {
       isNotifPage: s.section === 'notifications',
       isMessages: s.section === 'messages',
       isSettings: s.section === 'settings',
+      accountName: Tafseel.userName(this._session) || 'Student',
+      accountAvatar: Tafseel.defaultAvatar,
 
       allRequests: REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).map(r => {
         const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
@@ -712,19 +746,72 @@ class Component extends DCLogic {
       }),
 
       settingsName: s.settingsName, onSettingsName: e => this.setState({ settingsName: e.target.value }),
+      settingsNameEnglish: s.settingsNameEnglish,
+      onSettingsNameEnglish: e => this.setState({ settingsNameEnglish: e.target.value }),
       settingsEmail: s.settingsEmail,
+      accountBusy: s.accountBusy,
+      accountProfileTitle: Tafseel.t('account_profile'),
+      accountPrimaryName: Tafseel.t('account_primary_name'),
+      accountEnglishName: Tafseel.t('account_english_name'),
+      accountEnglishHint: Tafseel.t('account_english_hint'),
+      accountDefaultPhoto: Tafseel.t('account_default_photo'),
+      accountPasswordTitle: Tafseel.t('account_password'),
+      accountCurrentPassword: Tafseel.t('account_current_password'),
+      accountNewPassword: Tafseel.t('account_new_password'),
+      accountConfirmPassword: Tafseel.t('account_confirm_password'),
+      accountSaveProfile: Tafseel.t('account_save_profile'),
+      accountUpdatePassword: Tafseel.t('account_update_password'),
+      accountPasswordHint: Tafseel.t('account_password_hint'),
       notifyDeliveries: s.notifyDeliveries, onNotifyDeliveries: e => this.setState({ notifyDeliveries: e.target.checked }),
       notifySessions: s.notifySessions, onNotifySessions: e => this.setState({ notifySessions: e.target.checked }),
       onSaveSettings: async () => {
+        if (s.accountBusy) return;
+        this.setState({ accountBusy:true });
         try {
-          const profile = await Tafseel.api.put('/auth/profile', { fullName:s.settingsName });
+          const profile = await Tafseel.api.put('/auth/profile', {
+            fullName:s.settingsName,
+            fullNameEnglish:s.settingsNameEnglish
+          });
           await Tafseel.api.put('/notification-preferences', {
             inAppEnabled:s.notifySessions,
             emailEnabled:s.notifyDeliveries
           });
-          this.setState({ settingsName:profile.fullName });
-          this.flash('Settings saved');
-        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          this._session = { ...this._session, ...profile };
+          this.setState({
+            settingsName:profile.fullName || '',
+            settingsNameEnglish:profile.fullNameEnglish || ''
+          });
+          this.flash(Tafseel.t('account_profile_saved'));
+        } catch (error) {
+          this.flash(Tafseel.api.errorMessage(error));
+        } finally {
+          this.setState({ accountBusy:false });
+        }
+      },
+      currentPassword: s.currentPassword,
+      onCurrentPassword: e => this.setState({ currentPassword:e.target.value }),
+      newPassword: s.newPassword,
+      onNewPassword: e => this.setState({ newPassword:e.target.value }),
+      confirmPassword: s.confirmPassword,
+      onConfirmPassword: e => this.setState({ confirmPassword:e.target.value }),
+      onChangePassword: async () => {
+        if (s.accountBusy) return;
+        if (!s.newPassword || s.newPassword !== s.confirmPassword) {
+          this.flash(Tafseel.t('account_password_mismatch'));
+          return;
+        }
+        this.setState({ accountBusy:true });
+        try {
+          await Tafseel.api.put('/auth/password', {
+            currentPassword:s.currentPassword,
+            newPassword:s.newPassword
+          });
+          await Tafseel.api.logout();
+          location.replace('Tafseel-Auth.dc.html');
+        } catch (error) {
+          this.flash(Tafseel.api.errorMessage(error));
+          this.setState({ accountBusy:false });
+        }
       },
 
       stats: [

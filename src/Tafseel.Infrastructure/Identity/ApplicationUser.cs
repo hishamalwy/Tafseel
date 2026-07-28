@@ -5,6 +5,7 @@ namespace Tafseel.Infrastructure.Identity;
 public sealed class ApplicationUser : IdentityUser
 {
     public required string FullName { get; set; }
+    public string FullNameEnglish { get; set; } = "";
     public bool IsSuspended { get; set; }
     public DateTimeOffset? EmailConfirmationSentAt { get; set; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;

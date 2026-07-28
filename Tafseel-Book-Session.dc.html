@@ -392,7 +392,7 @@ class Component extends DCLogic {
       slotsLoading: s.slotsLoading,
       showNoSlots: showBooking && !s.slotsLoading && slotCount === 0,
 
-      teacherName: profile ? (profile.fullName || '') : '',
+      teacherName: profile ? Tafseel.userName(profile) : '',
       teacherMeta,
 
       title: s.title, onTitle: e => this.setState({ title: e.target.value }),

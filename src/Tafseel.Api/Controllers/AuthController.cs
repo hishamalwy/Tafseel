@@ -21,7 +21,7 @@ public sealed class AuthController(
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
         var result = await authentication.RegisterAsync(
-            new(request.Email, request.Password, request.FullName, request.Role), cancellationToken);
+            new(request.Email, request.Password, request.FullName, request.Role, NormalizeLang(request.Lang)), cancellationToken);
         if (result.Succeeded)
             return Accepted(new { confirmationRequired = true });
 
@@ -76,7 +76,7 @@ public sealed class AuthController(
         EmailRequest request,
         CancellationToken cancellationToken)
     {
-        await authentication.RequestEmailConfirmationAsync(request.Email, cancellationToken);
+        await authentication.RequestEmailConfirmationAsync(request.Email, NormalizeLang(request.Lang), cancellationToken);
         return Accepted();
     }
 
@@ -118,8 +118,29 @@ public sealed class AuthController(
         var userId = User.FindFirstValue("sub");
         var user = userId is null
             ? null
-            : await authentication.UpdateFullNameAsync(userId, request.FullName, cancellationToken);
+            : await authentication.UpdateProfileAsync(
+                userId, request.FullName, request.FullNameEnglish ?? "", cancellationToken);
         return user is null ? NotFound() : Ok(user);
+    }
+
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    [HttpPut("password")]
+    public async Task<IActionResult> ChangePassword(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue("sub");
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await authentication.ChangePasswordAsync(
+            userId, request.CurrentPassword, request.NewPassword, cancellationToken);
+        if (!result.Succeeded)
+            return Error(400, "password_change_failed", "Password change failed", result.Details);
+
+        Response.Cookies.Delete(RefreshCookie, CookieOptions());
+        return NoContent();
     }
 
     [AllowAnonymous]
@@ -129,7 +150,7 @@ public sealed class AuthController(
         ForgotPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        await authentication.RequestPasswordResetAsync(request.Email, cancellationToken);
+        await authentication.RequestPasswordResetAsync(request.Email, NormalizeLang(request.Lang), cancellationToken);
         return Accepted();
     }
 
@@ -178,6 +199,7 @@ public sealed class AuthController(
             user.UserId,
             user.Email,
             user.FullName,
+            user.FullNameEnglish,
             user.Roles,
             user.AccessToken,
             user.AccessTokenExpiresAt
@@ -196,6 +218,9 @@ public sealed class AuthController(
         return StatusCode(status, problem);
     }
 
+    private static string NormalizeLang(string? lang) =>
+        string.Equals(lang, "en", StringComparison.OrdinalIgnoreCase) ? "en" : "ar";
+
     private static CookieOptions CookieOptions(DateTimeOffset? expires = null) => new()
     {
         HttpOnly = true,
@@ -211,20 +236,28 @@ public sealed record RegisterRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MinLength(10), MaxLength(128)] string Password,
     [Required, MaxLength(200)] string FullName,
-    [Required] string Role);
+    [Required] string Role,
+    string Lang = "ar");
 
 public sealed record LoginRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MaxLength(128)] string Password);
 
 public sealed record UpdateProfileRequest(
-    [Required, MaxLength(200)] string FullName);
+    [Required, MaxLength(200)] string FullName,
+    [MaxLength(200)] string? FullNameEnglish = null);
+
+public sealed record ChangePasswordRequest(
+    [Required, MaxLength(128)] string CurrentPassword,
+    [Required, MinLength(10), MaxLength(128)] string NewPassword);
 
 public sealed record ForgotPasswordRequest(
-    [Required, EmailAddress, MaxLength(256)] string Email);
+    [Required, EmailAddress, MaxLength(256)] string Email,
+    string Lang = "ar");
 
 public sealed record EmailRequest(
-    [Required, EmailAddress, MaxLength(256)] string Email);
+    [Required, EmailAddress, MaxLength(256)] string Email,
+    string Lang = "ar");
 
 public sealed record ConfirmEmailRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,

@@ -1,6 +1,6 @@
 namespace Tafseel.Application.Authentication;
 
-public sealed record RegisterCommand(string Email, string Password, string FullName, string Role);
+public sealed record RegisterCommand(string Email, string Password, string FullName, string Role, string Lang = "ar");
 public sealed record LoginCommand(string Email, string Password);
 public sealed record RegistrationResult(
     bool Succeeded,
@@ -10,12 +10,18 @@ public sealed record AuthenticatedUser(
     string UserId,
     string Email,
     string FullName,
+    string FullNameEnglish,
     IReadOnlyCollection<string> Roles,
     string AccessToken,
     DateTimeOffset AccessTokenExpiresAt,
     string RefreshToken,
     DateTimeOffset RefreshTokenExpiresAt);
-public sealed record CurrentUser(string UserId, string Email, string FullName, IReadOnlyCollection<string> Roles);
+public sealed record CurrentUser(
+    string UserId,
+    string Email,
+    string FullName,
+    string FullNameEnglish,
+    IReadOnlyCollection<string> Roles);
 public sealed record PasswordResetResult(bool Succeeded, IReadOnlyCollection<string>? Details = null);
 
 public enum AuthenticationError
@@ -51,10 +57,12 @@ public interface IAuthenticationService
     Task<AuthenticationResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken);
     Task RevokeAsync(string refreshToken, CancellationToken cancellationToken);
     Task<CurrentUser?> GetUserAsync(string userId, CancellationToken cancellationToken);
-    Task<CurrentUser?> UpdateFullNameAsync(
-        string userId, string fullName, CancellationToken cancellationToken);
-    Task RequestEmailConfirmationAsync(string email, CancellationToken cancellationToken);
+    Task<CurrentUser?> UpdateProfileAsync(
+        string userId, string fullName, string fullNameEnglish, CancellationToken cancellationToken);
+    Task<PasswordResetResult> ChangePasswordAsync(
+        string userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+    Task RequestEmailConfirmationAsync(string email, string lang, CancellationToken cancellationToken);
     Task<AuthenticationError> ConfirmEmailAsync(string email, string token, CancellationToken cancellationToken);
-    Task RequestPasswordResetAsync(string email, CancellationToken cancellationToken);
+    Task RequestPasswordResetAsync(string email, string lang, CancellationToken cancellationToken);
     Task<PasswordResetResult> ResetPasswordAsync(string email, string token, string password, CancellationToken cancellationToken);
 }

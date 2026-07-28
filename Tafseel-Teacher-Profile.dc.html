@@ -32,7 +32,7 @@
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <a href="{{ accountHref }}" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
-        <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">{{ accountInitials }}</span>
+        <img src="{{ accountAvatar }}" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
         {{ accountLabel }}
       </a>
     </div>
@@ -66,7 +66,7 @@
 
   <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:24px;display:flex;gap:28px;flex-wrap:wrap">
     <div style="position:relative;flex:none">
-      <div style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center;font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:8px"><span data-i18n="tp_photo">teacher photo</span><br />132×132</div>
+      <img src="{{ accountAvatar }}" alt="" width="132" height="132" style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);object-fit:cover" />
     </div>
 
     <div style="flex:1;min-width:280px">
@@ -257,7 +257,7 @@
           <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                <span style="width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12.5px;font-weight:700;color:var(--text-2)">{{ rv.initials }}</span>
+                <img src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                 <div style="flex:1">
                   <div style="font-size:14.5px;font-weight:600">{{ rv.name }}</div>
                   <div style="font-size:12.5px;color:var(--muted)">{{ rv.service }} · {{ rv.date }}</div>
@@ -537,7 +537,7 @@ class Component extends DCLogic {
         (s.tab === key ? 'var(--primary);color:var(--primary);' : 'transparent;color:var(--muted);')
     });
 
-    const teacherName = profile ? profile.fullName : '';
+    const teacherName = profile ? Tafseel.userName(profile) : '';
     const subjects = ((profile && profile.subjects) || []).map(x => x.name).filter(Boolean);
     const languages = ((profile && profile.languages) || []).map(x => x.name).filter(Boolean);
     const topics = [
@@ -622,9 +622,8 @@ class Component extends DCLogic {
       '☆'.repeat(Math.max(0, 5 - Math.round(Number(n) || 0)));
 
     const session = s.session;
-    const accountLabel = session ? session.fullName : t('tp_login');
+    const accountLabel = session ? Tafseel.userName(session) : t('tp_login');
     const accountHref = session ? dashboardFor(session) : 'Tafseel-Auth.dc.html';
-    const accountInitials = session ? initials(session.fullName) : '?';
 
     const pageTitle = teacherName
       ? teacherName + ' ' + t('tp_page_title_suffix')
@@ -646,7 +645,7 @@ class Component extends DCLogic {
 
       accountHref,
       accountLabel,
-      accountInitials,
+      accountAvatar: Tafseel.defaultAvatar,
 
       teacherName,
       teacherMeta: metaParts.join(' · ') || (profile && profile.headline) || '',

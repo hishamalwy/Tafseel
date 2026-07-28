@@ -37,7 +37,7 @@
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
         <a data-hide-sm href="{{ accountHref }}" style="height:38px;max-width:220px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
-          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800;flex:none">{{ accountInitials }}</span>
+          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex:none" />
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ accountName }}</span>
         </a>
       </sc-if>
@@ -59,7 +59,7 @@
     <div class="tf-public-menu-actions">
       <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
         <a href="{{ accountHref }}" class="tf-public-menu-login" style="gap:8px">
-          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800">{{ accountInitials }}</span>
+          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
           {{ accountName }}
         </a>
       </sc-if>
@@ -743,8 +743,8 @@ class Component extends DCLogic {
       toggleLang: () => Tafseel.toggleLang(),
       hasSession: !!session,
       isGuest: this.state.sessionChecked && !session,
-      accountName: session ? session.fullName : '',
-      accountInitials: session ? Tafseel.participantInitials(session.fullName) : '',
+      accountName: session ? Tafseel.userName(session) : '',
+      accountAvatar: Tafseel.defaultAvatar,
       accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
       teacherJoinHref,
 

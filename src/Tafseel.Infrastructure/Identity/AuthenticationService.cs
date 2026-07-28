@@ -78,7 +78,7 @@ internal sealed class AuthenticationService(
 
         await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Registration completed for user {UserId} with role {Role}", user.Id, command.Role);
-        if (!await SendConfirmationAsync(user, cancellationToken))
+        if (!await SendConfirmationAsync(user, command.Lang, cancellationToken))
             return new(false, AuthenticationError.ConfirmationSendFailed);
 
         return new(true);
@@ -188,25 +188,57 @@ internal sealed class AuthenticationService(
         if (user is null)
             return null;
 
-        return new(user.Id, user.Email!, user.FullName, (await users.GetRolesAsync(user)).ToArray());
+        return new(user.Id, user.Email!, user.FullName, user.FullNameEnglish,
+            (await users.GetRolesAsync(user)).ToArray());
     }
 
-    public async Task<CurrentUser?> UpdateFullNameAsync(
-        string userId, string fullName, CancellationToken cancellationToken)
+    public async Task<CurrentUser?> UpdateProfileAsync(
+        string userId, string fullName, string fullNameEnglish, CancellationToken cancellationToken)
     {
         var user = await users.FindByIdAsync(userId);
         if (user is null)
             return null;
 
         user.FullName = fullName.Trim();
+        user.FullNameEnglish = fullNameEnglish.Trim();
         var result = await users.UpdateAsync(user);
         if (!result.Succeeded)
             throw new ValidationException(string.Join("; ", result.Errors.Select(x => x.Description)));
 
-        return new(user.Id, user.Email!, user.FullName, (await users.GetRolesAsync(user)).ToArray());
+        return new(user.Id, user.Email!, user.FullName, user.FullNameEnglish,
+            (await users.GetRolesAsync(user)).ToArray());
     }
 
-    public async Task RequestEmailConfirmationAsync(string emailAddress, CancellationToken cancellationToken)
+    public async Task<PasswordResetResult> ChangePasswordAsync(
+        string userId,
+        string currentPassword,
+        string newPassword,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null || user.IsSuspended)
+            return new(false);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var result = await users.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(false, result.Errors.Select(x => x.Description).ToArray());
+        }
+
+        var activeTokens = await db.RefreshTokens
+            .Where(x => x.UserId == user.Id && x.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+        foreach (var refreshToken in activeTokens)
+            refreshToken.RevokedAt = clock.GetUtcNow();
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        logger.LogInformation("Password changed and sessions revoked for user {UserId}", user.Id);
+        return new(true);
+    }
+
+    public async Task RequestEmailConfirmationAsync(string emailAddress, string lang, CancellationToken cancellationToken)
     {
         var user = await users.FindByEmailAsync(emailAddress);
         if (user is null || user.IsSuspended || await users.IsEmailConfirmedAsync(user))
@@ -219,7 +251,7 @@ internal sealed class AuthenticationService(
         if (user.EmailConfirmationSentAt > now.AddMinutes(-2))
             return;
 
-        await SendConfirmationAsync(user, cancellationToken);
+        await SendConfirmationAsync(user, lang, cancellationToken);
     }
 
     public async Task<AuthenticationError> ConfirmEmailAsync(
@@ -244,33 +276,43 @@ internal sealed class AuthenticationService(
         return AuthenticationError.None;
     }
 
-    public async Task RequestPasswordResetAsync(string emailAddress, CancellationToken cancellationToken)
+    public async Task RequestPasswordResetAsync(string emailAddress, string lang, CancellationToken cancellationToken)
     {
         var user = await users.FindByEmailAsync(emailAddress);
         if (user is null || user.IsSuspended)
             return;
 
+        var isEnglish = lang == "en";
         var token = await users.GeneratePasswordResetTokenAsync(user);
         var url = $"{emailOptions.Value.PasswordResetUrl}?mode=reset&email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}";
         try
         {
             var html = EmailTemplate.Render(
-                preheader: "اطلب كلمة سر جديدة خلال 24 ساعة",
-                kicker: "استرجاع كلمة السر",
-                heading: "نسيت كلمة السر؟ ولا يهمك",
-                paragraphs:
-                [
-                    $"وصلنا طلب لتغيير كلمة السر لحساب ⁦{user.Email}⁩.",
-                    "اضغط الزر اللي تحت واختر كلمة سر جديدة."
-                ],
+                preheader: isEnglish ? "Reset your password within 24 hours" : "اطلب كلمة سر جديدة خلال 24 ساعة",
+                kicker: isEnglish ? "Password reset" : "استرجاع كلمة السر",
+                heading: isEnglish ? "Forgot your password? No worries" : "نسيت كلمة السر؟ ولا يهمك",
+                paragraphs: isEnglish
+                    ?
+                    [
+                        $"We got a request to reset the password for ⁦{user.Email}⁩.",
+                        "Tap the button below and pick a new password."
+                    ]
+                    :
+                    [
+                        $"وصلنا طلب لتغيير كلمة السر لحساب ⁦{user.Email}⁩.",
+                        "اضغط الزر اللي تحت واختر كلمة سر جديدة."
+                    ],
                 appBaseUrl: emailOptions.Value.AppBaseUrl,
                 accent: EmailAccent.Authority,
-                ctaText: "تغيير كلمة السر ←",
+                ctaText: isEnglish ? "Reset password →" : "تغيير كلمة السر ←",
                 ctaUrl: url,
-                notice: "الرابط صالح لمدة 24 ساعة ويشتغل مرة وحدة بس. إذا ما كنت أنت اللي طلب التغيير، تجاهل الرسالة وكلمة السر بتبقى زي ما هي.");
+                notice: isEnglish
+                    ? "This link is valid for 24 hours and works only once. If you didn't request this, just ignore the email — your password stays the same."
+                    : "الرابط صالح لمدة 24 ساعة ويشتغل مرة وحدة بس. إذا ما كنت أنت اللي طلب التغيير، تجاهل الرسالة وكلمة السر بتبقى زي ما هي.",
+                lang: lang);
             await email.SendAsync(
                 user.Email!,
-                "إعادة تعيين كلمة السر — تفصيل",
+                isEnglish ? "Reset your password — Tafseel" : "إعادة تعيين كلمة السر — تفصيل",
                 html,
                 cancellationToken);
         }
@@ -312,29 +354,40 @@ internal sealed class AuthenticationService(
 
     private async Task<bool> SendConfirmationAsync(
         ApplicationUser user,
+        string lang,
         CancellationToken cancellationToken)
     {
+        var isEnglish = lang == "en";
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
         var url = $"{emailOptions.Value.ConfirmationUrl}?mode=confirm&email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}";
         try
         {
             var html = EmailTemplate.Render(
-                preheader: "خطوة وحدة وبس عشان تبدأ",
-                kicker: "تأكيد الحساب",
-                heading: $"أهلاً فيك يا {user.FullName}",
-                paragraphs:
-                [
-                    "قبل لا تبدأ، لازم نتأكد إن هذا الإيميل مالك فعلاً.",
-                    "اضغط الزر اللي تحت وحسابك بيتفعّل على طول."
-                ],
+                preheader: isEnglish ? "One quick step to get started" : "خطوة وحدة وبس عشان تبدأ",
+                kicker: isEnglish ? "Confirm your account" : "تأكيد الحساب",
+                heading: isEnglish ? $"Welcome, {user.FullName}" : $"أهلاً فيك يا {user.FullName}",
+                paragraphs: isEnglish
+                    ?
+                    [
+                        "Before you dive in, we just need to make sure this email is really yours.",
+                        "Tap the button below and your account is good to go."
+                    ]
+                    :
+                    [
+                        "قبل لا تبدأ، لازم نتأكد إن هذا الإيميل لك فعلاً.",
+                        "اضغط الزر اللي تحت وحسابك بيتفعّل على طول."
+                    ],
                 appBaseUrl: emailOptions.Value.AppBaseUrl,
                 accent: EmailAccent.Warmth,
-                ctaText: "تأكيد الإيميل ←",
+                ctaText: isEnglish ? "Confirm email →" : "تأكيد الإيميل ←",
                 ctaUrl: url,
-                notice: "الرابط صالح لمدة 24 ساعة. إذا ما كنت أنت اللي سجّل في تفصيل، تجاهل هذي الرسالة ولا شي بيصير.");
+                notice: isEnglish
+                    ? "This link is valid for 24 hours. If you didn't sign up for Tafseel, just ignore this email — nothing will happen."
+                    : "الرابط صالح لمدة 24 ساعة. إذا ما كنت أنت اللي سجّل في تفصيل، تجاهل هذي الرسالة ولا شي بيصير.",
+                lang: lang);
             await email.SendAsync(
                 user.Email!,
-                "أكّد إيميلك على تفصيل",
+                isEnglish ? "Confirm your email on Tafseel" : "أكّد إيميلك على تفصيل",
                 html,
                 cancellationToken);
             user.EmailConfirmationSentAt = clock.GetUtcNow();
@@ -437,7 +490,7 @@ internal sealed class AuthenticationService(
         await db.SaveChangesAsync(cancellationToken);
 
         return new(new(
-            user.Id, user.Email!, user.FullName, roles.ToArray(),
+            user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(),
             accessToken, expires, rawRefreshToken, storedRefreshToken.ExpiresAt));
     }
 

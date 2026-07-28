@@ -19,7 +19,7 @@ Create these secrets in the GitHub Environment named `staging`:
 
 Create this Environment variable:
 
-- `APP_URL`: `https://tafseel-api-hisham.azurewebsites.net`
+- `APP_URL`: `https://tafseel-api-hisham-dchqfbhsfbbndfgx.francecentral-01.azurewebsites.net`
 - `STAGING_SQL_DATABASE`: `tafseel-staging-db`
 
 The federated credential must use issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, and subject `repo:hishamalwy/Tafseel:environment:staging`. Grant the managed identity only the App Service deployment permissions it needs, preferably `Website Contributor` scoped to this Web App.

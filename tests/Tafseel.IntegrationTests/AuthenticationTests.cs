@@ -8,6 +8,67 @@ public sealed class AuthenticationTests(TafseelApiFactory factory)
     : IClassFixture<TafseelApiFactory>
 {
     [Fact]
+    public async Task Student_can_update_bilingual_name_and_change_password()
+    {
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var email = $"profile-{Guid.NewGuid():N}@example.com";
+        (await client.PostAsJsonAsync("/api/v1/auth/register", new
+        {
+            email,
+            password = "Strong!Password1",
+            fullName = "اسم الطالب",
+            role = "Student"
+        })).EnsureSuccessStatusCode();
+        await factory.ConfirmLatestEmailAsync(client, email);
+
+        var login = await client.PostAsJsonAsync("/api/v1/auth/login", new
+        {
+            email,
+            password = "Strong!Password1"
+        });
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("accessToken").GetString();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+
+        var profile = await client.PutAsJsonAsync("/api/v1/auth/profile", new
+        {
+            fullName = "الاسم الجديد",
+            fullNameEnglish = "New Student Name"
+        });
+        Assert.Equal(HttpStatusCode.OK, profile.StatusCode);
+        var current = await profile.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("الاسم الجديد", current.GetProperty("fullName").GetString());
+        Assert.Equal("New Student Name", current.GetProperty("fullNameEnglish").GetString());
+
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await client.PutAsJsonAsync("/api/v1/auth/password", new
+            {
+                currentPassword = "Wrong!Password1",
+                newPassword = "New!StrongPassword2"
+            })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.PutAsJsonAsync("/api/v1/auth/password", new
+            {
+                currentPassword = "Strong!Password1",
+                newPassword = "New!StrongPassword2"
+            })).StatusCode);
+
+        client.DefaultRequestHeaders.Authorization = null;
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.PostAsJsonAsync("/api/v1/auth/login", new
+            {
+                email,
+                password = "Strong!Password1"
+            })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.PostAsJsonAsync("/api/v1/auth/login", new
+            {
+                email,
+                password = "New!StrongPassword2"
+            })).StatusCode);
+    }
+
+    [Fact]
     public async Task Refresh_rotates_token_and_rejects_replay()
     {
         using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });

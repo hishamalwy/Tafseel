@@ -658,6 +658,15 @@
       return initials ? initials.toLocaleUpperCase() : '··';
     },
 
+    defaultAvatar: 'assets/brand/default-avatar.svg',
+
+    userName: function (user) {
+      if (!user) return '';
+      return this.lang === 'en' && String(user.fullNameEnglish || '').trim()
+        ? user.fullNameEnglish
+        : (user.fullName || user.name || '');
+    },
+
     dashboardHrefForSession: function (session) {
       var roles = (session && session.roles) || [];
       if (roles.indexOf('Admin') >= 0) return 'Tafseel-Admin-Dashboard.dc.html';

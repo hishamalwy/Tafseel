@@ -34,7 +34,7 @@
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
         <a data-hide-sm href="{{ accountHref }}" style="height:38px;max-width:220px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
-          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800;flex:none">{{ accountInitials }}</span>
+          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border);flex:none" />
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ accountName }}</span>
         </a>
       </sc-if>
@@ -54,7 +54,7 @@
     <div class="tf-public-menu-actions">
       <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
         <a href="{{ accountHref }}" class="tf-public-menu-login" style="gap:8px">
-          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800">{{ accountInitials }}</span>
+          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
           {{ accountName }}
         </a>
       </sc-if>
@@ -206,7 +206,7 @@
           <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;transition:all var(--t)" style-hover="border-color:var(--border-strong);box-shadow:var(--shadow-md)">
             <div style="display:flex;gap:14px;margin-bottom:14px">
               <div style="position:relative;flex:none">
-                <div style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px);display:grid;place-items:center;font-family:var(--font-mono);font-size:8px;color:var(--muted)">photo</div>
+                <img src="{{ defaultAvatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);object-fit:cover" />
                 <span title="{{ t.onlineLabel }}" style="{{ t.dotStyle }}"></span>
               </div>
               <div style="flex:1;min-width:0">
@@ -318,7 +318,7 @@ class Component extends DCLogic {
       Tafseel.api.get('/languages')
     ]).then(([page, languages]) => {
         TEACHERS = page.items.map(t => ({
-          id:t.teacherId, name:t.fullName, subject:t.subjects[0] || 'General',
+          id:t.teacherId, name:Tafseel.userName(t), subject:t.subjects[0] || 'General',
           level:t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
           years:'Verified experience', exp:0, rating:t.rating, reviews:t.ratingCount,
           completed:t.completedOrders + ' requests', bio:t.headline, skills:t.subjects,
@@ -426,8 +426,9 @@ class Component extends DCLogic {
       toggleLang: () => Tafseel.toggleLang(),
       hasSession: !!session,
       isGuest: s.sessionChecked && !session,
-      accountName: session ? session.fullName : '',
-      accountInitials: session ? Tafseel.participantInitials(session.fullName) : '',
+      accountName: session ? Tafseel.userName(session) : '',
+      accountAvatar: Tafseel.defaultAvatar,
+      defaultAvatar: Tafseel.defaultAvatar,
       accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
       teacherJoinHref,
       toast: s.toast,

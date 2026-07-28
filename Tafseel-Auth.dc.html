@@ -450,7 +450,7 @@ class Component extends DCLogic {
         this.setState({ emailTouched: true });
         if (!EMAIL_RE.test(s.email)) { this.setState({ loginError: 'Enter your email above first, then tap "Forgot password?".' }); return; }
         try {
-          await Tafseel.api.post('/auth/forgot-password', { email: s.email });
+          await Tafseel.api.post('/auth/forgot-password', { email: s.email, lang: Tafseel.lang });
           this.flash('If that account exists, a reset email is on its way.');
         } catch (error) { this.setState({ loginError: Tafseel.api.errorMessage(error) }); }
       },
@@ -466,7 +466,7 @@ class Component extends DCLogic {
         if (s.resendingConfirmation) return;
         this.setState({ resendingConfirmation: true, loginError: '' });
         try {
-          await Tafseel.api.post('/auth/request-email-confirmation', { email: target });
+          await Tafseel.api.post('/auth/request-email-confirmation', { email: target, lang: Tafseel.lang });
           this.flash(Tafseel.t('auth_confirmation_resent'));
           this.setState({ resendingConfirmation: false, email: target });
         } catch (error) {
@@ -552,7 +552,7 @@ class Component extends DCLogic {
         try {
           await Tafseel.api.register({
             fullName: s.fullName, email: s.regEmail, password: s.regPassword,
-            role: s.role === 'teacher' ? 'Teacher' : 'Student'
+            role: s.role === 'teacher' ? 'Teacher' : 'Student', lang: Tafseel.lang
           });
           this.setState({
             mode: 'login', registering: false, email: s.regEmail, password: '',

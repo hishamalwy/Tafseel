@@ -32,7 +32,8 @@ public sealed record TeacherCardDto(
     decimal? StartingPrice,
     string? Currency,
     IReadOnlyCollection<string> Subjects,
-    IReadOnlyCollection<string> Languages);
+    IReadOnlyCollection<string> Languages,
+    string? FullNameEnglish = null);
 
 public sealed record TeacherProfileDto(
     string TeacherId,
@@ -62,7 +63,8 @@ public sealed record TeacherProfileDto(
     bool IsEligibleForPublication = false,
     IReadOnlyCollection<string>? PublicationBlockingReasons = null,
     bool IsPubliclyVisible = false,
-    IReadOnlyCollection<Guid>? VerifiedSubjectIds = null);
+    IReadOnlyCollection<Guid>? VerifiedSubjectIds = null,
+    string? FullNameEnglish = null);
 
 public sealed record NamedItemDto(Guid Id, string Name);
 public sealed record UpdateTeacherProfile(

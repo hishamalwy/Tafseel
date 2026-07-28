@@ -72,6 +72,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         builder.Entity<ApplicationUser>(user =>
         {
             user.Property(x => x.FullName).HasMaxLength(200);
+            user.Property(x => x.FullNameEnglish).HasMaxLength(200);
             user.HasMany(x => x.RefreshTokens).WithOne(x => x.User).HasForeignKey(x => x.UserId);
         });
 
