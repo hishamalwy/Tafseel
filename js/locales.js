@@ -1371,6 +1371,11 @@
   "quality_in_queue": "In queue",
   "quality_prefs_unavailable": "Notification preferences could not be loaded for this session.",
 
+  "cta1_h": "Get your first explanation this week",
+  "cta1_p": "Upload your material, set a deadline, and pick from teachers who’ve already proven they can teach it.",
+  "cta2_h": "Start teaching with Tafseel",
+  "cta2_p": "Create your profile, submit a short teaching demo, pass our quality review, and start receiving requests that match your expertise.",
+
   "auth_title2": "Log in — Tafseel",
   "auth_welcome_back": "Welcome back",
   "auth_login_sub": "Log in to manage your requests and sessions.",
@@ -3125,6 +3130,11 @@
   "quality_queue_empty": "لا توجد طلبات في هذا الطابور.",
   "quality_in_queue": "في قائمة الانتظار",
   "quality_prefs_unavailable": "تعذر تحميل تفضيلات الإشعارات لهذه الجلسة.",
+
+  "cta1_h": "احصل على أول شرح هذا الأسبوع",
+  "cta1_p": "ارفع ملفك، وحدد موعد التسليم، واختر من بين معلمين أثبتوا بالفعل قدرتهم على شرح نفس النوع من المحتوى.",
+  "cta2_h": "ابدأ التدريس مع تفصيل",
+  "cta2_p": "أنشئ ملفك، وأرسل نموذج شرح قصير، واجتز مراجعة الجودة، ثم ابدأ في استقبال الطلبات التي تناسب خبرتك.",
 
   "auth_title2": "تسجيل الدخول — تفصيل",
   "auth_welcome_back": "مرحبًا بعودتك",
