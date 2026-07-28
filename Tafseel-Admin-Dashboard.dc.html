@@ -532,12 +532,12 @@
           </label>
         </sc-if>
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Name (English)</span>
+          <span style="font-size:13px;font-weight:600" data-i18n="admin_name_english">Name (English)</span>
           <input value="{{ catalogName }}" onChange="{{ onCatalogName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
         <sc-if value="{{ isNameArModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">الاسم بالعربي (Arabic name)</span>
+            <span style="font-size:13px;font-weight:600" data-i18n="admin_name_arabic">Arabic name</span>
             <input dir="rtl" value="{{ catalogNameAr }}" onChange="{{ onCatalogNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
         </sc-if>
@@ -630,12 +630,12 @@
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">Edit</h2>
       <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-        <span style="font-size:13px;font-weight:600">Name (English)</span>
+        <span style="font-size:13px;font-weight:600" data-i18n="admin_name_english">Name (English)</span>
         <input value="{{ editName }}" onChange="{{ onEditName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
       </label>
       <sc-if value="{{ editShowNameAr }}" hint-placeholder-val="{{ false }}">
         <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
-          <span style="font-size:13px;font-weight:600">الاسم بالعربي (Arabic name)</span>
+          <span style="font-size:13px;font-weight:600" data-i18n="admin_name_arabic">Arabic name</span>
           <input dir="rtl" value="{{ editNameAr }}" onChange="{{ onEditNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
       </sc-if>
