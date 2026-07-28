@@ -8,6 +8,7 @@ MIGRATION_BUNDLE_PATH="${MIGRATION_BUNDLE_PATH:-artifacts/migrations/tafseel-sta
 IDEMPOTENT_SQL_PATH="${IDEMPOTENT_SQL_PATH:-artifacts/migrations/tafseel-idempotent.sql}"
 HASH_FILE_PATH="${HASH_FILE_PATH:-artifacts/migrations/SHA256SUMS}"
 SQLCMD_IMAGE="${SQLCMD_IMAGE:-mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04}"
+SQLCMD_BIN="${SQLCMD_BIN:-}"
 BUNDLE_TIMEOUT_SECONDS="${BUNDLE_TIMEOUT_SECONDS:-900}"
 TRANSIENT_RETRY_COUNT="${TRANSIENT_RETRY_COUNT:-3}"
 TRANSIENT_RETRY_DELAY_SECONDS="${TRANSIENT_RETRY_DELAY_SECONDS:-15}"
@@ -58,10 +59,36 @@ test -f "$latest_migration_file" || { echo "Latest migration file not found: $la
 
 run_sqlcmd() {
   local query="$1"
+  local sqlcmd_bin="$SQLCMD_BIN"
+
+  if [[ -z "$sqlcmd_bin" ]]; then
+    if command -v sqlcmd >/dev/null 2>&1; then
+      sqlcmd_bin="$(command -v sqlcmd)"
+    elif command -v sqlcmd.exe >/dev/null 2>&1; then
+      sqlcmd_bin="$(command -v sqlcmd.exe)"
+    fi
+  fi
+
+  if [[ -n "$sqlcmd_bin" ]]; then
+    SQLCMDPASSWORD="$STAGING_SQL_PASSWORD" \
+      "$sqlcmd_bin" \
+      -C -b -W -h -1 -l 30 \
+      -S "$STAGING_SQL_SERVER" \
+      -d "$STAGING_SQL_DATABASE" \
+      -U "$STAGING_SQL_USERNAME" \
+      -Q "$query"
+    return
+  fi
+
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Neither sqlcmd nor docker is available to inspect the target database."
+    exit 1
+  fi
+
   docker run --rm \
+    --entrypoint /opt/mssql-tools18/bin/sqlcmd \
     -e SQLCMDPASSWORD="$STAGING_SQL_PASSWORD" \
     "$SQLCMD_IMAGE" \
-    /opt/mssql-tools18/bin/sqlcmd \
     -C -b -W -h -1 -l 30 \
     -S "$STAGING_SQL_SERVER" \
     -d "$STAGING_SQL_DATABASE" \

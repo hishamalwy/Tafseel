@@ -53,6 +53,13 @@ Assert-True "run script masks connection secrets" (
 )
 Assert-True "run script uses migration bundle" ($runText -match '--connection "\$CONNECTION_STRING"')
 Assert-True "run script validates artifact hashes" ($runText -match 'sha256sum -c')
+Assert-True "run script prefers native sqlcmd when available" (
+  $runText -match 'command -v sqlcmd' -and
+  $runText -match 'command -v sqlcmd\.exe'
+)
+Assert-True "run script bypasses SQL Server entrypoint logs in docker fallback" (
+  $runText -match '--entrypoint /opt/mssql-tools18/bin/sqlcmd'
+)
 Assert-True "run script inspects database identity" (
   $runText -match 'ORIGINAL_LOGIN' -and
   $runText -match 'SYSTEM_USER'
