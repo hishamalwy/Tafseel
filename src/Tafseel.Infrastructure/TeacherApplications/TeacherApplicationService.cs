@@ -95,8 +95,14 @@ internal sealed class TeacherApplicationService(
             .OrderBy(x => x.DisplayOrder)
             .Select(x => new
             {
-                x.Id, x.DisplayName, x.DisplayNameAr, Type = x.ResourceType.ToString(),
-                x.Url, x.OriginalFileName, x.DisplayOrder, x.IsRequired
+                x.Id,
+                x.DisplayName,
+                x.DisplayNameAr,
+                Type = x.ResourceType.ToString(),
+                x.Url,
+                x.OriginalFileName,
+                x.DisplayOrder,
+                x.IsRequired
             }).ToArrayAsync(ct));
         var submissionId = Guid.NewGuid();
         var submissionVersion = await db.TeacherDemoSubmissions.CountAsync(
@@ -397,8 +403,11 @@ internal sealed class TeacherApplicationService(
             where ids.Contains(application.Id)
             select new
             {
-                application.Id, user.FullName, SubjectName = subject.Name,
-                AssignmentTitle = assignment.Name, assignment.Instructions,
+                application.Id,
+                user.FullName,
+                SubjectName = subject.Name,
+                AssignmentTitle = assignment.Name,
+                assignment.Instructions,
                 SubmissionVersion = db.TeacherDemoSubmissions
                     .Where(x => x.TeacherApplicationId == application.Id)
                     .Max(x => (int?)x.SubmissionVersion) ?? 0
