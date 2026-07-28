@@ -29,6 +29,7 @@ jobs:
       Email__From: ${{ vars.EMAIL_FROM }}
       Email__ConfirmationUrl: ${{ vars.EMAIL_CONFIRMATION_URL }}
       Email__PasswordResetUrl: ${{ vars.EMAIL_PASSWORD_RESET_URL }}
+      Email__AppBaseUrl: ${{ vars.EMAIL_APP_BASE_URL }}
       Payments__Provider: ${{ vars.PAYMENTS_PROVIDER }}
       Payments__WebhookSecret: ${{ secrets.PAYMENTS_WEBHOOK_SECRET }}
       LiveSessions__Provider: ${{ vars.LIVE_SESSIONS_PROVIDER }}

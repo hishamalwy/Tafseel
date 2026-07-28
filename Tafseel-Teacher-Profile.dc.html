@@ -23,7 +23,7 @@
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="30" height="30" style="flex:none;object-fit:contain" />
       <span translate="no" class="tf-mursala" style="font-weight:900;font-size:19px;letter-spacing:0">تفصيــل</span>
     </a>
-    <nav aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
+    <nav class="tf-nav-track" aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
       <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Browse Teachers</a>
       <a href="Tafseel-Landing.dc.html#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Subjects</a>
       <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Become a Teacher</a>
@@ -675,7 +675,7 @@ class Component extends DCLogic {
         }
       },
 
-      chatHref: 'Tafseel-Chat.dc.html?otherUserId=' + encodeURIComponent(s.teacherId),
+      chatHref: 'Tafseel-Student-Dashboard.dc.html?chatWith=' + encodeURIComponent(s.teacherId),
       requestHref: selected
         ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
           '&teacherServiceId=' + encodeURIComponent(selected.id)

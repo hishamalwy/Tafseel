@@ -35,14 +35,15 @@ internal static class EmailTemplate
     private const string Muted = "#6B6D75";
     private const string Coral = "#FF6B5F";
     private const string Cyan = "#49C7F3";
-    private const string SansStack = "'Segoe UI', Tahoma, Arial, sans-serif";
-    private const string SerifStack = "Georgia, 'Times New Roman', serif";
+    private const string SansStack = "'Thmanyah Sans', 'Segoe UI', Tahoma, Arial, sans-serif";
+    private const string SerifStack = "'Thmanyah Serif Display', Georgia, 'Times New Roman', serif";
 
     public static string Render(
         string preheader,
         string kicker,
         string heading,
         IReadOnlyList<string> paragraphs,
+        string appBaseUrl,
         EmailAccent accent = EmailAccent.Authority,
         string? ctaText = null,
         string? ctaUrl = null,
@@ -56,6 +57,7 @@ internal static class EmailTemplate
         };
         var enc = HtmlEncoder.Default;
         var sb = new StringBuilder();
+        var assets = appBaseUrl.TrimEnd('/');
 
         sb.Append($$"""
             <!DOCTYPE html>
@@ -65,6 +67,11 @@ internal static class EmailTemplate
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <meta name="color-scheme" content="light">
             <title>{{enc.Encode(heading)}}</title>
+            <style>
+            @font-face{font-family:'Thmanyah Sans';src:url('{{enc.Encode(assets)}}/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2') format('woff2');font-weight:400}
+            @font-face{font-family:'Thmanyah Sans';src:url('{{enc.Encode(assets)}}/assets/fonts/thmanyah-sans/thmanyah-sans-bold.woff2') format('woff2');font-weight:700 900}
+            @font-face{font-family:'Thmanyah Serif Display';src:url('{{enc.Encode(assets)}}/assets/fonts/thmanyah-serif-display/thmanyah-serif-display-bold.woff2') format('woff2');font-weight:700 900}
+            </style>
             </head>
             <body style="margin:0;padding:0;background:{{WarmBone}};font-family:{{SansStack}}">
             <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">{{enc.Encode(preheader)}}</div>
@@ -74,11 +81,10 @@ internal static class EmailTemplate
             <tr><td style="height:5px;line-height:5px;font-size:0;background:{{Violet}}">&nbsp;</td></tr>
             <tr><td style="padding:28px 40px 4px">
             <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td style="width:30px;height:30px;border-radius:9px;background:{{Violet}};color:#FFFFFF;font-family:{{SansStack}};font-weight:800;font-size:15px;text-align:center;vertical-align:middle" align="center">T</td>
+            <td style="width:30px;height:30px;vertical-align:middle" align="center"><img src="{{enc.Encode(assets)}}/assets/brand/tafseel-mark.png" width="30" height="30" alt="" style="display:block;width:30px;height:30px;border:0"></td>
             <td style="width:10px"></td>
             <td>
-            <div style="font-family:{{SansStack}};font-weight:800;font-size:16px;color:{{NearBlack}};letter-spacing:-.02em">Tafseel</div>
-            <div style="font-family:{{SansStack}};font-size:11px;color:{{Muted}};margin-top:2px">تفصيل</div>
+            <div style="font-family:{{SerifStack}};font-weight:900;font-size:19px;color:{{NearBlack}}">تفصيــل</div>
             </td>
             </tr></table>
             </td></tr>

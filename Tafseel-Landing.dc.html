@@ -29,14 +29,22 @@
       <a class="tf-nav-link" href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Browse Teachers</a>
       <a class="tf-nav-link" href="#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Subjects</a>
       <a class="tf-nav-link" href="#how" data-i18n="nav_how" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">How It Works</a>
-      <a class="tf-nav-link" href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Become a Teacher</a>
+      <a class="tf-nav-link tf-press" href="{{ teacherJoinHref }}" data-i18n="nav_teach" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-size:14px;font-weight:700;box-shadow:var(--shadow-sm)" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Become a Teacher</a>
       <a class="tf-nav-link" href="#why" data-i18n="nav_about" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">About</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:8px;flex:none;margin-inline-start:auto">
+    <div class="tf-public-header-actions" style="display:flex;align-items:center;gap:8px;flex:none;margin-inline-start:auto">
       <button type="button" class="tf-lang-toggle tf-control-fade" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
-      <a data-hide-sm href="Tafseel-Auth.dc.html" data-i18n="nav_login" style="padding:8px 12px;font-size:14px;font-weight:600;color:var(--text-2)" style-hover="color:var(--text)">Log in</a>
-      <a data-hide-sm href="Tafseel-Auth.dc.html" data-i18n="nav_start" class="tf-press" style="height:38px;padding:0 18px;display:inline-flex;align-items:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:14px;font-weight:600;box-shadow:var(--shadow-sm)" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Get started</a>
+      <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
+        <a data-hide-sm href="{{ accountHref }}" style="height:38px;max-width:220px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800;flex:none">{{ accountInitials }}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ accountName }}</span>
+        </a>
+      </sc-if>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a data-hide-sm href="Tafseel-Auth.dc.html" data-i18n="nav_login" style="padding:8px 12px;font-size:14px;font-weight:600;color:var(--text-2)" style-hover="color:var(--text)">Log in</a>
+        <a data-hide-sm href="Tafseel-Auth.dc.html?mode=register" data-i18n="nav_start" class="tf-press" style="height:38px;padding:0 18px;display:inline-flex;align-items:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:14px;font-weight:600;box-shadow:var(--shadow-sm)" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Get started</a>
+      </sc-if>
       <button type="button" data-public-menu-toggle aria-controls="landing-public-menu" aria-expanded="false">☰</button>
     </div>
   </div>
@@ -45,40 +53,68 @@
       <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a>
       <a href="#subjects" data-i18n="nav_subjects">Subjects</a>
       <a href="#how" data-i18n="nav_how">How It Works</a>
-      <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach">Become a Teacher</a>
+      <a href="{{ teacherJoinHref }}" data-i18n="nav_teach">Become a Teacher</a>
       <a href="#why" data-i18n="nav_about">About</a>
     </nav>
     <div class="tf-public-menu-actions">
-      <a href="Tafseel-Auth.dc.html" data-i18n="nav_login" class="tf-public-menu-login">Log in</a>
-      <a href="Tafseel-Auth.dc.html" data-i18n="nav_start" class="tf-public-menu-start">Get started</a>
+      <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
+        <a href="{{ accountHref }}" class="tf-public-menu-login" style="gap:8px">
+          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800">{{ accountInitials }}</span>
+          {{ accountName }}
+        </a>
+      </sc-if>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a href="Tafseel-Auth.dc.html" data-i18n="nav_login" class="tf-public-menu-login">Log in</a>
+        <a href="Tafseel-Auth.dc.html?mode=register" data-i18n="nav_start" class="tf-public-menu-start">Get started</a>
+      </sc-if>
     </div>
   </div>
 </header>
 
 <main id="main">
 
-  <section data-stack="hero" class="tf-shell" style="position:relative;overflow:hidden;padding-block:clamp(48px,7vw,88px) 72px;display:grid;grid-template-columns:1.05fr 0.95fr;gap:64px;align-items:start">
+  <section data-stack="hero" class="tf-shell tf-landing-hero" style="position:relative;overflow:hidden;padding-block:var(--tf-landing-hero-pad, clamp(40px,6svh,72px));display:grid;grid-template-columns:1.05fr 0.95fr;gap:64px">
     <div style="position:absolute;z-index:0;width:520px;height:520px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,var(--primary) 16%,transparent),transparent);top:-220px;inset-inline-end:-140px;pointer-events:none"></div>
     <div style="position:absolute;z-index:0;width:340px;height:340px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,#D9FF43 16%,transparent),transparent);top:240px;inset-inline-start:-100px;pointer-events:none"></div>
-    <div class="tf-hero-stagger" style="position:relative;z-index:1">
-      <div style="display:inline-flex;align-items:center;gap:8px;height:30px;padding-inline:12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12.5px;font-weight:600;margin-bottom:24px">
+    <div class="tf-hero-stagger tf-landing-hero-copy" style="position:relative;z-index:1">
+      <div class="tf-hero-pill" style="display:inline-flex;align-items:center;align-self:flex-start;inline-size:fit-content;max-inline-size:100%;gap:8px;height:30px;padding-inline:12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12.5px;font-weight:600;margin-bottom:24px;white-space:nowrap">
         <span style="width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>
         <span>{{ heroPill }}</span>
       </div>
-      <h1 style="font-size:clamp(38px,5.2vw,60px);line-height:1.12;letter-spacing:-.035em;font-weight:800;margin-bottom:20px">
-        <span>{{ heroPrefix }}</span><span class="tf-rotate-word tf-rotate-accent" aria-live="polite"><span class="is-in" data-tick="{{ rotateTick }}" style="animation:tf-rotate-swap .45s ease">{{ heroRotate }}</span></span><span>{{ heroSuffix }}</span>
+      <h1 class="tf-hero-headline" style="font-size:clamp(38px,5.2vw,60px);line-height:1.12;letter-spacing:-.035em;font-weight:800;margin-bottom:20px">
+        <sc-if value="{{ heroLead }}" hint-placeholder-val="{{ false }}">
+          <span class="tf-hero-headline-lead">{{ heroLead }}</span>
+        </sc-if>
+        <span class="tf-hero-headline-main">
+          <span class="tf-hero-headline-phrase">
+            <span class="tf-hero-headline-keep">
+              <span>{{ heroPrefix }}</span>
+              <sc-if value="{{ heroHasRotate }}" hint-placeholder-val="{{ false }}">
+                <span class="tf-rotate-word tf-rotate-accent" aria-hidden="true" style="--tf-rotate-min:{{ heroRotateMin }}">
+                  <span class="tf-rotate-slot tf-rotate-slot-prev" data-tick="{{ rotateTick }}" style="{{ heroRotatePrevStyle }}">{{ heroRotatePrev }}</span>
+                  <span class="tf-rotate-slot tf-rotate-slot-current" data-tick="{{ rotateTick }}" style="{{ heroRotateCurrentStyle }}">{{ heroRotate }}</span>
+                </span>
+                <span class="tf-sr-only" aria-live="polite">{{ heroRotate }}</span>
+              </sc-if>
+              <sc-if value="{{ heroStaticWord }}" hint-placeholder-val="{{ false }}">
+                <span class="tf-rotate-accent">{{ heroStaticWord }}</span>
+              </sc-if>
+            </span>
+            <span>{{ heroSuffix }}</span>
+          </span>
+        </span>
       </h1>
-      <p style="font-size:18.5px;line-height:1.6;color:var(--muted);max-width:560px;margin-bottom:28px">{{ heroSub }}</p>
+      <p class="tf-hero-sub" style="font-size:18.5px;line-height:1.6;color:var(--muted);max-width:560px;margin-bottom:28px;white-space:pre-line">{{ heroSub }}</p>
 
-      <form onSubmit="{{ onSearch }}" role="search" style="display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:8px;box-shadow:var(--shadow-md);max-width:580px;margin-bottom:20px">
+      <form class="tf-hero-search" onSubmit="{{ onSearch }}" role="search" style="display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:8px;box-shadow:var(--shadow-md);max-width:580px;margin-bottom:20px">
         <label for="hero-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search subjects or topics</label>
-        <input id="hero-q" value="{{ q }}" onChange="{{ onQ }}" placeholder="Try “thermodynamics”, “calculus II”, “data structures”…" style="flex:1;height:44px;border:0;background:transparent;padding-inline:12px;font-size:15px;outline:none" />
+        <input id="hero-q" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onQFocus }}" onBlur="{{ onQBlur }}" placeholder="{{ heroSearchPlaceholder }}" style="flex:1;height:44px;border:0;background:transparent;padding-inline:12px;font-size:15px;outline:none" />
         <button type="submit" class="tf-press" style="height:44px;padding:0 22px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14.5px;cursor:pointer;box-shadow:var(--shadow-md)">{{ heroCta }}</button>
       </form>
 
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:40px">
-        <a href="Tafseel-Teacher-Apply.dc.html" style="height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:var(--r-md);color:var(--text);font-weight:600;font-size:14.5px;background:var(--surface);transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">{{ heroCta2 }}</a>
-        <span style="font-size:13px;color:var(--muted)">{{ heroNote }}</span>
+      <div class="tf-hero-actions" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:40px">
+        <a href="{{ teacherJoinHref }}" style="height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:var(--r-md);color:var(--text);font-weight:600;font-size:14.5px;background:var(--surface);transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">{{ heroCta2 }}</a>
+        <span class="tf-hero-note" style="font-size:13px;color:var(--muted)">{{ heroNote }}</span>
       </div>
 
       <div class="tf-stat-grid" style="border-top:1px solid var(--border);padding-top:24px;max-width:580px">
@@ -91,51 +127,53 @@
       </div>
     </div>
 
-    <div style="position:relative;z-index:1" data-reveal="right">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);overflow:hidden">
+    <div class="tf-landing-hero-visual" style="position:relative;z-index:1" data-reveal="right">
+      <div class="tf-hero-mockup" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);overflow:hidden">
         <div style="height:40px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding-inline:14px;background:var(--surface-2)">
           <span style="width:9px;height:9px;border-radius:50%;background:var(--border-strong)"></span>
           <span style="width:9px;height:9px;border-radius:50%;background:var(--border-strong)"></span>
           <span style="width:9px;height:9px;border-radius:50%;background:var(--border-strong)"></span>
-          <span style="margin-inline-start:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted)">tafseel.com/request/4821</span>
+          <span class="tf-hero-mockup-url" style="margin-inline-start:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted)">tafseel.com/request/4821</span>
         </div>
         <div style="padding:20px">
-          <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
-            <div style="width:52px;height:52px;border-radius:14px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px);display:grid;place-items:center;font-family:var(--font-mono);font-size:8px;color:var(--muted)">photo</div>
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:6px">
-                <span style="font-weight:700;font-size:15px">Dr. Rana Al-Otaibi</span>
-                <span title="Verified" style="width:16px;height:16px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:10px;display:grid;place-items:center">✓</span>
+          <div class="tf-hero-card" data-tick="{{ heroCardTick }}" style="{{ heroCardStyle }};transform-origin:50% 50%">
+            <div class="tf-hero-card-head" style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+              <div style="width:52px;height:52px;border-radius:14px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px);display:grid;place-items:center;font-family:var(--font-mono);font-size:8px;color:var(--muted)">{{ heroCardPhoto }}</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-weight:700;font-size:15px">{{ heroCardTeacher }}</span>
+                  <span title="{{ heroCardVerified }}" style="width:16px;height:16px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:10px;display:grid;place-items:center">✓</span>
+                </div>
+                <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ heroCardSubject }}</div>
               </div>
-              <div style="font-size:13px;color:var(--muted);margin-top:2px">Physics · Thermodynamics &amp; Mechanics</div>
+              <div class="tf-hero-card-price" style="display:flex;flex-direction:column;align-items:flex-end;text-align:end;flex:none">
+                <div style="font-weight:700;font-size:15px">{{ heroCardPrice }}</div>
+                <div style="font-size:12px;color:var(--muted)">{{ heroCardFrom }}</div>
+              </div>
             </div>
-            <div style="text-align:end">
-              <div style="font-weight:700;font-size:15px">SAR 120</div>
-              <div style="font-size:12px;color:var(--muted)">from</div>
+            <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:14px;background:var(--bg-alt);margin-bottom:14px">
+              <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;margin-bottom:8px">{{ heroCardRequestLabel }}</div>
+              <div style="font-weight:600;font-size:14.5px;margin-bottom:8px">{{ heroCardRequest }}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text-2)">{{ heroCardFile1 }}</span>
+                <span style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text-2)">{{ heroCardFile2 }}</span>
+              </div>
             </div>
           </div>
-          <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:14px;background:var(--bg-alt);margin-bottom:14px">
-            <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Your request</div>
-            <div style="font-weight:600;font-size:14.5px;margin-bottom:8px">Explain Carnot cycle problems from my past exam</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <span style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text-2)">exam-2024.pdf · 2.1 MB</span>
-              <span style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text-2)">notes.docx · 480 KB</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+          <div class="tf-hero-card-actions" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
             <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--success);font-weight:600">
-              <span style="width:8px;height:8px;border-radius:50%;background:var(--success)"></span> Delivered in 18 hours
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--success)"></span> {{ heroCardDelivered }}
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-              <span style="font-size:12.5px;padding:6px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">Request revision</span>
-              <span style="font-size:12.5px;padding:6px 10px;border-radius:8px;background:var(--success);color:#fff;font-weight:600">Approve &amp; release</span>
+              <span style="font-size:12.5px;padding:6px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ heroCardRevision }}</span>
+              <span style="font-size:12.5px;padding:6px 10px;border-radius:8px;background:var(--success);color:#fff;font-weight:600">{{ heroCardApprove }}</span>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-md);border:1px solid color-mix(in oklab,var(--success) 28%,var(--border));background:var(--success-soft)">
             <span style="width:34px;height:34px;flex:none;border-radius:10px;background:var(--surface);border:1px solid color-mix(in oklab,var(--success) 22%,var(--border));color:var(--success);display:grid;place-items:center;font-size:15px" aria-hidden="true">🛡</span>
             <div style="min-width:0">
-              <div style="font-size:13px;font-weight:700;color:var(--text)">Payment held in escrow</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.4">Released only when you approve</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text)">{{ heroCardPayment }}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.4">{{ heroCardPaymentNote }}</div>
             </div>
           </div>
         </div>
@@ -143,15 +181,50 @@
     </div>
   </section>
 
-  <section id="subjects" class="tf-shell" style="padding-block:64px">
-    <div style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
+  <section class="tf-shell tf-student-manual" style="padding-block:20px 32px">
+    <div class="tf-student-manual-frame" data-reveal style="position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:clamp(24px,4vw,36px);box-shadow:var(--shadow-md)">
+      <div style="position:absolute;z-index:0;width:240px;height:240px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--accent) 18%,transparent),transparent);top:-110px;inset-inline-end:-70px;pointer-events:none"></div>
+      <div class="tf-student-manual-layout" style="position:relative;z-index:1;display:grid;grid-template-columns:minmax(280px,.86fr) minmax(0,1.14fr);gap:28px;align-items:start">
+        <div class="tf-student-manual-copy" data-reveal="left">
+          <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:var(--highlight-soft);color:var(--highlight-ink);font-size:12px;font-weight:700;margin-bottom:16px">{{ studentManualEyebrow }}</div>
+          <h2 style="font-size:clamp(28px,3.2vw,36px);letter-spacing:-.03em;font-weight:800;max-inline-size:12ch;margin-bottom:10px">{{ studentManualTitle }}</h2>
+          <p style="font-size:15.5px;line-height:1.65;color:var(--muted);max-inline-size:48ch;margin-bottom:18px">{{ studentManualIntro }}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-2)">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--primary)"></span>
+              {{ studentManualTag1 }}
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-2)">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>
+              {{ studentManualTag2 }}
+            </span>
+          </div>
+        </div>
+        <div class="tf-student-manual-grid" data-reveal-group>
+          <sc-for list="{{ studentManualSteps }}" as="st" hint-placeholder-count="4">
+            <article class="tf-student-manual-card" style="position:relative;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 18px 17px;min-height:172px">
+            <div class="tf-landing-section-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:30px;padding-inline:10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--primary)">{{ st.n }}</span>
+                <span style="width:34px;height:34px;border-radius:11px;background:{{ st.tone }};display:grid;place-items:center;font-size:16px">{{ st.icon }}</span>
+              </div>
+              <div style="font-weight:750;font-size:16px;letter-spacing:-.01em;margin-bottom:8px">{{ st.title }}</div>
+              <div style="font-size:14px;line-height:1.6;color:var(--muted)">{{ st.body }}</div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="subjects" class="tf-shell tf-landing-subjects" style="padding-block:64px">
+    <div class="tf-landing-section-row" style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
       <div>
         <h2 data-i18n="subj_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Popular subjects</h2>
         <p data-i18n="subj_p" style="color:var(--muted);font-size:16px">From high-school revision to postgrad research support.</p>
       </div>
       <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;white-space:nowrap">All subjects →</a>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
+    <div class="tf-landing-card-grid tf-landing-card-grid-subjects" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
       <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="8">
         <a href="Tafseel-Browse-Teachers.dc.html" onClick="{{ s.onOpen }}" class="tf-lift" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;color:var(--text);display:block" style-hover="border-color:var(--border-strong);color:var(--text)">
           <div style="width:40px;height:40px;border-radius:11px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:18px;margin-bottom:14px">{{ s.icon }}</div>
@@ -167,7 +240,7 @@
     <div class="tf-shell" style="padding-block:80px">
       <h2 data-i18n="how_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">How Tafseel works</h2>
       <p data-i18n="how_p" style="color:var(--muted);font-size:16px;margin-bottom:40px">Four steps from “I don’t get this chapter” to a explanation made for you.</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
+      <div class="tf-landing-card-grid tf-landing-card-grid-how" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
         <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;position:relative">
             <div style="font-family:var(--font-mono);font-size:12px;color:var(--primary);font-weight:500;margin-bottom:14px">{{ st.n }}</div>
@@ -180,14 +253,14 @@
   </section>
 
   <section class="tf-shell" style="padding-block:80px">
-    <div style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
+    <div class="tf-landing-section-row" style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
       <div>
         <h2 data-i18n="feat_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Featured teachers</h2>
         <p data-i18n="feat_p" style="color:var(--muted);font-size:16px">Every teacher passes a recorded demo reviewed by our quality team.</p>
       </div>
       <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;white-space:nowrap">{{ browseAllLabel }}</a>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
+    <div class="tf-landing-card-grid tf-landing-card-grid-featured" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
       <sc-for list="{{ teachers }}" as="t" hint-placeholder-count="4">
         <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;transition:all var(--t)" style-hover="border-color:var(--border-strong);box-shadow:var(--shadow-md)">
           <div style="display:flex;gap:12px;margin-bottom:14px">
@@ -231,7 +304,7 @@
   <section id="pricing" class="tf-shell" style="padding-block:16px 80px">
     <h2 data-i18n="svc_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Six ways to get help</h2>
     <p data-i18n="svc_p" style="color:var(--muted);font-size:16px;margin-bottom:28px">Pick the format that fits the week you’re having.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px" data-reveal-group>
+    <div class="tf-landing-services-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px" data-reveal-group>
       <sc-for list="{{ services }}" as="sv" hint-placeholder-count="6">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;gap:14px">
           <div style="width:38px;height:38px;flex:none;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:16px">{{ sv.icon }}</div>
@@ -246,7 +319,7 @@
   </section>
 
   <section id="why" style="background:var(--bg-alt);border-block:1px solid var(--border)">
-    <div class="tf-shell" style="padding-block:80px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px">
+    <div class="tf-shell tf-landing-why-grid" style="padding-block:80px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px">
       <div data-reveal="left">
         <h2 data-i18n="why_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:12px">Why students trust Tafseel</h2>
         <p data-i18n="why_p" style="color:var(--muted);font-size:16px;line-height:1.65;margin-bottom:24px">We review every teacher before they can accept a single request, and we hold every payment until you say the work is done.</p>
@@ -273,12 +346,12 @@
     </div>
   </section>
 
-  <section style="padding:80px 0" data-reveal>
+  <section style="padding:80px 0">
     <h2 data-i18n="test_h" class="tf-shell" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:28px">What students say</h2>
     <div class="tf-marquee-mask">
-      <div class="tf-marquee-track" style="gap:16px">
+      <div class="tf-marquee-track" dir="ltr" style="gap:16px">
         <sc-for list="{{ testimonialLoop }}" as="tm" hint-placeholder-count="16">
-          <figure style="margin:0;width:320px;flex:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:16px">
+          <figure dir="auto" class="tf-testimonial-card" style="margin:0;width:320px;flex:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:16px">
             <div style="color:var(--warning);font-size:14px;letter-spacing:2px">★★★★★</div>
             <blockquote style="margin:0;font-size:15.5px;line-height:1.65;color:var(--text-2)">{{ tm.quote }}</blockquote>
             <figcaption style="margin-top:auto;display:flex;align-items:center;gap:12px;border-top:1px solid var(--border);padding-top:16px">
@@ -295,17 +368,17 @@
   </section>
 
   <section class="tf-shell" style="padding-block:0 88px">
-    <div style="position:relative;overflow:hidden;border-radius:var(--r-xl);border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-md);padding:clamp(28px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px" data-reveal>
+    <div class="tf-landing-cta-split" style="position:relative;overflow:hidden;border-radius:var(--r-xl);border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-md);padding:clamp(28px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px" data-reveal>
       <div style="position:absolute;z-index:0;width:340px;height:340px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,var(--primary) 12%,transparent),transparent);top:-160px;inset-inline-end:-100px;pointer-events:none"></div>
-      <div style="position:relative;z-index:1;border-inline-end:1px solid var(--border);padding-inline-end:48px">
+      <div class="tf-landing-cta-split-primary" style="position:relative;z-index:1;border-inline-end:1px solid var(--border);padding-inline-end:48px">
         <h3 data-i18n="cta1_h" style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px">Get your first explanation this week</h3>
         <p data-i18n="cta1_p" style="color:var(--muted);font-size:15.5px;line-height:1.6;margin-bottom:22px">Upload your material, set a deadline, and pick from teachers who’ve already proven they can teach it.</p>
         <a href="Tafseel-Browse-Teachers.dc.html" class="tf-press" style="height:46px;padding:0 24px;display:inline-flex;align-items:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:15px;box-shadow:var(--shadow-md)" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Find a teacher</a>
       </div>
       <div style="position:relative;z-index:1">
-        <h3 data-i18n="cta2_h" style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px">Teach on your own terms</h3>
-        <p data-i18n="cta2_p" style="color:var(--muted);font-size:15.5px;line-height:1.6;margin-bottom:22px">Record a three-minute demo, get reviewed by our quality team, and start accepting requests that match your expertise.</p>
-        <a href="Tafseel-Teacher-Apply.dc.html" style="height:46px;padding:0 24px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:15px;transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">Apply as a teacher</a>
+        <h3 data-i18n="cta2_h" style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px">Start teaching with Tafseel</h3>
+        <p data-i18n="cta2_p" style="color:var(--muted);font-size:15.5px;line-height:1.6;margin-bottom:22px">Create your profile, submit a short teaching demo, pass our quality review, and start receiving requests that match your expertise.</p>
+        <a href="Tafseel-Teacher-Apply.dc.html" style="height:46px;padding:0 24px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:15px;transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">Become a teacher</a>
       </div>
     </div>
   </section>
@@ -353,14 +426,71 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 
+const HERO_SEARCH_EXAMPLES_EN = [
+  'Search by subject, topic, or teacher',
+  'Need your graduation project slides explained clearly',
+  'Review the hardest chapters, step by step',
+  'Type the subject name and we will take it from there',
+  'Tough course? Tafseel makes it easier'
+];
+const HERO_SEARCH_EXAMPLES_AR = [
+  'ابحث عن المادة أو المعلم.',
+  'شرح مشاريع التخرج والسلايدات.',
+  'مراجعة أصعب الشابترات، دقيقة بدقيقة.',
+  'اكتب اسم المادة، والباقي علينا.',
+  'المادة صعبة؟ مع تفصيل... كل شيء يصير أسهل.'
+];
+
+const HERO_CARD_TEACHERS = [
+  {
+    teacherAr: 'د. هشام علوي', teacherEn: 'Dr. Hisham Alawi',
+    subjectAr: 'الحاسب · الذكاء الاصطناعي وتعلّم الآلة', subjectEn: 'Computer Science · AI & Machine Learning',
+    priceAr: '120 ريال سعودي', priceEn: 'SAR 120',
+    requestAr: 'اشرح لي كيف تتعلّم نماذج الذكاء الاصطناعي من البيانات', requestEn: 'Explain how AI models learn from data',
+    file1: 'ai-project.pdf · 2.1 MB', file2: 'dataset-notes.docx · 480 KB',
+    deliveredAr: 'تم التسليم خلال 18 ساعة', deliveredEn: 'Delivered in 18 hours'
+  },
+  {
+    teacherAr: 'د. أحمد حسن عبدالعليم', teacherEn: 'Dr. Ahmed Hassan Abdulalim',
+    subjectAr: 'الحاسب · الحوسبة السحابية', subjectEn: 'Computer Science · Cloud Computing',
+    priceAr: '150 ريال سعودي', priceEn: 'SAR 150',
+    requestAr: 'قارن لي بين خدمات AWS وAzure لمشروع التخرج', requestEn: 'Compare AWS and Azure services for my capstone project',
+    file1: 'cloud-architecture.pdf · 1.8 MB', file2: 'aws-pricing-notes.docx · 310 KB',
+    deliveredAr: 'تم التسليم خلال 14 ساعة', deliveredEn: 'Delivered in 14 hours'
+  },
+  {
+    teacherAr: 'د. سارة المطيري', teacherEn: 'Dr. Sarah Al-Mutairi',
+    subjectAr: 'الرياضيات · التفاضل والتكامل والجبر الخطي', subjectEn: 'Mathematics · Calculus & Linear Algebra',
+    priceAr: '95 ريال سعودي', priceEn: 'SAR 95',
+    requestAr: 'اشرح لي خطوات حل التكامل بالتجزئة خطوة بخطوة', requestEn: 'Walk me through integration by parts, step by step',
+    file1: 'calculus-hw.pdf · 940 KB', file2: 'exam-review.docx · 260 KB',
+    deliveredAr: 'تم التسليم خلال 10 ساعات', deliveredEn: 'Delivered in 10 hours'
+  },
+  {
+    teacherAr: 'د. عمر الشمري', teacherEn: 'Dr. Omar Al-Shammari',
+    subjectAr: 'الفيزياء · الميكانيكا والديناميكا الحرارية', subjectEn: 'Physics · Mechanics & Thermodynamics',
+    priceAr: '110 ريال سعودي', priceEn: 'SAR 110',
+    requestAr: 'اشرح لي مسائل الديناميكا الحرارية من امتحاني السابق', requestEn: 'Explain the thermodynamics problems from my past exam',
+    file1: 'thermo-midterm.pdf · 1.4 MB', file2: 'lecture-notes.docx · 375 KB',
+    deliveredAr: 'تم التسليم خلال 16 ساعة', deliveredEn: 'Delivered in 16 hours'
+  }
+];
+
 class Component extends DCLogic {
-  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, liveTeachers: null, liveServices: null, teacherTotal: null, rotateIndex: 0 };
+  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, liveTeachers: null, liveServices: null, teacherTotal: null, rotateIndex: 0, previousRotateIndex: 0, rotateTick: 0, cardIndex: 0, cardTick: 0, reduceMotion: false, heroTypedText: '', qFocused: false, session: null, sessionChecked: false };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
-    this._rotateTimer = setInterval(() => {
-      this.setState({ rotateIndex: (this.state.rotateIndex + 1) % 4 });
-    }, 2600);
+    this._motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this._onMotionChange = event => this._setReducedMotion(event.matches);
+    this._setReducedMotion(this._motionQuery.matches);
+    if (this._motionQuery.addEventListener) this._motionQuery.addEventListener('change', this._onMotionChange);
+    else if (this._motionQuery.addListener) this._motionQuery.addListener(this._onMotionChange);
+    this._typeState = { wordIndex: 0, charIndex: 0, deleting: false };
+    this._typeTimer = setTimeout(() => this._runTypewriter(), 700);
+    Tafseel.api.ready()
+      .then(session => this.setState({ session, sessionChecked: true }))
+      .catch(() => this.setState({ session: null, sessionChecked: true }));
     Promise.all([
       Tafseel.api.get('/subjects'),
       Tafseel.api.get('/teachers?pageSize=4'),
@@ -400,9 +530,80 @@ class Component extends DCLogic {
     })).catch(() => {});
   }
 
+  _setReducedMotion(reduceMotion) {
+    this.setState(prev => ({
+      reduceMotion,
+      previousRotateIndex: reduceMotion ? prev.rotateIndex : prev.previousRotateIndex
+    }), () => { this._syncRotateTimer(); this._syncCardTimer(); });
+  }
+
+  _syncRotateTimer() {
+    clearInterval(this._rotateTimer);
+    if (this.state.reduceMotion) return;
+    this._rotateTimer = setInterval(() => {
+      this.setState(prev => ({
+        previousRotateIndex: prev.rotateIndex,
+        rotateIndex: (prev.rotateIndex + 1) % 4,
+        rotateTick: prev.rotateTick + 1
+      }));
+    }, 2600);
+  }
+
+  _syncCardTimer() {
+    clearInterval(this._cardTimer);
+    if (this.state.reduceMotion) return;
+    this._cardTimer = setInterval(() => {
+      this.setState(prev => ({
+        cardIndex: (prev.cardIndex + 1) % HERO_CARD_TEACHERS.length,
+        cardTick: prev.cardTick + 1
+      }));
+    }, 4200);
+  }
+
+  _runTypewriter() {
+    clearTimeout(this._typeTimer);
+    const ar = this.state.lang === 'ar';
+    const examples = ar ? HERO_SEARCH_EXAMPLES_AR : HERO_SEARCH_EXAMPLES_EN;
+    const ts = this._typeState;
+    if (this.state.q || this.state.qFocused) {
+      this._typeTimer = setTimeout(() => this._runTypewriter(), 400);
+      return;
+    }
+    const word = examples[ts.wordIndex % examples.length];
+    let delay = ts.deleting ? 24 : 40;
+    if (!ts.deleting) {
+      ts.charIndex++;
+      if (ts.charIndex >= word.length) {
+        this.setState({ heroTypedText: word });
+        this._typeTimer = setTimeout(() => {
+          ts.deleting = true;
+          this._runTypewriter();
+        }, 1600);
+        return;
+      }
+    } else {
+      ts.charIndex--;
+      if (ts.charIndex <= 0) {
+        ts.deleting = false;
+        ts.wordIndex = (ts.wordIndex + 1) % examples.length;
+        this.setState({ heroTypedText: '' });
+        this._typeTimer = setTimeout(() => this._runTypewriter(), 380);
+        return;
+      }
+    }
+    this.setState({ heroTypedText: word.slice(0, ts.charIndex) });
+    this._typeTimer = setTimeout(() => this._runTypewriter(), delay);
+  }
+
   componentWillUnmount() {
     Tafseel.offChange(this._sub);
     clearInterval(this._rotateTimer);
+    clearInterval(this._cardTimer);
+    if (this._motionQuery && this._onMotionChange) {
+      if (this._motionQuery.removeEventListener) this._motionQuery.removeEventListener('change', this._onMotionChange);
+      else if (this._motionQuery.removeListener) this._motionQuery.removeListener(this._onMotionChange);
+    }
+    clearTimeout(this._typeTimer);
     clearTimeout(this._toastTimer);
     clearTimeout(this._toastExitTimer);
   }
@@ -415,10 +616,30 @@ class Component extends DCLogic {
 
   renderVals() {
     const ar = this.state.lang === 'ar';
+    const showTypedPlaceholder = !this.state.q && !this.state.qFocused;
+    const session = this.state.session;
+    const teacherJoinHref = session && (session.roles || []).includes('Teacher')
+      ? 'Tafseel-Teacher-Apply.dc.html'
+      : 'Tafseel-Auth.dc.html?mode=register&role=teacher';
     const rotateWords = ar
-      ? ['المعلم', 'المدرّس', 'المرشد', 'الخبير']
-      : ['teacher', 'tutor', 'mentor', 'specialist'];
+      ? ['احتياجك', 'مستواك', 'قدراتك', 'وقتك']
+      : ['needs', 'level', 'pace', 'schedule'];
+    const previousRotateIndex = this.state.previousRotateIndex % rotateWords.length;
     const heroRotate = rotateWords[this.state.rotateIndex % rotateWords.length];
+    const heroRotatePrev = rotateWords[previousRotateIndex];
+    const rotateMotion = ' .56s cubic-bezier(.16,1,.3,1) both';
+    const rotatePulse = this.state.rotateTick % 2 ? 'b' : 'a';
+    const heroRotatePrevStyle = this.state.reduceMotion || !this.state.rotateTick
+      ? 'opacity:0;transform:translateY(-110%)'
+      : 'animation:tf-rotate-out-' + rotatePulse + rotateMotion;
+    const heroRotateCurrentStyle = this.state.reduceMotion || !this.state.rotateTick
+      ? 'opacity:1;transform:none'
+      : 'animation:tf-rotate-in-' + rotatePulse + rotateMotion;
+    const heroCardData = HERO_CARD_TEACHERS[this.state.cardIndex % HERO_CARD_TEACHERS.length];
+    const cardPulse = this.state.cardTick % 2 ? 'b' : 'a';
+    const heroCardStyle = this.state.reduceMotion || !this.state.cardTick
+      ? ''
+      : 'animation:tf-card-flip-' + cardPulse + ' .55s cubic-bezier(.2,.8,.3,1) both';
     const testimonials = [
       { quote: ar ? 'أرسلت ورقة الاختبار السابقة ليلة الأربعاء واستلمت شرحًا مدته 22 دقيقة لكل سؤال أخطأت فيه قبل صباح الجمعة.' : 'I sent my past exam paper on Wednesday night and got a 22-minute walkthrough of every question I got wrong before Friday morning.', initials: 'NA', name: 'Noor Abdulaziz', meta: ar ? 'طالبة هندسة، السنة الثانية' : 'Engineering, 2nd year' },
       { quote: ar ? 'كنت أدفع مقابل دورات كاملة لا أشاهد منها إلا فصلًا واحدًا. هنا أدفع مقابل الفصل الذي أحتاجه فقط.' : 'I used to pay for whole courses and watch one chapter. Here I pay for the one chapter I actually need.', initials: 'MS', name: 'Mohammed Sabri', meta: ar ? 'ثانوية عامة، الصف الثالث' : 'High school, final year' },
@@ -462,16 +683,43 @@ class Component extends DCLogic {
       toast: this.state.toast,
       toastClass: Tafseel.toastClass(this.state.toastLeaving),
       q: this.state.q,
-      heroPrefix: ar ? 'تعلّم من ' : 'Learn from the right ',
+      heroSearchPlaceholder: this.state.heroTypedText
+        ? this.state.heroTypedText + '|'
+        : (showTypedPlaceholder ? '|' : (ar ? '' : 'Type what you need help with')),
+      heroCardPhoto: ar ? 'صورة' : 'photo',
+      heroCardTeacher: ar ? heroCardData.teacherAr : heroCardData.teacherEn,
+      heroCardVerified: ar ? 'معلم موثّق' : 'Verified teacher',
+      heroCardSubject: ar ? heroCardData.subjectAr : heroCardData.subjectEn,
+      heroCardPrice: ar ? heroCardData.priceAr : heroCardData.priceEn,
+      heroCardFrom: ar ? 'من' : 'from',
+      heroCardRequestLabel: ar ? 'طلبك' : 'Your request',
+      heroCardRequest: ar ? heroCardData.requestAr : heroCardData.requestEn,
+      heroCardFile1: heroCardData.file1,
+      heroCardFile2: heroCardData.file2,
+      heroCardDelivered: ar ? heroCardData.deliveredAr : heroCardData.deliveredEn,
+      heroCardStyle: heroCardStyle,
+      heroCardTick: String(this.state.cardTick),
+      heroCardRevision: ar ? 'اطلب تعديلًا' : 'Request revision',
+      heroCardApprove: ar ? 'وافق وحوّل المبلغ' : 'Approve & release',
+      heroCardPayment: ar ? 'المبلغ محفوظ بأمان' : 'Payment held in escrow',
+      heroCardPaymentNote: ar ? 'لا يُحوّل إلا بعد موافقتك' : 'Released only when you approve',
+      heroLead: ar ? 'لا تدرس منهجا عاما' : 'Skip the generic course',
+      heroPrefix: ar ? 'تفصيل، شرحك على مقاس' : 'Learn around your',
+      heroHasRotate: true,
+      heroStaticWord: '',
       heroRotate,
-      rotateTick: String(this.state.rotateIndex),
-      heroSuffix: ar ? ' المناسب، بطريقتك.' : ', your way.',
+      heroRotatePrev,
+      heroRotatePrevStyle,
+      heroRotateCurrentStyle,
+      heroRotateMin: ar ? '6.8ch' : '10ch',
+      rotateTick: String(this.state.rotateTick),
+      heroSuffix: '',
       heroSub: ar
-        ? 'اختر معلمين موثقين، شاهد نماذج شرحهم، واطلب شرحًا مخصصًا حول ملفاتك وموضوعاتك ومواعيدك — لا دورات عامة.'
-        : 'Choose verified teachers, watch their teaching samples, and request personalized explanations built around your own files, topics and deadlines — not generic courses.',
+        ? 'حَوِّل أي ملف إلى شرح مُفصّل لك — ارفع ملفك، اختر وقتك\nوافهم الجزء الذي تحتاجه بدون تكرار أو تشتيت'
+        : 'Upload your material, pick the timing, and get the exact part you need explained clearly',
       heroCta: ar ? 'ابحث عن معلم' : 'Find a teacher',
       heroCta2: ar ? 'انضم كمعلم ←' : 'Become a teacher →',
-      heroNote: ar ? 'تصفّح مجانًا · ادفع فقط عند قبول التسليم' : 'Free to browse · Pay only when you accept a delivery',
+      heroNote: ar ? 'سجّل حسابك، واجتز اختبار الجودة، وابدأ في استقبال طلبات الشرح التي تناسب تخصصك.' : 'Create your profile, pass the quality review, and start receiving requests that fit your expertise.',
       heroPill: this.state.teacherTotal == null
         ? (ar ? 'معلمون موثّقون · ردود سريعة' : 'Verified teachers · fast responses')
         : (ar
@@ -479,6 +727,8 @@ class Component extends DCLogic {
           : (Tafseel.number(this.state.teacherTotal) + ' verified teachers · answering fast')),
       browseAllLabel: ar ? 'تصفح الكل →' : 'Browse all →',
       onQ: e => this.setState({ q: e.target.value }),
+      onQFocus: () => this.setState({ qFocused: true }),
+      onQBlur: () => this.setState({ qFocused: false }),
       onSearch: e => {
         e.preventDefault();
         if (this.state.q.trim()) {
@@ -489,6 +739,12 @@ class Component extends DCLogic {
       },
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
+      hasSession: !!session,
+      isGuest: this.state.sessionChecked && !session,
+      accountName: session ? session.fullName : '',
+      accountInitials: session ? Tafseel.participantInitials(session.fullName) : '',
+      accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
+      teacherJoinHref,
 
       stats: [
         {
@@ -500,12 +756,47 @@ class Component extends DCLogic {
         { value: '—', countUp: '', format: '', label: ar ? 'طلب مكتمل' : 'Requests completed' },
         { value: '—', countUp: '', format: '', label: ar ? 'متوسط التقييم' : 'Average rating' }
       ],
+      studentManualEyebrow: ar ? 'دليل الطالب' : 'Student manual',
+      studentManualTitle: ar ? 'كيف تحصل على شرح مفيد من أول مرة' : 'How to get useful help the first time',
+      studentManualIntro: ar ? 'رتّب طلبك بهذه الخطوات القصيرة لتصل بسرعة إلى المعلم المناسب، وتسعير واضح، وشرح يركّز على الجزء الذي يهمك فعلًا.' : 'Use this short playbook to reach the right teacher faster, get clear pricing, and keep the explanation focused on the exact part that matters.',
+      studentManualTag1: ar ? 'مناسب للطلبات السريعة والمذاكرة' : 'Built for quick study requests',
+      studentManualTag2: ar ? 'واضح قبل الدفع وقبل التسليم' : 'Clear before payment and delivery',
+      studentManualSteps: [
+        {
+          n: ar ? 'الخطوة 1' : 'Step 1',
+          icon: '⌁',
+          tone: 'var(--primary-soft)',
+          title: ar ? 'ابدأ من الدرس لا من المادة فقط' : 'Start with the lesson, not just the subject',
+          body: ar ? 'اذكر الشابتر أو السؤال أو الملف الذي أوقفك، حتى يصل طلبك إلى معلم يفهم نفس الجزء مباشرة.' : 'Name the chapter, question, or file you are stuck on so the request reaches a teacher who can jump straight into that exact topic.'
+        },
+        {
+          n: ar ? 'الخطوة 2' : 'Step 2',
+          icon: '◔',
+          tone: 'var(--accent-soft)',
+          title: ar ? 'ارفع السياق الذي يختصر الوقت' : 'Upload the context that saves time',
+          body: ar ? 'أضف السلايدات أو ورقة الاختبار أو ملاحظاتك، وحدد إن كنت تريد تبسيط المفهوم أو حلّ مثال مشابه.' : 'Attach your slides, exam sheet, or notes, and say whether you need the concept simplified or a similar example solved.'
+        },
+        {
+          n: ar ? 'الخطوة 3' : 'Step 3',
+          icon: '✦',
+          tone: 'var(--highlight-soft)',
+          title: ar ? 'قارن العرض المناسب لوقتك' : 'Choose the format that fits your week',
+          body: ar ? 'قارن بين شرح مسجل، جلسة مباشرة، أو مراجعة سريعة قبل الاختبار، ثم اختر الموعد والميزانية الأنسب.' : 'Compare a recorded explanation, a live session, or a fast pre-exam review, then choose the deadline and budget that fit best.'
+        },
+        {
+          n: ar ? 'الخطوة 4' : 'Step 4',
+          icon: '✓',
+          tone: 'var(--success-soft)',
+          title: ar ? 'راجع ثم اطلب تعديلًا إن لزم' : 'Review, then ask for a revision if needed',
+          body: ar ? 'بعد التسليم، تأكد أن الشرح غطّى النقاط المطلوبة. إذا احتجت توضيحًا إضافيًا، اطلبه قبل اعتماد الخدمة.' : 'After delivery, confirm the explanation covered the needed points. If you need an extra clarification, request it before approving the service.'
+        }
+      ],
       subjects: this.state.liveSubjects && this.state.liveSubjects.length ? this.state.liveSubjects : fallbackSubjects,
       steps: [
-        { n: '01', title: ar ? 'اختر مادتك' : 'Choose a subject', body: ar ? 'حدد المادة والمستوى الدراسي، من الثانوية إلى الدراسات العليا.' : 'Pick your subject and level, from high school to postgrad.' },
-        { n: '02', title: ar ? 'قارن المعلمين' : 'Compare teachers', body: ar ? 'شاهد نماذج الشرح، واقرأ التقييمات، وقارن الأسعار وأوقات الرد.' : 'Watch teaching samples, read reviews, compare prices and response times.' },
-        { n: '03', title: ar ? 'أرسل طلبك' : 'Submit your request', body: ar ? 'ارفع ملفاتك، واشرح ما تحتاجه، وحدد الموعد النهائي والميزانية.' : 'Upload your files, describe what you need, set a deadline and budget.' },
-        { n: '04', title: ar ? 'تعلّم بطريقتك' : 'Learn your way', body: ar ? 'استلم شرحًا مسجلًا مخصصًا أو احجز جلسة مباشرة.' : 'Get a custom recorded explanation or book a live session.' }
+        { n: '01', title: ar ? 'حدّد احتياجك' : 'Define Your Needs', body: ar ? 'حدّد المادة أو التخصص، وارفع السلايدات، الأسئلة، أو الأجزاء التي تحتاج شرحها.' : 'Select your subject or specialization, then upload your slides, questions, or the topics you need help with.' },
+        { n: '02', title: ar ? 'قارن واستقر' : 'Compare & Decide', body: ar ? 'شاهد نماذج الشرح، وقارن التقييمات، واختر المعلم الأنسب لأسلوب تعلمك.' : 'Watch sample lessons, compare ratings, and choose the tutor that best matches your learning style.' },
+        { n: '03', title: ar ? 'فصّل طلبك' : 'Customize Your Request', body: ar ? 'وضّح موضع الصعوبة، وحدد موعد التسليم، والميزانية المناسبة لك.' : 'Explain exactly what you need, set your deadline, and choose a budget that works for you.' },
+        { n: '04', title: ar ? 'استلم وافهم' : 'Learn with Confidence', body: ar ? 'استلم فيديو شرح مخصص أو احجز جلسة مباشرة، ولا يُحوّل المبلغ للمعلم إلا بعد رضاك عن الخدمة.' : 'Receive a personalized video explanation or book a live session. Your payment is only released to the tutor once you\'re satisfied.' }
       ],
       teachers: this.state.liveTeachers || [],
       services: this.state.liveServices && this.state.liveServices.length ? this.state.liveServices : fallbackServices,
@@ -546,13 +837,13 @@ class Component extends DCLogic {
           { label: ar ? 'حماية الطالب' : 'Student protection', href: '#why' }
         ]},
         { title: ar ? 'للمعلمين' : 'Teachers', links: [
-          { label: ar ? 'انضم كمعلم' : 'Apply as a teacher', href: 'Tafseel-Teacher-Apply.dc.html' },
+          { label: ar ? 'انضم كمعلم' : 'Apply as a teacher', href: teacherJoinHref },
           { label: ar ? 'لوحة المعلم' : 'Teacher dashboard', href: 'Tafseel-Teacher-Dashboard.dc.html' },
           { label: ar ? 'معايير الجودة' : 'Quality standards', href: 'Tafseel-Quality-Dashboard.dc.html' },
           { label: ar ? 'الأرباح والسحب' : 'Earnings & payouts', href: 'Tafseel-Teacher-Dashboard.dc.html' }
         ]},
         { title: ar ? 'الدعم' : 'Support', links: [
-          { label: ar ? 'الرسائل' : 'Messages', href: 'Tafseel-Chat.dc.html' }
+          { label: ar ? 'الرسائل' : 'Messages', href: 'Tafseel-Auth.dc.html' }
         ]}
       ]
     };

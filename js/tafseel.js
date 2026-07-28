@@ -54,6 +54,9 @@
           clearTimeout(self._navInkResizeTimer);
           self._navInkResizeTimer = setTimeout(function () { self.refreshNavInk(); }, 120);
         });
+        window.addEventListener('hashchange', function () {
+          self.refreshNavInk();
+        });
       }
       return this;
     },
@@ -154,32 +157,91 @@
         ink.setAttribute('aria-hidden', 'true');
         root.appendChild(ink);
       }
-      function moveTo(el) {
+      function navItems() {
+        return Array.prototype.slice.call(root.querySelectorAll('a, button.tf-nav-link'));
+      }
+      function clearCurrent() {
+        navItems().forEach(function (item) {
+          item.classList.remove('is-active');
+          if (item.dataset.tfNavCurrent === 'true') delete item.dataset.tfNavCurrent;
+        });
+      }
+      function setCurrent(el) {
         if (!el || !root.contains(el)) return;
+        clearCurrent();
+        el.classList.add('is-active');
+        el.dataset.tfNavCurrent = 'true';
+      }
+      function samePath(url) {
+        return url && url.origin === window.location.origin && url.pathname === window.location.pathname;
+      }
+      function findLocationCurrent() {
+        var hash = window.location.hash || '';
+        var items = navItems();
+        if (hash) {
+          for (var i = 0; i < items.length; i++) {
+            var href = items[i].getAttribute('href');
+            if (!href || href.charAt(0) !== '#') continue;
+            if (href === hash) return items[i];
+          }
+        }
+        for (var j = 0; j < items.length; j++) {
+          var item = items[j];
+          var rawHref = item.getAttribute('href');
+          if (!rawHref || rawHref.charAt(0) === '#') continue;
+          try {
+            var url = new URL(rawHref, window.location.href);
+            if (!samePath(url)) continue;
+            if (!url.hash || url.hash === hash) return item;
+          } catch (_) {}
+        }
+        return null;
+      }
+      function moveTo(el) {
+        if (!el || !root.contains(el)) {
+          root.style.setProperty('--tf-nav-w', '0px');
+          return;
+        }
         var r = root.getBoundingClientRect();
         var t = el.getBoundingClientRect();
         root.style.setProperty('--tf-nav-x', (t.left - r.left) + 'px');
         root.style.setProperty('--tf-nav-w', t.width + 'px');
       }
       function active() {
-        return root.querySelector('a.is-active, button.is-active, [aria-current="page"], [aria-selected="true"]')
-          || root.querySelector('a, button.tf-nav-link');
+        var manual = root.querySelector('[data-tf-nav-current="true"], a.is-active, button.is-active');
+        if (manual) return manual;
+        return root.querySelector('[aria-current="page"], [aria-selected="true"]') || findLocationCurrent();
       }
       root._tfNavActive = active;
-      root._tfMoveNavInk = function (el) { moveTo(el || active()); };
+      root._tfMoveNavInk = function (el) {
+        // Skip the resync while the pointer is hovering the nav — this runs on
+        // every re-render (e.g. the hero's rotating word ticks every ~2.6s),
+        // and without this guard it was yanking the ink back to the "current"
+        // link out from under a live hover every few seconds, which read as
+        // the underline randomly glitching/lagging while browsing the menu.
+        if (!el && root._tfHovering) return;
+        var current = active();
+        if (current && current.dataset.tfNavCurrent !== 'true' && !current.classList.contains('is-active')) {
+          setCurrent(current);
+          current = active();
+        }
+        moveTo(el || current);
+      };
       if (root.dataset.navInkBound) { root._tfMoveNavInk(); return; }
       root.dataset.navInkBound = 'true';
       root.addEventListener('mouseover', function (e) {
         var el = e.target.closest('a, button.tf-nav-link');
-        if (el && root.contains(el)) moveTo(el);
+        if (el && root.contains(el)) { root._tfHovering = true; moveTo(el); }
       });
-      root.addEventListener('mouseleave', function () { moveTo(active()); });
+      root.addEventListener('mouseleave', function () { root._tfHovering = false; moveTo(active()); });
       // Hash/anchor nav (e.g. the Landing page) has no real "active" page —
       // follow the clicked item immediately instead of leaving the ink
       // sitting wherever the first link happened to be.
       root.addEventListener('click', function (e) {
         var el = e.target.closest('a, button.tf-nav-link');
-        if (el && root.contains(el)) moveTo(el);
+        if (!el || !root.contains(el)) return;
+        setCurrent(el);
+        moveTo(el);
       });
       if (!Tafseel._navInkRoots.includes(root)) Tafseel._navInkRoots.push(root);
       moveTo(active());
@@ -233,6 +295,34 @@
       io.observe(root);
     },
 
+    observeReveals: function () {
+      var targets = [];
+      document.querySelectorAll('[data-reveal]').forEach(function (el) { targets.push(el); });
+      document.querySelectorAll('[data-reveal-group]').forEach(function (group) {
+        Array.prototype.forEach.call(group.children, function (child, i) {
+          child.style.setProperty('--tf-reveal-i', String(i));
+          targets.push(child);
+        });
+      });
+      var pending = targets.filter(function (el) { return !el.dataset.revealBound; });
+      if (!pending.length) return;
+      pending.forEach(function (el) { el.dataset.revealBound = 'true'; });
+      document.documentElement.classList.add('tf-reveal-on');
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced || !('IntersectionObserver' in window)) {
+        pending.forEach(function (el) { el.classList.add('is-in'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          io.unobserve(entry.target);
+        });
+      }, { threshold: 0.05, rootMargin: '0px 0px 12% 0px' });
+      pending.forEach(function (el) { io.observe(el); });
+    },
+
     t: function (keyOrEnglish, values) {
       var key = locales.en[keyOrEnglish] !== undefined ? keyOrEnglish : keyFor(keyOrEnglish);
       if (!key || locales[this.lang][key] === undefined) return '⟦missing:' + keyOrEnglish + '⟧';
@@ -244,6 +334,13 @@
     localizeText: function (value) {
       var key = keyFor(value);
       return key && locales[this.lang][key] !== undefined ? locales[this.lang][key] : value;
+    },
+
+    languageLabel: function (language) {
+      var code = String(language && (language.code || language.detail) || '').toLowerCase();
+      if (code === 'ar') return this.lang === 'ar' ? 'العربية' : 'Arabic';
+      if (code === 'en') return this.lang === 'ar' ? 'الإنجليزية' : 'English';
+      return language && language.name || code;
     },
 
     translate: function (scope) {
@@ -357,6 +454,7 @@
         if (!button.textContent.trim()) button.textContent = '☰';
       });
       document.querySelectorAll('[data-escrow-flow]').forEach(function (el) { self.observeEscrow(el); });
+      self.observeReveals();
       document.querySelectorAll('[data-count-up]').forEach(function (el) {
         var raw = el.getAttribute('data-count-up');
         if (!raw || raw === '' || raw === 'null' || raw === '—' || el.dataset.counted === raw) return;
@@ -553,9 +651,11 @@
     },
 
     participantInitials: function (participantId) {
-      var id = String(participantId || '').replace(/[^a-zA-Z0-9]/g, '');
-      if (id.length >= 2) return id.slice(0, 2).toUpperCase();
-      return '··';
+      var parts = String(participantId || '').trim().split(/\s+/).filter(Boolean);
+      var initials = parts.slice(0, 2).map(function (part) {
+        return Array.from(part)[0] || '';
+      }).join('');
+      return initials ? initials.toLocaleUpperCase() : '··';
     },
 
     dashboardHrefForSession: function (session) {

@@ -69,11 +69,21 @@ public sealed class QualificationTopic : CatalogItem
             throw new DomainException("invalid_video_duration", "Video duration must be between 30 and 600 seconds.");
         SubjectId = subjectId;
         Instructions = instructions.Trim();
+        ExpectedVideoSeconds = maxVideoSeconds;
+        MinVideoSeconds = 30;
         MaxVideoSeconds = maxVideoSeconds;
     }
     public Guid SubjectId { get; private init; }
     public string Instructions { get; private set; } = "";
+    public string TitleAr { get; private set; } = "";
+    public string InstructionsAr { get; private set; } = "";
+    public int ExpectedVideoSeconds { get; private set; }
+    public int MinVideoSeconds { get; private set; }
     public int MaxVideoSeconds { get; private set; }
+    public string EvaluationGuidance { get; private set; } = "";
+    public string EvaluationGuidanceAr { get; private set; } = "";
+    public int DisplayOrder { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
     public void Update(string name, string instructions, int maxVideoSeconds)
     {
         if (maxVideoSeconds is < 30 or > 600)
@@ -81,7 +91,67 @@ public sealed class QualificationTopic : CatalogItem
         Rename(name);
         Instructions = instructions.Trim();
         MaxVideoSeconds = maxVideoSeconds;
+        ExpectedVideoSeconds = Math.Min(ExpectedVideoSeconds == 0 ? maxVideoSeconds : ExpectedVideoSeconds, maxVideoSeconds);
     }
+
+    public void Configure(
+        string name, string titleAr, string instructions, string instructionsAr,
+        int expectedSeconds, int minimumSeconds, int maximumSeconds,
+        string evaluationGuidance, string evaluationGuidanceAr, int displayOrder)
+    {
+        if (minimumSeconds < 30 || maximumSeconds > 600
+            || minimumSeconds > expectedSeconds || expectedSeconds > maximumSeconds)
+            throw new DomainException("invalid_video_duration", "Assignment duration limits are invalid.");
+        Rename(name);
+        TitleAr = titleAr?.Trim() ?? "";
+        Instructions = instructions?.Trim() ?? "";
+        InstructionsAr = instructionsAr?.Trim() ?? "";
+        ExpectedVideoSeconds = expectedSeconds;
+        MinVideoSeconds = minimumSeconds;
+        MaxVideoSeconds = maximumSeconds;
+        EvaluationGuidance = evaluationGuidance?.Trim() ?? "";
+        EvaluationGuidanceAr = evaluationGuidanceAr?.Trim() ?? "";
+        DisplayOrder = displayOrder;
+    }
+}
+
+public enum QualificationResourceType { File, Link }
+
+public sealed class QualificationAssignmentResource
+{
+    private QualificationAssignmentResource() { }
+    public QualificationAssignmentResource(
+        Guid assignmentId, QualificationResourceType type, string displayName, string displayNameAr,
+        string originalFileName, string storageKey, string contentType, long sizeBytes,
+        string? url, int displayOrder, bool isRequired, DateTimeOffset now)
+    {
+        Id = Guid.NewGuid();
+        QualificationAssignmentId = assignmentId;
+        ResourceType = type;
+        DisplayName = displayName.Trim();
+        DisplayNameAr = displayNameAr?.Trim() ?? "";
+        OriginalFileName = originalFileName;
+        StorageKey = storageKey;
+        ContentType = contentType;
+        SizeBytes = sizeBytes;
+        Url = url;
+        DisplayOrder = displayOrder;
+        IsRequired = isRequired;
+        CreatedAt = now;
+    }
+    public Guid Id { get; private init; }
+    public Guid QualificationAssignmentId { get; private init; }
+    public QualificationResourceType ResourceType { get; private init; }
+    public string DisplayName { get; private init; } = "";
+    public string DisplayNameAr { get; private init; } = "";
+    public string OriginalFileName { get; private init; } = "";
+    public string StorageKey { get; private init; } = "";
+    public string ContentType { get; private init; } = "";
+    public long SizeBytes { get; private init; }
+    public string? Url { get; private init; }
+    public int DisplayOrder { get; private init; }
+    public bool IsRequired { get; private init; }
+    public DateTimeOffset CreatedAt { get; private init; }
 }
 
 public sealed class EducationLevel : CatalogItem

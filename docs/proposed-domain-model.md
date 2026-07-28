@@ -113,7 +113,7 @@ There is currently no frontend page that actually books a session end-to-end —
 - **MessageAttachment** — message FK, file reference.
 - **MessageReadReceipt** — or fold into `ConversationParticipant.last-read-at` if per-message receipts aren't needed (no UI evidence of per-message read receipts, only unread *conversation* dots).
 
-No dedicated Chat page exists in the repo (`Tafseel-Chat.dc.html` is linked but missing) — message list/thread UI must be designed from the spec plus the conversation-list patterns visible on both dashboards.
+Chat is implemented as a shared dashboard widget using the existing conversation/message APIs and SignalR hub.
 
 ## 8. Notifications
 

@@ -42,6 +42,12 @@ jobs:
         run: dotnet test tests/Tafseel.IntegrationTests -c Release --no-build --filter "Category!=SqlServer" --collect "XPlat Code Coverage" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration
       - name: JavaScript syntax
         run: node scripts/ci/check-js.mjs
+      - name: Staging deploy gate script tests
+        shell: pwsh
+        run: ./scripts/ci/tests/deploy-gates.tests.ps1
+      - name: Staging migration automation tests
+        shell: pwsh
+        run: ./scripts/ci/tests/staging-migration.tests.ps1
       - name: Coverage summary
         shell: pwsh
         run: ./scripts/ci/coverage-summary.ps1

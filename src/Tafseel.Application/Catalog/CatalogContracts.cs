@@ -17,7 +17,25 @@ public sealed record CatalogItemDto(
     IReadOnlyCollection<int>? AllowedDurations = null,
     decimal? MinPrice = null,
     decimal? MaxPrice = null,
-    int? DisplayOrder = null);
+    int? DisplayOrder = null,
+    string? TitleAr = null,
+    string? InstructionsAr = null,
+    int? MinVideoSeconds = null,
+    int? ExpectedVideoSeconds = null,
+    int? MaxVideoSeconds = null,
+    string? EvaluationGuidance = null,
+    string? EvaluationGuidanceAr = null,
+    IReadOnlyCollection<CatalogResourceDto>? Resources = null);
+public sealed record CatalogResourceDto(
+    Guid Id, string DisplayName, string DisplayNameAr, string? Url,
+    int DisplayOrder, bool IsRequired, bool IsFile);
+public sealed record QualificationLinkResourceInput(
+    [param: Required, NotWhiteSpace, StringLength(200)] string DisplayName,
+    [param: StringLength(200)] string DisplayNameAr,
+    [param: Required, Url, StringLength(2000)] string Url,
+    [param: Range(0, 10000)] int DisplayOrder = 0,
+    bool IsRequired = false);
+public sealed record CatalogFile(Stream Content, string ContentType, string FileName);
 public sealed record SubjectInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
     [param: Required, NotWhiteSpace, StringLength(100)] string Icon);
@@ -35,12 +53,23 @@ public sealed record QualificationTopicInput(
     Guid SubjectId,
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
     [param: Required, NotWhiteSpace, StringLength(2000)] string Instructions,
-    [param: Range(30, 600)] int MaxVideoSeconds = 180) : IValidatableObject
+    [param: Range(30, 600)] int MaxVideoSeconds = 180,
+    [param: StringLength(200)] string TitleAr = "",
+    [param: StringLength(2000)] string InstructionsAr = "",
+    [param: Range(30, 600)] int MinVideoSeconds = 30,
+    [param: Range(30, 600)] int ExpectedVideoSeconds = 180,
+    [param: StringLength(4000)] string EvaluationGuidance = "",
+    [param: StringLength(4000)] string EvaluationGuidanceAr = "",
+    [param: Range(0, 10000)] int DisplayOrder = 0) : IValidatableObject
 {
-    public IEnumerable<ValidationResult> Validate(ValidationContext _) =>
-        SubjectId == Guid.Empty
-            ? [new("Subject is required.", [nameof(SubjectId)])]
-            : [];
+    public IEnumerable<ValidationResult> Validate(ValidationContext _)
+    {
+        if (SubjectId == Guid.Empty)
+            yield return new("Subject is required.", [nameof(SubjectId)]);
+        if (MinVideoSeconds > ExpectedVideoSeconds || ExpectedVideoSeconds > MaxVideoSeconds)
+            yield return new("Video duration must satisfy minimum ≤ expected ≤ maximum.",
+                [nameof(MinVideoSeconds), nameof(ExpectedVideoSeconds), nameof(MaxVideoSeconds)]);
+    }
 }
 public sealed record NamedCatalogInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
@@ -71,4 +100,7 @@ public interface ICatalogService
     Task<CatalogItemDto> CreateServiceAsync(NamedCatalogInput input, CancellationToken cancellationToken);
     Task UpdateAsync(string type, Guid id, NamedCatalogInput input, CancellationToken cancellationToken);
     Task SetActiveAsync(string type, Guid id, bool active, CancellationToken cancellationToken);
+    Task<CatalogResourceDto> AddLinkResourceAsync(Guid assignmentId, QualificationLinkResourceInput input, CancellationToken cancellationToken);
+    Task<CatalogResourceDto> AddFileResourceAsync(Guid assignmentId, Stream stream, string fileName, string contentType, long size, string displayName, string displayNameAr, int displayOrder, bool isRequired, CancellationToken cancellationToken);
+    Task<CatalogFile> OpenResourceAsync(Guid resourceId, CancellationToken cancellationToken);
 }

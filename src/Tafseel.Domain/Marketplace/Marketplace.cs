@@ -206,8 +206,29 @@ public sealed class TeacherTeachingSample
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? PublishedAt { get; private set; }
     public bool IsPublished => PublishedAt.HasValue;
+    public Guid? SourceTeacherApplicationId { get; private init; }
+    public Guid? SourceDemoSubmissionId { get; private init; }
+    public Guid? QualificationAssignmentId { get; private init; }
+    public string? ApprovedByUserId { get; private init; }
     public void Publish(DateTimeOffset now) => PublishedAt ??= now;
     public void Unpublish() => PublishedAt = null;
+
+    public static TeacherTeachingSample FromQualificationDemo(
+        string teacherId, Guid subjectId, string title, string storageKey, int durationSeconds,
+        Guid applicationId, Guid demoSubmissionId, Guid assignmentId, string approvedByUserId,
+        DateTimeOffset now)
+    {
+        var sample = new TeacherTeachingSample(
+            teacherId, subjectId, null, title, storageKey, durationSeconds, now)
+        {
+            SourceTeacherApplicationId = applicationId,
+            SourceDemoSubmissionId = demoSubmissionId,
+            QualificationAssignmentId = assignmentId,
+            ApprovedByUserId = approvedByUserId
+        };
+        sample.Publish(now);
+        return sample;
+    }
 }
 
 public sealed class TeacherAvailabilityRule

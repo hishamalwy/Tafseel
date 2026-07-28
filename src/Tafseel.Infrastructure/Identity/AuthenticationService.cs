@@ -263,6 +263,7 @@ internal sealed class AuthenticationService(
                     $"وصلنا طلب لتغيير كلمة السر لحساب ⁦{user.Email}⁩.",
                     "اضغط الزر اللي تحت واختر كلمة سر جديدة."
                 ],
+                appBaseUrl: emailOptions.Value.AppBaseUrl,
                 accent: EmailAccent.Authority,
                 ctaText: "تغيير كلمة السر ←",
                 ctaUrl: url,
@@ -326,6 +327,7 @@ internal sealed class AuthenticationService(
                     "قبل لا تبدأ، لازم نتأكد إن هذا الإيميل مالك فعلاً.",
                     "اضغط الزر اللي تحت وحسابك بيتفعّل على طول."
                 ],
+                appBaseUrl: emailOptions.Value.AppBaseUrl,
                 accent: EmailAccent.Warmth,
                 ctaText: "تأكيد الإيميل ←",
                 ctaUrl: url,

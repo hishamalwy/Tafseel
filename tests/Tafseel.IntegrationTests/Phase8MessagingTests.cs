@@ -66,6 +66,12 @@ public sealed class Phase8MessagingTests(SqlServerTafseelApiFactory factory)
         var teacherList = JsonDocument.Parse(await teacherClient.GetStringAsync("/api/v1/conversations"))
             .RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == id);
         Assert.Equal(1, teacherList.GetProperty("unreadCount").GetInt32());
+        var safeParticipant = teacherList.GetProperty("participants").EnumerateArray()
+            .Single(x => x.GetProperty("userId").GetString() == student.Id);
+        Assert.NotEqual(student.Id, safeParticipant.GetProperty("displayName").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(safeParticipant.GetProperty("displayName").GetString()));
+        Assert.Equal(Roles.Student, safeParticipant.GetProperty("role").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(safeParticipant.GetProperty("initials").GetString()));
         var read = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/conversations/{id}/read");
         read.Headers.TryAddWithoutValidation("If-Match", teacherList.GetProperty("version").GetString());
         (await teacherClient.SendAsync(read)).EnsureSuccessStatusCode();

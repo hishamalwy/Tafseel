@@ -18,7 +18,7 @@ Published allowlist: `Program.cs` `frontendPages` (13 `.dc.html` pages).
 | Teacher Apply | Teacher | applications | |
 | Quality Dashboard | QualityReviewer | application queue | |
 | Admin Dashboard | Admin | users, catalog, metrics, withdrawals, disputes | Coupons/settings = honest disabled |
-| Chat | Authenticated | conversations via `js/chat.js` | |
+| Embedded chat | Student / Teacher dashboards | conversations via `js/chat-widget.js` | Standalone route redirects for compatibility |
 | Auth | Public | `/auth/*` | |
 
 ## Book Live Session visibility (exact)

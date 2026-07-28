@@ -244,9 +244,10 @@ var frontendPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     "Tafseel-Landing.dc.html", "Tafseel-Browse-Teachers.dc.html", "Tafseel-Teacher-Profile.dc.html",
     "Tafseel-Request.dc.html", "Tafseel-Student-Dashboard.dc.html", "Tafseel-Teacher-Dashboard.dc.html",
     "Tafseel-Quality-Dashboard.dc.html", "Tafseel-Admin-Dashboard.dc.html", "Tafseel-Auth.dc.html",
-    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Chat.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html"
+    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html"
 };
 app.MapGet("/", () => Results.Redirect("/app/Tafseel-Landing.dc.html"));
+app.MapGet("/app/Tafseel-Chat.dc.html", () => Results.Redirect("/app/Tafseel-Student-Dashboard.dc.html?section=messages", permanent: true));
 app.MapGet("/app/{file}", (string file) =>
     frontendPages.Contains(file)
         ? Results.File(Path.Combine(frontendRoot, file), "text/html; charset=utf-8")
@@ -254,7 +255,7 @@ app.MapGet("/app/{file}", (string file) =>
 app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
-    file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat.js"
+    file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
 app.MapGet("/app/js/vendor/{file}", (string file) =>
@@ -269,6 +270,8 @@ app.MapGet("/app/assets/brand/{file}", (string file) =>
             Path.Combine(frontendRoot, "assets", "brand", file),
             file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ? "image/x-icon" : "image/png")
         : Results.NotFound());
+app.MapGet("/favicon.ico", () =>
+    Results.File(Path.Combine(frontendRoot, "assets", "brand", "favicon.ico"), "image/x-icon"));
 app.MapGet("/app/assets/fonts/thmanyah-sans/{file}", (string file) =>
     file is "thmanyah-sans-light.woff2" or "thmanyah-sans-regular.woff2"
         or "thmanyah-sans-medium.woff2" or "thmanyah-sans-bold.woff2"

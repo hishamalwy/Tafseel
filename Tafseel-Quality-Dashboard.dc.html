@@ -35,6 +35,9 @@
         </button>
       </sc-for>
     </nav>
+    <div style="padding:16px;border-top:1px solid var(--border)">
+      <button type="button" class="tf-dashboard-logout" onClick="{{ onLogout }}"><span aria-hidden="true">↪</span>{{ logoutLabel }}</button>
+    </div>
   </aside>
 
   <div data-drawer-overlay="{{ drawerState }}" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
@@ -200,13 +203,20 @@
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
               <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Demo submission</h2>
               <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px">Topic: {{ current.demoTopic }}</p>
-              <div style="position:relative;aspect-ratio:16/9;border-radius:var(--r-md);background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center;margin-bottom:12px">
-                <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">demo video · 2:58</span>
-                <button type="button" onClick="{{ playDemo }}" aria-label="Play demo" style="position:absolute;width:52px;height:52px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);font-size:17px;box-shadow:var(--shadow-md)">▶</button>
-              </div>
+              <p style="font-size:13.5px;color:var(--text-2);margin-bottom:14px">{{ current.assignmentInstructions }}</p>
+              <sc-if value="{{ current.hasResources }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+                  <sc-for list="{{ current.resources }}" as="resource" hint-placeholder-count="0">
+                    <a href="{{ resource.href }}" target="_blank" rel="noopener"
+                      style="font-size:12px;padding:6px 9px;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--primary)">{{ resource.name }}</a>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <video src="{{ current.demoUrl }}" controls preload="metadata"
+                style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
               <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
-                <span>Duration: 2:58 (max 3:00)</span>
-                <span>Format: MP4, 1080p</span>
+                <span>Duration: {{ current.demoDuration }}</span>
+                <span>Submission version {{ current.submissionVersion }}</span>
               </div>
             </section>
 
@@ -343,22 +353,32 @@ class Component extends DCLogic {
       APPLICATIONS = (Array.isArray(items) ? items : []).map(x => {
         const statusLabel = status[x.status] || 'Pending';
         const priorityLabel = priority[x.priority] || 'Medium';
-        const teacherLabel = typeof Tafseel.participantLabel === 'function'
-          ? Tafseel.participantLabel(x.teacherId)
-          : (x.teacherId || 'Teacher');
-        const initials = typeof Tafseel.participantInitials === 'function'
-          ? Tafseel.participantInitials(x.teacherId)
-          : 'TR';
+        const teacherLabel = x.teacherDisplayName || 'Teacher';
+        const initials = teacherLabel.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'TR';
+        let resources = [];
+        try { resources = JSON.parse(x.assignmentResourceManifest || '[]'); } catch (_) {}
+        resources = resources.map(resource => ({
+          name: resource.DisplayName || resource.displayName || resource.OriginalFileName || resource.originalFileName || 'Resource',
+          href: (resource.Type || resource.type) === 'File'
+            ? '/api/v1/qualification-resources/' + (resource.Id || resource.id) + '/content'
+            : (resource.Url || resource.url || '#')
+        }));
         return {
           id: x.id,
           name: teacherLabel,
           initials,
-          subject: (subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
+          subject: x.subjectName || (subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
           submitted: x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle: 'medium' }) : '—',
           priority: priorityLabel,
           status: statusLabel,
-          demoTopic: (topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
-          facts: [{ k: 'Teacher ID', v: x.teacherId || '—' }],
+          demoTopic: x.assignmentTitle || (topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
+          assignmentInstructions: x.assignmentInstructions || '',
+          resources,
+          hasResources: resources.length > 0,
+          facts: [{ k: 'Degree', v: x.degree || '—' }, { k: 'Experience', v: String(x.experienceYears || 0) + ' years' }],
+          demoUrl: '/api/v1/teacher-applications/' + x.id + '/demo/content',
+          demoDuration: x.demoDurationSeconds ? Math.floor(x.demoDurationSeconds / 60) + ':' + String(x.demoDurationSeconds % 60).padStart(2, '0') : '—',
+          submissionVersion: x.submissionVersion || 1,
           version: x.version,
           rawStatus: x.status
         };
@@ -452,6 +472,10 @@ class Component extends DCLogic {
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
+      logoutLabel: Tafseel.t('admin_logout'),
+      onLogout: async () => {
+        try { await Tafseel.api.logout(); } finally { location.href = 'Tafseel-Auth.dc.html'; }
+      },
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
 
@@ -491,11 +515,11 @@ class Component extends DCLogic {
       backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
 
       summary: s.queueLoading ? [
-        { label: 'Pending applications', value: '…' }, { label: 'In queue', value: '…' },
+        { label: 'Pending applications', value: '…' }, { label: Tafseel.t('quality_in_queue'), value: '…' },
         { label: 'Approval rate', value: '—' }, { label: 'Avg. review time', value: '—' }
       ] : [
         { label: 'Pending applications', value: String(pendingCount) },
-        { label: 'In queue', value: String(APPLICATIONS.length) },
+        { label: Tafseel.t('quality_in_queue'), value: String(APPLICATIONS.length) },
         { label: 'Approval rate', value: '—' },
         { label: 'Avg. review time', value: '—' }
       ],
@@ -533,7 +557,6 @@ class Component extends DCLogic {
       }),
 
       current, rubric, overallScore,
-      playDemo: () => this.flash('Playing demo submission…'),
 
       comment: s.comment, onComment: e => this.setState({ comment: e.target.value, needsReason: false }),
       internalNotes: s.internalNotes, onInternalNotes: e => this.setState({ internalNotes: e.target.value }),

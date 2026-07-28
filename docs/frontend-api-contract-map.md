@@ -38,7 +38,7 @@ The browser uses `js/api.js`. API base defaults to same-origin `/api/v1` and can
 | Teacher Apply | Catalog and application status | subjects/topics + teacher-application endpoints | Teacher |
 | Quality Dashboard | Queue/start/decision | teacher-application queue and transitions | Quality Reviewer |
 | Admin Dashboard | Users/catalog/metrics/withdrawals/disputes | admin endpoints | Admin permissions |
-| Chat | Conversations/messages/read | conversation endpoints; 5s polling via `js/chat.js` | Participant |
+| Embedded chat | Conversations/messages/read | conversation endpoints; SignalR with bounded polling fallback via `js/chat-widget.js` | Participant |
 | Auth | Register/login/refresh/logout | `/auth/*` | Public/session |
 
 ## Service catalog contract

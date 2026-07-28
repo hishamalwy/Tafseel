@@ -62,12 +62,14 @@ public sealed class ConfigurationValidationTests
             () => services.GetRequiredService<IOptions<EmailOptions>>().Value);
     }
 
-    [Fact]
-    public void Production_rejects_resend_sandbox_sender()
+    [Theory]
+    [InlineData("Staging")]
+    [InlineData("Production")]
+    public void Non_development_rejects_resend_sandbox_sender(string environment)
     {
         using var services = Provider(
             "Email:From", "Tafseel <onboarding@resend.dev>",
-            Environments.Production);
+            environment);
         Assert.Throws<OptionsValidationException>(
             () => services.GetRequiredService<IOptions<EmailOptions>>().Value);
     }

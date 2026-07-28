@@ -28,7 +28,51 @@ public sealed record TeacherApplicationDto(
     ApplicationPriority Priority,
     string? AssignedReviewerId,
     DateTimeOffset? SubmittedAt,
-    string Version);
+    string Version,
+    string? TeacherDisplayName = null,
+    string? SubjectName = null,
+    string? AssignmentTitle = null,
+    string? AssignmentInstructions = null,
+    bool DemoUploaded = false,
+    int? DemoDurationSeconds = null,
+    int SubmissionVersion = 0,
+    string? PublicFeedback = null,
+    string? City = null,
+    int ExperienceYears = 0,
+    string? Degree = null,
+    string AssignmentResourceManifest = "[]");
+
+public enum TeacherOnboardingStatus
+{
+    EmailUnconfirmed, ApplicationRequired, ApplicationDraft, DemoRequired, ReadyToSubmit,
+    PendingReview, UnderReview, ChangesRequested, Rejected, ApprovedButProfileIncomplete,
+    ApprovedButNotPublished, Published, Suspended
+}
+
+public sealed record TeacherOnboardingStatusDto(
+    TeacherOnboardingStatus Status,
+    bool EmailConfirmed,
+    Guid? ApplicationId,
+    TeacherApplicationStatus? ApplicationStatus,
+    Guid? SubjectId,
+    Guid? AssignmentId,
+    bool DemoUploaded,
+    bool CanSubmit,
+    IReadOnlyCollection<Guid> ApprovedSubjectIds,
+    bool ProfileComplete,
+    bool HasActiveService,
+    bool IsPublished,
+    string NextAction,
+    string NextUrl,
+    IReadOnlyCollection<string> BlockingReasons);
+
+public sealed record QualificationResourceDto(
+    Guid Id, Guid AssignmentId, string Type, string DisplayName, string DisplayNameAr,
+    string? Url, int DisplayOrder, bool IsRequired);
+
+public sealed record PrivateMediaFile(Stream Content, string ContentType, string FileName);
+public sealed record RevokeQualificationInput(
+    [param: Required, NotWhiteSpace, StringLength(2000)] string Reason);
 public sealed record ReviewScoreInput(
     [param: EnumDataType(typeof(EvaluationCriterion))] EvaluationCriterion Criterion,
     [param: Range(1, 5)] int Score);
@@ -62,8 +106,11 @@ public interface ITeacherApplicationService
     Task WithdrawAsync(string teacherId, Guid applicationId, string expectedVersion, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<TeacherApplicationDto>> GetMineAsync(string teacherId, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<TeacherApplicationDto>> GetQueueAsync(TeacherApplicationStatus? status, CancellationToken cancellationToken);
+    Task<TeacherOnboardingStatusDto> GetOnboardingStatusAsync(string teacherId, CancellationToken cancellationToken);
+    Task<PrivateMediaFile> OpenDemoAsync(string requesterId, Guid applicationId, bool canReview, CancellationToken cancellationToken);
     Task StartReviewAsync(string reviewerId, Guid applicationId, ApplicationPriority priority, string expectedVersion, CancellationToken cancellationToken);
     Task DecideAsync(string reviewerId, Guid applicationId, DecideTeacherApplication input, string expectedVersion, CancellationToken cancellationToken);
+    Task RevokeQualificationAsync(string reviewerId, Guid qualificationId, RevokeQualificationInput input, CancellationToken cancellationToken);
 }
 
 public interface IFileStorageService

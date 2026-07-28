@@ -16,7 +16,7 @@ Date: 2026-07-27. Scope: all 11 published `.dc.html` entry points, cross-referen
 | [Tafseel-Quality-Dashboard.dc.html](../Tafseel-Quality-Dashboard.dc.html) | QualityReviewer | teacher-application queue/transitions |
 | [Tafseel-Auth.dc.html](../Tafseel-Auth.dc.html) | Public | register/login/refresh/confirm/reset |
 | [Tafseel-Teacher-Apply.dc.html](../Tafseel-Teacher-Apply.dc.html) | Teacher (applicant) | teacher-application CRUD + demo upload |
-| [Tafseel-Chat.dc.html](../Tafseel-Chat.dc.html) | Any authenticated participant | conversations/messages, 5s polling |
+| Embedded dashboard chat | Student / Teacher | conversations/messages, SignalR, bounded polling fallback |
 
 All 11 are reachable, present in the repository, and referenced consistently from navigation — confirmed by the new `scripts/ci/check-frontend-integrity.mjs` (§6).
 

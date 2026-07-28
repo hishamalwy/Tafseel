@@ -11,6 +11,7 @@ Resend__ApiToken
 Email__From
 Email__ConfirmationUrl
 Email__PasswordResetUrl
+Email__AppBaseUrl
 Payments__Provider
 Payments__WebhookSecret
 LiveSessions__Provider

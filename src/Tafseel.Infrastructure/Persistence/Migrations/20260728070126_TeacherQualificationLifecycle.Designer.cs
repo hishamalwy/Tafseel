@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tafseel.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tafseel.Infrastructure.Persistence;
 namespace Tafseel.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TafseelDbContext))]
-    partial class TafseelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728070126_TeacherQualificationLifecycle")]
+    partial class TeacherQualificationLifecycle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2590,21 +2593,6 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AssignmentInstructionsSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("AssignmentResourceManifest")
-                        .IsRequired()
-                        .HasMaxLength(12000)
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AssignmentTitleSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("ContentType")
                         .IsRequired()

@@ -31,7 +31,8 @@ public sealed record TeacherCardDto(
     int ResponseTimeMinutes,
     decimal? StartingPrice,
     string? Currency,
-    IReadOnlyCollection<string> Subjects);
+    IReadOnlyCollection<string> Subjects,
+    IReadOnlyCollection<string> Languages);
 
 public sealed record TeacherProfileDto(
     string TeacherId,
@@ -56,7 +57,12 @@ public sealed record TeacherProfileDto(
     IReadOnlyCollection<AvailabilityExceptionDto> AvailabilityExceptions,
     IReadOnlyCollection<CredentialDto> Certifications,
     IReadOnlyCollection<CredentialDto> Experience,
-    LiveSessionBookingPolicyDto? LiveSessionBookingPolicy);
+    LiveSessionBookingPolicyDto? LiveSessionBookingPolicy,
+    bool IsProfileComplete = false,
+    bool IsEligibleForPublication = false,
+    IReadOnlyCollection<string>? PublicationBlockingReasons = null,
+    bool IsPubliclyVisible = false,
+    IReadOnlyCollection<Guid>? VerifiedSubjectIds = null);
 
 public sealed record NamedItemDto(Guid Id, string Name);
 public sealed record UpdateTeacherProfile(

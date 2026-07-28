@@ -1,5 +1,8 @@
 name: Deploy Staging - Azure App Service
 on:
+  workflow_run:
+    workflows: ["Staging Gate"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       sha:
@@ -12,25 +15,39 @@ concurrency:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
-  DEPLOY_SHA: ${{ inputs.sha }}
   APP_URL: ${{ vars.APP_URL }}
 jobs:
-  deploy:
-    name: staging-azure
+  resolve:
+    name: resolve-validated-sha
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: staging
+    outputs:
+      sha: ${{ steps.revision.outputs.sha }}
     permissions:
       contents: read
       checks: read
-      id-token: write
     steps:
-      - name: Validate requested revision
+      - name: Resolve deploy revision
+        id: revision
         shell: bash
-        run: '[[ "$DEPLOY_SHA" =~ ^[0-9A-Fa-f]{40}$ ]] || { echo "A full Git SHA is required."; exit 1; }'
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            sha="${{ inputs.sha }}"
+          else
+            sha="${{ github.event.workflow_run.head_sha }}"
+          fi
+          [[ "$sha" =~ ^[0-9A-Fa-f]{40}$ ]] || { echo "A full Git SHA is required (got: '${sha:-empty}')."; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_SHA=$sha" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ inputs.sha }}
+          ref: ${{ steps.revision.outputs.sha }}
           fetch-depth: 0
       - name: Verify main ancestry and required gates
         shell: bash
@@ -38,15 +55,95 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          git fetch origin main
-          git merge-base --is-ancestor "$DEPLOY_SHA" origin/main ||
-            { echo "Requested revision is not on main."; exit 1; }
-          required=("build-and-provider-neutral" "sql-server" "publish-smoke" "dependencies-and-secrets" "codeql-csharp" "codeql-javascript-typescript" "migrations" "image")
-          checks="$(gh api "repos/$GITHUB_REPOSITORY/commits/$DEPLOY_SHA/check-runs?per_page=100")"
-          for name in "${required[@]}"; do
-            jq -e --arg n "$name" '[.check_runs[] | select(.name==$n and .conclusion=="success")] | length > 0' <<<"$checks" >/dev/null ||
-              { echo "Required successful check missing: $name"; exit 1; }
-          done
+          chmod +x scripts/ci/verify-main-revision.sh scripts/ci/wait-for-required-checks.sh
+          ./scripts/ci/verify-main-revision.sh "$DEPLOY_SHA"
+          # Bounded re-check avoids racing incomplete check-runs after the gate workflow.
+          ./scripts/ci/wait-for-required-checks.sh "$DEPLOY_SHA" scripts/ci/required-staging-gates.txt 600 15
+  migrate:
+    name: staging-db-migrate
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: staging
+    permissions:
+      contents: read
+      checks: read
+      id-token: write
+    env:
+      DEPLOY_SHA: ${{ needs.resolve.outputs.sha }}
+      STAGING_SQL_SERVER: ${{ secrets.STAGING_SQL_SERVER }}
+      STAGING_SQL_DATABASE: ${{ vars.STAGING_SQL_DATABASE }}
+      STAGING_SQL_USERNAME: ${{ secrets.STAGING_SQL_USERNAME }}
+      STAGING_SQL_PASSWORD: ${{ secrets.STAGING_SQL_PASSWORD }}
+      EXPECTED_DATABASE_NAME: tafseel-staging-db
+      TARGET_ENVIRONMENT_NAME: staging
+      Jwt__SigningKey: ci-only-signing-key-with-at-least-32-characters
+      Resend__ApiToken: ci-only-token
+      Payments__WebhookSecret: ci-only-webhook-secret-with-at-least-32-characters
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          fetch-depth: 0
+      - name: Azure login with OIDC
+        uses: azure/login@1384c340ab2dda50fed2bee3041d1d87018aa5e8
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify Azure session
+        shell: bash
+        run: |
+          set -euo pipefail
+          az account show --output none
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - name: Restore tools
+        run: dotnet tool restore
+      - name: Restore
+        run: dotnet restore Tafseel.sln --locked-mode
+      - name: Build
+        run: dotnet build Tafseel.sln -c Release --no-restore
+      - name: Build exact-SHA migration artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x scripts/ci/build-migration-artifacts.sh scripts/ci/run-staging-migrations.sh
+          ./scripts/ci/build-migration-artifacts.sh
+      - name: Upload migration artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: staging-migrations-${{ needs.resolve.outputs.sha }}
+          path: artifacts/migrations
+          if-no-files-found: error
+      - name: Apply pending staging migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/ci/run-staging-migrations.sh
+  deploy:
+    name: staging-azure
+    needs: [resolve, migrate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: staging
+    permissions:
+      contents: read
+      checks: read
+      id-token: write
+    env:
+      DEPLOY_SHA: ${{ needs.resolve.outputs.sha }}
+      Jwt__SigningKey: ci-only-signing-key-with-at-least-32-characters
+      Resend__ApiToken: ci-only-token
+      Payments__WebhookSecret: ci-only-webhook-secret-with-at-least-32-characters
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          fetch-depth: 0
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
         with:
           dotnet-version: 8.0.x
@@ -61,6 +158,15 @@ jobs:
       - name: Validate publish output
         shell: pwsh
         run: ./scripts/ci/validate-publish.ps1 -PublishDirectory ./artifacts/azure-publish
+      - name: Confirm migrations already completed
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat <<'EOF'
+          Staging database migrations completed in the preceding staging-db-migrate job.
+          Application startup must not call Database.Migrate(), MigrateAsync(), or EnsureCreated().
+          This deploy publishes the exact validated application SHA only after migration success.
+          EOF
       - name: Azure login with OIDC
         uses: azure/login@1384c340ab2dda50fed2bee3041d1d87018aa5e8
         with:
@@ -96,20 +202,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$APP_URL" || { echo "staging APP_URL variable is required."; exit 1; }
-          for attempt in {1..60}; do
-            if curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null; then break; fi
-            sleep 5
-          done
-          curl --fail --silent --show-error --max-time 20 "$APP_URL/health/live" >/dev/null
-          curl --fail --silent --show-error --max-time 20 "$APP_URL/health/ready" >/dev/null
-          curl --fail --silent --show-error --max-time 20 "$APP_URL/app/Tafseel-Landing.dc.html" >/dev/null
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "$APP_URL/api/v1/auth/me")" = 401
+          chmod +x scripts/ci/staging-smoke.sh
+          ./scripts/ci/staging-smoke.sh "$APP_URL" 60 5 20
       - name: Deployment evidence
         if: always()
         shell: bash
         run: |
           echo "## Azure staging deployment" >> "$GITHUB_STEP_SUMMARY"
           echo "- Revision: \`$DEPLOY_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger: \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Environment: \`staging\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Database migrations were not executed by this workflow or application startup." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Database migrations were applied and verified in job \`staging-db-migrate\` before deployment." >> "$GITHUB_STEP_SUMMARY"

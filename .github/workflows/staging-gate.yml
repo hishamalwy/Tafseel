@@ -1,0 +1,38 @@
+name: Staging Gate
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+concurrency:
+  group: staging-gate-${{ github.sha }}
+  cancel-in-progress: true
+jobs:
+  required-checks:
+    name: required-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Wait for required Staging gates
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GATE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/ci/verify-main-revision.sh scripts/ci/wait-for-required-checks.sh
+          ./scripts/ci/verify-main-revision.sh "$GATE_SHA"
+          ./scripts/ci/wait-for-required-checks.sh "$GATE_SHA" scripts/ci/required-staging-gates.txt 2700 20
+      - name: Gate summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## Staging Gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Revision: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Required check-run names are listed in \`scripts/ci/required-staging-gates.txt\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "- This gate does not deploy and does not apply database migrations." >> "$GITHUB_STEP_SUMMARY"

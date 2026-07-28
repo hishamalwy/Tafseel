@@ -67,9 +67,9 @@ public sealed class Pass3SqlConstraintTests(SqlServerTafseelApiFactory factory)
         Assert.Equal(1, await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE [TeacherApplications] SET [ExperienceYears] = {80}, [DemoDurationSeconds] = {600}, [Priority] = {2}, [Status] = {6} WHERE [Id] = {application.Id}"));
         Assert.Equal(1, await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE [QualificationTopics] SET [MaxVideoSeconds] = {30} WHERE [Id] = {topic.Id}"));
+            $"UPDATE [QualificationTopics] SET [MinVideoSeconds] = {30}, [ExpectedVideoSeconds] = {30}, [MaxVideoSeconds] = {30} WHERE [Id] = {topic.Id}"));
         Assert.Equal(1, await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE [QualificationTopics] SET [MaxVideoSeconds] = {600} WHERE [Id] = {topic.Id}"));
+            $"UPDATE [QualificationTopics] SET [MinVideoSeconds] = {30}, [ExpectedVideoSeconds] = {600}, [MaxVideoSeconds] = {600} WHERE [Id] = {topic.Id}"));
         Assert.Equal(1, await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE [TeacherApplicationReview] SET [Decision] = {2} WHERE [Id] = {reviewId}"));
         Assert.Equal(1, await db.Database.ExecuteSqlInterpolatedAsync(

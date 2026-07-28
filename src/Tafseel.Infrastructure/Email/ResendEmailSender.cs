@@ -24,6 +24,8 @@ internal sealed class ResendEmailSender(IResend resend, IOptions<EmailOptions> o
             HtmlBody = htmlBody
         };
         message.To.Add(to);
-        await resend.EmailSendAsync(message, cancellationToken);
+        var response = await resend.EmailSendAsync(message, cancellationToken);
+        if (!response.Success)
+            throw response.Exception!;
     }
 }

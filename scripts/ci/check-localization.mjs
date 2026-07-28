@@ -12,7 +12,6 @@ const pages = [
   "Tafseel-Admin-Dashboard.dc.html",
   "Tafseel-Auth.dc.html",
   "Tafseel-Teacher-Apply.dc.html",
-  "Tafseel-Chat.dc.html",
   "Tafseel-Book-Session.dc.html",
   "Tafseel-Payment.dc.html"
 ];
@@ -150,6 +149,9 @@ const runtime = runtimeContext.window.Tafseel;
 runtime.setLang("ar");
 if (attributes.lang !== "ar" || attributes.dir !== "rtl")
   throw new Error("Arabic switching must set lang=ar and dir=rtl.");
+if (runtime.languageLabel({ name: "Arabic", code: "ar" }) !== "العربية"
+    || runtime.languageLabel({ name: "English", code: "en" }) !== "الإنجليزية")
+  throw new Error("Arabic teaching-language labels must remain distinct.");
 if (!/[\u0600-\u06ff]/.test(textNodes[0].nodeValue) || !/[\u0600-\u06ff]/.test(textNodes[1].nodeValue))
   throw new Error("Arabic switching left visible or hidden auth content untranslated.");
 runtime.setLang("en");

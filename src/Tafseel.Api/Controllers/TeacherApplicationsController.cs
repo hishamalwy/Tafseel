@@ -32,6 +32,18 @@ public sealed class TeacherApplicationsController(ITeacherApplicationService app
     public Task<IReadOnlyCollection<TeacherApplicationDto>> Mine(CancellationToken ct) =>
         applications.GetMineAsync(UserId(), ct);
 
+    [Authorize(Policy = Permissions.TeachersApply), HttpGet("~/api/v1/teachers/onboarding-status")]
+    public Task<TeacherOnboardingStatusDto> OnboardingStatus(CancellationToken ct) =>
+        applications.GetOnboardingStatusAsync(UserId(), ct);
+
+    [Authorize, HttpGet("{id:guid}/demo/content")]
+    public async Task<IActionResult> DemoContent(Guid id, CancellationToken ct)
+    {
+        var canReview = User.HasClaim(Permissions.ClaimType, Permissions.TeachersReviewApplications);
+        var file = await applications.OpenDemoAsync(UserId(), id, canReview, ct);
+        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+    }
+
     [Authorize(Policy = Permissions.TeachersApply), EnableRateLimiting("upload")]
     [RequestSizeLimit(250 * 1024 * 1024), HttpPost("{id:guid}/demo")]
     public async Task<IActionResult> UploadDemo(
@@ -91,6 +103,14 @@ public sealed class TeacherApplicationsController(ITeacherApplicationService app
         CancellationToken ct)
     {
         await applications.DecideAsync(UserId(), id, input, expectedVersion, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.TeachersReviewApplications), HttpPost("~/api/v1/teacher-qualifications/{id:guid}/revoke")]
+    public async Task<IActionResult> RevokeQualification(
+        Guid id, RevokeQualificationInput input, CancellationToken ct)
+    {
+        await applications.RevokeQualificationAsync(UserId(), id, input, ct);
         return NoContent();
     }
 

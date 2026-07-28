@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tafseel.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tafseel.Infrastructure.Persistence;
 namespace Tafseel.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TafseelDbContext))]
-    partial class TafseelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728072154_TeacherQualificationAssignmentSnapshots")]
+    partial class TeacherQualificationAssignmentSnapshots
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

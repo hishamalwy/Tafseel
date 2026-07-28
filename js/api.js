@@ -127,6 +127,8 @@
         var first = Object.values(error.errors)[0];
         if (Array.isArray(first) && first[0]) return first[0];
       }
+      if (error instanceof TypeError && /fetch|network/i.test(error.message || ''))
+        return Tafseel.t('network_error');
       return error && error.message || 'Something went wrong.';
     }
   };

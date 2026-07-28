@@ -1,0 +1,10 @@
+# Exact GitHub Actions check-run names required before Azure Staging deploy.
+# Keep in sync with docs/branch-protection.md job names (suffix after "Workflow / ").
+build-and-provider-neutral
+sql-server
+publish-smoke
+dependencies-and-secrets
+codeql-csharp
+codeql-javascript-typescript
+migrations
+image

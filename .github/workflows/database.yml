@@ -58,7 +58,12 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           "Previous migration: $previous" | Out-File -Append $env:GITHUB_STEP_SUMMARY
       - run: dotnet ef migrations has-pending-model-changes --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build
-      - run: dotnet ef migrations script --idempotent --project src/Tafseel.Infrastructure --startup-project src/Tafseel.Api --configuration Release --no-build -o artifacts/tafseel-idempotent.sql
+      - name: Build migration bundle and idempotent SQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x scripts/ci/build-migration-artifacts.sh
+          ./scripts/ci/build-migration-artifacts.sh
       - name: Migration safety unit tests
         shell: pwsh
         run: ./scripts/ci/tests/check-migration-safety.tests.ps1
@@ -76,4 +81,4 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: migration-${{ github.sha }}
-          path: artifacts/tafseel-idempotent.sql
+          path: artifacts/migrations

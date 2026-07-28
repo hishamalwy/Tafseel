@@ -23,19 +23,24 @@
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="30" height="30" style="flex:none;object-fit:contain" />
       <span translate="no" class="tf-mursala" style="font-weight:900;font-size:19px;letter-spacing:0">تفصيــل</span>
     </a>
-    <nav data-hide-sm aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
-      <a href="Tafseel-Browse-Teachers.dc.html" aria-current="page" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);background:var(--surface-2);color:var(--text);font-size:14px;font-weight:600">Browse Teachers</a>
+    <nav data-hide-sm class="tf-nav-track" aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
+      <a href="Tafseel-Browse-Teachers.dc.html" aria-current="page" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text);font-size:14px;font-weight:600">Browse Teachers</a>
       <a href="Tafseel-Landing.dc.html#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Subjects</a>
       <a href="Tafseel-Landing.dc.html#how" data-i18n="nav_how" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">How It Works</a>
-      <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Become a Teacher</a>
+      <a href="{{ teacherJoinHref }}" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Become a Teacher</a>
     </nav>
     <div style="display:flex;align-items:center;gap:8px;flex:none;margin-inline-start:auto">
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
-      <a data-hide-sm href="Tafseel-Student-Dashboard.dc.html" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
-        <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">NA</span>
-        Noor
-      </a>
+      <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
+        <a data-hide-sm href="{{ accountHref }}" style="height:38px;max-width:220px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800;flex:none">{{ accountInitials }}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ accountName }}</span>
+        </a>
+      </sc-if>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a data-hide-sm href="Tafseel-Auth.dc.html" data-i18n="nav_login" style="padding:8px 12px;font-size:14px;font-weight:600;color:var(--text-2)">Log in</a>
+      </sc-if>
       <button type="button" data-public-menu-toggle aria-controls="browse-public-menu" aria-expanded="false">☰</button>
     </div>
   </div>
@@ -44,13 +49,18 @@
       <a href="Tafseel-Browse-Teachers.dc.html" aria-current="page" data-i18n="nav_browse">Browse Teachers</a>
       <a href="Tafseel-Landing.dc.html#subjects" data-i18n="nav_subjects">Subjects</a>
       <a href="Tafseel-Landing.dc.html#how" data-i18n="nav_how">How It Works</a>
-      <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach">Become a Teacher</a>
+      <a href="{{ teacherJoinHref }}" data-i18n="nav_teach">Become a Teacher</a>
     </nav>
     <div class="tf-public-menu-actions">
-      <a href="Tafseel-Student-Dashboard.dc.html" class="tf-public-menu-login" style="gap:8px">
-        <span style="width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:10px;font-weight:700">NA</span>
-        Noor
-      </a>
+      <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
+        <a href="{{ accountHref }}" class="tf-public-menu-login" style="gap:8px">
+          <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10px;font-weight:800">{{ accountInitials }}</span>
+          {{ accountName }}
+        </a>
+      </sc-if>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a href="Tafseel-Auth.dc.html" data-i18n="nav_login" class="tf-public-menu-login">Log in</a>
+      </sc-if>
     </div>
   </div>
 </header>
@@ -65,7 +75,7 @@
   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:20px">
     <div>
       <h1 data-i18n="browse_h" style="font-size:clamp(26px,3vw,34px);font-weight:800;letter-spacing:-.03em;margin-bottom:6px">Find your teacher</h1>
-      <p style="color:var(--muted);font-size:15px"><span style="font-weight:600;color:var(--text-2)">{{ count }}</span> <span data-i18n="browse_count">verified teachers match your filters</span></p>
+      <p style="color:var(--muted);font-size:15px"><span style="font-weight:600;color:var(--text-2)">{{ count }}</span> <span data-i18n="browse_matches">teachers match your filters</span></p>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <label for="sort" style="font-size:13.5px;color:var(--muted)" data-i18n="browse_sort">Sort by</label>
@@ -132,12 +142,12 @@
       </div>
 
       <div>
-        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Teaching language</div>
+        <div data-i18n="browse_teaching_language" style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Teaching language</div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <sc-for list="{{ languageChecks }}" as="c" hint-placeholder-count="3">
+          <sc-for list="{{ languageChecks }}" as="c" hint-placeholder-count="2">
             <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-2)">
               <input type="checkbox" checked="{{ c.checked }}" onChange="{{ c.onChange }}" style="width:16px;height:16px;accent-color:var(--primary)" />
-              <span>{{ c.label }}</span>
+              <span data-i18n-skip>{{ c.label }}</span>
               <span style="margin-inline-start:auto;font-size:12px;color:var(--muted)">{{ c.count }}</span>
             </label>
           </sc-for>
@@ -176,7 +186,10 @@
       </sc-if>
 
       <sc-if value="{{ teachersError }}" hint-placeholder-val="{{ false }}">
-        <div class="tf-empty-enter" role="alert" style="border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:64px 24px;text-align:center;background:var(--surface);color:var(--error);font-size:14.5px">{{ teachersError }}</div>
+        <div class="tf-empty-enter" role="alert" style="border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:64px 24px;text-align:center;background:var(--surface);font-size:14.5px">
+          <p style="color:var(--error);margin:0 0 16px">{{ teachersError }}</p>
+          <button type="button" onClick="{{ retryTeachers }}" data-i18n="retry" style="height:40px;padding:0 18px;border:0;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:600">Try again</button>
+        </div>
       </sc-if>
 
       <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
@@ -282,34 +295,44 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
     q: '', subject: 'All subjects', level: 'All levels', service: 'All services',
-    minRating: 0, maxPrice: 400, langs: [], verifiedOnly: true, onlineOnly: false, weekOnly: false,
+    minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false,
     sort: 'recommended', page: 1, favs: [], compare: [], toast: '', toastLeaving: false,
-    teachersLoading: true, teachersError: ''
+    teachersLoading: true, teachersError: '', languageOptions: [], session: null, sessionChecked: false
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     const query = new URLSearchParams(location.search);
     this.setState({ q: query.get('search') || '' });
-    Tafseel.api.get('/teachers' + Tafseel.api.query({ search: query.get('search'), pageSize: 100 }))
-      .then(page => {
+    Tafseel.api.ready()
+      .then(session => this.setState({ session, sessionChecked: true }))
+      .catch(() => this.setState({ session: null, sessionChecked: true }));
+    this.loadTeachers();
+  }
+
+  loadTeachers() {
+    const search = new URLSearchParams(location.search).get('search');
+    this.setState({ teachersLoading: true, teachersError: '' });
+    Promise.all([
+      Tafseel.api.get('/teachers' + Tafseel.api.query({ search, pageSize: 100 })),
+      Tafseel.api.get('/languages')
+    ]).then(([page, languages]) => {
         TEACHERS = page.items.map(t => ({
           id:t.teacherId, name:t.fullName, subject:t.subjects[0] || 'General',
           level:t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
           years:'Verified experience', exp:0, rating:t.rating, reviews:t.ratingCount,
           completed:t.completedOrders + ' requests', bio:t.headline, skills:t.subjects,
           response:'Replies in ~' + Math.max(1, Math.round(t.responseTimeMinutes / 60)) + 'h',
-          responseMins:t.responseTimeMinutes, languages:'', langs:[],
+          responseMins:t.responseTimeMinutes, languages:(t.languages || []).join(' · '), langs:t.languages || [],
           price:t.startingPrice || 0, online:false, verified:t.verified, thisWeek:false,
           levels:[], services:[],
           profileHref:'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId)
         }));
-        this.setState({ page: 1, teachersLoading: false, teachersError: '' });
+        this.setState({ page: 1, languageOptions: languages, teachersLoading: false, teachersError: '' });
       })
-      .catch(error => {
+      .catch(() => {
         TEACHERS = [];
-        this.setState({ teachersLoading: false, teachersError: Tafseel.api.errorMessage(error) });
-        this.flash(Tafseel.api.errorMessage(error));
+        this.setState({ teachersLoading: false, teachersError: Tafseel.t('browse_load_error') });
       });
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
@@ -347,7 +370,7 @@ class Component extends DCLogic {
       if (s.service !== 'All services' && !t.services.includes(s.service)) return false;
       if (t.rating < s.minRating) return false;
       if (t.price > s.maxPrice) return false;
-      if (s.langs.length && !s.langs.some(l => t.langs.includes(l))) return false;
+      if (s.langs.length && !s.langs.some(language => t.langs.includes(language))) return false;
       if (s.verifiedOnly && !t.verified) return false;
       if (s.onlineOnly && !t.online) return false;
       if (s.weekOnly && !t.thisWeek) return false;
@@ -382,11 +405,18 @@ class Component extends DCLogic {
     if (s.service !== 'All services') activeChips.push({ label: s.service, onClear: e => this.popChip(e, () => this.setState({ service: 'All services', page: 1 })) });
     if (s.minRating) activeChips.push({ label: s.minRating + '★ & up', onClear: e => this.popChip(e, () => this.setState({ minRating: 0, page: 1 })) });
     if (s.maxPrice < 400) activeChips.push({ label: '≤ SAR ' + s.maxPrice, onClear: e => this.popChip(e, () => this.setState({ maxPrice: 400, page: 1 })) });
-    s.langs.forEach(l => activeChips.push({ label: l, onClear: e => this.popChip(e, () => this.toggleIn('langs', l)) }));
+    s.langs.forEach(language => activeChips.push({
+      label: Tafseel.languageLabel(s.languageOptions.find(option => option.name === language) || { name: language }),
+      onClear: e => this.popChip(e, () => this.toggleIn('langs', language))
+    }));
     if (s.onlineOnly) activeChips.push({ label: 'Online now', onClear: e => this.popChip(e, () => this.setState({ onlineOnly: false })) });
     if (s.weekOnly) activeChips.push({ label: 'Available this week', onClear: e => this.popChip(e, () => this.setState({ weekOnly: false })) });
 
     const compared = TEACHERS.filter(t => s.compare.includes(t.id));
+    const session = s.session;
+    const teacherJoinHref = session && (session.roles || []).includes('Teacher')
+      ? 'Tafseel-Teacher-Apply.dc.html'
+      : 'Tafseel-Auth.dc.html?mode=register&role=teacher';
 
     return {
       langLabel: Tafseel.t('language_target'),
@@ -394,6 +424,12 @@ class Component extends DCLogic {
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
+      hasSession: !!session,
+      isGuest: s.sessionChecked && !session,
+      accountName: session ? session.fullName : '',
+      accountInitials: session ? Tafseel.participantInitials(session.fullName) : '',
+      accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
+      teacherJoinHref,
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
       noop: e => e.preventDefault(),
@@ -401,6 +437,7 @@ class Component extends DCLogic {
       count: results.length,
       teachersLoading: s.teachersLoading,
       teachersError: s.teachersError,
+      retryTeachers: () => this.loadTeachers(),
       isEmpty: !s.teachersLoading && !s.teachersError && results.length === 0,
       q: s.q, onQ: e => this.setState({ q: e.target.value, page: 1 }),
       sort: s.sort, onSort: e => this.setState({ sort: e.target.value }),
@@ -422,16 +459,16 @@ class Component extends DCLogic {
       maxPriceLabel: s.maxPrice >= 400 ? 'SAR 400+' : 'SAR ' + s.maxPrice,
       onPrice: e => this.setState({ maxPrice: Number(e.target.value), page: 1 }),
 
-      languageChecks: ['Arabic', 'English'].map(l => ({
-        label: l, checked: s.langs.includes(l),
-        count: TEACHERS.filter(t => t.langs.includes(l)).length,
-        onChange: () => { this.toggleIn('langs', l); this.setState({ page: 1 }); }
+      languageChecks: s.languageOptions.map(language => ({
+        label: Tafseel.languageLabel(language),
+        checked: s.langs.includes(language.name),
+        count: TEACHERS.filter(teacher => teacher.langs.includes(language.name)).length,
+        onChange: () => { this.toggleIn('langs', language.name); this.setState({ page: 1 }); }
       })),
-
       verifiedOnly: s.verifiedOnly, onVerified: e => this.setState({ verifiedOnly: e.target.checked, page: 1 }),
       onlineOnly: s.onlineOnly, onOnline: e => this.setState({ onlineOnly: e.target.checked, page: 1 }),
       weekOnly: s.weekOnly, onWeek: e => this.setState({ weekOnly: e.target.checked, page: 1 }),
-      clearFilters: () => this.setState({ q: '', subject: 'All subjects', level: 'All levels', service: 'All services', minRating: 0, maxPrice: 400, langs: [], verifiedOnly: true, onlineOnly: false, weekOnly: false, page: 1 }),
+      clearFilters: () => this.setState({ q: '', subject: 'All subjects', level: 'All levels', service: 'All services', minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false, page: 1 }),
 
       activeChips,
       hasActiveChips: activeChips.length > 0,

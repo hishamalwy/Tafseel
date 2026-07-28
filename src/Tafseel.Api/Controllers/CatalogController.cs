@@ -13,12 +13,17 @@ public sealed class CatalogController(ICatalogService catalog) : ControllerBase
     public Task<IReadOnlyCollection<CatalogItemDto>> Subjects(CancellationToken ct) =>
         catalog.GetSubjectsAsync(false, ct);
 
-    [AllowAnonymous, HttpGet("topics")]
-    public Task<IReadOnlyCollection<CatalogItemDto>> Topics(
+    [HttpGet("topics")]
+    public async Task<IActionResult> Topics(
         [FromQuery] Guid? subjectId,
         [FromQuery] bool qualificationOnly,
-        CancellationToken ct) =>
-        catalog.GetTopicsAsync(subjectId, qualificationOnly, false, ct);
+        CancellationToken ct)
+    {
+        var items = await catalog.GetTopicsAsync(subjectId, qualificationOnly, false, ct);
+        if (qualificationOnly && User.Identity?.IsAuthenticated != true)
+            items = items.Select(x => x with { Resources = null }).ToArray();
+        return Ok(items);
+    }
 
     [AllowAnonymous, HttpGet("education-levels")]
     public Task<IReadOnlyCollection<CatalogItemDto>> EducationLevels(CancellationToken ct) =>
@@ -43,6 +48,35 @@ public sealed class CatalogController(ICatalogService catalog) : ControllerBase
     [Authorize(Policy = Permissions.TopicsManage), HttpPost("admin/qualification-topics")]
     public async Task<IActionResult> CreateQualificationTopic(QualificationTopicInput input, CancellationToken ct) =>
         Created("", await catalog.CreateQualificationTopicAsync(input, ct));
+
+    [Authorize(Policy = Permissions.TopicsManage), HttpPost("admin/qualification-topics/{id:guid}/resources/link")]
+    public async Task<IActionResult> AddQualificationLink(
+        Guid id, QualificationLinkResourceInput input, CancellationToken ct) =>
+        Created("", await catalog.AddLinkResourceAsync(id, input, ct));
+
+    [Authorize(Policy = Permissions.TopicsManage), RequestSizeLimit(25 * 1024 * 1024)]
+    [HttpPost("admin/qualification-topics/{id:guid}/resources/file")]
+    public async Task<IActionResult> AddQualificationFile(
+        Guid id, IFormFile file, [FromForm] string displayName,
+        [FromForm] string displayNameAr, [FromForm] int displayOrder,
+        [FromForm] bool isRequired, CancellationToken ct)
+    {
+        await using var stream = file.OpenReadStream();
+        return Created("", await catalog.AddFileResourceAsync(
+            id, stream, file.FileName, file.ContentType, file.Length,
+            displayName, displayNameAr, displayOrder, isRequired, ct));
+    }
+
+    [Authorize, HttpGet("qualification-resources/{id:guid}/content")]
+    public async Task<IActionResult> QualificationResource(Guid id, CancellationToken ct)
+    {
+        if (!User.IsInRole(Roles.Teacher)
+            && !User.HasClaim(Permissions.ClaimType, Permissions.TeachersReviewApplications)
+            && !User.HasClaim(Permissions.ClaimType, Permissions.TopicsManage))
+            return Forbid();
+        var file = await catalog.OpenResourceAsync(id, ct);
+        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+    }
 
     [Authorize(Policy = Permissions.SubjectsManage), HttpPost("admin/education-levels")]
     public async Task<IActionResult> CreateEducationLevel(NamedCatalogInput input, CancellationToken ct) =>

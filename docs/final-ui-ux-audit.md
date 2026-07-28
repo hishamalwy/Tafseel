@@ -27,7 +27,7 @@ In `css/tafseel.css`: Inter `@font-face`; utility patterns `.tf-unavailable`, `.
 | Book Session | Real slots/book for exact selected teacher service, loading + disabled submit |
 | Payment | Real initiate; coupon section is honest-unavailable (no coupon API); no fake card form |
 | Request | Real learning-request create |
-| Chat | Wired to `js/chat.js` |
+| Chat | Embedded in Student/Teacher dashboards via `js/chat-widget.js` |
 | Dashboards | Role gates; teacher service create/edit |
 | Landing | Services from `GET /services`; no fake featured counts when API is absent |
 

@@ -156,13 +156,14 @@ public static class DependencyInjection
                     && ValidFrontendUrl(options.AppBaseUrl, environment.IsProduction()),
                 "Email frontend URLs must be absolute and use HTTPS in Production.")
             .Validate(options =>
-                    !environment.IsProduction()
+                    environment.IsDevelopment() || environment.IsEnvironment("Testing")
                     || MailAddress.TryCreate(options.From, out var sender)
                     && !sender.Address.EndsWith("@resend.dev", StringComparison.OrdinalIgnoreCase)
-                    && new Uri(options.PasswordResetUrl).Host is not ("localhost" or "127.0.0.1")
-                    && new Uri(options.ConfirmationUrl).Host is not ("localhost" or "127.0.0.1")
-                    && new Uri(options.AppBaseUrl).Host is not ("localhost" or "127.0.0.1"),
-                "Production email must use a verified sender and non-local frontend URLs.")
+                    && (!environment.IsProduction()
+                        || new Uri(options.PasswordResetUrl).Host is not ("localhost" or "127.0.0.1")
+                        && new Uri(options.ConfirmationUrl).Host is not ("localhost" or "127.0.0.1")
+                        && new Uri(options.AppBaseUrl).Host is not ("localhost" or "127.0.0.1")),
+                "Non-development email must use a verified sender; Production also requires non-local frontend URLs.")
             .ValidateOnStart();
         services.AddHttpClient<ResendClient>(client => client.Timeout = TimeSpan.FromSeconds(15));
         services.AddOptions<ResendClientOptions>()
@@ -223,6 +224,11 @@ public static class DependencyInjection
                 if (!await db.ServiceCatalogItems.AnyAsync(x => x.Code == service.Code))
                     db.Add(new ServiceCatalogItem(
                         service.Name, service.Description, service.Code, displayOrder: service.DisplayOrder));
+
+            (string Name, string Code)[] canonicalLanguages = [("Arabic", "ar"), ("English", "en")];
+            foreach (var language in canonicalLanguages)
+                if (!await db.TeachingLanguages.AnyAsync(x => x.Code == language.Code))
+                    db.Add(new TeachingLanguage(language.Name, language.Code));
             await db.SaveChangesAsync();
 
             if (scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true)

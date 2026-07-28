@@ -8,7 +8,9 @@ using Tafseel.Application.Marketplace;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.Marketplace;
+using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
+using Tafseel.Infrastructure.Messaging;
 
 namespace Tafseel.Infrastructure.Marketplace;
 
@@ -16,6 +18,7 @@ internal sealed class MarketplaceService(
     TafseelDbContext db,
     IFileStorageService files,
     IOptions<LiveSessionOptions> liveSessionOptions,
+    NotificationWriter notifications,
     TimeProvider clock) : IMarketplaceService
 {
     private readonly LiveSessionOptions _liveSessionOptions = liveSessionOptions.Value;
@@ -37,7 +40,19 @@ internal sealed class MarketplaceService(
         var query =
             from profile in db.TeacherProfiles.AsNoTracking()
             join user in db.Users.AsNoTracking() on profile.TeacherId equals user.Id
-            where profile.IsPublished
+            where profile.IsPublished && user.EmailConfirmed && !user.IsSuspended
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                && db.TeacherServices.Any(service => service.TeacherId == profile.TeacherId
+                    && service.IsActive
+                    && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
+                        && q.SubjectId == service.SubjectId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                    && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+                    && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
+                        && type.IsActive && type.IsPublic && type.TeacherSelectable
+                        && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
+                            rule => rule.TeacherId == profile.TeacherId))))
             select new { profile, user };
 
         if (!string.IsNullOrWhiteSpace(input.Search))
@@ -49,6 +64,7 @@ internal sealed class MarketplaceService(
         if (input.SubjectId.HasValue)
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
                 q.TeacherId == x.profile.TeacherId && q.SubjectId == input.SubjectId
+                && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
                 && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive)));
         if (input.TopicId.HasValue)
             query = query.Where(x => db.TeacherTopics.Any(t =>
@@ -74,7 +90,9 @@ internal sealed class MarketplaceService(
                 db.TeacherLanguages.Any(language =>
                     language.TeacherId == x.profile.TeacherId && language.LanguageId == languageId)));
         if (input.VerifiedOnly)
-            query = query.Where(x => db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.profile.TeacherId));
+            query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
+                q.TeacherId == x.profile.TeacherId
+                && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
         if (input.AvailableThisWeek)
         {
             var weekStart = clock.GetUtcNow();
@@ -115,7 +133,8 @@ internal sealed class MarketplaceService(
                 x.user.FullName,
                 x.profile.Headline,
                 x.profile.Country,
-                db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.profile.TeacherId),
+                db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null),
                 x.profile.AverageRating,
                 x.profile.RatingCount,
                 x.profile.CompletedOrders,
@@ -128,8 +147,12 @@ internal sealed class MarketplaceService(
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
-                db.TeacherSubjectQualifications.Where(q => q.TeacherId == x.profile.TeacherId)
-                    .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray()))
+                db.TeacherSubjectQualifications.Where(q => q.TeacherId == x.profile.TeacherId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                    .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray(),
+                db.TeacherLanguages.Where(language => language.TeacherId == x.profile.TeacherId)
+                    .Join(db.TeachingLanguages, language => language.LanguageId, item => item.Id, (_, item) => item.Name)
+                    .ToArray()))
             .ToArrayAsync(ct);
         return new(rows, page, pageSize, count);
     }
@@ -139,6 +162,19 @@ internal sealed class MarketplaceService(
         var profile = await db.TeacherProfiles.AsNoTracking()
             .SingleOrDefaultAsync(x => x.TeacherId == teacherId && x.IsPublished, ct)
             ?? throw new DomainException("teacher_not_found", "Teacher was not found.");
+        if (!await db.Users.AnyAsync(x => x.Id == teacherId && x.EmailConfirmed && !x.IsSuspended, ct))
+            throw new DomainException("teacher_not_found", "Teacher was not found.");
+        if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId
+                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct)
+            || !await db.TeacherServices.AnyAsync(x => x.TeacherId == teacherId && x.IsActive
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
+                    && q.SubjectId == x.SubjectId && q.Status == TeacherQualificationStatus.Approved
+                    && q.RevokedAt == null)
+                && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId
+                    && type.IsActive && type.IsPublic && type.TeacherSelectable
+                    && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
+                        rule => rule.TeacherId == teacherId))), ct))
+            throw new DomainException("teacher_not_found", "Teacher was not found.");
         return await BuildProfileAsync(profile, publicOnly: true, ct);
     }
 
@@ -165,11 +201,31 @@ internal sealed class MarketplaceService(
         var profile = await OwnedProfileAsync(teacherId, ct);
         if (published)
         {
-            if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId, ct))
+            if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId
+                    && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct))
                 throw new DomainException("teacher_not_approved", "An approved subject qualification is required.");
+            var hasAvailability = await db.TeacherAvailabilityRules.AnyAsync(
+                x => x.TeacherId == teacherId, ct);
+            if (!await (
+                    from service in db.TeacherServices
+                    join type in db.ServiceCatalogItems on service.ServiceCatalogItemId equals type.Id
+                    where service.TeacherId == teacherId && service.IsActive
+                        && type.IsActive && type.IsPublic && type.TeacherSelectable
+                        && (!type.RequiresScheduling || hasAvailability)
+                        && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
+                            && q.SubjectId == service.SubjectId
+                            && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                    select service.Id).AnyAsync(ct))
+                throw new DomainException("active_service_required", "Create an active service in an approved subject before publishing.");
             profile.Publish(clock.GetUtcNow());
         }
         else profile.Unpublish(clock.GetUtcNow());
+        await notifications.QueueAsync(
+            teacherId, published ? "ProfilePublished" : "ProfileUnpublished",
+            published ? "Profile published" : "Profile unpublished",
+            published ? "Your teacher profile is now public." : "Your teacher profile is no longer public.",
+            "/app/Tafseel-Teacher-Dashboard.dc.html?section=profile",
+            $"profile-publication:{teacherId}:{published}", email: false, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -242,6 +298,10 @@ internal sealed class MarketplaceService(
     {
         var sample = await db.TeacherTeachingSamples.SingleOrDefaultAsync(x => x.Id == id && x.TeacherId == teacherId, ct)
             ?? throw new DomainException("sample_not_owned", "Teaching sample was not found.");
+        if (!published && sample.SourceDemoSubmissionId.HasValue)
+            throw new DomainException(
+                "qualification_sample_locked",
+                "An approved qualification demo remains public while its subject qualification is active.");
         if (published)
         {
             await RequireActiveQualificationAsync(teacherId, sample.SubjectId, ct);
@@ -371,7 +431,8 @@ internal sealed class MarketplaceService(
             orderby favorite.CreatedAt descending
             select new TeacherCardDto(
                 profile.TeacherId, user.FullName, profile.Headline, profile.Country,
-                db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId),
+                db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null),
                 profile.AverageRating, profile.RatingCount, profile.CompletedOrders, profile.ResponseTimeMinutes,
                 db.TeacherServices.Where(s => s.TeacherId == profile.TeacherId && s.IsActive
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
@@ -381,8 +442,12 @@ internal sealed class MarketplaceService(
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
-                db.TeacherSubjectQualifications.Where(q => q.TeacherId == profile.TeacherId)
-                    .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray()))
+                db.TeacherSubjectQualifications.Where(q => q.TeacherId == profile.TeacherId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                    .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray(),
+                db.TeacherLanguages.Where(language => language.TeacherId == profile.TeacherId)
+                    .Join(db.TeachingLanguages, language => language.LanguageId, item => item.Id, (_, item) => item.Name)
+                    .ToArray()))
             .ToArrayAsync(ct);
         return cards;
     }
@@ -392,7 +457,8 @@ internal sealed class MarketplaceService(
         await RequireTeacherAsync(teacherId, ct);
         var valid = await db.Topics.Where(x => ids.Contains(x.Id) && x.IsActive
                 && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId && q.SubjectId == x.SubjectId))
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId && q.SubjectId == x.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null))
             .Select(x => x.Id).ToArrayAsync(ct);
         if (valid.Length != ids.Length)
             throw new DomainException("topic_not_approved", "Every topic must be active and belong to an approved subject.");
@@ -404,8 +470,12 @@ internal sealed class MarketplaceService(
     private async Task ReplaceLanguagesAsync(string teacherId, Guid[] ids, CancellationToken ct)
     {
         await RequireTeacherAsync(teacherId, ct);
+        if (ids.Length == 0)
+            throw new DomainException("language_required", "At least one teaching language is required.");
         if (await db.TeachingLanguages.CountAsync(x => ids.Contains(x.Id) && x.IsActive, ct) != ids.Length)
             throw new DomainException("language_not_found", "Every teaching language must be active.");
+        if (!await db.TeacherProfiles.AnyAsync(x => x.TeacherId == teacherId, ct))
+            db.TeacherProfiles.Add(new TeacherProfile(teacherId, clock.GetUtcNow()));
         db.TeacherLanguages.RemoveRange(db.TeacherLanguages.Where(x => x.TeacherId == teacherId));
         db.TeacherLanguages.AddRange(ids.Select(id => new TeacherLanguage(teacherId, id)));
         await db.SaveChangesAsync(ct);
@@ -424,7 +494,8 @@ internal sealed class MarketplaceService(
     private async Task<TeacherProfileDto> BuildProfileAsync(TeacherProfile profile, bool publicOnly, CancellationToken ct)
     {
         var teacherId = profile.TeacherId;
-        var subjects = await db.TeacherSubjectQualifications.AsNoTracking().Where(x => x.TeacherId == teacherId)
+        var subjects = await db.TeacherSubjectQualifications.AsNoTracking().Where(x => x.TeacherId == teacherId
+                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null)
             .Join(db.Subjects, x => x.SubjectId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
         var topics = await db.TeacherTopics.AsNoTracking().Where(x => x.TeacherId == teacherId)
             .Join(db.Topics, x => x.TopicId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
@@ -444,11 +515,17 @@ internal sealed class MarketplaceService(
         if (publicOnly)
         {
             servicesQuery = servicesQuery.Where(x => x.ts.IsActive
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
+                    && q.SubjectId == x.ts.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
                 && db.Subjects.Any(subject => subject.Id == x.ts.SubjectId && subject.IsActive)
                 && x.type.IsActive
                 && x.type.IsPublic
                 && x.type.TeacherSelectable);
-            samplesQuery = samplesQuery.Where(x => x.PublishedAt != null);
+            samplesQuery = samplesQuery.Where(x => x.PublishedAt != null
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
+                    && q.SubjectId == x.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
         }
         var services = (await servicesQuery.ToArrayAsync(ct))
             .OrderBy(x => x.type.DisplayOrder).ThenBy(x => x.ts.CreatedAt)
@@ -459,6 +536,21 @@ internal sealed class MarketplaceService(
         var exceptions = (await db.TeacherAvailabilityExceptions.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
         var certifications = (await db.TeacherCertifications.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
         var experience = (await db.TeacherExperiences.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
+        var user = await db.Users.AsNoTracking().SingleAsync(x => x.Id == teacherId, ct);
+        var profileComplete = !string.IsNullOrWhiteSpace(profile.Headline)
+            && !string.IsNullOrWhiteSpace(profile.Bio)
+            && !string.IsNullOrWhiteSpace(profile.Country)
+            && !string.IsNullOrWhiteSpace(profile.City);
+        var hasEligibleService = services.Any(x => x.IsActive && x.IsCatalogActive
+            && x.IsPublic && x.TeacherSelectable
+            && (!x.RequiresScheduling || hasAvailability));
+        var blockers = new List<string>();
+        if (!user.EmailConfirmed) blockers.Add("email_unconfirmed");
+        if (user.IsSuspended) blockers.Add("account_suspended");
+        if (!hasActiveQualification) blockers.Add("qualification_required");
+        if (!profileComplete) blockers.Add("profile_incomplete");
+        if (!hasEligibleService) blockers.Add("eligible_active_service_required");
+        var eligible = blockers.Count == 0;
         return new(
             teacherId, await TeacherNameAsync(teacherId, ct), profile.Headline, profile.Bio, profile.Country,
             profile.City, profile.TimeZoneId, subjects.Length > 0, profile.AverageRating, profile.RatingCount,
@@ -466,7 +558,9 @@ internal sealed class MarketplaceService(
             services, samples, rules, exceptions, certifications, experience,
             new LiveSessionBookingPolicyDto(
                 _liveSessionOptions.EmergencyPremiumPercent,
-                _liveSessionOptions.CancellationWindowHours));
+                _liveSessionOptions.CancellationWindowHours),
+            profileComplete, eligible, blockers, profile.IsPublished && eligible,
+            subjects.Select(x => x.Id).ToArray());
     }
 
     private static TeacherProfileDto EmptyProfile(string teacherId, string name) =>
@@ -489,7 +583,8 @@ internal sealed class MarketplaceService(
 
     private async Task RequireActiveQualificationAsync(string teacherId, Guid subjectId, CancellationToken ct)
     {
-        if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId && x.SubjectId == subjectId, ct)
+        if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId && x.SubjectId == subjectId
+                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct)
             || !await db.Subjects.AnyAsync(x => x.Id == subjectId && x.IsActive, ct))
             throw new DomainException("teacher_not_approved", "An active approved subject qualification is required.");
     }

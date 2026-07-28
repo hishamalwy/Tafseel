@@ -5,6 +5,7 @@ namespace Tafseel.Domain.TeacherApplications;
 public enum TeacherApplicationStatus { Draft, Submitted, UnderReview, ChangesRequested, Approved, Rejected, Withdrawn }
 public enum ApplicationPriority { Low, Medium, High }
 public enum ReviewDecision { Approve, RequestChanges, Reject }
+public enum TeacherQualificationStatus { Approved, Revoked }
 public enum EvaluationCriterion
 {
     SubjectKnowledge,
@@ -43,6 +44,7 @@ public sealed class TeacherApplication
     public string Degree { get; private set; } = "";
     public string? DemoStorageKey { get; private set; }
     public int? DemoDurationSeconds { get; private set; }
+    public Guid? LatestDemoSubmissionId { get; private set; }
     public TeacherApplicationStatus Status { get; private set; }
     public ApplicationPriority Priority { get; private set; } = ApplicationPriority.Medium;
     public string? AssignedReviewerId { get; private set; }
@@ -70,6 +72,14 @@ public sealed class TeacherApplication
             throw new DomainException("invalid_demo_duration", $"Demo must not exceed {maximumSeconds} seconds.");
         DemoStorageKey = Required(storageKey, "demo_required");
         DemoDurationSeconds = durationSeconds;
+    }
+
+    public void AttachDemo(Guid submissionId, string storageKey, int durationSeconds, int minimumSeconds, int maximumSeconds)
+    {
+        if (durationSeconds < minimumSeconds)
+            throw new DomainException("invalid_demo_duration", $"Demo must be at least {minimumSeconds} seconds.");
+        AttachDemo(storageKey, durationSeconds, maximumSeconds);
+        LatestDemoSubmissionId = submissionId;
     }
 
     public void Submit(string actorId, DateTimeOffset now)
@@ -248,9 +258,83 @@ public sealed class TeacherSubjectQualification
         TeacherId = teacherId;
         SubjectId = subjectId;
         ApprovedAt = approvedAt;
+        CreatedAt = UpdatedAt = approvedAt;
+    }
+    public TeacherSubjectQualification(
+        string teacherId, Guid subjectId, Guid applicationId, Guid qualificationAssignmentId,
+        string approvedByUserId, DateTimeOffset approvedAt) : this(teacherId, subjectId, approvedAt)
+    {
+        ApplicationId = applicationId;
+        QualificationAssignmentId = qualificationAssignmentId;
+        ApprovedByUserId = approvedByUserId;
     }
     public Guid Id { get; private init; }
     public string TeacherId { get; private init; } = "";
     public Guid SubjectId { get; private init; }
     public DateTimeOffset ApprovedAt { get; private init; }
+    public Guid? ApplicationId { get; private init; }
+    public Guid? QualificationAssignmentId { get; private init; }
+    public string? ApprovedByUserId { get; private init; }
+    public TeacherQualificationStatus Status { get; private set; }
+    public DateTimeOffset? RevokedAt { get; private set; }
+    public string? RevokedByUserId { get; private set; }
+    public string? RevocationReason { get; private set; }
+    public DateTimeOffset CreatedAt { get; private init; }
+    public DateTimeOffset UpdatedAt { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
+    public bool IsActive => Status == TeacherQualificationStatus.Approved && RevokedAt is null;
+
+    public void Revoke(string actorId, string reason, DateTimeOffset now)
+    {
+        if (!IsActive) return;
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainException("revocation_reason_required", "A revocation reason is required.");
+        Status = TeacherQualificationStatus.Revoked;
+        RevokedAt = UpdatedAt = now;
+        RevokedByUserId = actorId;
+        RevocationReason = reason.Trim();
+    }
+}
+
+public sealed class TeacherDemoSubmission
+{
+    private TeacherDemoSubmission() { }
+    public TeacherDemoSubmission(
+        Guid id, Guid applicationId, string teacherId, Guid subjectId, Guid qualificationAssignmentId,
+        string storageKey, string originalFileName, string contentType, long sizeBytes,
+        int durationSeconds, int submissionVersion, DateTimeOffset submittedAt,
+        string assignmentTitleSnapshot = "", string assignmentInstructionsSnapshot = "",
+        string assignmentResourceManifest = "[]")
+    {
+        Id = id;
+        TeacherApplicationId = applicationId;
+        TeacherId = teacherId;
+        SubjectId = subjectId;
+        QualificationAssignmentId = qualificationAssignmentId;
+        StorageKey = storageKey;
+        OriginalFileName = originalFileName;
+        ContentType = contentType;
+        SizeBytes = sizeBytes;
+        DurationSeconds = durationSeconds;
+        SubmissionVersion = submissionVersion;
+        SubmittedAt = submittedAt;
+        AssignmentTitleSnapshot = assignmentTitleSnapshot;
+        AssignmentInstructionsSnapshot = assignmentInstructionsSnapshot;
+        AssignmentResourceManifest = assignmentResourceManifest;
+    }
+    public Guid Id { get; private init; }
+    public Guid TeacherApplicationId { get; private init; }
+    public string TeacherId { get; private init; } = "";
+    public Guid SubjectId { get; private init; }
+    public Guid QualificationAssignmentId { get; private init; }
+    public string StorageKey { get; private init; } = "";
+    public string OriginalFileName { get; private init; } = "";
+    public string ContentType { get; private init; } = "";
+    public long SizeBytes { get; private init; }
+    public int DurationSeconds { get; private init; }
+    public int SubmissionVersion { get; private init; }
+    public DateTimeOffset SubmittedAt { get; private init; }
+    public string AssignmentTitleSnapshot { get; private init; } = "";
+    public string AssignmentInstructionsSnapshot { get; private init; } = "";
+    public string AssignmentResourceManifest { get; private init; } = "[]";
 }

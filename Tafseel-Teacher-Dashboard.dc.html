@@ -16,6 +16,8 @@
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<script src="js/vendor/signalr.min.js"></script>
+<script src="js/chat-widget.js"></script>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -38,7 +40,8 @@
       </sc-for>
     </nav>
     <div style="padding:16px;border-top:1px solid var(--border)">
-      <a href="Tafseel-Chat.dc.html" style="font-size:13px;font-weight:600;color:var(--primary)">Open messages</a>
+      <button type="button" onClick="{{ openChat }}" style="border:0;background:transparent;font-size:13px;font-weight:600;color:var(--primary)">Open messages</button>
+      <button type="button" class="tf-dashboard-logout" onClick="{{ onLogout }}"><span aria-hidden="true">↪</span>{{ logoutLabel }}</button>
     </div>
   </aside>
 
@@ -49,7 +52,7 @@
       <button id="teacher-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="teacher-sidebar" style="{{ drawerToggleStyle }}">☰</button>
       <div style="font-size:15px;font-weight:700" data-hide-sm="1">Teacher dashboard</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-        <a href="Tafseel-Chat.dc.html" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</a>
+        <button type="button" onClick="{{ openChat }}" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</button>
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
@@ -286,7 +289,7 @@
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Messages</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <sc-for list="{{ conversations }}" as="c" hint-placeholder-count="4">
-            <a href="Tafseel-Chat.dc.html" style="display:flex;gap:14px;align-items:center;padding:16px 20px;border-top:1px solid var(--border);color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+            <button type="button" onClick="{{ openChat }}" style="display:flex;width:100%;gap:14px;align-items:center;padding:16px 20px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start">
               <span style="width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--text-2);flex:none">{{ c.initials }}</span>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;gap:10px">
@@ -295,7 +298,7 @@
                 </div>
                 <div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</div>
               </div>
-            </a>
+            </button>
           </sc-for>
         </div>
       </div>
@@ -543,9 +546,14 @@ class Component extends DCLogic {
     PENDING = [];
     ORDERS = [];
     Tafseel.installDashboardDrawer(this, { sidebarId: 'teacher-sidebar', toggleId: 'teacher-drawer-toggle' });
-    Tafseel.api.requireRoles(['Teacher']).then(session => {
+    Tafseel.api.requireRoles(['Teacher']).then(async session => {
       if (!session) return;
       this._session = session;
+      const lifecycle = await Tafseel.api.get('/teachers/onboarding-status');
+      if (lifecycle.status < 9) {
+        location.replace(lifecycle.nextUrl || 'Tafseel-Teacher-Apply.dc.html');
+        return;
+      }
       return Promise.all([
         Tafseel.api.get('/learning-requests/assigned?pageSize=100'),
         Tafseel.api.get('/orders/assigned?pageSize=100'),
@@ -644,6 +652,10 @@ class Component extends DCLogic {
       themeIcon: s.theme === 'dark' ? '☀' : '☾',
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
+      logoutLabel: Tafseel.t('admin_logout'),
+      onLogout: async () => {
+        try { await Tafseel.api.logout(); } finally { location.href = 'Tafseel-Auth.dc.html'; }
+      },
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
       stop: e => e.stopPropagation(),
@@ -976,6 +988,7 @@ class Component extends DCLogic {
       })),
 
       acceptModal: s.acceptModal,
+      openChat: () => window.TafseelChat && window.TafseelChat.open(),
       closeModal: () => this.setState({ acceptModal: null }),
       finalPrice: s.finalPrice, onFinalPrice: e => this.setState({ finalPrice: e.target.value }),
       deliveryDate: s.deliveryDate, onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),

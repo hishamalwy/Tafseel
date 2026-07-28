@@ -381,6 +381,9 @@
                 <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ c.meta }}</div>
               </div>
               <div style="display:flex;align-items:center;gap:12px;flex:none">
+                <sc-if value="{{ c.canManageResources }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ c.onResources }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Resources</button>
+                </sc-if>
                 <button type="button" onClick="{{ c.onEdit }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Edit</button>
                 <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2)">
                   <input type="checkbox" checked="{{ c.active }}" onChange="{{ c.onToggle }}" style="width:36px;height:21px;accent-color:var(--primary)" />
@@ -512,7 +515,7 @@
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ catalogModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ catalogModalTitle }}</h2>
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
-        <sc-if value="{{ isTopicModal }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ isSubjectScopedModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Subject</span>
             <select value="{{ catalogSubjectId }}" onChange="{{ onCatalogSubjectId }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
@@ -541,6 +544,13 @@
               <option value="Standard">Standard</option>
               <option value="Advanced">Advanced</option>
             </select>
+          </label>
+        </sc-if>
+        <sc-if value="{{ isAssignmentModal }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600" data-i18n="admin_assignment_instructions">Teacher instructions</span>
+            <textarea value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" rows="5" maxlength="2000"
+              style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
         </sc-if>
         <sc-if value="{{ isServiceModal }}" hint-placeholder-val="{{ false }}">
@@ -584,6 +594,26 @@
   </div>
 </sc-if>
 
+<sc-if value="{{ resourceModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:72;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeResourceModal }}">
+    <div role="dialog" aria-modal="true" aria-label="Assignment resources" onClick="{{ stop }}" style="width:min(560px,100%);max-height:90dvh;overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:14px">Assignment resources</h2>
+      <sc-for list="{{ assignmentResources }}" as="resource" hint-placeholder-count="0">
+        <a href="{{ resource.url }}" target="_blank" rel="noopener" style="display:block;padding:9px 0;color:var(--primary)">{{ resource.name }}</a>
+      </sc-for>
+      <label style="display:flex;flex-direction:column;gap:6px;margin-top:12px"><span>Display name</span><input value="{{ resourceName }}" onChange="{{ onResourceName }}" /></label>
+      <label style="display:flex;flex-direction:column;gap:6px;margin-top:12px"><span>Safe URL</span><input type="url" value="{{ resourceUrl }}" onChange="{{ onResourceUrl }}" /></label>
+      <div class="tf-actions" style="margin-top:12px"><button class="tf-button" type="button" onClick="{{ addLinkResource }}">Add link</button></div>
+      <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+      <label style="display:flex;flex-direction:column;gap:6px"><span>Reference file</span><input id="assignment-resource-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.ppt,.pptx,.doc,.docx,.txt" /></label>
+      <div class="tf-actions" style="margin-top:12px">
+        <button class="tf-button" type="button" onClick="{{ uploadAssignmentResource }}">Upload file</button>
+        <button class="tf-button tf-button-secondary" type="button" onClick="{{ closeResourceModal }}">Close</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ editModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeEditModal }}">
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
@@ -618,6 +648,7 @@ function paginate(list, page) {
 const CATALOG_DATA = {
   subjects: [],
   topics: [],
+  assignments: [],
   services: [],
   coupons: []
 };
@@ -642,6 +673,7 @@ class Component extends DCLogic {
     commissionRate: 15, requireReview: true, maintenanceMode: false,
     catalogModal: false, catalogName: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
     catalogCode: '', catalogRequiresScheduling: false, catalogDiscountType: '0', catalogDiscountValue: 10,
+    resourceModal: null, resourceName: '', resourceUrl: '',
     editModal: null, editName: '', usersTotal: 0, liveWithdrawals: [],
     usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
@@ -664,6 +696,7 @@ class Component extends DCLogic {
     USERS = [];
     CATALOG_DATA.subjects = [];
     CATALOG_DATA.topics = [];
+    CATALOG_DATA.assignments = [];
     CATALOG_DATA.services = [];
     CATALOG_DATA.coupons = [];
     LIST_DATA.requests = [];
@@ -684,7 +717,8 @@ class Component extends DCLogic {
         Tafseel.api.get('/admin/catalog/services'),
         Tafseel.api.get('/admin/disputes?pageSize=100'),
         Tafseel.api.get('/admin/withdrawals?status=0&pageSize=100'),
-        Tafseel.api.get('/admin/coupons')
+        Tafseel.api.get('/admin/coupons'),
+        Tafseel.api.get('/admin/catalog/qualification-topics')
       ]);
     }).then(results => {
       if (!results) return;
@@ -711,6 +745,9 @@ class Component extends DCLogic {
       const mapCatalog = (payload) => (payload || []).map(x => ({ id:x.id, name:x.name, meta:x.detail || '', active:x.isActive }));
       CATALOG_DATA.subjects = mapCatalog(settled(2));
       CATALOG_DATA.topics = mapCatalog(settled(3));
+      CATALOG_DATA.assignments = (settled(8) || []).map(x => ({
+        id:x.id, name:x.name, meta:x.detail || '', active:x.isActive, resources:x.resources || []
+      }));
       CATALOG_DATA.services = (settled(4) || []).map(x => ({
         id:x.id, name:x.name, active:x.isActive,
         meta:[
@@ -724,6 +761,7 @@ class Component extends DCLogic {
       if (failed(2)) catalogErrors.subjects = Tafseel.api.errorMessage(failed(2));
       if (failed(3)) catalogErrors.topics = Tafseel.api.errorMessage(failed(3));
       if (failed(4)) catalogErrors.services = Tafseel.api.errorMessage(failed(4));
+      if (failed(8)) catalogErrors.assignments = Tafseel.api.errorMessage(failed(8));
 
       const couponsPayload = settled(7);
       if (couponsPayload) {
@@ -809,7 +847,7 @@ class Component extends DCLogic {
   /** Resolve which section a nav key opens (page/pageRole/catalogKind/listKind). */
   navigateTo(key) {
     const roleMap = { users: 'all', students: 'Student', teachers: 'Teacher', reviewers: 'Reviewer' };
-    const catalogKeys = ['subjects', 'topics', 'services', 'coupons'];
+    const catalogKeys = ['subjects', 'topics', 'assignments', 'services', 'coupons'];
     const listKeys = ['requests', 'sessions', 'reviews', 'disputes'];
     const patch = { drawer: false, navKey: key, pagination: 1 };
     document.body.style.overflow = '';
@@ -875,7 +913,7 @@ class Component extends DCLogic {
     const NAV = [
       ['overview','◱','Overview'], ['users','◈','Users'], ['students','◍','Students'], ['teachers','✎','Teachers'],
       ['reviewers','◑','Quality Reviewers'], ['subjects','∑','Subjects'],
-      ['topics','◫','Topics'], ['services','▤','Services'], ['requests','⇩','Requests'], ['sessions','◉','Live Sessions'],
+      ['topics','◫','Topics'], ['assignments','▣','Qualification assignments'], ['services','▤','Services'], ['requests','⇩','Requests'], ['sessions','◉','Live Sessions'],
       ['payments','$','Payments'], ['withdrawals','⇧','Withdrawals'], ['reviews','★','Reviews'], ['disputes','⚠','Disputes'],
       ['coupons','%','Coupons'], ['reports','▥','Reports'], ['settings','⚙','Platform Settings']
     ];
@@ -965,9 +1003,9 @@ class Component extends DCLogic {
           };
         }),
 
-      catalogTitle: { subjects:'Subjects', topics:'Demo topics', services:'Services', coupons:'Coupons' }[s.catalogKind],
+      catalogTitle: { subjects:'Subjects', topics:'Topics', assignments:'Qualification assignments', services:'Services', coupons:'Coupons' }[s.catalogKind],
       catalogAddLabel: {
-        subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'),
+        subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'), assignments:'Add assignment',
         services: Tafseel.t('admin_add_service'), coupons: Tafseel.t('admin_add_coupon')
       }[s.catalogKind],
       catalogAddDisabled: false,
@@ -983,13 +1021,16 @@ class Component extends DCLogic {
         const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
         return {
           ...c, active,
+          canManageResources: s.catalogKind === 'assignments',
+          onResources: () => this.setState({ resourceModal:c, resourceName:'', resourceUrl:'' }),
           onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta, version: c.version }, editName: c.name }),
           onToggle: async () => {
             try {
               if (s.catalogKind === 'coupons') {
                 await Tafseel.api.patch('/admin/coupons/' + c.id + '/active', { isActive: !active });
               } else {
-                await Tafseel.api.patch('/admin/catalog/' + s.catalogKind + '/' + c.id + '/active', { isActive:!active });
+                const kind = s.catalogKind === 'assignments' ? 'qualification-topics' : s.catalogKind;
+                await Tafseel.api.patch('/admin/catalog/' + kind + '/' + c.id + '/active', { isActive:!active });
               }
               this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
               this.flash(c.name + (active ? ' deactivated' : ' activated'));
@@ -998,12 +1039,46 @@ class Component extends DCLogic {
         };
       }),
 
+      resourceModal: !!s.resourceModal,
+      assignmentResources: (s.resourceModal?.resources || []).map(x => ({
+        name:x.displayName || x.displayNameAr || 'Resource', url:x.url || '#'
+      })),
+      resourceName: s.resourceName, onResourceName: e => this.setState({ resourceName:e.target.value }),
+      resourceUrl: s.resourceUrl, onResourceUrl: e => this.setState({ resourceUrl:e.target.value }),
+      closeResourceModal: () => this.setState({ resourceModal:null }),
+      addLinkResource: async () => {
+        if (!s.resourceModal || !s.resourceName.trim() || !s.resourceUrl.trim()) return;
+        try {
+          const created = await Tafseel.api.post('/admin/qualification-topics/' + s.resourceModal.id + '/resources/link', {
+            displayName:s.resourceName, displayNameAr:'', url:s.resourceUrl, displayOrder:(s.resourceModal.resources || []).length, isRequired:false
+          });
+          const resources = [...(s.resourceModal.resources || []), created];
+          s.resourceModal.resources = resources;
+          this.setState({ resourceModal:{...s.resourceModal,resources}, resourceName:'', resourceUrl:'' });
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
+      uploadAssignmentResource: async () => {
+        const file = document.getElementById('assignment-resource-file')?.files?.[0];
+        if (!s.resourceModal || !file || !s.resourceName.trim()) return this.flash('Choose a file and display name.');
+        const data = new FormData();
+        data.append('file', file); data.append('displayName', s.resourceName); data.append('displayNameAr', '');
+        data.append('displayOrder', String((s.resourceModal.resources || []).length)); data.append('isRequired', 'false');
+        try {
+          const created = await Tafseel.api.upload('/admin/qualification-topics/' + s.resourceModal.id + '/resources/file', data);
+          const resources = [...(s.resourceModal.resources || []), created];
+          s.resourceModal.resources = resources;
+          this.setState({ resourceModal:{...s.resourceModal,resources}, resourceName:'' });
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
+
       catalogModal: s.catalogModal,
       isSubjectModal: s.catalogKind === 'subjects',
       isTopicModal: s.catalogKind === 'topics',
+      isAssignmentModal: s.catalogKind === 'assignments',
+      isSubjectScopedModal: s.catalogKind === 'topics' || s.catalogKind === 'assignments',
       isServiceModal: s.catalogKind === 'services',
       isCouponModal: s.catalogKind === 'coupons',
-      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', services:'Add service', coupons:'Add coupon' }[s.catalogKind],
+      catalogModalTitle: { subjects:'Add subject', topics:'Add topic', assignments:'Add qualification assignment', services:'Add service', coupons:'Add coupon' }[s.catalogKind],
       catalogName: s.catalogName, onCatalogName: e => this.setState({ catalogName: e.target.value }),
       catalogIcon: s.catalogIcon, onCatalogIcon: e => this.setState({ catalogIcon: e.target.value }),
       catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
@@ -1042,6 +1117,16 @@ class Component extends DCLogic {
             if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash('Subject and name are required.');
             created = await Tafseel.api.post('/admin/topics', { subjectId: s.catalogSubjectId, name: s.catalogName, difficulty: s.catalogDifficulty });
             CATALOG_DATA.topics = [...CATALOG_DATA.topics, { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
+          } else if (s.catalogKind === 'assignments') {
+            if (!s.catalogSubjectId || !s.catalogName.trim() || !s.catalogDetail.trim())
+              return this.flash('Subject, title, and instructions are required.');
+            created = await Tafseel.api.post('/admin/qualification-topics', {
+              subjectId: s.catalogSubjectId, name: s.catalogName, instructions: s.catalogDetail,
+              minVideoSeconds: 30, expectedVideoSeconds: 180, maxVideoSeconds: 180
+            });
+            CATALOG_DATA.assignments = [...CATALOG_DATA.assignments, {
+              id: created.id, name: created.name, meta: created.detail || '', active: created.isActive
+            }];
           } else if (s.catalogKind === 'services') {
             if (!s.catalogName.trim() || !(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_service_code_required'));
             created = await Tafseel.api.post('/admin/services', {
@@ -1086,7 +1171,8 @@ class Component extends DCLogic {
       confirmEditCatalog: async () => {
         if (!s.editModal || !s.editName.trim()) return this.flash('Name is required.');
         try {
-          await Tafseel.api.put('/admin/catalog/' + s.editModal.kind + '/' + s.editModal.id, {
+          const kind = s.editModal.kind === 'assignments' ? 'qualification-topics' : s.editModal.kind;
+          await Tafseel.api.put('/admin/catalog/' + kind + '/' + s.editModal.id, {
             name: s.editName, detail: s.editModal.detail || null
           });
           CATALOG_DATA[s.editModal.kind] = (CATALOG_DATA[s.editModal.kind] || []).map(c =>

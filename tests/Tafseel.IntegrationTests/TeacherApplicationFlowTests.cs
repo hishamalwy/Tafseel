@@ -70,10 +70,25 @@ public sealed class TeacherApplicationFlowTests(SqlServerTafseelApiFactory facto
         Assert.Equal(HttpStatusCode.NoContent,
             (await reviewer.PostAsJsonAsync($"/api/v1/teacher-applications/{applicationId}/decision",
                 new { decision = (int)ReviewDecision.Approve, scores, comment = (string?)null, internalNotes = "Strong demo" })).StatusCode);
+        var streamed = await reviewer.GetAsync($"/api/v1/teacher-applications/{applicationId}/demo/content");
+        streamed.EnsureSuccessStatusCode();
+        Assert.Equal(bytes, await streamed.Content.ReadAsByteArrayAsync());
+        var lifecycle = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/onboarding-status");
+        Assert.Equal(9, lifecycle.GetProperty("status").GetInt32());
 
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Contains(db.TeacherSubjectQualifications, x => x.SubjectId == subjectId);
+        var qualification = Assert.Single(db.TeacherSubjectQualifications.Where(x => x.SubjectId == subjectId));
+        Assert.Equal(applicationId, qualification.ApplicationId);
+        Assert.Equal(TeacherQualificationStatus.Approved, qualification.Status);
+        var submission = Assert.Single(db.TeacherDemoSubmissions.Where(x => x.TeacherApplicationId == applicationId));
+        var sample = Assert.Single(db.TeacherTeachingSamples.Where(x => x.SourceTeacherApplicationId == applicationId));
+        Assert.Equal(submission.Id, sample.SourceDemoSubmissionId);
+        Assert.Equal(submission.StorageKey, sample.StorageKey);
+        Assert.True(sample.IsPublished);
+        var hide = await teacher.PutAsJsonAsync(
+            $"/api/v1/teachers/me/samples/{sample.Id}/publication", new { published = false });
+        Assert.Equal(HttpStatusCode.BadRequest, hide.StatusCode);
     }
 
     private async Task<(Guid SubjectId, Guid QualificationTopicId)> SeedCatalogAndReviewer()

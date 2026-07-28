@@ -174,6 +174,7 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       reviewers: { page: 'users', pageRole: 'Reviewer' },
       subjects: { page: 'catalog', catalogKind: 'subjects' },
       topics: { page: 'catalog', catalogKind: 'topics' },
+      assignments: { page: 'catalog', catalogKind: 'assignments' },
       services: { page: 'catalog', catalogKind: 'services' },
       coupons: { page: 'catalog', catalogKind: 'coupons' },
       requests: { page: 'list', listKind: 'requests' },
@@ -353,11 +354,29 @@ for (const [page, ids] of [
     throw new Error(`${page} must install the shared dashboard drawer (or Admin compactNav).`);
 }
 
+for (const page of [
+  "Tafseel-Student-Dashboard.dc.html",
+  "Tafseel-Teacher-Dashboard.dc.html",
+  "Tafseel-Quality-Dashboard.dc.html"
+]) {
+  const source = readFileSync(page, "utf8");
+  if (!source.includes("tf-dashboard-logout") || !source.includes("await Tafseel.api.logout()"))
+    throw new Error(`${page} must expose a working logout action.`);
+}
+
 const browse = readFileSync("Tafseel-Browse-Teachers.dc.html", "utf8");
 if (/let\s+TEACHERS\s*=\s*\[\s*\{/.test(browse))
   throw new Error("Browse Teachers must not seed mock teacher rows — start from [].");
 if (!/teachersLoading/.test(browse))
   throw new Error("Browse Teachers must expose teachersLoading.");
+if (/\bNoor\b|>\s*NA\s*</.test(browse))
+  throw new Error("Browse Teachers public header must not render a dummy signed-in user.");
+if (!/sessionChecked/.test(browse) || !/Tafseel\.api\.ready\(\)/.test(browse))
+  throw new Error("Browse Teachers public header must resolve the real auth session.");
+if (!/verifiedOnly:\s*false/.test(browse))
+  throw new Error("Browse Teachers must not silently enable verified-only filtering.");
+if (!/languageChecks/.test(browse) || !/t\.languages/.test(browse))
+  throw new Error("Browse Teachers language checkboxes must use real teacher language data.");
 
 const quality = readFileSync("Tafseel-Quality-Dashboard.dc.html", "utf8");
 if (/let\s+APPLICATIONS\s*=\s*\[\s*\{/.test(quality))
@@ -365,9 +384,15 @@ if (/let\s+APPLICATIONS\s*=\s*\[\s*\{/.test(quality))
 if (!/queueLoading/.test(quality))
   throw new Error("Quality Dashboard must expose queueLoading.");
 
-const chat = readFileSync("Tafseel-Chat.dc.html", "utf8");
-if (!chat.includes("js/vendor/signalr.min.js"))
-  throw new Error("Chat page must load the vendored SignalR client.");
+const chat = readFileSync("js/chat-widget.js", "utf8");
+if (!chat.includes("HubConnectionBuilder"))
+  throw new Error("Embedded chat must connect to the SignalR message hub.");
+for (const dashboard of ["Tafseel-Student-Dashboard.dc.html", "Tafseel-Teacher-Dashboard.dc.html"]) {
+  if (!readFileSync(dashboard, "utf8").includes("js/chat-widget.js"))
+    throw new Error(`${dashboard} must load embedded chat.`);
+}
+if (existsSync("Tafseel-Chat.dc.html"))
+  throw new Error("Standalone chat must not be published as a product page.");
 if (!existsSync("js/vendor/signalr.min.js"))
   throw new Error("Missing vendored SignalR client: js/vendor/signalr.min.js");
 if (existsSync("js/auth.js"))
@@ -378,6 +403,18 @@ if (/grid-template-columns\s*:\s*repeat\(\s*3\s*,/.test(landing) && !/tf-stat-gr
   throw new Error("Landing must not keep an unmarked rigid repeat(3) grid.");
 if (/grid-template-columns\s*:\s*repeat\(\s*2\s*,/.test(landing) && !landing.includes("tf-cols-2") && !landing.includes("data-stack"))
   throw new Error("Landing must not keep an unmarked rigid repeat(2) reasons grid.");
+if (!/Tafseel\.api\.ready\(\)/.test(landing) || !/accountName/.test(landing))
+  throw new Error("Landing must preserve and display the real signed-in session.");
+if (!/Tafseel-Auth\.dc\.html\?mode=register&role=teacher/.test(landing))
+  throw new Error("Landing teacher CTAs must enter Teacher registration directly.");
+
+const auth = readFileSync("Tafseel-Auth.dc.html", "utf8");
+if (!/role\s*===\s*['"]teacher['"]\s*\?\s*['"]teacher['"]\s*:\s*['"]student['"]/.test(auth))
+  throw new Error("Auth must honor the validated Teacher registration query.");
+
+const teacherApply = readFileSync("js/teacher-apply.js", "utf8");
+if (!/\/teachers\/me\/languages/.test(teacherApply) || !/selectedLanguageIds/.test(teacherApply))
+  throw new Error("Teacher application must save at least one selected teaching language.");
 
 // Ban known illustrative analytics / fake trend patterns across published pages + page scripts.
 const analyticsBanned = [

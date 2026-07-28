@@ -62,7 +62,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
     [Fact]
     public async Task Private_samples_and_internal_fields_never_leak_publicly()
     {
-        var teacher = await SeedTeacherAsync(approved: true, withPrivateSample: true);
+        var teacher = await SeedTeacherAsync(approved: true, withService: true, withPrivateSample: true);
         var anonymous = factory.CreateClient();
         Assert.Equal(HttpStatusCode.NotFound,
             (await anonymous.GetAsync($"/api/v1/teachers/samples/{teacher.SampleId}/content")).StatusCode);
@@ -81,7 +81,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
     [Fact]
     public async Task Favorites_are_unique_and_idempotent()
     {
-        var teacher = await SeedTeacherAsync(approved: true);
+        var teacher = await SeedTeacherAsync(approved: true, withService: true);
         var student = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
         var client = await ClientForAsync(student.Email);
         Assert.Equal(HttpStatusCode.NoContent,
@@ -111,8 +111,9 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         response.EnsureSuccessStatusCode();
         var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
         Assert.Equal(50, json.GetProperty("pageSize").GetInt32());
-        Assert.Contains(json.GetProperty("items").EnumerateArray(), x =>
+        var item = Assert.Single(json.GetProperty("items").EnumerateArray(), x =>
             x.GetProperty("teacherId").GetString() == teacher.Id);
+        Assert.Single(item.GetProperty("languages").EnumerateArray());
         Assert.InRange(factory.Commands.ReadCount, 1, 2);
 
         var invalid = await client.GetAsync("/api/v1/teachers?sort=raw-sql");
@@ -129,7 +130,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
     [Fact]
     public async Task Availability_validates_timezone_and_rejects_overlap()
     {
-        var teacher = await SeedTeacherAsync(approved: true);
+        var teacher = await SeedTeacherAsync(approved: true, withService: true);
         var client = await ClientForAsync(teacher.Email);
         var valid = new
         {

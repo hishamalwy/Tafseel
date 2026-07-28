@@ -51,14 +51,14 @@ internal sealed class MessagingService(
         {
             existing.RequireParticipant(userId);
             await transaction.CommitAsync(ct);
-            return Map(existing, userId);
+            return await MapAsync(existing, userId, ct);
         }
         var conversation = new Conversation(
             userId, input.OtherUserId, input.Scope, input.ResourceId, clock.GetUtcNow());
         db.Add(conversation);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
-        return Map(conversation, userId);
+        return await MapAsync(conversation, userId, ct);
     }
 
     public async Task<PagedResult<ConversationDto>> GetConversationsAsync(
@@ -72,7 +72,18 @@ internal sealed class MessagingService(
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Include(x => x.Participants).Include(x => x.Messages).ThenInclude(x => x.Attachments)
             .AsSplitQuery().ToArrayAsync(ct);
-        return new(items.Select(x => Map(x, userId)).ToArray(), page, pageSize, total);
+        var participantIds = items.SelectMany(x => x.Participants).Select(x => x.UserId).Distinct().ToArray();
+        var people = await db.Users.AsNoTracking().Where(x => participantIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.FullName, ct);
+        var roleRows = await (
+            from userRole in db.UserRoles.AsNoTracking()
+            join role in db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+            where participantIds.Contains(userRole.UserId)
+            select new { userRole.UserId, role.Name })
+            .ToArrayAsync(ct);
+        var roles = roleRows.GroupBy(x => x.UserId)
+            .ToDictionary(x => x.Key, x => x.First().Name ?? string.Empty);
+        return new(items.Select(x => Map(x, userId, people, roles)).ToArray(), page, pageSize, total);
     }
 
     public async Task<PagedResult<MessageDto>> GetMessagesAsync(
@@ -99,7 +110,7 @@ internal sealed class MessagingService(
         var recipientIds = conversation.Participants.Where(x => x.UserId != userId).Select(x => x.UserId).ToArray();
         foreach (var recipientId in recipientIds)
             await notificationWriter.QueueAsync(recipientId, "NewMessage", "New message",
-                "You received a new private message.", $"/chat?conversation={conversationId}",
+                "You received a new private message.", "/app/Tafseel-Auth.dc.html",
                 $"message:{message.Id}", email: false, ct);
         await db.SaveChangesAsync(ct); // system of record before broadcast
         var dto = Map(message);
@@ -199,14 +210,41 @@ internal sealed class MessagingService(
         if (!valid) throw NotOwned();
     }
 
-    private static ConversationDto Map(Conversation x, string userId)
+    private async Task<ConversationDto> MapAsync(Conversation x, string userId, CancellationToken ct)
+    {
+        var ids = x.Participants.Select(p => p.UserId).ToArray();
+        var people = await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName, ct);
+        var roleRows = await (
+            from userRole in db.UserRoles.AsNoTracking()
+            join role in db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
+            where ids.Contains(userRole.UserId)
+            select new { userRole.UserId, role.Name })
+            .ToArrayAsync(ct);
+        var roles = roleRows.GroupBy(x => x.UserId)
+            .ToDictionary(x => x.Key, x => x.First().Name ?? string.Empty);
+        return Map(x, userId, people, roles);
+    }
+
+    private static ConversationDto Map(
+        Conversation x, string userId,
+        IReadOnlyDictionary<string, string> people,
+        IReadOnlyDictionary<string, string> roles)
     {
         var readAt = x.Participants.Single(p => p.UserId == userId).LastReadAt;
         var latest = x.Messages.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
         return new(x.Id, x.Scope, x.ResourceId, x.Participants.Select(p => p.UserId).ToArray(),
             latest is null ? null : Map(latest),
             x.Messages.Count(m => m.SenderId != userId && (readAt is null || m.CreatedAt > readAt)),
-            x.UpdatedAt, Convert.ToBase64String(x.RowVersion));
+            x.UpdatedAt, Convert.ToBase64String(x.RowVersion),
+            x.Participants.Select(p =>
+            {
+                var name = people.GetValueOrDefault(p.UserId) ?? "Tafseel user";
+                var initials = string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Take(2).Select(part => char.ToUpperInvariant(part[0])));
+                return new ConversationParticipantDto(
+                    p.UserId, name, initials, roles.GetValueOrDefault(p.UserId));
+            }).ToArray());
     }
     private static MessageDto Map(Message x) =>
         new(x.Id, x.ConversationId, x.SenderId, x.Body, x.CreatedAt, x.Attachments.Select(Map).ToArray());
@@ -386,6 +424,7 @@ internal sealed class NotificationOutboxWorker(
                         kicker: "إشعار جديد",
                         heading: notification.Title,
                         paragraphs: [notification.Body],
+                        appBaseUrl: emailOptions.Value.AppBaseUrl,
                         accent: EmailAccent.Activity,
                         ctaText: ctaUrl is null ? null : "عرض التفاصيل ←",
                         ctaUrl: ctaUrl);

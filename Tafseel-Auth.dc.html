@@ -17,9 +17,9 @@
 <script src="js/api.js"></script>
 </helmet>
 
-<div style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr" data-stack="auth">
-  <div style="display:flex;flex-direction:column;padding:40px;min-width:0;position:relative;overflow:hidden;background:radial-gradient(520px 380px at 10% 8%,color-mix(in oklab,var(--primary) 14%,transparent),transparent 70%),radial-gradient(460px 340px at 92% 96%,color-mix(in oklab,#D9FF43 16%,transparent),transparent 70%),var(--bg)">
-    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:auto">
+<div class="tf-auth-layout" style="min-height:100vh;display:grid;grid-template-columns:1fr 1fr" data-stack="auth">
+  <div class="tf-auth-main" style="display:flex;flex-direction:column;padding:40px;min-width:0;position:relative;overflow:hidden;background:radial-gradient(520px 380px at 10% 8%,color-mix(in oklab,var(--primary) 14%,transparent),transparent 70%),radial-gradient(460px 340px at 92% 96%,color-mix(in oklab,#D9FF43 16%,transparent),transparent 70%),var(--bg)">
+    <div class="tf-auth-toolbar" style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:auto">
       <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
         <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
         <span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span>
@@ -31,7 +31,7 @@
       </button>
     </div>
 
-    <div style="position:relative;z-index:1;max-width:400px;margin:0 auto;width:100%;padding-block:40px">
+    <div class="tf-auth-card-wrap" style="position:relative;z-index:1;max-width:400px;margin:0 auto;width:100%;padding-block:40px">
       <div class="tf-panel tf-panel-narrow tf-auth-panel" style="padding:30px 26px;box-shadow:var(--shadow-lg);border-radius:var(--r-xl)">
         <div class="tf-auth-tabs" role="tablist">
           <sc-for list="{{ modeTabs }}" as="m" hint-placeholder-count="2">
@@ -77,7 +77,7 @@
               <sc-if value="{{ needsConfirmationResend }}" hint-placeholder-val="{{ false }}">
                 <button type="button" onClick="{{ onResendConfirmation }}" disabled="{{ resendingConfirmation }}" style="font-size:13.5px;font-weight:700;border:0;background:none;padding:0;cursor:pointer;color:var(--primary);text-align:start" data-i18n="auth_resend_confirmation">Resend confirmation email</button>
               </sc-if>
-              <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="tf-auth-inline-row" style="display:flex;align-items:center;justify-content:space-between">
                 <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2);font-weight:500">
                   <input type="checkbox" checked="{{ remember }}" onChange="{{ onRemember }}" style="width:16px;height:16px;accent-color:var(--primary)" />
                   Remember me
@@ -277,7 +277,7 @@
     <span style="margin-top:auto"></span>
   </div>
 
-  <div data-hide-sm="1" style="background:#121318;display:flex;align-items:center;justify-content:center;padding:40px;position:relative;overflow:hidden">
+  <div class="tf-auth-aside" data-hide-sm="1" style="background:#121318;display:flex;align-items:center;justify-content:center;padding:40px;position:relative;overflow:hidden">
     <div style="position:absolute;inset:0;background-image:radial-gradient(color-mix(in oklab,#8B7BFF 40%,transparent) 1.5px,transparent 1.5px);background-size:26px 26px;opacity:.35"></div>
     <div style="position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,#5538F2 60%,transparent),transparent);top:-160px;inset-inline-end:-160px"></div>
     <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,#D9FF43 22%,transparent),transparent);bottom:-140px;inset-inline-start:-120px"></div>
@@ -295,11 +295,18 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-function destination(session) {
+async function destination(session) {
   var roles = session.roles || [];
   if (roles.includes('Admin')) return 'Tafseel-Admin-Dashboard.dc.html';
   if (roles.includes('QualityReviewer')) return 'Tafseel-Quality-Dashboard.dc.html';
-  if (roles.includes('Teacher')) return 'Tafseel-Teacher-Dashboard.dc.html';
+  if (roles.includes('Teacher')) {
+    try {
+      const lifecycle = await Tafseel.api.get('/teachers/onboarding-status');
+      return lifecycle.nextUrl || 'Tafseel-Teacher-Apply.dc.html';
+    } catch (_) {
+      return 'Tafseel-Teacher-Apply.dc.html';
+    }
+  }
   return 'Tafseel-Student-Dashboard.dc.html';
 }
 
@@ -359,12 +366,13 @@ class Component extends DCLogic {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     const query = new URLSearchParams(location.search);
     const mode = query.get('mode');
+    const role = query.get('role');
     const email = query.get('email') || '';
     const token = query.get('token') || '';
     if (mode === 'reset' && email && token) {
       this.setState({ mode: 'reset', resetEmail: email, resetToken: token });
     } else if (mode === 'register') {
-      this.setState({ mode: 'register' });
+      this.setState({ mode: 'register', role: role === 'teacher' ? 'teacher' : 'student' });
     } else if (mode === 'confirm' && email && token) {
       Tafseel.api.post('/auth/confirm-email', { email, token })
         .then(() => { history.replaceState(null, '', location.pathname); this.flash('Email confirmed. You can log in now.'); })
@@ -476,7 +484,7 @@ class Component extends DCLogic {
         this.setState({ loginError: '', loggingIn: true, needsConfirmationResend: false });
         try {
           const session = await Tafseel.api.login(s.email, s.password);
-          location.href = destination(session);
+          location.href = await destination(session);
         } catch (error) {
           if (error && error.code === 'email_confirmation_required') {
             this.setState({

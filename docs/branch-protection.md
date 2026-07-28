@@ -14,6 +14,8 @@ Protect `main` with:
   - `Security / codeql-javascript-typescript`
   - `Database / migrations`
   - `Docker / image`
+- Do **not** add `Staging Gate` or `Deploy Staging - Azure App Service` as merge-required checks; they run after merge to `main` to authorize Azure Staging deploy.
 - Require Production Environment approval separately from branch review.
+- Exact check-run names used by Staging deploy automation are listed in `scripts/ci/required-staging-gates.txt` (job name suffixes above).
 
 Configure the `production` Environment with required reviewers, prevent self-approval, and restrict deployment to protected `v*.*.*` tags. These repository settings are manual GitHub administration; no undocumented settings automation is included.

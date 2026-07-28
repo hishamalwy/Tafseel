@@ -33,6 +33,7 @@ public sealed class RoleBootstrapTests
         await using var verification = services.CreateAsyncScope();
         var db = verification.ServiceProvider.GetRequiredService<TafseelDbContext>();
         Assert.Equal(Roles.All.Order(), await db.Roles.Select(x => x.Name!).OrderBy(x => x).ToArrayAsync());
+        Assert.Equal(["ar", "en"], await db.TeachingLanguages.Select(x => x.Code).OrderBy(x => x).ToArrayAsync());
     }
 
     [Fact]

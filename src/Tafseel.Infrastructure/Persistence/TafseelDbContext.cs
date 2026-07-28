@@ -19,11 +19,13 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Topic> Topics => Set<Topic>();
     public DbSet<QualificationTopic> QualificationTopics => Set<QualificationTopic>();
+    public DbSet<QualificationAssignmentResource> QualificationAssignmentResources => Set<QualificationAssignmentResource>();
     public DbSet<EducationLevel> EducationLevels => Set<EducationLevel>();
     public DbSet<TeachingLanguage> TeachingLanguages => Set<TeachingLanguage>();
     public DbSet<ServiceCatalogItem> ServiceCatalogItems => Set<ServiceCatalogItem>();
     public DbSet<TeacherApplication> TeacherApplications => Set<TeacherApplication>();
     public DbSet<TeacherSubjectQualification> TeacherSubjectQualifications => Set<TeacherSubjectQualification>();
+    public DbSet<TeacherDemoSubmission> TeacherDemoSubmissions => Set<TeacherDemoSubmission>();
     public DbSet<TeacherProfile> TeacherProfiles => Set<TeacherProfile>();
     public DbSet<TeacherTopic> TeacherTopics => Set<TeacherTopic>();
     public DbSet<TeacherLanguage> TeacherLanguages => Set<TeacherLanguage>();
@@ -96,10 +98,38 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         builder.Entity<Topic>().HasIndex(x => new { x.SubjectId, x.NormalizedName }).IsUnique();
         builder.Entity<Topic>().HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
         builder.Entity<QualificationTopic>().Property(x => x.Instructions).HasMaxLength(2000);
+        builder.Entity<QualificationTopic>().Property(x => x.TitleAr).HasMaxLength(200);
+        builder.Entity<QualificationTopic>().Property(x => x.InstructionsAr).HasMaxLength(2000);
+        builder.Entity<QualificationTopic>().Property(x => x.EvaluationGuidance).HasMaxLength(4000);
+        builder.Entity<QualificationTopic>().Property(x => x.EvaluationGuidanceAr).HasMaxLength(4000);
+        builder.Entity<QualificationTopic>().Property(x => x.RowVersion).IsRowVersion().IsRequired(false);
         builder.Entity<QualificationTopic>().HasIndex(x => new { x.SubjectId, x.NormalizedName }).IsUnique();
         builder.Entity<QualificationTopic>().HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
         builder.Entity<QualificationTopic>().ToTable(table =>
-            table.HasCheckConstraint("CK_QualificationTopics_MaxVideoSeconds", "[MaxVideoSeconds] BETWEEN 30 AND 600"));
+        {
+            table.HasCheckConstraint("CK_QualificationTopics_MaxVideoSeconds", "[MaxVideoSeconds] BETWEEN 30 AND 600");
+            table.HasCheckConstraint("CK_QualificationTopics_Duration",
+                "[MinVideoSeconds] BETWEEN 30 AND [ExpectedVideoSeconds] AND [ExpectedVideoSeconds] <= [MaxVideoSeconds]");
+            table.HasCheckConstraint("CK_QualificationTopics_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
+        });
+        builder.Entity<QualificationAssignmentResource>(resource =>
+        {
+            resource.Property(x => x.Id).ValueGeneratedNever();
+            resource.Property(x => x.DisplayName).HasMaxLength(200);
+            resource.Property(x => x.DisplayNameAr).HasMaxLength(200);
+            resource.Property(x => x.OriginalFileName).HasMaxLength(255);
+            resource.Property(x => x.StorageKey).HasMaxLength(500);
+            resource.Property(x => x.ContentType).HasMaxLength(150);
+            resource.Property(x => x.Url).HasMaxLength(2000);
+            resource.HasIndex(x => new { x.QualificationAssignmentId, x.DisplayOrder });
+            resource.HasOne<QualificationTopic>().WithMany().HasForeignKey(x => x.QualificationAssignmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            resource.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_QualificationAssignmentResources_Type", "[ResourceType] BETWEEN 0 AND 1");
+                table.HasCheckConstraint("CK_QualificationAssignmentResources_Size", "[SizeBytes] >= 0");
+            });
+        });
         builder.Entity<TeachingLanguage>().Property(x => x.Code).HasMaxLength(10);
         builder.Entity<TeachingLanguage>().HasIndex(x => x.Code).IsUnique();
         builder.Entity<ServiceCatalogItem>().Property(x => x.Description).HasMaxLength(1000);
@@ -179,9 +209,45 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         builder.Entity<TeacherSubjectQualification>(qualification =>
         {
             qualification.Property(x => x.Id).ValueGeneratedNever();
+            qualification.Property(x => x.ApprovedByUserId).HasMaxLength(450);
+            qualification.Property(x => x.RevokedByUserId).HasMaxLength(450);
+            qualification.Property(x => x.RevocationReason).HasMaxLength(2000);
+            qualification.Property(x => x.RowVersion).IsRowVersion().IsRequired(false);
+            qualification.Ignore(x => x.IsActive);
             qualification.HasIndex(x => new { x.TeacherId, x.SubjectId }).IsUnique();
             qualification.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             qualification.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+            qualification.HasOne<TeacherApplication>().WithMany().HasForeignKey(x => x.ApplicationId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            qualification.HasOne<QualificationTopic>().WithMany().HasForeignKey(x => x.QualificationAssignmentId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            qualification.ToTable(table =>
+                table.HasCheckConstraint("CK_TeacherSubjectQualifications_Status", "[Status] BETWEEN 0 AND 1"));
+        });
+        builder.Entity<TeacherDemoSubmission>(submission =>
+        {
+            submission.Property(x => x.Id).ValueGeneratedNever();
+            submission.Property(x => x.TeacherId).HasMaxLength(450);
+            submission.Property(x => x.StorageKey).HasMaxLength(500);
+            submission.Property(x => x.OriginalFileName).HasMaxLength(255);
+            submission.Property(x => x.ContentType).HasMaxLength(150);
+            submission.Property(x => x.AssignmentTitleSnapshot).HasMaxLength(200);
+            submission.Property(x => x.AssignmentInstructionsSnapshot).HasMaxLength(2000);
+            submission.Property(x => x.AssignmentResourceManifest).HasMaxLength(12000);
+            submission.HasIndex(x => new { x.TeacherApplicationId, x.SubmissionVersion }).IsUnique();
+            submission.HasOne<TeacherApplication>().WithMany().HasForeignKey(x => x.TeacherApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            submission.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+            submission.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+            submission.HasOne<QualificationTopic>().WithMany().HasForeignKey(x => x.QualificationAssignmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            submission.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_TeacherDemoSubmissions_Duration", "[DurationSeconds] BETWEEN 1 AND 600");
+                table.HasCheckConstraint("CK_TeacherDemoSubmissions_Size", "[SizeBytes] > 0");
+                table.HasCheckConstraint("CK_TeacherDemoSubmissions_Version", "[SubmissionVersion] > 0");
+            });
         });
 
         builder.Entity<TeacherProfile>(profile =>
@@ -252,8 +318,10 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             sample.Property(x => x.TeacherId).HasMaxLength(450);
             sample.Property(x => x.Title).HasMaxLength(200);
             sample.Property(x => x.StorageKey).HasMaxLength(500);
+            sample.Property(x => x.ApprovedByUserId).HasMaxLength(450);
             sample.Ignore(x => x.IsPublished);
             sample.HasIndex(x => new { x.TeacherId, x.PublishedAt });
+            sample.HasIndex(x => x.SourceDemoSubmissionId).IsUnique().HasFilter("[SourceDemoSubmissionId] IS NOT NULL");
             sample.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             sample.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
             sample.HasOne<Topic>().WithMany().HasForeignKey(x => x.TopicId).OnDelete(DeleteBehavior.Restrict);

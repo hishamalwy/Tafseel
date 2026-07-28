@@ -4,15 +4,37 @@
 
 The current Staging target is the Linux .NET 8 Azure App Service code app `tafseel-api-hisham` on Free F1. It is a demo environment, not Production.
 
-Run `Deploy Staging - Azure App Service` manually with a full Git SHA. The workflow:
+### Automatic path
+
+Every successful push to `main` follows:
+
+1. CI, Security, Database, and Docker checks run for that exact commit.
+2. `Staging Gate` waits (bounded retry, finite timeout) until every required check-run for that SHA succeeds, and fails immediately on failure/cancelled/timed_out.
+3. `Deploy Staging - Azure App Service` starts automatically via `workflow_run` after `Staging Gate` succeeds.
+4. The resolved revision is always `github.event.workflow_run.head_sha` (the validated push commit), never the latest `main` tip and never the deploy workflow’s default-branch `github.sha`.
+5. The `staging-db-migrate` job logs in to Azure with OIDC, rebuilds the exact-SHA EF migration bundle and idempotent SQL, verifies artifact hashes, confirms the target is only `tafseel-staging-db`, inspects DB identity, applies only pending migrations, verifies `__EFMigrationsHistory`, and checks the latest migration’s expected schema objects.
+6. Only after migration success does the `staging-azure` job publish `src/Tafseel.Api/Tafseel.Api.csproj`, deploy the prebuilt zip to App Service, wait for readiness, and run smoke tests.
+
+### Manual fallback
+
+Run `Deploy Staging - Azure App Service` with `workflow_dispatch` and a full 40-character Git SHA when you need an emergency/manual redeploy of an already validated `main` commit. The same SHA validation, migration safety, target-database checks, and pre-deploy migration execution still apply.
+
+### What the deploy verifies
 
 1. Confirms the SHA belongs to `main`.
-2. Requires successful CI, Security, Database, and Docker checks for that exact commit.
-3. Restores the locked solution, builds Release, and publishes `src/Tafseel.Api/Tafseel.Api.csproj`.
-4. Authenticates with Azure OIDC and deploys the prebuilt directory to the App Service `Production` slot.
-5. Tests `/health/live`, `/health/ready`, `/app/Tafseel-Landing.dc.html`, and anonymous access to `/api/v1/auth/me`.
+2. Requires successful check-runs for that exact commit (names in `scripts/ci/required-staging-gates.txt`):
+   `build-and-provider-neutral`, `sql-server`, `publish-smoke`, `dependencies-and-secrets`, `codeql-csharp`, `codeql-javascript-typescript`, `migrations`, `image`.
+3. Rebuilds the exact-SHA migration artifacts:
+   - `artifacts/migrations/tafseel-staging-migrate`
+   - `artifacts/migrations/tafseel-idempotent.sql`
+4. Validates artifact hashes and refuses to run unless the target database name is exactly `tafseel-staging-db`.
+5. Applies the migration bundle before deploying the application. Transient Azure SQL conditions are retried with a small bounded retry budget; invalid credentials, wrong target DB, policy failures, SQL logic errors, and verification failures stop immediately.
+6. Verifies `__EFMigrationsHistory` contains the latest expected `MigrationId`, records the current/target/latest-applied migrations in the Step Summary, and checks the latest migration’s created tables/columns where practical.
+7. Restores the locked solution, builds Release, publishes the API project, validates publish output, authenticates with Azure OIDC, and deploys the prebuilt package to the App Service `Production` slot.
+8. Runs a bounded ready probe that **fails explicitly** if readiness never succeeds, then verifies `/health/live`, `/health/ready`, `/app/Tafseel-Landing.dc.html`, and that `/api/v1/auth/me` returns `401`.
+9. Records the exact deployed SHA in the GitHub Step Summary.
 
-It does not run target-database migrations. Apply the reviewed idempotent SQL artifact to the Staging database before the first deployment. Application startup in `Staging` does not migrate the database.
+Application startup in `Staging` does not migrate the database (`InitializeIdentityAsync` only migrates in Development). `Database.Migrate()`, `MigrateAsync()`, and `EnsureCreated()` must remain out of Staging and Production startup. Migration failure stops deployment because `staging-azure` depends on successful completion of `staging-db-migrate`.
 
 The Free F1 Staging app may use mock payment/live-session providers and `/home` local persistence for demonstration. It must not be promoted to Production, scaled to multiple instances, or treated as durable file storage.
 
@@ -39,7 +61,7 @@ Jwt__Issuer=Tafseel.Api
 Jwt__Audience=Tafseel.Web
 Jwt__SigningKey=<random value, at least 32 characters>
 Resend__ApiToken=<rotated Resend staging token>
-Email__From=Tafseel <onboarding@resend.dev>
+Email__From=Tafseel <noreply@your-verified-domain.example>
 Email__ConfirmationUrl=https://tafseel-api-hisham.azurewebsites.net/app/Tafseel-Auth.dc.html
 Email__PasswordResetUrl=https://tafseel-api-hisham.azurewebsites.net/app/Tafseel-Auth.dc.html
 Email__AppBaseUrl=https://tafseel-api-hisham.azurewebsites.net/app
@@ -56,7 +78,33 @@ Do not add `WEBSITE_RUN_FROM_PACKAGE`, a publish profile, or Azure client creden
 
 Cancel the workflow proposed by Azure Deployment Center instead of pressing **Save**: saving it would commit a second deployment workflow. Configure or reuse the user-assigned identity and its GitHub federated credential separately, then use this repository-owned workflow.
 
+### Staging database authentication
+
+The repository shows Azure OIDC is intended for Azure control-plane deployment only. It does not prove that the GitHub federated principal has Azure SQL Microsoft Entra configuration or database-level data-plane permissions. Until that is explicitly set up and reviewed, use a dedicated Staging SQL login in the GitHub `staging` Environment:
+
+```text
+STAGING_SQL_SERVER=<logical-server-name>.database.windows.net
+STAGING_SQL_DATABASE=tafseel-staging-db
+STAGING_SQL_USERNAME=<staging-migration-login>
+STAGING_SQL_PASSWORD=<rotated-secret>
+```
+
+Keep the login scoped to `tafseel-staging-db` with least privilege, rotate it regularly, and never reuse Production SQL credentials.
+
+### Destructive or coordinated migrations
+
+The automatic Staging path is only for reviewed expand-safe migrations. If `scripts/ci/check-migration-safety.ps1` blocks a migration, do not widen the approvals broadly. Review the exact blocked migration and operation, then use an expand/migrate/contract release sequence or a manual DBA-reviewed change instead. Production migration/deploy remains manual and approval-gated.
+
+### Manual fallback and troubleshooting
+
+- `workflow_dispatch` still requires a full 40-character validated `main` SHA and runs the same migration-then-deploy path.
+- Use `artifacts/migrations/tafseel-idempotent.sql` for human review and emergency/manual DBA execution if automation is blocked before deployment.
+- If `staging-db-migrate` fails on authentication or target validation, fix the secret/configuration issue and rerun; the workflow does not continue silently.
+- If readiness fails after deployment, investigate schema state, migration evidence, and App Service logs before retrying.
+
 ## Production
+
+Production deployment remains manual.
 
 1. Create and validate a semantic GitHub Release.
 2. Confirm backup evidence and migration review.
@@ -64,7 +112,7 @@ Cancel the workflow proposed by Azure Deployment Center instead of pressing **Sa
 4. Approve the protected Production Environment.
 5. The workflow downloads release assets, verifies checksums and image digest, validates configuration and SQL connectivity, applies SQL separately, deploys the immutable digest using the configured safe strategy, and runs production-safe smoke tests.
 
-Application startup never applies Production migrations. Failed health triggers application-image rollback only; database rollback remains manual.
+Application startup never applies Production migrations. Failed health triggers application-image rollback only; database rollback remains manual. Production migration/deploy approvals and the existing manual SQL application step remain unchanged by the Staging automation.
 
 ## Production deployment adapter
 

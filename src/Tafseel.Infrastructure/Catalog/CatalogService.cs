@@ -4,14 +4,17 @@ using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Common;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Governance;
+using Tafseel.Application.TeacherApplications;
 
 namespace Tafseel.Infrastructure.Catalog;
 
-internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : ICatalogService
+internal sealed class CatalogService(
+    TafseelDbContext db, AuditWriter audit, IFileStorageService files, TimeProvider clock) : ICatalogService
 {
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetSubjectsAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.Subjects, includeInactive)
-            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Icon, null, null, null, null, null, null, null, null, null, null))
+            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Icon, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetTopicsAsync(Guid? subjectId, bool qualificationOnly, bool includeInactive, CancellationToken ct)
@@ -22,9 +25,25 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
             if (!includeInactive)
                 query = query.Where(x => db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
-            return await query.Select(x => new CatalogItemDto(
-                x.Id, x.Name, x.IsActive, x.Instructions, x.SubjectId, null, null, null, null, null, null, null, null, null))
-                .ToArrayAsync(ct);
+            var assignments = await query.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ToArrayAsync(ct);
+            var ids = assignments.Select(x => x.Id).ToArray();
+            var resources = await db.QualificationAssignmentResources.AsNoTracking()
+                .Where(x => ids.Contains(x.QualificationAssignmentId))
+                .OrderBy(x => x.DisplayOrder).ToArrayAsync(ct);
+            return assignments.Select(x => new CatalogItemDto(
+                x.Id, x.Name, x.IsActive, x.Instructions, x.SubjectId,
+                DisplayOrder: x.DisplayOrder, TitleAr: x.TitleAr, InstructionsAr: x.InstructionsAr,
+                MinVideoSeconds: x.MinVideoSeconds, ExpectedVideoSeconds: x.ExpectedVideoSeconds,
+                MaxVideoSeconds: x.MaxVideoSeconds, EvaluationGuidance: x.EvaluationGuidance,
+                EvaluationGuidanceAr: x.EvaluationGuidanceAr,
+                Resources: resources.Where(r => r.QualificationAssignmentId == x.Id)
+                    .Select(r => new CatalogResourceDto(
+                        r.Id, r.DisplayName, r.DisplayNameAr,
+                        r.ResourceType == QualificationResourceType.File
+                            ? $"/api/v1/qualification-resources/{r.Id}/content" : r.Url,
+                        r.DisplayOrder,
+                        r.IsRequired, r.ResourceType == QualificationResourceType.File)).ToArray()))
+                .ToArray();
         }
         else
         {
@@ -33,19 +52,22 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
                 query = query.Where(x => db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
             return await query.Select(x => new CatalogItemDto(
-                x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, null, null, null, null, null, null, null, null, null))
+                x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null))
                 .ToArrayAsync(ct);
         }
     }
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.EducationLevels, includeInactive)
-            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, null, null, null, null, null, null, null, null, null))
+            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetLanguagesAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.TeachingLanguages, includeInactive)
-            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Code, null, null, null, null, null, null, null, null, null, null))
+            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, x.Code, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetServicesAsync(bool includeInactive, CancellationToken ct)
@@ -109,8 +131,16 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
     public async Task<CatalogItemDto> CreateQualificationTopicAsync(QualificationTopicInput input, CancellationToken ct)
     {
         await RequireActiveSubject(input.SubjectId, ct);
-        return await AddAsync(new QualificationTopic(input.SubjectId, input.Name, input.Instructions, input.MaxVideoSeconds),
-            x => new(x.Id, x.Name, x.IsActive, x.Instructions, x.SubjectId), ct);
+        var assignment = new QualificationTopic(input.SubjectId, input.Name, input.Instructions, input.MaxVideoSeconds);
+        assignment.Configure(input.Name, input.TitleAr, input.Instructions, input.InstructionsAr,
+            input.ExpectedVideoSeconds, input.MinVideoSeconds, input.MaxVideoSeconds,
+            input.EvaluationGuidance, input.EvaluationGuidanceAr, input.DisplayOrder);
+        return await AddAsync(assignment,
+            x => new(x.Id, x.Name, x.IsActive, x.Instructions, x.SubjectId,
+                DisplayOrder: x.DisplayOrder, TitleAr: x.TitleAr, InstructionsAr: x.InstructionsAr,
+                MinVideoSeconds: x.MinVideoSeconds, ExpectedVideoSeconds: x.ExpectedVideoSeconds,
+                MaxVideoSeconds: x.MaxVideoSeconds, EvaluationGuidance: x.EvaluationGuidance,
+                EvaluationGuidanceAr: x.EvaluationGuidanceAr), ct);
     }
 
     public Task<CatalogItemDto> CreateEducationLevelAsync(NamedCatalogInput input, CancellationToken ct) =>
@@ -118,7 +148,7 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
 
     public Task<CatalogItemDto> CreateLanguageAsync(NamedCatalogInput input, CancellationToken ct) =>
         AddAsync(new TeachingLanguage(input.Name, input.Detail ?? ""),
-            x => new(x.Id, x.Name, x.IsActive, x.Code), ct);
+            x => new(x.Id, x.Name, x.IsActive, Code: x.Code), ct);
 
     public Task<CatalogItemDto> CreateServiceAsync(NamedCatalogInput input, CancellationToken ct) =>
         AddAsync(
@@ -203,6 +233,51 @@ internal sealed class CatalogService(TafseelDbContext db, AuditWriter audit) : I
         item.SetActive(active);
         await SaveCatalogAsync(ct);
     }
+
+    public async Task<CatalogResourceDto> AddLinkResourceAsync(
+        Guid assignmentId, QualificationLinkResourceInput input, CancellationToken ct)
+    {
+        await Required(db.QualificationTopics, assignmentId, ct);
+        var resource = new QualificationAssignmentResource(
+            assignmentId, QualificationResourceType.Link, input.DisplayName, input.DisplayNameAr,
+            "", "", "", 0, input.Url, input.DisplayOrder, input.IsRequired, clock.GetUtcNow());
+        db.Add(resource);
+        await db.SaveChangesAsync(ct);
+        return ResourceDto(resource);
+    }
+
+    public async Task<CatalogResourceDto> AddFileResourceAsync(
+        Guid assignmentId, Stream stream, string fileName, string contentType, long size,
+        string displayName, string displayNameAr, int displayOrder, bool isRequired, CancellationToken ct)
+    {
+        await Required(db.QualificationTopics, assignmentId, ct);
+        var stored = await files.StorePrivateFileAsync(
+            stream, fileName, contentType, size, "qualification-resources", ct);
+        var resource = new QualificationAssignmentResource(
+            assignmentId, QualificationResourceType.File, displayName, displayNameAr,
+            Path.GetFileName(fileName), stored.StorageKey, stored.ContentType, stored.Size,
+            null, displayOrder, isRequired, clock.GetUtcNow());
+        db.Add(resource);
+        await db.SaveChangesAsync(ct);
+        return ResourceDto(resource);
+    }
+
+    public async Task<CatalogFile> OpenResourceAsync(Guid resourceId, CancellationToken ct)
+    {
+        var resource = await db.QualificationAssignmentResources.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == resourceId
+                && x.ResourceType == QualificationResourceType.File
+                && db.QualificationTopics.Any(a => a.Id == x.QualificationAssignmentId && a.IsActive), ct)
+            ?? throw new DomainException("qualification_resource_not_found", "Qualification resource was not found.");
+        return new(await files.OpenPrivateFileAsync(resource.StorageKey, ct),
+            resource.ContentType, resource.OriginalFileName);
+    }
+
+    private static CatalogResourceDto ResourceDto(QualificationAssignmentResource resource) =>
+        new(resource.Id, resource.DisplayName, resource.DisplayNameAr,
+            resource.ResourceType == QualificationResourceType.File
+                ? $"/api/v1/qualification-resources/{resource.Id}/content" : resource.Url,
+            resource.DisplayOrder, resource.IsRequired, resource.ResourceType == QualificationResourceType.File);
 
     private async Task RequireActiveSubject(Guid id, CancellationToken ct)
     {

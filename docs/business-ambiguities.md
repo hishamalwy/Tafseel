@@ -4,7 +4,7 @@ Every item below has no unambiguous answer in the frontend. Per the master instr
 
 ## 1. Three referenced pages don't exist in the repository
 
-`Tafseel-Teacher-Apply.dc.html`, `Tafseel-Auth.dc.html`, and `Tafseel-Chat.dc.html` are linked from navigation/footers throughout the site ([audit §1](frontend-requirements-audit.md#1-files-inspected)) but no such files exist. This affects three mandatory spec domains: **authentication**, **teacher onboarding/application intake**, and **real-time messaging**.
+Authentication and teacher application pages now exist. Messaging is embedded in the Student and Teacher dashboards; the former standalone Chat URL is a compatibility redirect.
 
 **Impact**: there is no frontend evidence for the *exact* fields, steps, or copy of registration/login, the teacher application wizard, or the chat UI.
 
