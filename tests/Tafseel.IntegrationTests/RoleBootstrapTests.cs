@@ -14,6 +14,57 @@ namespace Tafseel.IntegrationTests;
 public sealed class RoleBootstrapTests
 {
     [Fact]
+    public async Task Development_startup_invokes_bootstrap_with_migrations_enabled()
+    {
+        var invocations = 0;
+        bool? migrate = null;
+
+        await global::IdentityInitialization.RunAsync(
+            new TestHostEnvironment(Environments.Development),
+            requestedMigrate =>
+            {
+                invocations++;
+                migrate = requestedMigrate;
+                return Task.CompletedTask;
+            });
+
+        Assert.Equal(1, invocations);
+        Assert.True(migrate);
+    }
+
+    [Theory]
+    [InlineData("Staging")]
+    [InlineData("Production")]
+    [InlineData("Testing")]
+    public async Task Non_development_startup_does_not_invoke_bootstrap(string environment)
+    {
+        var invocations = 0;
+
+        await global::IdentityInitialization.RunAsync(
+            new TestHostEnvironment(environment),
+            _ =>
+            {
+                invocations++;
+                return Task.CompletedTask;
+            });
+
+        Assert.Equal(0, invocations);
+    }
+
+    [Fact]
+    public void Testing_factory_preserves_its_intentional_bootstrap()
+    {
+        using var factory = new TafseelApiFactory();
+        using var scope = factory.Services.CreateScope();
+        var roles = scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Roles
+            .Select(x => x.Name!)
+            .OrderBy(x => x)
+            .ToArray();
+
+        Assert.Equal(Roles.All.Order(), roles);
+    }
+
+    [Fact]
     public async Task Bootstrap_handles_empty_repeated_and_partially_existing_role_sets()
     {
         await using var database = new SqliteConnection("Data Source=:memory:");

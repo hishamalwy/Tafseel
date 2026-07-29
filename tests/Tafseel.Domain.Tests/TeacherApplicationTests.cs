@@ -125,6 +125,18 @@ public sealed class TeacherApplicationTests
         Assert.Equal("incomplete_evaluation", error.Code);
     }
 
+    [Theory]
+    [InlineData("100", "BSc")]
+    [InlineData("Cairo", "100")]
+    public void City_and_degree_require_meaningful_text(string city, string degree)
+    {
+        var application = new TeacherApplication(
+            "teacher", Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        Assert.Throws<DomainException>(() =>
+            application.UpdateDraft(application.QualificationTopicId, city, 5, degree));
+    }
+
     [Fact]
     public void Undefined_priority_is_rejected()
     {

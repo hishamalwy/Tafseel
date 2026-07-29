@@ -2,7 +2,7 @@
 
 > Pass 3 implementation note (2026-07-26): the implemented catalog and teacher-qualification model is authoritative where it differs from this broader Phase 1 proposal. Catalog records now persist display `Name` and product-normalized `NormalizedName`. Subjects, Education Levels, Teaching Languages, and Service Catalog Items are globally unique by normalized name; Topics and Qualification Topics are unique by `(SubjectId, NormalizedName)`. `TeacherApplication.RowVersion` is exposed as an opaque API version, and historical reviews, scores, and status rows use restrictive delete behavior. Future marketplace aggregates below remain proposals and were not implemented in Pass 3.
 
-Derived from [frontend-requirements-audit.md](frontend-requirements-audit.md). This is a **proposal for Phase 2+**; nothing here has been implemented yet. Field lists are illustrative, not exhaustive column-by-column specs — those get finalized during Phase 2/3 EF Core configuration.
+Derived from [frontend-requirements-audit.md](audits/frontend-requirements-audit.md). This is a **proposal for Phase 2+**; nothing here has been implemented yet. Field lists are illustrative, not exhaustive column-by-column specs — those get finalized during Phase 2/3 EF Core configuration.
 
 Mermaid overview (major aggregates only — full field-level ERD belongs in `docs/domain-model.md` once implemented):
 
@@ -43,7 +43,7 @@ erDiagram
 
 ## 1. Identity & Profiles
 
-- **ApplicationUser** (Identity) — email, password hash, phone (optional), roles, security stamp, email-confirmed flag, account status (`Active|Suspended|PendingVerification`), created/last-login timestamps. *Suspension observed as an Admin action on every user row — [audit §3.7](frontend-requirements-audit.md#37-admin-dashboard-tafseel-admin-dashboarddchtml).*
+- **ApplicationUser** (Identity) — email, password hash, phone (optional), roles, security stamp, email-confirmed flag, account status (`Active|Suspended|PendingVerification`), created/last-login timestamps. *Suspension observed as an Admin action on every user row — [audit §3.7](audits/frontend-requirements-audit.md#37-admin-dashboard-tafseel-admin-dashboarddchtml).*
 - **StudentProfile** (1:1 ApplicationUser) — display name, education level, preferred language(s), avatar file reference.
 - **TeacherProfile** (1:1 ApplicationUser) — bio, years of experience, city/country, teaching languages, verification status, "level" badge (`Verified|RisingTalent|TopRated` — flagged as ambiguous, see [business-ambiguities.md](business-ambiguities.md) §5), response-time (computed, cached), rating (computed, cached), avatar, LinkedIn URL, bank payout reference (masked in UI — [Teacher-Dashboard:348](../Tafseel-Teacher-Dashboard.dc.html#L348)), timezone.
 - **QualityReviewerProfile** (1:1 ApplicationUser) — notification preferences (new-application email, auto-assign toggle — [Quality-Dashboard:386-387](../Tafseel-Quality-Dashboard.dc.html#L386-L387)).
@@ -75,7 +75,7 @@ Business rules carried from the audit: comment required to Reject/Request-change
 
 - **TeacherService** — teacher FK, ServiceCatalogItem FK, price (decimal), delivery-time descriptor, revision count, active flag. ("My Services" toggle list.)
 - **TeacherTeachingSample** — teacher FK, video file reference, title, duration, topic/meta, display order.
-- **TeacherAvailabilityRule** — recurring weekly pattern (day-of-week + time-of-day slots + timezone) — needed to reconcile the two conflicting availability UIs (see [audit §5.3](frontend-requirements-audit.md#5-inconsistencies-found-between-pages)); resolve to the richer (per-slot) model since that is what the public profile actually renders.
+- **TeacherAvailabilityRule** — recurring weekly pattern (day-of-week + time-of-day slots + timezone) — needed to reconcile the two conflicting availability UIs (see [audit §5.3](audits/frontend-requirements-audit.md#5-inconsistencies-found-between-pages)); resolve to the richer (per-slot) model since that is what the public profile actually renders.
 - **TeacherAvailabilityException** — one-off overrides (holiday, already-booked slot).
 - **FavoriteTeacher** — student FK, teacher FK (the heart/save toggle on Browse and Profile pages).
 - **TeacherCertification**, **TeacherExperience** — the "Education & experience" timeline entries (degree/lecturer role/certification/tutoring-start, each with a date range and icon).
@@ -117,7 +117,7 @@ Chat is implemented as a shared dashboard widget using the existing conversation
 
 ## 8. Notifications
 
-- **Notification** — user FK, type (enum matching [audit §7](frontend-requirements-audit.md#7-notification-events-evidence-based)), title, body, related-entity type/id, read flag, created-at.
+- **Notification** — user FK, type (enum matching [audit §7](audits/frontend-requirements-audit.md#7-notification-events-evidence-based)), title, body, related-entity type/id, read flag, created-at.
 - **UserNotificationPreference** — per-user toggles observed: student (email on new deliveries, email on session reminders), teacher (email on new requests, SMS on session reminders), reviewer (email on new application, auto-assign).
 - **NotificationTemplate** — optional, only if templating value is clear; the mock strings are simple enough that this may be over-engineering for Phase 8 — decide then.
 
@@ -127,7 +127,7 @@ Chat is implemented as a shared dashboard widget using the existing conversation
 - **ReviewScore** — review FK, category (`Clarity|Communication|SubjectKnowledge|DeliveryTime|ValueForMoney` — the 5 fixed categories from the profile page), score 1–5.
 - **ReviewModerationRecord** — review FK, moderator FK, action (`Flagged|Unflagged|Removed`), reason, timestamp. (Admin's Reviews list shows a "Flagged" status on one mock row — [Admin-Dashboard:444](../Tafseel-Admin-Dashboard.dc.html#L444).)
 
-Kept entirely distinct from `TeacherApplicationReview`/`TeacherEvaluationScore` above (different purpose, different rubric, different actors) per [audit §5.2](frontend-requirements-audit.md#5-inconsistencies-found-between-pages).
+Kept entirely distinct from `TeacherApplicationReview`/`TeacherEvaluationScore` above (different purpose, different rubric, different actors) per [audit §5.2](audits/frontend-requirements-audit.md#5-inconsistencies-found-between-pages).
 
 ## 10. Payments, Escrow, Ledger, Withdrawals
 

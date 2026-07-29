@@ -11,7 +11,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using Tafseel.Api.Controllers;
 using Tafseel.Application.Authorization;
+using Tafseel.Application.Marketplace;
 using Tafseel.Domain.Catalog;
+using Tafseel.Domain.Marketplace;
 using Tafseel.Infrastructure.Identity;
 using Tafseel.Infrastructure.Persistence;
 
@@ -80,6 +82,51 @@ public sealed class TeacherApplicationAuthorizationTests(TafseelApiFactory facto
         }
     }
 
+    [Fact]
+    public async Task Own_languages_returns_stable_collections_for_new_saved_and_partial_profiles()
+    {
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await Client().GetAsync("/api/v1/teachers/me/languages")).StatusCode);
+
+        var denied = await User(Roles.Student, false);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await Client(denied.Token).GetAsync("/api/v1/teachers/me/languages")).StatusCode);
+
+        var teacher = await User(
+            Roles.Teacher, true, permission: Permissions.TeachersManageOwnProfile);
+        using var teacherClient = Client(teacher.Token);
+        var empty = await teacherClient.GetFromJsonAsync<NamedItemDto[]>("/api/v1/teachers/me/languages");
+        Assert.Empty(empty!);
+
+        Guid languageId;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            var language = new TeachingLanguage($"Language-{Guid.NewGuid():N}", $"x-{Guid.NewGuid():N}");
+            db.Add(language);
+            await db.SaveChangesAsync();
+            languageId = language.Id;
+        }
+
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await teacherClient.PutAsJsonAsync("/api/v1/teachers/me/languages", new { ids = new[] { languageId } }))
+                .StatusCode);
+        var saved = Assert.Single(
+            (await teacherClient.GetFromJsonAsync<NamedItemDto[]>("/api/v1/teachers/me/languages"))!);
+        Assert.Equal(languageId, saved.Id);
+
+        var partial = await User(
+            Roles.Teacher, true, permission: Permissions.TeachersManageOwnProfile);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            db.Add(new TeacherProfile(partial.UserId, DateTimeOffset.UtcNow));
+            await db.SaveChangesAsync();
+        }
+        Assert.Empty((await Client(partial.Token)
+            .GetFromJsonAsync<NamedItemDto[]>("/api/v1/teachers/me/languages"))!);
+    }
+
     private async Task<(Guid SubjectId, Guid TopicId)> SeedCatalog()
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -91,7 +138,11 @@ public sealed class TeacherApplicationAuthorizationTests(TafseelApiFactory facto
         return (subject.Id, topic.Id);
     }
 
-    private async Task<TestUser> User(string role, bool applyPermission, bool suspended = false)
+    private async Task<TestUser> User(
+        string role,
+        bool applyPermission,
+        bool suspended = false,
+        string? permission = null)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -106,10 +157,14 @@ public sealed class TeacherApplicationAuthorizationTests(TafseelApiFactory facto
         user.Email = user.UserName;
         Assert.True((await users.CreateAsync(user, "Strong!Password1")).Succeeded);
         Assert.True((await users.AddToRoleAsync(user, role)).Succeeded);
-        return new(TestToken(user, role, applyPermission), suspended);
+        return new(TestToken(user, role, applyPermission, permission), suspended, user.Id);
     }
 
-    private static string TestToken(ApplicationUser user, string role, bool applyPermission)
+    private static string TestToken(
+        ApplicationUser user,
+        string role,
+        bool applyPermission,
+        string? permission)
     {
         var claims = new List<Claim>
         {
@@ -120,7 +175,7 @@ public sealed class TeacherApplicationAuthorizationTests(TafseelApiFactory facto
             new(ClaimTypes.Role, role)
         };
         if (applyPermission)
-            claims.Add(new(Permissions.ClaimType, Permissions.TeachersApply));
+            claims.Add(new(Permissions.ClaimType, permission ?? Permissions.TeachersApply));
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes("integration-tests-only-signing-key-32-bytes")),
             SecurityAlgorithms.HmacSha256);
@@ -137,5 +192,5 @@ public sealed class TeacherApplicationAuthorizationTests(TafseelApiFactory facto
         return client;
     }
 
-    private sealed record TestUser(string Token, bool Suspended);
+    private sealed record TestUser(string Token, bool Suspended, string UserId);
 }

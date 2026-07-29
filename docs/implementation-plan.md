@@ -20,7 +20,7 @@ Phase 1 (this audit) is complete. This plan sequences Phases 2–11 per the mast
 
 ## Phase 4 — Teacher Marketplace
 - `TeacherProfile`, `TeacherService`, `TeacherTeachingSample`, `TeacherAvailabilityRule`/`Exception`, `FavoriteTeacher`, `TeacherCertification`/`Experience`.
-- `/teachers` search endpoint matching the exact filter/sort whitelist from [audit §10](frontend-requirements-audit.md#10-filters-and-sorting-whitelist-source-of-truth) — this is the highest-traffic anonymous endpoint, so indexing and `AsNoTracking`/projection-to-DTO matter most here.
+- `/teachers` search endpoint matching the exact filter/sort whitelist from [audit §10](audits/frontend-requirements-audit.md#10-filters-and-sorting-whitelist-source-of-truth) — this is the highest-traffic anonymous endpoint, so indexing and `AsNoTracking`/projection-to-DTO matter most here.
 - Resolve [business-ambiguities.md](business-ambiguities.md) §5 (teacher level badge rule) and §6 (availability model) before exposing the profile/availability endpoints as final.
 - Rating/response-time/completed-count as cached, recomputed-on-write fields, not query-time aggregates on every list request.
 

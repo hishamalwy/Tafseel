@@ -46,7 +46,8 @@ Runtime application secrets belong in Azure App Service Configuration, not GitHu
 - `Resend__ApiToken`
 - `Payments__WebhookSecret`
 
-The remaining required App Service settings and demo-safe values are listed in `deployment.md`.
+The remaining required App Service settings and demo-safe values are listed in
+[`architecture/DEPLOYMENT_RUNBOOK.md`](architecture/DEPLOYMENT_RUNBOOK.md).
 
 ## Production secrets
 

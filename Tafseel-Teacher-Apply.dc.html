@@ -15,9 +15,23 @@
     .tf-apply-step{padding:10px;border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:18px;font-weight:700;text-align:center}
     .tf-apply-step[data-active="true"]{background:var(--primary-soft);color:var(--primary)}
     .tf-assignment{margin:14px 0;padding:18px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)}
-    .tf-assignment h2{font-size:24px;margin:0 0 8px}.tf-assignment-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .tf-assignment h2{font-size:24px;margin:0 0 4px}.tf-assignment h3{font-size:17px;margin:18px 0 8px}
+    .tf-assignment-title-alt{margin:0 0 12px;color:var(--text-2);font-size:17px;font-weight:700}
+    .tf-assignment-instructions{white-space:pre-wrap}.tf-assignment-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     .tf-assignment-meta span{padding:5px 9px;border-radius:99px;background:var(--surface);font-size:12px;color:var(--text-2)}
-    @media(max-width:640px){.tf-apply-steps{grid-template-columns:1fr}.tf-workflow{padding-inline:14px}}
+    .tf-assignment-resources{display:grid;gap:8px;padding:0;list-style:none}
+    .tf-assignment-resource{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)}
+    .tf-assignment-resource small{display:block;color:var(--muted)}.tf-assignment-resource a{flex:none}
+    .tf-apply-skeleton{display:grid;gap:14px;padding-block:12px}
+    .tf-skeleton-line,.tf-skeleton-box{background:var(--surface-2);border-radius:var(--r-sm);animation:tf-pulse 1.2s ease-in-out infinite alternate}
+    .tf-skeleton-line{height:42px}.tf-skeleton-box{height:150px}.tf-skeleton-line:last-child{width:38%}
+    .tf-field-error{min-height:20px;margin:5px 0 0;color:var(--error);font-size:13px}
+    @keyframes tf-pulse{to{opacity:.45}}
+    @media(prefers-reduced-motion:reduce){.tf-skeleton-line,.tf-skeleton-box{animation:none}}
+    @media(max-width:640px){
+      .tf-apply-steps{grid-template-columns:1fr}.tf-workflow{padding-inline:14px}
+      .tf-assignment-resource{align-items:flex-start;flex-direction:column}.tf-assignment-resource a{width:100%}
+    }
   </style>
 </head>
 <body>
@@ -38,23 +52,33 @@
         <div class="tf-apply-step" id="step-demo" data-i18n="apply_step_demo">2. Demo</div>
         <div class="tf-apply-step" id="step-review" data-i18n="apply_step_review">3. Review</div>
       </div>
+      <div id="apply-skeleton" class="tf-apply-skeleton" role="status" aria-live="polite">
+        <span data-i18n="apply_loading">Loading application…</span>
+        <div class="tf-skeleton-line" aria-hidden="true"></div>
+        <div class="tf-skeleton-line" aria-hidden="true"></div>
+        <div class="tf-skeleton-box" aria-hidden="true"></div>
+        <div class="tf-skeleton-line" aria-hidden="true"></div>
+      </div>
+      <div id="apply-content" hidden>
       <div id="lifecycle-status" class="tf-alert" role="status" hidden></div>
       <div id="applications" class="tf-list" aria-live="polite"></div>
       <form id="application-form" class="tf-form">
         <div class="tf-grid-2">
           <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
-          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required></select></div>
+          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select><p id="topics-error" class="tf-field-error" role="status"></p></div>
           <div class="tf-field"><label for="city" data-i18n="apply_city">City</label><input id="city" maxlength="150" required autocomplete="address-level2"></div>
           <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" value="0" required></div>
         </div>
         <fieldset class="tf-field" style="border:0;padding:0;margin:0">
           <legend data-i18n="apply_languages" style="font-weight:700;margin-bottom:6px">Teaching languages</legend>
           <p class="tf-muted" data-i18n="apply_languages_hint" style="font-size:13px;margin:0 0 10px">Choose every language you can teach in.</p>
-          <div id="teaching-languages" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+          <div id="teaching-languages" style="display:flex;gap:10px;flex-wrap:wrap" aria-describedby="languages-error"></div>
+          <p id="languages-error" class="tf-field-error" role="status"></p>
         </fieldset>
         <article id="assignment-details" class="tf-assignment" hidden></article>
-        <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required></div>
+        <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required autocomplete="organization-title"></div>
         <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save">Save application</button>
+        <p id="submit-error" class="tf-field-error" role="alert"></p>
       </form>
       <form id="demo-form" class="tf-form" hidden>
         <h2 data-i18n="apply_demo_title">Teaching demo</h2>
@@ -68,6 +92,7 @@
         </div>
       </form>
       <p id="apply-status" class="tf-status" role="status" aria-live="polite"></p>
+      </div>
     </section>
   </main>
 </body>

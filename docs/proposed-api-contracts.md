@@ -2,12 +2,12 @@
 
 > Pass 3 implementation note (2026-07-26): current teacher-application mutation endpoints require `If-Match` with the opaque `version` returned by create, mine, and reviewer-queue responses. Missing or malformed input returns RFC 7807 with stable codes; stale SQL rowversion returns `409 concurrency_conflict`. The decision endpoint accepts all nine scores in one request. No score-draft endpoint or broad idempotency-key framework was added.
 
-Phase 1 proposal, base path `/api/v1`. This is the endpoint inventory needed to replace every mock array and `flash()` stub identified in [frontend-requirements-audit.md](frontend-requirements-audit.md). Full request/response DTOs and error catalogs are finalized per-phase during implementation; this document fixes the **shape and authorization** of the surface so Phase 2 scaffolding and the later [frontend-api-contract-map.md](frontend-api-contract-map.md) (page-by-page wiring) have a stable target.
+Phase 1 proposal, base path `/api/v1`. This is the endpoint inventory needed to replace every mock array and `flash()` stub identified in [frontend-requirements-audit.md](audits/frontend-requirements-audit.md). Full request/response DTOs and error catalogs are finalized per-phase during implementation; this document fixes the **shape and authorization** of the surface so Phase 2 scaffolding and the later [frontend-api-contract-map.md](frontend-api-contract-map.md) (page-by-page wiring) have a stable target.
 
-Conventions: all list endpoints paginated (`page`, `pageSize`, `sortBy` whitelisted per the enums in [audit §10](frontend-requirements-audit.md#10-filters-and-sorting-whitelist-source-of-truth)), all mutating endpoints accept an `Idempotency-Key` header where the audit's financial rules require it, errors as RFC 7807 ProblemDetails, all timestamps UTC ISO-8601.
+Conventions: all list endpoints paginated (`page`, `pageSize`, `sortBy` whitelisted per the enums in [audit §10](audits/frontend-requirements-audit.md#10-filters-and-sorting-whitelist-source-of-truth)), all mutating endpoints accept an `Idempotency-Key` header where the audit's financial rules require it, errors as RFC 7807 ProblemDetails, all timestamps UTC ISO-8601.
 
 ## `/api/v1/auth`
-*No frontend page exists for this group ([audit §1](frontend-requirements-audit.md#1-files-inspected)) — designed from the master spec's mandatory auth requirements.*
+*No frontend page exists for this group ([audit §1](audits/frontend-requirements-audit.md#1-files-inspected)) — designed from the master spec's mandatory auth requirements.*
 
 | Endpoint | Method | Auth | Notes |
 |---|---|---|---|
@@ -186,7 +186,7 @@ Conventions: all list endpoints paginated (`page`, `pageSize`, `sortBy` whitelis
 
 ## `/api/v1/quality`
 
-Covered by the `teacher-applications` group above (Admin's "Teacher Applications" nav item redirects to the same Quality Dashboard UI — [audit §3.7](frontend-requirements-audit.md#37-admin-dashboard-tafseel-admin-dashboarddchtml)); no separate route group needed unless Admin later gets distinct queue semantics.
+Covered by the `teacher-applications` group above (Admin's "Teacher Applications" nav item redirects to the same Quality Dashboard UI — [audit §3.7](audits/frontend-requirements-audit.md#37-admin-dashboard-tafseel-admin-dashboarddchtml)); no separate route group needed unless Admin later gets distinct queue semantics.
 
 ## Cross-cutting
 

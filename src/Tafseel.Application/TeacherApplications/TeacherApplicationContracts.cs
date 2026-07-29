@@ -17,6 +17,10 @@ public sealed record CreateTeacherApplication(
             yield return new("Subject is required.", [nameof(SubjectId)]);
         if (QualificationTopicId == Guid.Empty)
             yield return new("Qualification topic is required.", [nameof(QualificationTopicId)]);
+        if (!string.IsNullOrWhiteSpace(City) && !City.Any(char.IsLetter))
+            yield return new("City must contain a meaningful name.", [nameof(City)]);
+        if (!string.IsNullOrWhiteSpace(Degree) && !Degree.Any(char.IsLetter))
+            yield return new("Degree or qualification must contain meaningful text.", [nameof(Degree)]);
     }
 }
 public sealed record TeacherApplicationDto(

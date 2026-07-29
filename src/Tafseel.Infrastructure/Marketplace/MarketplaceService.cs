@@ -187,6 +187,23 @@ internal sealed class MarketplaceService(
         return await BuildProfileAsync(profile, publicOnly: false, ct);
     }
 
+    public async Task<IReadOnlyCollection<NamedItemDto>> GetLanguagesAsync(string teacherId, CancellationToken ct)
+    {
+        await RequireTeacherAsync(teacherId, ct);
+        // EF Core can't translate ordering after projecting into a custom DTO in the Join selector.
+        // Order first, then project into NamedItemDto.
+        return await db.TeacherLanguages.AsNoTracking()
+            .Where(x => x.TeacherId == teacherId)
+            .Join(
+                db.TeachingLanguages,
+                x => x.LanguageId,
+                x => x.Id,
+                (teacherLanguage, teachingLanguage) => new { teachingLanguage.Id, teachingLanguage.Name })
+            .OrderBy(x => x.Name)
+            .Select(x => new NamedItemDto(x.Id, x.Name))
+            .ToArrayAsync(ct);
+    }
+
     public async Task UpdateProfileAsync(string teacherId, UpdateTeacherProfile input, CancellationToken ct)
     {
         await RequireTeacherAsync(teacherId, ct);

@@ -12,6 +12,7 @@
     error.status = response.status;
     error.code = body && body.code || 'request_failed';
     error.errors = body && body.errors || null;
+    error.traceId = body && body.traceId || null;
     return error;
   }
 

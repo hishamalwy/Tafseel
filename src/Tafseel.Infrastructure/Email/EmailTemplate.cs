@@ -67,7 +67,12 @@ internal static class EmailTemplate
             : $"© {DateTime.UtcNow.Year} Tafseel. All rights reserved.";
         var enc = HtmlEncoder.Default;
         var sb = new StringBuilder();
-        var assets = appBaseUrl.TrimEnd('/');
+        // Email clients are sensitive to asset URL paths; some environments provide AppBaseUrl
+        // without the `/app` prefix even though the frontend assets are served under `/app/...`.
+        var baseUrl = appBaseUrl.TrimEnd('/');
+        if (!baseUrl.EndsWith("/app", StringComparison.OrdinalIgnoreCase))
+            baseUrl += "/app";
+        var assets = baseUrl;
         var dotGrid = $"radial-gradient(#8B7BFF66 1.5px, transparent 1.5px)";
         var glowTop = "radial-gradient(closest-side, rgba(85,56,242,.55), transparent)";
         var glowBottom = "radial-gradient(closest-side, rgba(217,255,67,.20), transparent)";

@@ -59,6 +59,10 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
         return NoContent();
     }
 
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpGet("me/languages")]
+    public Task<IReadOnlyCollection<NamedItemDto>> GetLanguages(CancellationToken ct) =>
+        marketplace.GetLanguagesAsync(UserId(), ct);
+
     [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpPut("me/education-levels")]
     public async Task<IActionResult> SetEducationLevels(IdList input, CancellationToken ct)
     {
@@ -177,4 +181,4 @@ public sealed class FavoriteTeachersController(IMarketplaceService marketplace) 
 
 public sealed record PublicationRequest(bool Published);
 public sealed record ActiveRequest(bool Active);
-public sealed record IdList([property: MaxLength(100)] IReadOnlyCollection<Guid> Ids);
+public sealed record IdList([param: MaxLength(100)] IReadOnlyCollection<Guid> Ids);

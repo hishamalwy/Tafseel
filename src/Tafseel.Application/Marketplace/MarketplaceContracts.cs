@@ -147,6 +147,7 @@ public interface IMarketplaceService
     Task<PagedResult<TeacherCardDto>> SearchAsync(TeacherSearch query, CancellationToken ct);
     Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct);
     Task<TeacherProfileDto> GetOwnProfileAsync(string teacherId, CancellationToken ct);
+    Task<IReadOnlyCollection<NamedItemDto>> GetLanguagesAsync(string teacherId, CancellationToken ct);
     Task UpdateProfileAsync(string teacherId, UpdateTeacherProfile input, CancellationToken ct);
     Task SetProfilePublishedAsync(string teacherId, bool published, CancellationToken ct);
     Task SetTopicsAsync(string teacherId, IReadOnlyCollection<Guid> topicIds, CancellationToken ct);

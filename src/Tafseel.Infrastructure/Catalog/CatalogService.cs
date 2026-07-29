@@ -42,7 +42,8 @@ internal sealed class CatalogService(
                         r.ResourceType == QualificationResourceType.File
                             ? $"/api/v1/qualification-resources/{r.Id}/content" : r.Url,
                         r.DisplayOrder,
-                        r.IsRequired, r.ResourceType == QualificationResourceType.File)).ToArray()))
+                        r.IsRequired, r.ResourceType == QualificationResourceType.File,
+                        r.OriginalFileName, r.ContentType)).ToArray()))
                 .ToArray();
         }
         else
@@ -282,7 +283,8 @@ internal sealed class CatalogService(
         new(resource.Id, resource.DisplayName, resource.DisplayNameAr,
             resource.ResourceType == QualificationResourceType.File
                 ? $"/api/v1/qualification-resources/{resource.Id}/content" : resource.Url,
-            resource.DisplayOrder, resource.IsRequired, resource.ResourceType == QualificationResourceType.File);
+            resource.DisplayOrder, resource.IsRequired, resource.ResourceType == QualificationResourceType.File,
+            resource.OriginalFileName, resource.ContentType);
 
     private async Task RequireActiveSubject(Guid id, CancellationToken ct)
     {

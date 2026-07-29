@@ -88,6 +88,12 @@ public sealed class CatalogTests(TafseelApiFactory factory) : IClassFixture<Tafs
         });
         var teacherToken = (await teacherLogin.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accessToken").GetString();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", teacherToken);
+        var assignments = await client.GetFromJsonAsync<JsonElement[]>(
+            $"/api/v1/topics?qualificationOnly=true&subjectId={id}");
+        var resource = Assert.Single(
+            Assert.Single(assignments!).GetProperty("resources").EnumerateArray());
+        Assert.Equal("assignment.pdf", resource.GetProperty("fileName").GetString());
+        Assert.Equal("application/pdf", resource.GetProperty("contentType").GetString());
         var downloaded = await client.GetAsync(resourceUrl!);
         Assert.Equal(HttpStatusCode.OK, downloaded.StatusCode);
         Assert.Equal("application/pdf", downloaded.Content.Headers.ContentType?.MediaType);

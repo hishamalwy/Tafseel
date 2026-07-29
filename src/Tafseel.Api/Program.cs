@@ -298,9 +298,18 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = check => check.Tags.Contains("ready")
 });
 
-if (!app.Environment.IsEnvironment("Testing"))
-    await app.Services.InitializeIdentityAsync(app.Environment.IsDevelopment());
+await IdentityInitialization.RunAsync(
+    app.Environment,
+    migrate => app.Services.InitializeIdentityAsync(migrate));
 
 app.Run();
 
 public partial class Program;
+
+internal static class IdentityInitialization
+{
+    internal static Task RunAsync(IHostEnvironment environment, Func<bool, Task> initialize) =>
+        environment.IsDevelopment()
+            ? initialize(true)
+            : Task.CompletedTask;
+}

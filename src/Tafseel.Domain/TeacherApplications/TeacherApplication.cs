@@ -60,8 +60,8 @@ public sealed class TeacherApplication
         if (experienceYears is < 0 or > 80)
             throw new DomainException("invalid_experience", "Experience years must be between 0 and 80.");
         QualificationTopicId = qualificationTopicId;
-        City = Required(city, "city_required");
-        Degree = Required(degree, "degree_required");
+        City = MeaningfulText(city, "city_required");
+        Degree = MeaningfulText(degree, "degree_required");
         ExperienceYears = experienceYears;
     }
 
@@ -170,6 +170,14 @@ public sealed class TeacherApplication
 
     private static string Required(string value, string code) =>
         string.IsNullOrWhiteSpace(value) ? throw new DomainException(code, "Value is required.") : value.Trim();
+
+    private static string MeaningfulText(string value, string code)
+    {
+        var text = Required(value, code);
+        return text.Any(char.IsLetter)
+            ? text
+            : throw new DomainException(code, "Value must contain meaningful text.");
+    }
 }
 
 public sealed class TeacherApplicationReview

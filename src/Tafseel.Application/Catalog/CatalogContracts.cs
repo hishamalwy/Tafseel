@@ -29,7 +29,8 @@ public sealed record CatalogItemDto(
     string? NameAr = null);
 public sealed record CatalogResourceDto(
     Guid Id, string DisplayName, string DisplayNameAr, string? Url,
-    int DisplayOrder, bool IsRequired, bool IsFile);
+    int DisplayOrder, bool IsRequired, bool IsFile,
+    string? FileName = null, string? ContentType = null);
 public sealed record QualificationLinkResourceInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string DisplayName,
     [param: StringLength(200)] string DisplayNameAr,
