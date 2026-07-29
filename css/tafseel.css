@@ -539,8 +539,8 @@ html.tf-reveal-on .tf-student-manual-card.is-in{
 .tf-form{display:grid;gap:18px}
 .tf-auth-copy{display:grid;gap:6px}
 .tf-auth-panel{animation:tf-fade 160ms ease-out}
-.tf-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.tf-field{display:grid;gap:7px}
+.tf-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.tf-field{display:grid;gap:7px;align-content:start}
 .tf-field label{font-size:13px;font-weight:700;color:var(--text-2)}
 .tf-field input,.tf-field select,.tf-field textarea{width:100%;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding:11px 12px;outline:none;line-height:1.4;font:inherit;box-sizing:border-box;color:var(--text)}
 .tf-field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),

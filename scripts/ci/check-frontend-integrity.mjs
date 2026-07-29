@@ -467,6 +467,11 @@ for (const [name, dashboard] of [
 const sharedUi = readFileSync("js/tafseel.js", "utf8");
 if (!/orderTimelineEvent:\s*function/.test(sharedUi))
   throw new Error("Order timeline event localization must stay in the shared frontend helper.");
+if (!/modalKeyDown:\s*function/.test(sharedUi) || !studentDashboard.includes("Tafseel.modalKeyDown") || !teacherDashboard.includes("Tafseel.modalKeyDown"))
+  throw new Error("Order timeline dialogs must share keyboard focus handling.");
+for (const behavior of ["event.key === 'Escape'", "event.key !== 'Tab'", "event.preventDefault()", "last.focus()", "first.focus()"])
+  if (!sharedUi.includes(behavior))
+    throw new Error(`Shared modal keyboard handling is missing ${behavior}.`);
 const localeSource = readFileSync("js/locales.js", "utf8");
 for (const key of [
   "order_timeline_title",

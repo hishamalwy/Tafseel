@@ -4,15 +4,15 @@ Last updated: 2026-07-29.
 
 ## Current Version
 
-No release tag is present. Current audited baseline is commit `6c42d7e` on `main`, plus uncommitted F-001, qualification and F-002 changes.
+No release tag is present. The shared `main` workspace advanced externally to commit `a0c82a4`; the final timeline keyboard and documentation changes remain uncommitted.
 
 ## Current Phase
 
-F-002 public teacher metrics integrity fixed locally after the conditionally verified Teacher Qualification Application pass.
+Owned Order Lifecycle Timeline completed locally after F-001 and F-002.
 
 ## Current Milestone
 
-Production-correct startup and public teacher metric boundaries are completed locally; the owned order lifecycle timeline is pending.
+Production-correct startup, public teacher metric boundaries and the owned Order lifecycle timeline are completed locally.
 
 ## Current Architecture Status
 
@@ -36,6 +36,7 @@ Historical implementation phases 2–11 are complete and indexed in [INDEX.md](.
 | Teacher qualification application contract and UX | Fixed locally | [Teacher qualification report](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) |
 | Teacher qualification application browser validation | Conditionally Verified | [Browser validation report](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) |
 | F-002 Public teacher metrics integrity | Fixed locally | [F-002 report](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) |
+| Owned Order lifecycle timeline | Completed locally | [Timeline report](./features/PHASE2_ORDER_TIMELINE_REPORT.md) |
 
 ## Open Findings
 
@@ -56,21 +57,20 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 
 | Slice | Status |
 |---|---|
-| Current roadmap vertical slices | None implemented |
+| Owned Order Lifecycle Timeline | Completed locally |
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
 ## Pending Vertical Slices
 
-1. Owned order lifecycle timeline from existing persisted evidence.
-2. Revision-to-delivery version linkage.
-3. Favorites pagination.
-4. Availability and teacher capacity after rule approval.
-5. Teacher comparison after metric correction.
-6. Student learning preferences.
-7. Explainable deterministic matching.
-8. Teacher/student analytics after event instrumentation.
-9. Quality trends, trust extensions, learning timeline and portfolio moderation.
+1. Revision-to-delivery version linkage.
+2. Favorites pagination.
+3. Availability and teacher capacity after rule approval.
+4. Teacher comparison after metric correction.
+5. Student learning preferences.
+6. Explainable deterministic matching.
+7. Teacher/student analytics after event instrumentation.
+8. Quality trends, trust extensions, learning timeline and portfolio moderation.
 
 ## Known Risks
 
@@ -106,24 +106,25 @@ The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TA
 
 ## Test Coverage Summary
 
-Latest F-002 validation:
+Latest Owned Order Lifecycle Timeline validation:
 
 - Locked restore, format verification and Release build: passed; 0 warnings and 0 errors.
-- Provider-neutral solution tests: 142 passed, 0 failed.
-- Focused Marketplace/favorites/review aggregate tests: 3 passed individually.
-- Focused F002 frontend integrity: passed across six public consumers with English/Arabic key parity.
+- Phase 5 Order integration suite and focused refund timeline test: 5 passed, 0 failed.
+- Domain, Application and Architecture tests: 63 passed, 0 failed.
+- Integration tests: 133 passed, 2 unrelated Marketplace time-out failures.
+- Frontend validation: passed across 12 entry points with 1,873 English/Arabic key pairs.
 - EF pending model changes: none.
-- Repository-wide frontend validation remains red on unrelated avatar-helper and Quality Dashboard localization changes.
-- Browser sort/overflow checks passed at 375 px and 1440 px; live card rendering was blocked by the unrelated avatar-helper mismatch.
+- Migration safety tests: 9 passed; publish smoke passed.
+- Populated browser timeline rendering remains unclaimed because no legitimate safe owned-Order fixture was available.
 
 ## Deployment Status
 
-- Development: available; current changes are local and uncommitted.
-- CI: not run for the current documentation/F-001 working tree.
+- Development: available; final keyboard and documentation changes are local and uncommitted.
+- CI: not run remotely; equivalent local gates were exercised.
 - Staging: not deployed or validated during these passes.
 - Production: manual deployment remains; no deployment performed.
 - Database: no migration generated or applied.
 
 ## Next Recommended Pass
 
-Owned Order Lifecycle Timeline using existing persisted evidence only.
+Focused F-005 revision-to-delivery version linkage evidence and schema decision.

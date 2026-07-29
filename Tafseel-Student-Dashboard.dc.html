@@ -874,7 +874,7 @@ class Component extends DCLogic {
       timelineEvents:s.timelineEvents.map(event => Tafseel.orderTimelineEvent(event)),
       closeTimeline:() => this.closeTimeline(),
       retryTimeline:event => s.timelineOrder && this.openTimeline(s.timelineOrder, event.currentTarget),
-      timelineKeyDown:event => { if (event.key === 'Escape') this.closeTimeline(); },
+      timelineKeyDown:event => Tafseel.modalKeyDown(event, () => this.closeTimeline()),
 
       allSessions: s.liveSessions.map(se => ({
         ...se,

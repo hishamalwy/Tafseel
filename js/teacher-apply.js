@@ -136,6 +136,45 @@
     }
   }
 
+  function apiPathFromUrl(url) {
+    if (!url) return '';
+    if (url.indexOf('/api/v1/') === 0) return url.slice('/api/v1'.length);
+    try {
+      var parsed = new URL(url, location.href);
+      if (parsed.pathname.indexOf('/api/v1/') === 0)
+        return parsed.pathname.slice('/api/v1'.length) + parsed.search;
+    } catch (_) {}
+    return '';
+  }
+
+  async function openProtectedResource(url, opts) {
+    var path = apiPathFromUrl(url);
+    if (!path) throw new Error(t('apply_resource_open_failed'));
+    await Tafseel.api.openBlob(path, opts || {});
+  }
+
+  function bindResourceActions(root) {
+    if (!root) return;
+    root.querySelectorAll('[data-resource-action]').forEach(function (button) {
+      button.addEventListener('click', async function () {
+        var action = button.getAttribute('data-resource-action');
+        var url = button.getAttribute('data-resource-url') || '';
+        var fileName = button.getAttribute('data-resource-name') || '';
+        button.disabled = true;
+        try {
+          await openProtectedResource(url, {
+            download: action === 'download',
+            fileName: fileName || undefined
+          });
+        } catch (error) {
+          message(Tafseel.api.errorMessage(error) || t('apply_resource_open_failed'), 'error');
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
+  }
+
   function resourceType(resource) {
     if (resource.contentType) return resource.contentType;
     if (!resource.isFile) return t('apply_link_type');
@@ -174,14 +213,33 @@
       var name = ar && resource.displayNameAr ? resource.displayNameAr : resource.displayName;
       var fileName = resource.fileName || name;
       var url = safeResourceUrl(resource.url);
-      return '<li class="tf-assignment-resource"><span><strong>' + escape(name) + '</strong>' +
-        '<small>' + escape(fileName) + ' · ' + escape(resourceType(resource)) +
-        (resource.isRequired ? ' · ' + escape(t('apply_required_resource')) : '') +
-        '</small></span>' +
-        (url ? '<a class="tf-button tf-button-secondary" href="' + escape(url) +
-          '" target="_blank" rel="noopener">' +
-          escape(resource.isFile ? t('apply_preview_download') : t('apply_open_reference')) + '</a>' : '') +
-        '</li>';
+      var meta = [fileName, resourceType(resource)];
+      if (resource.isRequired) meta.push(t('apply_required_resource'));
+      var icon = resource.isFile
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5"/><path d="M14 11a5 5 0 0 0-7.07 0L5.5 12.4a5 5 0 0 0 7.07 7.07L14 19"/></svg>';
+      var actions = '';
+      if (url && resource.isFile) {
+        actions =
+          '<div class="tf-assignment-resource-actions">' +
+          '<button type="button" class="tf-button tf-button-secondary" data-resource-action="preview" data-resource-url="' + escape(url) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          escape(t('apply_preview')) + '</button>' +
+          '<button type="button" class="tf-button" data-resource-action="download" data-resource-url="' + escape(url) + '" data-resource-name="' + escape(fileName) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>' +
+          escape(t('apply_download')) + '</button>' +
+          '</div>';
+      } else if (url) {
+        actions =
+          '<div class="tf-assignment-resource-actions">' +
+          '<a class="tf-button tf-button-secondary" href="' + escape(url) + '" target="_blank" rel="noopener">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>' +
+          escape(t('apply_open_reference')) + '</a></div>';
+      }
+      return '<li class="tf-assignment-resource"><div class="tf-assignment-resource-main">' +
+        '<span class="tf-assignment-resource-icon">' + icon + '</span>' +
+        '<span class="tf-assignment-resource-copy"><strong>' + escape(name) + '</strong>' +
+        '<small>' + escape(meta.join(' · ')) + '</small></span></div>' + actions + '</li>';
     }).join('');
     card.innerHTML = '<h2 lang="' + (ar ? 'ar' : 'en') + '" dir="' + (ar ? 'rtl' : 'ltr') + '">' +
       escape(primaryTitle) + '</h2>' +
@@ -207,6 +265,7 @@
       '<div class="tf-alert" data-kind="warning" role="note">' +
       escape(t('apply_material_warning')) + '</div>';
     card.hidden = false;
+    bindResourceActions(card);
     validateSelectedDemoDuration();
   }
 

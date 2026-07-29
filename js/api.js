@@ -44,7 +44,8 @@
       headers.set('Content-Type', 'application/json');
       options.body = JSON.stringify(options.body);
     }
-    headers.set('Accept', 'application/json');
+    if (!headers.has('Accept'))
+      headers.set('Accept', options.blob ? '*/*' : 'application/json');
     if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
     var response = await fetch(base + path, Object.assign({}, options, {
       headers: headers, credentials: 'include'
@@ -57,6 +58,14 @@
         accessToken = '';
         currentUser = null;
       }
+    }
+    if (options.blob) {
+      if (!response.ok) throw problem(response, await parse(response));
+      var blob = await response.blob();
+      var disposition = response.headers.get('content-disposition') || '';
+      var match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+      var fileName = match ? decodeURIComponent(match[1].replace(/"/g, '')) : '';
+      return { blob: blob, fileName: fileName, contentType: response.headers.get('content-type') || blob.type };
     }
     var body = await parse(response);
     if (!response.ok) throw problem(response, body);
@@ -71,6 +80,35 @@
     patch: function (path, body, headers) { return request(path, { method: 'PATCH', body: body, headers: headers }); },
     delete: function (path, headers) { return request(path, { method: 'DELETE', headers: headers }); },
     upload: function (path, form, headers) { return request(path, { method: 'POST', body: form, headers: headers }); },
+    /** Authenticated binary download (Bearer). Returns { blob, fileName, contentType }. */
+    blob: function (path) { return request(path, { blob: true }); },
+    /** Fetch a protected file and open it in a new tab (or force download). */
+    openBlob: async function (path, opts) {
+      opts = opts || {};
+      var file = await this.blob(path);
+      var objectUrl = URL.createObjectURL(file.blob);
+      if (opts.download) {
+        var anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = opts.fileName || file.fileName || 'download';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      } else {
+        var opened = window.open(objectUrl, '_blank', 'noopener');
+        if (!opened) {
+          var fallback = document.createElement('a');
+          fallback.href = objectUrl;
+          fallback.target = '_blank';
+          fallback.rel = 'noopener';
+          document.body.appendChild(fallback);
+          fallback.click();
+          fallback.remove();
+        }
+      }
+      setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 60 * 1000);
+      return file;
+    },
     login: async function (email, password) {
       var session = await request('/auth/login', {
         method: 'POST', body: { email: email, password: password }, noRefresh: true

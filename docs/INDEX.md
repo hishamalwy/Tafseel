@@ -11,6 +11,7 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Teacher Qualification Application](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) | 2026-07-29 | Fixed locally | Stabilized the language API, initial form loading, validation and assignment material UX. |
 | [Teacher Qualification Browser Validation](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) | 2026-07-29 | Validated locally | Browser-validated the qualification workflow and fixed lifecycle-message localization. |
 | [F-002 Public Teacher Metrics Integrity](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) | 2026-07-29 | Fixed locally | Removed unsupported public teacher metrics and ranking while preserving verified review and qualification evidence. |
+| [Owned Order Lifecycle Timeline](./features/PHASE2_ORDER_TIMELINE_REPORT.md) | 2026-07-29 | Completed locally | Added an owned, localized timeline using only persisted Order evidence. |
 
 ## Architecture
 
@@ -81,6 +82,7 @@ This index is append-only for immutable historical reports. New reports belong i
 | Messaging and notifications | Historical | [Phase 8](./features/phase-8-report.md) |
 | Governance, administration and audit | Historical | [Phase 9](./features/phase-9-report.md) |
 | Frontend integration | Historical | [Phase 10](./features/phase-10-report.md) |
+| Owned Order lifecycle timeline | Completed locally | [Owned Order Timeline](./features/PHASE2_ORDER_TIMELINE_REPORT.md) |
 
 Additional historical reports:
 

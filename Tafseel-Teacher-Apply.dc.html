@@ -75,13 +75,28 @@
     .tf-assignment-title-alt{margin:0 0 12px;color:var(--muted);font-size:15px;font-weight:600}
     .tf-assignment-instructions{white-space:pre-wrap;margin:0;line-height:1.55;color:var(--text)}
     .tf-assignment-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .tf-assignment-resources{display:grid;gap:8px;padding:0;margin:0;list-style:none}
+    .tf-assignment-resources{display:grid;gap:10px;padding:0;margin:0;list-style:none}
     .tf-assignment-resource{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
     }
-    .tf-assignment-resource small{display:block;color:var(--muted);margin-top:2px}
-    .tf-assignment-resource a{flex:none}
+    .tf-assignment-resource-main{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+    .tf-assignment-resource-icon{
+      width:40px;height:40px;flex:none;border-radius:12px;display:grid;place-items:center;
+      background:var(--primary-soft);color:var(--primary);
+    }
+    .tf-assignment-resource-icon svg{display:block;width:18px;height:18px}
+    .tf-assignment-resource-copy{min-width:0}
+    .tf-assignment-resource-copy strong{
+      display:block;font-size:14px;font-weight:700;color:var(--text);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .tf-assignment-resource-copy small{display:block;color:var(--muted);margin-top:2px;font-size:12.5px}
+    .tf-assignment-resource-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap}
+    .tf-assignment-resource-actions .tf-button{
+      height:36px;min-height:36px;padding:0 12px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;
+    }
+    .tf-assignment-resource-actions .tf-button svg{width:14px;height:14px;flex:none}
 
     .tf-apply-skeleton{display:grid;gap:14px;padding-block:12px}
     .tf-fieldset-reset{border:0;padding:0;margin:0}
@@ -100,7 +115,8 @@
       border-color:var(--primary);background:var(--primary-soft);color:var(--primary);
       box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 28%,transparent);
     }
-    .tf-field-error-text{min-height:20px;color:var(--error);font-weight:600}
+    .tf-field-error-text{min-height:0;color:var(--error);font-weight:600}
+    .tf-field-error-text:not(:empty){min-height:20px;margin-top:2px}
 
     .tf-demo-file{
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
@@ -157,7 +173,8 @@
       .tf-apply-steps{display:none}
       .tf-apply-step-summary,.tf-apply-progress-track{display:block}
       .tf-assignment-resource{align-items:stretch;flex-direction:column}
-      .tf-assignment-resource a{width:100%;justify-content:center;display:inline-flex;align-items:center}
+      .tf-assignment-resource-actions{width:100%}
+      .tf-assignment-resource-actions .tf-button{flex:1;justify-content:center}
       [data-stack="apply"] .tf-form-actions{flex-direction:column;align-items:stretch}
       [data-stack="apply"] .tf-form-actions .tf-button{width:100%;min-width:0}
       .tf-demo-file{align-items:stretch}
@@ -200,10 +217,11 @@
       <form id="application-form" class="tf-form">
         <div class="tf-grid-2">
           <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
-          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select><p id="topics-error" class="tf-field-help tf-field-error-text" role="status"></p></div>
+          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select></div>
           <div class="tf-field"><label for="city" data-i18n="apply_city">City</label><input id="city" maxlength="150" required autocomplete="address-level2"></div>
           <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" required></div>
         </div>
+        <p id="topics-error" class="tf-field-help tf-field-error-text" role="status"></p>
         <fieldset class="tf-field tf-fieldset-reset" aria-describedby="languages-error">
           <legend class="tf-legend" data-i18n="apply_languages">Teaching languages</legend>
           <p class="tf-muted tf-fieldset-hint" data-i18n="apply_languages_hint">Choose every language you can teach in.</p>
