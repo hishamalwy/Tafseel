@@ -217,12 +217,15 @@
     .tf-apply-app-status[data-kind="warning"]{background:var(--warning-soft, color-mix(in oklab, #f59e0b 16%, transparent));color:var(--warning, #b45309)}
     .tf-apply-app-status[data-kind="error"]{background:var(--error-soft);color:var(--error)}
 
+    .tf-apply-panel{display:grid;gap:14px}
+    .tf-assignment-slot:empty{display:none}
     .tf-apply-panel-head{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0;
     }
     .tf-apply-panel-head h2{
       font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;
     }
+    .tf-apply-panel > .tf-muted{margin:0}
     .tf-apply-review{
       padding:28px 22px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);
       text-align:center;display:grid;gap:12px;justify-items:center;
@@ -304,65 +307,67 @@
         </ul>
       </aside>
 
-      <article id="assignment-details" class="tf-assignment" hidden></article>
-
       <section id="panel-details" class="tf-apply-panel">
-      <form id="application-form" class="tf-form">
-        <div class="tf-grid-2">
-          <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
-          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select></div>
-          <div class="tf-field"><label for="city" data-i18n="apply_city">City</label><input id="city" maxlength="150" required autocomplete="address-level2"></div>
-          <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" required></div>
+        <form id="application-form" class="tf-form">
+          <div class="tf-grid-2">
+            <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
+            <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select></div>
+            <div class="tf-field"><label for="city" data-i18n="apply_city">City</label><input id="city" maxlength="150" required autocomplete="address-level2"></div>
+            <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" required></div>
+          </div>
+          <p id="topics-error" class="tf-field-help tf-field-error-text" role="status"></p>
+          <fieldset class="tf-field tf-fieldset-reset" aria-describedby="languages-error">
+            <legend class="tf-legend" data-i18n="apply_languages">Teaching languages</legend>
+            <p class="tf-muted tf-fieldset-hint" data-i18n="apply_languages_hint">Choose every language you can teach in.</p>
+            <div id="teaching-languages" class="tf-chip-row"></div>
+            <p id="languages-error" class="tf-field-help tf-field-error-text" role="status"></p>
+          </fieldset>
+          <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required autocomplete="organization-title"></div>
+          <div class="tf-form-actions">
+            <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save_continue">Save and continue</button>
+          </div>
+          <p id="submit-error" class="tf-field-help tf-field-error-text" role="alert"></p>
+        </form>
+        <div id="assignment-slot-details" class="tf-assignment-slot">
+          <article id="assignment-details" class="tf-assignment" hidden></article>
         </div>
-        <p id="topics-error" class="tf-field-help tf-field-error-text" role="status"></p>
-        <fieldset class="tf-field tf-fieldset-reset" aria-describedby="languages-error">
-          <legend class="tf-legend" data-i18n="apply_languages">Teaching languages</legend>
-          <p class="tf-muted tf-fieldset-hint" data-i18n="apply_languages_hint">Choose every language you can teach in.</p>
-          <div id="teaching-languages" class="tf-chip-row"></div>
-          <p id="languages-error" class="tf-field-help tf-field-error-text" role="status"></p>
-        </fieldset>
-        <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required autocomplete="organization-title"></div>
-        <div class="tf-form-actions">
-          <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save_continue">Save and continue</button>
-        </div>
-        <p id="submit-error" class="tf-field-help tf-field-error-text" role="alert"></p>
-      </form>
       </section>
 
       <section id="panel-demo" class="tf-apply-panel" hidden>
-      <form id="demo-form" class="tf-form">
         <div class="tf-apply-panel-head">
           <h2 data-i18n="apply_demo_title">Teaching demo</h2>
           <button type="button" id="back-to-details" class="tf-button tf-button-secondary" data-i18n="apply_back_to_details">Back to details</button>
         </div>
         <p class="tf-muted" data-i18n="apply_demo_step_intro">Upload your teaching demo for the selected topic, then submit it for quality review.</p>
-        <div class="tf-field">
-          <span id="demo-label" class="tf-legend" data-i18n="apply_demo_file">Video file</span>
-          <label class="tf-file-drop" id="demo-drop" for="demo" aria-labelledby="demo-label">
-            <input id="demo" class="tf-sr-only" type="file" accept="video/*" required aria-describedby="demo-duration-rules">
-            <span class="tf-file-drop-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-            </span>
-            <span class="tf-file-drop-copy">
-              <span class="tf-file-drop-title" data-i18n="apply_demo_pick">Drag a video here or click to choose</span>
-              <span class="tf-file-drop-hint" data-i18n="apply_allowed_format">Allowed format: MP4 video only</span>
-            </span>
-            <span class="tf-file-drop-cta" data-i18n="apply_demo_browse">Browse files</span>
-          </label>
-          <p class="tf-field-help" id="demo-duration-rules"></p>
-          <div id="demo-file-info" class="tf-alert tf-demo-file" hidden>
-            <span><strong id="demo-file-name"></strong><br><span id="demo-file-meta" class="tf-muted"></span><br><span id="demo-file-state" class="tf-muted"></span></span>
-            <span class="tf-demo-file-actions">
-              <button type="button" id="demo-file-replace" class="tf-button tf-button-secondary" data-i18n="apply_demo_replace_file">Replace file</button>
-              <button type="button" id="demo-file-remove" class="tf-button tf-button-secondary" data-i18n="apply_demo_remove_file">Remove</button>
-            </span>
+        <div id="assignment-slot-demo" class="tf-assignment-slot"></div>
+        <form id="demo-form" class="tf-form">
+          <div class="tf-field">
+            <span id="demo-label" class="tf-legend" data-i18n="apply_demo_file">Video file</span>
+            <label class="tf-file-drop" id="demo-drop" for="demo" aria-labelledby="demo-label">
+              <input id="demo" class="tf-sr-only" type="file" accept="video/*" required aria-describedby="demo-duration-rules">
+              <span class="tf-file-drop-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              </span>
+              <span class="tf-file-drop-copy">
+                <span class="tf-file-drop-title" data-i18n="apply_demo_pick">Drag a video here or click to choose</span>
+                <span class="tf-file-drop-hint" data-i18n="apply_allowed_format">Allowed format: MP4 video only</span>
+              </span>
+              <span class="tf-file-drop-cta" data-i18n="apply_demo_browse">Browse files</span>
+            </label>
+            <p class="tf-field-help" id="demo-duration-rules"></p>
+            <div id="demo-file-info" class="tf-alert tf-demo-file" hidden>
+              <span><strong id="demo-file-name"></strong><br><span id="demo-file-meta" class="tf-muted"></span><br><span id="demo-file-state" class="tf-muted"></span></span>
+              <span class="tf-demo-file-actions">
+                <button type="button" id="demo-file-replace" class="tf-button tf-button-secondary" data-i18n="apply_demo_replace_file">Replace file</button>
+                <button type="button" id="demo-file-remove" class="tf-button tf-button-secondary" data-i18n="apply_demo_remove_file">Remove</button>
+              </span>
+            </div>
           </div>
-        </div>
-        <div class="tf-form-actions">
-          <button class="tf-button" type="submit" id="upload-demo" data-i18n="apply_upload_demo">Upload demo</button>
-          <button id="submit-application" class="tf-button tf-button-secondary" type="button" data-i18n="apply_submit_review">Submit for review</button>
-        </div>
-      </form>
+          <div class="tf-form-actions">
+            <button class="tf-button" type="submit" id="upload-demo" data-i18n="apply_upload_demo">Upload demo</button>
+            <button id="submit-application" class="tf-button tf-button-secondary" type="button" data-i18n="apply_submit_review">Submit for review</button>
+          </div>
+        </form>
       </section>
 
       <section id="panel-review" class="tf-apply-panel" hidden>

@@ -214,7 +214,9 @@
       var name = ar && resource.displayNameAr ? resource.displayNameAr : resource.displayName;
       var fileName = resource.fileName || name;
       var url = safeResourceUrl(resource.url);
-      var meta = [fileName, resourceType(resource)];
+      var meta = [];
+      if (fileName && fileName !== name) meta.push(fileName);
+      meta.push(resourceType(resource));
       if (resource.isRequired) meta.push(t('apply_required_resource'));
       var icon = resource.isFile
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h6"/></svg>'
@@ -350,6 +352,15 @@
     newBtn.hidden = [0, 3].includes(current.status);
   }
 
+  function placeAssignmentCard(step) {
+    var card = document.getElementById('assignment-details');
+    var detailsSlot = document.getElementById('assignment-slot-details');
+    var demoSlot = document.getElementById('assignment-slot-demo');
+    if (!card || !detailsSlot || !demoSlot) return;
+    var slot = step === 'demo' ? demoSlot : detailsSlot;
+    if (card.parentElement !== slot) slot.appendChild(card);
+  }
+
   function showWizardStep(step) {
     state.wizardStep = step;
     var panelDetails = document.getElementById('panel-details');
@@ -361,16 +372,15 @@
     panelDemo.hidden = step !== 'demo';
     panelReview.hidden = step !== 'review';
     if (guidelines) guidelines.hidden = step === 'review';
-    if (step === 'details' || step === 'demo') renderAssignment();
-    else assignment.hidden = true;
+    if (step === 'details' || step === 'demo') {
+      placeAssignmentCard(step);
+      renderAssignment();
+    } else if (assignment) {
+      assignment.hidden = true;
+    }
     renderApplications();
     renderStepper(state.current);
     if (step === 'review') renderReviewPanel(state.current);
-    if (step === 'demo') {
-      panelDemo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (step === 'review') {
-      panelReview.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   }
 
   var STEPS = [
@@ -418,13 +428,14 @@
     var states = { details: 'locked', demo: 'locked', review: 'locked' };
     if (step === 'details') {
       states.details = 'current';
-      if (canVisitStep('demo', current)) states.demo = current && current.status === 3 ? 'error' : 'locked';
+      if (canVisitStep('demo', current))
+        states.demo = current && current.status === 3 ? 'error' : 'completed';
+      if (canVisitStep('review', current)) states.review = 'completed';
     } else if (step === 'demo') {
       states.details = canVisitStep('details', current) ? 'completed' : 'locked';
       states.demo = current && current.status === 3 ? 'error' : 'current';
+      if (canVisitStep('review', current)) states.review = 'completed';
     } else {
-      states.details = 'locked';
-      states.demo = 'locked';
       states.review = 'current';
       if (canVisitStep('details', current)) states.details = 'completed';
       if (canVisitStep('demo', current)) states.demo = 'completed';
