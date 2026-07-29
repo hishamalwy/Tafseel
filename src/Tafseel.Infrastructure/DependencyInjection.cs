@@ -19,6 +19,7 @@ using Tafseel.Application.Marketplace;
 using Tafseel.Application.Messaging;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Orders;
+using Tafseel.Application.Students;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Catalog;
 using Tafseel.Infrastructure.Catalog;
@@ -32,6 +33,7 @@ using Tafseel.Infrastructure.Messaging;
 using Tafseel.Infrastructure.LiveSessions;
 using Tafseel.Infrastructure.Orders;
 using Tafseel.Infrastructure.Persistence;
+using Tafseel.Infrastructure.Students;
 using Tafseel.Infrastructure.TeacherApplications;
 
 namespace Tafseel.Infrastructure;
@@ -132,6 +134,7 @@ public static class DependencyInjection
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<NotificationWriter>();
+        services.AddScoped<IStudentLearningPreferenceService, StudentLearningPreferenceService>();
         services.AddScoped<IGovernanceService, GovernanceService>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<AuditWriter>();

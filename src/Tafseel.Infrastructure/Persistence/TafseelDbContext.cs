@@ -7,6 +7,7 @@ using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Messaging;
 using Tafseel.Domain.Orders;
+using Tafseel.Domain.Students;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Identity;
 
@@ -60,6 +61,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<MessageAttachment> MessageAttachments => Set<MessageAttachment>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<UserNotificationPreference> UserNotificationPreferences => Set<UserNotificationPreference>();
+    public DbSet<StudentLearningPreference> StudentLearningPreferences => Set<StudentLearningPreference>();
     public DbSet<NotificationOutbox> NotificationOutbox => Set<NotificationOutbox>();
     public DbSet<TeacherReview> TeacherReviews => Set<TeacherReview>();
     public DbSet<Dispute> Disputes => Set<Dispute>();
@@ -813,6 +815,27 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             preference.HasKey(x => x.UserId);
             preference.Property(x => x.UserId).HasMaxLength(450);
             preference.HasOne<ApplicationUser>().WithOne().HasForeignKey<UserNotificationPreference>(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<StudentLearningPreference>(preference =>
+        {
+            preference.HasKey(x => x.UserId);
+            preference.Property(x => x.UserId).HasMaxLength(450);
+            preference.Property(x => x.ExplanationStyle).HasMaxLength(32);
+            preference.Property(x => x.RowVersion).IsRowVersion();
+            preference.HasIndex(x => x.PreferredTeachingLanguageId);
+            preference.HasOne<ApplicationUser>().WithOne()
+                .HasForeignKey<StudentLearningPreference>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            preference.HasOne<TeachingLanguage>().WithMany()
+                .HasForeignKey(x => x.PreferredTeachingLanguageId)
+                .OnDelete(DeleteBehavior.Restrict);
+            preference.ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_StudentLearningPreferences_ExplanationStyle",
+                    "[ExplanationStyle] IS NULL OR [ExplanationStyle] IN (" +
+                    "'step_by_step','short_direct','detailed','visual','exam_focused','practice_focused')");
+            });
         });
         builder.Entity<NotificationOutbox>(outbox =>
         {

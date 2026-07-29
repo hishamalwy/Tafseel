@@ -100,10 +100,59 @@
       sections.push((labels.explanationPreference || 'Explanation preference') + ':\n' + styleLabel);
     }
 
+    var languageLabel = String(input.preferredTeachingLanguageLabel || '').trim();
+    if (languageLabel) {
+      sections.push((labels.preferredTeachingLanguage || 'Preferred teaching language') + ':\n' + languageLabel);
+    }
+
     var notes = String(input.constraints || '').trim();
     if (notes) sections.push((labels.additionalNotes || 'Additional notes') + ':\n' + notes);
 
     return sections.join('\n\n').trim();
+  }
+
+  /**
+   * Resolve per-request preference fields once during wizard init.
+   * Draft (including intentional empty values) always wins over saved globals.
+   */
+  function resolvePreferenceDefaults(input) {
+    input = input || {};
+    var draft = input.draft || null;
+    var teacherLanguageIds = (input.teacherLanguageIds || []).map(function (id) {
+      return String(id || '');
+    }).filter(Boolean);
+    var savedStyle = isExplanationStyle(input.savedExplanationStyle) ? input.savedExplanationStyle : '';
+    var savedLanguageId = input.savedPreferredTeachingLanguageId
+      ? String(input.savedPreferredTeachingLanguageId)
+      : '';
+
+    if (draft) {
+      return {
+        explanationStyle: isExplanationStyle(draft.explanationStyle) ? draft.explanationStyle : '',
+        preferredTeachingLanguageId: draft.preferredTeachingLanguageId
+          ? String(draft.preferredTeachingLanguageId)
+          : '',
+        languageInfoCode: '',
+        source: 'draft'
+      };
+    }
+
+    var languageId = '';
+    var languageInfoCode = '';
+    if (savedLanguageId) {
+      if (teacherLanguageIds.indexOf(savedLanguageId) >= 0) {
+        languageId = savedLanguageId;
+      } else {
+        languageInfoCode = 'teacher_language_unavailable';
+      }
+    }
+
+    return {
+      explanationStyle: savedStyle,
+      preferredTeachingLanguageId: languageId,
+      languageInfoCode: languageInfoCode,
+      source: savedStyle || languageId || languageInfoCode ? 'profile' : 'none'
+    };
   }
 
   function draftKey(studentId, teacherId) {
@@ -138,6 +187,9 @@
       constraints: String(payload.constraints || '').slice(0, 2000),
       topicLabel: String(payload.topicLabel || '').slice(0, 200),
       explanationStyle: isExplanationStyle(payload.explanationStyle) ? payload.explanationStyle : '',
+      preferredTeachingLanguageId: payload.preferredTeachingLanguageId
+        ? String(payload.preferredTeachingLanguageId).slice(0, 64)
+        : '',
       prompts: payload.prompts && typeof payload.prompts === 'object' ? payload.prompts : {},
       deliveryDate: String(payload.deliveryDate || ''),
       flexibleBudget: !!payload.flexibleBudget,
@@ -205,6 +257,7 @@
     requestableServices: requestableServices,
     subjectNameForService: subjectNameForService,
     composeDescription: composeDescription,
+    resolvePreferenceDefaults: resolvePreferenceDefaults,
     draftKey: draftKey,
     readDraft: readDraft,
     writeDraft: writeDraft,

@@ -89,10 +89,46 @@ public sealed class Phase10FrontendIntegrationTests(SqlServerTafseelApiFactory f
         var client = factory.CreateClient();
         var html = await client.GetStringAsync("/app/Tafseel-Teacher-Dashboard.dc.html");
 
-        Assert.Contains("<span style=\"font-size:13px;font-weight:600\">Description</span>", html);
-        Assert.Contains("<span style=\"font-size:13px;font-weight:600\">Delivery hours</span>", html);
-        Assert.Contains("<span style=\"font-size:13px;font-weight:600\">Revisions</span>", html);
-        Assert.DoesNotContain("<sc-if value=\"{{ serviceModalCreate }}\" hint-placeholder-val=\"{{ true }}\">\r\n          <label style=\"display:flex;flex-direction:column;gap:6px\">\r\n            <span style=\"font-size:13px;font-weight:600\">Description</span>", html);
+        // Subject / service type selection stays wired and gated to create mode.
+        Assert.Contains("svcSubjectId", html);
+        Assert.Contains("onSvcSubjectId", html);
+        Assert.Contains("svcCatalogId", html);
+        Assert.Contains("onSvcCatalogId", html);
+
+        // Title, description, price and currency remain wired for both create and edit.
+        Assert.Contains("svcTitle", html);
+        Assert.Contains("onSvcTitle", html);
+        Assert.Contains("svcDescription", html);
+        Assert.Contains("onSvcDescription", html);
+        Assert.Contains("svcPrice", html);
+        Assert.Contains("onSvcPrice", html);
+        Assert.Contains("svcCurrency", html);
+
+        // Delivery/duration and revision fields remain wired and localized.
+        Assert.Contains("svcDeliveryHours", html);
+        Assert.Contains("onSvcDeliveryHours", html);
+        Assert.Contains("svcRevisions", html);
+        Assert.Contains("onSvcRevisions", html);
+        Assert.Contains("Tafseel.t('td_delivery_hours')", html);
+        Assert.Contains("Tafseel.t('td_revisions')", html);
+
+        // Save/update action and API payload mapping for both create and edit flows.
+        Assert.Contains("confirmServiceModal", html);
+        Assert.Contains("Tafseel.api.put('/teachers/me/services/'", html);
+        Assert.Contains("Tafseel.api.post('/teachers/me/services'", html);
+        Assert.Contains("serviceCatalogItemId: existing.serviceCatalogItemId", html);
+        Assert.Contains("serviceCatalogItemId: s.svcCatalogId", html);
+
+        // Subject/service-type selection stays scoped to the create-mode gate, while
+        // title/description remain available regardless of mode (structural, not style-based).
+        var createGateIndex = html.IndexOf("serviceModalCreate", StringComparison.Ordinal);
+        var subjectFieldIndex = html.IndexOf("svcSubjectId", StringComparison.Ordinal);
+        var gateCloseIndex = html.IndexOf("</sc-if>", createGateIndex, StringComparison.Ordinal);
+        var titleFieldIndex = html.IndexOf("svcTitle", StringComparison.Ordinal);
+        Assert.True(
+            createGateIndex >= 0 && createGateIndex < subjectFieldIndex
+                && subjectFieldIndex < gateCloseIndex && gateCloseIndex < titleFieldIndex,
+            "Subject/service-type selection should stay gated to create mode while title/description remain available in edit mode.");
     }
 
     private async Task<HttpClient> ClientAsync(string email)

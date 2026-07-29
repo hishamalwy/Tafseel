@@ -482,6 +482,39 @@
           <button type="button" onClick="{{ onSaveSettings }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px;margin-top:6px">{{ accountSaveProfile }}</button>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="font-size:17px;margin:0">{{ learnPrefsTitle }}</h2>
+          <p style="font-size:13.5px;color:var(--muted);margin:0;line-height:1.55">{{ learnPrefsIntro }}</p>
+          <p style="font-size:12.5px;color:var(--text-2);margin:0;line-height:1.5">{{ learnPrefsGuarantee }}</p>
+          <fieldset style="border:0;padding:0;margin:0">
+            <legend style="font-size:13px;font-weight:600;margin-bottom:10px">{{ learnPrefsStyleLegend }}</legend>
+            <div role="radiogroup" aria-label="{{ learnPrefsStyleLegend }}" style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ learnPrefsStyleOptions }}" as="st" hint-placeholder-count="7">
+                <button type="button" role="radio" aria-checked="{{ st.checked }}" onClick="{{ st.onClick }}" disabled="{{ learnPrefsBusy }}" style="{{ st.style }}">{{ st.label }}</button>
+              </sc-for>
+            </div>
+          </fieldset>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ learnPrefsLanguageLabel }}</span>
+            <select value="{{ learnPrefsLanguageId }}" onChange="{{ onLearnPrefsLanguage }}" disabled="{{ learnPrefsBusy }}" aria-describedby="student-learn-lang-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
+              <option value="">{{ learnPrefsLanguageNone }}</option>
+              <sc-for list="{{ learnPrefsLanguages }}" as="lg" hint-placeholder-count="2">
+                <option value="{{ lg.id }}" selected="{{ lg.selected }}">{{ lg.label }}</option>
+              </sc-for>
+            </select>
+            <span id="student-learn-lang-note" style="font-size:12px;color:var(--muted)">{{ learnPrefsLanguageHint }}</span>
+          </label>
+          <sc-if value="{{ learnPrefsError }}" hint-placeholder-val="{{ false }}">
+            <p role="alert" style="font-size:13px;color:var(--danger);margin:0">{{ learnPrefsError }}</p>
+          </sc-if>
+          <sc-if value="{{ learnPrefsSuccess }}" hint-placeholder-val="{{ false }}">
+            <p role="status" style="font-size:13px;color:var(--success);margin:0">{{ learnPrefsSuccess }}</p>
+          </sc-if>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <button type="button" onClick="{{ onSaveLearnPrefs }}" disabled="{{ learnPrefsBusy }}" style="height:42px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ learnPrefsSave }}</button>
+            <button type="button" onClick="{{ onResetLearnPrefs }}" disabled="{{ learnPrefsBusy }}" style="height:42px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;color:var(--text-2)">{{ learnPrefsReset }}</button>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
@@ -612,6 +645,9 @@ class Component extends DCLogic {
     hasAvatar: false, accountUserId: '', avatarVersion: 0,
     currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
     notifyDeliveries: true, notifySessions: true,
+    learnPrefsStyle: '', learnPrefsLanguageId: '', learnPrefsVersion: null,
+    learnPrefsLanguages: [], learnPrefsBusy: false, learnPrefsLoading: false,
+    learnPrefsError: '', learnPrefsSuccess: '',
     timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: [],
     ordersLoaded: false
   };
@@ -644,7 +680,9 @@ class Component extends DCLogic {
         Tafseel.api.get('/notifications?pageSize=100'),
         Tafseel.api.get('/live-sessions/mine?pageSize=100'),
         Tafseel.api.get('/notification-preferences'),
-        Tafseel.api.get('/conversations?pageSize=50')
+        Tafseel.api.get('/conversations?pageSize=50'),
+        Tafseel.api.get('/students/me/learning-preferences'),
+        Tafseel.api.get('/languages')
       ]);
     }).then(results => {
       if (!results) return;
@@ -657,7 +695,9 @@ class Component extends DCLogic {
       const sessions = value(4);
       const preferences = value(5);
       const conversations = value(6);
-      [0, 1, 2, 3, 4, 5, 6].forEach(fail);
+      const learningPrefs = value(7);
+      const languages = value(8);
+      [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(fail);
       const requestNames = ['Pending Teacher Review','Clarification Requested','Accepted','Declined','Cancelled'];
       const orderNames = ['Payment Required','In Progress','Delivered','Revision Requested','Completed','Cancelled'];
       REQUESTS = [];
@@ -698,7 +738,22 @@ class Component extends DCLogic {
           when:Tafseel.date(x.startsAt), countdown:'Scheduled',
           urgent:x.status === 1, version:x.version
         })) : [],
-        ordersLoaded: !!orders
+        ordersLoaded: !!orders,
+        learnPrefsStyle: learningPrefs && learningPrefs.explanationStyle ? learningPrefs.explanationStyle : '',
+        learnPrefsLanguageId: learningPrefs && learningPrefs.preferredTeachingLanguage
+          ? String(learningPrefs.preferredTeachingLanguage.id)
+          : '',
+        learnPrefsVersion: learningPrefs && learningPrefs.version ? learningPrefs.version : null,
+        learnPrefsLanguages: Array.isArray(languages)
+          ? languages.filter(x => x && x.isActive !== false).map(x => ({
+            id: String(x.id),
+            name: x.name || '',
+            nameAr: x.nameAr || x.name || ''
+          }))
+          : [],
+        learnPrefsError: learningPrefs ? '' : (results[7] && results[7].status === 'rejected'
+          ? Tafseel.api.errorMessage(results[7].reason)
+          : '')
       });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -984,6 +1039,98 @@ class Component extends DCLogic {
       accountPasswordHint: Tafseel.t('account_password_hint'),
       notifyDeliveries: s.notifyDeliveries, onNotifyDeliveries: e => this.setState({ notifyDeliveries: e.target.checked }),
       notifySessions: s.notifySessions, onNotifySessions: e => this.setState({ notifySessions: e.target.checked }),
+      learnPrefsTitle: Tafseel.t('learn_prefs_title'),
+      learnPrefsIntro: Tafseel.t('learn_prefs_intro'),
+      learnPrefsGuarantee: Tafseel.t('learn_prefs_guarantee'),
+      learnPrefsStyleLegend: Tafseel.t('learn_prefs_style_legend'),
+      learnPrefsLanguageLabel: Tafseel.t('learn_prefs_language_label'),
+      learnPrefsLanguageNone: Tafseel.t('learn_prefs_language_none'),
+      learnPrefsLanguageHint: Tafseel.t('learn_prefs_language_hint'),
+      learnPrefsSave: Tafseel.t('learn_prefs_save'),
+      learnPrefsReset: Tafseel.t('learn_prefs_reset'),
+      learnPrefsBusy: s.learnPrefsBusy,
+      learnPrefsError: s.learnPrefsError,
+      learnPrefsSuccess: s.learnPrefsSuccess,
+      learnPrefsLanguageId: s.learnPrefsLanguageId || '',
+      onLearnPrefsLanguage: e => this.setState({
+        learnPrefsLanguageId: e.target.value || '',
+        learnPrefsSuccess: '',
+        learnPrefsError: ''
+      }),
+      learnPrefsLanguages: (s.learnPrefsLanguages || []).map(lg => {
+        const isAr = Tafseel.lang === 'ar';
+        const label = (isAr && lg.nameAr) ? lg.nameAr : (lg.name || lg.nameAr || '');
+        return {
+          id: String(lg.id),
+          label: label,
+          selected: String(s.learnPrefsLanguageId) === String(lg.id) ? 'selected' : undefined
+        };
+      }),
+      learnPrefsStyleOptions: [
+        {
+          label: Tafseel.t('learn_prefs_style_none'),
+          checked: !s.learnPrefsStyle ? 'true' : 'false',
+          style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+            (!s.learnPrefsStyle ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+          onClick: () => this.setState({ learnPrefsStyle: '', learnPrefsSuccess: '', learnPrefsError: '' })
+        }
+      ].concat(['step_by_step','short_direct','detailed','visual','exam_focused','practice_focused'].map(code => ({
+        label: Tafseel.t('req_style_' + code),
+        checked: s.learnPrefsStyle === code ? 'true' : 'false',
+        style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+          (s.learnPrefsStyle === code ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+        onClick: () => this.setState({ learnPrefsStyle: code, learnPrefsSuccess: '', learnPrefsError: '' })
+      }))),
+      onSaveLearnPrefs: async () => {
+        if (s.learnPrefsBusy) return;
+        this.setState({ learnPrefsBusy: true, learnPrefsError: '', learnPrefsSuccess: '' });
+        try {
+          const saved = await Tafseel.api.put('/students/me/learning-preferences', {
+            explanationStyle: s.learnPrefsStyle || null,
+            preferredTeachingLanguageId: s.learnPrefsLanguageId || null,
+            version: s.learnPrefsVersion
+          });
+          this.setState({
+            learnPrefsStyle: saved && saved.explanationStyle ? saved.explanationStyle : '',
+            learnPrefsLanguageId: saved && saved.preferredTeachingLanguage
+              ? String(saved.preferredTeachingLanguage.id)
+              : '',
+            learnPrefsVersion: saved && saved.version ? saved.version : null,
+            learnPrefsSuccess: Tafseel.t('learn_prefs_saved'),
+            learnPrefsBusy: false
+          });
+        } catch (error) {
+          this.setState({
+            learnPrefsBusy: false,
+            learnPrefsError: Tafseel.api.errorMessage(error),
+            learnPrefsSuccess: ''
+          });
+        }
+      },
+      onResetLearnPrefs: async () => {
+        if (s.learnPrefsBusy) return;
+        this.setState({ learnPrefsBusy: true, learnPrefsError: '', learnPrefsSuccess: '' });
+        try {
+          const saved = await Tafseel.api.put('/students/me/learning-preferences', {
+            explanationStyle: null,
+            preferredTeachingLanguageId: null,
+            version: s.learnPrefsVersion
+          });
+          this.setState({
+            learnPrefsStyle: '',
+            learnPrefsLanguageId: '',
+            learnPrefsVersion: saved && saved.version ? saved.version : null,
+            learnPrefsSuccess: Tafseel.t('learn_prefs_reset_done'),
+            learnPrefsBusy: false
+          });
+        } catch (error) {
+          this.setState({
+            learnPrefsBusy: false,
+            learnPrefsError: Tafseel.api.errorMessage(error),
+            learnPrefsSuccess: ''
+          });
+        }
+      },
       onSaveSettings: async () => {
         if (s.accountBusy) return;
         this.setState({ accountBusy:true });

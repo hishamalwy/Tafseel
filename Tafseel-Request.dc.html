@@ -129,6 +129,22 @@
               </div>
             </fieldset>
             <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13.5px;font-weight:600">{{ languageLabel }}</span>
+              <select value="{{ preferredTeachingLanguageId }}" onChange="{{ onLanguage }}" aria-describedby="req-language-note" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px">
+                <option value="">{{ languageNone }}</option>
+                <sc-for list="{{ languageOptions }}" as="lg" hint-placeholder-count="2">
+                  <option value="{{ lg.id }}" selected="{{ lg.selected }}">{{ lg.label }}</option>
+                </sc-for>
+              </select>
+              <span id="req-language-note" style="font-size:12px;color:var(--muted)">{{ languageHint }}</span>
+            </label>
+            <sc-if value="{{ showLanguageInfo }}" hint-placeholder-val="{{ false }}">
+              <p role="status" style="font-size:13px;color:var(--text-2);margin:0">{{ languageInfo }}</p>
+            </sc-if>
+            <sc-if value="{{ prefsLoadError }}" hint-placeholder-val="{{ false }}">
+              <p role="status" style="font-size:13px;color:var(--muted);margin:0">{{ prefsUnavailable }}</p>
+            </sc-if>
+            <label style="display:flex;flex-direction:column;gap:6px">
               <span style="font-size:13.5px;font-weight:600">{{ constraintsLabel }}</span>
               <textarea value="{{ constraints }}" onChange="{{ onConstraints }}" rows="2" maxlength="1500" placeholder="{{ constraintsPh }}" style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
             </label>
@@ -343,7 +359,8 @@ class Component extends DCLogic {
     missingTeacherId: false, loading: true, noServices: false, loadError: '',
     schedulingOnly: false, profile: null, service: null, serviceId: '',
     step: 1, title: '', goal: '', constraints: '', topicLabel: '',
-    prompts: {}, explanationStyle: '',
+    prompts: {}, explanationStyle: '', preferredTeachingLanguageId: '',
+    languageInfoCode: '', prefsLoadError: false, preferencesInitialized: false,
     files: [], fileReminders: [], flexibleBudget: true, budget: 150,
     deliveryDate: '', agreed: false, submitting: false,
     submitted: false, createdRequestId: '', createdVersion: '',
@@ -366,7 +383,7 @@ class Component extends DCLogic {
     Tafseel.api.requireRoles(['Student']).then(session => {
       if (!session) return;
       this.setState({ studentId: session.userId || '' });
-      return this.loadTeacher().then(() => this.restoreDraftIfAny());
+      return this.initializeWizard();
     }).catch(error => {
       this.setState({ loading: false, loadError: Tafseel.api.errorMessage(error), noServices: true });
       this.flash(Tafseel.api.errorMessage(error));
@@ -413,6 +430,7 @@ class Component extends DCLogic {
       constraints: s.constraints,
       topicLabel: s.topicLabel,
       explanationStyle: s.explanationStyle,
+      preferredTeachingLanguageId: s.preferredTeachingLanguageId,
       prompts: s.prompts,
       deliveryDate: s.deliveryDate,
       flexibleBudget: s.flexibleBudget,
@@ -429,74 +447,127 @@ class Component extends DCLogic {
     else this.setState({ draftStatus: t('req_draft_saved') });
   }
 
-  restoreDraftIfAny() {
+  async initializeWizard() {
+    this.setState({ loading: true, noServices: false, loadError: '', schedulingOnly: false, prefsLoadError: false });
+    const prefsPromise = Tafseel.api.get('/students/me/learning-preferences')
+      .then(prefs => ({ ok: true, prefs: prefs || {} }))
+      .catch(() => ({ ok: false, prefs: null }));
+
+    let teacherResult;
+    try {
+      teacherResult = await this.fetchTeacherContext();
+    } catch (error) {
+      this.setState({
+        loading: false,
+        loadError: Tafseel.api.errorMessage(error),
+        noServices: true,
+        preferencesInitialized: true
+      });
+      this.flash(Tafseel.api.errorMessage(error));
+      return;
+    }
+
+    const prefsResult = await prefsPromise;
     const draft = G.readDraft(this.state.studentId, this.state.teacherId);
-    if (!draft) return;
-    const services = G.requestableServices(this.state.profile && this.state.profile.services);
-    let service = null;
-    if (draft.serviceId) service = services.find(x => String(x.id) === String(draft.serviceId)) || null;
-    if (!service) service = this.state.service;
-    this.setState({
-      serviceId: service ? String(service.id) : '',
-      service: service || this.state.service,
-      step: Math.min(5, Math.max(1, Number(draft.step) || 1)),
-      title: draft.title || '',
-      goal: draft.goal || '',
-      constraints: draft.constraints || '',
-      topicLabel: draft.topicLabel || '',
-      explanationStyle: G.isExplanationStyle(draft.explanationStyle) ? draft.explanationStyle : '',
-      prompts: draft.prompts || {},
-      deliveryDate: draft.deliveryDate || this.state.deliveryDate,
-      flexibleBudget: draft.flexibleBudget !== false,
-      budget: Number(draft.budget) || this.state.budget,
-      agreed: !!draft.agreed,
-      fileReminders: Array.isArray(draft.fileNames) ? draft.fileNames : [],
-      restoredNotice: true,
-      draftStatus: t('req_draft_restored'),
-      liveMessage: t('req_draft_restored')
+    const teacherLanguages = (teacherResult.profile && teacherResult.profile.languages) || [];
+    const teacherLanguageIds = teacherLanguages.map(l => l && l.id).filter(Boolean);
+    const savedStyle = prefsResult.prefs && prefsResult.prefs.explanationStyle;
+    const savedLang = prefsResult.prefs && prefsResult.prefs.preferredTeachingLanguage
+      && prefsResult.prefs.preferredTeachingLanguage.id;
+    const resolved = G.resolvePreferenceDefaults({
+      draft: draft,
+      savedExplanationStyle: savedStyle,
+      savedPreferredTeachingLanguageId: savedLang,
+      teacherLanguageIds: teacherLanguageIds
     });
+
+    const base = Object.assign({}, teacherResult.statePatch, {
+      explanationStyle: resolved.explanationStyle,
+      preferredTeachingLanguageId: resolved.preferredTeachingLanguageId,
+      languageInfoCode: resolved.languageInfoCode,
+      prefsLoadError: !prefsResult.ok,
+      preferencesInitialized: true,
+      loading: false
+    });
+
+    if (draft) {
+      const services = G.requestableServices(teacherResult.profile && teacherResult.profile.services);
+      let service = null;
+      if (draft.serviceId) service = services.find(x => String(x.id) === String(draft.serviceId)) || null;
+      if (!service) service = teacherResult.statePatch.service || null;
+      Object.assign(base, {
+        serviceId: service ? String(service.id) : '',
+        service: service || teacherResult.statePatch.service || null,
+        step: Math.min(5, Math.max(1, Number(draft.step) || 1)),
+        title: draft.title || '',
+        goal: draft.goal || '',
+        constraints: draft.constraints || '',
+        topicLabel: draft.topicLabel || '',
+        explanationStyle: G.isExplanationStyle(draft.explanationStyle) ? draft.explanationStyle : '',
+        preferredTeachingLanguageId: draft.preferredTeachingLanguageId
+          ? String(draft.preferredTeachingLanguageId)
+          : '',
+        prompts: draft.prompts || {},
+        deliveryDate: draft.deliveryDate || this.state.deliveryDate,
+        flexibleBudget: draft.flexibleBudget !== false,
+        budget: Number(draft.budget) || teacherResult.statePatch.budget || this.state.budget,
+        agreed: !!draft.agreed,
+        fileReminders: Array.isArray(draft.fileNames) ? draft.fileNames : [],
+        restoredNotice: true,
+        draftStatus: t('req_draft_restored'),
+        liveMessage: t('req_draft_restored'),
+        languageInfoCode: ''
+      });
+    }
+
+    this.setState(base);
+  }
+
+  async fetchTeacherContext() {
+    const profile = await Tafseel.api.get('/teachers/' + encodeURIComponent(this.state.teacherId));
+    const requestable = G.requestableServices(profile.services);
+    const all = profile.services || [];
+    const preferred = all.find(s => String(s.id) === String(this.state.preferredServiceId));
+    if (preferred && G.isSchedulingService(preferred) && !preferred.canRequest) {
+      return {
+        profile,
+        statePatch: {
+          profile, service: preferred, serviceId: String(preferred.id),
+          schedulingOnly: true, noServices: false
+        }
+      };
+    }
+    const service = (() => {
+      if (this.state.preferredServiceId) {
+        const match = requestable.find(s => String(s.id) === String(this.state.preferredServiceId));
+        if (match) return match;
+      }
+      return requestable[0] || null;
+    })();
+    if (!service) {
+      return {
+        profile,
+        statePatch: {
+          profile, service: null, serviceId: '', noServices: true, loadError: '', step: 1
+        }
+      };
+    }
+    const budget = Math.max(50, Math.round(Number(service.price) || 150));
+    return {
+      profile,
+      statePatch: {
+        profile, service, serviceId: String(service.id), noServices: false, loadError: '',
+        schedulingOnly: false, budget, flexibleBudget: true
+      }
+    };
+  }
+
+  restoreDraftIfAny() {
+    // Kept for compatibility; initializeWizard applies draft atomically.
   }
 
   async loadTeacher() {
-    this.setState({ loading: true, noServices: false, loadError: '', schedulingOnly: false });
-    try {
-      const profile = await Tafseel.api.get('/teachers/' + encodeURIComponent(this.state.teacherId));
-      const requestable = G.requestableServices(profile.services);
-      const all = profile.services || [];
-      const preferred = all.find(s => String(s.id) === String(this.state.preferredServiceId));
-      if (preferred && G.isSchedulingService(preferred) && !preferred.canRequest) {
-        this.setState({
-          profile, service: preferred, serviceId: String(preferred.id),
-          schedulingOnly: true, noServices: false, loading: false
-        });
-        return;
-      }
-      const service = (() => {
-        if (this.state.preferredServiceId) {
-          const match = requestable.find(s => String(s.id) === String(this.state.preferredServiceId));
-          if (match) return match;
-        }
-        return requestable[0] || null;
-      })();
-      if (!service) {
-        this.setState({
-          profile, service: null, serviceId: '', noServices: true, loadError: '',
-          loading: false, step: 1
-        });
-        return;
-      }
-      const budget = Math.max(50, Math.round(Number(service.price) || 150));
-      this.setState({
-        profile, service, serviceId: String(service.id), noServices: false, loadError: '',
-        loading: false, budget, flexibleBudget: true
-      });
-    } catch (error) {
-      const message = Tafseel.api.errorMessage(error);
-      this.setState({
-        loading: false, noServices: true, loadError: message, profile: null, service: null, serviceId: ''
-      });
-      this.flash(message);
-    }
+    return this.initializeWizard();
   }
 
   addFiles(fileList) {
@@ -549,10 +620,20 @@ class Component extends DCLogic {
       serviceDetails: t('req_compose_service_details'),
       topic: t('req_compose_topic'),
       explanationPreference: t('req_compose_style'),
+      preferredTeachingLanguage: t('req_compose_language'),
       additionalNotes: t('req_compose_notes'),
       prompt: promptKeys,
       style
     };
+  }
+
+  languageLabelForId(id) {
+    if (!id) return '';
+    const langs = (this.state.profile && this.state.profile.languages) || [];
+    const match = langs.find(l => String(l.id) === String(id));
+    if (!match) return '';
+    const isAr = Tafseel.lang === 'ar';
+    return (isAr && match.nameAr) ? match.nameAr : (match.name || match.nameAr || '');
   }
 
   buildDescription() {
@@ -565,6 +646,7 @@ class Component extends DCLogic {
       promptOrder: defs.map(d => d.key),
       topicLabel: s.topicLabel,
       explanationStyle: s.explanationStyle,
+      preferredTeachingLanguageLabel: this.languageLabelForId(s.preferredTeachingLanguageId),
       constraints: s.constraints
     }, this.compositionLabels());
   }
@@ -763,6 +845,7 @@ class Component extends DCLogic {
     const budgetSummary = s.flexibleBudget ? t('req_flexible') : this.money(s.budget, currency);
     const replyHours = service && service.deliveryHours ? Math.max(1, Math.round(Number(service.deliveryHours))) : 24;
     const styleLabel = G.isExplanationStyle(s.explanationStyle) ? t('req_style_' + s.explanationStyle) : '—';
+    const languageSummary = this.languageLabelForId(s.preferredTeachingLanguageId) || '—';
 
     const checklistItems = checklistState.map(item => {
       const done = item.done;
@@ -866,13 +949,39 @@ class Component extends DCLogic {
         }
       })),
       styleLegend: t('req_style_legend'),
-      styleOptions: G.EXPLANATION_STYLES.map(code => ({
+      styleOptions: [
+        {
+          label: t('req_style_none'),
+          checked: !s.explanationStyle ? 'true' : 'false',
+          style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+            (!s.explanationStyle ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+          onClick: () => this.updateField({ explanationStyle: '' })
+        }
+      ].concat(G.EXPLANATION_STYLES.map(code => ({
         label: t('req_style_' + code),
         checked: s.explanationStyle === code ? 'true' : 'false',
         style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
           (s.explanationStyle === code ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
         onClick: () => this.updateField({ explanationStyle: code })
-      })),
+      }))),
+      languageLabel: t('req_language_label'),
+      languageNone: t('req_language_none'),
+      languageHint: t('req_language_hint'),
+      preferredTeachingLanguageId: s.preferredTeachingLanguageId || '',
+      onLanguage: e => this.updateField({ preferredTeachingLanguageId: e.target.value || '', languageInfoCode: '' }),
+      languageOptions: ((profile && profile.languages) || []).map(lg => {
+        const isAr = Tafseel.lang === 'ar';
+        const label = (isAr && lg.nameAr) ? lg.nameAr : (lg.name || lg.nameAr || '');
+        return {
+          id: String(lg.id),
+          label: label,
+          selected: String(s.preferredTeachingLanguageId) === String(lg.id) ? 'selected' : undefined
+        };
+      }),
+      showLanguageInfo: s.languageInfoCode === 'teacher_language_unavailable',
+      languageInfo: t('req_language_teacher_unavailable'),
+      prefsLoadError: !!s.prefsLoadError,
+      prefsUnavailable: t('req_prefs_unavailable'),
       constraintsLabel: t('req_constraints_label'),
       constraintsPh: t('req_constraints_ph'),
       constraints: s.constraints,
@@ -931,6 +1040,7 @@ class Component extends DCLogic {
         { k: t('req_summary_topic'), v: escapeText(s.topicLabel || '—') },
         { k: t('req_summary_title'), v: escapeText(s.title || '—') },
         { k: t('req_summary_style'), v: escapeText(styleLabel) },
+        { k: t('req_summary_language'), v: escapeText(languageSummary) },
         { k: t('req_summary_delivery'), v: deliveryLabelText },
         { k: t('req_summary_budget'), v: budgetSummary },
         { k: t('req_summary_files'), v: t('req_files_count', { n: String(s.files.length) }) }

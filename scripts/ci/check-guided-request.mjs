@@ -89,6 +89,51 @@ assert(G.requiredChecklistComplete(items), "required complete without style/file
 assert(items.some(i => i.id === "style" && i.kind === "recommended" && !i.done), "style recommended incomplete");
 assert(items.some(i => i.id === "files" && i.kind === "recommended" && !i.done), "files recommended");
 
+// Preference resolution precedence
+const draftWins = G.resolvePreferenceDefaults({
+  draft: { explanationStyle: '', preferredTeachingLanguageId: '' },
+  savedExplanationStyle: 'detailed',
+  savedPreferredTeachingLanguageId: 'lang-1',
+  teacherLanguageIds: ['lang-1']
+});
+assert(draftWins.source === 'draft', 'draft source');
+assert(draftWins.explanationStyle === '', 'intentional empty draft style wins');
+assert(draftWins.preferredTeachingLanguageId === '', 'intentional empty draft language wins');
+
+const profilePrefill = G.resolvePreferenceDefaults({
+  draft: null,
+  savedExplanationStyle: 'step_by_step',
+  savedPreferredTeachingLanguageId: 'lang-1',
+  teacherLanguageIds: ['lang-1', 'lang-2']
+});
+assert(profilePrefill.explanationStyle === 'step_by_step', 'profile style prefills');
+assert(profilePrefill.preferredTeachingLanguageId === 'lang-1', 'supported language prefills');
+
+const unsupportedLang = G.resolvePreferenceDefaults({
+  draft: null,
+  savedExplanationStyle: 'visual',
+  savedPreferredTeachingLanguageId: 'lang-x',
+  teacherLanguageIds: ['lang-1']
+});
+assert(unsupportedLang.preferredTeachingLanguageId === '', 'unsupported language not preselected');
+assert(unsupportedLang.languageInfoCode === 'teacher_language_unavailable', 'info code set');
+
+const withLanguage = G.composeDescription({
+  goal: "Goal",
+  prompts: {},
+  promptOrder: [],
+  explanationStyle: "detailed",
+  preferredTeachingLanguageLabel: "Arabic",
+  constraints: ""
+}, {
+  goal: "Goal",
+  explanationPreference: "Explanation preference",
+  preferredTeachingLanguage: "Preferred teaching language",
+  style: { detailed: "Detailed" }
+});
+assert(withLanguage.includes("Preferred teaching language:\nArabic"), "language composed");
+assert(withLanguage.includes("Explanation preference:\nDetailed"), "style still composed");
+
 // Draft round-trip without secrets/bytes
 const storage = new Map();
 const fakeLocalStorage = {
@@ -105,6 +150,7 @@ GD.writeDraft("student-1", "teacher-1", {
   title: "T",
   goal: "G",
   explanationStyle: "detailed",
+  preferredTeachingLanguageId: "lang-1",
   prompts: { concept: "x" },
   deliveryDate: "2026-08-02",
   flexibleBudget: true,
@@ -118,12 +164,16 @@ assert(!raw.includes("%PDF"), "draft has no file bytes");
 const restored = GD.readDraft("student-1", "teacher-1");
 assert(restored.fileNames[0] === "notes.pdf", "file names reminder only");
 assert(restored.explanationStyle === "detailed", "style restored");
+assert(restored.preferredTeachingLanguageId === "lang-1", "language restored");
 GD.clearDraft("student-1", "teacher-1");
 assert(GD.readDraft("student-1", "teacher-1") === null, "draft cleared");
 
 // Page wiring
 const page = readFileSync("Tafseel-Request.dc.html", "utf8");
 assert(page.includes('src="js/guided-request.js"'), "page loads guided-request.js");
+assert(page.includes("initializeWizard"), "atomic wizard init");
+assert(page.includes("resolvePreferenceDefaults"), "preference precedence wired");
+assert(page.includes("/students/me/learning-preferences"), "loads student learning preferences");
 assert(page.includes("onSaveExit"), "Save & Exit wired");
 assert(page.includes("uploaded.version") || page.includes("uploaded && uploaded.version"), "upload version chaining");
 assert(page.includes("req_file_reselect_warning") || page.includes("fileReselectWarning"), "file reselect warning");
@@ -139,5 +189,8 @@ const student = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
 assert(student.includes('href="Tafseel-Browse-Teachers.dc.html"') && student.includes("dash_new_request"),
   "Student Dashboard New request routes to Browse Teachers");
 assert(!/href="Tafseel-Request\.dc\.html"/.test(student), "Student Dashboard must not open Request without Teacher");
+assert(student.includes("learn_prefs_title") || student.includes("learnPrefsTitle"), "learning preferences settings section");
+assert(student.includes("/students/me/learning-preferences"), "settings calls learning preferences API");
+assert(!/Tafseel-Teacher-Dashboard\.dc\.html[\s\S]*learnPrefsTitle/.test(student), "learning prefs stay on Student Dashboard");
 
 console.log("Guided request checks passed.");
