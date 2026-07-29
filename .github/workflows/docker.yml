@@ -57,6 +57,8 @@ jobs:
           context: .
           load: true
           tags: tafseel:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ inputs.version || '0.0.0-ci' }}
             REVISION=${{ github.sha }}

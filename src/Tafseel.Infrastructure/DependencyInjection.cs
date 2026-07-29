@@ -38,6 +38,25 @@ namespace Tafseel.Infrastructure;
 
 public static class DependencyInjection
 {
+    private static readonly (string Name, string Description, string Code, int DisplayOrder)[] CanonicalServices =
+    [
+        ("Custom recorded explanation", "A recorded video walking through your exact topic, step by step.", "recorded_explanation", 10),
+        ("Assignment guidance", "Coaching through your assignment, not ghostwriting.", "assignment_guidance", 20),
+        ("Exam revision", "Focused revision on your syllabus and past papers.", "exam_revision", 30),
+        ("Live session", "One-to-one video call with a shared whiteboard.", "live_session", 40)
+    ];
+
+    private static readonly (string Name, string Code)[] CanonicalLanguages =
+        [("Arabic", "ar"), ("English", "en")];
+
+    private static readonly (string Role, string Email, string FullName)[] StagingUsers =
+    [
+        (Roles.Admin, "admin@gmail.com", "Tafseel Admin"),
+        (Roles.Student, "student@gmail.com", "Tafseel Student"),
+        (Roles.Teacher, "teacher@gmail.com", "Tafseel Teacher"),
+        (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer")
+    ];
+
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -198,6 +217,10 @@ public static class DependencyInjection
             await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Database.MigrateAsync();
 
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        var staging = scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true;
+        if (await IdentitySeedIsCurrentAsync(db, staging))
+            return;
+
         var strategy = new NonRetryingExecutionStrategy(db);
         await strategy.ExecuteAsync(async () =>
         {
@@ -213,37 +236,21 @@ public static class DependencyInjection
 
             // Canonical services back real business logic (e.g. LiveSessionService/MarketplaceService key off
             // Code == "live_session") and must exist idempotently in every environment, not just staging demo data.
-            (string Name, string Description, string Code, int DisplayOrder)[] canonicalServices =
-            [
-                ("Custom recorded explanation", "A recorded video walking through your exact topic, step by step.", "recorded_explanation", 10),
-                ("Assignment guidance", "Coaching through your assignment, not ghostwriting.", "assignment_guidance", 20),
-                ("Exam revision", "Focused revision on your syllabus and past papers.", "exam_revision", 30),
-                ("Live session", "One-to-one video call with a shared whiteboard.", "live_session", 40)
-            ];
-            foreach (var service in canonicalServices)
+            foreach (var service in CanonicalServices)
                 if (!await db.ServiceCatalogItems.AnyAsync(x => x.Code == service.Code))
                     db.Add(new ServiceCatalogItem(
                         service.Name, service.Description, service.Code, displayOrder: service.DisplayOrder));
 
-            (string Name, string Code)[] canonicalLanguages = [("Arabic", "ar"), ("English", "en")];
-            foreach (var language in canonicalLanguages)
+            foreach (var language in CanonicalLanguages)
                 if (!await db.TeachingLanguages.AnyAsync(x => x.Code == language.Code))
                     db.Add(new TeachingLanguage(language.Name, language.Code));
             await db.SaveChangesAsync();
 
-            if (scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true)
+            if (staging)
             {
                 var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                 var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
-                (string Role, string Email, string FullName)[] stagingUsers =
-                [
-                    (Roles.Admin, "admin@gmail.com", "Tafseel Admin"),
-                    (Roles.Student, "student@gmail.com", "Tafseel Student"),
-                    (Roles.Teacher, "teacher@gmail.com", "Tafseel Teacher"),
-                    (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer")
-                ];
-
-                foreach (var account in stagingUsers)
+                foreach (var account in StagingUsers)
                 {
                     var user = await users.FindByEmailAsync(account.Email);
                     if (user is null)
@@ -280,6 +287,43 @@ public static class DependencyInjection
 
             await transaction.CommitAsync();
         });
+    }
+
+    private static async Task<bool> IdentitySeedIsCurrentAsync(TafseelDbContext db, bool staging)
+    {
+        if (await db.Roles.CountAsync(x => x.Name != null && Roles.All.Contains(x.Name)) != Roles.All.Length)
+            return false;
+
+        var serviceCodes = CanonicalServices.Select(x => x.Code).ToArray();
+        if (await db.ServiceCatalogItems.CountAsync(x => serviceCodes.Contains(x.Code)) != serviceCodes.Length)
+            return false;
+
+        var languageCodes = CanonicalLanguages.Select(x => x.Code).ToArray();
+        if (await db.TeachingLanguages.CountAsync(x => languageCodes.Contains(x.Code)) != languageCodes.Length)
+            return false;
+
+        if (!staging)
+            return true;
+
+        var emails = StagingUsers.Select(x => x.Email).ToArray();
+        var users = await db.Users
+            .Where(x => x.Email != null && emails.Contains(x.Email) && x.EmailConfirmed)
+            .Select(x => new { x.Id, x.Email })
+            .ToArrayAsync();
+        if (users.Length != StagingUsers.Length)
+            return false;
+
+        var assignments = await (
+            from user in db.Users
+            join userRole in db.UserRoles on user.Id equals userRole.UserId
+            join role in db.Roles on userRole.RoleId equals role.Id
+            where user.Email != null && emails.Contains(user.Email)
+            select new { user.Email, role.Name })
+            .ToArrayAsync();
+
+        return StagingUsers.All(expected =>
+            assignments.Any(actual =>
+                actual.Email == expected.Email && actual.Name == expected.Role));
     }
 
     private static bool ValidFrontendUrl(string value, bool requireHttps) =>

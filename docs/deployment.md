@@ -56,6 +56,8 @@ Configure these Azure App Service application settings before deployment:
 ASPNETCORE_ENVIRONMENT=Staging
 ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 SCM_DO_BUILD_DURING_DEPLOYMENT=false
+WEBSITE_WARMUP_PATH=/health/ready
+WEBSITE_WARMUP_STATUSES=200
 ConnectionStrings__Tafseel=<staging SQL Server connection string>
 Jwt__Issuer=Tafseel.Api
 Jwt__Audience=Tafseel.Web
@@ -73,6 +75,12 @@ LiveSessions__Provider=Mock
 DataProtection__KeysPath=/home/data-protection-keys
 FileStorage__RootPath=/home/tafseel-files
 ```
+
+`/health/live` confirms that the process can serve requests and deliberately
+does not query dependencies. `/health/ready` includes the tagged database check
+and is the App Service Health Check and warmup path. Startup initialization
+finishes before Kestrel accepts either request, so a `200` readiness response
+means both startup fail-fast work and the database check succeeded.
 
 Do not add `WEBSITE_RUN_FROM_PACKAGE`, a publish profile, or Azure client credentials as application settings. Azure deployment identity values belong only in the GitHub `staging` Environment.
 

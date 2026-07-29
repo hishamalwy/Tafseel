@@ -27,12 +27,20 @@ public sealed class RoleBootstrapTests
         {
             var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             Assert.True((await roles.DeleteAsync((await roles.FindByNameAsync(Roles.Teacher))!)).Succeeded);
+            var seedDb = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            seedDb.ServiceCatalogItems.Remove(
+                await seedDb.ServiceCatalogItems.SingleAsync(x => x.Code == "live_session"));
+            seedDb.TeachingLanguages.Remove(await seedDb.TeachingLanguages.SingleAsync(x => x.Code == "en"));
+            await seedDb.SaveChangesAsync();
         }
         await services.InitializeIdentityAsync();
 
         await using var verification = services.CreateAsyncScope();
         var db = verification.ServiceProvider.GetRequiredService<TafseelDbContext>();
         Assert.Equal(Roles.All.Order(), await db.Roles.Select(x => x.Name!).OrderBy(x => x).ToArrayAsync());
+        Assert.Equal(
+            ["assignment_guidance", "exam_revision", "live_session", "recorded_explanation"],
+            await db.ServiceCatalogItems.Select(x => x.Code).OrderBy(x => x).ToArrayAsync());
         Assert.Equal(["ar", "en"], await db.TeachingLanguages.Select(x => x.Code).OrderBy(x => x).ToArrayAsync());
     }
 
@@ -116,13 +124,37 @@ public sealed class RoleBootstrapTests
         Assert.Empty(await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Users.ToArrayAsync());
     }
 
-    private static ServiceCollection Services(SqliteConnection database, string? environment = null)
+    [Fact]
+    public async Task Repeated_bootstrap_uses_the_bounded_fast_path()
+    {
+        await using var database = new SqliteConnection("Data Source=:memory:");
+        await database.OpenAsync();
+        var commands = new CountingCommandInterceptor();
+        await using var services = Services(database, commands: commands).BuildServiceProvider();
+        await EnsureCreated(services);
+        await services.InitializeIdentityAsync();
+
+        commands.Reset();
+        await services.InitializeIdentityAsync();
+
+        Assert.Equal(3, commands.ReadCount);
+    }
+
+    private static ServiceCollection Services(
+        SqliteConnection database,
+        string? environment = null,
+        CountingCommandInterceptor? commands = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
         if (environment is not null)
             services.AddSingleton<IHostEnvironment>(new TestHostEnvironment(environment));
-        services.AddDbContext<TafseelDbContext>(options => options.UseSqlite(database));
+        services.AddDbContext<TafseelDbContext>(options =>
+        {
+            options.UseSqlite(database);
+            if (commands is not null)
+                options.AddInterceptors(commands);
+        });
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<TafseelDbContext>();

@@ -178,25 +178,28 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<TafseelDbContext>("database", tags: ["ready"]);
-builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
-builder.Services.AddSwaggerGen(options =>
+if (builder.Environment.IsDevelopment())
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Tafseel API", Version = "v1" });
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecurityScheme
+        options.SwaggerDoc("v1", new OpenApiInfo { Title = "Tafseel API", Version = "v1" });
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
-            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-        }] = []
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            }] = []
+        });
     });
-});
+}
 
 var app = builder.Build();
 
