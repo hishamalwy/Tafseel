@@ -61,12 +61,37 @@
     status.dataset.kind = kind || '';
   }
 
+  function isDemoReady() {
+    return !!(state.current && state.current.demoUploaded);
+  }
+
+  function syncDemoActions() {
+    if (!uploadBtn || !submitBtn) return;
+    var ready = isDemoReady();
+    var actions = submitBtn.parentElement;
+    uploadBtn.classList.toggle('tf-button-secondary', ready);
+    submitBtn.classList.toggle('tf-button-secondary', !ready);
+    if (actions) {
+      actions.dataset.demoReady = ready ? 'true' : 'false';
+      if (ready) actions.insertBefore(submitBtn, uploadBtn);
+      else actions.insertBefore(uploadBtn, submitBtn);
+    }
+  }
+
   function setSubmitLoading(next) {
     state.submitLoading = !!next;
+    var ready = isDemoReady();
     saveBtn.disabled = state.submitLoading || state.topicsLoading;
-    submitBtn.disabled = state.submitLoading || state.topicsLoading;
+    submitBtn.disabled = state.submitLoading || state.topicsLoading || !ready;
     uploadBtn.disabled = state.submitLoading || state.topicsLoading || state.demoDurationInvalid;
     saveBtn.textContent = state.submitLoading ? t('apply_saving') : t('apply_save_continue');
+    uploadBtn.textContent = state.submitLoading && !ready
+      ? t('apply_demo_uploading')
+      : t(ready ? 'apply_demo_reupload' : 'apply_upload_demo');
+    submitBtn.textContent = state.submitLoading && ready
+      ? t('apply_submitting')
+      : t('apply_submit_review');
+    syncDemoActions();
   }
 
   function errorText(error, fallbackKey) {
@@ -188,9 +213,9 @@
     var item = getCurrentTopic();
     var card = document.getElementById('assignment-details');
     var durationRules = document.getElementById('demo-duration-rules');
-    if (!item) {
-      card.hidden = true;
-      durationRules.textContent = '';
+    if (!item || state.wizardStep !== 'demo') {
+      if (card) card.hidden = true;
+      if (!item && durationRules) durationRules.textContent = '';
       return;
     }
     var minSeconds = item.minVideoSeconds || 30;
@@ -255,6 +280,9 @@
       '<span class="tf-badge">' + escape(requiredRange) + '</span>' +
       '<span class="tf-badge">' + escape(recommended) + '</span>' +
       '<span class="tf-badge">' + escape(t('apply_allowed_format')) + '</span></div>' +
+      '<h3>' + escape(t('apply_important_notes')) + '</h3>' +
+      '<div class="tf-alert" data-kind="warning" role="note">' +
+      escape(t('apply_material_warning')) + '</div>' +
       '<h3>' + escape(t('apply_instructions')) + '</h3>' +
       '<p class="tf-assignment-instructions">' + escape(instructions || t('apply_instructions_missing')) + '</p>' +
       '<h3>' + escape(t('apply_evaluation')) + '</h3>' +
@@ -263,10 +291,7 @@
         ? '<h3>' + escape(t('apply_assignment_resources')) + '</h3><ul class="tf-assignment-resources">' +
           resources + '</ul>'
         : '<h3>' + escape(t('apply_assignment_resources')) + '</h3><p class="tf-empty">' +
-          escape(t('apply_no_resources')) + '</p>') +
-      '<h3>' + escape(t('apply_important_notes')) + '</h3>' +
-      '<div class="tf-alert" data-kind="warning" role="note">' +
-      escape(t('apply_material_warning')) + '</div>';
+          escape(t('apply_no_resources')) + '</p>');
     card.hidden = false;
     bindResourceActions(card);
     validateSelectedDemoDuration();
@@ -281,13 +306,31 @@
     return 'draft';
   }
 
+  function applicationSubjectLabel(application) {
+    var catalog = state.subjects.find(function (item) { return item.id === application.subjectId; });
+    if (catalog) return catalogLabel(catalog);
+    var ar = document.documentElement.lang === 'ar';
+    if (ar && application.subjectNameAr) return application.subjectNameAr;
+    return application.subjectName || t('apply_subject');
+  }
+
+  function applicationTopicLabel(application) {
+    var catalog = state.topics.find(function (item) {
+      return item.id === application.qualificationTopicId;
+    });
+    if (catalog) return topicLabel(catalog);
+    var ar = document.documentElement.lang === 'ar';
+    if (ar && application.assignmentTitleAr) return application.assignmentTitleAr;
+    return application.assignmentTitle || '';
+  }
+
   function renderApplications() {
     var list = document.getElementById('applications');
     list.innerHTML = state.applications.length
       ? state.applications.map(function (application) {
           var active = state.current && state.current.id === application.id;
-          var subjectLabel = application.subjectName || t('apply_subject');
-          var topicLabelText = application.assignmentTitle || '';
+          var subjectLabel = applicationSubjectLabel(application);
+          var topicLabelText = applicationTopicLabel(application);
           var detailParts = [];
           if (topicLabelText) detailParts.push(topicLabelText);
           if (application.city) detailParts.push(application.city);
@@ -346,19 +389,17 @@
       body.textContent = t('apply_review_pending_body');
     }
     meta.innerHTML =
-      '<div><dt>' + escape(t('apply_subject')) + '</dt><dd>' + escape(current.subjectName || '—') + '</dd></div>' +
-      '<div><dt>' + escape(t('apply_topic')) + '</dt><dd>' + escape(current.assignmentTitle || '—') + '</dd></div>' +
+      '<div><dt>' + escape(t('apply_subject')) + '</dt><dd>' + escape(applicationSubjectLabel(current) || '—') + '</dd></div>' +
+      '<div><dt>' + escape(t('apply_topic')) + '</dt><dd>' + escape(applicationTopicLabel(current) || '—') + '</dd></div>' +
       '<div><dt>' + escape(t('apply_status_label')) + '</dt><dd>' + escape(statusName(current.status)) + '</dd></div>';
     newBtn.hidden = [0, 3].includes(current.status);
   }
 
-  function placeAssignmentCard(step) {
+  function placeAssignmentCard() {
     var card = document.getElementById('assignment-details');
-    var detailsSlot = document.getElementById('assignment-slot-details');
     var demoSlot = document.getElementById('assignment-slot-demo');
-    if (!card || !detailsSlot || !demoSlot) return;
-    var slot = step === 'demo' ? demoSlot : detailsSlot;
-    if (card.parentElement !== slot) slot.appendChild(card);
+    if (!card || !demoSlot) return;
+    if (card.parentElement !== demoSlot) demoSlot.appendChild(card);
   }
 
   function showWizardStep(step) {
@@ -372,14 +413,15 @@
     panelDemo.hidden = step !== 'demo';
     panelReview.hidden = step !== 'review';
     if (guidelines) guidelines.hidden = step === 'review';
-    if (step === 'details' || step === 'demo') {
-      placeAssignmentCard(step);
+    if (step === 'demo') {
+      placeAssignmentCard();
       renderAssignment();
     } else if (assignment) {
       assignment.hidden = true;
     }
     renderApplications();
     renderStepper(state.current);
+    syncDemoActions();
     if (step === 'review') renderReviewPanel(state.current);
   }
 
@@ -500,7 +542,6 @@
       topic.value = current.qualificationTopicId;
       document.getElementById('city').value = current.city || '';
       document.getElementById('years').value = String(current.experienceYears || 0);
-      document.getElementById('degree').value = current.degree || '';
     }
     if (current && current.status === 3 && current.publicFeedback)
       message(current.publicFeedback, 'warning');
@@ -595,8 +636,7 @@
       subject,
       topic,
       document.getElementById('city'),
-      document.getElementById('years'),
-      document.getElementById('degree')
+      document.getElementById('years')
     ].forEach(function (input) {
       input.setCustomValidity('');
     });
@@ -616,13 +656,8 @@
       return false;
     }
     var city = document.getElementById('city');
-    var degree = document.getElementById('degree');
     if (!/\p{L}/u.test(city.value)) {
       focusInvalid(city, t('apply_city_invalid'));
-      return false;
-    }
-    if (!/\p{L}/u.test(degree.value)) {
-      focusInvalid(degree, t('apply_degree_invalid'));
       return false;
     }
     var years = Number(document.getElementById('years').value);
@@ -794,7 +829,7 @@
       qualificationTopicId: topic.value,
       city: document.getElementById('city').value.trim(),
       experienceYears: Number(document.getElementById('years').value),
-      degree: document.getElementById('degree').value.trim()
+      degree: (state.current && state.current.degree) || ''
     };
     setSubmitLoading(true);
     try {
@@ -821,18 +856,12 @@
     }
   });
 
-  document.getElementById('back-to-details').addEventListener('click', function () {
-    if (state.submitLoading) return;
-    showWizardStep('details');
-  });
-
   document.getElementById('review-new-application').addEventListener('click', function () {
     if (state.submitLoading) return;
     state.current = null;
     subject.disabled = false;
     document.getElementById('city').value = '';
     document.getElementById('years').value = '';
-    document.getElementById('degree').value = '';
     demoInput.value = '';
     state.demoDuration = null;
     state.demoDurationInvalid = false;
@@ -941,6 +970,7 @@
     renderAssignment();
     renderLifecycle();
     renderStepper(state.current);
+    syncDemoActions();
     if (state.wizardStep === 'review') renderReviewPanel(state.current);
   });
 

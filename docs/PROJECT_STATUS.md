@@ -4,15 +4,15 @@ Last updated: 2026-07-29.
 
 ## Current Version
 
-No release tag is present. Current audited baseline is commit `5c59b0d` on `main`, plus unrelated pre-existing Teacher Application/localization working-tree changes and uncommitted F-005 documentation.
+No release tag is present. Current audited baseline is commit `7323c9e` on `main`, plus uncommitted Teacher Comparison and concurrent Teacher Qualification Application working-tree changes.
 
 ## Current Phase
 
-F-005 revision-to-delivery linkage investigation completed without implementation.
+Teacher Availability and Capacity product decision completed. The approved first slice covers truthful live-session availability only; source implementation has not started.
 
 ## Current Milestone
 
-The owned Order timeline is complete, and F-005 is proven to require an explicit persisted relationship before it can be implemented safely.
+The marketplace now has a truthful bounded public Teacher comparison and an implementation-ready availability decision. F-005 remains deferred and proven to require an explicit persisted relationship.
 
 ## Current Architecture Status
 
@@ -37,6 +37,8 @@ Historical implementation phases 2–11 and completed production-correction pass
 | Teacher qualification application browser validation | Conditionally Verified | [Browser validation report](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) |
 | F-002 Public teacher metrics integrity | Fixed locally | [F-002 report](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) |
 | Owned Order lifecycle timeline | Completed locally | [Timeline report](./features/PHASE2_ORDER_TIMELINE_REPORT.md) |
+| Teacher comparison | Conditionally Verified | [Teacher comparison report](./features/TEACHER_COMPARISON_REPORT.md) |
+| Teacher availability and capacity product decision | Decision complete | [Decision report](./reports/TEACHER_AVAILABILITY_CAPACITY_DECISION_REPORT.md) |
 
 ## Open Findings
 
@@ -58,6 +60,8 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 | Slice | Status |
 |---|---|
 | Owned Order Lifecycle Timeline | Completed locally |
+| Teacher Comparison | Implemented locally; browser conditional |
+| Teacher Availability and Capacity | Decision complete; implementation pending |
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
@@ -65,12 +69,11 @@ Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
 1. F-005 legacy-data, client-binding and revision-response relationship decisions.
 2. Favorites pagination.
-3. Availability and teacher capacity after rule approval.
-4. Teacher comparison after metric correction.
-5. Student learning preferences.
-6. Explainable deterministic matching.
-7. Teacher/student analytics after event instrumentation.
-8. Quality trends, trust extensions, learning timeline and portfolio moderation.
+3. Live-session availability using the approved bounded summary design; request capacity remains deferred.
+4. Student learning preferences.
+5. Explainable deterministic matching.
+6. Teacher/student analytics after event instrumentation.
+7. Quality trends, trust extensions, learning timeline and portfolio moderation.
 
 ## Known Risks
 
@@ -82,6 +85,9 @@ Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 6. **Medium:** SignalR multi-instance delivery is not verified.
 7. **Medium:** The DC/Babel runtime requires broader CSP allowances.
 8. **Medium:** One Marketplace query-count integration test remains order/isolation sensitive.
+9. **Medium:** Populated Teacher Comparison browser behavior remains conditional until Development contains at least two legitimately published Teachers.
+10. **Medium:** Public profiles currently expose raw availability rules and exception details until the approved public summary contract is implemented.
+11. **Medium:** Awaiting-payment live sessions reserve slots without an approved expiry policy.
 
 ## Blocked By Business Rules
 
@@ -89,6 +95,7 @@ Unresolved decisions include:
 
 - Teacher metric formulas, date windows, exclusions and privacy boundaries.
 - Capacity workload statuses and reservation rules.
+- Minimum live-session booking notice and awaiting-payment reservation expiry.
 - Matching weights, ownership, versioning and tie-breaking.
 - Complexity categories and override authority.
 - Learning outcome/mastery vocabulary and evidence.
@@ -106,16 +113,21 @@ The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TA
 
 ## Test Coverage Summary
 
-Latest F-005 investigation validation:
+Latest Teacher Comparison validation:
 
-- Release build: passed; 0 warnings and 0 errors.
-- Phase 5 Order integration suite: 4 passed, 0 failed.
-- Focused dispute and refund timeline integration tests: 2 passed, 0 failed.
-- No schema, migration, API, delivery, revision or timeline behavior changed.
+- Locked restore, format and Release build passed; build had 0 warnings and 0 errors.
+- Focused Teacher Comparison SQL tests: 4 passed, 0 failed.
+- Full SQL Server suite: 60 passed, 0 failed.
+- Provider-neutral suites: 142 passed, 0 failed.
+- Frontend integrity and localization: 12 entry points and 1,934 paired keys passed.
+- EF pending-model check, 9 migration-safety tests and publish smoke passed.
+- No schema or migration changed.
+- Populated browser interaction remains conditional because Development returned zero published Teachers.
+- The Teacher Availability and Capacity pass was documentation-only; repository evidence, Markdown links, scope and whitespace were validated without changing runtime tests or schema.
 
 ## Deployment Status
 
-- Development: available; F-005 investigation documentation is local and uncommitted.
+- Development: controlled local Browser/Runtime validation completed; Teacher Comparison is local and uncommitted.
 - CI: not run remotely; equivalent local gates were exercised.
 - Staging: not deployed or validated during these passes.
 - Production: manual deployment remains; no deployment performed.
@@ -123,4 +135,4 @@ Latest F-005 investigation validation:
 
 ## Next Recommended Pass
 
-Decision-only F-005 pass for legacy-row policy, client target binding and whether revision-response delivery linkage is also required.
+Focused live-session availability implementation without request capacity.

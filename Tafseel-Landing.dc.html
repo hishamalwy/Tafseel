@@ -216,24 +216,37 @@
     </div>
   </section>
 
-  <section id="subjects" class="tf-shell tf-landing-subjects" style="padding-block:64px">
-    <div class="tf-landing-section-row" style="display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px">
+  <section id="subjects" class="tf-shell tf-landing-subjects">
+    <div class="tf-landing-section-row tf-subject-catalog-head">
       <div>
-        <h2 data-i18n="subj_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Popular subjects</h2>
-        <p data-i18n="subj_p" style="color:var(--muted);font-size:16px">From high-school revision to postgrad research support.</p>
+        <h2 data-i18n="subj_h">Popular subjects</h2>
+        <p data-i18n="subj_p">From high-school revision to postgrad research support.</p>
       </div>
-      <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;white-space:nowrap">All subjects →</a>
+      <a class="tf-subject-catalog-all" href="Tafseel-Browse-Teachers.dc.html" data-i18n="subj_all">All subjects →</a>
     </div>
-    <div class="tf-landing-card-grid tf-landing-card-grid-subjects" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
-      <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="8">
-        <a href="Tafseel-Browse-Teachers.dc.html" onClick="{{ s.onOpen }}" class="tf-lift" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;color:var(--text);display:block" style-hover="border-color:var(--border-strong);color:var(--text)">
-          <div style="width:40px;height:40px;border-radius:11px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:18px;margin-bottom:14px">{{ s.icon }}</div>
-          <div style="font-weight:700;font-size:16px;margin-bottom:4px">{{ s.name }}</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px">{{ s.desc }}</div>
-          <div style="font-size:12.5px;font-weight:600;color:var(--text-2)">{{ s.count }}</div>
-        </a>
-      </sc-for>
-    </div>
+    <sc-if value="{{ subjectsLoading }}" hint-placeholder-val="{{ false }}">
+      <div class="tf-subject-grid tf-subject-grid-skeleton" aria-busy="true" aria-live="polite">
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ subjectsEmpty }}" hint-placeholder-val="{{ false }}">
+      <p class="tf-subject-catalog-empty" data-i18n="subj_empty">Subjects are unavailable right now. Please try again later.</p>
+    </sc-if>
+    <sc-if value="{{ subjectsReady }}" hint-placeholder-val="{{ true }}">
+      <div class="tf-subject-grid" data-reveal-group>
+        <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="8">
+          <a class="tf-subject-card" href="{{ s.href }}">
+            <span class="tf-subject-card-glow" aria-hidden="true"></span>
+            <span class="tf-subject-card-pattern" aria-hidden="true"></span>
+            <span class="tf-subject-card-title">{{ s.name }}</span>
+            <span class="tf-subject-card-cta"><span>{{ s.cta }}</span></span>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
   </section>
 
   <section id="how" style="background:var(--bg-alt);border-block:1px solid var(--border);margin-top:40px">
@@ -477,7 +490,7 @@ const HERO_CARD_TEACHERS = [
 ];
 
 class Component extends DCLogic {
-  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, liveTeachers: null, liveServices: null, teacherTotal: null, rotateIndex: 0, previousRotateIndex: 0, rotateTick: 0, cardIndex: 0, cardTick: 0, reduceMotion: false, heroTypedText: '', qFocused: false, session: null, sessionChecked: false };
+  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, subjectsLoaded: false, liveTeachers: null, liveServices: null, teacherTotal: null, rotateIndex: 0, previousRotateIndex: 0, rotateTick: 0, cardIndex: 0, cardTick: 0, reduceMotion: false, heroTypedText: '', qFocused: false, session: null, sessionChecked: false };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
@@ -496,40 +509,36 @@ class Component extends DCLogic {
       Tafseel.api.get('/teachers?pageSize=4'),
       Tafseel.api.get('/services')
     ]).then(([subjects, teachers, services]) => this.setState({
-      liveSubjects:subjects.slice(0, 8).map((subject, index) => ({
-        icon:['∑','⚛','⚗','🧬','{}','Aa','◱','⚙'][index] || '•',
-        name:subject.name,
-        nameAr:subject.nameAr || '',
-        desc:subject.detail || 'Explore personalized learning in this subject',
-        count:'Explore teachers',
-        onOpen:event => {
-          event.preventDefault();
-          location.href = 'Tafseel-Browse-Teachers.dc.html?search=' + encodeURIComponent(subject.name);
-        }
+      subjectsLoaded: true,
+      liveSubjects: (subjects || []).map(subject => ({
+        id: subject.id,
+        name: subject.name,
+        nameAr: subject.nameAr || '',
+        href: 'Tafseel-Browse-Teachers.dc.html?subjectId=' + encodeURIComponent(subject.id)
       })),
-      liveTeachers:teachers.items.map(teacher => ({
-        name:teacher.fullName,
-        subject:teacher.subjects[0] || teacher.headline,
-        hasRating:teacher.rating != null && teacher.ratingCount > 0,
-        rating:teacher.rating == null ? '' : Number(teacher.rating).toFixed(1),
-        reviews:teacher.ratingCount,
-        topics:teacher.subjects.slice(0, 2),
-        status:teacher.verified ? 'Verified teacher' : 'Teacher',
-        price:teacher.startingPrice == null ? 'Ask for price' : (teacher.currency || 'SAR') + ' ' + teacher.startingPrice,
-        onOpen:event => {
+      liveTeachers: teachers.items.map(teacher => ({
+        name: teacher.fullName,
+        subject: teacher.subjects[0] || teacher.headline,
+        hasRating: teacher.rating != null && teacher.ratingCount > 0,
+        rating: teacher.rating == null ? '' : Number(teacher.rating).toFixed(1),
+        reviews: teacher.ratingCount,
+        topics: teacher.subjects.slice(0, 2),
+        status: teacher.verified ? 'Verified teacher' : 'Teacher',
+        price: teacher.startingPrice == null ? 'Ask for price' : (teacher.currency || 'SAR') + ' ' + teacher.startingPrice,
+        onOpen: event => {
           event.preventDefault();
           location.href = 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId);
         }
       })),
-      liveServices:(services || []).slice(0, 6).map((sv, index) => ({
-        icon:['▶','✎','◷','◉','◈','⇩'][index % 6],
-        name:sv.name,
-        nameAr:sv.nameAr || '',
-        desc:sv.detail || sv.name,
-        price:''
+      liveServices: (services || []).slice(0, 6).map((sv, index) => ({
+        icon: ['▶', '✎', '◷', '◉', '◈', '⇩'][index % 6],
+        name: sv.name,
+        nameAr: sv.nameAr || '',
+        desc: sv.detail || sv.name,
+        price: ''
       })),
-      teacherTotal:teachers.totalCount
-    })).catch(() => {});
+      teacherTotal: teachers.totalCount
+    })).catch(() => this.setState({ subjectsLoaded: true, liveSubjects: [] }));
   }
 
   _setReducedMotion(reduceMotion) {
@@ -650,26 +659,7 @@ class Component extends DCLogic {
       { quote: ar ? 'قارنت بين ثلاث معلمات بالتقييمات ونماذج الشرح قبل ما أختار. الاختيار كان واضح وسريع.' : 'I compared three teachers by their ratings and sample videos before picking one. The choice was fast and obvious.', initials: 'RA', name: 'Rawan Ali', meta: ar ? 'ثانوية عامة، علمي' : 'High school, science track' },
       { quote: ar ? 'طلبت مراجعة قبل الامتحان بيوم واحد واستلمت الرد خلال ساعتين. مكنتش متوقعة السرعة دي.' : 'I requested a review one day before my exam and got a reply within two hours. I didn’t expect it to be this fast.', initials: 'OB', name: 'Omar Bakr', meta: ar ? 'طالب طب، السنة الرابعة' : 'Medicine, 4th year' }
     ];
-    // Static marketing fallbacks — shown only while /subjects, /teachers or /services
-    // return nothing (API still loading, empty catalog, or request failed). Never used
-    // to fabricate live counts (see heroPill/stats, which stay honest "—"/null-driven).
-    const fallbackSubjects = [
-      { icon: '∑', name: ar ? 'الرياضيات' : 'Mathematics', desc: ar ? 'التفاضل والجبر الخطي والإحصاء' : 'Calculus, linear algebra, statistics', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: '⚛', name: ar ? 'الفيزياء' : 'Physics', desc: ar ? 'الميكانيكا والديناميكا والكهرومغناطيسية' : 'Mechanics, thermodynamics, E&M', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: '⚗', name: ar ? 'الكيمياء' : 'Chemistry', desc: ar ? 'العضوية وغير العضوية والتحليلية' : 'Organic, inorganic, analytical', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: '🧬', name: ar ? 'الأحياء' : 'Biology', desc: ar ? 'الخلية والوراثة وعلم وظائف الأعضاء' : 'Cell biology, genetics, physiology', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: '{}', name: ar ? 'البرمجة' : 'Programming', desc: ar ? 'الخوارزميات وقواعد البيانات وتطوير الويب' : 'Algorithms, databases, web dev', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: 'Aa', name: ar ? 'اللغة الإنجليزية' : 'English', desc: ar ? 'الكتابة الأكاديمية وIELTS والمحادثة' : 'Academic writing, IELTS, speaking', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: '◱', name: ar ? 'إدارة الأعمال' : 'Business', desc: ar ? 'المحاسبة والتمويل والتسويق' : 'Accounting, finance, marketing', count: ar ? 'استكشف المعلمين' : 'Explore teachers' },
-      { icon: '⚙', name: ar ? 'الهندسة' : 'Engineering', desc: ar ? 'الدوائر والاستاتيكا وCAD' : 'Circuits, statics, CAD', count: ar ? 'استكشف المعلمين' : 'Explore teachers' }
-    ].map(subject => ({
-      ...subject,
-      onOpen: event => {
-        event.preventDefault();
-        location.href = 'Tafseel-Browse-Teachers.dc.html?search=' + encodeURIComponent(subject.name);
-      }
-    }));
-    const fallbackTeachers = [];
+    // Static marketing fallbacks for services only — subjects always come from /subjects.
     const fallbackServices = [
       { icon: '▶', name: ar ? 'شرح مسجّل مخصص' : 'Custom explanation', desc: ar ? 'فيديو مسجل يشرح موضوعك تحديدًا خطوة بخطوة.' : 'A recorded video walking through your exact topic, step by step.', price: ar ? 'من 95 ريال' : 'from SAR 95' },
       { icon: '✎', name: ar ? 'إرشاد الواجبات' : 'Assignment guidance', desc: ar ? 'توجيه منهجي لحل واجبك دون كتابته نيابة عنك.' : 'Structured guidance on your assignment — coaching, not ghostwriting.', price: ar ? 'من 80 ريال' : 'from SAR 80' },
@@ -793,9 +783,14 @@ class Component extends DCLogic {
           body: ar ? 'بعد التسليم، تأكد أن الشرح غطّى النقاط المطلوبة. إذا احتجت توضيحًا إضافيًا، اطلبه قبل اعتماد الخدمة.' : 'After delivery, confirm the explanation covered the needed points. If you need an extra clarification, request it before approving the service.'
         }
       ],
-      subjects: this.state.liveSubjects && this.state.liveSubjects.length
-        ? this.state.liveSubjects.map(x => ({ ...x, name: ar && x.nameAr ? x.nameAr : x.name }))
-        : fallbackSubjects,
+      subjectsLoading: !this.state.subjectsLoaded,
+      subjectsEmpty: this.state.subjectsLoaded && !(this.state.liveSubjects && this.state.liveSubjects.length),
+      subjectsReady: !!(this.state.liveSubjects && this.state.liveSubjects.length),
+      subjects: (this.state.liveSubjects || []).map(x => ({
+        ...x,
+        name: ar && x.nameAr ? x.nameAr : x.name,
+        cta: Tafseel.t('subj_cta')
+      })),
       steps: [
         { n: '01', title: ar ? 'حدّد احتياجك' : 'Define Your Needs', body: ar ? 'حدّد المادة أو التخصص، وارفع السلايدات، الأسئلة، أو الأجزاء التي تحتاج شرحها.' : 'Select your subject or specialization, then upload your slides, questions, or the topics you need help with.' },
         { n: '02', title: ar ? 'قارن واستقر' : 'Compare & Decide', body: ar ? 'شاهد نماذج الشرح، وقارن التقييمات، واختر المعلم الأنسب لأسلوب تعلمك.' : 'Watch sample lessons, compare ratings, and choose the tutor that best matches your learning style.' },

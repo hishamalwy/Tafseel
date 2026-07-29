@@ -36,6 +36,40 @@ public sealed record TeacherCardDto(
     string? FullNameEnglish = null,
     bool HasAvatar = false);
 
+public sealed record TeacherComparisonResultDto(
+    int RequestedCount,
+    int UnavailableCount,
+    IReadOnlyCollection<TeacherComparisonDto> Teachers);
+public sealed record TeacherComparisonDto(
+    string TeacherId,
+    string FullName,
+    string? FullNameEnglish,
+    bool HasAvatar,
+    string Headline,
+    string Bio,
+    bool Verified,
+    decimal? Rating,
+    int RatingCount,
+    IReadOnlyCollection<ComparisonNamedItemDto> Subjects,
+    IReadOnlyCollection<ComparisonNamedItemDto> Topics,
+    IReadOnlyCollection<ComparisonNamedItemDto> Languages,
+    IReadOnlyCollection<ComparisonNamedItemDto> EducationLevels,
+    IReadOnlyCollection<TeacherComparisonServiceDto> Services,
+    decimal? StartingPrice,
+    string? StartingCurrency,
+    IReadOnlyCollection<TeacherComparisonExperienceDto> Experience,
+    int SampleCount);
+public sealed record ComparisonNamedItemDto(Guid Id, string Name, string? NameAr);
+public sealed record TeacherComparisonServiceDto(
+    string Title,
+    string ServiceType,
+    string? ServiceTypeAr,
+    decimal Price,
+    string Currency,
+    bool RequiresScheduling);
+public sealed record TeacherComparisonExperienceDto(
+    string Title, string Organization, DateOnly? From, DateOnly? To);
+
 public sealed record TeacherProfileDto(
     string TeacherId,
     string FullName,
@@ -147,6 +181,7 @@ public sealed record CredentialDto(
 public interface IMarketplaceService
 {
     Task<PagedResult<TeacherCardDto>> SearchAsync(TeacherSearch query, CancellationToken ct);
+    Task<TeacherComparisonResultDto> CompareAsync(string[] ids, CancellationToken ct);
     Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct);
     Task<TeacherProfileDto> GetOwnProfileAsync(string teacherId, CancellationToken ct);
     Task<IReadOnlyCollection<NamedItemDto>> GetLanguagesAsync(string teacherId, CancellationToken ct);

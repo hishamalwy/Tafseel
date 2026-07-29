@@ -61,7 +61,7 @@ public sealed class TeacherApplication
             throw new DomainException("invalid_experience", "Experience years must be between 0 and 80.");
         QualificationTopicId = qualificationTopicId;
         City = MeaningfulText(city, "city_required");
-        Degree = MeaningfulText(degree, "degree_required");
+        Degree = string.IsNullOrWhiteSpace(degree) ? "" : MeaningfulText(degree, "degree_required");
         ExperienceYears = experienceYears;
     }
 
@@ -85,7 +85,7 @@ public sealed class TeacherApplication
     public void Submit(string actorId, DateTimeOffset now)
     {
         EnsureStatus(TeacherApplicationStatus.Draft, TeacherApplicationStatus.ChangesRequested);
-        if (string.IsNullOrWhiteSpace(City) || string.IsNullOrWhiteSpace(Degree) || DemoStorageKey is null)
+        if (string.IsNullOrWhiteSpace(City) || DemoStorageKey is null)
             throw new DomainException("application_incomplete", "Profile details and a demo video are required.");
         TransitionTo(TeacherApplicationStatus.Submitted, actorId, null, now);
         SubmittedAt = now;

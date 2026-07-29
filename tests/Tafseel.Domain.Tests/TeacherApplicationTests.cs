@@ -138,6 +138,18 @@ public sealed class TeacherApplicationTests
     }
 
     [Fact]
+    public void Empty_degree_is_allowed_on_draft()
+    {
+        var application = new TeacherApplication(
+            "teacher", Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        application.UpdateDraft(application.QualificationTopicId, "Cairo", 5, "");
+
+        Assert.Equal("", application.Degree);
+        Assert.Equal("Cairo", application.City);
+    }
+
+    [Fact]
     public void Undefined_priority_is_rejected()
     {
         var application = CompleteDraft();

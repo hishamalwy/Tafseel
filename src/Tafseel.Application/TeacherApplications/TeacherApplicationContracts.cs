@@ -9,7 +9,7 @@ public sealed record CreateTeacherApplication(
     Guid QualificationTopicId,
     [param: Required, NotWhiteSpace, StringLength(150)] string City,
     [param: Range(0, 80)] int ExperienceYears,
-    [param: Required, NotWhiteSpace, StringLength(300)] string Degree) : IValidatableObject
+    [param: StringLength(300)] string? Degree = null) : IValidatableObject
 {
     public IEnumerable<ValidationResult> Validate(ValidationContext _)
     {
@@ -44,7 +44,9 @@ public sealed record TeacherApplicationDto(
     string? City = null,
     int ExperienceYears = 0,
     string? Degree = null,
-    string AssignmentResourceManifest = "[]");
+    string AssignmentResourceManifest = "[]",
+    string? SubjectNameAr = null,
+    string? AssignmentTitleAr = null);
 
 public enum TeacherOnboardingStatus
 {

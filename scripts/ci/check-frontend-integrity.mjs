@@ -513,6 +513,93 @@ if (!/trend_unavailable/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "u
 if (!/chartsEmpty/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "utf8")))
   throw new Error("Admin overview must gate charts behind chartsEmpty / chartsReady.");
 
+const comparisonPage = readFileSync("Tafseel-Browse-Teachers.dc.html", "utf8");
+for (const required of [
+  "/teachers/compare?",
+  "s.compare.length >= 3",
+  "compareDisabled",
+  "compareUnavailableCount",
+  "Tafseel.modalKeyDown",
+  'role="dialog"',
+  'aria-modal="true"',
+  "tf-compare-table",
+  "tf-compare-mobile"
+]) {
+  if (!comparisonPage.includes(required))
+    throw new Error(`Teacher comparison is missing required bounded UI behavior: ${required}.`);
+}
+if (/completedOrders|responseTimeMinutes|acceptanceRate|cancellationRate|refundRate|revisionRate/i.test(comparisonPage))
+  throw new Error("Teacher comparison must not present unsupported marketplace metrics.");
+for (const key of [
+  "compare_add",
+  "compare_action",
+  "compare_unavailable",
+  "compare_field_subjects",
+  "compare_field_rating",
+  "compare_self_reported",
+  "compare_session_price"
+]) {
+  if ((localeSource.match(new RegExp(`"${key}"`, "g")) || []).length !== 2)
+    throw new Error(`Teacher comparison locale key ${key} must exist once in English and Arabic.`);
+}
+{
+  const comparisonLogic = logicOf(comparisonPage);
+  const smoke = `
+    const location = { search: '' };
+    const document = { body: { style: {} }, contains: () => false, getElementById: () => null };
+    const setTimeout = fn => { fn(); return 1; };
+    const Tafseel = {
+      lang: 'en', theme: 'light', defaultAvatar: 'default.svg',
+      t: (key, values) => values ? Object.entries(values).reduce((text, pair) => text.replace('{' + pair[0] + '}', pair[1]), key) : key,
+      number: value => String(value),
+      userName: teacher => teacher.fullName || teacher.name || '',
+      languageLabel: language => language.name,
+      avatarUrl: () => 'default.svg',
+      dashboardHrefForSession: () => '',
+      toastClass: () => '',
+      api: { errorMessage: () => 'error' }
+    };
+    class DCLogic {}
+    ${comparisonLogic}
+    TEACHERS = [1, 2, 3, 4].map(id => ({
+      id: String(id), name: 'Teacher ' + id, subject: 'Math', level: 'Verified',
+      hasRating: false, rating: null, reviews: 0, bio: '', skills: ['Math'],
+      languages: '', langs: [], price: 100, online: false, verified: true,
+      thisWeek: false, levels: [], services: [], avatar: 'default.svg'
+    }));
+    const c = new Component();
+    c.setState = patch => { c.state = { ...c.state, ...patch }; };
+    c.state = { ...c.state, teachersLoading: false, sessionChecked: true, languageOptions: [] };
+    for (const id of ['1', '2', '3']) {
+      const item = c.renderVals().results.find(teacher => teacher.id === id);
+      item.onCompare();
+    }
+    if (c.state.compare.join(',') !== '1,2,3') throw new Error('three selections must be preserved in selection order');
+    let flashed = '';
+    c.flash = message => { flashed = message; };
+    c.renderVals().results.find(teacher => teacher.id === '4').onCompare();
+    if (c.state.compare.join(',') !== '1,2,3' || !flashed.includes('compare_limit_reached'))
+      throw new Error('fourth selection must be rejected without silently replacing a teacher');
+    c.state = { ...c.state, compare: ['1'], q: 'no-match' };
+    if (c.renderVals().compareDisabled !== true || c.state.compare.join(',') !== '1')
+      throw new Error('selection must survive filters and comparison must stay disabled below two');
+    c.state = {
+      ...c.state, compare: ['1', '2'], q: '', compareTeachers: [
+        { teacherId: '1', fullName: 'One', verified: true, subjects: [], topics: [], languages: [], educationLevels: [], services: [], experience: [], sampleCount: 0, rating: null, ratingCount: 0 },
+        { teacherId: '2', fullName: 'Two', verified: true, subjects: [], topics: [], languages: [], educationLevels: [], services: [], experience: [], sampleCount: 0, rating: null, ratingCount: 0 }
+      ]
+    };
+    const vals = c.renderVals();
+    if (vals.compareDisabled || vals.comparisonTeachers.length !== 2 || vals.comparisonRows.length < 10)
+      throw new Error('two public teachers must render a complete comparison');
+  `;
+  try {
+    new Function(smoke)();
+  } catch (error) {
+    throw new Error(`Teacher comparison behavior smoke failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 const css = readFileSync("css/tafseel.css", "utf8");
 for (const token of [".tf-page", ".tf-grid", ".tf-table-wrap", ".tf-stat-grid", ".tf-skip", ".tf-dashboard-shell"]) {
   if (!css.includes(token))

@@ -12,6 +12,30 @@
 <title>Browse teachers — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
+<style>
+  .tf-compare-overlay{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;background:color-mix(in oklab,#000 58%,transparent)}
+  .tf-compare-dialog{width:min(1180px,100%);max-height:calc(100dvh - 48px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px}
+  .tf-compare-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px}
+  .tf-compare-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md)}
+  .tf-compare-table{width:100%;min-width:760px;border-collapse:collapse;table-layout:fixed}
+  .tf-compare-table th,.tf-compare-table td{padding:14px;text-align:start;vertical-align:top;border-block-end:1px solid var(--border);overflow-wrap:anywhere}
+  .tf-compare-table th:first-child{width:170px;color:var(--muted);font-size:13px}
+  .tf-compare-table tr:last-child th,.tf-compare-table tr:last-child td{border-block-end:0}
+  .tf-compare-mobile{display:none}
+  .tf-compare-person{display:flex;gap:10px;align-items:center;min-width:0}
+  .tf-compare-person img{width:44px;height:44px;border-radius:12px;object-fit:cover;border:1px solid var(--border);flex:none}
+  .tf-compare-copy{white-space:pre-line;overflow-wrap:anywhere}
+  @media(max-width:720px){
+    .tf-compare-overlay{padding:0;place-items:end stretch}
+    .tf-compare-dialog{width:100%;max-height:92dvh;border-radius:var(--r-lg) var(--r-lg) 0 0;padding:18px}
+    .tf-compare-table-wrap{display:none}
+    .tf-compare-mobile{display:grid;gap:14px}
+    .tf-compare-mobile article{border:1px solid var(--border);border-radius:var(--r-md);padding:16px;min-width:0}
+    .tf-compare-mobile dl{display:grid;gap:12px;margin-top:16px}
+    .tf-compare-mobile dt{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:3px}
+    .tf-compare-mobile dd{margin:0;color:var(--text-2);overflow-wrap:anywhere}
+  }
+</style>
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
@@ -94,9 +118,9 @@
       <label for="f-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search by teacher, topic or keyword</label>
       <input id="f-q" value="{{ q }}" onChange="{{ onQ }}" data-i18n-ph="ph_search" placeholder="Teacher, topic or keyword" style="flex:1;border:0;background:transparent;outline:none;font-size:14.5px;min-width:0" />
     </div>
-    <select value="{{ subject }}" onChange="{{ onSubject }}" aria-label="Subject" style="height:44px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);font-size:14.5px">
+    <select value="{{ subjectId }}" onChange="{{ onSubject }}" aria-label="Subject" style="height:44px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);font-size:14.5px">
       <sc-for list="{{ subjectOptions }}" as="o" hint-placeholder-count="5">
-        <option value="{{ o }}">{{ o }}</option>
+        <option value="{{ o.id }}">{{ o.label }}</option>
       </sc-for>
     </select>
     <select value="{{ level }}" onChange="{{ onLevel }}" aria-label="Education level" style="height:44px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);font-size:14.5px">
@@ -249,8 +273,8 @@
             </div>
 
             <label style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">
-              <input type="checkbox" checked="{{ t.compared }}" onChange="{{ t.onCompare }}" style="width:15px;height:15px;accent-color:var(--primary)" />
-              <span>Add to comparison</span>
+              <input type="checkbox" checked="{{ t.compared }}" onChange="{{ t.onCompare }}" aria-label="{{ t.compareLabel }}" style="width:15px;height:15px;accent-color:var(--primary)" />
+              <span>{{ t.compareLabel }}</span>
             </label>
           </article>
         </sc-for>
@@ -266,13 +290,91 @@
 </main>
 
 <sc-if value="{{ compareCount }}" hint-placeholder-val="{{ false }}">
-  <div role="region" aria-label="Comparison tray" style="position:fixed;inset-block-end:0;inset-inline:0;z-index:60;background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--shadow-lg);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;animation:tf-rise 200ms ease both">
-    <span style="font-size:14px;font-weight:700">{{ compareCount }} selected to compare</span>
+  <div role="region" aria-label="{{ compareTrayLabel }}" style="position:fixed;inset-block-end:0;inset-inline:0;z-index:60;background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--shadow-lg);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;animation:tf-rise 200ms ease both">
+    <span role="status" aria-live="polite" style="font-size:14px;font-weight:700">{{ compareSelectedLabel }}</span>
     <span style="font-size:13.5px;color:var(--muted)">{{ compareNames }}</span>
     <div style="margin-inline-start:auto;display:flex;gap:8px">
-      <button type="button" onClick="{{ clearCompare }}" style="height:38px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Clear</button>
-      <button type="button" onClick="{{ doCompare }}" style="height:38px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Compare teachers</button>
+      <button type="button" onClick="{{ clearCompare }}" style="height:38px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">{{ compareClearLabel }}</button>
+      <button type="button" onClick="{{ openCompare }}" disabled="{{ compareDisabled }}" style="height:38px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;opacity:{{ compareActionOpacity }}">{{ compareActionLabel }}</button>
     </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ compareOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="tf-compare-overlay" onClick="{{ closeCompare }}">
+    <section class="tf-compare-dialog" role="dialog" aria-modal="true" aria-labelledby="compare-title" onClick="{{ stopPropagation }}" onKeyDown="{{ compareKeyDown }}">
+      <div class="tf-compare-head">
+        <div>
+          <h2 id="compare-title" style="font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.03em;margin-bottom:6px">{{ compareTitle }}</h2>
+          <p style="color:var(--muted);font-size:14px">{{ compareIntro }}</p>
+        </div>
+        <button id="compare-close" type="button" onClick="{{ closeCompare }}" aria-label="{{ compareCloseLabel }}" style="flex:none;width:40px;height:40px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:20px">×</button>
+      </div>
+
+      <sc-if value="{{ compareLoading }}" hint-placeholder-val="{{ false }}">
+        <div role="status" aria-live="polite" style="padding:64px 20px;text-align:center;color:var(--muted)">{{ compareLoadingLabel }}</div>
+      </sc-if>
+      <sc-if value="{{ compareHasError }}" hint-placeholder-val="{{ false }}">
+        <div role="alert" style="padding:36px 20px;text-align:center;border:1px solid var(--border);border-radius:var(--r-md)">
+          <p style="margin-bottom:16px;color:var(--error)">{{ compareError }}</p>
+          <button type="button" onClick="{{ retryCompare }}" style="height:40px;padding-inline:18px;border:0;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700">{{ compareRetryLabel }}</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ compareReady }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ compareUnavailable }}" hint-placeholder-val="{{ false }}">
+          <p role="status" style="margin-bottom:16px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);background:var(--surface-2)">{{ compareUnavailableLabel }}</p>
+        </sc-if>
+        <sc-if value="{{ compareNeedsTwo }}" hint-placeholder-val="{{ false }}">
+          <p role="status" style="padding:32px 16px;text-align:center;color:var(--muted)">{{ compareNeedsTwoLabel }}</p>
+        </sc-if>
+        <sc-if value="{{ compareHasTeachers }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-compare-table-wrap">
+            <table class="tf-compare-table">
+              <thead><tr><th scope="col">{{ compareFieldLabel }}</th>
+                <sc-for list="{{ comparisonTeachers }}" as="t" hint-placeholder-count="3">
+                  <th scope="col">
+                    <div class="tf-compare-person">
+                      <img src="{{ t.avatar }}" alt="" />
+                      <div style="min-width:0"><strong>{{ t.name }}</strong><div style="font-size:12px;color:var(--success);margin-top:3px">{{ t.verifiedLabel }}</div></div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+                      <a href="{{ t.profileHref }}" style="font-size:12.5px;color:var(--primary);font-weight:700">{{ t.profileLabel }}</a>
+                      <button type="button" onClick="{{ t.onRemove }}" aria-label="{{ t.removeLabel }}" style="border:0;background:none;color:var(--muted);font-size:12.5px;padding:0">{{ t.removeText }}</button>
+                    </div>
+                  </th>
+                </sc-for>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ comparisonRows }}" as="row" hint-placeholder-count="10">
+                  <tr><th scope="row">{{ row.label }}</th>
+                    <sc-for list="{{ row.values }}" as="value" hint-placeholder-count="3"><td class="tf-compare-copy">{{ value }}</td></sc-for>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div class="tf-compare-mobile">
+            <sc-for list="{{ comparisonTeachers }}" as="t" hint-placeholder-count="3">
+              <article>
+                <div class="tf-compare-person">
+                  <img src="{{ t.avatar }}" alt="" />
+                  <div style="min-width:0"><strong>{{ t.name }}</strong><div style="font-size:12px;color:var(--success);margin-top:3px">{{ t.verifiedLabel }}</div></div>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">
+                  <a href="{{ t.profileHref }}" style="font-size:13px;color:var(--primary);font-weight:700">{{ t.profileLabel }}</a>
+                  <button type="button" onClick="{{ t.onRemove }}" aria-label="{{ t.removeLabel }}" style="border:0;background:none;color:var(--muted);font-size:13px;padding:0">{{ t.removeText }}</button>
+                </div>
+                <dl>
+                  <sc-for list="{{ t.fields }}" as="field" hint-placeholder-count="10">
+                    <div><dt>{{ field.label }}</dt><dd class="tf-compare-copy">{{ field.value }}</dd></div>
+                  </sc-for>
+                </dl>
+              </article>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+    </section>
   </div>
 </sc-if>
 
@@ -291,49 +393,73 @@ const CHIP_BASE = 'height:32px;padding-inline:12px;border-radius:var(--r-sm);fon
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
-    q: '', subject: 'All subjects', level: 'All levels', service: 'All services',
+    q: '', subjectId: '', level: 'All levels', service: 'All services',
     minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false,
     sort: 'name', page: 1, favs: [], compare: [], toast: '', toastLeaving: false,
-    teachersLoading: true, teachersError: '', languageOptions: [], session: null, sessionChecked: false
+    teachersLoading: true, teachersError: '', languageOptions: [], subjectsCatalog: [],
+    session: null, sessionChecked: false,
+    compareOpen: false, compareLoading: false, compareError: '', compareTeachers: [], compareUnavailableCount: 0
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     const query = new URLSearchParams(location.search);
-    this.setState({ q: query.get('search') || '' });
+    const subjectId = query.get('subjectId') || '';
+    const search = query.get('search') || '';
+    this.setState({
+      q: search,
+      subjectId
+    }, () => this.loadTeachers());
     Tafseel.api.ready()
       .then(session => this.setState({ session, sessionChecked: true }))
       .catch(() => this.setState({ session: null, sessionChecked: true }));
-    this.loadTeachers();
   }
 
   loadTeachers() {
-    const search = new URLSearchParams(location.search).get('search');
+    const s = this.state;
     this.setState({ teachersLoading: true, teachersError: '' });
     Promise.all([
-      Tafseel.api.get('/teachers' + Tafseel.api.query({ search, pageSize: 100 })),
+      Tafseel.api.get('/teachers' + Tafseel.api.query({
+        search: s.q.trim() || undefined,
+        subjectId: s.subjectId || undefined,
+        pageSize: 100
+      })),
+      Tafseel.api.get('/subjects'),
       Tafseel.api.get('/languages')
-    ]).then(([page, languages]) => {
+    ]).then(([page, subjects, languages]) => {
         TEACHERS = page.items.map(t => ({
-          id:t.teacherId, name:Tafseel.userName(t), subject:t.subjects[0] || 'General',
-          level:t.rating != null && t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
-          hasRating:t.rating != null && t.ratingCount > 0,
-          rating:t.rating == null ? null : Number(t.rating),
-          reviews:t.ratingCount, bio:t.headline, skills:t.subjects,
-          languages:(t.languages || []).join(' · '), langs:t.languages || [],
-          price:t.startingPrice, online:false, verified:t.verified, thisWeek:false,
-          levels:[], services:[],
-          profileHref:'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId),
+          id: t.teacherId, name: Tafseel.userName(t), subject: t.subjects[0] || 'General',
+          level: t.rating != null && t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
+          hasRating: t.rating != null && t.ratingCount > 0,
+          rating: t.rating == null ? null : Number(t.rating),
+          reviews: t.ratingCount, bio: t.headline, skills: t.subjects,
+          languages: (t.languages || []).join(' · '), langs: t.languages || [],
+          price: t.startingPrice, online: false, verified: t.verified, thisWeek: false,
+          levels: [], services: [],
+          profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId),
           avatar: Tafseel.avatarUrl(t.teacherId, t.hasAvatar)
         }));
-        this.setState({ page: 1, languageOptions: languages, teachersLoading: false, teachersError: '' });
+        const catalog = subjects || [];
+        const subjectStillValid = !s.subjectId || catalog.some(item => item.id === s.subjectId);
+        this.setState({
+          page: 1,
+          subjectsCatalog: catalog,
+          subjectId: subjectStillValid ? s.subjectId : '',
+          languageOptions: languages,
+          teachersLoading: false,
+          teachersError: ''
+        });
       })
       .catch(() => {
         TEACHERS = [];
         this.setState({ teachersLoading: false, teachersError: Tafseel.t('browse_load_error') });
       });
   }
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentWillUnmount() {
+    Tafseel.offChange(this._sub);
+    document.body.style.overflow = '';
+    this._compareRequest = (this._compareRequest || 0) + 1;
+  }
   componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   flash(msg) {
@@ -358,12 +484,65 @@ class Component extends DCLogic {
     return next;
   }
 
+  openComparison(trigger) {
+    if (this.state.compare.length < 2 || this.state.compareLoading) return;
+    this._compareTrigger = trigger && trigger.currentTarget;
+    document.body.style.overflow = 'hidden';
+    this.setState({ compareOpen: true });
+    setTimeout(() => {
+      const close = document.getElementById('compare-close');
+      if (close) close.focus();
+    }, 0);
+    this.loadComparison();
+  }
+
+  loadComparison() {
+    const request = (this._compareRequest || 0) + 1;
+    this._compareRequest = request;
+    const ids = this.state.compare.slice(0, 3);
+    const query = ids.map(id => 'ids=' + encodeURIComponent(id)).join('&');
+    this.setState({ compareLoading: true, compareError: '', compareTeachers: [], compareUnavailableCount: 0 });
+    Tafseel.api.get('/teachers/compare?' + query)
+      .then(result => {
+        if (this._compareRequest !== request) return;
+        const teachers = result.teachers || [];
+        const availableIds = teachers.map(teacher => teacher.teacherId);
+        this.setState({
+          compareLoading: false,
+          compareTeachers: teachers,
+          compareUnavailableCount: Number(result.unavailableCount || 0),
+          compare: ids.filter(id => availableIds.includes(id))
+        });
+      })
+      .catch(() => {
+        if (this._compareRequest !== request) return;
+        this.setState({
+          compareLoading: false,
+          compareError: Tafseel.t('compare_load_error')
+        });
+      });
+  }
+
+  closeComparison() {
+    this._compareRequest = (this._compareRequest || 0) + 1;
+    document.body.style.overflow = '';
+    this.setState({ compareOpen: false, compareLoading: false, compareError: '' });
+    const trigger = this._compareTrigger;
+    setTimeout(() => { if (trigger && document.contains(trigger)) trigger.focus(); }, 0);
+  }
+
+  removeComparisonTeacher(id) {
+    this.setState({
+      compare: this.state.compare.filter(value => value !== id),
+      compareTeachers: this.state.compareTeachers.filter(teacher => teacher.teacherId !== id)
+    });
+  }
+
   filtered() {
     const s = this.state;
     const q = s.q.trim().toLowerCase();
     let out = TEACHERS.filter(t => {
       if (q && !(t.name + ' ' + t.subject + ' ' + t.skills.join(' ') + ' ' + t.bio).toLowerCase().includes(q)) return false;
-      if (s.subject !== 'All subjects' && t.subject !== s.subject) return false;
       if (s.level !== 'All levels' && !t.levels.includes(s.level)) return false;
       if (s.service !== 'All services' && !t.services.includes(s.service)) return false;
       if (s.minRating && (t.rating == null || t.rating < s.minRating)) return false;
@@ -399,7 +578,16 @@ class Component extends DCLogic {
       : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);');
 
     const activeChips = [];
-    if (s.subject !== 'All subjects') activeChips.push({ label: s.subject, onClear: e => this.popChip(e, () => this.setState({ subject: 'All subjects', page: 1 })) });
+    const selectedSubject = (s.subjectsCatalog || []).find(item => item.id === s.subjectId);
+    if (selectedSubject) {
+      const subjectLabel = document.documentElement.lang === 'ar' && selectedSubject.nameAr
+        ? selectedSubject.nameAr
+        : selectedSubject.name;
+      activeChips.push({
+        label: subjectLabel,
+        onClear: e => this.popChip(e, () => this.setState({ subjectId: '', page: 1 }, () => this.loadTeachers()))
+      });
+    }
     if (s.level !== 'All levels') activeChips.push({ label: s.level, onClear: e => this.popChip(e, () => this.setState({ level: 'All levels', page: 1 })) });
     if (s.service !== 'All services') activeChips.push({ label: s.service, onClear: e => this.popChip(e, () => this.setState({ service: 'All services', page: 1 })) });
     if (s.minRating) activeChips.push({ label: s.minRating + '★ & up', onClear: e => this.popChip(e, () => this.setState({ minRating: 0, page: 1 })) });
@@ -412,6 +600,65 @@ class Component extends DCLogic {
     if (s.weekOnly) activeChips.push({ label: 'Available this week', onClear: e => this.popChip(e, () => this.setState({ weekOnly: false })) });
 
     const compared = TEACHERS.filter(t => s.compare.includes(t.id));
+    const missing = Tafseel.t('compare_not_provided');
+    const namedItems = items => (items || []).map(item =>
+      s.lang === 'ar' && item.nameAr ? item.nameAr : item.name
+    ).filter(Boolean).join(' · ') || missing;
+    const money = (value, currency) => {
+      if (value == null) return missing;
+      try {
+        return new Intl.NumberFormat(s.lang === 'ar' ? 'ar-SA' : 'en-US', {
+          style: 'currency', currency: currency || 'SAR'
+        }).format(Number(value));
+      } catch (_) {
+        return String(value) + ' ' + (currency || '');
+      }
+    };
+    const experience = teacher => {
+      const items = (teacher.experience || []).map(item =>
+        [item.title, item.organization, [
+          String(item.from || '').slice(0, 4),
+          item.to ? String(item.to).slice(0, 4) : Tafseel.t('compare_present')
+        ].filter(Boolean).join('–')].filter(Boolean).join(' · ')
+      );
+      return items.length ? items.join('\n') + '\n' + Tafseel.t('compare_self_reported') : missing;
+    };
+    const fieldDefs = [
+      ['headline', 'compare_field_headline', teacher => teacher.headline || missing],
+      ['bio', 'compare_field_bio', teacher => teacher.bio || missing],
+      ['subjects', 'compare_field_subjects', teacher => namedItems(teacher.subjects)],
+      ['topics', 'compare_field_topics', teacher => namedItems(teacher.topics)],
+      ['languages', 'compare_field_languages', teacher => namedItems(teacher.languages)],
+      ['education', 'compare_field_education', teacher => namedItems(teacher.educationLevels)],
+      ['services', 'compare_field_services', teacher => (teacher.services || []).map(service => {
+        const type = s.lang === 'ar' && service.serviceTypeAr ? service.serviceTypeAr : service.serviceType;
+        const price = money(service.price, service.currency);
+        return [service.title, type, service.requiresScheduling
+          ? Tafseel.t('compare_session_price', { price }) : price].filter(Boolean).join(' — ');
+      }).join('\n') || missing],
+      ['startingPrice', 'compare_field_starting_price', teacher => money(teacher.startingPrice, teacher.startingCurrency)],
+      ['rating', 'compare_field_rating', teacher => teacher.rating == null || !teacher.ratingCount
+        ? Tafseel.t('compare_no_reviews')
+        : Tafseel.number(Number(teacher.rating), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) +
+          ' ★ · ' + Tafseel.t('compare_reviews_count', { n: Tafseel.number(teacher.ratingCount) })],
+      ['experience', 'compare_field_experience', experience],
+      ['samples', 'compare_field_samples', teacher => Tafseel.t('compare_sample_count', { n: Tafseel.number(teacher.sampleCount || 0) })]
+    ];
+    const comparisonTeachers = s.compareTeachers.map(teacher => {
+      const name = s.lang === 'en' && teacher.fullNameEnglish ? teacher.fullNameEnglish : teacher.fullName;
+      return {
+        ...teacher,
+        name,
+        avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar),
+        profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId),
+        profileLabel: Tafseel.t('compare_view_profile'),
+        verifiedLabel: Tafseel.t('compare_verified'),
+        removeText: Tafseel.t('compare_remove'),
+        removeLabel: Tafseel.t('compare_remove_teacher', { name }),
+        onRemove: () => this.removeComparisonTeacher(teacher.teacherId),
+        fields: fieldDefs.map(field => ({ label: Tafseel.t(field[1]), value: field[2](teacher) }))
+      };
+    });
     const session = s.session;
     const teacherJoinHref = session && (session.roles || []).includes('Teacher')
       ? 'Tafseel-Teacher-Apply.dc.html'
@@ -441,10 +688,16 @@ class Component extends DCLogic {
       isEmpty: !s.teachersLoading && !s.teachersError && results.length === 0,
       q: s.q, onQ: e => this.setState({ q: e.target.value, page: 1 }),
       sort: s.sort, onSort: e => this.setState({ sort: e.target.value }),
-      subject: s.subject, onSubject: e => this.setState({ subject: e.target.value, page: 1 }),
+      subjectId: s.subjectId,
+      onSubject: e => this.setState({ subjectId: e.target.value, page: 1 }, () => this.loadTeachers()),
       level: s.level, onLevel: e => this.setState({ level: e.target.value, page: 1 }),
       service: s.service, onService: e => this.setState({ service: e.target.value, page: 1 }),
-      subjectOptions: ['All subjects', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Programming', 'English', 'Business', 'Engineering'],
+      subjectOptions: [{ id: '', label: Tafseel.t('browse_all_subjects') }].concat(
+        (s.subjectsCatalog || []).map(item => ({
+          id: item.id,
+          label: document.documentElement.lang === 'ar' && item.nameAr ? item.nameAr : item.name
+        }))
+      ),
       levelOptions: ['All levels', 'High school', 'Undergraduate', 'Postgraduate', 'Professional'],
       serviceOptions: ['All services', 'Custom explanation', 'Assignment guidance', 'Exam revision', 'Live session', 'Project mentoring'],
 
@@ -468,7 +721,10 @@ class Component extends DCLogic {
       verifiedOnly: s.verifiedOnly, onVerified: e => this.setState({ verifiedOnly: e.target.checked, page: 1 }),
       onlineOnly: s.onlineOnly, onOnline: e => this.setState({ onlineOnly: e.target.checked, page: 1 }),
       weekOnly: s.weekOnly, onWeek: e => this.setState({ weekOnly: e.target.checked, page: 1 }),
-      clearFilters: () => this.setState({ q: '', subject: 'All subjects', level: 'All levels', service: 'All services', minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false, page: 1 }),
+      clearFilters: () => this.setState({
+        q: '', subjectId: '', level: 'All levels', service: 'All services',
+        minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false, page: 1
+      }, () => this.loadTeachers()),
 
       activeChips,
       hasActiveChips: activeChips.length > 0,
@@ -496,8 +752,9 @@ class Component extends DCLogic {
           }
         },
         compared: s.compare.includes(t.id),
+        compareLabel: Tafseel.t(s.compare.includes(t.id) ? 'compare_remove' : 'compare_add'),
         onCompare: () => {
-          if (!s.compare.includes(t.id) && s.compare.length >= 3) return this.flash('You can compare up to 3 teachers at a time.');
+          if (!s.compare.includes(t.id) && s.compare.length >= 3) return this.flash(Tafseel.t('compare_limit_reached'));
           this.toggleIn('compare', t.id);
         }
       })),
@@ -513,8 +770,39 @@ class Component extends DCLogic {
 
       compareCount: s.compare.length,
       compareNames: compared.map(t => t.name).join(' · '),
+      compareTrayLabel: Tafseel.t('compare_tray'),
+      compareSelectedLabel: Tafseel.t('compare_selected_count', { n: Tafseel.number(s.compare.length) }),
+      compareClearLabel: Tafseel.t('compare_clear'),
+      compareActionLabel: Tafseel.t('compare_action'),
+      compareDisabled: s.compare.length < 2 || s.compareLoading,
+      compareActionOpacity: s.compare.length < 2 || s.compareLoading ? '.5' : '1',
       clearCompare: () => this.setState({ compare: [] }),
-      doCompare: () => this.flash('Comparing ' + compared.length + ' teachers side by side…')
+      openCompare: event => this.openComparison(event),
+      compareOpen: s.compareOpen,
+      compareLoading: s.compareLoading,
+      compareHasError: !!s.compareError,
+      compareError: s.compareError,
+      compareReady: !s.compareLoading && !s.compareError,
+      compareHasTeachers: comparisonTeachers.length > 0,
+      compareNeedsTwo: comparisonTeachers.length < 2,
+      compareUnavailable: s.compareUnavailableCount > 0,
+      compareUnavailableLabel: Tafseel.t('compare_unavailable', { n: Tafseel.number(s.compareUnavailableCount) }),
+      compareNeedsTwoLabel: Tafseel.t('compare_needs_two'),
+      compareTitle: Tafseel.t('compare_title'),
+      compareIntro: Tafseel.t('compare_intro'),
+      compareFieldLabel: Tafseel.t('compare_field'),
+      compareCloseLabel: Tafseel.t('compare_close'),
+      compareLoadingLabel: Tafseel.t('compare_loading'),
+      compareRetryLabel: Tafseel.t('retry'),
+      comparisonTeachers,
+      comparisonRows: fieldDefs.map(field => ({
+        label: Tafseel.t(field[1]),
+        values: s.compareTeachers.map(teacher => field[2](teacher))
+      })),
+      retryCompare: () => this.loadComparison(),
+      closeCompare: () => this.closeComparison(),
+      stopPropagation: event => event.stopPropagation(),
+      compareKeyDown: event => Tafseel.modalKeyDown(event, () => this.closeComparison())
     };
   }
 }

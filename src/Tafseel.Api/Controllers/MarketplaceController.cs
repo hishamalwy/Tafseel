@@ -16,6 +16,11 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     public Task<Application.Common.PagedResult<TeacherCardDto>> Search(
         [FromQuery] TeacherSearch query, CancellationToken ct) => marketplace.SearchAsync(query, ct);
 
+    [AllowAnonymous, HttpGet("compare")]
+    public Task<TeacherComparisonResultDto> Compare(
+        [FromQuery] string[] ids, CancellationToken ct) =>
+        marketplace.CompareAsync(ids, ct);
+
     [AllowAnonymous, HttpGet("{teacherId}")]
     public Task<TeacherProfileDto> Profile(string teacherId, CancellationToken ct) =>
         marketplace.GetPublicProfileAsync(teacherId, ct);

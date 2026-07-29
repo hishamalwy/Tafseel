@@ -162,6 +162,178 @@ internal sealed class MarketplaceService(
         return new(rows, page, pageSize, count);
     }
 
+    public async Task<TeacherComparisonResultDto> CompareAsync(string[] ids, CancellationToken ct)
+    {
+        if (ids is null || ids.Length < 2)
+            throw new DomainException(
+                "comparison_requires_two_teachers", "Select at least two Teachers to compare.");
+        if (ids.Length > 3)
+            throw new DomainException(
+                "comparison_limit_exceeded", "No more than three Teachers can be compared.");
+
+        var requestedIds = new string[ids.Length];
+        for (var index = 0; index < ids.Length; index++)
+        {
+            if (!Guid.TryParse(ids[index], out var parsed))
+                throw new DomainException(
+                    "comparison_invalid_teacher_id", "A comparison Teacher identifier is invalid.");
+            requestedIds[index] = parsed.ToString();
+        }
+        if (requestedIds.Distinct(StringComparer.OrdinalIgnoreCase).Count() != requestedIds.Length)
+            throw new DomainException(
+                "comparison_duplicate_teacher", "Each compared Teacher must be unique.");
+
+        var profiles = await (
+            from profile in db.TeacherProfiles.AsNoTracking()
+            join user in db.Users.AsNoTracking() on profile.TeacherId equals user.Id
+            where requestedIds.Contains(profile.TeacherId)
+                && profile.IsPublished && user.EmailConfirmed && !user.IsSuspended
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                && db.TeacherServices.Any(service => service.TeacherId == profile.TeacherId
+                    && service.IsActive
+                    && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
+                        && q.SubjectId == service.SubjectId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                    && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+                    && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
+                        && type.IsActive && type.IsPublic && type.TeacherSelectable
+                        && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
+                            rule => rule.TeacherId == profile.TeacherId))))
+            select new
+            {
+                profile.TeacherId,
+                user.FullName,
+                user.FullNameEnglish,
+                HasAvatar = user.AvatarStorageKey != null && user.AvatarStorageKey != "",
+                profile.Headline,
+                profile.Bio,
+                Rating = profile.RatingCount > 0 ? (decimal?)profile.AverageRating : null,
+                profile.RatingCount
+            }).ToArrayAsync(ct);
+
+        var availableIds = profiles.Select(x => x.TeacherId).ToArray();
+        if (availableIds.Length == 0)
+            return new(ids.Length, ids.Length, []);
+
+        var subjects = await (
+            from qualification in db.TeacherSubjectQualifications.AsNoTracking()
+            join subject in db.Subjects.AsNoTracking() on qualification.SubjectId equals subject.Id
+            where availableIds.Contains(qualification.TeacherId)
+                && qualification.Status == TeacherQualificationStatus.Approved
+                && qualification.RevokedAt == null && subject.IsActive
+            orderby qualification.TeacherId, subject.Name, subject.Id
+            select new
+            {
+                qualification.TeacherId,
+                Item = new ComparisonNamedItemDto(subject.Id, subject.Name, subject.NameAr)
+            }).ToArrayAsync(ct);
+        var topics = await (
+            from teacherTopic in db.TeacherTopics.AsNoTracking()
+            join topic in db.Topics.AsNoTracking() on teacherTopic.TopicId equals topic.Id
+            where availableIds.Contains(teacherTopic.TeacherId) && topic.IsActive
+                && db.Subjects.Any(subject => subject.Id == topic.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q =>
+                    q.TeacherId == teacherTopic.TeacherId && q.SubjectId == topic.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+            orderby teacherTopic.TeacherId, topic.Name, topic.Id
+            select new
+            {
+                teacherTopic.TeacherId,
+                Item = new ComparisonNamedItemDto(topic.Id, topic.Name, topic.NameAr)
+            }).ToArrayAsync(ct);
+        var languages = await (
+            from teacherLanguage in db.TeacherLanguages.AsNoTracking()
+            join language in db.TeachingLanguages.AsNoTracking()
+                on teacherLanguage.LanguageId equals language.Id
+            where availableIds.Contains(teacherLanguage.TeacherId) && language.IsActive
+            orderby teacherLanguage.TeacherId, language.Name, language.Id
+            select new
+            {
+                teacherLanguage.TeacherId,
+                Item = new ComparisonNamedItemDto(language.Id, language.Name, language.NameAr)
+            }).ToArrayAsync(ct);
+        var educationLevels = await (
+            from teacherLevel in db.TeacherEducationLevels.AsNoTracking()
+            join level in db.EducationLevels.AsNoTracking()
+                on teacherLevel.EducationLevelId equals level.Id
+            where availableIds.Contains(teacherLevel.TeacherId) && level.IsActive
+            orderby teacherLevel.TeacherId, level.Name, level.Id
+            select new
+            {
+                teacherLevel.TeacherId,
+                Item = new ComparisonNamedItemDto(level.Id, level.Name, level.NameAr)
+            }).ToArrayAsync(ct);
+        var services = await (
+            from service in db.TeacherServices.AsNoTracking()
+            join type in db.ServiceCatalogItems.AsNoTracking()
+                on service.ServiceCatalogItemId equals type.Id
+            where availableIds.Contains(service.TeacherId) && service.IsActive
+                && type.IsActive && type.IsPublic && type.TeacherSelectable
+                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
+                    && q.SubjectId == service.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
+                    rule => rule.TeacherId == service.TeacherId))
+            orderby type.DisplayOrder, service.CreatedAt, service.Id
+            select new
+            {
+                service.TeacherId,
+                Item = new TeacherComparisonServiceDto(
+                    service.Title, type.Name, type.NameAr, service.Price, service.Currency,
+                    type.RequiresScheduling)
+            }).ToArrayAsync(ct);
+        var experience = await db.TeacherExperiences.AsNoTracking()
+            .Where(x => availableIds.Contains(x.TeacherId))
+            .OrderByDescending(x => x.From).ThenBy(x => x.Title).ThenBy(x => x.Id)
+            .Select(x => new
+            {
+                x.TeacherId,
+                Item = new TeacherComparisonExperienceDto(
+                    x.Title, x.Organization, x.From, x.To)
+            }).ToArrayAsync(ct);
+        var samples = await db.TeacherTeachingSamples.AsNoTracking()
+            .Where(x => availableIds.Contains(x.TeacherId) && x.PublishedAt != null
+                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.TeacherId
+                    && q.SubjectId == x.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null))
+            .GroupBy(x => x.TeacherId)
+            .Select(x => new { TeacherId = x.Key, Count = x.Count() })
+            .ToArrayAsync(ct);
+
+        static IReadOnlyCollection<TItem> Items<TItem>(
+            string teacherId, IEnumerable<(string TeacherId, TItem Item)> source) =>
+            source.Where(x => x.TeacherId == teacherId).Select(x => x.Item).ToArray();
+
+        var subjectRows = subjects.Select(x => (x.TeacherId, x.Item)).ToArray();
+        var topicRows = topics.Select(x => (x.TeacherId, x.Item)).ToArray();
+        var languageRows = languages.Select(x => (x.TeacherId, x.Item)).ToArray();
+        var levelRows = educationLevels.Select(x => (x.TeacherId, x.Item)).ToArray();
+        var serviceRows = services.Select(x => (x.TeacherId, x.Item)).ToArray();
+        var experienceRows = experience.Select(x => (x.TeacherId, x.Item)).ToArray();
+        var sampleCounts = samples.ToDictionary(x => x.TeacherId, x => x.Count);
+        var profileRows = profiles.ToDictionary(x => x.TeacherId, StringComparer.OrdinalIgnoreCase);
+
+        var compared = requestedIds.Where(profileRows.ContainsKey).Select(teacherId =>
+        {
+            var profile = profileRows[teacherId];
+            var teacherServices = Items(teacherId, serviceRows);
+            var startingService = teacherServices
+                .OrderBy(x => x.Price).ThenBy(x => x.Currency, StringComparer.Ordinal).FirstOrDefault();
+            return new TeacherComparisonDto(
+                profile.TeacherId, profile.FullName, profile.FullNameEnglish, profile.HasAvatar,
+                profile.Headline, profile.Bio, true, profile.Rating, profile.RatingCount,
+                Items(teacherId, subjectRows), Items(teacherId, topicRows),
+                Items(teacherId, languageRows), Items(teacherId, levelRows), teacherServices,
+                startingService?.Price, startingService?.Currency,
+                Items(teacherId, experienceRows), sampleCounts.GetValueOrDefault(teacherId));
+        }).ToArray();
+
+        return new(ids.Length, ids.Length - compared.Length, compared);
+    }
+
     public async Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct)
     {
         var profile = await db.TeacherProfiles.AsNoTracking()

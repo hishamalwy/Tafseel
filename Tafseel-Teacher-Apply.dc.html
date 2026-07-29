@@ -16,8 +16,7 @@
       align-items:start;
       padding:clamp(20px,4vw,40px) clamp(14px,3vw,24px) 48px;
       background:
-        radial-gradient(520px 320px at 8% 0%, color-mix(in oklab, var(--primary) 10%, transparent), transparent 70%),
-        radial-gradient(420px 280px at 100% 12%, color-mix(in oklab, #D9FF43 10%, transparent), transparent 72%),
+        radial-gradient(480px 280px at 6% 0%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 68%),
         var(--bg-alt);
     }
     [data-stack="apply"] .tf-panel{
@@ -30,11 +29,12 @@
       font-weight:800;
       letter-spacing:-.02em;
       line-height:1.15;
-      margin:0 0 8px;
+      margin:0 0 10px;
     }
     [data-stack="apply"] .tf-panel > .tf-muted{
-      margin:0 0 4px;
+      margin:0 0 6px;
       max-width:58ch;
+      line-height:1.55;
     }
     .tf-logout-link{
       height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);
@@ -42,25 +42,36 @@
     }
     .tf-logout-link:hover{border-color:var(--border-strong);color:var(--text)}
 
-    .tf-apply-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:22px 0 8px;padding:0;list-style:none}
+    .tf-apply-steps{
+      display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+      margin:24px 0 20px;padding:4px;list-style:none;
+      border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);
+    }
     .tf-apply-step{
       display:flex;align-items:center;justify-content:center;gap:8px;
-      min-height:44px;padding:10px 12px;border-radius:var(--r-sm);
-      border:1px solid var(--border);background:var(--surface);
+      min-height:42px;padding:10px 12px;border-radius:var(--r-sm);
+      border:1px solid transparent;background:transparent;
       color:var(--muted);font-size:13px;font-weight:700;text-align:center;
+      transition:background var(--t),color var(--t),border-color var(--t);
     }
     .tf-apply-step[data-state="current"]{
-      background:var(--primary-soft);border-color:color-mix(in oklab,var(--primary) 35%,var(--border));
-      color:var(--primary);box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 18%,transparent);
+      background:var(--primary);border-color:transparent;
+      color:var(--primary-ink);box-shadow:none;
     }
-    .tf-apply-step[data-state="completed"]{color:var(--text-2);border-color:var(--border-strong)}
-    .tf-apply-step[data-state="locked"]{opacity:.55}
-    .tf-apply-step[data-state="error"]{background:var(--error-soft);border-color:color-mix(in oklab,var(--error) 35%,var(--border));color:var(--error)}
-    .tf-apply-step.is-clickable{
-      cursor:pointer;opacity:1;
+    .tf-apply-step[data-state="completed"]{
+      color:var(--text);background:var(--surface);border-color:transparent;
     }
+    .tf-apply-step[data-state="locked"]{opacity:.5}
+    .tf-apply-step[data-state="error"]{
+      background:var(--error-soft);border-color:color-mix(in oklab,var(--error) 28%,transparent);
+      color:var(--error);
+    }
+    .tf-apply-step.is-clickable{cursor:pointer;opacity:1}
     .tf-apply-step.is-clickable:hover{
-      border-color:var(--border-strong);color:var(--text);background:var(--surface-2);
+      background:var(--surface);color:var(--text);
+    }
+    .tf-apply-step[data-state="current"].is-clickable:hover{
+      background:var(--primary-hover);color:var(--primary-ink);
     }
     .tf-apply-step[aria-disabled="true"]{cursor:default}
     .tf-apply-step-summary{display:none;margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--text-2)}
@@ -68,7 +79,7 @@
       appearance:none;border:0;background:transparent;padding:0;margin:0;
       font:inherit;font-weight:700;color:var(--text-2);cursor:pointer;
     }
-    .tf-apply-step-summary .tf-apply-step-jump.is-current{color:var(--primary)}
+    .tf-apply-step-summary .tf-apply-step-jump.is-current{color:var(--text);font-weight:800}
     .tf-apply-step-summary .tf-apply-step-jump.is-locked{opacity:.5;cursor:default;font-weight:600}
     .tf-apply-step-summary .tf-apply-step-jump-sep{margin:0 6px;color:var(--muted);font-weight:600}
     .tf-apply-progress-track{display:none;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-bottom:18px}
@@ -81,23 +92,30 @@
     html[dir="rtl"] .tf-apply-progress-fill{transform-origin:right center}
 
     .tf-assignment{
-      margin:4px 0;padding:18px 18px 16px;border:1px solid var(--border);
-      border-radius:var(--r-md);background:var(--surface-2);
+      margin:0;padding:18px 18px 16px;border:1px solid var(--border);
+      border-radius:var(--r-md);background:var(--surface);
     }
     .tf-assignment h2{font-family:var(--font-display);font-size:clamp(20px,3vw,26px);margin:0 0 4px;letter-spacing:-.02em}
-    .tf-assignment h3{font-size:14px;font-weight:800;margin:18px 0 8px;color:var(--text-2);letter-spacing:-.01em}
+    .tf-assignment h3{
+      font-size:13px;font-weight:800;margin:20px 0 8px;color:var(--text-2);letter-spacing:-.01em;
+    }
+    .tf-assignment h3:first-of-type{margin-top:14px}
     .tf-assignment-title-alt{margin:0 0 12px;color:var(--muted);font-size:15px;font-weight:600}
     .tf-assignment-instructions{white-space:pre-wrap;margin:0;line-height:1.55;color:var(--text)}
     .tf-assignment-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .tf-assignment-meta .tf-badge{
+      background:var(--surface-2);color:var(--text-2);
+      border:1px solid var(--border);
+    }
     .tf-assignment-resources{display:grid;gap:10px;padding:0;margin:0;list-style:none}
     .tf-assignment-resource{
       display:flex;align-items:center;justify-content:space-between;gap:14px;
-      padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
+      padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);
     }
     .tf-assignment-resource-main{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
     .tf-assignment-resource-icon{
       width:40px;height:40px;flex:none;border-radius:12px;display:grid;place-items:center;
-      background:var(--primary-soft);color:var(--primary);
+      background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);
     }
     .tf-assignment-resource-icon svg{display:block;width:18px;height:18px}
     .tf-assignment-resource-copy{min-width:0}
@@ -119,15 +137,15 @@
     .tf-chip-row{display:flex;gap:10px;flex-wrap:wrap}
     .tf-lang-chip{
       min-height:42px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;
-      border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);
       color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer;user-select:none;
       transition:border-color var(--t),background var(--t),color var(--t);
     }
     .tf-lang-chip input{width:16px;height:16px;accent-color:var(--primary);margin:0;flex:none}
     .tf-lang-chip:hover{border-color:var(--border-strong);color:var(--text)}
     .tf-lang-chip:has(input:checked){
-      border-color:var(--primary);background:var(--primary-soft);color:var(--primary);
-      box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 28%,transparent);
+      border-color:var(--primary);background:var(--primary-soft);color:var(--text);
+      box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 22%,transparent);
     }
     .tf-field-error-text{min-height:0;color:var(--error);font-weight:600}
     .tf-field-error-text:not(:empty){min-height:20px;margin-top:2px}
@@ -148,15 +166,15 @@
     }
     .tf-file-drop:hover,
     .tf-file-drop.is-dragover{
-      border-color:var(--primary);
-      background:var(--primary-soft);
-      box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 14%,transparent);
+      border-color:color-mix(in oklab,var(--primary) 55%,var(--border-strong));
+      background:color-mix(in oklab, var(--primary-soft) 55%, var(--bg));
+      box-shadow:none;
     }
     .tf-file-drop:has(:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
     .tf-file-drop[hidden]{display:none !important}
     .tf-file-drop-icon{
       width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
-      background:var(--primary-soft);color:var(--primary);flex:none;
+      background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);flex:none;
     }
     .tf-file-drop-icon svg{display:block;width:24px;height:24px}
     .tf-file-drop-copy{display:grid;gap:4px;max-width:34ch}
@@ -170,8 +188,12 @@
 
     [data-stack="apply"] .tf-form-actions{
       display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+      margin-top:4px;
     }
     [data-stack="apply"] .tf-form-actions .tf-button{min-width:148px}
+    [data-stack="apply"] .tf-form-actions[data-demo-ready="true"] #submit-application{
+      min-width:180px;
+    }
     [data-stack="apply"] .tf-list button{
       transition:border-color var(--t),background var(--t);
     }
@@ -181,7 +203,7 @@
 
     .tf-apply-guidelines{
       margin:0 0 18px;padding:16px 18px;border:1px solid var(--border);border-radius:var(--r-md);
-      background:var(--surface-2);
+      background:var(--bg);
     }
     .tf-apply-guidelines h2{
       margin:0 0 10px;font-size:14px;font-weight:800;color:var(--text-2);letter-spacing:-.01em;
@@ -191,17 +213,19 @@
       color:var(--text);font-size:13.5px;line-height:1.55;
     }
 
-    .tf-apply-apps{margin-block:0 18px}
+    #lifecycle-status{margin:0 0 16px}
+    #lifecycle-status:not([hidden]){display:block}
+    .tf-apply-apps{display:grid;gap:10px;margin:0 0 18px}
     .tf-apply-app{
       display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
       width:100%;padding:16px 18px;text-align:start;
-      border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);
       cursor:pointer;color:inherit;font:inherit;
     }
     .tf-apply-app:hover{border-color:var(--border-strong);background:var(--surface-2)}
     .tf-apply-app.is-active{
-      border-color:var(--primary);background:var(--primary-soft);
-      box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 22%,transparent);
+      border-color:var(--border-strong);
+      background:var(--surface-2);
     }
     .tf-apply-app-copy{min-width:0;flex:1;display:grid;gap:4px}
     .tf-apply-app-copy strong{font-size:15px;font-weight:800;color:var(--text)}
@@ -212,12 +236,12 @@
       border:1px solid var(--border);
     }
     .tf-apply-app-status[data-kind="draft"]{background:var(--surface-2);color:var(--text-2)}
-    .tf-apply-app-status[data-kind="pending"]{background:var(--primary-soft);color:var(--primary);border-color:color-mix(in oklab,var(--primary) 30%,var(--border))}
+    .tf-apply-app-status[data-kind="pending"]{background:var(--surface);color:var(--text);border-color:var(--border-strong)}
     .tf-apply-app-status[data-kind="success"]{background:var(--success-soft, color-mix(in oklab, #22c55e 14%, transparent));color:var(--success, #16a34a)}
     .tf-apply-app-status[data-kind="warning"]{background:var(--warning-soft, color-mix(in oklab, #f59e0b 16%, transparent));color:var(--warning, #b45309)}
     .tf-apply-app-status[data-kind="error"]{background:var(--error-soft);color:var(--error)}
 
-    .tf-apply-panel{display:grid;gap:14px}
+    .tf-apply-panel{display:grid;gap:16px}
     .tf-assignment-slot:empty{display:none}
     .tf-apply-panel-head{
       display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0;
@@ -225,9 +249,9 @@
     .tf-apply-panel-head h2{
       font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;
     }
-    .tf-apply-panel > .tf-muted{margin:0}
+    .tf-apply-panel > .tf-muted{margin:0;line-height:1.5;max-width:56ch}
     .tf-apply-review{
-      padding:28px 22px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);
+      padding:28px 22px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--bg);
       text-align:center;display:grid;gap:12px;justify-items:center;
     }
     .tf-apply-review h2{
@@ -236,16 +260,17 @@
     .tf-apply-review .tf-muted{max-width:48ch;margin:0}
     .tf-apply-review-badge{
       height:30px;padding:0 12px;display:inline-flex;align-items:center;border-radius:var(--r-sm);
-      font-size:12.5px;font-weight:800;background:var(--primary-soft);color:var(--primary);
-      border:1px solid color-mix(in oklab,var(--primary) 28%,var(--border));
+      font-size:12.5px;font-weight:800;background:var(--surface-2);color:var(--text);
+      border:1px solid var(--border);
     }
     .tf-apply-review-meta{
       margin:8px 0 0;padding:14px 16px;width:min(100%,420px);display:grid;gap:8px;
-      border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);text-align:start;
+      border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);text-align:start;
     }
     .tf-apply-review-meta div{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
     .tf-apply-review-meta dt{color:var(--muted);font-weight:600}
     .tf-apply-review-meta dd{margin:0;font-weight:700;color:var(--text)}
+    #apply-status:not(:empty){margin-top:8px}
 
     @media(max-width:720px){
       [data-stack="apply"] .tf-app-header{
@@ -322,24 +347,21 @@
             <div id="teaching-languages" class="tf-chip-row"></div>
             <p id="languages-error" class="tf-field-help tf-field-error-text" role="status"></p>
           </fieldset>
-          <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required autocomplete="organization-title"></div>
           <div class="tf-form-actions">
             <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save_continue">Save and continue</button>
           </div>
           <p id="submit-error" class="tf-field-help tf-field-error-text" role="alert"></p>
         </form>
-        <div id="assignment-slot-details" class="tf-assignment-slot">
-          <article id="assignment-details" class="tf-assignment" hidden></article>
-        </div>
       </section>
 
       <section id="panel-demo" class="tf-apply-panel" hidden>
         <div class="tf-apply-panel-head">
           <h2 data-i18n="apply_demo_title">Teaching demo</h2>
-          <button type="button" id="back-to-details" class="tf-button tf-button-secondary" data-i18n="apply_back_to_details">Back to details</button>
         </div>
         <p class="tf-muted" data-i18n="apply_demo_step_intro">Upload your teaching demo for the selected topic, then submit it for quality review.</p>
-        <div id="assignment-slot-demo" class="tf-assignment-slot"></div>
+        <div id="assignment-slot-demo" class="tf-assignment-slot">
+          <article id="assignment-details" class="tf-assignment" hidden></article>
+        </div>
         <form id="demo-form" class="tf-form">
           <div class="tf-field">
             <span id="demo-label" class="tf-legend" data-i18n="apply_demo_file">Video file</span>

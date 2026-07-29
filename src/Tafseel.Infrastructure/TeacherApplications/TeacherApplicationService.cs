@@ -406,7 +406,9 @@ internal sealed class TeacherApplicationService(
                 application.Id,
                 user.FullName,
                 SubjectName = subject.Name,
+                SubjectNameAr = subject.NameAr,
                 AssignmentTitle = assignment.Name,
+                AssignmentTitleAr = assignment.TitleAr,
                 assignment.Instructions,
                 SubmissionVersion = db.TeacherDemoSubmissions
                     .Where(x => x.TeacherApplicationId == application.Id)
@@ -438,7 +440,9 @@ internal sealed class TeacherApplicationService(
                 x.DemoStorageKey is not null, x.DemoDurationSeconds,
                 detail.SubmissionVersion, feedback.GetValueOrDefault(x.Id),
                 x.City, x.ExperienceYears, x.Degree,
-                latestDemo?.AssignmentResourceManifest ?? "[]");
+                latestDemo?.AssignmentResourceManifest ?? "[]",
+                detail.SubjectNameAr,
+                detail.AssignmentTitleAr);
         }).ToArray();
     }
 
