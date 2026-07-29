@@ -11,11 +11,31 @@ namespace Tafseel.Infrastructure.Catalog;
 internal sealed class CatalogService(
     TafseelDbContext db, AuditWriter audit, IFileStorageService files, TimeProvider clock) : ICatalogService
 {
-    public async Task<IReadOnlyCollection<CatalogItemDto>> GetSubjectsAsync(bool includeInactive, CancellationToken ct) =>
-        await Query(db.Subjects, includeInactive)
-            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, x.Icon, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, x.NameAr))
+    public async Task<IReadOnlyCollection<CatalogItemDto>> GetSubjectsAsync(bool includeInactive, CancellationToken ct)
+    {
+        var rows = await Query(db.Subjects, includeInactive)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ThenBy(x => x.Id)
+            .Select(x => new { x.Id, x.Name, x.IsActive, x.Icon, x.NameAr, x.DisplayOrder })
             .ToArrayAsync(ct);
+        return rows.Select(x => MapSubject(x.Id, x.Name, x.IsActive, x.Icon, x.NameAr, x.DisplayOrder)).ToArray();
+    }
+
+    public async Task<IReadOnlyCollection<CatalogItemDto>> GetFeaturedSubjectsAsync(int take, CancellationToken ct)
+    {
+        take = Math.Clamp(take, 1, 4);
+        // Featured = first active subjects by DisplayOrder (no IsFeatured flag — order alone is the product rule).
+        var rows = await Query(db.Subjects, includeInactive: false)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ThenBy(x => x.Id)
+            .Take(take)
+            .Select(x => new { x.Id, x.Name, x.IsActive, x.Icon, x.NameAr, x.DisplayOrder })
+            .ToArrayAsync(ct);
+        return rows.Select(x => MapSubject(x.Id, x.Name, x.IsActive, x.Icon, x.NameAr, x.DisplayOrder)).ToArray();
+    }
+
+    private static CatalogItemDto MapSubject(
+        Guid id, string name, bool isActive, string icon, string nameAr, int displayOrder) =>
+        new(id, name, isActive, icon, null, null, null, null, null, null, null, null, null, displayOrder,
+            NameAr: nameAr, NameEn: name);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetTopicsAsync(Guid? subjectId, bool qualificationOnly, bool includeInactive, CancellationToken ct)
     {
@@ -55,7 +75,7 @@ internal sealed class CatalogService(
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
             return await query.Select(x => new CatalogItemDto(
                 x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null, null, null, null))
                 .ToArrayAsync(ct);
         }
     }
@@ -63,13 +83,13 @@ internal sealed class CatalogService(
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.EducationLevels, includeInactive)
             .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetLanguagesAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.TeachingLanguages, includeInactive)
             .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, x.Code, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null, null, null, null))
             .ToArrayAsync(ct);
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetServicesAsync(bool includeInactive, CancellationToken ct)
@@ -83,6 +103,7 @@ internal sealed class CatalogService(
                 x.Name,
                 x.IsActive,
                 x.Description,
+                x.DescriptionAr,
                 x.Code,
                 x.Type,
                 x.IsPublic,
@@ -96,23 +117,19 @@ internal sealed class CatalogService(
             })
             .ToArrayAsync(ct);
 
-        return rows.Select(x => new CatalogItemDto(
-            x.Id,
-            x.Name,
-            x.IsActive,
-            x.Description,
-            null,
-            x.Code,
-            x.Type,
-            x.IsPublic,
-            x.TeacherSelectable,
-            x.RequiresScheduling,
-            ParseDurations(x.AllowedDurationsCsv),
-            x.MinPrice,
-            x.MaxPrice,
-            x.DisplayOrder,
-            NameAr: x.NameAr)).ToArray();
+        return rows.Select(x => MapService(x.Id, x.Name, x.IsActive, x.Description, x.DescriptionAr, x.Code, x.Type,
+            x.IsPublic, x.TeacherSelectable, x.RequiresScheduling, ParseDurations(x.AllowedDurationsCsv),
+            x.MinPrice, x.MaxPrice, x.DisplayOrder, x.NameAr)).ToArray();
     }
+
+    private static CatalogItemDto MapService(
+        Guid id, string name, bool isActive, string description, string descriptionAr, string code, string type,
+        bool isPublic, bool teacherSelectable, bool requiresScheduling, IReadOnlyCollection<int>? durations,
+        decimal? minPrice, decimal? maxPrice, int displayOrder, string nameAr) =>
+        new(
+            id, name, isActive, description, null, code, type, isPublic, teacherSelectable, requiresScheduling,
+            durations, minPrice, maxPrice, displayOrder,
+            NameAr: nameAr, DescriptionAr: descriptionAr, NameEn: name, DescriptionEn: description);
 
     private static IReadOnlyCollection<int>? ParseDurations(string? csv)
     {
@@ -123,7 +140,8 @@ internal sealed class CatalogService(
     }
 
     public Task<CatalogItemDto> CreateSubjectAsync(SubjectInput input, CancellationToken ct) =>
-        AddAsync(new Subject(input.Name, input.Icon, input.NameAr), x => new(x.Id, x.Name, x.IsActive, x.Icon, NameAr: x.NameAr), ct);
+        AddAsync(new Subject(input.Name, input.Icon, input.NameAr, input.DisplayOrder),
+            x => MapSubject(x.Id, x.Name, x.IsActive, x.Icon, x.NameAr, x.DisplayOrder), ct);
 
     public async Task<CatalogItemDto> CreateTopicAsync(TopicInput input, CancellationToken ct)
     {
@@ -155,33 +173,30 @@ internal sealed class CatalogService(
         AddAsync(new TeachingLanguage(input.Name, input.Detail ?? ""),
             x => new(x.Id, x.Name, x.IsActive, Code: x.Code), ct);
 
-    public Task<CatalogItemDto> CreateServiceAsync(NamedCatalogInput input, CancellationToken ct) =>
-        AddAsync(
-            new ServiceCatalogItem(
-                input.Name,
-                input.Detail ?? "",
-                input.Code ?? throw new DomainException("service_code_required", "Service code is required."),
-                input.Type,
-                input.IsPublic ?? true,
-                input.TeacherSelectable ?? true,
-                input.RequiresScheduling ?? false,
-                input.AllowedDurations,
-                input.MinPrice,
-                input.MaxPrice,
-                input.DisplayOrder ?? 0,
-                input.NameAr ?? ""),
-            x => new(
-                x.Id, x.Name, x.IsActive, x.Description, null, x.Code, x.Type, x.IsPublic,
-                x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations, x.MinPrice, x.MaxPrice, x.DisplayOrder,
-                NameAr: x.NameAr),
-            ct);
+    public async Task<CatalogItemDto> CreateServiceAsync(ServiceCatalogInput input, CancellationToken ct)
+    {
+        var item = new ServiceCatalogItem(
+            input.NameEn,
+            input.DescriptionEn,
+            ServiceCatalogItem.CodeFromEnglishName(input.NameEn),
+            input.NameAr,
+            input.DescriptionAr,
+            displayOrder: input.DisplayOrder);
+        if (!input.IsActive)
+            item.SetActive(false);
+        return await AddAsync(item, x => MapService(
+            x.Id, x.Name, x.IsActive, x.Description, x.DescriptionAr, x.Code, x.Type,
+            x.IsPublic, x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations,
+            x.MinPrice, x.MaxPrice, x.DisplayOrder, x.NameAr), ct);
+    }
 
     public async Task UpdateAsync(string type, Guid id, NamedCatalogInput input, CancellationToken ct)
     {
         switch (type.ToLowerInvariant())
         {
             case "subjects":
-                (await Required(db.Subjects, id, ct)).Update(input.Name, input.Detail ?? "", input.NameAr);
+                (await Required(db.Subjects, id, ct)).Update(
+                    input.Name, input.Detail ?? "", input.NameAr, input.DisplayOrder);
                 break;
             case "topics":
                 (await Required(db.Topics, id, ct)).Update(input.Name, input.Detail ?? "");
@@ -207,26 +222,21 @@ internal sealed class CatalogService(
                 (await Required(db.TeachingLanguages, id, ct)).Update(input.Name, input.Detail ?? "");
                 break;
             case "services":
-                {
-                    var service = await Required(db.ServiceCatalogItems, id, ct);
-                    service.Update(
-                        input.Name,
-                        input.Detail ?? "",
-                        string.IsNullOrWhiteSpace(input.Code) ? service.Code : input.Code,
-                        string.IsNullOrWhiteSpace(input.Type) ? service.Type : input.Type,
-                        input.IsPublic ?? service.IsPublic,
-                        input.TeacherSelectable ?? service.TeacherSelectable,
-                        input.RequiresScheduling ?? service.RequiresScheduling,
-                        input.AllowedDurations ?? service.AllowedDurations,
-                        input.MinPrice ?? service.MinPrice,
-                        input.MaxPrice ?? service.MaxPrice,
-                        input.DisplayOrder ?? service.DisplayOrder,
-                        input.NameAr);
-                    break;
-                }
+                throw new DomainException(
+                    "invalid_catalog_type",
+                    "Services must be updated with the bilingual service catalog contract.");
             default:
                 throw new DomainException("invalid_catalog_type", "Unknown catalog type.");
         }
+        await SaveCatalogAsync(ct);
+    }
+
+    public async Task UpdateServiceAsync(Guid id, ServiceCatalogInput input, CancellationToken ct)
+    {
+        var service = await Required(db.ServiceCatalogItems, id, ct);
+        service.ConfigureLocalizedContent(
+            input.NameEn, input.NameAr, input.DescriptionEn, input.DescriptionAr,
+            input.DisplayOrder, input.IsActive);
         await SaveCatalogAsync(ct);
     }
 
@@ -247,6 +257,8 @@ internal sealed class CatalogService(
             await RequireActiveSubject(topic.SubjectId, ct);
         if (active && item is QualificationTopic qualificationTopic)
             await RequireActiveSubject(qualificationTopic.SubjectId, ct);
+        if (active && item is ServiceCatalogItem service)
+            service.EnsureCompleteLocalization();
         item.SetActive(active);
         await SaveCatalogAsync(ct);
     }

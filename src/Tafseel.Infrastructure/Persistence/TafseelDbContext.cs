@@ -32,6 +32,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<TeacherEducationLevel> TeacherEducationLevels => Set<TeacherEducationLevel>();
     public DbSet<TeacherService> TeacherServices => Set<TeacherService>();
     public DbSet<TeacherTeachingSample> TeacherTeachingSamples => Set<TeacherTeachingSample>();
+    public DbSet<TeacherTeachingSampleVersion> TeacherTeachingSampleVersions => Set<TeacherTeachingSampleVersion>();
     public DbSet<TeacherAvailabilityRule> TeacherAvailabilityRules => Set<TeacherAvailabilityRule>();
     public DbSet<TeacherAvailabilityException> TeacherAvailabilityExceptions => Set<TeacherAvailabilityException>();
     public DbSet<TeacherCertification> TeacherCertifications => Set<TeacherCertification>();
@@ -98,6 +99,10 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         ConfigureCatalog<TeachingLanguage>(builder, true);
         ConfigureCatalog<ServiceCatalogItem>(builder, true);
         builder.Entity<Subject>().Property(x => x.Icon).HasMaxLength(100);
+        builder.Entity<Subject>().ToTable(table =>
+        {
+            table.HasCheckConstraint("CK_Subjects_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
+        });
         builder.Entity<Topic>().Property(x => x.Difficulty).HasMaxLength(50);
         builder.Entity<Topic>().HasIndex(x => new { x.SubjectId, x.NormalizedName }).IsUnique();
         builder.Entity<Topic>().HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
@@ -137,6 +142,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         builder.Entity<TeachingLanguage>().Property(x => x.Code).HasMaxLength(10);
         builder.Entity<TeachingLanguage>().HasIndex(x => x.Code).IsUnique();
         builder.Entity<ServiceCatalogItem>().Property(x => x.Description).HasMaxLength(1000);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.DescriptionAr).HasMaxLength(1000);
         builder.Entity<ServiceCatalogItem>().Property(x => x.Code).HasMaxLength(50).IsUnicode(false);
         builder.Entity<ServiceCatalogItem>().HasIndex(x => x.Code).IsUnique();
         builder.Entity<ServiceCatalogItem>().Property(x => x.Type).HasMaxLength(50).IsUnicode(false);
@@ -323,14 +329,59 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             sample.Property(x => x.Title).HasMaxLength(200);
             sample.Property(x => x.StorageKey).HasMaxLength(500);
             sample.Property(x => x.ApprovedByUserId).HasMaxLength(450);
+            sample.Property(x => x.RowVersion).IsRowVersion();
             sample.Ignore(x => x.IsPublished);
+            sample.HasMany(x => x.Versions).WithOne()
+                .HasForeignKey(x => x.TeacherTeachingSampleId).OnDelete(DeleteBehavior.Restrict);
             sample.HasIndex(x => new { x.TeacherId, x.PublishedAt });
+            sample.HasIndex(x => new { x.TeacherId, x.SourceType, x.ModerationStatus, x.ArchivedAt });
+            sample.HasIndex(x => x.CurrentVersionId).IsUnique().HasFilter("[CurrentVersionId] IS NOT NULL");
+            sample.HasIndex(x => x.ApprovedVersionId).IsUnique().HasFilter("[ApprovedVersionId] IS NOT NULL");
             sample.HasIndex(x => x.SourceDemoSubmissionId).IsUnique().HasFilter("[SourceDemoSubmissionId] IS NOT NULL");
             sample.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             sample.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
             sample.HasOne<Topic>().WithMany().HasForeignKey(x => x.TopicId).OnDelete(DeleteBehavior.Restrict);
             sample.ToTable(table =>
-                table.HasCheckConstraint("CK_TeacherTeachingSamples_Duration", "[DurationSeconds] BETWEEN 1 AND 3600"));
+            {
+                table.HasCheckConstraint(
+                    "CK_TeacherTeachingSamples_Duration",
+                    "[DurationSeconds] IS NULL OR [DurationSeconds] BETWEEN 1 AND 3600");
+                table.HasCheckConstraint(
+                    "CK_TeacherTeachingSamples_Source",
+                    "([SourceType] = 0 AND [ModerationStatus] IS NULL) OR ([SourceType] = 1 AND [ModerationStatus] BETWEEN 0 AND 6)");
+                table.HasCheckConstraint(
+                    "CK_TeacherTeachingSamples_ShowcasePublication",
+                    "[SourceType] = 0 OR [PublishedAt] IS NULL OR ([ModerationStatus] = 4 AND [ApprovedVersionId] IS NOT NULL AND [ArchivedAt] IS NULL)");
+            });
+        });
+        builder.Entity<TeacherTeachingSampleVersion>(version =>
+        {
+            version.Property(x => x.Id).ValueGeneratedNever();
+            version.Property(x => x.Title).HasMaxLength(200);
+            version.Property(x => x.Description).HasMaxLength(2000);
+            version.Property(x => x.StorageKey).HasMaxLength(500);
+            version.Property(x => x.OriginalFileName).HasMaxLength(255);
+            version.Property(x => x.ContentType).HasMaxLength(100);
+            version.Property(x => x.SubmittedByUserId).HasMaxLength(450);
+            version.Property(x => x.AssignedReviewerId).HasMaxLength(450);
+            version.Property(x => x.DecidedByUserId).HasMaxLength(450);
+            version.Property(x => x.DecisionReasonCode).HasMaxLength(100);
+            version.Property(x => x.TeacherVisibleNote).HasMaxLength(2000);
+            version.Property(x => x.InternalNote).HasMaxLength(2000);
+            version.Property(x => x.RowVersion).IsRowVersion();
+            version.HasIndex(x => new { x.TeacherTeachingSampleId, x.VersionNumber }).IsUnique();
+            version.HasIndex(x => new { x.Status, x.SubmittedAt, x.Id });
+            version.HasOne<Topic>().WithMany().HasForeignKey(x => x.TopicId).OnDelete(DeleteBehavior.Restrict);
+            version.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.SubmittedByUserId).OnDelete(DeleteBehavior.Restrict);
+            version.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.AssignedReviewerId).OnDelete(DeleteBehavior.Restrict);
+            version.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.DecidedByUserId).OnDelete(DeleteBehavior.Restrict);
+            version.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Number", "[VersionNumber] > 0");
+                table.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Status", "[Status] BETWEEN 0 AND 5");
+                table.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Size", "[FileSize] IS NULL OR [FileSize] > 0");
+                table.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Duration", "[DurationSeconds] IS NULL OR [DurationSeconds] BETWEEN 1 AND 3600");
+            });
         });
         builder.Entity<TeacherAvailabilityRule>(rule =>
         {

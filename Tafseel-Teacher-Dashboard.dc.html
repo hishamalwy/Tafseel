@@ -40,7 +40,6 @@
       </sc-for>
     </nav>
     <div style="padding:16px;border-top:1px solid var(--border)">
-      <button type="button" onClick="{{ openChat }}" style="border:0;background:transparent;font-size:13px;font-weight:600;color:var(--primary)">Open messages</button>
       <button type="button" class="tf-dashboard-logout" onClick="{{ onLogout }}"><span aria-hidden="true">↪</span>{{ logoutLabel }}</button>
     </div>
   </aside>
@@ -50,9 +49,8 @@
   <div style="display:flex;flex-direction:column;min-width:0">
     <header data-dash-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
       <button id="teacher-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="teacher-sidebar" style="{{ drawerToggleStyle }}">☰</button>
-      <div style="font-size:15px;font-weight:700" data-hide-sm="1">Teacher dashboard</div>
+      <div style="font-size:15px;font-weight:700" data-hide-sm="1">{{ dashboardTitle }}</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-        <button type="button" onClick="{{ openChat }}" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</button>
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
@@ -123,9 +121,9 @@
         </sc-for>
       </section>
 
-      <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+      <section id="active-orders" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <h2 style="font-size:16px;font-weight:700">Active orders</h2>
+          <h2 style="font-size:16px;font-weight:700">{{ ordersHeading }}</h2>
           <div role="tablist" style="display:flex;gap:4px;flex-wrap:wrap">
             <sc-for list="{{ orderTabs }}" as="ot" hint-placeholder-count="5">
               <button type="button" role="tab" aria-selected="{{ ot.selected }}" onClick="{{ ot.onClick }}" style="{{ ot.style }}">{{ ot.label }}</button>
@@ -198,8 +196,8 @@
           </div>
         </section>
 
-        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-          <h2 style="font-size:16px;font-weight:700;margin-bottom:14px">Upcoming live sessions</h2>
+        <section id="live-sessions" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:14px">{{ sessionsHeading }}</h2>
           <div style="display:flex;flex-direction:column;gap:12px">
             <sc-for list="{{ sessions }}" as="se" hint-placeholder-count="2">
               <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:13px">
@@ -244,20 +242,124 @@
             </article>
           </sc-for>
         </div>
+
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-top:22px">
+          <h2 style="font-size:17px;margin-bottom:5px">{{ teacherShowcasesTitle }}</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">{{ teacherShowcasesHint }}</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ showcaseTitleLabel }}</span>
+              <input value="{{ showcaseTitle }}" onChange="{{ onShowcaseTitle }}" maxlength="200" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ showcaseSubjectLabel }}</span>
+              <select value="{{ showcaseSubjectId }}" onChange="{{ onShowcaseSubject }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+                <option value="">{{ showcaseChooseSubject }}</option>
+                <sc-for list="{{ showcaseSubjects }}" as="subject" hint-placeholder-count="0">
+                  <option value="{{ subject.id }}">{{ subject.name }}</option>
+                </sc-for>
+              </select>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ showcaseTopicLabel }}</span>
+              <select value="{{ showcaseTopicId }}" onChange="{{ onShowcaseTopic }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+                <option value="">{{ showcaseNoTopic }}</option>
+                <sc-for list="{{ showcaseTopics }}" as="topic" hint-placeholder-count="0">
+                  <option value="{{ topic.id }}">{{ topic.name }}</option>
+                </sc-for>
+              </select>
+            </label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+            <span style="font-size:13px;font-weight:600">{{ showcaseDescriptionLabel }}</span>
+            <textarea value="{{ showcaseDescription }}" onChange="{{ onShowcaseDescription }}" maxlength="2000" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);resize:vertical"></textarea>
+          </label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button type="button" onClick="{{ onSaveShowcaseDraft }}" disabled="{{ showcaseBusy }}" style="height:40px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700">{{ showcaseSaveLabel }}</button>
+            <sc-if value="{{ showcaseEditing }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ onCancelShowcaseEdit }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ showcaseCancelLabel }}</button>
+            </sc-if>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:10px">{{ showcaseUploadHint }}</p>
+        </section>
+
+        <sc-if value="{{ showcaseLoading }}" hint-placeholder-val="{{ false }}">
+          <p role="status" class="tf-empty">{{ showcaseLoadingText }}</p>
+        </sc-if>
+        <sc-if value="{{ showcaseError }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="color:var(--error);font-size:14px;margin-top:14px">{{ showcaseError }} <button type="button" onClick="{{ onRetryShowcases }}" style="border:0;background:none;color:var(--primary);font-weight:700">{{ retryLabel }}</button></div>
+        </sc-if>
+        <sc-if value="{{ showcasesEmpty }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-empty">{{ showcasesEmptyText }}</p>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+          <sc-for list="{{ teacherShowcases }}" as="sm" hint-placeholder-count="0">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start">
+              <div style="min-width:0">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <h3 style="font-size:15px;margin:0">{{ sm.title }}</h3>
+                  <span style="{{ sm.statusStyle }}">{{ sm.status }}</span>
+                </div>
+                <p style="font-size:13px;color:var(--muted);margin:7px 0">{{ sm.description }}</p>
+                <div style="font-size:12px;color:var(--text-2)">{{ sm.versionText }}</div>
+                <sc-if value="{{ sm.feedback }}" hint-placeholder-val="{{ false }}">
+                  <p style="font-size:13px;color:var(--warning);margin-top:8px">{{ sm.feedback }}</p>
+                </sc-if>
+                <details style="margin-top:9px">
+                  <summary style="font-size:12.5px;color:var(--primary);cursor:pointer">{{ versionHistoryLabel }}</summary>
+                  <ul style="font-size:12px;color:var(--muted);padding-inline-start:20px;margin-top:6px">
+                    <sc-for list="{{ sm.versions }}" as="v" hint-placeholder-count="0"><li>{{ v }}</li></sc-for>
+                  </ul>
+                </details>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;min-width:140px">
+                <sc-if value="{{ sm.canEdit }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ sm.onEdit }}" style="height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ editLabel }}</button>
+                  <label style="height:34px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;font-weight:600;cursor:pointer">
+                    {{ uploadMp4Label }}<input type="file" accept="video/mp4,.mp4" hidden onChange="{{ sm.onUpload }}" />
+                  </label>
+                  <button type="button" onClick="{{ sm.onSubmit }}" disabled="{{ showcaseBusy }}" style="height:34px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700">{{ submitLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ sm.canNewVersion }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ sm.onNewVersion }}" style="height:34px;border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);border-radius:var(--r-sm);font-weight:700">{{ newVersionLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ sm.canWatch }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ sm.onWatch }}" style="height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ watchSampleLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ sm.canReorder }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;gap:6px">
+                    <button type="button" onClick="{{ sm.onMoveUp }}" aria-label="{{ moveUpLabel }}" style="height:34px;flex:1;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">↑</button>
+                    <button type="button" onClick="{{ sm.onMoveDown }}" aria-label="{{ moveDownLabel }}" style="height:34px;flex:1;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">↓</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ sm.canArchive }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ sm.onArchive }}" style="height:34px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-sm);font-weight:600">{{ archiveLabel }}</button>
+                </sc-if>
+              </div>
+            </article>
+          </sc-for>
+        </div>
       </div>
     </sc-if>
 
     <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Teaching samples</h1>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ showcasePageTitle }}</h1>
+        <p style="font-size:14px;color:var(--muted);margin-bottom:18px">{{ showcasePageHint }}</p>
+        <h2 style="font-size:17px;margin-bottom:5px">{{ qualificationSamplesTitle }}</h2>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">{{ qualificationSamplesHint }}</p>
+        <sc-if value="{{ qualificationSamplesEmpty }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-empty">{{ qualificationSamplesEmptyText }}</p>
+        </sc-if>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
-          <sc-for list="{{ teachingSamples }}" as="sm" hint-placeholder-count="4">
+          <sc-for list="{{ qualificationSamples }}" as="sm" hint-placeholder-count="0">
             <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)">
               <div style="position:relative;aspect-ratio:16/9;background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center">
                 <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">video thumbnail</span>
                 <button type="button" onClick="{{ sm.onWatch }}" aria-label="Watch" style="position:absolute;width:40px;height:40px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink)">▶</button>
               </div>
               <div style="padding:12px">
+                <span style="display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;background:var(--success-soft);color:var(--success);margin-bottom:8px">{{ sm.trust }}</span>
                 <div style="font-size:14px;font-weight:600">{{ sm.title }}</div>
                 <div style="font-size:12px;color:var(--muted);margin-top:3px">{{ sm.meta }}</div>
               </div>
@@ -371,24 +473,40 @@
     </sc-if>
 
     <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
-      <div style="max-width:520px">
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Profile</h1>
+      <div style="max-width:720px;display:flex;flex-direction:column;gap:16px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ profileHeading }}</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:13px;color:var(--muted);margin-bottom:4px">{{ publicationStatusLabel }}</div>
+              <div style="font-size:16px;font-weight:700">{{ publicationStatusValue }}</div>
+            </div>
+            <button type="button" onClick="{{ onTogglePublication }}" disabled="{{ publicationBusy }}" style="height:40px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13.5px">{{ publicationButtonLabel }}</button>
+          </div>
+          <sc-if value="{{ hasMissingRequirements }}" hint-placeholder-val="{{ false }}">
+            <ul style="margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--text-2)">
+              <sc-for list="{{ missingRequirements }}" as="req" hint-placeholder-count="4">
+                <li>{{ req.label }}</li>
+              </sc-for>
+            </ul>
+          </sc-if>
+        </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Short professional bio</span>
+            <span style="font-size:13px;font-weight:600">{{ profileBioLabel }}</span>
             <textarea value="{{ profileBio }}" onChange="{{ onProfileBio }}" rows="4" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Professional headline</span>
+            <span style="font-size:13px;font-weight:600">{{ profileHeadlineLabel }}</span>
             <input value="{{ profileHeadline }}" onChange="{{ onProfileHeadline }}" maxlength="200" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <div class="tf-grid-2">
             <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13px;font-weight:600">Country</span>
+              <span style="font-size:13px;font-weight:600">{{ profileCountryLabel }}</span>
               <input value="{{ profileCountry }}" onChange="{{ onProfileCountry }}" maxlength="100" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
             </label>
             <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13px;font-weight:600">City</span>
+              <span style="font-size:13px;font-weight:600">{{ profileCityLabel }}</span>
               <input value="{{ profileCity }}" onChange="{{ onProfileCity }}" maxlength="150" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
             </label>
           </div>
@@ -396,72 +514,80 @@
             <span style="font-size:13px;font-weight:600" data-i18n="profile_response_minutes">Self-reported expected response time (minutes)</span>
             <input type="number" min="0" max="43200" sc-camel-value="{{ profileResponseMinutes }}" onChange="{{ onProfileResponseMinutes }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
-          <button type="button" onClick="{{ onSaveProfile }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save profile</button>
+          <button type="button" onClick="{{ onSaveProfile }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ profileSaveLabel }}</button>
         </div>
       </div>
     </sc-if>
 
     <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
-      <div style="max-width:560px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:16px;width:100%;max-width:1100px">
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
-          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
-            <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
-              <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <label style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:13px;font-weight:600;cursor:pointer">
-                  {{ accountChangePhoto }}
-                  <input type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden onChange="{{ onAvatarFile }}" />
-                </label>
-                <sc-if value="{{ hasCustomAvatar }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ onClearAvatar }}" style="height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2)">{{ accountRemovePhoto }}</button>
-                </sc-if>
+        <div data-stack="settings" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <h2 style="font-size:17px;margin:0">{{ settingsProfileInfoTitle }}</h2>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountPrimaryName }}</span>
+              <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" maxlength="200" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountEnglishName }}</span>
+              <input value="{{ settingsNameEnglish }}" onChange="{{ onSettingsNameEnglish }}" maxlength="200" dir="ltr" autocomplete="name" aria-describedby="teacher-english-name-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+              <span id="teacher-english-name-note" style="font-size:12px;color:var(--muted)">{{ accountEnglishHint }}</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ settingsEmailLabel }}</span>
+              <input value="{{ settingsEmail }}" readonly style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px" />
+              <span style="font-size:12px;color:var(--muted)">{{ settingsEmailNote }}</span>
+            </label>
+            <button type="button" onClick="{{ onSaveAccount }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountSaveProfile }}</button>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <h2 style="font-size:17px;margin:0">{{ settingsPhotoTitle }}</h2>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <img src="{{ accountAvatar }}" alt="" width="72" height="72" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+              <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+                <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <label style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:13px;font-weight:600;cursor:pointer">
+                    {{ accountChangePhoto }}
+                    <input type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden onChange="{{ onAvatarFile }}" />
+                  </label>
+                  <sc-if value="{{ hasCustomAvatar }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ onClearAvatar }}" style="height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2)">{{ accountRemovePhoto }}</button>
+                  </sc-if>
+                </div>
               </div>
             </div>
           </div>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ accountPrimaryName }}</span>
-            <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" maxlength="200" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ accountEnglishName }}</span>
-            <input value="{{ settingsNameEnglish }}" onChange="{{ onSettingsNameEnglish }}" maxlength="200" dir="ltr" autocomplete="name" aria-describedby="teacher-english-name-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-            <span id="teacher-english-name-note" style="font-size:12px;color:var(--muted)">{{ accountEnglishHint }}</span>
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Email</span>
-            <input value="{{ settingsEmail }}" readonly style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px" />
-          </label>
-          <button type="button" onClick="{{ onSaveAccount }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountSaveProfile }}</button>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
-          <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
-            <input type="password" value="{{ currentPassword }}" onChange="{{ onCurrentPassword }}" autocomplete="current-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ accountNewPassword }}</span>
-            <input type="password" value="{{ newPassword }}" onChange="{{ onNewPassword }}" minlength="10" autocomplete="new-password" aria-describedby="teacher-password-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-            <span id="teacher-password-note" style="font-size:12px;color:var(--muted)">{{ accountPasswordHint }}</span>
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ accountConfirmPassword }}</span>
-            <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPassword }}" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-          </label>
-          <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
-          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-            <span>Email notifications</span>
-            <input type="checkbox" checked="{{ notifyNewRequests }}" onChange="{{ onNotifyNewRequests }}" style="width:38px;height:22px;accent-color:var(--primary)" />
-          </label>
-          <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-            <span>In-app notifications</span>
-            <input type="checkbox" checked="{{ notifySms }}" onChange="{{ onNotifySms }}" style="width:38px;height:22px;accent-color:var(--primary)" />
-          </label>
-          <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
+              <input type="password" value="{{ currentPassword }}" onChange="{{ onCurrentPassword }}" autocomplete="current-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountNewPassword }}</span>
+              <input type="password" value="{{ newPassword }}" onChange="{{ onNewPassword }}" minlength="10" autocomplete="new-password" aria-describedby="teacher-password-note" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+              <span id="teacher-password-note" style="font-size:12px;color:var(--muted)">{{ accountPasswordHint }}</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountConfirmPassword }}</span>
+              <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPassword }}" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <h2 style="font-size:17px;margin:0">{{ settingsNotificationsTitle }}</h2>
+            <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2);gap:12px">
+              <span>{{ settingsEmailNotifications }}</span>
+              <input type="checkbox" checked="{{ notifyNewRequests }}" onChange="{{ onNotifyNewRequests }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2);gap:12px">
+              <span>{{ settingsInAppNotifications }}</span>
+              <input type="checkbox" checked="{{ notifyInApp }}" onChange="{{ onNotifyInApp }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+            </label>
+            <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ settingsSaveChanges }}</button>
+          </div>
         </div>
       </div>
     </sc-if>
@@ -549,14 +675,16 @@
           </label>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Delivery hours</span>
-            <input type="number" min="1" max="8760" sc-camel-value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Revisions</span>
-            <input type="number" min="0" max="20" sc-camel-value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-          </label>
+          <sc-if value="{{ showDeliveryFields }}" hint-placeholder-val="{{ true }}">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ tdDeliveryHours }}</span>
+              <input type="number" min="1" max="8760" sc-camel-value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ tdRevisions }}</span>
+              <input type="number" min="0" max="20" sc-camel-value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+          </sc-if>
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -621,15 +749,18 @@ let PENDING = [];
 
 let ORDERS = [];
 
-const STAGE_ACTION = { accepted:'Start work', progress:'Continue', ready:'Deliver', revision:'View revision', completed:'View' };
+const STAGE_ACTION = { awaiting_payment:'Waiting for payment', progress:'In progress', ready:'Delivered', revision:'View revision', completed:'Completed', cancelled:'Cancelled' };
 
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, section: 'overview',
     orderTab: 'all', declined: [], acceptModal: null,
-    finalPrice: 130, deliveryDate: '2026-07-30', revisions: '2', notes: '', toast: '', toastLeaving: false,
+    finalPrice: '', deliveryDate: '', revisions: '2', notes: '', toast: '', toastLeaving: false, onboarding: null, publicationBusy: false,
     balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
-    subjectsCatalog: [], servicesCatalog: [],
+    subjectsCatalog: [], servicesCatalog: [], eligibleSubjects: [],
+    showcases: [], showcaseLoading: true, showcaseError: '', showcaseBusy: false,
+    showcaseEditingId: '', showcaseTitle: '', showcaseDescription: '',
+    showcaseSubjectId: '', showcaseTopicId: '', showcaseTopics: [],
     serviceModal: null,
     svcSubjectId: '', svcCatalogId: '', svcTitle: '', svcDescription: '',
     svcPrice: 120, svcCurrency: 'SAR', svcDeliveryHours: 48, svcRevisions: 2,
@@ -660,53 +791,90 @@ class Component extends DCLogic {
         location.replace(lifecycle.nextUrl || 'Tafseel-Teacher-Apply.dc.html');
         return;
       }
-      return Promise.all([
+      this.setState({ onboarding: lifecycle });
+      return Promise.allSettled([
         Tafseel.api.get('/learning-requests/assigned?pageSize=100'),
         Tafseel.api.get('/orders/assigned?pageSize=100'),
         Tafseel.api.get('/withdrawals/balances'),
         Tafseel.api.get('/live-sessions/mine?pageSize=100'),
-        Tafseel.api.get('/teachers/me').catch(() => null),
+        Tafseel.api.get('/teachers/me'),
         Tafseel.api.get('/notification-preferences'),
         Tafseel.api.get('/teachers/' + encodeURIComponent(session.userId) + '/reviews?pageSize=50'),
         Tafseel.api.get('/conversations?pageSize=50'),
-        Tafseel.api.get('/subjects'),
-        Tafseel.api.get('/services')
+        Tafseel.api.get('/teachers/me/eligible-subjects'),
+        Tafseel.api.get('/services'),
+        Tafseel.api.get('/teachers/me/showcases?pageSize=20')
       ]);
-    }).then(data => {
-      if (!data) return;
-      PENDING = data[0].items.map(x => ({
-        id:x.id, student:x.studentId, initials:'ST', subject:'Request', topic:x.title,
-        description:x.description, files:x.attachments.map(a => a.originalName),
-        budget:x.budget ? 'SAR ' + x.budget : 'Flexible',
-        deadline:Tafseel.date(x.preferredDeliveryAt), urgency:'Standard', version:x.version
-      }));
-      const stages = ['accepted','ready','progress','ready','completed','completed'];
-      ORDERS = data[1].items.map(x => ({
-        id:x.id, title:'Order ' + x.id, student:x.studentId,
-        deadline:Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }),
-        price:x.currency + ' ' + x.price, stage:stages[x.status], version:x.version
-      }));
-      const profile = data[4];
+    }).then(results => {
+      if (!results) return;
+      const value = (i) => results[i].status === 'fulfilled' ? results[i].value : null;
+      const fail = (i) => { if (results[i].status === 'rejected') this.flash(Tafseel.api.errorMessage(results[i].reason)); };
+      for (let i = 0; i < results.length; i++) fail(i);
+      const requests = value(0);
+      const orders = value(1);
+      const balances = value(2) || [];
+      const sessions = value(3);
+      const profile = value(4);
+      const prefs = value(5);
+      const reviews = value(6);
+      const conversations = value(7);
+      const eligible = value(8) || [];
+      const servicesCatalog = value(9) || [];
+      const showcases = value(10);
+      const ORDER_STAGES = ['awaiting_payment','progress','ready','revision','completed','cancelled'];
+      PENDING = requests && requests.items ? requests.items.map(x => ({
+        id:x.id,
+        student:x.studentDisplayName || Tafseel.participantLabel(x.studentId),
+        subject:x.subjectName || '',
+        topic:x.title,
+        description:x.description,
+        files:(x.attachments || []).map(a => a.originalName),
+        budget:x.budget != null ? ('SAR ' + x.budget) : Tafseel.t('td_budget_flexible'),
+        budgetValue:x.budget,
+        preferredDeliveryAt:x.preferredDeliveryAt,
+        deadline:Tafseel.date(x.preferredDeliveryAt),
+        version:x.version
+      })) : [];
+      ORDERS = orders && orders.items ? orders.items.map(x => ({
+        id:x.id,
+        title:x.title || (Tafseel.t('td_order') + ' ' + x.id),
+        student:x.studentDisplayName || Tafseel.participantLabel(x.studentId),
+        deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
+        price:(x.currency || 'SAR') + ' ' + x.price,
+        stage:ORDER_STAGES[x.status] || 'awaiting_payment',
+        version:x.version
+      })) : [];
       const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const availDays = profile && profile.availability && profile.availability.length
+        ? [...new Set(profile.availability.map(x => dayNames[x.dayOfWeek]))]
+        : [];
       this.setState({
-        declined:[], balances:data[2], profile,
+        declined:[],
+        balances,
+        profile,
         profileBio:profile ? profile.bio : '',
         profileHeadline:profile ? profile.headline : '',
         profileCountry:profile ? profile.country : '',
         profileCity:profile ? profile.city : '',
-        profileResponseMinutes:profile ? profile.responseTimeMinutes : 60,
-        timezone:profile ? profile.timeZoneId : 'Asia/Riyadh',
-        availDays:profile ? [...new Set(profile.availability.map(x => dayNames[x.dayOfWeek]))] : ['Sun','Mon','Tue','Wed','Thu'],
-        notifyNewRequests:data[5].emailEnabled,
-        notifySms:data[5].inAppEnabled,
-        liveReviews:data[6].items,
-        liveConversations:data[7].items,
-        subjectsCatalog:data[8] || [],
-        servicesCatalog:data[9] || [],
-        liveSessions:data[3].items.filter(x => x.status === 0 || x.status === 1).map(x => ({
-          id:x.id, student:x.studentId, topic:x.title,
-          when:Tafseel.date(x.startsAt), confirmed:x.status === 1
-        }))
+        profileResponseMinutes:profile && profile.responseTimeMinutes != null ? profile.responseTimeMinutes : 0,
+        timezone:profile && profile.timeZoneId ? profile.timeZoneId : 'Asia/Riyadh',
+        availDays,
+        notifyNewRequests:prefs ? !!prefs.emailEnabled : true,
+        notifyInApp:prefs ? !!prefs.inAppEnabled : true,
+        liveReviews:reviews && reviews.items ? reviews.items : [],
+        liveConversations:conversations && conversations.items ? conversations.items : [],
+        eligibleSubjects:eligible,
+        servicesCatalog,
+        showcases:showcases && showcases.items ? showcases.items : [],
+        showcaseLoading:false,
+        showcaseError:results[10].status === 'rejected' ? Tafseel.api.errorMessage(results[10].reason) : '',
+        liveSessions:sessions && sessions.items ? sessions.items.filter(x => x.status === 0 || x.status === 1).map(x => ({
+          id:x.id,
+          student:x.studentDisplayName || Tafseel.participantLabel(x.studentId),
+          topic:x.title,
+          when:Tafseel.date(x.startsAt),
+          confirmed:x.status === 1
+        })) : []
       });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -719,6 +887,34 @@ class Component extends DCLogic {
 
   flash(msg) {
     Tafseel.flash(this, msg, 2800);
+  }
+
+  async loadShowcases() {
+    try {
+      this.setState({ showcaseLoading:true, showcaseError:'' });
+      const page = await Tafseel.api.get('/teachers/me/showcases?pageSize=20');
+      this.setState({ showcases:(page && page.items) || [], showcaseLoading:false });
+    } catch (error) {
+      this.setState({ showcaseLoading:false, showcaseError:Tafseel.api.errorMessage(error) });
+    }
+  }
+
+  resetShowcaseForm() {
+    this.setState({
+      showcaseEditingId:'', showcaseTitle:'', showcaseDescription:'',
+      showcaseSubjectId:'', showcaseTopicId:'', showcaseTopics:[]
+    });
+  }
+
+  async selectShowcaseSubject(subjectId) {
+    this.setState({ showcaseSubjectId:subjectId, showcaseTopicId:'', showcaseTopics:[] });
+    if (!subjectId) return;
+    try {
+      const topics = await Tafseel.api.get('/topics?subjectId=' + encodeURIComponent(subjectId));
+      this.setState({ showcaseTopics:Array.isArray(topics) ? topics : [] });
+    } catch (error) {
+      this.flash(Tafseel.api.errorMessage(error));
+    }
   }
 
   async openTimeline(item, trigger) {
@@ -759,21 +955,21 @@ class Component extends DCLogic {
     const withdrawalAvailableText = withdrawalBalance.currency + ' ' + Tafseel.number(withdrawalBalance.available);
     const withdrawalButtonLabel = Number(withdrawalBalance.available) > 0 ? 'Withdraw' : 'No available balance';
     const newCount = PENDING.length;
-    const orderCount = ORDERS.filter(o => o.stage !== 'completed').length;
+    const orderCount = ORDERS.filter(o => o.stage !== 'completed' && o.stage !== 'cancelled').length;
     const sessionCount = (s.liveSessions || []).length;
     const unreadMessages = (s.liveConversations || []).reduce((n, c) => n + (c.unreadCount || 0), 0);
     const NAV = [
-      ['overview','◱','Overview',0], ['new','✦','New Requests', newCount], ['orders','◫','Active Orders', orderCount], ['sessions','◉','Live Sessions', sessionCount],
-      ['services','▤','My Services',0], ['samples','▶','Teaching Samples',0], ['availability','◷','Availability',0],
-      ['messages','✉','Messages', unreadMessages], ['reviews','★','Reviews',0], ['earnings','$','Earnings',0], ['withdrawals','⇩','Withdrawals',0],
-      ['profile','◍','Profile',0], ['settings','⚙','Settings',0]
+      ['overview','◱','td_nav_overview',0], ['new','✦','td_nav_new', newCount], ['orders','◫','td_nav_orders', orderCount], ['sessions','◉','td_nav_sessions', sessionCount],
+      ['services','▤','td_nav_services',0], ['samples','▶','td_nav_samples',0], ['availability','◷','td_nav_availability',0],
+      ['messages','✉','td_nav_messages', unreadMessages], ['reviews','★','td_nav_reviews',0], ['earnings','$','td_nav_earnings',0], ['withdrawals','⇩','td_nav_withdrawals',0],
+      ['profile','◍','td_nav_profile',0], ['settings','⚙','td_nav_settings',0]
     ];
 
     const urgencyTone = { 'Standard':['var(--surface-2)','var(--text-2)'], 'Before exam':['var(--warning-soft)','var(--warning)'], 'Same day':['var(--error-soft)','var(--error)'] };
 
     const orderTabs = [
-      { key:'all', label:'All' }, { key:'accepted', label:'Accepted' }, { key:'progress', label:'In Progress' },
-      { key:'ready', label:'Ready to Deliver' }, { key:'revision', label:'Revision' }, { key:'completed', label:'Completed' }
+      { key:'all', label: Tafseel.t('td_tab_all') }, { key:'awaiting_payment', label: Tafseel.t('td_tab_awaiting') }, { key:'progress', label: Tafseel.t('td_tab_progress') },
+      { key:'ready', label: Tafseel.t('td_tab_ready') }, { key:'revision', label: Tafseel.t('td_tab_revision') }, { key:'completed', label: Tafseel.t('td_tab_completed') }
     ].map(t => ({
       label: t.label, selected: s.orderTab === t.key,
       style: 'padding:7px 12px;border:0;background:none;font-size:13px;font-weight:600;border-radius:var(--r-sm);transition:all var(--t);' +
@@ -848,22 +1044,27 @@ class Component extends DCLogic {
           this.setState({ accountBusy: false });
         }
       },
-      greetingTitle: (Tafseel.userName(this._session) ? ('Welcome, ' + Tafseel.userName(this._session).split(' ')[0]) : 'Teacher dashboard'),
+      greetingTitle: (Tafseel.userName(this._session)
+        ? Tafseel.t('dash_greeting_named', { name: Tafseel.userName(this._session).split(/\s+/)[0] })
+        : Tafseel.t('td_dashboard_title')),
       greetingSub: (PENDING.length - s.declined.length)
-        ? ((PENDING.length - s.declined.length) + ' new request(s) waiting for a response.')
-        : 'No new requests in your queue.',
+        ? Tafseel.t('dash_sub_counts', {
+            action: String(PENDING.length - s.declined.length),
+            sessions: String((s.liveSessions || []).length)
+          })
+        : Tafseel.t('dash_sub_empty'),
 
-      navItems: NAV.map(([key, icon, label, badge]) => ({
-        icon, label, badge: badge || 0,
+      navItems: NAV.map(([key, icon, labelKey, badge]) => ({
+        icon, label: Tafseel.t(labelKey), badge: badge || 0,
         current: s.section === key ? 'page' : 'false',
         style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
           (s.section === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
         onClick: () => {
-          const overviewAnchors = ['new', 'orders', 'sessions'];
+          const overviewAnchors = { new:'new-requests', orders:'active-orders', sessions:'live-sessions' };
           if (typeof this.closeDrawer === 'function') this.closeDrawer();
           else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
-          this.setState({ section: overviewAnchors.includes(key) ? 'overview' : key });
-          if (key === 'new') setTimeout(() => document.getElementById('new-requests')?.scrollIntoView({ behavior: 'smooth' }), 50);
+          this.setState({ section: overviewAnchors[key] ? 'overview' : key });
+          if (overviewAnchors[key]) setTimeout(() => document.getElementById(overviewAnchors[key])?.scrollIntoView({ behavior: 'smooth' }), 50);
         }
       })),
 
@@ -877,6 +1078,48 @@ class Component extends DCLogic {
       isWithdrawals: s.section === 'withdrawals',
       isProfile: s.section === 'profile',
       isSettings: s.section === 'settings',
+      dashboardTitle: Tafseel.t('td_dashboard_title'),
+      ordersHeading: Tafseel.t('td_nav_orders'),
+      sessionsHeading: Tafseel.t('td_nav_sessions'),
+      profileHeading: Tafseel.t('td_nav_profile'),
+      profileBioLabel: Tafseel.t('td_profile_bio'),
+      profileHeadlineLabel: Tafseel.t('td_profile_headline'),
+      profileCountryLabel: Tafseel.t('td_profile_country'),
+      profileCityLabel: Tafseel.t('td_profile_city'),
+      profileSaveLabel: Tafseel.t('td_profile_save'),
+      publicationStatusLabel: Tafseel.t('td_publication_status'),
+      publicationStatusValue: s.profile && s.profile.isPubliclyVisible ? Tafseel.t('td_publication_public') : Tafseel.t('td_publication_private'),
+      publicationButtonLabel: s.profile && s.profile.isPubliclyVisible ? Tafseel.t('td_unpublish') : Tafseel.t('td_publish'),
+      publicationBusy: !!s.publicationBusy,
+      hasMissingRequirements: !!(s.onboarding && s.onboarding.missingRequirements && s.onboarding.missingRequirements.length),
+      missingRequirements: ((s.onboarding && s.onboarding.missingRequirements) || []).map(code => ({
+        label: (() => { const key = 'td_missing_' + code; const t = Tafseel.t(key); return t === key ? code : t; })()
+      })),
+      onTogglePublication: async () => {
+        if (!s.profile || s.publicationBusy) return;
+        const published = !s.profile.isPubliclyVisible;
+        this.setState({ publicationBusy: true });
+        try {
+          await Tafseel.api.put('/teachers/me/publication', { published });
+          const [profile, onboarding] = await Promise.all([
+            Tafseel.api.get('/teachers/me'),
+            Tafseel.api.get('/teachers/onboarding-status')
+          ]);
+          this.setState({ profile, onboarding, publicationBusy: false });
+          this.flash(published ? Tafseel.t('td_published') : Tafseel.t('td_unpublished'));
+        } catch (error) {
+          this.setState({ publicationBusy: false });
+          this.flash(Tafseel.api.errorMessage(error));
+        }
+      },
+      settingsProfileInfoTitle: Tafseel.t('td_settings_profile_info'),
+      settingsPhotoTitle: Tafseel.t('td_settings_photo'),
+      settingsNotificationsTitle: Tafseel.t('td_settings_notifications'),
+      settingsEmailLabel: Tafseel.t('td_settings_email'),
+      settingsEmailNote: Tafseel.t('settings_email_note'),
+      settingsEmailNotifications: Tafseel.t('settings_email_notifications'),
+      settingsInAppNotifications: Tafseel.t('settings_inapp_notifications'),
+      settingsSaveChanges: Tafseel.t('td_settings_save'),
       accountProfileTitle: Tafseel.t('account_profile'),
       accountPrimaryName: Tafseel.t('account_primary_name'),
       accountEnglishName: Tafseel.t('account_english_name'),
@@ -891,7 +1134,9 @@ class Component extends DCLogic {
 
       myServices: (s.profile && s.profile.services ? s.profile.services : []).map(sv => ({
         id:sv.id, name:sv.title,
-        desc:sv.deliveryHours + ' hour delivery · ' + sv.revisions + ' revisions',
+        desc: sv.requiresScheduling
+          ? Tafseel.t('td_nav_sessions')
+          : (sv.deliveryHours + ' ' + Tafseel.t('td_delivery_hours') + ' · ' + sv.revisions + ' ' + Tafseel.t('td_revisions')),
         price:sv.currency + ' ' + sv.price,
         active:sv.isActive,
         version:sv.version,
@@ -928,13 +1173,33 @@ class Component extends DCLogic {
       serviceModalCreate: !s.serviceModal || s.serviceModal.mode === 'create',
       serviceModalTitle: s.serviceModal && s.serviceModal.mode === 'edit' ? 'Edit service' : 'Add service',
       closeServiceModal: () => this.setState({ serviceModal: null }),
-      subjectOptions: (s.subjectsCatalog || []).map(x => ({ id: x.id, name: x.name })),
+      subjectOptions: (s.eligibleSubjects || []).map(x => ({
+        id: x.id,
+        name: (document.documentElement.lang === 'ar' && x.nameAr) ? x.nameAr : x.name
+      })),
       serviceTypeOptions: (s.servicesCatalog || [])
-        .filter(x => x.teacherSelectable !== false)
+        .filter(x => x.teacherSelectable !== false && x.isPublic !== false)
         .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0) || String(a.name).localeCompare(String(b.name)))
-        .map(x => ({ id: x.id, name: x.name })),
+        .map(x => ({
+          id: x.id,
+          name: (document.documentElement.lang === 'ar' && (x.nameAr || x.titleAr)) ? (x.nameAr || x.titleAr) : x.name,
+          requiresScheduling: !!x.requiresScheduling
+        })),
+      showDeliveryFields: (() => {
+        const selected = (s.servicesCatalog || []).find(x => String(x.id) === String(s.svcCatalogId));
+        return !(selected && selected.requiresScheduling);
+      })(),
+      tdDeliveryHours: Tafseel.t('td_delivery_hours'),
+      tdRevisions: Tafseel.t('td_revisions'),
       svcSubjectId: s.svcSubjectId, onSvcSubjectId: e => this.setState({ svcSubjectId: e.target.value }),
-      svcCatalogId: s.svcCatalogId, onSvcCatalogId: e => this.setState({ svcCatalogId: e.target.value }),
+      svcCatalogId: s.svcCatalogId, onSvcCatalogId: e => {
+        const id = e.target.value;
+        const selected = (s.servicesCatalog || []).find(x => String(x.id) === String(id));
+        this.setState({
+          svcCatalogId: id,
+          ...(selected && selected.requiresScheduling ? { svcDeliveryHours: 1, svcRevisions: 0 } : {})
+        });
+      },
       svcTitle: s.svcTitle, onSvcTitle: e => this.setState({ svcTitle: e.target.value }),
       svcDescription: s.svcDescription, onSvcDescription: e => this.setState({ svcDescription: e.target.value }),
       svcPrice: s.svcPrice, onSvcPrice: e => this.setState({ svcPrice: e.target.value }),
@@ -969,8 +1234,10 @@ class Component extends DCLogic {
           } else {
             if (!s.svcSubjectId || !s.svcCatalogId) return this.flash('Subject and service type are required.');
             if (!description) return this.flash('Description is required.');
-            if (!(deliveryHours >= 1)) return this.flash('Delivery hours are required.');
-            if (!(revisions >= 0)) return this.flash('Revisions are required.');
+            const selectedType = (s.servicesCatalog || []).find(x => String(x.id) === String(s.svcCatalogId));
+            const scheduling = !!(selectedType && selectedType.requiresScheduling);
+            if (!scheduling && !(deliveryHours >= 1)) return this.flash('Delivery hours are required.');
+            if (!scheduling && !(revisions >= 0)) return this.flash('Revisions are required.');
             await Tafseel.api.post('/teachers/me/services', {
               subjectId: s.svcSubjectId,
               serviceCatalogItemId: s.svcCatalogId,
@@ -978,21 +1245,185 @@ class Component extends DCLogic {
               description,
               price,
               currency: 'SAR',
-              deliveryHours,
-              revisions
+              deliveryHours: scheduling ? 1 : deliveryHours,
+              revisions: scheduling ? 0 : revisions
             });
-            this.flash('Service created');
+            this.flash(Tafseel.t('td_service_created'));
           }
           const profile = await Tafseel.api.get('/teachers/me');
           this.setState({ profile, serviceModal: null });
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
 
-      teachingSamples: s.profile ? s.profile.samples.map(sample => ({
-        title:sample.title,
-        meta:Math.floor(sample.durationSeconds / 60) + ':' + String(sample.durationSeconds % 60).padStart(2, '0'),
-        onWatch:() => window.open('/api/v1/teachers/samples/' + sample.id + '/content', '_blank', 'noopener')
-      })) : [],
+      showcasePageTitle:Tafseel.t('showcase_page_title'),
+      showcasePageHint:Tafseel.t('showcase_page_hint'),
+      qualificationSamplesTitle:Tafseel.t('showcase_qualification_title'),
+      qualificationSamplesHint:Tafseel.t('showcase_qualification_hint'),
+      qualificationSamplesEmptyText:Tafseel.t('showcase_qualification_empty'),
+      teacherShowcasesTitle:Tafseel.t('showcase_teacher_title'),
+      teacherShowcasesHint:Tafseel.t('showcase_teacher_hint'),
+      showcaseTitleLabel:Tafseel.t('showcase_title_label'),
+      showcaseDescriptionLabel:Tafseel.t('showcase_description_label'),
+      showcaseSubjectLabel:Tafseel.t('showcase_subject_label'),
+      showcaseTopicLabel:Tafseel.t('showcase_topic_label'),
+      showcaseChooseSubject:Tafseel.t('showcase_choose_subject'),
+      showcaseNoTopic:Tafseel.t('showcase_no_topic'),
+      showcaseSaveLabel:s.showcaseEditingId ? Tafseel.t('showcase_save_changes') : Tafseel.t('showcase_create_draft'),
+      showcaseCancelLabel:Tafseel.t('common_cancel'),
+      showcaseUploadHint:Tafseel.t('showcase_upload_hint'),
+      showcaseLoadingText:Tafseel.t('showcase_loading'),
+      showcasesEmptyText:Tafseel.t('showcase_empty'),
+      retryLabel:Tafseel.t('retry'),
+      editLabel:Tafseel.t('common_edit'),
+      uploadMp4Label:Tafseel.t('showcase_upload_mp4'),
+      submitLabel:Tafseel.t('showcase_submit'),
+      newVersionLabel:Tafseel.t('showcase_new_version'),
+      watchSampleLabel:Tafseel.t('showcase_watch'),
+      archiveLabel:Tafseel.t('showcase_archive'),
+      moveUpLabel:Tafseel.t('showcase_move_up'),
+      moveDownLabel:Tafseel.t('showcase_move_down'),
+      versionHistoryLabel:Tafseel.t('showcase_version_history'),
+      showcaseTitle:s.showcaseTitle,
+      showcaseDescription:s.showcaseDescription,
+      showcaseSubjectId:s.showcaseSubjectId,
+      showcaseTopicId:s.showcaseTopicId,
+      showcaseSubjects:(s.eligibleSubjects || []).map(x => ({ id:x.id, name:Tafseel.lang === 'ar' && x.nameAr ? x.nameAr : x.name })),
+      showcaseTopics:(s.showcaseTopics || []).map(x => ({ id:x.id, name:Tafseel.lang === 'ar' && x.nameAr ? x.nameAr : x.name })),
+      showcaseEditing:!!s.showcaseEditingId,
+      showcaseBusy:!!s.showcaseBusy,
+      showcaseLoading:!!s.showcaseLoading,
+      showcaseError:s.showcaseError,
+      showcasesEmpty:!s.showcaseLoading && !s.showcaseError && !(s.showcases || []).length,
+      onShowcaseTitle:e => this.setState({ showcaseTitle:e.target.value }),
+      onShowcaseDescription:e => this.setState({ showcaseDescription:e.target.value }),
+      onShowcaseSubject:e => this.selectShowcaseSubject(e.target.value),
+      onShowcaseTopic:e => this.setState({ showcaseTopicId:e.target.value }),
+      onCancelShowcaseEdit:() => this.resetShowcaseForm(),
+      onRetryShowcases:() => this.loadShowcases(),
+      onSaveShowcaseDraft:async () => {
+        if (s.showcaseBusy || !s.showcaseTitle.trim() || !s.showcaseSubjectId)
+          return this.flash(Tafseel.t('showcase_required_fields'));
+        this.setState({ showcaseBusy:true });
+        try {
+          const body = {
+            subjectId:s.showcaseSubjectId,
+            topicId:s.showcaseTopicId || null,
+            title:s.showcaseTitle.trim(),
+            description:s.showcaseDescription.trim() || null
+          };
+          if (s.showcaseEditingId) {
+            const existing = (s.showcases || []).find(x => x.id === s.showcaseEditingId);
+            await Tafseel.api.put('/teachers/me/showcases/' + existing.id, body, { 'If-Match':existing.version });
+          } else await Tafseel.api.post('/teachers/me/showcases', body);
+          this.resetShowcaseForm();
+          await this.loadShowcases();
+          this.flash(Tafseel.t('showcase_draft_saved'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ showcaseBusy:false }); }
+      },
+      qualificationSamples:((s.profile && s.profile.samples) || [])
+        .filter(sample => sample.sourceCode === 'qualification_sample')
+        .map(sample => ({
+          title:sample.title,
+          trust:Tafseel.t('trust_qualification_sample'),
+          meta:sample.durationSeconds ? Math.floor(sample.durationSeconds / 60) + ':' + String(sample.durationSeconds % 60).padStart(2, '0') : '',
+          onWatch:() => window.open('/api/v1/teachers/samples/' + sample.id + '/content', '_blank', 'noopener')
+        })),
+      qualificationSamplesEmpty:!((s.profile && s.profile.samples) || []).some(sample => sample.sourceCode === 'qualification_sample'),
+      teacherShowcases:(s.showcases || []).map(sample => {
+        const current = sample.currentVersion || {};
+        const labels = [
+          Tafseel.t('showcase_status_draft'), Tafseel.t('showcase_status_submitted'),
+          Tafseel.t('showcase_status_under_review'), Tafseel.t('showcase_status_changes_requested'),
+          Tafseel.t('showcase_status_approved'), Tafseel.t('showcase_status_rejected'),
+          Tafseel.t('showcase_status_archived')
+        ];
+        const tone = sample.status === 4 ? ['var(--success-soft)','var(--success)']
+          : sample.status === 3 || sample.status === 5 ? ['var(--warning-soft)','var(--warning)']
+          : ['var(--surface-2)','var(--text-2)'];
+        const approved = (s.showcases || []).filter(x => x.status === 4 && !x.archivedAt)
+          .sort((a,b) => a.displayOrder - b.displayOrder);
+        const approvedIndex = approved.findIndex(x => x.id === sample.id);
+        const reorder = async direction => {
+          const target = approvedIndex + direction;
+          if (approvedIndex < 0 || target < 0 || target >= approved.length) return;
+          const ids = approved.map(x => x.id);
+          [ids[approvedIndex], ids[target]] = [ids[target], ids[approvedIndex]];
+          try {
+            await Tafseel.api.put('/teachers/me/showcases/order', { ids });
+            await this.loadShowcases();
+          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        };
+        return {
+          title:current.title || Tafseel.t('showcase_untitled'),
+          description:current.description || Tafseel.t('showcase_no_description'),
+          status:labels[sample.status] || Tafseel.t('showcase_status_unknown'),
+          statusStyle:'display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;background:' + tone[0] + ';color:' + tone[1],
+          versionText:Tafseel.t('showcase_version_number', { number:String(current.versionNumber || 1) }),
+          feedback:current.teacherVisibleNote || '',
+          versions:(sample.versions || []).map(v => Tafseel.t('showcase_version_status', {
+            number:String(v.versionNumber), status:labels[v.status] || Tafseel.t('showcase_status_unknown')
+          })),
+          canEdit:sample.status === 0,
+          canNewVersion:sample.status === 3 || sample.status === 5 || sample.status === 4,
+          canWatch:!!current.originalFileName,
+          canArchive:sample.status === 4,
+          canReorder:sample.status === 4 && approved.length > 1,
+          onEdit:async () => {
+            this.setState({
+              showcaseEditingId:sample.id,
+              showcaseTitle:current.title || '',
+              showcaseDescription:current.description || ''
+            });
+            await this.selectShowcaseSubject(sample.subjectId);
+            this.setState({ showcaseTopicId:current.topicId || '' });
+          },
+          onUpload:async event => {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (!/\.mp4$/i.test(file.name) || file.type !== 'video/mp4')
+              return this.flash(Tafseel.t('showcase_mp4_only'));
+            const form = new FormData();
+            form.append('file', file);
+            this.setState({ showcaseBusy:true });
+            try {
+              await Tafseel.api.upload('/teachers/me/showcases/' + sample.id + '/video', form, { 'If-Match':sample.version });
+              await this.loadShowcases();
+              this.flash(Tafseel.t('showcase_upload_saved'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+            finally { this.setState({ showcaseBusy:false }); }
+          },
+          onSubmit:async () => {
+            try {
+              await Tafseel.api.post('/teachers/me/showcases/' + sample.id + '/submit', null, { 'If-Match':sample.version });
+              await this.loadShowcases();
+              this.flash(Tafseel.t('showcase_submitted'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          },
+          onNewVersion:async () => {
+            try {
+              await Tafseel.api.post('/teachers/me/showcases/' + sample.id + '/versions', null, { 'If-Match':sample.version });
+              await this.loadShowcases();
+              this.flash(Tafseel.t('showcase_new_version_created'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          },
+          onWatch:async () => {
+            try {
+              await Tafseel.api.openBlob('/teachers/me/showcases/' + sample.id + '/versions/' + current.id + '/content');
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          },
+          onArchive:async () => {
+            try {
+              await Tafseel.api.post('/teachers/me/showcases/' + sample.id + '/archive', null, { 'If-Match':sample.version });
+              await this.loadShowcases();
+              this.flash(Tafseel.t('showcase_archived'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          },
+          onMoveUp:() => reorder(-1),
+          onMoveDown:() => reorder(1)
+        };
+      }),
 
       availDays: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => {
         const active = (s.availDays || ['Sun','Mon','Tue','Wed','Thu']).includes(d);
@@ -1021,15 +1452,23 @@ class Component extends DCLogic {
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
 
-      conversations: s.liveConversations.length ? s.liveConversations.map(c => {
-        const peerId = c.participantIds.find(id => id !== this._session?.userId) || '';
+      conversations: (s.liveConversations || []).map(c => {
+        const peer = (c.participants || []).find(p => p.userId !== this._session?.userId);
+        const peerId = peer?.userId || (c.participantIds || []).find(id => id !== this._session?.userId) || '';
         return {
-          initials: Tafseel.participantInitials(peerId),
-          name: Tafseel.participantLabel(peerId),
+          initials: peer?.initials || Tafseel.participantInitials(peerId),
+          name: peer?.displayName || Tafseel.participantLabel(peerId),
           preview: c.latestMessage?.body || Tafseel.t('chat_no_messages'),
-          time: Tafseel.date(c.updatedAt)
+          time: Tafseel.date(c.updatedAt),
+          peerId
         };
-      }) : [],
+      }),
+
+      teacherReviews: (s.liveReviews || []).map(review => ({
+        student: review.studentDisplayName || Tafseel.t('td_anonymous_student'),
+        stars:'★'.repeat(Math.max(0, Math.round(review.overallScore || 0))),
+        body: review.originalComment || ''
+      })),
 
       teacherReviews: s.liveReviews.length ? s.liveReviews.map(review => ({
         student:'Verified student',
@@ -1115,35 +1554,39 @@ class Component extends DCLogic {
       },
 
       notifyNewRequests: s.notifyNewRequests ?? true, onNotifyNewRequests: e => this.setState({ notifyNewRequests: e.target.checked }),
-      notifySms: s.notifySms ?? false, onNotifySms: e => this.setState({ notifySms: e.target.checked }),
+      notifyInApp: s.notifyInApp ?? false, onNotifyInApp: e => this.setState({ notifyInApp: e.target.checked }),
       onSaveSettings: async () => {
         try {
           await Tafseel.api.put('/notification-preferences', {
-            inAppEnabled:s.notifySms,
+            inAppEnabled:s.notifyInApp,
             emailEnabled:s.notifyNewRequests
           });
-          this.flash('Settings saved');
+          this.flash(Tafseel.t('td_settings_save_ok'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
 
       scrollToRequests: () => document.getElementById('new-requests') && document.getElementById('new-requests').scrollIntoView({ behavior: 'smooth' }),
 
       stats: [
-        { label: 'New requests', value: String(PENDING.length - s.declined.length) },
-        { label: 'Active orders', value: String(ORDERS.filter(x => x.stage !== 'completed').length) },
-        { label: 'Upcoming sessions', value: String(s.liveSessions.length) },
-        { label: 'Earnings this month', value: '—' },
-        { label: 'Rating', value: s.profile && s.profile.rating != null ? s.profile.rating + ' ★' : '—' },
-        { label: 'Self-reported response time', value: s.profile && s.profile.responseTimeMinutes > 0 ? s.profile.responseTimeMinutes + ' min' : '—' }
+        { label: Tafseel.t('td_stat_new_requests'), value: String(PENDING.length - s.declined.length) },
+        { label: Tafseel.t('td_stat_active_orders'), value: String(ORDERS.filter(x => x.stage !== 'completed' && x.stage !== 'cancelled').length) },
+        { label: Tafseel.t('td_stat_sessions'), value: String((s.liveSessions || []).length) },
+        { label: Tafseel.t('td_stat_available_balance'), value: trackedCurrency + ' ' + Tafseel.number((s.balances || []).reduce((n, b) => n + Number(b.available || 0), 0)) },
+        { label: Tafseel.t('td_stat_rating'), value: s.profile && s.profile.rating != null ? (s.profile.rating + ' ★') : Tafseel.t('td_not_yet_rated') },
+        { label: Tafseel.t('td_stat_response'), value: s.profile && s.profile.responseTimeMinutes != null ? (s.profile.responseTimeMinutes + ' ' + Tafseel.t('td_min')) : Tafseel.t('td_unavailable') }
       ],
 
       pendingCount: PENDING.length - s.declined.length,
       pending: PENDING.filter(q => !s.declined.includes(q.id)).map(q => {
-        const [bg, fg] = urgencyTone[q.urgency];
         return {
           ...q,
-          urgencyStyle: 'font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:' + bg + ';color:' + fg,
-          onAccept: () => this.setState({ acceptModal: q, finalPrice: parseInt(q.budget.replace(/\D/g, '')) || 100 }),
+          urgency: '',
+          urgencyStyle: 'display:none',
+          onAccept: () => {
+            const price = q.budgetValue != null ? Number(q.budgetValue) : '';
+            const date = q.preferredDeliveryAt ? new Date(q.preferredDeliveryAt).toISOString().slice(0, 10) : '';
+            this.setState({ acceptModal: q, finalPrice: price, deliveryDate: date });
+          },
           onDecline: async () => {
             const reason = prompt('Reason for declining this request:');
             if (!reason) return;

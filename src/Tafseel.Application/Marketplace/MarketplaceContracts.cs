@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Tafseel.Application.Common;
+using Tafseel.Domain.Marketplace;
 
 namespace Tafseel.Application.Marketplace;
 
@@ -102,7 +103,7 @@ public sealed record TeacherProfileDto(
     string? FullNameEnglish = null,
     bool HasAvatar = false);
 
-public sealed record NamedItemDto(Guid Id, string Name);
+public sealed record NamedItemDto(Guid Id, string Name, string? NameAr);
 public sealed record UpdateTeacherProfile(
     [param: Required, NotWhiteSpace, StringLength(200)] string Headline,
     [param: Required, NotWhiteSpace, StringLength(4000)] string Bio,
@@ -150,9 +151,99 @@ public sealed record LiveSessionBookingPolicyDto(
     decimal EmergencyPremiumPercent,
     int CancellationWindowHours);
 
+public sealed class TeacherShowcaseOptions
+{
+    public const string SectionName = "TeacherShowcases";
+    public bool Enabled { get; init; }
+    public bool DurableObjectStorage { get; init; }
+    public bool MalwareScanning { get; init; }
+    public bool ReliableMediaProbing { get; init; }
+    public bool RetentionPolicy { get; init; }
+    public bool CopyrightReportingPolicy { get; init; }
+    public bool ModerationOperations { get; init; }
+    public bool SecureMediaDelivery { get; init; }
+    public int MaxPublicPerTeacher { get; init; } = 6;
+    public int MaxPublicPerSubject { get; init; } = 3;
+    public int MaxVersionsPerShowcase { get; init; } = 20;
+}
+
 public sealed record TeachingSampleDto(
-    Guid Id, Guid SubjectId, Guid? TopicId, string Title, int DurationSeconds, DateTimeOffset? PublishedAt);
+    Guid Id,
+    Guid SubjectId,
+    Guid? TopicId,
+    string Title,
+    int? DurationSeconds,
+    DateTimeOffset? PublishedAt,
+    string SourceCode,
+    string TrustCode,
+    string? Description = null,
+    int DisplayOrder = 0);
 public sealed record SampleFile(Stream Content, string ContentType);
+
+public sealed record CreateShowcaseInput(
+    Guid SubjectId,
+    Guid? TopicId,
+    [param: Required, NotWhiteSpace, StringLength(200)] string Title,
+    [param: StringLength(2000)] string? Description);
+public sealed record UpdateShowcaseDraftInput(
+    Guid SubjectId,
+    Guid? TopicId,
+    [param: Required, NotWhiteSpace, StringLength(200)] string Title,
+    [param: StringLength(2000)] string? Description);
+public sealed record ShowcaseDecisionInput(
+    [param: EnumDataType(typeof(ShowcaseDecision))] ShowcaseDecision Decision,
+    [param: StringLength(100)] string? ReasonCode,
+    [param: StringLength(2000)] string? TeacherVisibleNote,
+    [param: StringLength(2000)] string? InternalNote);
+public sealed record ShowcaseOrderInput(IReadOnlyCollection<Guid> Ids);
+public sealed record ShowcaseVersionDto(
+    Guid Id,
+    int VersionNumber,
+    Guid? TopicId,
+    string Title,
+    string Description,
+    ShowcaseModerationStatus Status,
+    string? OriginalFileName,
+    string? ContentType,
+    long? FileSize,
+    int? DurationSeconds,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? SubmittedAt,
+    string? DecisionReasonCode,
+    string? TeacherVisibleNote,
+    string Version);
+public sealed record TeacherShowcaseDto(
+    Guid Id,
+    Guid SubjectId,
+    TeachingSampleSourceType SourceType,
+    ShowcaseModerationStatus Status,
+    Guid? CurrentVersionId,
+    Guid? ApprovedVersionId,
+    DateTimeOffset? ArchivedAt,
+    int DisplayOrder,
+    string Version,
+    ShowcaseVersionDto CurrentVersion,
+    IReadOnlyCollection<ShowcaseVersionDto> Versions);
+public sealed record ShowcaseQueueItemDto(
+    Guid SampleId,
+    Guid VersionId,
+    int VersionNumber,
+    string TeacherId,
+    string TeacherDisplayName,
+    Guid SubjectId,
+    string SubjectName,
+    string? SubjectNameAr,
+    Guid? TopicId,
+    string? TopicName,
+    string? TopicNameAr,
+    string Title,
+    string Description,
+    string OriginalFileName,
+    long? FileSize,
+    DateTimeOffset SubmittedAt,
+    ShowcaseModerationStatus Status,
+    string? AssignedReviewerId,
+    string Version);
 
 public sealed record AvailabilityRuleInput(
     [param: EnumDataType(typeof(DayOfWeek))] DayOfWeek DayOfWeek,
@@ -187,6 +278,7 @@ public interface IMarketplaceService
     Task<IReadOnlyCollection<NamedItemDto>> GetLanguagesAsync(string teacherId, CancellationToken ct);
     Task UpdateProfileAsync(string teacherId, UpdateTeacherProfile input, CancellationToken ct);
     Task SetProfilePublishedAsync(string teacherId, bool published, CancellationToken ct);
+    Task<IReadOnlyCollection<NamedItemDto>> GetEligibleSubjectsAsync(string teacherId, CancellationToken ct);
     Task SetTopicsAsync(string teacherId, IReadOnlyCollection<Guid> topicIds, CancellationToken ct);
     Task SetLanguagesAsync(string teacherId, IReadOnlyCollection<Guid> languageIds, CancellationToken ct);
     Task SetEducationLevelsAsync(string teacherId, IReadOnlyCollection<Guid> educationLevelIds, CancellationToken ct);
@@ -196,6 +288,19 @@ public interface IMarketplaceService
     Task<TeachingSampleDto> AddSampleAsync(string teacherId, Guid subjectId, Guid? topicId, string title, Stream stream, string fileName, string contentType, long size, int durationSeconds, CancellationToken ct);
     Task SetSamplePublishedAsync(string teacherId, Guid id, bool published, CancellationToken ct);
     Task<SampleFile> OpenSampleAsync(string? requesterId, Guid id, CancellationToken ct);
+    Task<PagedResult<TeacherShowcaseDto>> GetShowcasesAsync(string teacherId, int page, int pageSize, CancellationToken ct);
+    Task<TeacherShowcaseDto> GetShowcaseAsync(string teacherId, Guid id, CancellationToken ct);
+    Task<TeacherShowcaseDto> CreateShowcaseAsync(string teacherId, CreateShowcaseInput input, CancellationToken ct);
+    Task<TeacherShowcaseDto> UpdateShowcaseDraftAsync(string teacherId, Guid id, UpdateShowcaseDraftInput input, string version, CancellationToken ct);
+    Task<TeacherShowcaseDto> UploadShowcaseVideoAsync(string teacherId, Guid id, Stream stream, string fileName, string contentType, long size, string version, CancellationToken ct);
+    Task SubmitShowcaseAsync(string teacherId, Guid id, string version, CancellationToken ct);
+    Task<TeacherShowcaseDto> CreateShowcaseVersionAsync(string teacherId, Guid id, string version, CancellationToken ct);
+    Task ArchiveShowcaseAsync(string teacherId, Guid id, string version, CancellationToken ct);
+    Task ReorderShowcasesAsync(string teacherId, ShowcaseOrderInput input, CancellationToken ct);
+    Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(ShowcaseModerationStatus? status, int page, int pageSize, CancellationToken ct);
+    Task StartShowcaseReviewAsync(string reviewerId, Guid id, Guid versionId, string version, CancellationToken ct);
+    Task DecideShowcaseAsync(string reviewerId, Guid id, Guid versionId, ShowcaseDecisionInput input, string version, CancellationToken ct);
+    Task<SampleFile> OpenShowcaseVersionAsync(string requesterId, bool canReview, Guid id, Guid versionId, CancellationToken ct);
     Task<AvailabilityRuleDto> AddAvailabilityRuleAsync(string teacherId, AvailabilityRuleInput input, CancellationToken ct);
     Task RemoveAvailabilityRuleAsync(string teacherId, Guid id, CancellationToken ct);
     Task<AvailabilityExceptionDto> AddAvailabilityExceptionAsync(string teacherId, AvailabilityExceptionInput input, CancellationToken ct);

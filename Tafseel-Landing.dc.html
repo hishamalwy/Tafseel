@@ -237,7 +237,7 @@
     </sc-if>
     <sc-if value="{{ subjectsReady }}" hint-placeholder-val="{{ true }}">
       <div class="tf-subject-grid" data-reveal-group>
-        <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="8">
+        <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="4">
           <a class="tf-subject-card" href="{{ s.href }}">
             <span class="tf-subject-card-glow" aria-hidden="true"></span>
             <span class="tf-subject-card-pattern" aria-hidden="true"></span>
@@ -318,15 +318,11 @@
     <h2 data-i18n="svc_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Six ways to get help</h2>
     <p data-i18n="svc_p" style="color:var(--muted);font-size:16px;margin-bottom:28px">Pick the format that fits the week you’re having.</p>
     <div class="tf-landing-services-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px" data-reveal-group>
-      <sc-for list="{{ services }}" as="sv" hint-placeholder-count="6">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;gap:14px">
-          <div style="width:38px;height:38px;flex:none;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:16px">{{ sv.icon }}</div>
-          <div>
-            <div style="font-weight:700;font-size:16px;margin-bottom:5px">{{ sv.name }}</div>
-            <div style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:8px">{{ sv.desc }}</div>
-            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-2)">{{ sv.price }}</div>
-          </div>
-        </div>
+      <sc-for list="{{ services }}" as="sv" hint-placeholder-count="4">
+        <article class="tf-service-card">
+          <h3 class="tf-service-card-title">{{ sv.name }}</h3>
+          <p class="tf-service-card-desc">{{ sv.desc }}</p>
+        </article>
       </sc-for>
     </div>
   </section>
@@ -504,19 +500,24 @@ class Component extends DCLogic {
     Tafseel.api.ready()
       .then(session => this.setState({ session, sessionChecked: true }))
       .catch(() => this.setState({ session: null, sessionChecked: true }));
-    Promise.all([
-      Tafseel.api.get('/subjects'),
+    Promise.allSettled([
+      Tafseel.api.get('/subjects/featured?take=4'),
       Tafseel.api.get('/teachers?pageSize=4'),
       Tafseel.api.get('/services')
-    ]).then(([subjects, teachers, services]) => this.setState({
+    ]).then(results => {
+      const value = (i) => results[i] && results[i].status === 'fulfilled' ? results[i].value : null;
+      const subjects = value(0);
+      const teachers = value(1);
+      const services = value(2);
+      this.setState({
       subjectsLoaded: true,
-      liveSubjects: (subjects || []).map(subject => ({
+      liveSubjects: subjects ? (subjects || []).map(subject => ({
         id: subject.id,
-        name: subject.name,
+        name: subject.nameEn || subject.name,
         nameAr: subject.nameAr || '',
         href: 'Tafseel-Browse-Teachers.dc.html?subjectId=' + encodeURIComponent(subject.id)
-      })),
-      liveTeachers: teachers.items.map(teacher => ({
+      })) : [],
+      liveTeachers: teachers && teachers.items ? teachers.items.map(teacher => ({
         name: teacher.fullName,
         subject: teacher.subjects[0] || teacher.headline,
         hasRating: teacher.rating != null && teacher.ratingCount > 0,
@@ -529,16 +530,16 @@ class Component extends DCLogic {
           event.preventDefault();
           location.href = 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId);
         }
-      })),
-      liveServices: (services || []).slice(0, 6).map((sv, index) => ({
-        icon: ['▶', '✎', '◷', '◉', '◈', '⇩'][index % 6],
-        name: sv.name,
+      })) : null,
+      liveServices: services ? (services || []).slice(0, 6).map(sv => ({
+        name: sv.nameEn || sv.name || '',
         nameAr: sv.nameAr || '',
-        desc: sv.detail || sv.name,
-        price: ''
-      })),
-      teacherTotal: teachers.totalCount
-    })).catch(() => this.setState({ subjectsLoaded: true, liveSubjects: [] }));
+        desc: sv.descriptionEn || sv.detail || '',
+        descAr: sv.descriptionAr || ''
+      })) : null,
+      teacherTotal: teachers ? teachers.totalCount : null
+    });
+    });
   }
 
   _setReducedMotion(reduceMotion) {
@@ -661,13 +662,15 @@ class Component extends DCLogic {
     ];
     // Static marketing fallbacks for services only — subjects always come from /subjects.
     const fallbackServices = [
-      { icon: '▶', name: ar ? 'شرح مسجّل مخصص' : 'Custom explanation', desc: ar ? 'فيديو مسجل يشرح موضوعك تحديدًا خطوة بخطوة.' : 'A recorded video walking through your exact topic, step by step.', price: ar ? 'من 95 ريال' : 'from SAR 95' },
-      { icon: '✎', name: ar ? 'إرشاد الواجبات' : 'Assignment guidance', desc: ar ? 'توجيه منهجي لحل واجبك دون كتابته نيابة عنك.' : 'Structured guidance on your assignment — coaching, not ghostwriting.', price: ar ? 'من 80 ريال' : 'from SAR 80' },
-      { icon: '◷', name: ar ? 'مراجعة الاختبار' : 'Exam revision', desc: ar ? 'مراجعة مكثفة للأخطاء الشائعة والأسئلة السابقة.' : 'Focused revision on past papers and the mistakes that cost marks.', price: ar ? 'من 110 ريال' : 'from SAR 110' },
-      { icon: '◉', name: ar ? 'جلسة مباشرة' : 'Live session', desc: ar ? 'مكالمة فيديو فردية مع سبورة مشتركة.' : 'One-to-one video call with a shared whiteboard.', price: ar ? 'من 160 ريال/ساعة' : 'from SAR 160/hr' },
-      { icon: '◈', name: ar ? 'إرشاد المشاريع' : 'Project mentoring', desc: ar ? 'متابعة متعددة الجلسات لمشروع التخرج أو البحث.' : 'Multi-session support for capstone projects and research.', price: ar ? 'من 420 ريال' : 'from SAR 420' },
-      { icon: '⇩', name: ar ? 'شرح جاهز للتحميل' : 'Recorded explanation', desc: ar ? 'شروحات جاهزة يمكنك تحميلها ومشاهدتها متى شئت.' : 'Ready-made explanations you can download and rewatch anytime.', price: ar ? 'من 45 ريال' : 'from SAR 45' }
+      { name: 'Custom recorded explanation', nameAr: 'شرح مسجّل مخصص', desc: 'A recorded video walking through your exact topic, step by step.', descAr: 'فيديو مسجل يشرح موضوعك تحديدًا خطوة بخطوة.' },
+      { name: 'Assignment guidance', nameAr: 'إرشاد الواجبات', desc: 'Coaching through your assignment, not ghostwriting.', descAr: 'توجيه منهجي لحل واجبك دون كتابته نيابة عنك.' },
+      { name: 'Exam revision', nameAr: 'مراجعة الاختبار', desc: 'Focused revision on your syllabus and past papers.', descAr: 'مراجعة مكثفة لمنهجك وأسئلة الاختبارات السابقة.' },
+      { name: 'Live session', nameAr: 'جلسة مباشرة', desc: 'One-to-one video call with a shared whiteboard.', descAr: 'مكالمة فيديو فردية مع سبورة مشتركة.' }
     ];
+    const localizeService = x => ({
+      name: ar ? (x.nameAr || x.name) : (x.name || x.nameEn || ''),
+      desc: ar ? (x.descAr || x.descriptionAr || x.desc || '') : (x.desc || x.descriptionEn || x.detail || '')
+    });
     return {
       langLabel: Tafseel.t('language_target'),
       langSwitchLabel: Tafseel.t('admin_switch_language'),
@@ -799,8 +802,8 @@ class Component extends DCLogic {
       ],
       teachers: this.state.liveTeachers || [],
       services: this.state.liveServices && this.state.liveServices.length
-        ? this.state.liveServices.map(x => ({ ...x, name: ar && x.nameAr ? x.nameAr : x.name }))
-        : fallbackServices,
+        ? this.state.liveServices.map(localizeService)
+        : fallbackServices.map(localizeService),
       escrow: [
         { n: '1', text: ar ? 'يدفع الطالب عند قبول العرض' : 'Student pays when the offer is accepted' },
         { n: '2', text: ar ? 'تحتفظ المنصة بالمبلغ بأمان' : 'Tafseel holds the payment securely' },

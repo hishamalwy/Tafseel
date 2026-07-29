@@ -142,7 +142,7 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
         var level = new EducationLevel("University " + suffix);
         var serviceType = new ServiceCatalogItem(
             "Recorded explanation " + suffix, "Public comparison service.", "compare_" + suffix,
-            type: "recorded", nameAr: "شرح مسجل");
+            "شرح مسجل", "خدمة مقارنة عامة", type: "recorded");
         db.AddRange(subject, topic, language, level, serviceType);
 
         var ids = new[] { first.Id, second.Id, third.Id, unpublished.Id };
@@ -173,10 +173,18 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
 
         db.Add(new TeacherExperience(first.Id, "University lecturer", "Public University",
             new DateOnly(2020, 1, 1), null));
+        var storage = scope.ServiceProvider.GetRequiredService<Tafseel.Application.TeacherApplications.IFileStorageService>();
+        var mediaBytes = new byte[] { 0, 0, 0, 0, (byte)'f', (byte)'t', (byte)'y', (byte)'p', 0, 0, 0, 0 };
+        var stored = await storage.StorePrivateVideoAsync(
+            new MemoryStream(mediaBytes), "published-sample.mp4", "video/mp4", mediaBytes.Length, default);
         var sample = new TeacherTeachingSample(
             first.Id, subject.Id, topic.Id, "Published sample",
-            $"teacher-demos/{Guid.NewGuid():N}.mp4", 120, DateTimeOffset.UtcNow);
-        sample.Publish(DateTimeOffset.UtcNow);
+            stored.StorageKey, 120, DateTimeOffset.UtcNow);
+        sample.CurrentVersion().ReplaceVideo(
+            stored.StorageKey, "published-sample.mp4", stored.ContentType, stored.Size);
+        sample.Submit(first.Id, DateTimeOffset.UtcNow);
+        sample.StartReview(second.Id, DateTimeOffset.UtcNow);
+        sample.Decide(second.Id, ShowcaseDecision.Approve, null, null, null, DateTimeOffset.UtcNow);
         db.Add(sample);
         await db.SaveChangesAsync();
         return new(first.Id, second.Id, third.Id, unpublished.Id);

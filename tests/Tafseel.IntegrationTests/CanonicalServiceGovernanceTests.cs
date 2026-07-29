@@ -25,25 +25,30 @@ public sealed class CanonicalServiceGovernanceTests(SqlServerTafseelApiFactory f
 
         var created = await client.PostAsJsonAsync("/api/v1/admin/services", new
         {
-            name = "Canonical Live " + suffix,
-            detail = "Live booking service",
-            code = "Live-Session-" + suffix,
-            requiresScheduling = true,
-            minPrice = 30,
-            displayOrder = 40
+            nameEn = "Canonical Live " + suffix,
+            nameAr = "جلسة مباشرة " + suffix,
+            descriptionEn = "Live booking service",
+            descriptionAr = "خدمة حجز مباشرة",
+            displayOrder = 40,
+            isActive = true
         });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var json = JsonDocument.Parse(await created.Content.ReadAsStringAsync()).RootElement;
-        Assert.Equal("live_session_" + suffix, json.GetProperty("code").GetString());
+        Assert.Equal("canonical_live_" + suffix, json.GetProperty("code").GetString());
+        Assert.Equal("Canonical Live " + suffix, json.GetProperty("nameEn").GetString());
+        Assert.Equal("جلسة مباشرة " + suffix, json.GetProperty("nameAr").GetString());
+        Assert.Equal("خدمة حجز مباشرة", json.GetProperty("descriptionAr").GetString());
 
         var duplicate = await client.PostAsJsonAsync("/api/v1/admin/services", new
         {
-            name = "Duplicate Live " + suffix,
-            detail = "Should fail",
-            code = "live_session_" + suffix
+            nameEn = "Canonical Live " + suffix,
+            nameAr = "نسخة مكررة",
+            descriptionEn = "Should fail",
+            descriptionAr = "يجب أن تفشل",
+            displayOrder = 41,
+            isActive = true
         });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
-        Assert.Contains("catalog_code_duplicate", await duplicate.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -181,12 +186,14 @@ public sealed class CanonicalServiceGovernanceTests(SqlServerTafseelApiFactory f
         var live = await db.ServiceCatalogItems.AsTracking().FirstOrDefaultAsync(x => x.Code == "live_session");
         if (live is null)
         {
-            live = new ServiceCatalogItem("Live Session", "Live explanation", "live_session");
+            live = new ServiceCatalogItem(
+                "Live Session", "Live explanation", "live_session", "جلسة مباشرة", "شرح مباشر");
             db.Add(live);
         }
         else if (!live.IsActive) live.SetActive(true);
 
-        var recorded = new ServiceCatalogItem("Recorded " + suffix, "Async explanation", "svc_" + suffix);
+        var recorded = new ServiceCatalogItem(
+            "Recorded " + suffix, "Async explanation", "svc_" + suffix, "شرح مسجل", "شرح غير متزامن");
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Teacher", "Profile for governance tests.", "Egypt", "Cairo",
             "Egypt Standard Time", 10, factory.Clock.GetUtcNow());

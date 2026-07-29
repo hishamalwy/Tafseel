@@ -253,6 +253,80 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         Assert.Equal(2, rowversions.Count(x => x == "RowVersion"));
     }
 
+    [Fact]
+    public async Task Multi_attachment_uploads_chain_versions_and_reject_stale_IfMatch()
+    {
+        var data = await SeedAsync();
+        var student = await ClientForAsync(data.Student.Email);
+        var request = await CreateAsync(student, data.ServiceId);
+
+        var first = await UploadAsync(
+            student, $"/api/v1/learning-requests/{request.Id}/attachments",
+            request.Version, "file", "one.pdf");
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        var firstJson = JsonDocument.Parse(await first.Content.ReadAsStringAsync()).RootElement;
+        var versionAfterFirst = firstJson.GetProperty("version").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(versionAfterFirst));
+        Assert.NotEqual(request.Version, versionAfterFirst);
+
+        var stale = await UploadAsync(
+            student, $"/api/v1/learning-requests/{request.Id}/attachments",
+            request.Version, "file", "two.pdf");
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+
+        var second = await UploadAsync(
+            student, $"/api/v1/learning-requests/{request.Id}/attachments",
+            versionAfterFirst!, "file", "two.pdf");
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        var secondJson = JsonDocument.Parse(await second.Content.ReadAsStringAsync()).RootElement;
+        var versionAfterSecond = secondJson.GetProperty("version").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(versionAfterSecond));
+        Assert.NotEqual(versionAfterFirst, versionAfterSecond);
+
+        var mine = JsonDocument.Parse(await student.GetStringAsync("/api/v1/learning-requests/mine?pageSize=50"))
+            .RootElement.GetProperty("items").EnumerateArray()
+            .Single(x => x.GetProperty("id").GetGuid() == request.Id);
+        Assert.Equal(2, mine.GetProperty("attachments").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Scheduling_service_cannot_create_learning_request()
+    {
+        var student = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
+        var teacher = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Teacher);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        var suffix = Guid.NewGuid().ToString("N");
+        var subject = new Subject("Sched Subject " + suffix, "code");
+        var live = new ServiceCatalogItem(
+            "Live Session " + suffix, "Live explanation", "live_" + suffix, "جلسة", "شرح مباشر",
+            type: "live", isPublic: true, teacherSelectable: true, requiresScheduling: true,
+            allowedDurations: [60], displayOrder: 40);
+        db.AddRange(subject, live,
+            new TeacherSubjectQualification(teacher.Id, subject.Id, DateTimeOffset.UtcNow));
+        var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);
+        profile.Update("Live teacher", "Teacher for scheduling rejection.", "Egypt", "Cairo",
+            "Egypt Standard Time", 15, DateTimeOffset.UtcNow);
+        profile.Publish(DateTimeOffset.UtcNow);
+        var service = new TeacherService(
+            teacher.Id, subject.Id, live.Id, "Live help",
+            "A live session that must be booked.", 120, "SAR", 24, 0, DateTimeOffset.UtcNow);
+        db.AddRange(profile, service);
+        await db.SaveChangesAsync();
+
+        var client = await ClientForAsync(student.Email);
+        var response = await client.PostAsJsonAsync("/api/v1/learning-requests", new
+        {
+            teacherServiceId = service.Id,
+            title = "Book via request",
+            description = "This should be rejected because the service requires scheduling.",
+            preferredDeliveryAt = DateTimeOffset.UtcNow.AddDays(2),
+            budget = 120m
+        });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("teacher_service_not_found", await CodeAsync(response));
+    }
+
     private async Task<SeedData> SeedAsync()
     {
         var student = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
@@ -263,7 +337,8 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Order Subject " + suffix, "code");
-        var type = new ServiceCatalogItem("Order Service " + suffix, "Explanation", "svc_" + suffix);
+        var type = new ServiceCatalogItem(
+            "Order Service " + suffix, "Explanation", "svc_" + suffix, "خدمة طلب", "شرح");
         db.AddRange(subject, type,
             new TeacherSubjectQualification(teacher.Id, subject.Id, DateTimeOffset.UtcNow));
         var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);

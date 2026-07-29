@@ -40,3 +40,4 @@ for (const file of readdirSync(".").filter(x => x.endsWith(".dc.html"))) {
 execFileSync(process.execPath, ["scripts/ci/check-auth-ui.mjs"], { stdio: "inherit" });
 execFileSync(process.execPath, ["scripts/ci/check-localization.mjs"], { stdio: "inherit" });
 execFileSync(process.execPath, ["scripts/ci/check-frontend-integrity.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-guided-request.mjs"], { stdio: "inherit" });

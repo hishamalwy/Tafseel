@@ -50,6 +50,10 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
         return NoContent();
     }
 
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpGet("me/eligible-subjects")]
+    public Task<IReadOnlyCollection<NamedItemDto>> EligibleSubjects(CancellationToken ct) =>
+        marketplace.GetEligibleSubjectsAsync(UserId(), ct);
+
     [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpPut("me/topics")]
     public async Task<IActionResult> SetTopics(IdList input, CancellationToken ct)
     {
@@ -119,6 +123,103 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     public async Task<IActionResult> PublishSample(Guid id, PublicationRequest input, CancellationToken ct)
     {
         await marketplace.SetSamplePublishedAsync(UserId(), id, input.Published, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpGet("me/showcases")]
+    public Task<Application.Common.PagedResult<TeacherShowcaseDto>> MyShowcases(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
+        marketplace.GetShowcasesAsync(UserId(), page, pageSize, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpGet("me/showcases/{id:guid}")]
+    public Task<TeacherShowcaseDto> MyShowcase(Guid id, CancellationToken ct) =>
+        marketplace.GetShowcaseAsync(UserId(), id, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPost("me/showcases")]
+    public async Task<IActionResult> CreateShowcase(CreateShowcaseInput input, CancellationToken ct)
+    {
+        var showcase = await marketplace.CreateShowcaseAsync(UserId(), input, ct);
+        return Created($"/api/v1/teachers/me/showcases/{showcase.Id}", showcase);
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPut("me/showcases/{id:guid}")]
+    public Task<TeacherShowcaseDto> UpdateShowcase(
+        Guid id, UpdateShowcaseDraftInput input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        marketplace.UpdateShowcaseDraftAsync(UserId(), id, input, version, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), EnableRateLimiting("upload")]
+    [RequestSizeLimit(250 * 1024 * 1024), HttpPost("me/showcases/{id:guid}/video")]
+    public async Task<TeacherShowcaseDto> UploadShowcaseVideo(
+        Guid id, IFormFile file,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await using var stream = file.OpenReadStream();
+        return await marketplace.UploadShowcaseVideoAsync(
+            UserId(), id, stream, file.FileName, file.ContentType, file.Length, version, ct);
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPost("me/showcases/{id:guid}/submit")]
+    public async Task<IActionResult> SubmitShowcase(
+        Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await marketplace.SubmitShowcaseAsync(UserId(), id, version, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPost("me/showcases/{id:guid}/versions")]
+    public Task<TeacherShowcaseDto> CreateShowcaseVersion(
+        Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        marketplace.CreateShowcaseVersionAsync(UserId(), id, version, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPost("me/showcases/{id:guid}/archive")]
+    public async Task<IActionResult> ArchiveShowcase(
+        Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await marketplace.ArchiveShowcaseAsync(UserId(), id, version, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPut("me/showcases/order")]
+    public async Task<IActionResult> ReorderShowcases(ShowcaseOrderInput input, CancellationToken ct)
+    {
+        await marketplace.ReorderShowcasesAsync(UserId(), input, ct);
+        return NoContent();
+    }
+
+    [Authorize, HttpGet("me/showcases/{id:guid}/versions/{versionId:guid}/content")]
+    public async Task<IActionResult> ShowcaseVersionContent(
+        Guid id, Guid versionId, CancellationToken ct)
+    {
+        var canReview = User.HasClaim(Permissions.ClaimType, Permissions.TeachersReviewShowcases);
+        var file = await marketplace.OpenShowcaseVersionAsync(UserId(), canReview, id, versionId, ct);
+        return File(file.Content, file.ContentType, enableRangeProcessing: true);
+    }
+
+    [Authorize(Policy = Permissions.TeachersReviewShowcases), HttpGet("showcase-moderation")]
+    public Task<Application.Common.PagedResult<ShowcaseQueueItemDto>> ShowcaseQueue(
+        [FromQuery, EnumDataType(typeof(Tafseel.Domain.Marketplace.ShowcaseModerationStatus))]
+        Tafseel.Domain.Marketplace.ShowcaseModerationStatus? status,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
+        marketplace.GetShowcaseQueueAsync(status, page, pageSize, ct);
+
+    [Authorize(Policy = Permissions.TeachersReviewShowcases)]
+    [HttpPost("showcase-moderation/{id:guid}/versions/{versionId:guid}/start-review")]
+    public async Task<IActionResult> StartShowcaseReview(
+        Guid id, Guid versionId,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await marketplace.StartShowcaseReviewAsync(UserId(), id, versionId, version, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.TeachersReviewShowcases)]
+    [HttpPost("showcase-moderation/{id:guid}/versions/{versionId:guid}/decision")]
+    public async Task<IActionResult> DecideShowcase(
+        Guid id, Guid versionId, ShowcaseDecisionInput input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await marketplace.DecideShowcaseAsync(UserId(), id, versionId, input, version, ct);
         return NoContent();
     }
 

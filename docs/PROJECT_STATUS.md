@@ -1,18 +1,18 @@
 # Tafseel Project Status
 
-Last updated: 2026-07-29.
+Last updated: 2026-07-30.
 
 ## Current Version
 
-No release tag is present. Current audited baseline is commit `7323c9e` on `main`, plus uncommitted Teacher Comparison and concurrent Teacher Qualification Application working-tree changes.
+No release tag is present. Current audited baseline is commit `79be4cf` on `main`, plus uncommitted Live-Session Availability and concurrent Catalog/Teacher Application working-tree changes.
 
 ## Current Phase
 
-Teacher Availability and Capacity product decision completed. The approved first slice covers truthful live-session availability only; source implementation has not started.
+The Student Learning Preferences decision is complete. The Limited Guided Request UX remains implemented locally and conditionally browser-verified. The Limited Teacher Showcase MVP remains implemented locally and conditionally browser-verified for Development/Testing and explicitly enabled Staging only.
 
 ## Current Milestone
 
-The marketplace now has a truthful bounded public Teacher comparison and an implementation-ready availability decision. F-005 remains deferred and proven to require an explicit persisted relationship.
+Approved limited global Student learning defaults (explanation style + optional teaching language) with Guided Request prefill/override and Description composition as request truth. No profiling, matching or Learning Request schema change in the approved MVP. Marketplace Showcase trust separation and F-005 remain as previously recorded.
 
 ## Current Architecture Status
 
@@ -39,6 +39,12 @@ Historical implementation phases 2–11 and completed production-correction pass
 | Owned Order lifecycle timeline | Completed locally | [Timeline report](./features/PHASE2_ORDER_TIMELINE_REPORT.md) |
 | Teacher comparison | Conditionally Verified | [Teacher comparison report](./features/TEACHER_COMPARISON_REPORT.md) |
 | Teacher availability and capacity product decision | Decision complete | [Decision report](./reports/TEACHER_AVAILABILITY_CAPACITY_DECISION_REPORT.md) |
+| Live-session availability summary | Conditionally Verified | [Availability report](./features/LIVE_SESSION_AVAILABILITY_SUMMARY_REPORT.md) |
+| Teacher Portfolio Moderation and Showcase Workflow | Decision complete | [Portfolio moderation decision](./reports/TEACHER_PORTFOLIO_MODERATION_DECISION_REPORT.md) |
+| Limited Teacher Showcase MVP | Conditionally verified | [Showcase MVP report](./features/TEACHER_SHOWCASE_MVP_REPORT.md) |
+| Student Request Assistant and Guided Request UX | Decision complete | [Request assistant decision](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md) |
+| Limited Guided Request UX | Conditionally verified | [Guided Request UX report](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) |
+| Student Learning Preferences | Decision complete | [Preferences decision](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md) |
 
 ## Open Findings
 
@@ -61,19 +67,21 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 |---|---|
 | Owned Order Lifecycle Timeline | Completed locally |
 | Teacher Comparison | Implemented locally; browser conditional |
-| Teacher Availability and Capacity | Decision complete; implementation pending |
+| Teacher Availability and Capacity | Session-availability slice implemented locally; request capacity deferred |
+| Teacher Portfolio Moderation and Showcase Workflow | Limited MVP implemented locally; browser conditional |
+| Student Request Assistant and Guided Request UX | Decision complete; Limited Guided UX implemented locally; browser conditional |
+| Student Learning Preferences | Decision complete; implementation not started |
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
 ## Pending Vertical Slices
 
-1. F-005 legacy-data, client-binding and revision-response relationship decisions.
-2. Favorites pagination.
-3. Live-session availability using the approved bounded summary design; request capacity remains deferred.
-4. Student learning preferences.
-5. Explainable deterministic matching.
-6. Teacher/student analytics after event instrumentation.
-7. Quality trends, trust extensions, learning timeline and portfolio moderation.
+1. Limited Student Learning Preferences implementation.
+2. F-005 legacy-data, client-binding and revision-response relationship decisions.
+3. Favorites pagination.
+4. Explainable deterministic matching.
+5. Teacher/student analytics after event instrumentation.
+6. Quality trends, trust extensions and learning timeline.
 
 ## Known Risks
 
@@ -81,12 +89,12 @@ Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 2. **High:** Local file storage durability, multi-instance behavior and malware scanning are unproven.
 3. **High:** Completed-work and response-time formulas remain unapproved; F-002 prevents them from being presented publicly until evidence rules exist.
 4. **High:** Revision records do not identify their target delivery version.
-5. **High:** Additional portfolio publication has no distinct moderation state.
+5. **High:** Teacher Showcase Production media readiness remains blocked by storage, scanning, probing, retention, reporting, moderation operations and secure delivery.
 6. **Medium:** SignalR multi-instance delivery is not verified.
 7. **Medium:** The DC/Babel runtime requires broader CSP allowances.
 8. **Medium:** One Marketplace query-count integration test remains order/isolation sensitive.
 9. **Medium:** Populated Teacher Comparison browser behavior remains conditional until Development contains at least two legitimately published Teachers.
-10. **Medium:** Public profiles currently expose raw availability rules and exception details until the approved public summary contract is implemented.
+10. **Medium:** Populated availability surfaces remain conditionally browser-verified because Development has no legitimately published scheduled Teacher.
 11. **Medium:** Awaiting-payment live sessions reserve slots without an approved expiry policy.
 
 ## Blocked By Business Rules
@@ -100,7 +108,7 @@ Unresolved decisions include:
 - Complexity categories and override authority.
 - Learning outcome/mastery vocabulary and evidence.
 - Badge/achievement criteria and revocation.
-- Portfolio moderation ownership.
+- Portfolio retention/legal-hold, takedown appeals, Quality moderation service target and final display limits.
 - Quality trend formulas and enforcement separation.
 - Payment hold/settlement terminology and policy.
 - Extended verification providers/evidence/expiry.
@@ -113,26 +121,48 @@ The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TA
 
 ## Test Coverage Summary
 
-Latest Teacher Comparison validation:
+Latest Limited Guided Request UX validation:
+
+- Locked restore, Release build, format, frontend integrity, guided-request checks, localization (2,238 paired keys), EF pending-model (no changes), publish smoke and `git diff --check` passed.
+- Focused Phase5 request tests: 6/6 passed (including multi-attachment version chaining and scheduling-service rejection).
+- Architecture, Domain and Application suites: 1, 66 and 5 passed.
+- Provider-neutral integration: 80 passed, 1 unrelated RoleBootstrap 3-vs-4 query-count failure.
+- No migration generated.
+- Controlled browser verified English and Arabic Teacher-required unavailable state on `/app/Tafseel-Request.dc.html`; authenticated full lifecycle and multi-viewport matrix remain conditional.
+
+Latest Limited Teacher Showcase MVP validation:
+
+- Locked restore, Release build, format, frontend, localization, EF pending-model, migration safety, idempotent script and publish smoke passed.
+- Focused Showcase tests: 3 Domain and 5 SQL Server integration tests passed.
+- Architecture, Domain and Application suites passed 1, 66 and 5 tests.
+- Four affected Teacher Comparison SQL tests passed after their fixture adopted the approved Showcase lifecycle.
+- Provider-neutral passed 80 and remains red only on the pre-existing RoleBootstrap 3-vs-4 query-count assertion.
+- The final SQL run passed 72 and had two unrelated failures: a stale Teacher Dashboard English-literal assertion and the previously documented suite-order-sensitive Marketplace query counter; that query test passed alone.
+- Controlled Testing browser validated English/LTR/light and Arabic/RTL/dark at 1280×720; the authenticated lifecycle and requested multi-viewport matrix remain conditional.
+- One focused migration was generated and not applied.
+
+Latest Live-Session Availability validation:
 
 - Locked restore, format and Release build passed; build had 0 warnings and 0 errors.
-- Focused Teacher Comparison SQL tests: 4 passed, 0 failed.
-- Full SQL Server suite: 60 passed, 0 failed.
-- Provider-neutral suites: 142 passed, 0 failed.
-- Frontend integrity and localization: 12 entry points and 1,934 paired keys passed.
-- EF pending-model check, 9 migration-safety tests and publish smoke passed.
-- No schema or migration changed.
-- Populated browser interaction remains conditional because Development returned zero published Teachers.
-- The Teacher Availability and Capacity pass was documentation-only; repository evidence, Markdown links, scope and whitespace were validated without changing runtime tests or schema.
+- Focused availability tests: 3 passed, including the state matrix, stale-summary booking safety, schedule mutation guards and DST.
+- Related Marketplace/Comparison/Live Session tests: 19 passed.
+- Architecture, Domain and Application suites: 69 passed.
+- Provider-neutral integration: 78 passed, 1 unrelated concurrent Catalog query-count failure.
+- Full SQL Server suite: 68 passed, 1 unrelated concurrent Teacher Dashboard markup assertion failure.
+- Frontend integrity: 12 entry points passed.
+- Localization: 12 entry points and 2,026 paired keys passed.
+- EF pending-model check, migration safety, deployment-script tests and publish smoke passed.
+- The availability slice changed no schema and generated no migration.
+- Browser rendering passed English/Dark and Arabic/RTL/Light at the available 1280px viewport; populated and multi-viewport behavior remains conditional.
 
 ## Deployment Status
 
-- Development: controlled local Browser/Runtime validation completed; Teacher Comparison is local and uncommitted.
+- Development/Testing: controlled local Browser/Runtime validation completed; Limited Teacher Showcase is local and uncommitted.
 - CI: not run remotely; equivalent local gates were exercised.
 - Staging: not deployed or validated during these passes.
 - Production: manual deployment remains; no deployment performed.
-- Database: no migration generated or applied.
+- Database: Showcase migration generated and validated but not applied; the worktree also contains separate concurrent Catalog migrations.
 
 ## Next Recommended Pass
 
-Focused live-session availability implementation without request capacity.
+Limited Student Learning Preferences implementation: typed preference entity, Student GET/PUT API, Dashboard Settings UI, Guided Request prefill with draft precedence, additive migration and ownership/validation tests — without matching, accessibility expansion or Learning Request schema changes. See [ADR-009](./decisions/ADR-009-STUDENT-LEARNING-PREFERENCES.md) and the [decision report](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md).

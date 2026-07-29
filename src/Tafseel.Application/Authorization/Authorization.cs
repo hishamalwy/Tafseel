@@ -20,6 +20,8 @@ public static class Permissions
     public const string TeachersReviewApplications = "Teachers.ReviewApplications";
     public const string TeachersManageOwnProfile = "Teachers.ManageOwnProfile";
     public const string TeachersManageOwnServices = "Teachers.ManageOwnServices";
+    public const string TeachersManageOwnShowcases = "Teachers.ManageOwnShowcases";
+    public const string TeachersReviewShowcases = "Teachers.ReviewShowcases";
     public const string StudentsCreateRequests = "Students.CreateRequests";
     public const string RequestsViewOwn = "Requests.ViewOwn";
     public const string RequestsAccept = "Requests.Accept";
@@ -44,8 +46,8 @@ public static class Permissions
 
     public static readonly string[] All =
     [
-        UsersView, UsersManage, TeachersApply, TeachersReviewApplications,
-        TeachersManageOwnProfile, TeachersManageOwnServices, StudentsCreateRequests,
+        UsersView, UsersManage, TeachersApply, TeachersReviewApplications, TeachersReviewShowcases,
+        TeachersManageOwnProfile, TeachersManageOwnServices, TeachersManageOwnShowcases, StudentsCreateRequests,
         RequestsViewOwn, RequestsAccept, RequestsDecline, RequestsDeliver,
         RequestsRequestRevision, RequestsComplete, SessionsBook, SessionsManageOwn, MessagesUse,
         PaymentsViewOwn, PaymentsManage, WithdrawalsRequest, WithdrawalsReview,
@@ -56,10 +58,10 @@ public static class Permissions
     public static IReadOnlyCollection<string> ForRole(string role) => role switch
     {
         Roles.Admin => All,
-        Roles.QualityReviewer => [TeachersReviewApplications, ReportsView],
+        Roles.QualityReviewer => [TeachersReviewApplications, TeachersReviewShowcases, ReportsView],
         Roles.Teacher =>
         [
-            TeachersApply, TeachersManageOwnProfile, TeachersManageOwnServices,
+            TeachersApply, TeachersManageOwnProfile, TeachersManageOwnServices, TeachersManageOwnShowcases,
             RequestsViewOwn, RequestsAccept, RequestsDecline, RequestsDeliver,
             SessionsManageOwn, MessagesUse, PaymentsViewOwn, WithdrawalsRequest, DisputesCreate
         ],

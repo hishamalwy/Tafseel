@@ -180,37 +180,211 @@ public sealed class TeacherService
     }
 }
 
+public enum TeachingSampleSourceType { QualificationGenerated, TeacherShowcase }
+public enum ShowcaseModerationStatus
+{
+    Draft,
+    Submitted,
+    UnderReview,
+    ChangesRequested,
+    Approved,
+    Rejected,
+    Archived
+}
+public enum ShowcaseDecision { Approve, RequestChanges, Reject }
+
 public sealed class TeacherTeachingSample
 {
+    private readonly List<TeacherTeachingSampleVersion> _versions = [];
     private TeacherTeachingSample() { }
-    public TeacherTeachingSample(string teacherId, Guid subjectId, Guid? topicId, string title, string storageKey, int durationSeconds, DateTimeOffset now)
+
+    // Kept for existing callers; new API code uses CreateShowcaseDraft.
+    public TeacherTeachingSample(
+        string teacherId, Guid subjectId, Guid? topicId, string title,
+        string storageKey, int durationSeconds, DateTimeOffset now)
     {
         if (durationSeconds is < 1 or > 3600)
             throw new DomainException("invalid_sample_duration", "Sample duration is invalid.");
         Id = Guid.NewGuid();
-        TeacherId = teacherId;
+        TeacherId = Required(teacherId, 450, "teacher");
         SubjectId = subjectId;
         TopicId = topicId;
-        Title = title.Trim();
-        StorageKey = storageKey;
+        Title = Required(title, 200, "sample_title");
+        StorageKey = Required(storageKey, 500, "storage_key");
         DurationSeconds = durationSeconds;
+        SourceType = TeachingSampleSourceType.TeacherShowcase;
+        ModerationStatus = ShowcaseModerationStatus.Draft;
         CreatedAt = now;
+        UpdatedAt = now;
+        var version = TeacherTeachingSampleVersion.CreateLegacyDraft(
+            Id, TopicId, Title, StorageKey, durationSeconds, now);
+        _versions.Add(version);
+        CurrentVersionId = version.Id;
     }
+
     public Guid Id { get; private set; }
     public string TeacherId { get; private set; } = "";
     public Guid SubjectId { get; private set; }
     public Guid? TopicId { get; private set; }
     public string Title { get; private set; } = "";
-    public string StorageKey { get; private set; } = "";
-    public int DurationSeconds { get; private set; }
+    public string? StorageKey { get; private set; }
+    public int? DurationSeconds { get; private set; }
+    public TeachingSampleSourceType SourceType { get; private set; }
+    public ShowcaseModerationStatus? ModerationStatus { get; private set; }
+    public Guid? CurrentVersionId { get; private set; }
+    public Guid? ApprovedVersionId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? PublishedAt { get; private set; }
-    public bool IsPublished => PublishedAt.HasValue;
+    public DateTimeOffset? ArchivedAt { get; private set; }
+    public int DisplayOrder { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
+    public bool IsPublished => PublishedAt.HasValue && ArchivedAt is null;
     public Guid? SourceTeacherApplicationId { get; private init; }
     public Guid? SourceDemoSubmissionId { get; private init; }
     public Guid? QualificationAssignmentId { get; private init; }
     public string? ApprovedByUserId { get; private init; }
-    public void Publish(DateTimeOffset now) => PublishedAt ??= now;
+    public IReadOnlyCollection<TeacherTeachingSampleVersion> Versions => _versions;
+
+    public static TeacherTeachingSample CreateShowcaseDraft(
+        string teacherId, Guid subjectId, Guid? topicId, string title, string? description,
+        DateTimeOffset now)
+    {
+        var sample = new TeacherTeachingSample
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = Required(teacherId, 450, "teacher"),
+            SubjectId = subjectId,
+            TopicId = topicId,
+            Title = Required(title, 200, "sample_title"),
+            SourceType = TeachingSampleSourceType.TeacherShowcase,
+            ModerationStatus = ShowcaseModerationStatus.Draft,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+        var version = new TeacherTeachingSampleVersion(
+            sample.Id, 1, topicId, sample.Title, description, now);
+        sample._versions.Add(version);
+        sample.CurrentVersionId = version.Id;
+        return sample;
+    }
+
+    public TeacherTeachingSampleVersion CurrentVersion() =>
+        _versions.SingleOrDefault(x => x.Id == CurrentVersionId)
+        ?? throw new DomainException("sample_version_not_found", "The current showcase version was not found.");
+
+    public void UpdateDraft(Guid? topicId, string title, string? description, DateTimeOffset now)
+    {
+        RequireShowcase();
+        var version = CurrentVersion();
+        version.UpdateDraft(topicId, title, description);
+        TopicId = topicId;
+        Title = version.Title;
+        UpdatedAt = now;
+    }
+
+    public void ChangeDraftSubject(Guid subjectId, DateTimeOffset now)
+    {
+        RequireShowcase();
+        if (ModerationStatus != ShowcaseModerationStatus.Draft || CurrentVersion().Status != ShowcaseModerationStatus.Draft)
+            throw InvalidTransition();
+        SubjectId = subjectId;
+        UpdatedAt = now;
+    }
+
+    public void Submit(string teacherId, DateTimeOffset now)
+    {
+        RequireShowcase();
+        var version = CurrentVersion();
+        version.Submit(teacherId, now);
+        ModerationStatus = ShowcaseModerationStatus.Submitted;
+        UpdatedAt = now;
+    }
+
+    public void StartReview(string reviewerId, DateTimeOffset now)
+    {
+        RequireShowcase();
+        CurrentVersion().StartReview(reviewerId, now);
+        ModerationStatus = ShowcaseModerationStatus.UnderReview;
+        UpdatedAt = now;
+    }
+
+    public void Decide(
+        string reviewerId, ShowcaseDecision decision, string? reasonCode,
+        string? teacherVisibleNote, string? internalNote, DateTimeOffset now)
+    {
+        RequireShowcase();
+        var version = CurrentVersion();
+        version.Decide(reviewerId, decision, reasonCode, teacherVisibleNote, internalNote, now);
+        ModerationStatus = version.Status;
+        if (version.Status == ShowcaseModerationStatus.Approved)
+        {
+            ApprovedVersionId = version.Id;
+            PublishedAt = now;
+            ArchivedAt = null;
+        }
+        UpdatedAt = now;
+    }
+
+    public TeacherTeachingSampleVersion CreateNextVersion(DateTimeOffset now)
+    {
+        RequireShowcase();
+        if (ModerationStatus is not (ShowcaseModerationStatus.ChangesRequested
+            or ShowcaseModerationStatus.Rejected or ShowcaseModerationStatus.Approved))
+            throw InvalidTransition();
+        var current = CurrentVersion();
+        var version = current.CreateNext(_versions.Max(x => x.VersionNumber) + 1, now);
+        _versions.Add(version);
+        CurrentVersionId = version.Id;
+        TopicId = version.TopicId;
+        Title = version.Title;
+        ModerationStatus = ShowcaseModerationStatus.Draft;
+        UpdatedAt = now;
+        return version;
+    }
+
+    public void Archive(DateTimeOffset now)
+    {
+        RequireShowcase();
+        if (ModerationStatus != ShowcaseModerationStatus.Approved)
+            throw InvalidTransition();
+        ArchivedAt = now;
+        PublishedAt = null;
+        ApprovedVersionId = null;
+        ModerationStatus = ShowcaseModerationStatus.Archived;
+        UpdatedAt = now;
+    }
+
+    public void HideForQualificationRevocation(DateTimeOffset now)
+    {
+        if (SourceType != TeachingSampleSourceType.TeacherShowcase)
+        {
+            Unpublish();
+            return;
+        }
+        ArchivedAt = now;
+        PublishedAt = null;
+        ApprovedVersionId = null;
+        ModerationStatus = ShowcaseModerationStatus.Archived;
+        UpdatedAt = now;
+    }
+
+    public void SetDisplayOrder(int displayOrder, DateTimeOffset now)
+    {
+        RequireShowcase();
+        if (ModerationStatus != ShowcaseModerationStatus.Approved || displayOrder is < 0 or > 5)
+            throw new DomainException("invalid_sample_order", "Only approved showcases can be reordered.");
+        DisplayOrder = displayOrder;
+        UpdatedAt = now;
+    }
+
+    public void Publish(DateTimeOffset now)
+    {
+        if (SourceType != TeachingSampleSourceType.QualificationGenerated)
+            throw new DomainException("direct_sample_publication_forbidden", "Teacher Showcases require Quality approval.");
+        PublishedAt ??= now;
+    }
+
     public void Unpublish() => PublishedAt = null;
 
     public static TeacherTeachingSample FromQualificationDemo(
@@ -218,16 +392,217 @@ public sealed class TeacherTeachingSample
         Guid applicationId, Guid demoSubmissionId, Guid assignmentId, string approvedByUserId,
         DateTimeOffset now)
     {
-        var sample = new TeacherTeachingSample(
-            teacherId, subjectId, null, title, storageKey, durationSeconds, now)
+        if (durationSeconds is < 1 or > 3600)
+            throw new DomainException("invalid_sample_duration", "Sample duration is invalid.");
+        var sample = new TeacherTeachingSample
         {
+            Id = Guid.NewGuid(),
+            TeacherId = Required(teacherId, 450, "teacher"),
+            SubjectId = subjectId,
+            Title = Required(title, 200, "sample_title"),
+            StorageKey = Required(storageKey, 500, "storage_key"),
+            DurationSeconds = durationSeconds,
+            SourceType = TeachingSampleSourceType.QualificationGenerated,
             SourceTeacherApplicationId = applicationId,
             SourceDemoSubmissionId = demoSubmissionId,
             QualificationAssignmentId = assignmentId,
-            ApprovedByUserId = approvedByUserId
+            ApprovedByUserId = Required(approvedByUserId, 450, "approver"),
+            CreatedAt = now,
+            UpdatedAt = now
         };
         sample.Publish(now);
         return sample;
+    }
+
+    private void RequireShowcase()
+    {
+        if (SourceType != TeachingSampleSourceType.TeacherShowcase)
+            throw new DomainException("qualification_sample_locked", "Qualification Samples cannot enter Showcase moderation.");
+        if (ArchivedAt.HasValue)
+            throw new DomainException("sample_archived", "The Showcase is archived.");
+    }
+
+    private static DomainException InvalidTransition() =>
+        new("invalid_sample_transition", "The Showcase is not in the required state.");
+
+    private static string Required(string? value, int maximum, string field)
+    {
+        value = value?.Trim() ?? "";
+        if (value.Length is 0 || value.Length > maximum)
+            throw new DomainException($"invalid_{field}", $"{field} is required and must not exceed {maximum} characters.");
+        return value;
+    }
+}
+
+public sealed class TeacherTeachingSampleVersion
+{
+    private static readonly HashSet<string> ReasonCodes =
+    [
+        "copyright_or_ownership",
+        "unsafe_or_inappropriate",
+        "unrelated_to_subject",
+        "misleading_claim",
+        "privacy_or_personal_data",
+        "unplayable_or_low_media_quality",
+        "policy_other"
+    ];
+
+    private TeacherTeachingSampleVersion() { }
+    internal TeacherTeachingSampleVersion(
+        Guid sampleId, int versionNumber, Guid? topicId, string title,
+        string? description, DateTimeOffset now)
+    {
+        Id = Guid.NewGuid();
+        TeacherTeachingSampleId = sampleId;
+        VersionNumber = versionNumber;
+        UpdateDraft(topicId, title, description);
+        Status = ShowcaseModerationStatus.Draft;
+        CreatedAt = now;
+    }
+
+    public Guid Id { get; private set; }
+    public Guid TeacherTeachingSampleId { get; private set; }
+    public int VersionNumber { get; private set; }
+    public Guid? TopicId { get; private set; }
+    public string Title { get; private set; } = "";
+    public string Description { get; private set; } = "";
+    public string? StorageKey { get; private set; }
+    public string? OriginalFileName { get; private set; }
+    public string? ContentType { get; private set; }
+    public long? FileSize { get; private set; }
+    public int? DurationSeconds { get; private set; }
+    public ShowcaseModerationStatus Status { get; private set; }
+    public string? SubmittedByUserId { get; private set; }
+    public DateTimeOffset? SubmittedAt { get; private set; }
+    public string? AssignedReviewerId { get; private set; }
+    public DateTimeOffset? ReviewStartedAt { get; private set; }
+    public string? DecidedByUserId { get; private set; }
+    public DateTimeOffset? DecidedAt { get; private set; }
+    public string? DecisionReasonCode { get; private set; }
+    public string? TeacherVisibleNote { get; private set; }
+    public string? InternalNote { get; private set; }
+    public DateTimeOffset CreatedAt { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
+
+    public void UpdateDraft(Guid? topicId, string title, string? description)
+    {
+        RequireDraft();
+        title = title?.Trim() ?? "";
+        description = description?.Trim() ?? "";
+        if (title.Length is 0 or > 200)
+            throw new DomainException("invalid_sample_title", "A Showcase title is required and must not exceed 200 characters.");
+        if (description.Length > 2000)
+            throw new DomainException("invalid_sample_description", "A Showcase description must not exceed 2000 characters.");
+        TopicId = topicId;
+        Title = title;
+        Description = description;
+    }
+
+    public void ReplaceVideo(string storageKey, string originalFileName, string contentType, long fileSize)
+    {
+        RequireDraft();
+        StorageKey = Required(storageKey, 500, "storage_key");
+        OriginalFileName = Required(Path.GetFileName(originalFileName), 255, "file_name");
+        if (!string.Equals(contentType, "video/mp4", StringComparison.OrdinalIgnoreCase))
+            throw new DomainException("unsupported_media_type", "Only MP4 Showcase videos are supported.");
+        if (fileSize <= 0)
+            throw new DomainException("invalid_file_size", "The Showcase video cannot be empty.");
+        ContentType = "video/mp4";
+        FileSize = fileSize;
+        DurationSeconds = null;
+    }
+
+    public void Submit(string submittedByUserId, DateTimeOffset now)
+    {
+        RequireDraft();
+        if (StorageKey is null || OriginalFileName is null || ContentType is null || FileSize is null)
+            throw new DomainException("sample_media_required", "Upload an MP4 video before submitting the Showcase.");
+        Status = ShowcaseModerationStatus.Submitted;
+        SubmittedByUserId = Required(submittedByUserId, 450, "submitter");
+        SubmittedAt = now;
+    }
+
+    public void StartReview(string reviewerId, DateTimeOffset now)
+    {
+        if (Status != ShowcaseModerationStatus.Submitted)
+            throw new DomainException("invalid_sample_transition", "Only a submitted Showcase can enter review.");
+        Status = ShowcaseModerationStatus.UnderReview;
+        AssignedReviewerId = Required(reviewerId, 450, "reviewer");
+        ReviewStartedAt = now;
+    }
+
+    public void Decide(
+        string reviewerId, ShowcaseDecision decision, string? reasonCode,
+        string? teacherVisibleNote, string? internalNote, DateTimeOffset now)
+    {
+        if (Status != ShowcaseModerationStatus.UnderReview
+            || !string.Equals(AssignedReviewerId, reviewerId, StringComparison.Ordinal))
+            throw new DomainException("review_ownership_conflict", "Only the assigned reviewer can decide this Showcase.");
+        teacherVisibleNote = teacherVisibleNote?.Trim();
+        internalNote = internalNote?.Trim();
+        if (teacherVisibleNote?.Length > 2000 || internalNote?.Length > 2000)
+            throw new DomainException("invalid_review_note", "Review notes must not exceed 2000 characters.");
+        if (decision is ShowcaseDecision.Reject or ShowcaseDecision.RequestChanges)
+        {
+            reasonCode = reasonCode?.Trim().ToLowerInvariant();
+            if (reasonCode is null || !ReasonCodes.Contains(reasonCode))
+                throw new DomainException("invalid_moderation_reason", "A supported moderation reason is required.");
+            if (string.IsNullOrWhiteSpace(teacherVisibleNote))
+                throw new DomainException("review_note_required", "Teacher-visible feedback is required.");
+        }
+        else reasonCode = null;
+        Status = decision switch
+        {
+            ShowcaseDecision.Approve => ShowcaseModerationStatus.Approved,
+            ShowcaseDecision.RequestChanges => ShowcaseModerationStatus.ChangesRequested,
+            ShowcaseDecision.Reject => ShowcaseModerationStatus.Rejected,
+            _ => throw new DomainException("invalid_moderation_decision", "The moderation decision is invalid.")
+        };
+        DecisionReasonCode = reasonCode;
+        TeacherVisibleNote = teacherVisibleNote;
+        InternalNote = internalNote;
+        DecidedByUserId = reviewerId;
+        DecidedAt = now;
+    }
+
+    internal TeacherTeachingSampleVersion CreateNext(int versionNumber, DateTimeOffset now)
+    {
+        var version = new TeacherTeachingSampleVersion(
+            TeacherTeachingSampleId, versionNumber, TopicId, Title, Description, now);
+        version.StorageKey = StorageKey;
+        version.OriginalFileName = OriginalFileName;
+        version.ContentType = ContentType;
+        version.FileSize = FileSize;
+        version.DurationSeconds = DurationSeconds;
+        return version;
+    }
+
+    internal static TeacherTeachingSampleVersion CreateLegacyDraft(
+        Guid sampleId, Guid? topicId, string title, string storageKey,
+        int durationSeconds, DateTimeOffset now)
+    {
+        var version = new TeacherTeachingSampleVersion(sampleId, 1, topicId, title, null, now)
+        {
+            StorageKey = storageKey,
+            OriginalFileName = "legacy-sample.mp4",
+            ContentType = "video/mp4",
+            DurationSeconds = durationSeconds
+        };
+        return version;
+    }
+
+    private void RequireDraft()
+    {
+        if (Status != ShowcaseModerationStatus.Draft)
+            throw new DomainException("draft_required", "Only a Draft Showcase version can be changed.");
+    }
+
+    private static string Required(string? value, int maximum, string field)
+    {
+        value = value?.Trim() ?? "";
+        if (value.Length is 0 || value.Length > maximum)
+            throw new DomainException($"invalid_{field}", $"{field} is required and must not exceed {maximum} characters.");
+        return value;
     }
 }
 

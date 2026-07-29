@@ -27,12 +27,39 @@ public sealed record LiveSessionDto(
 
 public sealed record BookableSlotDto(
     DateTimeOffset StartsAt, DateTimeOffset EndsAt, DateTime StudentLocalStart, string StudentTimeZoneId);
+public sealed record AvailabilitySummaryDto(
+    string TeacherId,
+    Guid? TeacherServiceId,
+    string State,
+    DateTimeOffset? NextSlotStartUtc,
+    DateTimeOffset? NextSlotEndUtc,
+    int? DurationMinutes,
+    DateTimeOffset SearchHorizonEndUtc,
+    string ViewerTimeZoneId,
+    bool TimeZoneFallbackUsed);
+public sealed record AvailabilitySummaryResultDto(
+    int RequestedCount,
+    int UnavailableCount,
+    IReadOnlyCollection<AvailabilitySummaryDto> Summaries);
+
+public static class AvailabilitySummaryStates
+{
+    public const string AvailableToday = "available_today";
+    public const string NextAvailable = "next_available";
+    public const string NoUpcomingAvailability = "no_upcoming_availability";
+    public const string NoScheduleConfigured = "no_schedule_configured";
+    public const string TemporarilyUnavailable = "temporarily_unavailable";
+    public const string FullyBooked = "fully_booked";
+    public const string NotApplicable = "not_applicable";
+}
 public sealed record JoinSessionDto(string Url, DateTimeOffset ValidFrom, DateTimeOffset ValidUntil);
 
 public interface ILiveSessionService
 {
     Task<IReadOnlyCollection<BookableSlotDto>> GetSlotsAsync(
         string teacherId, Guid? teacherServiceId, DateOnly from, int days, int durationMinutes, string studentTimeZoneId, CancellationToken ct);
+    Task<AvailabilitySummaryResultDto> GetAvailabilitySummariesAsync(
+        IReadOnlyCollection<string> teacherIds, Guid? teacherServiceId, string? viewerTimeZoneId, CancellationToken ct);
     Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct);
     Task<PagedResult<LiveSessionDto>> GetMineAsync(string userId, int page, int pageSize, CancellationToken ct);
     Task RescheduleAsync(string userId, Guid id, RescheduleLiveSession input, string version, CancellationToken ct);

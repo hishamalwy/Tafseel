@@ -70,7 +70,11 @@ public sealed record TeacherOnboardingStatusDto(
     bool IsPublished,
     string NextAction,
     string NextUrl,
-    IReadOnlyCollection<string> BlockingReasons);
+    IReadOnlyCollection<string> BlockingReasons,
+    bool HasAvailability = false,
+    bool HasPublicSample = false,
+    bool ReadyForPublication = false,
+    IReadOnlyCollection<string>? MissingRequirements = null);
 
 public sealed record QualificationResourceDto(
     Guid Id, Guid AssignmentId, string Type, string DisplayName, string DisplayNameAr,
@@ -128,6 +132,7 @@ public interface IFileStorageService
         long size,
         CancellationToken cancellationToken);
     Task<Stream> OpenPrivateVideoAsync(string storageKey, CancellationToken cancellationToken);
+    Task<bool> PrivateFileExistsAsync(string storageKey, CancellationToken cancellationToken);
     Task<StoredFile> StorePrivateFileAsync(
         Stream stream, string fileName, string contentType, long size, string category, CancellationToken cancellationToken);
     Task<Stream> OpenPrivateFileAsync(string storageKey, CancellationToken cancellationToken);

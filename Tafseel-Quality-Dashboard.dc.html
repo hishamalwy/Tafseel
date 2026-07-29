@@ -50,8 +50,8 @@
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">SM</span>
-          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Sami Mattar</span>
+          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
         </div>
       </div>
     </header>
@@ -129,6 +129,86 @@
         </section>
       </sc-if>
 
+      <sc-if value="{{ isShowcases }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div>
+            <h1 style="font-size:26px;font-weight:800;margin-bottom:6px">{{ showcaseQueueTitle }}</h1>
+            <p style="font-size:14px;color:var(--muted)">{{ showcaseQueueHint }}</p>
+          </div>
+          <sc-if value="{{ showcaseQueueLoading }}" hint-placeholder-val="{{ false }}">
+            <p role="status" class="tf-empty" data-i18n="showcase_loading">Loading Teacher Showcases…</p>
+          </sc-if>
+          <sc-if value="{{ showcaseQueueError }}" hint-placeholder-val="{{ false }}">
+            <p role="alert" style="color:var(--error)">{{ showcaseQueueError }}</p>
+          </sc-if>
+          <sc-if value="{{ showcaseQueueEmpty }}" hint-placeholder-val="{{ false }}">
+            <p class="tf-empty" data-i18n="quality_showcase_queue_empty">No submitted Teacher Showcases.</p>
+          </sc-if>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto">
+            <table>
+              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ showcaseQueueTitle }}</caption>
+              <thead><tr style="background:var(--surface-2)">
+                <th scope="col" style="text-align:start;padding:11px 16px" data-i18n="quality_showcase_teacher">Teacher</th>
+                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_subject">Subject</th>
+                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_version">Version</th>
+                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_submitted">Submitted</th>
+                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_status">Status</th>
+                <th scope="col" style="text-align:end;padding:11px 16px" data-i18n="quality_showcase_action">Action</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ showcaseQueue }}" as="item" hint-placeholder-count="0">
+                  <tr style="border-top:1px solid var(--border)">
+                    <td style="padding:13px 16px;font-weight:600">{{ item.name }}</td>
+                    <td style="padding:13px 12px">{{ item.subject }}</td>
+                    <td style="padding:13px 12px">{{ item.versionNumber }}</td>
+                    <td style="padding:13px 12px">{{ item.submitted }}</td>
+                    <td style="padding:13px 12px"><span style="{{ item.statusStyle }}">{{ item.status }}</span></td>
+                    <td style="padding:13px 16px;text-align:end"><button type="button" onClick="{{ item.onOpen }}" style="height:34px;padding:0 13px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600" data-i18n="quality_showcase_review">Review</button></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </section>
+
+          <sc-if value="{{ hasCurrentShowcase }}" hint-placeholder-val="{{ false }}">
+            <section data-stack="showcase-review" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:18px;align-items:start">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
+                <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+                  <div>
+                    <h2 style="font-size:18px">{{ currentShowcase.title }}</h2>
+                    <p style="font-size:13px;color:var(--muted);margin-top:4px">{{ currentShowcase.name }} · {{ currentShowcase.subject }} · {{ currentShowcase.topic }}</p>
+                  </div>
+                  <button type="button" onClick="{{ closeShowcase }}" aria-label="{{ closeShowcaseLabel }}" style="border:0;background:none;font-size:20px">×</button>
+                </div>
+                <p style="font-size:14px;color:var(--text-2);margin:14px 0">{{ currentShowcase.description }}</p>
+                <video src="{{ showcasePreviewUrl }}" controls preload="metadata" style="width:100%;aspect-ratio:16/9;background:#111;border-radius:var(--r-md)"></video>
+                <div style="font-size:12px;color:var(--muted);margin-top:8px">{{ currentShowcase.fileName }}</div>
+              </div>
+              <aside style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:13px">
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:13px;font-weight:600" data-i18n="quality_showcase_reason">Reason for rejection or changes</span>
+                  <select value="{{ showcaseReasonCode }}" onChange="{{ onShowcaseReason }}" style="height:40px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+                    <option value="" data-i18n="quality_showcase_choose_reason">Choose a reason</option>
+                    <sc-for list="{{ showcaseReasonOptions }}" as="reason" hint-placeholder-count="0"><option value="{{ reason.code }}">{{ reason.label }}</option></sc-for>
+                  </select>
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:13px;font-weight:600" data-i18n="quality_showcase_teacher_feedback">Feedback visible to Teacher</span>
+                  <textarea value="{{ showcaseFeedback }}" onChange="{{ onShowcaseFeedback }}" maxlength="2000" rows="3" style="padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)"></textarea>
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:13px;font-weight:600" data-i18n="quality_showcase_internal_note">Internal note</span>
+                  <textarea value="{{ showcaseInternalNote }}" onChange="{{ onShowcaseInternalNote }}" maxlength="2000" rows="2" style="padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)"></textarea>
+                </label>
+                <button type="button" onClick="{{ onShowcaseApprove }}" disabled="{{ showcaseBusy }}" style="height:40px;border:0;background:var(--success);color:#fff;border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_approve">Approve Showcase</button>
+                <button type="button" onClick="{{ onShowcaseChanges }}" disabled="{{ showcaseBusy }}" style="height:40px;border:1px solid var(--warning);background:var(--warning-soft);color:var(--warning);border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_request_changes">Request changes</button>
+                <button type="button" onClick="{{ onShowcaseReject }}" disabled="{{ showcaseBusy }}" style="height:40px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_reject">Reject Showcase</button>
+              </aside>
+            </section>
+          </sc-if>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ isReportsPage }}" hint-placeholder-val="{{ false }}">
         <div>
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Reports</h1>
@@ -143,7 +223,7 @@
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
             <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Applications reviewed per week</h2>
             <sc-if value="{{ reportChartEmpty }}" hint-placeholder-val="{{ true }}">
-              <p class="tf-empty">Weekly review analytics are not available yet.</p>
+              <p class="tf-empty" data-i18n="quality_report_chart_unavailable">Weekly review analytics are not available yet.</p>
             </sc-if>
             <sc-if value="{{ reportChartReady }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;align-items:flex-end;gap:8px;height:100px">
@@ -350,6 +430,7 @@
 const RUBRIC_KEYS = ['Subject knowledge', 'Accuracy of information', 'Clarity of explanation', 'Communication skills', 'Teaching structure', 'Voice quality', 'Video quality', 'Student engagement', 'Professionalism'];
 
 let APPLICATIONS = [];
+let SHOWCASES = [];
 
 const STATUS_TONE = {
   'Pending': ['var(--warning-soft)', 'var(--warning)'], 'Under Review': ['var(--info-soft)', 'var(--info)'],
@@ -363,6 +444,9 @@ class Component extends DCLogic {
     statusTab: 'all', view: 'list', page: 'overview', navKey: 'overview', currentId: null,
     scores: {}, comment: '', internalNotes: '', needsReason: false, toast: '', toastLeaving: false,
     queueLoading: true, queueError: '',
+    showcaseLoading: true, showcaseError: '', showcaseCurrentId: '',
+    showcaseFeedback: '', showcaseInternalNote: '', showcaseReasonCode: '',
+    showcasePreviewUrl: '', showcaseBusy: false,
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
     hasAvatar: false, accountUserId: '', avatarVersion: 0, accountBusy: false,
     currentPassword: '', newPassword: '', confirmPassword: ''
@@ -385,6 +469,7 @@ class Component extends DCLogic {
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() {
+    if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
   }
@@ -402,6 +487,13 @@ class Component extends DCLogic {
         Tafseel.api.get('/subjects'),
         Tafseel.api.get('/topics?qualificationOnly=true')
       ]);
+      let showcasePage = null;
+      let showcaseError = '';
+      try {
+        showcasePage = await Tafseel.api.get('/teachers/showcase-moderation?pageSize=20');
+      } catch (error) {
+        showcaseError = Tafseel.api.errorMessage(error);
+      }
       let preferences = null;
       try {
         preferences = await Tafseel.api.get('/notification-preferences');
@@ -443,18 +535,74 @@ class Component extends DCLogic {
           rawStatus: x.status
         };
       });
+      const showcaseStatus = [
+        'Draft', 'Submitted', 'Under Review', 'Changes Requested', 'Approved', 'Rejected', 'Archived'
+      ];
+      SHOWCASES = ((showcasePage && showcasePage.items) || []).map(x => ({
+        id:x.sampleId,
+        versionId:x.versionId,
+        versionNumber:x.versionNumber,
+        name:x.teacherDisplayName,
+        subject:Tafseel.lang === 'ar' && x.subjectNameAr ? x.subjectNameAr : x.subjectName,
+        topic:Tafseel.lang === 'ar' && x.topicNameAr ? x.topicNameAr : (x.topicName || ''),
+        title:x.title,
+        description:x.description || '',
+        fileName:x.originalFileName,
+        fileSize:x.fileSize,
+        submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '—',
+        status:showcaseStatus[x.status] || 'Submitted',
+        rawStatus:x.status,
+        assignedReviewerId:x.assignedReviewerId,
+        version:x.version
+      }));
       this.setState({
         currentId: this.state.currentId,
         notifyNewApps: preferences ? preferences.emailEnabled : (this.state.notifyNewApps ?? true),
         inAppNotifications: preferences ? preferences.inAppEnabled : (this.state.inAppNotifications ?? true),
         prefsUnavailable: !preferences,
         queueLoading: false,
-        queueError: ''
+        queueError: '',
+        showcaseLoading:false,
+        showcaseError
       });
     } catch (error) {
       APPLICATIONS = [];
-      this.setState({ queueLoading: false, queueError: Tafseel.api.errorMessage(error) });
+      SHOWCASES = [];
+      this.setState({
+        queueLoading:false,
+        queueError:Tafseel.api.errorMessage(error),
+        showcaseLoading:false,
+        showcaseError:Tafseel.api.errorMessage(error)
+      });
     }
+  }
+
+  async openShowcase(id) {
+    try {
+      let item = SHOWCASES.find(x => x.id === id);
+      if (!item) return;
+      if (item.rawStatus === 1) {
+        await Tafseel.api.post(
+          '/teachers/showcase-moderation/' + item.id + '/versions/' + item.versionId + '/start-review',
+          null, { 'If-Match':item.version });
+        await this.loadQueue();
+        item = SHOWCASES.find(x => x.id === id);
+      }
+      if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
+      const file = await Tafseel.api.blob(
+        '/teachers/me/showcases/' + item.id + '/versions/' + item.versionId + '/content');
+      this._showcasePreviewUrl = URL.createObjectURL(file.blob);
+      this.setState({
+        showcaseCurrentId:id,
+        showcasePreviewUrl:this._showcasePreviewUrl,
+        showcaseFeedback:'',
+        showcaseInternalNote:'',
+        showcaseReasonCode:'',
+        navKey:'showcases',
+        page:'showcases',
+        view:'list'
+      });
+    } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
   }
 
   async openApp(id) {
@@ -475,14 +623,17 @@ class Component extends DCLogic {
     const pendingCount = APPLICATIONS.filter(a => a.status === 'Pending').length;
     const underReviewCount = APPLICATIONS.filter(a => a.status === 'Under Review').length;
     const changesCount = APPLICATIONS.filter(a => a.status === 'Changes Requested').length;
+    const showcaseCount = SHOWCASES.length;
     const NAV = [
       ['overview','◱','Overview',0], ['pending','◷','Pending Applications',pendingCount], ['review','◍','Under Review',underReviewCount],
       ['changes','↺','Changes Requested',changesCount], ['approved','✓','Approved Teachers',0], ['rejected','✕','Rejected Applications',0],
       ['reports','▤','Reports',0], ['settings','⚙','Settings',0]
     ];
 
+    NAV.splice(NAV.length - 2, 0, ['showcases','▶',Tafseel.t('quality_showcase_nav'),showcaseCount]);
     const filtered = APPLICATIONS.filter(a => s.statusTab === 'all' || a.status.toLowerCase().replace(' ', '') === s.statusTab);
     const current = APPLICATIONS.find(a => a.id === s.currentId) || filtered[0] || null;
+    const currentShowcase = SHOWCASES.find(x => x.id === s.showcaseCurrentId) || null;
 
     const rubric = RUBRIC_KEYS.map(label => {
       const score = s.scores[label] || 0;
@@ -525,6 +676,35 @@ class Component extends DCLogic {
       else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
     };
 
+    const decideShowcase = async decision => {
+      if (!currentShowcase || s.showcaseBusy) return;
+      if (decision !== 0 && (!s.showcaseReasonCode || !s.showcaseFeedback.trim()))
+        return this.flash(Tafseel.t('quality_showcase_feedback_required'));
+      this.setState({ showcaseBusy:true });
+      try {
+        await Tafseel.api.post(
+          '/teachers/showcase-moderation/' + currentShowcase.id + '/versions/' + currentShowcase.versionId + '/decision',
+          {
+            decision,
+            reasonCode:decision === 0 ? null : s.showcaseReasonCode,
+            teacherVisibleNote:s.showcaseFeedback.trim() || null,
+            internalNote:s.showcaseInternalNote.trim() || null
+          },
+          { 'If-Match':currentShowcase.version });
+        if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
+        this._showcasePreviewUrl = '';
+        this.setState({
+          showcaseCurrentId:'', showcasePreviewUrl:'', showcaseFeedback:'',
+          showcaseInternalNote:'', showcaseReasonCode:'', showcaseBusy:false
+        });
+        await this.loadQueue();
+        this.flash(Tafseel.t('quality_showcase_decision_saved'));
+      } catch (error) {
+        this.setState({ showcaseBusy:false });
+        this.flash(Tafseel.api.errorMessage(error));
+      }
+    };
+
     return {
       ...Tafseel.drawerRenderVals(this),
       langLabel: Tafseel.t('language_target'),
@@ -533,6 +713,7 @@ class Component extends DCLogic {
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       defaultAvatar: Tafseel.defaultAvatar,
+      accountName: Tafseel.userName(this._session) || Tafseel.t('quality_reviewer_fallback'),
       accountAvatar: Tafseel.avatarUrl(s.accountUserId || (this._session && this._session.userId), s.hasAvatar, s.avatarVersion),
       hasCustomAvatar: !!s.hasAvatar,
       accountBusy: !!s.accountBusy,
@@ -638,13 +819,49 @@ class Component extends DCLogic {
         onClick: () => navTo(key)
       })),
 
-      isList: s.view === 'list' && (s.page || 'overview') !== 'reports' && (s.page || 'overview') !== 'settings',
+      isList: s.view === 'list' && !['reports','settings','showcases'].includes(s.page || 'overview'),
+      isShowcases:s.page === 'showcases',
       isReportsPage: s.page === 'reports',
       isSettingsPage: s.page === 'settings',
+      showcaseQueueTitle:Tafseel.t('quality_showcase_queue_title'),
+      showcaseQueueHint:Tafseel.t('quality_showcase_queue_hint'),
+      closeShowcaseLabel:Tafseel.t('quality_showcase_close'),
+      showcaseQueueLoading:!!s.showcaseLoading,
+      showcaseQueueError:s.showcaseError,
+      showcaseQueueEmpty:!s.showcaseLoading && !s.showcaseError && SHOWCASES.length === 0,
+      showcaseQueue:SHOWCASES.map(item => ({
+        ...item,
+        onOpen:() => this.openShowcase(item.id),
+        statusStyle:'display:inline-flex;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:700;background:' +
+          (item.rawStatus === 2 ? 'var(--info-soft);color:var(--info)' : 'var(--warning-soft);color:var(--warning)')
+      })),
+      hasCurrentShowcase:!!currentShowcase,
+      currentShowcase,
+      showcasePreviewUrl:s.showcasePreviewUrl,
+      showcaseReasonCode:s.showcaseReasonCode,
+      showcaseFeedback:s.showcaseFeedback,
+      showcaseInternalNote:s.showcaseInternalNote,
+      showcaseBusy:!!s.showcaseBusy,
+      onShowcaseReason:e => this.setState({ showcaseReasonCode:e.target.value }),
+      onShowcaseFeedback:e => this.setState({ showcaseFeedback:e.target.value }),
+      onShowcaseInternalNote:e => this.setState({ showcaseInternalNote:e.target.value }),
+      onShowcaseApprove:() => decideShowcase(0),
+      onShowcaseChanges:() => decideShowcase(1),
+      onShowcaseReject:() => decideShowcase(2),
+      closeShowcase:() => {
+        if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
+        this._showcasePreviewUrl = '';
+        this.setState({ showcaseCurrentId:'', showcasePreviewUrl:'' });
+      },
+      showcaseReasonOptions:[
+        'copyright_or_ownership','unsafe_or_inappropriate','unrelated_to_subject',
+        'misleading_claim','privacy_or_personal_data','unplayable_or_low_media_quality','policy_other'
+      ].map(code => ({ code, label:Tafseel.t('showcase_reason_' + code) })),
 
       reportStats: [
-        { label: 'Applications reviewed (30d)', value: '—' }, { label: 'Approval rate', value: '—' },
-        { label: 'Avg. review time', value: '—' }
+        { label: Tafseel.t('quality_report_reviewed'), value: Tafseel.t('analytics_unavailable') },
+        { label: Tafseel.t('quality_report_approval_rate'), value: Tafseel.t('analytics_unavailable') },
+        { label: Tafseel.t('quality_report_avg_time'), value: Tafseel.t('analytics_unavailable') }
       ],
       reportChart: [],
       reportChartEmpty: true,
@@ -666,13 +883,15 @@ class Component extends DCLogic {
       backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
 
       summary: s.queueLoading ? [
-        { label: 'Pending applications', value: '…' }, { label: Tafseel.t('quality_in_queue'), value: '…' },
-        { label: 'Approval rate', value: '—' }, { label: 'Avg. review time', value: '—' }
+        { label: Tafseel.t('quality_summary_pending'), value: '…' },
+        { label: Tafseel.t('quality_in_queue'), value: '…' },
+        { label: Tafseel.t('quality_report_approval_rate'), value: '…' },
+        { label: Tafseel.t('quality_report_avg_time'), value: '…' }
       ] : [
-        { label: 'Pending applications', value: String(pendingCount) },
+        { label: Tafseel.t('quality_summary_pending'), value: String(pendingCount) },
         { label: Tafseel.t('quality_in_queue'), value: String(APPLICATIONS.length) },
-        { label: 'Approval rate', value: '—' },
-        { label: 'Avg. review time', value: '—' }
+        { label: Tafseel.t('quality_report_approval_rate'), value: Tafseel.t('analytics_unavailable') },
+        { label: Tafseel.t('quality_report_avg_time'), value: Tafseel.t('analytics_unavailable') }
       ],
 
       queueLoading: s.queueLoading,

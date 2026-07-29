@@ -1700,10 +1700,25 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<Guid?>("ApprovedVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<int>("DurationSeconds")
+                    b.Property<Guid?>("CurrentVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ModerationStatus")
                         .HasColumnType("int");
 
                     b.Property<DateTimeOffset?>("PublishedAt")
@@ -1712,14 +1727,22 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("QualificationAssignmentId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<Guid?>("SourceDemoSubmissionId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("SourceTeacherApplicationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
                     b.Property<string>("StorageKey")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -1739,7 +1762,18 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("TopicId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ApprovedVersionId")
+                        .IsUnique()
+                        .HasFilter("[ApprovedVersionId] IS NOT NULL");
+
+                    b.HasIndex("CurrentVersionId")
+                        .IsUnique()
+                        .HasFilter("[CurrentVersionId] IS NOT NULL");
 
                     b.HasIndex("SourceDemoSubmissionId")
                         .IsUnique()
@@ -1751,9 +1785,129 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TeacherId", "PublishedAt");
 
+                    b.HasIndex("TeacherId", "SourceType", "ModerationStatus", "ArchivedAt");
+
                     b.ToTable("TeacherTeachingSamples", t =>
                         {
-                            t.HasCheckConstraint("CK_TeacherTeachingSamples_Duration", "[DurationSeconds] BETWEEN 1 AND 3600");
+                            t.HasCheckConstraint("CK_TeacherTeachingSamples_Duration", "[DurationSeconds] IS NULL OR [DurationSeconds] BETWEEN 1 AND 3600");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSamples_ShowcasePublication", "[SourceType] = 0 OR [PublishedAt] IS NULL OR ([ModerationStatus] = 4 AND [ApprovedVersionId] IS NOT NULL AND [ArchivedAt] IS NULL)");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSamples_Source", "([SourceType] = 0 AND [ModerationStatus] IS NULL) OR ([SourceType] = 1 AND [ModerationStatus] BETWEEN 0 AND 6)");
+                        });
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Marketplace.TeacherTeachingSampleVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssignedReviewerId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DecidedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("DecisionReasonCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("InternalNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OriginalFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTimeOffset?>("ReviewStartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("SubmittedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("TeacherTeachingSampleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TeacherVisibleNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("TopicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedReviewerId");
+
+                    b.HasIndex("DecidedByUserId");
+
+                    b.HasIndex("SubmittedByUserId");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("TeacherTeachingSampleId", "VersionNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "SubmittedAt", "Id");
+
+                    b.ToTable("TeacherTeachingSampleVersions", t =>
+                        {
+                            t.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Duration", "[DurationSeconds] IS NULL OR [DurationSeconds] BETWEEN 1 AND 3600");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Number", "[VersionNumber] > 0");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Size", "[FileSize] IS NULL OR [FileSize] > 0");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSampleVersions_Status", "[Status] BETWEEN 0 AND 5");
                         });
                 });
 
@@ -3008,6 +3162,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("DescriptionAr")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
@@ -3057,6 +3216,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                 {
                     b.HasBaseType("Tafseel.Domain.Catalog.CatalogItem");
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<string>("Icon")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -3068,6 +3230,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.ToTable("Subjects", t =>
                         {
                             t.HasCheckConstraint("CK_Subject_NormalizedName", "[NormalizedName] <> ''");
+
+                            t.HasCheckConstraint("CK_Subjects_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
                         });
                 });
 
@@ -3602,6 +3766,35 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("Tafseel.Domain.Marketplace.TeacherTeachingSampleVersion", b =>
+                {
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Tafseel.Domain.Marketplace.TeacherTeachingSample", null)
+                        .WithMany("Versions")
+                        .HasForeignKey("TeacherTeachingSampleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tafseel.Domain.Catalog.Topic", null)
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("Tafseel.Domain.Marketplace.TeacherTopic", b =>
                 {
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
@@ -3953,6 +4146,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Navigation("Attachments");
 
                     b.Navigation("History");
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Marketplace.TeacherTeachingSample", b =>
+                {
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("Tafseel.Domain.Messaging.Conversation", b =>

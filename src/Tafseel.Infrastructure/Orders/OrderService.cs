@@ -25,10 +25,16 @@ internal sealed class OrderService(
     public async Task<LearningRequestDto> CreateRequestAsync(
         string studentId, CreateLearningRequest input, CancellationToken ct)
     {
+        // Align with public CanRequest: active, public, teacher-selectable, non-scheduling services only.
         var service = await db.TeacherServices.AsNoTracking().SingleOrDefaultAsync(x =>
                 x.Id == input.TeacherServiceId && x.IsActive
                 && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId && type.IsActive)
+                && db.ServiceCatalogItems.Any(type =>
+                    type.Id == x.ServiceCatalogItemId
+                    && type.IsActive
+                    && type.IsPublic
+                    && type.TeacherSelectable
+                    && !type.RequiresScheduling)
                 && db.TeacherSubjectQualifications.Any(q =>
                     q.TeacherId == x.TeacherId && q.SubjectId == x.SubjectId)
                 && db.TeacherProfiles.Any(profile =>
@@ -55,6 +61,8 @@ internal sealed class OrderService(
         {
             request.AddAttachment(
                 studentId, stored.StorageKey, SafeName(fileName), stored.ContentType, stored.Size, clock.GetUtcNow());
+            // Ensure the LearningRequest row is updated so SQL Server advances RowVersion for upload chaining.
+            db.Entry(request).Property(x => x.UpdatedAt).IsModified = true;
             await db.SaveChangesAsync(ct);
         }
         catch
@@ -62,7 +70,10 @@ internal sealed class OrderService(
             await files.DeletePrivateFileAsync(stored.StorageKey, CancellationToken.None);
             throw;
         }
-        return Map(request.Attachments.Last());
+        // Return the updated request row version so clients can chain multi-file uploads safely.
+        var requestVersion = Convert.ToBase64String(
+            (byte[])db.Entry(request).Property(x => x.RowVersion).CurrentValue!);
+        return Map(request.Attachments.Last(), requestVersion);
     }
 
     public async Task<PrivateFile> OpenRequestAttachmentAsync(string userId, Guid attachmentId, CancellationToken ct)
@@ -418,7 +429,7 @@ internal sealed class OrderService(
     private static LearningRequestDto Map(LearningRequest x) =>
         new(x.Id, x.StudentId, x.TeacherId, x.TeacherServiceId, x.Title, x.Description,
             x.PreferredDeliveryAt, x.Budget, x.Status, x.CreatedAt,
-            x.Attachments.Select(Map).ToArray(), x.Clarifications.Select(c =>
+            x.Attachments.Select(a => Map(a)).ToArray(), x.Clarifications.Select(c =>
                 new ClarificationDto(c.Id, c.SenderId, c.Message, c.CreatedAt)).ToArray(),
             Convert.ToBase64String(x.RowVersion));
     private static OrderDto Map(Order x, bool teacherView) =>
@@ -429,8 +440,8 @@ internal sealed class OrderService(
             x.AgreedDeliveryAt, x.RevisionAllowance, x.RevisionsUsed, x.Status,
             x.PaymentStatus, x.DeliveryState, x.CreatedAt,
             x.Deliveries.Select(Map).ToArray(), Convert.ToBase64String(x.RowVersion));
-    private static AttachmentDto Map(LearningRequestAttachment x) =>
-        new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt);
+    private static AttachmentDto Map(LearningRequestAttachment x, string? version = null) =>
+        new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt, version);
     private static DeliveryDto Map(OrderDelivery x) =>
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.Message, x.CreatedAt);
 

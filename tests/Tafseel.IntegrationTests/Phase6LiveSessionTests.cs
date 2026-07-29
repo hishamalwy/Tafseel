@@ -169,7 +169,8 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         var type = await db.ServiceCatalogItems.AsTracking().FirstOrDefaultAsync(x => x.Code == "live_session");
         if (type is null)
         {
-            type = new ServiceCatalogItem("Live Session", "Live explanation", "live_session");
+            type = new ServiceCatalogItem(
+                "Live Session", "Live explanation", "live_session", "جلسة مباشرة", "شرح مباشر");
             db.Add(type);
         }
         else if (!type.IsActive)

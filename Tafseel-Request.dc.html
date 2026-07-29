@@ -9,12 +9,13 @@
 <x-dc>
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Request an explanation — Tafseel</title>
+<title data-i18n="req_page_title">Request an explanation — Tafseel</title>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<script src="js/guided-request.js"></script>
 </helmet>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
@@ -23,73 +24,113 @@
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
       <span translate="no" class="tf-mursala" style="font-weight:900;font-size:17px;letter-spacing:0">تفصيــل</span>
     </a>
-    <span style="color:var(--muted);font-size:14px">/ Request an explanation</span>
+    <span style="color:var(--muted);font-size:14px" data-i18n="req_breadcrumb">/ Request an explanation</span>
     <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+      <span role="status" aria-live="polite" style="font-size:12px;color:var(--muted);min-width:0">{{ draftStatus }}</span>
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
-      <a href="Tafseel-Student-Dashboard.dc.html" aria-label="Cancel and return to dashboard" style="font-size:13.5px;color:var(--muted);font-weight:600" style-hover="color:var(--text)">Save &amp; exit</a>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
+      <button type="button" onClick="{{ onSaveExit }}" style="font-size:13.5px;color:var(--muted);font-weight:600;border:0;background:none;cursor:pointer;padding:6px 8px;min-height:40px" style-hover="color:var(--text)">{{ saveExitLabel }}</button>
     </div>
   </div>
 </header>
 
 <main class="tf-shell" style="padding-block:32px 80px">
+  <div id="req-live" class="tf-sr-only" role="status" aria-live="polite">{{ liveMessage }}</div>
+
   <sc-if value="{{ showUnavailable }}" hint-placeholder-val="{{ false }}">
+    <div class="tf-unavailable" role="alert">
+      <h1 style="font-size:20px;font-weight:800;margin:0 0 10px">{{ unavailableTitle }}</h1>
+      <p style="margin:0 0 16px">{{ unavailableMessage }}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <a href="Tafseel-Browse-Teachers.dc.html" style="height:42px;padding:0 18px;display:inline-flex;align-items:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ browseTeachersLabel }}</a>
+        <sc-if value="{{ showRetry }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ onRetryLoad }}" style="height:42px;padding:0 18px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:600">{{ retryLabel }}</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showSchedulingOnly }}" hint-placeholder-val="{{ false }}">
     <div class="tf-unavailable" role="status">
-      <p style="margin:0 0 12px">{{ unavailableMessage }}</p>
-      <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--primary);font-weight:700;text-decoration:underline">Browse Teachers</a>
+      <h1 style="font-size:20px;font-weight:800;margin:0 0 10px">{{ schedulingTitle }}</h1>
+      <p style="margin:0 0 16px">{{ schedulingMessage }}</p>
+      <a href="{{ bookHref }}" style="height:42px;padding:0 18px;display:inline-flex;align-items:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ bookSessionLabel }}</a>
     </div>
   </sc-if>
 
   <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ true }}">
-    <div class="tf-unavailable" role="status">Loading request options…</div>
+    <div class="tf-unavailable" role="status">{{ loadingLabel }}</div>
   </sc-if>
 
   <sc-if value="{{ showForm }}" hint-placeholder-val="{{ false }}">
-    <nav aria-label="Request progress" style="display:flex;align-items:center;gap:0;margin-bottom:36px">
+    <nav aria-label="{{ progressAria }}" style="display:flex;align-items:center;gap:0;margin-bottom:36px;overflow-x:auto">
       <sc-for list="{{ progressSteps }}" as="p" hint-placeholder-count="5">
-        <div style="display:flex;align-items:center;flex:1">
+        <div style="display:flex;align-items:center;flex:1;min-width:72px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none">
-            <span style="{{ p.circleStyle }}">{{ p.icon }}</span>
+            <span style="{{ p.circleStyle }}" aria-current="{{ p.ariaCurrent }}">{{ p.icon }}</span>
             <span style="{{ p.labelStyle }}">{{ p.label }}</span>
           </div>
           <sc-if value="{{ p.hasLine }}" hint-placeholder-val="{{ true }}">
-            <span style="{{ p.lineStyle }}"></span>
+            <span style="{{ p.lineStyle }}" aria-hidden="true"></span>
           </sc-if>
         </div>
       </sc-for>
     </nav>
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:32px;box-shadow:var(--shadow-sm)">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:clamp(18px,3vw,32px);box-shadow:var(--shadow-sm)">
 
       <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
         <div>
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">What kind of help do you need?</h1>
-          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">{{ teacherIntro }}</p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+          <h1 tabindex="-1" id="req-step-heading" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ step1Title }}</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:12px">{{ teacherIntro }}</p>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:20px"><span style="font-weight:700">{{ subjectLabel }}:</span> {{ subjectValue }}</p>
+          <div role="radiogroup" aria-label="{{ serviceGroupLabel }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
             <sc-for list="{{ serviceTypes }}" as="sv" hint-placeholder-count="5">
-              <button type="button" onClick="{{ sv.onClick }}" style="{{ sv.style }}">
-                <span style="font-size:20px">{{ sv.icon }}</span>
+              <button type="button" role="radio" aria-checked="{{ sv.checked }}" onClick="{{ sv.onClick }}" style="{{ sv.style }}">
+                <span style="font-size:20px" aria-hidden="true">{{ sv.icon }}</span>
                 <span style="font-weight:700;font-size:15px;margin-top:10px">{{ sv.name }}</span>
                 <span style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">{{ sv.desc }}</span>
                 <span style="font-size:12px;color:var(--text-2);margin-top:8px;font-weight:600">{{ sv.price }}</span>
               </button>
             </sc-for>
           </div>
+          <label style="display:flex;flex-direction:column;gap:6px;margin-top:20px;max-width:420px">
+            <span style="font-size:13.5px;font-weight:600">{{ topicLabel }}</span>
+            <input value="{{ topicLabelValue }}" onChange="{{ onTopic }}" placeholder="{{ topicPh }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+          </label>
         </div>
       </sc-if>
 
       <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
         <div>
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Describe your request</h1>
-          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">The more specific you are, the closer the first draft will be.</p>
+          <h1 tabindex="-1" id="req-step-heading" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ step2Title }}</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">{{ step2Blurb }}</p>
           <div style="display:flex;flex-direction:column;gap:16px">
             <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Request title</span>
-              <input value="{{ title }}" onChange="{{ onTitle }}" placeholder="e.g. Explain Carnot cycle problems from my past exam" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+              <span style="font-size:13.5px;font-weight:600">{{ titleLabel }}</span>
+              <input value="{{ title }}" onChange="{{ onTitle }}" maxlength="200" placeholder="{{ titlePh }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
             </label>
             <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Detailed description</span>
-              <textarea value="{{ description }}" onChange="{{ onDescription }}" rows="5" placeholder="What exactly should the explanation cover? Attach the exam questions or chapters if relevant." style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
+              <span style="font-size:13.5px;font-weight:600">{{ goalLabel }}</span>
+              <textarea value="{{ goal }}" onChange="{{ onGoal }}" rows="4" maxlength="4000" placeholder="{{ goalPh }}" style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
+            </label>
+            <sc-for list="{{ promptFields }}" as="pf" hint-placeholder-count="3">
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13.5px;font-weight:600">{{ pf.label }} <sc-if value="{{ pf.required }}" hint-placeholder-val="{{ false }}"><span style="color:var(--danger)">({{ requiredWord }})</span></sc-if></span>
+                <textarea value="{{ pf.value }}" onChange="{{ pf.onChange }}" rows="2" maxlength="1000" placeholder="{{ pf.ph }}" style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
+              </label>
+            </sc-for>
+            <fieldset style="border:0;padding:0;margin:0">
+              <legend style="font-size:13.5px;font-weight:600;margin-bottom:10px">{{ styleLegend }}</legend>
+              <div role="radiogroup" aria-label="{{ styleLegend }}" style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ styleOptions }}" as="st" hint-placeholder-count="6">
+                  <button type="button" role="radio" aria-checked="{{ st.checked }}" onClick="{{ st.onClick }}" style="{{ st.style }}">{{ st.label }}</button>
+                </sc-for>
+              </div>
+            </fieldset>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13.5px;font-weight:600">{{ constraintsLabel }}</span>
+              <textarea value="{{ constraints }}" onChange="{{ onConstraints }}" rows="2" maxlength="1500" placeholder="{{ constraintsPh }}" style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
             </label>
           </div>
         </div>
@@ -97,27 +138,31 @@
 
       <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
         <div>
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Upload your files</h1>
-          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">PDF, Word, images, PowerPoint and ZIP up to 25 MB each.</p>
-          <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:36px 20px;text-align:center;cursor:pointer;background:var(--bg)" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}">
-            <input type="file" multiple="{{ true }}" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
-            <div style="width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 12px;font-size:18px;color:var(--muted)">⇧</div>
-            <div style="font-size:15px;font-weight:700;margin-bottom:4px">Drag &amp; drop files here</div>
-            <div style="font-size:13px;color:var(--muted)">or click to browse your device</div>
+          <h1 tabindex="-1" id="req-step-heading" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ step3Title }}</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:12px">{{ step3Blurb }}</p>
+          <p role="note" style="font-size:13px;color:var(--text-2);margin-bottom:16px">{{ fileReselectWarning }}</p>
+          <sc-if value="{{ hasFileReminders }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:13px;color:var(--muted);margin-bottom:12px">{{ fileReminderText }}</p>
+          </sc-if>
+          <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:36px 20px;text-align:center;cursor:pointer;background:var(--bg);position:relative" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}">
+            <input type="file" multiple="{{ true }}" accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip,application/pdf,image/png,image/jpeg,application/zip" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
+            <div style="width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 12px;font-size:18px;color:var(--muted)" aria-hidden="true">⇧</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px">{{ dragDropLabel }}</div>
+            <div style="font-size:13px;color:var(--muted)">{{ orBrowseLabel }}</div>
           </label>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px" aria-live="polite">
             <sc-for list="{{ files }}" as="f" hint-placeholder-count="2">
               <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px;background:var(--surface)">
-                <span style="width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:13px">{{ f.icon }}</span>
+                <span style="width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:13px" aria-hidden="true">{{ f.icon }}</span>
                 <div style="flex:1;min-width:0">
                   <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</div>
-                  <div style="font-size:12px;color:var(--muted)">{{ f.size }}</div>
+                  <div style="font-size:12px;color:var(--muted)">{{ f.size }} · {{ f.status }}</div>
                 </div>
-                <button type="button" onClick="{{ f.onRemove }}" aria-label="Remove file" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);flex:none">✕</button>
+                <button type="button" onClick="{{ f.onRemove }}" aria-label="{{ removeFileLabel }}" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);flex:none">✕</button>
               </div>
             </sc-for>
             <sc-if value="{{ noFiles }}" hint-placeholder-val="{{ false }}">
-              <p style="font-size:13px;color:var(--muted);text-align:center">No files added yet — you can also continue without any.</p>
+              <p style="font-size:13px;color:var(--muted);text-align:center">{{ noFilesLabel }}</p>
             </sc-if>
           </div>
         </div>
@@ -125,25 +170,25 @@
 
       <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
         <div>
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Deadline &amp; budget</h1>
-          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Set when you need the explanation and your budget preference.</p>
+          <h1 tabindex="-1" id="req-step-heading" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ step4Title }}</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">{{ step4Blurb }}</p>
           <div style="display:flex;flex-direction:column;gap:20px">
             <label style="display:flex;flex-direction:column;gap:6px;max-width:260px">
-              <span style="font-size:13.5px;font-weight:600">Preferred delivery date</span>
+              <span style="font-size:13.5px;font-weight:600">{{ deliveryLabel }}</span>
               <input type="date" sc-camel-value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" min="{{ minDeliveryDate }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
             </label>
             <div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <span style="font-size:13.5px;font-weight:600">Your budget</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap">
+                <span style="font-size:13.5px;font-weight:600">{{ budgetLabel }}</span>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
                   <input type="checkbox" checked="{{ flexibleBudget }}" onChange="{{ onFlexible }}" style="width:16px;height:16px;accent-color:var(--primary)" />
-                  Flexible — let the teacher propose a price
+                  {{ flexibleBudgetLabel }}
                 </label>
               </div>
               <sc-if value="{{ notFlexible }}" hint-placeholder-val="{{ true }}">
                 <div style="display:flex;align-items:center;gap:12px">
-                  <input type="range" min="{{ budgetMin }}" max="{{ budgetMax }}" step="10" sc-camel-value="{{ budget }}" onChange="{{ onBudget }}" style="flex:1;accent-color:var(--primary)" />
-                  <span style="font-family:var(--font-mono);font-size:14.5px;font-weight:700;width:90px;text-align:end">{{ budgetLabel }}</span>
+                  <input type="range" min="{{ budgetMin }}" max="{{ budgetMax }}" step="10" sc-camel-value="{{ budget }}" onChange="{{ onBudget }}" style="flex:1;accent-color:var(--primary)" aria-label="{{ budgetLabel }}" />
+                  <span style="font-family:var(--font-mono);font-size:14.5px;font-weight:700;width:90px;text-align:end">{{ budgetValueLabel }}</span>
                 </div>
               </sc-if>
             </div>
@@ -153,68 +198,90 @@
 
       <sc-if value="{{ isStep5 }}" hint-placeholder-val="{{ false }}">
         <div>
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">Review your request</h1>
-          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">Confirm the details below — your teacher will respond within their usual response time.</p>
+          <h1 tabindex="-1" id="req-step-heading" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ step5Title }}</h1>
+          <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">{{ step5Blurb }}</p>
 
           <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-              <span style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
               <div>
                 <div style="font-size:14.5px;font-weight:700">{{ teacherName }}</div>
                 <div style="font-size:12.5px;color:var(--muted)">{{ teacherMeta }}</div>
               </div>
+              <button type="button" onClick="{{ editService }}" style="font-size:13px;font-weight:600;color:var(--primary);border:0;background:none;cursor:pointer;min-height:40px">{{ editLabel }}</button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:16px">
               <sc-for list="{{ summary }}" as="s" hint-placeholder-count="6">
                 <div>
                   <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ s.k }}</div>
-                  <div style="font-size:14px;font-weight:600">{{ s.v }}</div>
+                  <div style="font-size:14px;font-weight:600;word-break:break-word">{{ s.v }}</div>
                 </div>
               </sc-for>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+                <h2 style="font-size:13.5px;font-weight:700;margin:0">{{ composedPreviewLabel }}</h2>
+                <button type="button" onClick="{{ editDetails }}" style="font-size:13px;font-weight:600;color:var(--primary);border:0;background:none;cursor:pointer;min-height:40px">{{ editLabel }}</button>
+              </div>
+              <pre style="white-space:pre-wrap;word-break:break-word;font-family:var(--font-sans);font-size:13.5px;line-height:1.55;margin:0;padding:12px;border-radius:var(--r-md);background:var(--bg);border:1px solid var(--border);max-height:280px;overflow:auto">{{ composedPreview }}</pre>
             </div>
           </div>
 
-          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
-            <h2 style="font-size:14.5px;font-weight:700;margin-bottom:12px">Price summary</h2>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="4">
-                <div style="display:flex;justify-content:space-between;font-size:13.5px">
-                  <span style="color:var(--text-2)">{{ pl.label }}</span><span style="{{ pl.style }}">{{ pl.value }}</span>
-                </div>
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px" aria-labelledby="req-checklist-title">
+            <h2 id="req-checklist-title" style="font-size:14.5px;font-weight:700;margin-bottom:12px">{{ checklistTitle }}</h2>
+            <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ checklistItems }}" as="c" hint-placeholder-count="6">
+                <li style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px">
+                  <span aria-hidden="true" style="{{ c.iconStyle }}">{{ c.icon }}</span>
+                  <span>
+                    <span style="font-weight:600">{{ c.label }}</span>
+                    <span style="color:var(--muted)"> — {{ c.kindLabel }} · {{ c.stateLabel }}</span>
+                  </span>
+                </li>
               </sc-for>
+            </ul>
+          </div>
+
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
+            <h2 style="font-size:14.5px;font-weight:700;margin-bottom:12px">{{ priceSummaryLabel }}</h2>
+            <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px">
+              <span style="color:var(--text-2)">{{ servicePriceLabel }}</span><span>{{ servicePriceValue }}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:16px;font-weight:800">
-              <span>Total</span><span>{{ totalLabel }}</span>
+              <span>{{ totalLabelWord }}</span><span>{{ totalLabel }}</span>
             </div>
           </div>
 
           <div style="background:var(--success-soft);border-radius:var(--r-md);padding:14px 16px;display:flex;gap:10px;margin-bottom:20px">
-            <span style="color:var(--success)">🛡</span>
-            <span style="font-size:13px;color:var(--text-2);line-height:1.5">Your payment is protected until the service is completed — held by Tafseel and released only after you approve the delivery.</span>
+            <span style="color:var(--success)" aria-hidden="true">🛡</span>
+            <span style="font-size:13px;color:var(--text-2);line-height:1.5">{{ protectedPayment }}</span>
           </div>
 
           <label style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text-2)">
             <input type="checkbox" checked="{{ agreed }}" onChange="{{ onAgree }}" style="width:17px;height:17px;margin-top:1px;accent-color:var(--primary)" />
-            <span>I agree that this request follows Tafseel's academic integrity policy and the teacher may decline if it falls outside their scope.</span>
+            <span>{{ agreeTerms }}</span>
           </label>
         </div>
       </sc-if>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
-        <button type="button" onClick="{{ onBack }}" disabled="{{ isFirst }}" style="{{ backStyle }}">← Back</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--border);gap:12px;flex-wrap:wrap">
+        <button type="button" onClick="{{ onBack }}" disabled="{{ isFirst }}" style="{{ backStyle }}">{{ backLabel }}</button>
         <button type="button" onClick="{{ onNext }}" disabled="{{ nextDisabled }}" style="{{ nextStyle }}">{{ nextLabel }}</button>
       </div>
     </div>
   </sc-if>
 </main>
 
-<sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ showResult }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:80;background:oklch(0.2 0.02 265 / .45);display:flex;align-items:center;justify-content:center;padding:20px">
-    <div role="dialog" aria-modal="true" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:32px;text-align:center">
-      <div style="width:56px;height:56px;border-radius:50%;background:var(--success-soft);color:var(--success);display:grid;place-items:center;font-size:24px;margin:0 auto 18px">✓</div>
-      <h2 style="font-size:19px;font-weight:800;margin-bottom:8px">Request sent</h2>
-      <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:22px">{{ successMessage }}</p>
-      <a href="{{ dashboardHref }}" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Go to my dashboard</a>
+    <div role="dialog" aria-modal="true" aria-labelledby="req-result-title" style="width:min(440px,100%);background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:32px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:50%;background:{{ resultIconBg }};color:{{ resultIconColor }};display:grid;place-items:center;font-size:24px;margin:0 auto 18px" aria-hidden="true">{{ resultIcon }}</div>
+      <h2 id="req-result-title" style="font-size:19px;font-weight:800;margin-bottom:8px">{{ resultTitle }}</h2>
+      <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:12px">{{ resultBody }}</p>
+      <sc-if value="{{ showPartialUploads }}" hint-placeholder-val="{{ false }}">
+        <p style="font-size:13.5px;color:var(--text-2);margin-bottom:16px">{{ partialUploadSummary }}</p>
+        <button type="button" onClick="{{ onRetryUploads }}" style="height:42px;width:100%;margin-bottom:10px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:700">{{ retryUploadsLabel }}</button>
+      </sc-if>
+      <a href="{{ dashboardHref }}" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">{{ goDashboardLabel }}</a>
     </div>
   </div>
 </sc-if>
@@ -226,6 +293,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 const FILE_ICONS = { pdf:'📄', docx:'📝', doc:'📝', png:'🖼', jpg:'🖼', jpeg:'🖼', pptx:'📊', zip:'🗂' };
+const G = window.TafseelGuidedRequest;
 
 function t(key, values) { return Tafseel.t(key, values); }
 
@@ -236,26 +304,15 @@ function ymd(date) {
   return y + '-' + m + '-' + d;
 }
 
-function serviceIcon(title, description) {
+function serviceIcon(title, description, code) {
+  const c = G.normalizeCode(code);
+  if (c === 'exam_revision') return '◷';
+  if (c === 'assignment_guidance') return '✎';
+  if (c === 'recorded_explanation') return '▶';
   const text = (title || '') + ' ' + (description || '');
-  if (/urgent|emergency|طارئ/i.test(text)) return '⚡';
   if (/exam|اختبار|revision|مراجعة/i.test(text)) return '◷';
   if (/assign|واجب|guidance/i.test(text)) return '✎';
   return '▶';
-}
-
-function activeServices(services) {
-  return (services || []).filter(s => s && s.canRequest);
-}
-
-function pickService(services, preferredId) {
-  const active = activeServices(services);
-  if (!active.length) return null;
-  if (preferredId) {
-    const match = active.find(s => String(s.id) === String(preferredId));
-    if (match) return match;
-  }
-  return active[0];
 }
 
 function toDeliveryAt(dateStr) {
@@ -275,16 +332,23 @@ function formatFileSize(bytes) {
   return Math.max(1, Math.round(size / 1024)) + ' KB';
 }
 
+function escapeText(value) {
+  return String(value == null ? '' : value);
+}
+
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
-    teacherId: '', preferredServiceId: '',
+    teacherId: '', preferredServiceId: '', studentId: '',
     missingTeacherId: false, loading: true, noServices: false, loadError: '',
-    profile: null, service: null, serviceId: '',
-    step: 1, title: '', description: '',
-    files: [], flexibleBudget: true, budget: 150,
+    schedulingOnly: false, profile: null, service: null, serviceId: '',
+    step: 1, title: '', goal: '', constraints: '', topicLabel: '',
+    prompts: {}, explanationStyle: '',
+    files: [], fileReminders: [], flexibleBudget: true, budget: 150,
     deliveryDate: '', agreed: false, submitting: false,
-    submitted: false, createdRequestId: '', toast: ''
+    submitted: false, createdRequestId: '', createdVersion: '',
+    uploadOk: 0, uploadFail: 0, failedFiles: [],
+    toast: '', draftStatus: '', liveMessage: '', restoredNotice: false
   };
 
   componentDidMount() {
@@ -301,20 +365,31 @@ class Component extends DCLogic {
     this.setState({ teacherId, preferredServiceId, deliveryDate: ymd(defaultDate) });
     Tafseel.api.requireRoles(['Student']).then(session => {
       if (!session) return;
-      return this.loadTeacher();
+      this.setState({ studentId: session.userId || '' });
+      return this.loadTeacher().then(() => this.restoreDraftIfAny());
     }).catch(error => {
-      this.setState({ loading: false });
+      this.setState({ loading: false, loadError: Tafseel.api.errorMessage(error), noServices: true });
       this.flash(Tafseel.api.errorMessage(error));
     });
   }
 
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
-  componentDidUpdate() { Tafseel.translate(); }
+  componentWillUnmount() {
+    Tafseel.offChange(this._sub);
+    clearTimeout(this._draftTimer);
+  }
+  componentDidUpdate(prev) {
+    Tafseel.translate();
+    if (prev && prev.step !== this.state.step) {
+      const heading = document.getElementById('req-step-heading');
+      if (heading && typeof heading.focus === 'function') heading.focus();
+      this.setState({ liveMessage: t('req_step_announced', { step: String(this.state.step) }) });
+    }
+  }
 
   flash(msg) {
     this.setState({ toast: msg });
     clearTimeout(this._t);
-    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2800);
   }
 
   money(amount, currency) {
@@ -323,12 +398,86 @@ class Component extends DCLogic {
     return cur + ' ' + Tafseel.number(rounded, { maximumFractionDigits: 2 });
   }
 
+  scheduleDraftSave() {
+    clearTimeout(this._draftTimer);
+    this._draftTimer = setTimeout(() => this.persistDraft(false), 450);
+  }
+
+  draftPayload() {
+    const s = this.state;
+    return {
+      serviceId: s.serviceId,
+      step: s.step,
+      title: s.title,
+      goal: s.goal,
+      constraints: s.constraints,
+      topicLabel: s.topicLabel,
+      explanationStyle: s.explanationStyle,
+      prompts: s.prompts,
+      deliveryDate: s.deliveryDate,
+      flexibleBudget: s.flexibleBudget,
+      budget: s.budget,
+      fileNames: s.files.map(f => f.name),
+      agreed: s.agreed
+    };
+  }
+
+  persistDraft(announce) {
+    if (!this.state.teacherId) return;
+    G.writeDraft(this.state.studentId, this.state.teacherId, this.draftPayload());
+    if (announce !== false) this.setState({ draftStatus: t('req_draft_saved') });
+    else this.setState({ draftStatus: t('req_draft_saved') });
+  }
+
+  restoreDraftIfAny() {
+    const draft = G.readDraft(this.state.studentId, this.state.teacherId);
+    if (!draft) return;
+    const services = G.requestableServices(this.state.profile && this.state.profile.services);
+    let service = null;
+    if (draft.serviceId) service = services.find(x => String(x.id) === String(draft.serviceId)) || null;
+    if (!service) service = this.state.service;
+    this.setState({
+      serviceId: service ? String(service.id) : '',
+      service: service || this.state.service,
+      step: Math.min(5, Math.max(1, Number(draft.step) || 1)),
+      title: draft.title || '',
+      goal: draft.goal || '',
+      constraints: draft.constraints || '',
+      topicLabel: draft.topicLabel || '',
+      explanationStyle: G.isExplanationStyle(draft.explanationStyle) ? draft.explanationStyle : '',
+      prompts: draft.prompts || {},
+      deliveryDate: draft.deliveryDate || this.state.deliveryDate,
+      flexibleBudget: draft.flexibleBudget !== false,
+      budget: Number(draft.budget) || this.state.budget,
+      agreed: !!draft.agreed,
+      fileReminders: Array.isArray(draft.fileNames) ? draft.fileNames : [],
+      restoredNotice: true,
+      draftStatus: t('req_draft_restored'),
+      liveMessage: t('req_draft_restored')
+    });
+  }
+
   async loadTeacher() {
-    this.setState({ loading: true, noServices: false, loadError: '' });
+    this.setState({ loading: true, noServices: false, loadError: '', schedulingOnly: false });
     try {
       const profile = await Tafseel.api.get('/teachers/' + encodeURIComponent(this.state.teacherId));
-      const services = activeServices(profile.services);
-      const service = pickService(services, this.state.preferredServiceId);
+      const requestable = G.requestableServices(profile.services);
+      const all = profile.services || [];
+      const preferred = all.find(s => String(s.id) === String(this.state.preferredServiceId));
+      if (preferred && G.isSchedulingService(preferred) && !preferred.canRequest) {
+        this.setState({
+          profile, service: preferred, serviceId: String(preferred.id),
+          schedulingOnly: true, noServices: false, loading: false
+        });
+        return;
+      }
+      const service = (() => {
+        if (this.state.preferredServiceId) {
+          const match = requestable.find(s => String(s.id) === String(this.state.preferredServiceId));
+          if (match) return match;
+        }
+        return requestable[0] || null;
+      })();
       if (!service) {
         this.setState({
           profile, service: null, serviceId: '', noServices: true, loadError: '',
@@ -339,7 +488,7 @@ class Component extends DCLogic {
       const budget = Math.max(50, Math.round(Number(service.price) || 150));
       this.setState({
         profile, service, serviceId: String(service.id), noServices: false, loadError: '',
-        loading: false, budget, flexibleBudget: true, step: 1
+        loading: false, budget, flexibleBudget: true
       });
     } catch (error) {
       const message = Tafseel.api.errorMessage(error);
@@ -351,75 +500,204 @@ class Component extends DCLogic {
   }
 
   addFiles(fileList) {
-    const added = Array.from(fileList || []).map(file => ({
-      file, name: file.name, size: formatFileSize(file.size),
-      kind: (file.name.split('.').pop() || '').toLowerCase()
-    }));
-    if (added.length) this.setState({ files: this.state.files.concat(added) });
+    const current = this.state.files.slice();
+    const errors = [];
+    Array.from(fileList || []).forEach(file => {
+      if (current.length >= G.MAX_FILES) {
+        errors.push(t('req_file_limit', { n: String(G.MAX_FILES) }));
+        return;
+      }
+      const check = G.validateFile(file);
+      if (!check.ok) {
+        errors.push(t(check.code === 'size' ? 'req_file_too_large' : 'req_file_type_invalid', { name: file.name }));
+        return;
+      }
+      const dup = current.some(f => f.name === file.name && f.file && f.file.size === file.size);
+      if (dup) {
+        errors.push(t('req_file_duplicate', { name: file.name }));
+        return;
+      }
+      current.push({
+        file, name: file.name, size: formatFileSize(file.size),
+        kind: check.ext, status: 'pending', uploaded: false
+      });
+    });
+    this.setState({ files: current, fileReminders: [] });
+    this.scheduleDraftSave();
+    if (errors[0]) this.flash(errors[0]);
+    this.setState({ liveMessage: t('req_files_count', { n: String(current.length) }) });
   }
 
   selectedService() {
     const s = this.state;
     if (!s.service) return null;
     if (s.serviceId && String(s.service.id) !== String(s.serviceId)) {
-      const match = activeServices(s.profile && s.profile.services).find(x => String(x.id) === String(s.serviceId));
+      const match = G.requestableServices(s.profile && s.profile.services).find(x => String(x.id) === String(s.serviceId));
       return match || s.service;
     }
     return s.service;
   }
 
+  compositionLabels() {
+    const promptKeys = {};
+    ['concept','stuck','scope','file_use','assignment','attempted','failed','help_type','exam_date','topics','weakest','focus','generic_detail']
+      .forEach(k => { promptKeys[k] = t('req_prompt_' + k); });
+    const style = {};
+    G.EXPLANATION_STYLES.forEach(code => { style[code] = t('req_style_' + code); });
+    return {
+      goal: t('req_compose_goal'),
+      serviceDetails: t('req_compose_service_details'),
+      topic: t('req_compose_topic'),
+      explanationPreference: t('req_compose_style'),
+      additionalNotes: t('req_compose_notes'),
+      prompt: promptKeys,
+      style
+    };
+  }
+
   buildDescription() {
-    return this.state.description.trim();
+    const s = this.state;
+    const service = this.selectedService();
+    const defs = G.promptsForService(service && service.serviceCatalogCode);
+    return G.composeDescription({
+      goal: s.goal,
+      prompts: s.prompts,
+      promptOrder: defs.map(d => d.key),
+      topicLabel: s.topicLabel,
+      explanationStyle: s.explanationStyle,
+      constraints: s.constraints
+    }, this.compositionLabels());
+  }
+
+  updateField(patch) {
+    this.setState(patch);
+    this.scheduleDraftSave();
+  }
+
+  onSaveExit() {
+    this.persistDraft(true);
+    this.flash(t('req_draft_saved_exit'));
+    setTimeout(() => {
+      location.href = 'Tafseel-Student-Dashboard.dc.html?section=requests';
+    }, 350);
   }
 
   async submitRequest() {
     const s = this.state;
     if (s.submitting) return;
     const service = this.selectedService();
-    if (!service) {
+    if (!service || !service.canRequest) {
       this.flash(t('req_no_services'));
       return;
     }
-    this.setState({ submitting: true });
+    const description = this.buildDescription();
+    if (!s.title.trim() || !description) {
+      this.flash(t('req_fill_details'));
+      return;
+    }
+    if (description.length > 5000) {
+      this.flash(t('req_description_too_long'));
+      return;
+    }
+    this.setState({ submitting: true, liveMessage: t('req_submitting') });
     try {
       const payload = {
         teacherServiceId: service.id,
         title: s.title.trim(),
-        description: this.buildDescription(),
+        description,
         preferredDeliveryAt: toDeliveryAt(s.deliveryDate),
         budget: s.flexibleBudget ? null : Number(s.budget)
       };
       const created = await Tafseel.api.post('/learning-requests', payload);
-      if (s.files.length && created && created.id && created.version) {
-        for (const item of s.files) {
-          if (!item.file) continue;
-          try {
-            const form = new FormData();
-            form.append('file', item.file, item.file.name);
-            await Tafseel.api.upload('/learning-requests/' + created.id + '/attachments', form, {
-              'If-Match': created.version
-            });
-          } catch (_) { /* request succeeded; attachments are optional */ }
+      let version = created && created.version ? created.version : '';
+      let ok = 0;
+      let fail = 0;
+      const failedFiles = [];
+      const files = s.files.map(f => Object.assign({}, f));
+      for (let i = 0; i < files.length; i++) {
+        const item = files[i];
+        if (!item.file || item.uploaded) continue;
+        try {
+          const form = new FormData();
+          form.append('file', item.file, item.file.name);
+          const uploaded = await Tafseel.api.upload('/learning-requests/' + created.id + '/attachments', form, {
+            'If-Match': version
+          });
+          if (uploaded && uploaded.version) version = uploaded.version;
+          files[i] = Object.assign({}, item, { uploaded: true, status: 'uploaded', file: null });
+          ok++;
+        } catch (err) {
+          files[i] = Object.assign({}, item, { status: 'failed', error: Tafseel.api.errorMessage(err) });
+          failedFiles.push(files[i]);
+          fail++;
         }
       }
+      G.clearDraft(s.studentId, s.teacherId);
       this.setState({
         submitting: false,
         submitted: true,
-        createdRequestId: created && created.id ? String(created.id) : ''
+        createdRequestId: created && created.id ? String(created.id) : '',
+        createdVersion: version,
+        files,
+        uploadOk: ok,
+        uploadFail: fail,
+        failedFiles,
+        draftStatus: '',
+        liveMessage: fail ? t('req_partial_upload_status') : t('req_success_title')
       });
     } catch (error) {
       this.setState({ submitting: false });
       this.flash(Tafseel.api.errorMessage(error));
+      this.persistDraft(true);
     }
+  }
+
+  async retryFailedUploads() {
+    const s = this.state;
+    if (s.submitting || !s.createdRequestId || !s.createdVersion) return;
+    this.setState({ submitting: true });
+    let version = s.createdVersion;
+    let ok = s.uploadOk;
+    let fail = 0;
+    const failedFiles = [];
+    const files = s.files.map(f => Object.assign({}, f));
+    for (let i = 0; i < files.length; i++) {
+      const item = files[i];
+      if (!item.file || item.uploaded || item.status !== 'failed') continue;
+      try {
+        const form = new FormData();
+        form.append('file', item.file, item.file.name);
+        const uploaded = await Tafseel.api.upload('/learning-requests/' + s.createdRequestId + '/attachments', form, {
+          'If-Match': version
+        });
+        if (uploaded && uploaded.version) version = uploaded.version;
+        files[i] = Object.assign({}, item, { uploaded: true, status: 'uploaded', file: null });
+        ok++;
+      } catch (err) {
+        files[i] = Object.assign({}, item, { status: 'failed', error: Tafseel.api.errorMessage(err) });
+        failedFiles.push(files[i]);
+        fail++;
+      }
+    }
+    this.setState({
+      submitting: false,
+      createdVersion: version,
+      files,
+      uploadOk: ok,
+      uploadFail: fail,
+      failedFiles,
+      liveMessage: fail ? t('req_partial_upload_status') : t('req_uploads_complete')
+    });
   }
 
   renderVals() {
     const s = this.state;
     const service = this.selectedService();
     const profile = s.profile;
-    const showUnavailable = s.missingTeacherId || (!s.loading && s.noServices);
+    const showUnavailable = s.missingTeacherId || (!s.loading && !s.schedulingOnly && s.noServices);
+    const showSchedulingOnly = !s.loading && s.schedulingOnly;
     const showLoading = !s.missingTeacherId && s.loading;
-    const showForm = !showUnavailable && !showLoading && !!service;
+    const showForm = !showUnavailable && !showSchedulingOnly && !showLoading && !!service && !!service.canRequest;
 
     const stepKeys = ['req_step_service', 'req_step_details', 'req_step_files', 'req_step_deadline', 'req_step_review'];
     const progressSteps = stepKeys.map((key, i) => {
@@ -429,7 +707,8 @@ class Component extends DCLogic {
         label: t(key),
         hasLine: i < stepKeys.length - 1,
         icon: state === 'done' ? '✓' : String(n),
-        circleStyle: 'width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;transition:all var(--t);' +
+        ariaCurrent: state === 'active' ? 'step' : 'false',
+        circleStyle: 'width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;' +
           (state === 'upcoming' ? 'border:1px solid var(--border);background:var(--surface);color:var(--muted);'
             : state === 'active' ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
               : 'border:0;background:var(--success);color:#fff;'),
@@ -438,137 +717,279 @@ class Component extends DCLogic {
       };
     });
 
-    const subjects = profile && profile.subjects ? profile.subjects.map(x => x.name).filter(Boolean) : [];
+    const subjectValue = G.subjectNameForService(profile, service) || '—';
     const teacherName = profile ? Tafseel.userName(profile) : '';
-    const teacherMeta = [
-      subjects[0] || (service && service.title) || ''
-    ].filter(Boolean).join(' · ');
+    const teacherMeta = [subjectValue, service && service.title].filter(Boolean).join(' · ');
     const teacherIntro = profile
-      ? t('req_requesting_from', { name: teacherName, subject: subjects[0] || (service && service.title) || '—' })
+      ? t('req_requesting_from', { name: teacherName, subject: subjectValue || (service && service.title) || '—' })
       : '';
 
     const servicePrice = service ? Number(service.price) || 0 : 0;
     const currency = service ? service.currency || 'SAR' : 'SAR';
-    const total = servicePrice;
     const budgetMin = Math.max(50, Math.round(servicePrice * 0.5));
     const budgetMax = Math.max(budgetMin + 50, Math.round(servicePrice * 3));
+    const defs = G.promptsForService(service && service.serviceCatalogCode);
+    const composed = this.buildDescription();
+    const checklistState = G.checklist({
+      teacherId: s.teacherId,
+      serviceId: s.serviceId,
+      subjectLabel: subjectValue,
+      title: s.title,
+      goal: s.goal,
+      promptDefs: defs,
+      prompts: s.prompts,
+      explanationStyle: s.explanationStyle,
+      deliveryDate: s.deliveryDate,
+      flexibleBudget: s.flexibleBudget,
+      budget: s.budget,
+      fileCount: s.files.length
+    });
+    const requiredOk = G.requiredChecklistComplete(checklistState);
 
     const canNext = () => {
       if (s.step === 1) return !!s.serviceId;
-      if (s.step === 2) return s.title.trim() && s.description.trim();
+      if (s.step === 2) {
+        if (!s.title.trim() || !s.goal.trim()) return false;
+        return defs.every(p => !p.required || !!(s.prompts[p.key] && String(s.prompts[p.key]).trim()));
+      }
       if (s.step === 4) return !!s.deliveryDate;
-      if (s.step === 5) return s.agreed && !s.submitting;
+      if (s.step === 5) return s.agreed && !s.submitting && requiredOk && !!composed;
       return true;
     };
 
-    const deliveryLabel = s.deliveryDate
+    const deliveryLabelText = s.deliveryDate
       ? Tafseel.date(s.deliveryDate, { dateStyle: 'medium' })
       : '—';
     const budgetSummary = s.flexibleBudget ? t('req_flexible') : this.money(s.budget, currency);
-    const totalLabel = s.flexibleBudget ? t('req_flexible') : this.money(total, currency);
+    const replyHours = service && service.deliveryHours ? Math.max(1, Math.round(Number(service.deliveryHours))) : 24;
+    const styleLabel = G.isExplanationStyle(s.explanationStyle) ? t('req_style_' + s.explanationStyle) : '—';
+
+    const checklistItems = checklistState.map(item => {
+      const done = item.done;
+      return {
+        label: t('req_check_' + item.id),
+        kindLabel: item.kind === 'required' ? t('req_check_required') : t('req_check_recommended'),
+        stateLabel: done ? t('req_check_complete') : t('req_check_incomplete'),
+        icon: done ? '✓' : (item.kind === 'required' ? '!' : '○'),
+        iconStyle: 'width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;' +
+          (done ? 'background:var(--success);color:#fff;' : item.kind === 'required' ? 'background:var(--danger-soft, #fee2e2);color:var(--danger);' : 'background:var(--surface-2);color:var(--muted);')
+      };
+    });
 
     return {
-      langLabel: s.lang === 'ar' ? 'EN' : 'عربي',
-      langSwitchLabel: Tafseel.t('admin_switch_language'),
-      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      langSwitchLabel: t('req_switch_lang'),
+      themeToggleLabel: t('req_toggle_theme'),
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
+      draftStatus: s.draftStatus,
+      liveMessage: s.liveMessage,
+      saveExitLabel: t('req_save_exit'),
+      onSaveExit: () => this.onSaveExit(),
       profileHref: s.teacherId
         ? 'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(s.teacherId)
         : 'Tafseel-Browse-Teachers.dc.html',
 
       showUnavailable,
+      unavailableTitle: s.missingTeacherId ? t('req_teacher_required_title') : t('req_teacher_unavailable_title'),
       unavailableMessage: s.missingTeacherId
         ? t('req_missing_teacher')
         : (s.loadError || t('req_no_services')),
+      browseTeachersLabel: t('req_browse_teachers'),
+      showRetry: !s.missingTeacherId && !!s.loadError,
+      retryLabel: t('req_retry_load'),
+      onRetryLoad: () => this.loadTeacher(),
+
+      showSchedulingOnly,
+      schedulingTitle: t('req_scheduling_title'),
+      schedulingMessage: t('req_scheduling_body'),
+      bookSessionLabel: t('req_book_session'),
+      bookHref: s.teacherId
+        ? 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
+          (s.serviceId ? '&teacherServiceId=' + encodeURIComponent(s.serviceId) : '')
+        : 'Tafseel-Browse-Teachers.dc.html',
+
       showLoading,
+      loadingLabel: t('req_loading'),
       showForm,
 
+      progressAria: t('req_progress_aria'),
       progressSteps,
       isStep1: s.step === 1, isStep2: s.step === 2, isStep3: s.step === 3, isStep4: s.step === 4, isStep5: s.step === 5,
 
+      step1Title: t('req_step1_title'),
       teacherIntro,
-      serviceTypes: activeServices(profile && profile.services).map(sv => ({
-        icon: serviceIcon(sv.title, sv.description),
+      subjectLabel: t('req_subject_label'),
+      subjectValue: escapeText(subjectValue),
+      serviceGroupLabel: t('req_step_service'),
+      topicLabel: t('req_topic_label'),
+      topicPh: t('req_topic_ph'),
+      topicLabelValue: s.topicLabel,
+      onTopic: e => this.updateField({ topicLabel: e.target.value }),
+      serviceTypes: G.requestableServices(profile && profile.services).map(sv => ({
+        icon: serviceIcon(sv.title, sv.description, sv.serviceCatalogCode),
         name: sv.title,
         desc: sv.description,
         price: this.money(sv.price, sv.currency),
-        style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:18px;border-radius:var(--r-md);transition:all var(--t);' +
-          (String(s.serviceId) === String(sv.id) ? 'border:1px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+        checked: String(s.serviceId) === String(sv.id) ? 'true' : 'false',
+        style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:18px;border-radius:var(--r-md);min-height:44px;' +
+          (String(s.serviceId) === String(sv.id) ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
         onClick: () => {
           const budget = Math.max(50, Math.round(Number(sv.price) || 150));
-          this.setState({ serviceId: String(sv.id), service: sv, budget });
+          const nextPrompts = {};
+          G.promptsForService(sv.serviceCatalogCode).forEach(p => {
+            nextPrompts[p.key] = (s.prompts && s.prompts[p.key]) || '';
+          });
+          this.updateField({ serviceId: String(sv.id), service: sv, budget, prompts: nextPrompts });
         }
       })),
 
-      title: s.title, onTitle: e => this.setState({ title: e.target.value }),
-      description: s.description, onDescription: e => this.setState({ description: e.target.value }),
+      step2Title: t('req_step2_title'),
+      step2Blurb: t('req_step2_blurb'),
+      titleLabel: t('req_title_label'),
+      titlePh: t('req_title_ph'),
+      title: s.title,
+      onTitle: e => this.updateField({ title: e.target.value }),
+      goalLabel: t('req_goal_label'),
+      goalPh: t('req_goal_ph'),
+      goal: s.goal,
+      onGoal: e => this.updateField({ goal: e.target.value }),
+      requiredWord: t('req_check_required'),
+      promptFields: defs.map(p => ({
+        label: t('req_prompt_' + p.key),
+        ph: t('req_prompt_' + p.key + '_ph'),
+        required: !!p.required,
+        value: s.prompts[p.key] || '',
+        onChange: e => {
+          const prompts = Object.assign({}, s.prompts, { [p.key]: e.target.value });
+          this.updateField({ prompts });
+        }
+      })),
+      styleLegend: t('req_style_legend'),
+      styleOptions: G.EXPLANATION_STYLES.map(code => ({
+        label: t('req_style_' + code),
+        checked: s.explanationStyle === code ? 'true' : 'false',
+        style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+          (s.explanationStyle === code ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
+        onClick: () => this.updateField({ explanationStyle: code })
+      })),
+      constraintsLabel: t('req_constraints_label'),
+      constraintsPh: t('req_constraints_ph'),
+      constraints: s.constraints,
+      onConstraints: e => this.updateField({ constraints: e.target.value }),
 
+      step3Title: t('req_step3_title'),
+      step3Blurb: t('req_step3_blurb'),
+      fileReselectWarning: t('req_file_reselect_warning'),
+      hasFileReminders: s.fileReminders.length > 0 && s.files.length === 0,
+      fileReminderText: t('req_file_reminders', { names: s.fileReminders.join(', ') }),
+      dragDropLabel: t('req_drag_drop'),
+      orBrowseLabel: t('req_or_browse'),
+      removeFileLabel: t('req_remove_file'),
+      noFilesLabel: t('req_no_files'),
       onDragOver: e => e.preventDefault(),
       onDrop: e => { e.preventDefault(); this.addFiles(e.dataTransfer.files); },
-      onFilePick: e => this.addFiles(e.target.files),
+      onFilePick: e => { this.addFiles(e.target.files); e.target.value = ''; },
       noFiles: s.files.length === 0,
       files: s.files.map((f, i) => ({
-        name: f.name, size: f.size,
+        name: escapeText(f.name),
+        size: f.size,
+        status: f.status === 'failed' ? t('req_file_status_failed') : (f.uploaded ? t('req_file_status_uploaded') : t('req_file_status_pending')),
         icon: FILE_ICONS[f.kind] || '📁',
-        onRemove: () => this.setState({ files: s.files.filter((_, idx) => idx !== i) })
+        onRemove: () => {
+          this.updateField({ files: s.files.filter((_, idx) => idx !== i) });
+        }
       })),
 
+      step4Title: t('req_step4_title'),
+      step4Blurb: t('req_step4_blurb'),
+      deliveryLabel: t('req_delivery_label'),
       deliveryDate: s.deliveryDate,
       minDeliveryDate: ymd(new Date()),
-      onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
+      onDeliveryDate: e => this.updateField({ deliveryDate: e.target.value }),
+      budgetLabel: t('req_budget_label'),
+      flexibleBudgetLabel: t('req_flexible_budget'),
       flexibleBudget: s.flexibleBudget,
-      onFlexible: e => this.setState({ flexibleBudget: e.target.checked }),
+      onFlexible: e => this.updateField({ flexibleBudget: e.target.checked }),
       notFlexible: !s.flexibleBudget,
       budget: s.budget,
       budgetMin,
       budgetMax,
-      budgetLabel: this.money(s.budget, currency),
-      onBudget: e => this.setState({ budget: Number(e.target.value) }),
+      budgetValueLabel: this.money(s.budget, currency),
+      onBudget: e => this.updateField({ budget: Number(e.target.value) }),
 
-      teacherName,
-      teacherMeta,
+      step5Title: t('req_step5_title'),
+      step5Blurb: t('req_step5_blurb'),
+      teacherName: escapeText(teacherName),
+      teacherMeta: escapeText(teacherMeta),
+      editLabel: t('req_edit_section'),
+      editService: () => this.setState({ step: 1 }),
+      editDetails: () => this.setState({ step: 2 }),
       summary: [
-        { k: t('req_summary_service'), v: service ? service.title : '—' },
-        { k: t('req_summary_title'), v: s.title || '—' },
-        { k: t('req_summary_delivery'), v: deliveryLabel },
+        { k: t('req_summary_service'), v: escapeText(service ? service.title : '—') },
+        { k: t('req_summary_subject'), v: escapeText(subjectValue) },
+        { k: t('req_summary_topic'), v: escapeText(s.topicLabel || '—') },
+        { k: t('req_summary_title'), v: escapeText(s.title || '—') },
+        { k: t('req_summary_style'), v: escapeText(styleLabel) },
+        { k: t('req_summary_delivery'), v: deliveryLabelText },
         { k: t('req_summary_budget'), v: budgetSummary },
         { k: t('req_summary_files'), v: t('req_files_count', { n: String(s.files.length) }) }
       ],
-      priceLines: [
-        { label: t('req_service_price'), value: this.money(servicePrice, currency), style: '' },
-      ],
-      totalLabel,
+      composedPreviewLabel: t('req_composed_preview'),
+      composedPreview: escapeText(composed || '—'),
+      checklistTitle: t('req_checklist_title'),
+      checklistItems,
+      priceSummaryLabel: t('req_price_summary'),
+      servicePriceLabel: t('req_service_price'),
+      servicePriceValue: this.money(servicePrice, currency),
+      totalLabelWord: t('req_total'),
+      totalLabel: s.flexibleBudget ? t('req_flexible') : this.money(servicePrice, currency),
+      protectedPayment: t('req_protected_payment'),
+      agreeTerms: t('req_agree_terms'),
+      agreed: s.agreed,
+      onAgree: e => this.updateField({ agreed: e.target.checked }),
 
-      agreed: s.agreed, onAgree: e => this.setState({ agreed: e.target.checked }),
-      submitted: s.submitted,
-      successMessage: t('req_success_body', { name: teacherName, hours: String(replyHours) }),
+      showResult: s.submitted,
+      resultIcon: s.uploadFail ? '!' : '✓',
+      resultIconBg: s.uploadFail ? 'var(--warning-soft, #fef3c7)' : 'var(--success-soft)',
+      resultIconColor: s.uploadFail ? 'var(--warning, #b45309)' : 'var(--success)',
+      resultTitle: s.uploadFail ? t('req_partial_success_title') : t('req_success_title'),
+      resultBody: s.uploadFail
+        ? t('req_partial_success_body', { id: String(s.createdRequestId).slice(0, 8) })
+        : t('req_success_body', { name: teacherName, hours: String(replyHours) }),
+      showPartialUploads: s.uploadFail > 0,
+      partialUploadSummary: t('req_partial_upload_summary', { ok: String(s.uploadOk), fail: String(s.uploadFail) }),
+      retryUploadsLabel: t('req_retry_uploads'),
+      onRetryUploads: () => this.retryFailedUploads(),
+      goDashboardLabel: t('req_go_dashboard'),
       dashboardHref: 'Tafseel-Student-Dashboard.dc.html?section=requests' +
         (s.createdRequestId ? '&requestCreated=' + encodeURIComponent(s.createdRequestId) : ''),
 
       isFirst: s.step === 1,
-      backStyle: 'height:40px;padding:0 18px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;' + (s.step === 1 ? 'opacity:.4;cursor:not-allowed;' : 'color:var(--text);'),
+      backLabel: t('req_back'),
+      backStyle: 'height:40px;padding:0 18px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;min-width:44px;' + (s.step === 1 ? 'opacity:.4;cursor:not-allowed;' : 'color:var(--text);'),
       onBack: () => s.step > 1 && this.setState({ step: s.step - 1 }),
-
       nextDisabled: !canNext(),
       nextLabel: s.step === 5 ? (s.submitting ? t('req_submitting') : t('req_submit')) : t('req_continue'),
-      nextStyle: 'height:40px;padding:0 22px;border:0;border-radius:var(--r-sm);font-weight:700;font-size:14px;background:var(--primary);color:var(--primary-ink);' + (!canNext() ? 'opacity:.5;cursor:not-allowed;' : ''),
+      nextStyle: 'height:40px;padding:0 22px;border:0;border-radius:var(--r-sm);font-weight:700;font-size:14px;background:var(--primary);color:var(--primary-ink);min-width:44px;' + (!canNext() ? 'opacity:.5;cursor:not-allowed;' : ''),
       onNext: () => {
         if (!canNext()) {
           if (s.step === 1) return this.flash(t('req_select_service'));
           if (s.step === 2) return this.flash(t('req_fill_details'));
           if (s.step === 4) return this.flash(t('req_pick_delivery'));
-          if (s.step === 5) return this.flash(t('req_accept_terms'));
+          if (s.step === 5) {
+            if (!s.agreed) return this.flash(t('req_accept_terms'));
+            if (!requiredOk) return this.flash(t('req_checklist_incomplete'));
+          }
           return;
         }
         if (s.step === 5) return this.submitRequest();
         this.setState({ step: s.step + 1 });
+        this.scheduleDraftSave();
       }
     };
   }
 }
-
 </script>
 </body>
 </html>

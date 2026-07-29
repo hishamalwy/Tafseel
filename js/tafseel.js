@@ -687,6 +687,57 @@
       return 'Tafseel-Landing.dc.html';
     },
 
+    viewerTimeZone: function () {
+      try {
+        var id = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return id ? { id: id, fallback: false } : { id: 'UTC', fallback: true };
+      } catch (_) {
+        return { id: 'UTC', fallback: true };
+      }
+    },
+
+    availabilityPath: function (teacherIds, teacherServiceId) {
+      var timezone = this.viewerTimeZone();
+      var query = new URLSearchParams();
+      Array.from(new Set(teacherIds || [])).slice(0, 12).forEach(function (id) {
+        query.append('teacherIds', id);
+      });
+      if (teacherServiceId) query.set('teacherServiceId', teacherServiceId);
+      query.set('viewerTimeZoneId', timezone.id);
+      return '/live-sessions/availability-summaries?' + query.toString();
+    },
+
+    availabilityText: function (summary) {
+      if (!summary || !summary.state) return this.t('availability_error');
+      var zone = summary.viewerTimeZoneId || 'UTC';
+      var startsAt = summary.nextSlotStartUtc ? new Date(summary.nextSlotStartUtc) : null;
+      var locale = this.lang === 'ar' ? 'ar-SA' : 'en-US';
+      var time = startsAt ? new Intl.DateTimeFormat(locale, {
+        hour: 'numeric', minute: '2-digit', timeZone: zone
+      }).format(startsAt) : '';
+      var date = startsAt ? new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium', timeStyle: 'short', timeZone: zone
+      }).format(startsAt) : '';
+      var key = {
+        available_today: 'availability_available_today',
+        next_available: 'availability_next_available',
+        no_upcoming_availability: 'availability_no_upcoming',
+        no_schedule_configured: 'availability_no_schedule',
+        temporarily_unavailable: 'availability_temporarily_unavailable',
+        fully_booked: 'availability_fully_booked',
+        not_applicable: 'availability_not_applicable'
+      }[summary.state];
+      if (!key) return this.t('availability_error');
+      var text = this.t(key, {
+        time: time,
+        date: date,
+        duration: this.number(summary.durationMinutes || 0)
+      });
+      return summary.timeZoneFallbackUsed
+        ? text + ' - ' + this.t('availability_utc_fallback')
+        : text;
+    },
+
     orderTimelineEvent: function (event) {
       var metadata = event && event.metadata || {};
       var details = [];

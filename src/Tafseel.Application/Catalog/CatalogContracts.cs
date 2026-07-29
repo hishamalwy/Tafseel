@@ -26,7 +26,10 @@ public sealed record CatalogItemDto(
     string? EvaluationGuidance = null,
     string? EvaluationGuidanceAr = null,
     IReadOnlyCollection<CatalogResourceDto>? Resources = null,
-    string? NameAr = null);
+    string? NameAr = null,
+    string? DescriptionAr = null,
+    string? NameEn = null,
+    string? DescriptionEn = null);
 public sealed record CatalogResourceDto(
     Guid Id, string DisplayName, string DisplayNameAr, string? Url,
     int DisplayOrder, bool IsRequired, bool IsFile,
@@ -41,7 +44,8 @@ public sealed record CatalogFile(Stream Content, string ContentType, string File
 public sealed record SubjectInput(
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
     [param: Required, NotWhiteSpace, StringLength(100)] string Icon,
-    [param: StringLength(200)] string NameAr = "");
+    [param: StringLength(200)] string NameAr = "",
+    [param: Range(0, 10000)] int DisplayOrder = 0);
 public sealed record TopicInput(
     Guid SubjectId,
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
@@ -90,9 +94,18 @@ public sealed record NamedCatalogInput(
     [param: StringLength(200)] string? NameAr = null,
     [param: StringLength(2000)] string? InstructionsAr = null);
 
+public sealed record ServiceCatalogInput(
+    [param: Required, NotWhiteSpace, StringLength(200)] string NameEn,
+    [param: Required, NotWhiteSpace, StringLength(200)] string NameAr,
+    [param: Required, NotWhiteSpace, StringLength(1000)] string DescriptionEn,
+    [param: Required, NotWhiteSpace, StringLength(1000)] string DescriptionAr,
+    [param: Range(0, 10000)] int DisplayOrder = 0,
+    bool IsActive = true);
+
 public interface ICatalogService
 {
     Task<IReadOnlyCollection<CatalogItemDto>> GetSubjectsAsync(bool includeInactive, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<CatalogItemDto>> GetFeaturedSubjectsAsync(int take, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<CatalogItemDto>> GetTopicsAsync(Guid? subjectId, bool qualificationOnly, bool includeInactive, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<CatalogItemDto>> GetLanguagesAsync(bool includeInactive, CancellationToken cancellationToken);
@@ -102,8 +115,9 @@ public interface ICatalogService
     Task<CatalogItemDto> CreateQualificationTopicAsync(QualificationTopicInput input, CancellationToken cancellationToken);
     Task<CatalogItemDto> CreateEducationLevelAsync(NamedCatalogInput input, CancellationToken cancellationToken);
     Task<CatalogItemDto> CreateLanguageAsync(NamedCatalogInput input, CancellationToken cancellationToken);
-    Task<CatalogItemDto> CreateServiceAsync(NamedCatalogInput input, CancellationToken cancellationToken);
+    Task<CatalogItemDto> CreateServiceAsync(ServiceCatalogInput input, CancellationToken cancellationToken);
     Task UpdateAsync(string type, Guid id, NamedCatalogInput input, CancellationToken cancellationToken);
+    Task UpdateServiceAsync(Guid id, ServiceCatalogInput input, CancellationToken cancellationToken);
     Task SetActiveAsync(string type, Guid id, bool active, CancellationToken cancellationToken);
     Task<CatalogResourceDto> AddLinkResourceAsync(Guid assignmentId, QualificationLinkResourceInput input, CancellationToken cancellationToken);
     Task<CatalogResourceDto> AddFileResourceAsync(Guid assignmentId, Stream stream, string fileName, string contentType, long size, string displayName, string displayNameAr, int displayOrder, bool isRequired, CancellationToken cancellationToken);

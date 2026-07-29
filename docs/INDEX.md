@@ -15,6 +15,13 @@ This index is append-only for immutable historical reports. New reports belong i
 | [F-005 Revision-to-Delivery Linkage Investigation](./audits/F005_REVISION_DELIVERY_LINKAGE_INVESTIGATION.md) | 2026-07-29 | Investigated | Proved that revision targets are not persisted and schema change is required. |
 | [Teacher Comparison](./features/TEACHER_COMPARISON_REPORT.md) | 2026-07-29 | Conditionally verified | Added bounded public comparison for two or three published Teachers without unsupported metrics. |
 | [Teacher Availability and Capacity Decision](./reports/TEACHER_AVAILABILITY_CAPACITY_DECISION_REPORT.md) | 2026-07-29 | Decision complete | Approved a truthful session-availability-only design and deferred request capacity pending business rules. |
+| [Live-Session Availability Summary](./features/LIVE_SESSION_AVAILABILITY_SUMMARY_REPORT.md) | 2026-07-29 | Conditionally verified | Added a bounded service-specific summary shared by Browse, Comparison and Profile while preserving authoritative booking revalidation. |
+| [Teacher Portfolio Moderation Decision](./reports/TEACHER_PORTFOLIO_MODERATION_DECISION_REPORT.md) | 2026-07-29 | Decision complete | Defined a limited MP4 showcase MVP with immutable versions, Quality review and distinct qualification trust. |
+| [Limited Teacher Showcase MVP](./features/TEACHER_SHOWCASE_MVP_REPORT.md) | 2026-07-29 | Conditionally verified | Implemented the Development/Staging MP4 Showcase lifecycle, Quality moderation and public trust separation with Production fail-closed gates. |
+| [Teacher Showcase MVP Migration](./database/TEACHER_SHOWCASE_MVP_MIGRATION.md) | 2026-07-29 | Generated; not applied | Documents deterministic legacy mapping, schema constraints and rollback risk. |
+| [Student Request Assistant Decision](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md) | 2026-07-29 | Decision complete | Approved a Limited Guided Request MVP that enhances the existing wizard without AI, Draft status or a second request domain. |
+| [Limited Guided Request UX](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) | 2026-07-29 | Conditionally verified | Implemented guided prompts, checklist, browser draft, Teacher-required entry and attachment version chaining without schema change. |
+| [Student Learning Preferences Decision](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md) | 2026-07-30 | Decision complete | Approved limited global Student learning defaults with per-request override and Description composition as request truth. |
 
 ## Architecture
 
@@ -88,6 +95,9 @@ This index is append-only for immutable historical reports. New reports belong i
 | Frontend integration | Historical | [Phase 10](./features/phase-10-report.md) |
 | Owned Order lifecycle timeline | Completed locally | [Owned Order Timeline](./features/PHASE2_ORDER_TIMELINE_REPORT.md) |
 | Teacher comparison | Conditionally verified | [Teacher Comparison](./features/TEACHER_COMPARISON_REPORT.md) |
+| Live-session availability summary | Conditionally verified | [Live-Session Availability](./features/LIVE_SESSION_AVAILABILITY_SUMMARY_REPORT.md) |
+| Limited Teacher Showcase MVP | Conditionally verified | [Teacher Showcase MVP](./features/TEACHER_SHOWCASE_MVP_REPORT.md) |
+| Limited Guided Request UX | Conditionally verified | [Guided Request UX](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) |
 
 Additional historical reports:
 
@@ -95,6 +105,9 @@ Additional historical reports:
 - [Final Implementation Report](./reports/implementation-report.md)
 - [Phase 11 Full Hardening Report](./reports/phase-11-report.md)
 - [Documentation Standardization Report](./reports/DOCUMENTATION_STANDARDIZATION_REPORT.md)
+- [Teacher Portfolio Moderation Decision Report](./reports/TEACHER_PORTFOLIO_MODERATION_DECISION_REPORT.md)
+- [Student Request Assistant Decision Report](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md)
+- [Student Learning Preferences Decision Report](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md)
 
 ## ADR (Architecture Decisions)
 
@@ -105,3 +118,6 @@ Additional historical reports:
 | [ADR-003](./decisions/ADR-003-IMMUTABLE-QUALIFICATION-VERSIONS.md) | Accepted | Qualification submissions are immutable versions |
 | [ADR-004](./decisions/ADR-004-DEVELOPMENT-ONLY-IDENTITY-INITIALIZATION.md) | Accepted | Normal identity initialization is Development-only |
 | [ADR-006](./decisions/ADR-006-TEACHER-AVAILABILITY-AND-CAPACITY.md) | Proposed | Bounded, service-specific live-session availability with request capacity deferred |
+| [ADR-007](./decisions/ADR-007-TEACHER-PORTFOLIO-MODERATION.md) | Proposed | MP4-only Teacher showcase with immutable versions, Quality moderation and explicit trust labels |
+| [ADR-008](./decisions/ADR-008-STUDENT-REQUEST-ASSISTANT.md) | Proposed | Guided Learning Request wizard enhancement without AI, Draft status or a second request domain |
+| [ADR-009](./decisions/ADR-009-STUDENT-LEARNING-PREFERENCES.md) | Proposed | Limited global Student learning defaults with per-request override; no profiling or matching |

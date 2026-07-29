@@ -51,6 +51,15 @@ internal sealed class LocalFileStorageService(IOptions<FileStorageOptions> optio
     public Task<Stream> OpenPrivateVideoAsync(string storageKey, CancellationToken cancellationToken)
         => OpenPrivateFileAsync(storageKey, cancellationToken);
 
+    public Task<bool> PrivateFileExistsAsync(string storageKey, CancellationToken cancellationToken)
+    {
+        var root = Path.GetFullPath(_options.RootPath);
+        var target = Path.GetFullPath(Path.Combine(root, storageKey.Replace('/', Path.DirectorySeparatorChar)));
+        return Task.FromResult(
+            target.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+            && File.Exists(target));
+    }
+
     public async Task<StoredFile> StorePrivateFileAsync(
         Stream stream, string fileName, string contentType, long size, string category,
         CancellationToken cancellationToken)

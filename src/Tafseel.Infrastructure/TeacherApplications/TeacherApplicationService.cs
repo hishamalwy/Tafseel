@@ -267,10 +267,18 @@ internal sealed class TeacherApplicationService(
     public async Task RevokeQualificationAsync(
         string reviewerId, Guid qualificationId, RevokeQualificationInput input, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var qualification = await db.TeacherSubjectQualifications
             .SingleOrDefaultAsync(x => x.Id == qualificationId, ct)
             ?? throw new DomainException("qualification_not_found", "Qualification was not found.");
-        if (!qualification.IsActive) return;
+        if (!qualification.IsActive)
+        {
+            await transaction.CommitAsync(ct);
+            return;
+        }
+        if (db.Database.IsSqlServer())
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"EXEC sp_getapplock @Resource={"teacher-showcase-subject:" + qualification.TeacherId + ":" + qualification.SubjectId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct);
         var now = clock.GetUtcNow();
         qualification.Revoke(reviewerId, input.Reason, now);
         var services = await db.TeacherServices
@@ -279,13 +287,24 @@ internal sealed class TeacherApplicationService(
         foreach (var service in services) service.SetActive(false, now);
         var samples = await db.TeacherTeachingSamples
             .Where(x => x.TeacherId == qualification.TeacherId
-                && x.SubjectId == qualification.SubjectId && x.PublishedAt != null).ToArrayAsync(ct);
-        foreach (var sample in samples) sample.Unpublish();
+                && x.SubjectId == qualification.SubjectId
+                && (x.PublishedAt != null || x.SourceType == TeachingSampleSourceType.TeacherShowcase))
+            .ToArrayAsync(ct);
+        foreach (var sample in samples)
+        {
+            sample.HideForQualificationRevocation(now);
+            if (sample.SourceType == TeachingSampleSourceType.TeacherShowcase)
+                audit.Add(reviewerId, "ShowcaseHiddenByQualificationRevocation",
+                    "TeacherTeachingSample", sample.Id.ToString(),
+                    "Teacher Showcase hidden because its subject qualification was revoked.",
+                    $"qualification:{qualification.Id}:showcase:{sample.Id}");
+        }
         await notifications.QueueAsync(
             qualification.TeacherId, "QualificationRevoked", "Subject qualification updated",
             input.Reason, "/app/Tafseel-Teacher-Apply.dc.html?view=status",
             $"qualification-revoked:{qualification.Id}", email: true, ct);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<TeacherOnboardingStatusDto> GetOnboardingStatusAsync(
@@ -309,21 +328,37 @@ internal sealed class TeacherApplicationService(
             && !string.IsNullOrWhiteSpace(profile.City);
         var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking()
             .AnyAsync(x => x.TeacherId == teacherId, ct);
-        var hasActiveService = await (
+        var hasPublicSample = await db.TeacherTeachingSamples.AsNoTracking()
+            .AnyAsync(x => x.TeacherId == teacherId && x.PublishedAt != null
+                && approvedSubjectIds.Contains(x.SubjectId), ct);
+        var activeQualifiedServices = await (
             from service in db.TeacherServices.AsNoTracking()
             join type in db.ServiceCatalogItems.AsNoTracking()
                 on service.ServiceCatalogItemId equals type.Id
             where service.TeacherId == teacherId && service.IsActive
                 && approvedSubjectIds.Contains(service.SubjectId)
                 && type.IsActive && type.IsPublic && type.TeacherSelectable
-                && (!type.RequiresScheduling || hasAvailability)
-            select service.Id).AnyAsync(ct);
+            select new { service.Id, type.RequiresScheduling }).ToArrayAsync(ct);
+        var hasQualifiedActiveService = activeQualifiedServices.Length > 0;
+        var needsAvailability = activeQualifiedServices.Any(x => x.RequiresScheduling) && !hasAvailability;
+        var hasActiveService = hasQualifiedActiveService && !needsAvailability;
         var publiclyVisible = profile?.IsPublished == true && profileComplete
             && approvedSubjectIds.Length > 0 && hasActiveService
             && user.EmailConfirmed && !user.IsSuspended;
+        var readyForPublication = profileComplete
+            && approvedSubjectIds.Length > 0 && hasActiveService
+            && user.EmailConfirmed && !user.IsSuspended
+            && profile?.IsPublished != true;
         var demoUploaded = application?.DemoStorageKey is not null;
+        // Approved qualifications take precedence over a newer draft/in-progress application
+        // so multi-subject teachers are not kicked off the dashboard.
         var status = user.IsSuspended ? TeacherOnboardingStatus.Suspended
             : !user.EmailConfirmed ? TeacherOnboardingStatus.EmailUnconfirmed
+            : approvedSubjectIds.Length > 0
+                ? (!profileComplete ? TeacherOnboardingStatus.ApprovedButProfileIncomplete
+                    : (!hasActiveService || !publiclyVisible)
+                        ? TeacherOnboardingStatus.ApprovedButNotPublished
+                        : TeacherOnboardingStatus.Published)
             : application is null ? TeacherOnboardingStatus.ApplicationRequired
             : application.Status == TeacherApplicationStatus.Draft && !demoUploaded ? TeacherOnboardingStatus.DemoRequired
             : application.Status == TeacherApplicationStatus.Draft ? TeacherOnboardingStatus.ReadyToSubmit
@@ -331,10 +366,7 @@ internal sealed class TeacherApplicationService(
             : application.Status == TeacherApplicationStatus.UnderReview ? TeacherOnboardingStatus.UnderReview
             : application.Status == TeacherApplicationStatus.ChangesRequested ? TeacherOnboardingStatus.ChangesRequested
             : application.Status == TeacherApplicationStatus.Rejected ? TeacherOnboardingStatus.Rejected
-            : approvedSubjectIds.Length > 0 && !profileComplete ? TeacherOnboardingStatus.ApprovedButProfileIncomplete
-            : approvedSubjectIds.Length > 0 && (!hasActiveService || !publiclyVisible)
-                ? TeacherOnboardingStatus.ApprovedButNotPublished
-            : TeacherOnboardingStatus.Published;
+            : TeacherOnboardingStatus.ApplicationRequired;
         var (action, url) = status switch
         {
             TeacherOnboardingStatus.ApplicationRequired => ("Start your subject application", "Tafseel-Teacher-Apply.dc.html"),
@@ -342,19 +374,32 @@ internal sealed class TeacherApplicationService(
                 or TeacherOnboardingStatus.ChangesRequested => ("Continue your application", "Tafseel-Teacher-Apply.dc.html"),
             TeacherOnboardingStatus.PendingReview or TeacherOnboardingStatus.UnderReview
                 or TeacherOnboardingStatus.Rejected => ("View application status", "Tafseel-Teacher-Apply.dc.html?view=status"),
+            TeacherOnboardingStatus.ApprovedButProfileIncomplete => ("Complete profile", "Tafseel-Teacher-Dashboard.dc.html?section=profile"),
+            TeacherOnboardingStatus.ApprovedButNotPublished => ("Finish marketplace setup", "Tafseel-Teacher-Dashboard.dc.html?section=profile"),
+            TeacherOnboardingStatus.Published => ("Open teacher dashboard", "Tafseel-Teacher-Dashboard.dc.html"),
             _ => ("Continue teacher setup", "Tafseel-Teacher-Dashboard.dc.html")
         };
         var blockers = new List<string>();
-        if (!user.EmailConfirmed) blockers.Add("email_unconfirmed");
-        if (approvedSubjectIds.Length == 0) blockers.Add("qualification_required");
-        if (!profileComplete) blockers.Add("profile_incomplete");
-        if (!hasActiveService) blockers.Add("active_service_required");
-        if (profile?.IsPublished != true) blockers.Add("profile_not_published");
+        var missing = new List<string>();
+        if (!user.EmailConfirmed) { blockers.Add("email_unconfirmed"); missing.Add("confirm_email"); }
+        if (user.IsSuspended) blockers.Add("account_suspended");
+        if (approvedSubjectIds.Length == 0) { blockers.Add("qualification_required"); missing.Add("get_approved_qualification"); }
+        if (!profileComplete) { blockers.Add("profile_incomplete"); missing.Add("complete_profile"); }
+        if (!hasQualifiedActiveService) { blockers.Add("active_service_required"); missing.Add("add_approved_subject_service"); }
+        if (needsAvailability) { blockers.Add("availability_required"); missing.Add("set_availability"); }
+        if (!hasPublicSample) missing.Add("add_public_sample");
+        if (profile?.IsPublished != true)
+        {
+            blockers.Add("profile_not_published");
+            if (readyForPublication) missing.Add("ready_for_publication");
+            else if (approvedSubjectIds.Length > 0) missing.Add("publish_profile");
+        }
         return new(status, user.EmailConfirmed, application?.Id, application?.Status,
             application?.SubjectId, application?.QualificationTopicId, demoUploaded,
             status == TeacherOnboardingStatus.ReadyToSubmit, approvedSubjectIds,
             profileComplete, hasActiveService, publiclyVisible,
-            action, url, blockers);
+            action, url, blockers,
+            hasAvailability, hasPublicSample, readyForPublication, missing);
     }
 
     public async Task<PrivateMediaFile> OpenDemoAsync(

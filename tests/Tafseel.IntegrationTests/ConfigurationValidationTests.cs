@@ -11,6 +11,7 @@ using Tafseel.Application.Orders;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Finance;
 using Tafseel.Application.Governance;
+using Tafseel.Application.Marketplace;
 
 namespace Tafseel.IntegrationTests;
 
@@ -131,6 +132,14 @@ public sealed class ConfigurationValidationTests
         using var services = Provider("Payments:Provider", "Mock", Environments.Production);
         Assert.Throws<OptionsValidationException>(
             () => services.GetRequiredService<IOptions<PaymentOptions>>().Value);
+    }
+
+    [Fact]
+    public void Production_rejects_enabled_showcases_without_every_media_readiness_gate()
+    {
+        using var services = Provider("TeacherShowcases:Enabled", "true", Environments.Production);
+        Assert.Throws<OptionsValidationException>(
+            () => services.GetRequiredService<IOptions<TeacherShowcaseOptions>>().Value);
     }
 
     [Theory]

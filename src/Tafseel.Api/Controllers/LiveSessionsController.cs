@@ -13,6 +13,14 @@ namespace Tafseel.Api.Controllers;
 [Route("api/v1/live-sessions")]
 public sealed class LiveSessionsController(ILiveSessionService sessions) : ControllerBase
 {
+    [AllowAnonymous, HttpGet("availability-summaries")]
+    public Task<AvailabilitySummaryResultDto> AvailabilitySummaries(
+        [FromQuery] string[] teacherIds,
+        [FromQuery] Guid? teacherServiceId,
+        [FromQuery] string? viewerTimeZoneId,
+        CancellationToken ct) =>
+        sessions.GetAvailabilitySummariesAsync(teacherIds, teacherServiceId, viewerTimeZoneId, ct);
+
     [AllowAnonymous, HttpGet("teachers/{teacherId}/slots")]
     public Task<IReadOnlyCollection<BookableSlotDto>> Slots(
         string teacherId, [FromQuery] Guid? teacherServiceId, [FromQuery] DateOnly from, [FromQuery] int days,

@@ -181,14 +181,6 @@
           <span>Verified only</span>
           <input type="checkbox" checked="{{ verifiedOnly }}" onChange="{{ onVerified }}" style="width:38px;height:22px;accent-color:var(--primary)" />
         </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;color:var(--text-2)">
-          <span>Online now</span>
-          <input type="checkbox" checked="{{ onlineOnly }}" onChange="{{ onOnline }}" style="width:38px;height:22px;accent-color:var(--primary)" />
-        </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;color:var(--text-2)">
-          <span>Available this week</span>
-          <input type="checkbox" checked="{{ weekOnly }}" onChange="{{ onWeek }}" style="width:38px;height:22px;accent-color:var(--primary)" />
-        </label>
       </div>
     </aside>
 
@@ -218,7 +210,7 @@
         <div class="tf-empty-enter" style="border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:64px 24px;text-align:center;background:var(--surface)">
           <div style="width:52px;height:52px;border-radius:14px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 16px;font-size:20px;color:var(--muted)">⌕</div>
           <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">No teachers match these filters</h3>
-          <p style="color:var(--muted);font-size:14.5px;max-width:380px;margin:0 auto 20px">Try widening your price range or clearing the online-now filter.</p>
+          <p data-i18n="browse_empty_hint" style="color:var(--muted);font-size:14.5px;max-width:380px;margin:0 auto 20px">Try widening your price range or clearing some filters.</p>
           <button type="button" onClick="{{ clearFilters }}" style="height:40px;padding:0 20px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14px">Clear all filters</button>
         </div>
       </sc-if>
@@ -229,7 +221,6 @@
             <div style="display:flex;gap:14px;margin-bottom:14px">
               <div style="position:relative;flex:none">
                 <img src="{{ t.avatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);object-fit:cover" />
-                <span title="{{ t.onlineLabel }}" style="{{ t.dotStyle }}"></span>
               </div>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;align-items:center;gap:6px">
@@ -259,6 +250,10 @@
 
             <div style="display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:16px">
               <span>🗣 {{ t.languages }}</span>
+            </div>
+
+            <div role="status" aria-label="{{ t.availabilityAria }}" style="min-height:42px;padding:10px 12px;margin-bottom:14px;border-radius:var(--r-sm);background:var(--surface-2);color:var(--text-2);font-size:13px;line-height:1.45;overflow-wrap:anywhere">
+              {{ t.availabilityLabel }}
             </div>
 
             <div style="margin-top:auto;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -394,11 +389,12 @@ class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
     q: '', subjectId: '', level: 'All levels', service: 'All services',
-    minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false,
+    minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false,
     sort: 'name', page: 1, favs: [], compare: [], toast: '', toastLeaving: false,
     teachersLoading: true, teachersError: '', languageOptions: [], subjectsCatalog: [],
     session: null, sessionChecked: false,
-    compareOpen: false, compareLoading: false, compareError: '', compareTeachers: [], compareUnavailableCount: 0
+    compareOpen: false, compareLoading: false, compareError: '', compareTeachers: [], compareUnavailableCount: 0,
+    availabilityByTeacher: {}, availabilityLoading: false, availabilityError: false
   };
 
   componentDidMount() {
@@ -417,6 +413,7 @@ class Component extends DCLogic {
 
   loadTeachers() {
     const s = this.state;
+    this._availabilityKey = '';
     this.setState({ teachersLoading: true, teachersError: '' });
     Promise.all([
       Tafseel.api.get('/teachers' + Tafseel.api.query({
@@ -434,7 +431,7 @@ class Component extends DCLogic {
           rating: t.rating == null ? null : Number(t.rating),
           reviews: t.ratingCount, bio: t.headline, skills: t.subjects,
           languages: (t.languages || []).join(' · '), langs: t.languages || [],
-          price: t.startingPrice, online: false, verified: t.verified, thisWeek: false,
+          price: t.startingPrice, verified: t.verified,
           levels: [], services: [],
           profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId),
           avatar: Tafseel.avatarUrl(t.teacherId, t.hasAvatar)
@@ -460,7 +457,53 @@ class Component extends DCLogic {
     document.body.style.overflow = '';
     this._compareRequest = (this._compareRequest || 0) + 1;
   }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
+  componentDidUpdate() {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    this.ensureAvailability();
+  }
+
+  visibleTeachers() {
+    const results = this.filtered();
+    const perPage = 6;
+    const pageCount = Math.max(1, Math.ceil(results.length / perPage));
+    const page = Math.min(this.state.page, pageCount);
+    return results.slice((page - 1) * perPage, page * perPage);
+  }
+
+  ensureAvailability() {
+    if (this.state.teachersLoading || this.state.teachersError) return;
+    const ids = this.visibleTeachers().map(teacher => teacher.id);
+    const key = ids.join('|') + '|' + Tafseel.viewerTimeZone().id;
+    if (this._availabilityKey === key) return;
+    this._availabilityKey = key;
+    const request = (this._availabilityRequest || 0) + 1;
+    this._availabilityRequest = request;
+    if (!ids.length) {
+      this.setState({ availabilityByTeacher: {}, availabilityLoading: false, availabilityError: false });
+      return;
+    }
+    this.setState({ availabilityLoading: true, availabilityError: false });
+    Tafseel.api.get(Tafseel.availabilityPath(ids))
+      .then(result => {
+        if (this._availabilityRequest !== request) return;
+        const summaries = {};
+        (result.summaries || []).forEach(summary => { summaries[summary.teacherId] = summary; });
+        this.setState({
+          availabilityByTeacher: summaries,
+          availabilityLoading: false,
+          availabilityError: false
+        });
+      })
+      .catch(() => {
+        if (this._availabilityRequest !== request) return;
+        this.setState({
+          availabilityByTeacher: {},
+          availabilityLoading: false,
+          availabilityError: true
+        });
+      });
+  }
 
   flash(msg) {
     Tafseel.flash(this, msg);
@@ -502,10 +545,21 @@ class Component extends DCLogic {
     const ids = this.state.compare.slice(0, 3);
     const query = ids.map(id => 'ids=' + encodeURIComponent(id)).join('&');
     this.setState({ compareLoading: true, compareError: '', compareTeachers: [], compareUnavailableCount: 0 });
-    Tafseel.api.get('/teachers/compare?' + query)
-      .then(result => {
+    Promise.all([
+      Tafseel.api.get('/teachers/compare?' + query),
+      Tafseel.api.get(Tafseel.availabilityPath(ids)).catch(() => null)
+    ])
+      .then(([result, availability]) => {
         if (this._compareRequest !== request) return;
-        const teachers = result.teachers || [];
+        const availabilityByTeacher = {};
+        ((availability && availability.summaries) || []).forEach(summary => {
+          availabilityByTeacher[summary.teacherId] = summary;
+        });
+        const teachers = (result.teachers || []).map(teacher => ({
+          ...teacher,
+          availabilitySummary: availabilityByTeacher[teacher.teacherId] || null,
+          availabilityError: !availability
+        }));
         const availableIds = teachers.map(teacher => teacher.teacherId);
         this.setState({
           compareLoading: false,
@@ -549,8 +603,6 @@ class Component extends DCLogic {
       if (t.price != null && t.price > s.maxPrice) return false;
       if (s.langs.length && !s.langs.some(language => t.langs.includes(language))) return false;
       if (s.verifiedOnly && !t.verified) return false;
-      if (s.onlineOnly && !t.online) return false;
-      if (s.weekOnly && !t.thisWeek) return false;
       return true;
     });
     const by = {
@@ -596,8 +648,6 @@ class Component extends DCLogic {
       label: Tafseel.languageLabel(s.languageOptions.find(option => option.name === language) || { name: language }),
       onClear: e => this.popChip(e, () => this.toggleIn('langs', language))
     }));
-    if (s.onlineOnly) activeChips.push({ label: 'Online now', onClear: e => this.popChip(e, () => this.setState({ onlineOnly: false })) });
-    if (s.weekOnly) activeChips.push({ label: 'Available this week', onClear: e => this.popChip(e, () => this.setState({ weekOnly: false })) });
 
     const compared = TEACHERS.filter(t => s.compare.includes(t.id));
     const missing = Tafseel.t('compare_not_provided');
@@ -636,6 +686,9 @@ class Component extends DCLogic {
         return [service.title, type, service.requiresScheduling
           ? Tafseel.t('compare_session_price', { price }) : price].filter(Boolean).join(' — ');
       }).join('\n') || missing],
+      ['availability', 'availability_field', teacher => teacher.availabilityError
+        ? Tafseel.t('availability_error')
+        : Tafseel.availabilityText(teacher.availabilitySummary)],
       ['startingPrice', 'compare_field_starting_price', teacher => money(teacher.startingPrice, teacher.startingCurrency)],
       ['rating', 'compare_field_rating', teacher => teacher.rating == null || !teacher.ratingCount
         ? Tafseel.t('compare_no_reviews')
@@ -719,11 +772,9 @@ class Component extends DCLogic {
         onChange: () => { this.toggleIn('langs', language.name); this.setState({ page: 1 }); }
       })),
       verifiedOnly: s.verifiedOnly, onVerified: e => this.setState({ verifiedOnly: e.target.checked, page: 1 }),
-      onlineOnly: s.onlineOnly, onOnline: e => this.setState({ onlineOnly: e.target.checked, page: 1 }),
-      weekOnly: s.weekOnly, onWeek: e => this.setState({ weekOnly: e.target.checked, page: 1 }),
       clearFilters: () => this.setState({
         q: '', subjectId: '', level: 'All levels', service: 'All services',
-        minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false, page: 1
+        minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, page: 1
       }, () => this.loadTeachers()),
 
       activeChips,
@@ -733,8 +784,12 @@ class Component extends DCLogic {
         ...t,
         profileHref: t.profileHref || ('Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.id)),
         priceLabel: 'SAR ' + t.price,
-        onlineLabel: t.online ? 'Online now' : 'Offline',
-        dotStyle: 'position:absolute;inset-block-end:-2px;inset-inline-end:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);background:' + (t.online ? 'var(--success)' : 'var(--border-strong)'),
+        availabilityLabel: s.availabilityLoading && !s.availabilityByTeacher[t.id]
+          ? Tafseel.t('availability_loading')
+          : s.availabilityError
+            ? Tafseel.t('availability_error')
+            : Tafseel.availabilityText(s.availabilityByTeacher[t.id]),
+        availabilityAria: Tafseel.t('availability_field'),
         fav: s.favs.includes(t.id),
         favIcon: s.favs.includes(t.id) ? '♥' : '♡',
         favStyle: 'flex:none;width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);font-size:15px;line-height:1;color:' + (s.favs.includes(t.id) ? 'var(--error)' : 'var(--muted)'),

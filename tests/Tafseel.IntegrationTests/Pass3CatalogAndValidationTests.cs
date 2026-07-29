@@ -85,10 +85,26 @@ public sealed class Pass3CatalogAndValidationTests(SqlServerTafseelApiFactory fa
         using var client = await AdminClient();
         var name = $"Global {Guid.NewGuid():N}";
         object FirstPayload() => route == "services"
-            ? new { name = $" {name} ", detail = firstDetail, code = $"svc-{Guid.NewGuid():N}" }
+            ? new
+            {
+                nameEn = $" {name} ",
+                nameAr = "خدمة " + name,
+                descriptionEn = firstDetail,
+                descriptionAr = "وصف " + firstDetail,
+                displayOrder = 10,
+                isActive = true
+            }
             : new { name = $" {name} ", detail = firstDetail };
         object SecondPayload() => route == "services"
-            ? new { name = name.ToUpperInvariant(), detail = secondDetail, code = $"svc-{Guid.NewGuid():N}" }
+            ? new
+            {
+                nameEn = name.ToUpperInvariant(),
+                nameAr = "خدمة مكررة " + name,
+                descriptionEn = secondDetail,
+                descriptionAr = "وصف " + secondDetail,
+                displayOrder = 11,
+                isActive = true
+            }
             : new { name = name.ToUpperInvariant(), detail = secondDetail };
         Assert.Equal(HttpStatusCode.Created,
             (await client.PostAsJsonAsync($"/api/v1/admin/{route}",

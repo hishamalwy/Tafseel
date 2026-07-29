@@ -937,6 +937,50 @@ html[dir="rtl"] .tf-subject-card:focus-visible .tf-subject-card-cta{
 .tf-landing-cta-split-primary{
   min-width:0;
 }
+.tf-service-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  min-height:168px;
+  padding:28px 24px 26px;
+  text-align:center;
+  background:
+    linear-gradient(165deg, color-mix(in oklab, var(--primary) 7%, var(--surface)) 0%, var(--surface) 46%, color-mix(in oklab, var(--bg-alt) 50%, var(--surface)) 100%);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  transition:transform 220ms cubic-bezier(.2,.8,.3,1), border-color 220ms ease, box-shadow 220ms ease;
+}
+.tf-service-card-title{
+  margin:0;
+  font-family:var(--font-display);
+  font-size:clamp(20px,2.2vw,26px);
+  font-weight:800;
+  letter-spacing:-.03em;
+  line-height:1.18;
+  max-width:16ch;
+  text-wrap:balance;
+  color:var(--text);
+}
+.tf-service-card-desc{
+  margin:0;
+  font-size:14.5px;
+  line-height:1.55;
+  color:var(--muted);
+  max-width:34ch;
+}
+.tf-service-card:hover{
+  transform:translateY(-3px);
+  border-color:color-mix(in oklab, var(--primary) 36%, var(--border));
+  box-shadow:
+    0 12px 28px color-mix(in oklab, #000 14%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--primary) 12%, transparent);
+}
+@media (prefers-reduced-motion:reduce){
+  .tf-service-card{transition:none}
+  .tf-service-card:hover{transform:none}
+}
 .tf-hero-pill,
 .tf-hero-headline,
 .tf-hero-sub,
@@ -1574,6 +1618,9 @@ input,select,textarea,button{max-inline-size:100%}
 }
 
 @media (max-width:480px){
+  [data-stack="showcase-review"]{
+    grid-template-columns:minmax(0,1fr) !important;
+  }
   .tf-hero-headline{
     font-size:clamp(31px,10.4vw,38px) !important;
     line-height:1.14 !important;

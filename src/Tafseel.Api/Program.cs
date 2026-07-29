@@ -259,6 +259,7 @@ app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
     file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js"
+        or "guided-request.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
 app.MapGet("/app/js/vendor/{file}", (string file) =>

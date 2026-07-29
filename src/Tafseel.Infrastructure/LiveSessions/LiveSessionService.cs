@@ -10,6 +10,7 @@ using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Marketplace;
+using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Messaging;
 
@@ -39,40 +40,191 @@ internal sealed class LiveSessionService(
         var rules = await db.TeacherAvailabilityRules.AsNoTracking()
             .Where(x => x.TeacherId == service.Service.TeacherId).ToArrayAsync(ct);
         if (rules.Length == 0) return [];
-        var rangeStart = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddDays(-1);
-        var rangeEnd = rangeStart.AddDays(days + 2);
+        var rangeStart = StartOfDayUtc(from, studentZone);
+        var rangeEnd = StartOfDayUtc(from.AddDays(days), studentZone);
         var exceptions = await db.TeacherAvailabilityExceptions.AsNoTracking()
-            .Where(x => x.TeacherId == service.Service.TeacherId && x.StartsAt < rangeEnd && x.EndsAt > rangeStart)
+            .Where(x => x.TeacherId == service.Service.TeacherId
+                && x.StartsAt < rangeEnd.AddHours(4) && x.EndsAt > rangeStart)
             .ToArrayAsync(ct);
         var bookings = await db.LiveSessionBookings.AsNoTracking()
             .Where(x => x.TeacherId == service.Service.TeacherId && ReservingStatuses.Contains(x.Status)
-                && x.StartsAt < rangeEnd && x.EndsAt > rangeStart)
+                && x.StartsAt < rangeEnd.AddHours(4) && x.EndsAt > rangeStart)
             .ToArrayAsync(ct);
+        return CalculateSlots(
+                rules, exceptions, bookings, durationMinutes, rangeStart, rangeEnd, clock.GetUtcNow())
+            .Bookable
+            .Select(x => new BookableSlotDto(
+                x.StartsAt, x.EndsAt,
+                TimeZoneInfo.ConvertTime(x.StartsAt, studentZone).DateTime,
+                studentTimeZoneId))
+            .ToArray();
+    }
+
+    public async Task<AvailabilitySummaryResultDto> GetAvailabilitySummariesAsync(
+        IReadOnlyCollection<string> teacherIds,
+        Guid? teacherServiceId,
+        string? viewerTimeZoneId,
+        CancellationToken ct)
+    {
+        if (teacherIds.Count == 0
+            || teacherIds.Any(string.IsNullOrWhiteSpace)
+            || teacherIds.Any(x => !Guid.TryParse(x, out _)))
+            throw new DomainException(
+                "invalid_teacher_ids",
+                "Provide between 1 and 12 valid Teacher identifiers.");
+
+        var requestedIds = teacherIds.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        if (requestedIds.Length > 12)
+            throw new DomainException(
+                "invalid_teacher_ids",
+                "Provide between 1 and 12 valid Teacher identifiers.");
+        if (teacherServiceId.HasValue && requestedIds.Length != 1)
+            throw new DomainException(
+                "invalid_availability_scope",
+                "A specific Teacher service can be requested for one Teacher only.");
+
+        var fallback = string.IsNullOrWhiteSpace(viewerTimeZoneId);
+        var viewerZone = Zone(fallback ? "UTC" : viewerTimeZoneId!);
+        var resolvedViewerZoneId = fallback ? "UTC" : viewerTimeZoneId!;
         var now = clock.GetUtcNow();
-        var result = new List<BookableSlotDto>();
-        for (var offset = 0; offset < days; offset++)
-        {
-            var date = from.AddDays(offset);
-            foreach (var rule in rules.Where(x => x.DayOfWeek == date.DayOfWeek))
+        var viewerToday = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, viewerZone).DateTime);
+        var horizonStart = StartOfDayUtc(viewerToday, viewerZone);
+        var horizonEnd = StartOfDayUtc(viewerToday.AddDays(30), viewerZone);
+
+        var serviceRows = await (
+            from service in db.TeacherServices.AsNoTracking()
+            join type in db.ServiceCatalogItems.AsNoTracking()
+                on service.ServiceCatalogItemId equals type.Id
+            where requestedIds.Contains(service.TeacherId)
+                && service.IsActive
+                && type.IsActive && type.IsPublic && type.TeacherSelectable
+                && db.TeacherProfiles.Any(profile =>
+                    profile.TeacherId == service.TeacherId && profile.IsPublished)
+                && db.Users.Any(user =>
+                    user.Id == service.TeacherId && user.EmailConfirmed && !user.IsSuspended)
+                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(qualification =>
+                    qualification.TeacherId == service.TeacherId
+                    && qualification.SubjectId == service.SubjectId
+                    && qualification.Status == TeacherQualificationStatus.Approved
+                    && qualification.RevokedAt == null)
+            select new
             {
-                var teacherZone = Zone(rule.TimeZoneId);
-                var step = rule.SlotMinutes ?? durationMinutes;
-                for (var start = rule.Start; start.AddMinutes(durationMinutes) <= rule.End; start = start.AddMinutes(step))
-                {
-                    var local = DateTime.SpecifyKind(date.ToDateTime(start), DateTimeKind.Unspecified);
-                    if (teacherZone.IsInvalidTime(local) || teacherZone.IsAmbiguousTime(local)) continue;
-                    var startsAt = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(local, teacherZone), TimeSpan.Zero);
-                    var endsAt = startsAt.AddMinutes(durationMinutes);
-                    if (startsAt <= now
-                        || exceptions.Any(x => x.StartsAt < endsAt && startsAt < x.EndsAt)
-                        || bookings.Any(x => x.StartsAt < endsAt && startsAt < x.EndsAt))
-                        continue;
-                    result.Add(new(startsAt, endsAt,
-                        TimeZoneInfo.ConvertTime(startsAt, studentZone).DateTime, studentTimeZoneId));
-                }
+                service.TeacherId,
+                ServiceId = service.Id,
+                type.Code,
+                type.RequiresScheduling,
+                type.AllowedDurationsCsv
+            }).ToArrayAsync(ct);
+
+        var publicTeacherIds = serviceRows.Select(x => x.TeacherId)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        if (publicTeacherIds.Length == 0)
+            return new(requestedIds.Length, requestedIds.Length, []);
+
+        var rules = await db.TeacherAvailabilityRules.AsNoTracking()
+            .Where(x => publicTeacherIds.Contains(x.TeacherId)).ToArrayAsync(ct);
+        var exceptions = await db.TeacherAvailabilityExceptions.AsNoTracking()
+            .Where(x => publicTeacherIds.Contains(x.TeacherId)
+                && x.StartsAt < horizonEnd.AddHours(4) && x.EndsAt > horizonStart)
+            .ToArrayAsync(ct);
+        var bookings = await db.LiveSessionBookings.AsNoTracking()
+            .Where(x => publicTeacherIds.Contains(x.TeacherId)
+                && ReservingStatuses.Contains(x.Status)
+                && x.StartsAt < horizonEnd.AddHours(4) && x.EndsAt > horizonStart)
+            .ToArrayAsync(ct);
+
+        var summaries = new List<AvailabilitySummaryDto>(publicTeacherIds.Length);
+        foreach (var teacherId in requestedIds.Where(id =>
+                     publicTeacherIds.Contains(id, StringComparer.OrdinalIgnoreCase)))
+        {
+            var liveServices = serviceRows
+                .Where(x => string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(x.Code, LiveSessionCatalogCode, StringComparison.Ordinal)
+                    && x.RequiresScheduling
+                    && (!teacherServiceId.HasValue || x.ServiceId == teacherServiceId.Value))
+                .Select(x => new SummaryService(
+                    x.ServiceId,
+                    ParseDurations(x.AllowedDurationsCsv).DefaultIfEmpty(0).Min()))
+                .Where(x => x.DurationMinutes > 0)
+                .OrderBy(x => x.ServiceId)
+                .ToArray();
+
+            if (liveServices.Length == 0)
+            {
+                summaries.Add(Summary(
+                    teacherId, AvailabilitySummaryStates.NotApplicable, horizonEnd,
+                    resolvedViewerZoneId, fallback));
+                continue;
             }
+
+            var teacherRules = rules.Where(x =>
+                string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (teacherRules.Length == 0)
+            {
+                summaries.Add(Summary(
+                    teacherId, AvailabilitySummaryStates.NoScheduleConfigured, horizonEnd,
+                    resolvedViewerZoneId, fallback));
+                continue;
+            }
+
+            var teacherExceptions = exceptions.Where(x =>
+                string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var teacherBookings = bookings.Where(x =>
+                string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var byDuration = liveServices.Select(x => x.DurationMinutes).Distinct()
+                .ToDictionary(
+                    duration => duration,
+                    duration => CalculateSlots(
+                        teacherRules, teacherExceptions, teacherBookings,
+                        duration, horizonStart, horizonEnd, now));
+
+            var earliest = liveServices
+                .Select(service => new
+                {
+                    Service = service,
+                    Slot = byDuration[service.DurationMinutes].Bookable.FirstOrDefault()
+                })
+                .Where(x => x.Slot is not null)
+                .OrderBy(x => x.Slot!.StartsAt)
+                .ThenBy(x => x.Service.ServiceId)
+                .FirstOrDefault();
+            if (earliest is not null)
+            {
+                var state = DateOnly.FromDateTime(
+                        TimeZoneInfo.ConvertTime(earliest.Slot!.StartsAt, viewerZone).DateTime)
+                    == viewerToday
+                    ? AvailabilitySummaryStates.AvailableToday
+                    : AvailabilitySummaryStates.NextAvailable;
+                summaries.Add(new(
+                    teacherId,
+                    earliest.Service.ServiceId,
+                    state,
+                    earliest.Slot.StartsAt,
+                    earliest.Slot.EndsAt,
+                    earliest.Service.DurationMinutes,
+                    horizonEnd,
+                    resolvedViewerZoneId,
+                    fallback));
+                continue;
+            }
+
+            var calculations = byDuration.Values.ToArray();
+            var rawCount = calculations.Sum(x => x.RawCount);
+            var afterExceptionsCount = calculations.Sum(x => x.AfterExceptionsCount);
+            var unavailableState = rawCount > 0 && afterExceptionsCount == 0
+                ? AvailabilitySummaryStates.TemporarilyUnavailable
+                : afterExceptionsCount > 0
+                    ? AvailabilitySummaryStates.FullyBooked
+                    : AvailabilitySummaryStates.NoUpcomingAvailability;
+            summaries.Add(Summary(
+                teacherId, unavailableState, horizonEnd, resolvedViewerZoneId, fallback));
         }
-        return result.OrderBy(x => x.StartsAt).ToArray();
+
+        return new(
+            requestedIds.Length,
+            requestedIds.Length - summaries.Count,
+            summaries);
     }
 
     public async Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct)
@@ -351,12 +503,119 @@ internal sealed class LiveSessionService(
                 && profile.IsPublished
                 && db.Subjects.Any(subject => subject.Id == row.service.SubjectId && subject.IsActive)
                 && db.TeacherSubjectQualifications.Any(q =>
-                    q.TeacherId == row.service.TeacherId && q.SubjectId == row.service.SubjectId), ct);
+                    q.TeacherId == row.service.TeacherId
+                    && q.SubjectId == row.service.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved
+                    && q.RevokedAt == null), ct);
         if (!eligible)
             throw new DomainException("teacher_not_approved", "An active approved subject qualification is required.");
 
         return (row.service, row.type);
     }
+
+    private static SlotCalculation CalculateSlots(
+        IReadOnlyCollection<TeacherAvailabilityRule> rules,
+        IReadOnlyCollection<TeacherAvailabilityException> exceptions,
+        IReadOnlyCollection<LiveSessionBooking> bookings,
+        int durationMinutes,
+        DateTimeOffset horizonStart,
+        DateTimeOffset horizonEnd,
+        DateTimeOffset now)
+    {
+        var rawCount = 0;
+        var afterExceptionsCount = 0;
+        var bookable = new List<SlotInterval>();
+        foreach (var rule in rules)
+        {
+            var zone = Zone(rule.TimeZoneId);
+            var firstDate = DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTime(horizonStart, zone).DateTime);
+            var lastDate = DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTime(horizonEnd.AddHours(4), zone).DateTime);
+            var step = rule.SlotMinutes ?? durationMinutes;
+            for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
+            {
+                if (date.DayOfWeek != rule.DayOfWeek) continue;
+                for (var start = rule.Start;
+                     start.AddMinutes(durationMinutes) <= rule.End;
+                     start = start.AddMinutes(step))
+                {
+                    var local = DateTime.SpecifyKind(
+                        date.ToDateTime(start), DateTimeKind.Unspecified);
+                    if (zone.IsInvalidTime(local) || zone.IsAmbiguousTime(local)) continue;
+                    var startsAt = new DateTimeOffset(
+                        TimeZoneInfo.ConvertTimeToUtc(local, zone), TimeSpan.Zero);
+                    if (startsAt <= now || startsAt < horizonStart || startsAt >= horizonEnd)
+                        continue;
+                    var endsAt = startsAt.AddMinutes(durationMinutes);
+                    rawCount++;
+                    if (exceptions.Any(x => Overlaps(x.StartsAt, x.EndsAt, startsAt, endsAt)))
+                        continue;
+                    afterExceptionsCount++;
+                    if (bookings.Any(x => Overlaps(x.StartsAt, x.EndsAt, startsAt, endsAt)))
+                        continue;
+                    bookable.Add(new(startsAt, endsAt));
+                }
+            }
+        }
+
+        return new(
+            rawCount,
+            afterExceptionsCount,
+            bookable.OrderBy(x => x.StartsAt).ThenBy(x => x.EndsAt).ToArray());
+    }
+
+    private static DateTimeOffset StartOfDayUtc(DateOnly date, TimeZoneInfo zone)
+    {
+        var local = DateTime.SpecifyKind(
+            date.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified);
+        while (zone.IsInvalidTime(local))
+            local = local.AddMinutes(1);
+        if (zone.IsAmbiguousTime(local))
+            return new DateTimeOffset(
+                local, zone.GetAmbiguousTimeOffsets(local).Max()).ToUniversalTime();
+        return new(
+            TimeZoneInfo.ConvertTimeToUtc(local, zone), TimeSpan.Zero);
+    }
+
+    private static IReadOnlyCollection<int> ParseDurations(string csv) =>
+        csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => int.TryParse(value, out var duration) ? duration : 0)
+            .Where(value => value is >= 15 and <= 240)
+            .Distinct()
+            .Order()
+            .ToArray();
+
+    private static bool Overlaps(
+        DateTimeOffset firstStart,
+        DateTimeOffset firstEnd,
+        DateTimeOffset secondStart,
+        DateTimeOffset secondEnd) =>
+        firstStart < secondEnd && secondStart < firstEnd;
+
+    private static AvailabilitySummaryDto Summary(
+        string teacherId,
+        string state,
+        DateTimeOffset horizonEnd,
+        string viewerTimeZoneId,
+        bool fallback) =>
+        new(
+            teacherId,
+            null,
+            state,
+            null,
+            null,
+            null,
+            horizonEnd,
+            viewerTimeZoneId,
+            fallback);
+
+    private sealed record SummaryService(Guid ServiceId, int DurationMinutes);
+    private sealed record SlotInterval(DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+    private sealed record SlotCalculation(
+        int RawCount,
+        int AfterExceptionsCount,
+        IReadOnlyCollection<SlotInterval> Bookable);
 
     private static string SafeName(string fileName) =>
         Path.GetFileName(fileName) is { Length: > 0 and <= 255 } name ? name : "attachment";

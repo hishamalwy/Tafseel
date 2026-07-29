@@ -1,16 +1,19 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Tafseel.Application.Common;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Marketplace;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
+using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Messaging;
+using Tafseel.Infrastructure.Governance;
 
 namespace Tafseel.Infrastructure.Marketplace;
 
@@ -18,10 +21,14 @@ internal sealed class MarketplaceService(
     TafseelDbContext db,
     IFileStorageService files,
     IOptions<LiveSessionOptions> liveSessionOptions,
+    IOptions<TeacherShowcaseOptions> showcaseOptions,
     NotificationWriter notifications,
+    AuditWriter audit,
+    IHostEnvironment environment,
     TimeProvider clock) : IMarketplaceService
 {
     private readonly LiveSessionOptions _liveSessionOptions = liveSessionOptions.Value;
+    private readonly TeacherShowcaseOptions _showcaseOptions = showcaseOptions.Value;
     private static readonly string[] Sorts =
         ["name", "highest-rated", "lowest-price", "highest-price"];
 
@@ -34,6 +41,10 @@ internal sealed class MarketplaceService(
             throw new DomainException("invalid_sort", "The requested teacher sort is not supported.");
         if (input.OnlineOnly)
             throw new DomainException("online_status_unavailable", "Online status is not currently available.");
+        if (input.AvailableThisWeek)
+            throw new DomainException(
+                "availability_filter_unavailable",
+                "Use the bounded availability summary instead of a schedule-presence filter.");
         if (input.MinimumRating is < 0 or > 5 || input.MaximumPrice is <= 0)
             throw new DomainException("invalid_filter", "A marketplace filter is outside its allowed range.");
 
@@ -50,9 +61,7 @@ internal sealed class MarketplaceService(
                         && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
                     && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
                     && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
-                        && type.IsActive && type.IsPublic && type.TeacherSelectable
-                        && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
-                            rule => rule.TeacherId == profile.TeacherId))))
+                        && type.IsActive && type.IsPublic && type.TeacherSelectable))
             select new { profile, user };
 
         if (!string.IsNullOrWhiteSpace(input.Search))
@@ -94,17 +103,6 @@ internal sealed class MarketplaceService(
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
                 q.TeacherId == x.profile.TeacherId
                 && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
-        if (input.AvailableThisWeek)
-        {
-            var weekStart = clock.GetUtcNow();
-            var weekEnd = weekStart.AddDays(7);
-            query = query.Where(x =>
-                db.TeacherAvailabilityRules.Any(rule => rule.TeacherId == x.profile.TeacherId)
-                && !db.TeacherAvailabilityExceptions.Any(exception =>
-                    exception.TeacherId == x.profile.TeacherId
-                    && exception.StartsAt < weekEnd && exception.EndsAt > weekStart));
-        }
-
         query = sort switch
         {
             "highest-rated" => query.OrderByDescending(x => x.profile.RatingCount > 0)
@@ -197,9 +195,7 @@ internal sealed class MarketplaceService(
                         && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
                     && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
                     && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
-                        && type.IsActive && type.IsPublic && type.TeacherSelectable
-                        && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
-                            rule => rule.TeacherId == profile.TeacherId))))
+                        && type.IsActive && type.IsPublic && type.TeacherSelectable))
             select new
             {
                 profile.TeacherId,
@@ -274,8 +270,6 @@ internal sealed class MarketplaceService(
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
                     && q.SubjectId == service.SubjectId
                     && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
-                    rule => rule.TeacherId == service.TeacherId))
             orderby type.DisplayOrder, service.CreatedAt, service.Id
             select new
             {
@@ -348,9 +342,7 @@ internal sealed class MarketplaceService(
                     && q.SubjectId == x.SubjectId && q.Status == TeacherQualificationStatus.Approved
                     && q.RevokedAt == null)
                 && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId
-                    && type.IsActive && type.IsPublic && type.TeacherSelectable
-                    && (!type.RequiresScheduling || db.TeacherAvailabilityRules.Any(
-                        rule => rule.TeacherId == teacherId))), ct))
+                    && type.IsActive && type.IsPublic && type.TeacherSelectable), ct))
             throw new DomainException("teacher_not_found", "Teacher was not found.");
         return await BuildProfileAsync(profile, publicOnly: true, ct);
     }
@@ -374,9 +366,9 @@ internal sealed class MarketplaceService(
                 db.TeachingLanguages,
                 x => x.LanguageId,
                 x => x.Id,
-                (teacherLanguage, teachingLanguage) => new { teachingLanguage.Id, teachingLanguage.Name })
+                (teacherLanguage, teachingLanguage) => new { teachingLanguage.Id, teachingLanguage.Name, teachingLanguage.NameAr })
             .OrderBy(x => x.Name)
-            .Select(x => new NamedItemDto(x.Id, x.Name))
+            .Select(x => new NamedItemDto(x.Id, x.Name, x.NameAr))
             .ToArrayAsync(ct);
     }
 
@@ -395,6 +387,13 @@ internal sealed class MarketplaceService(
         var profile = await OwnedProfileAsync(teacherId, ct);
         if (published)
         {
+            var user = await db.Users.AsNoTracking().SingleAsync(x => x.Id == teacherId, ct);
+            if (!user.EmailConfirmed)
+                throw new DomainException("email_unconfirmed", "Confirm your email before publishing.");
+            if (user.IsSuspended)
+                throw new DomainException("account_suspended", "Suspended accounts cannot publish.");
+            if (string.IsNullOrWhiteSpace(profile.Country) || string.IsNullOrWhiteSpace(profile.City))
+                throw new DomainException("profile_incomplete", "Complete your profile country and city before publishing.");
             if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId
                     && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct))
                 throw new DomainException("teacher_not_approved", "An approved subject qualification is required.");
@@ -423,6 +422,24 @@ internal sealed class MarketplaceService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<IReadOnlyCollection<NamedItemDto>> GetEligibleSubjectsAsync(
+        string teacherId, CancellationToken ct)
+    {
+        await RequireTeacherAsync(teacherId, ct);
+        var rows = await (
+            from q in db.TeacherSubjectQualifications.AsNoTracking()
+            join s in db.Subjects.AsNoTracking() on q.SubjectId equals s.Id
+            where q.TeacherId == teacherId
+                && q.Status == TeacherQualificationStatus.Approved
+                && q.RevokedAt == null
+                && s.IsActive
+            select new { s.Id, s.Name, s.NameAr }).ToArrayAsync(ct);
+        return rows
+            .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(x => new NamedItemDto(x.Id, x.Name, x.NameAr))
+            .ToArray();
+    }
+
     public Task SetTopicsAsync(string teacherId, IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
         ReplaceTopicsAsync(teacherId, ids.Distinct().ToArray(), ct);
 
@@ -435,8 +452,9 @@ internal sealed class MarketplaceService(
     public async Task<TeacherServiceDto> AddServiceAsync(string teacherId, TeacherServiceInput input, CancellationToken ct)
     {
         await RequireActiveQualificationAsync(teacherId, input.SubjectId, ct);
-        if (!await db.ServiceCatalogItems.AnyAsync(x => x.Id == input.ServiceCatalogItemId && x.IsActive, ct))
-            throw new DomainException("service_type_not_found", "An active service type is required.");
+        if (!await db.ServiceCatalogItems.AnyAsync(x => x.Id == input.ServiceCatalogItemId
+                && x.IsActive && x.IsPublic && x.TeacherSelectable, ct))
+            throw new DomainException("service_type_not_found", "An active public teacher-selectable service type is required.");
         var service = new TeacherService(
             teacherId, input.SubjectId, input.ServiceCatalogItemId, input.Title, input.Description,
             input.Price, input.Currency, input.DeliveryHours, input.Revisions, clock.GetUtcNow());
@@ -463,8 +481,9 @@ internal sealed class MarketplaceService(
         if (active)
         {
             await RequireActiveQualificationAsync(teacherId, service.SubjectId, ct);
-            if (!await db.ServiceCatalogItems.AnyAsync(x => x.Id == service.ServiceCatalogItemId && x.IsActive, ct))
-                throw new DomainException("service_type_not_found", "An active service type is required.");
+            if (!await db.ServiceCatalogItems.AnyAsync(x => x.Id == service.ServiceCatalogItemId
+                    && x.IsActive && x.IsPublic && x.TeacherSelectable, ct))
+                throw new DomainException("service_type_not_found", "An active public teacher-selectable service type is required.");
         }
         service.SetActive(active, clock.GetUtcNow());
         await db.SaveChangesAsync(ct);
@@ -474,44 +493,336 @@ internal sealed class MarketplaceService(
         string teacherId, Guid subjectId, Guid? topicId, string title, Stream stream, string fileName,
         string contentType, long size, int durationSeconds, CancellationToken ct)
     {
+        RequireShowcasesEnabled();
         await RequireActiveQualificationAsync(teacherId, subjectId, ct);
-        if (topicId.HasValue && !await db.Topics.AnyAsync(x =>
-                x.Id == topicId && x.SubjectId == subjectId && x.IsActive, ct))
-            throw new DomainException("topic_not_found", "An active topic in the approved subject is required.");
-        if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 200)
-            throw new DomainException("invalid_sample_title", "A teaching sample title is required.");
+        await RequireValidTopicAsync(subjectId, topicId, ct);
+        await RequireShowcaseCapacityAsync(teacherId, subjectId, ct);
         var stored = await files.StorePrivateVideoAsync(stream, fileName, contentType, size, ct);
-        var sample = new TeacherTeachingSample(
-            teacherId, subjectId, topicId, title, stored.StorageKey, durationSeconds, clock.GetUtcNow());
+        var now = clock.GetUtcNow();
+        var sample = TeacherTeachingSample.CreateShowcaseDraft(
+            teacherId, subjectId, topicId, title, null, now);
+        sample.CurrentVersion().ReplaceVideo(
+            stored.StorageKey, SafeFileName(fileName), stored.ContentType, stored.Size);
         db.Add(sample);
-        await db.SaveChangesAsync(ct);
-        return Map(sample);
+        audit.AddCurrent("ShowcaseCreated", "TeacherTeachingSample", sample.Id.ToString(), "Teacher Showcase draft created with MP4 media.");
+        try { await db.SaveChangesAsync(ct); }
+        catch
+        {
+            await files.DeletePrivateFileAsync(stored.StorageKey, ct);
+            throw;
+        }
+        return Map(sample, sample.CurrentVersion());
     }
 
     public async Task SetSamplePublishedAsync(string teacherId, Guid id, bool published, CancellationToken ct)
     {
         var sample = await db.TeacherTeachingSamples.SingleOrDefaultAsync(x => x.Id == id && x.TeacherId == teacherId, ct)
             ?? throw new DomainException("sample_not_owned", "Teaching sample was not found.");
-        if (!published && sample.SourceDemoSubmissionId.HasValue)
+        if (sample.SourceType == TeachingSampleSourceType.TeacherShowcase)
+            throw new DomainException(
+                "direct_sample_publication_forbidden",
+                "Teacher Showcases require Quality approval and cannot be published directly.");
+        if (!published)
             throw new DomainException(
                 "qualification_sample_locked",
                 "An approved qualification demo remains public while its subject qualification is active.");
-        if (published)
-        {
-            await RequireActiveQualificationAsync(teacherId, sample.SubjectId, ct);
-            sample.Publish(clock.GetUtcNow());
-        }
-        else sample.Unpublish();
+        await RequireActiveQualificationAsync(teacherId, sample.SubjectId, ct);
+        sample.Publish(clock.GetUtcNow());
         await db.SaveChangesAsync(ct);
     }
 
     public async Task<SampleFile> OpenSampleAsync(string? requesterId, Guid id, CancellationToken ct)
     {
-        var sample = await db.TeacherTeachingSamples.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct)
+        var sample = await db.TeacherTeachingSamples.AsNoTracking()
+            .Include(x => x.Versions)
+            .SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("sample_not_found", "Teaching sample was not found.");
-        if (!sample.IsPublished && !string.Equals(sample.TeacherId, requesterId, StringComparison.Ordinal))
+        string? storageKey;
+        if (sample.SourceType == TeachingSampleSourceType.QualificationGenerated)
+            storageKey = sample.StorageKey;
+        else
+        {
+            if (!ShowcasesEnabled)
+                throw new DomainException("sample_not_found", "Teaching sample was not found.");
+            var versionId = string.Equals(sample.TeacherId, requesterId, StringComparison.Ordinal)
+                ? sample.CurrentVersionId
+                : sample.ApprovedVersionId;
+            storageKey = sample.Versions.SingleOrDefault(x => x.Id == versionId)?.StorageKey;
+        }
+        var owner = string.Equals(sample.TeacherId, requesterId, StringComparison.Ordinal);
+        if (!owner && !await IsPublicSampleAsync(sample, storageKey, ct))
             throw new DomainException("sample_not_found", "Teaching sample was not found.");
-        return new(await files.OpenPrivateVideoAsync(sample.StorageKey, ct), "video/mp4");
+        if (storageKey is null || !await files.PrivateFileExistsAsync(storageKey, ct))
+            throw new DomainException("inaccessible_media", "Teaching sample media is unavailable.");
+        return new(await files.OpenPrivateVideoAsync(storageKey, ct), "video/mp4");
+    }
+
+    public async Task<PagedResult<TeacherShowcaseDto>> GetShowcasesAsync(
+        string teacherId, int page, int pageSize, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 20);
+        var query = db.TeacherTeachingSamples.AsNoTracking()
+            .Include(x => x.Versions)
+            .Where(x => x.TeacherId == teacherId
+                && x.SourceType == TeachingSampleSourceType.TeacherShowcase);
+        var total = await query.CountAsync(ct);
+        var items = await query.OrderBy(x => x.ArchivedAt != null)
+            .ThenBy(x => x.DisplayOrder).ThenByDescending(x => x.UpdatedAt).ThenBy(x => x.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
+        return new(items.Select(MapShowcase).ToArray(), page, pageSize, total);
+    }
+
+    public async Task<TeacherShowcaseDto> GetShowcaseAsync(
+        string teacherId, Guid id, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        return MapShowcase(await OwnedShowcaseAsync(teacherId, id, tracking: false, ct));
+    }
+
+    public async Task<TeacherShowcaseDto> CreateShowcaseAsync(
+        string teacherId, CreateShowcaseInput input, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        await RequireActiveQualificationAsync(teacherId, input.SubjectId, ct);
+        await RequireValidTopicAsync(input.SubjectId, input.TopicId, ct);
+        await RequireShowcaseCapacityAsync(teacherId, input.SubjectId, ct);
+        var sample = TeacherTeachingSample.CreateShowcaseDraft(
+            teacherId, input.SubjectId, input.TopicId, input.Title, input.Description, clock.GetUtcNow());
+        db.Add(sample);
+        audit.AddCurrent("ShowcaseCreated", "TeacherTeachingSample", sample.Id.ToString(), "Teacher Showcase draft created.");
+        await db.SaveChangesAsync(ct);
+        return MapShowcase(sample);
+    }
+
+    public async Task<TeacherShowcaseDto> UpdateShowcaseDraftAsync(
+        string teacherId, Guid id, UpdateShowcaseDraftInput input, string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        var sample = await OwnedShowcaseAsync(teacherId, id, tracking: true, ct);
+        ApplyVersionToSample(sample, version);
+        await RequireActiveQualificationAsync(teacherId, input.SubjectId, ct);
+        await RequireValidTopicAsync(input.SubjectId, input.TopicId, ct);
+        if (sample.SubjectId != input.SubjectId)
+            sample.ChangeDraftSubject(input.SubjectId, clock.GetUtcNow());
+        sample.UpdateDraft(input.TopicId, input.Title, input.Description, clock.GetUtcNow());
+        audit.AddCurrent("ShowcaseDraftUpdated", "TeacherTeachingSample", sample.Id.ToString(), "Teacher Showcase draft metadata updated.");
+        await db.SaveChangesAsync(ct);
+        return MapShowcase(sample);
+    }
+
+    public async Task<TeacherShowcaseDto> UploadShowcaseVideoAsync(
+        string teacherId, Guid id, Stream stream, string fileName, string contentType,
+        long size, string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        var sample = await OwnedShowcaseAsync(teacherId, id, tracking: true, ct);
+        ApplyVersionToSample(sample, version);
+        if (sample.ModerationStatus != ShowcaseModerationStatus.Draft)
+            throw new DomainException("draft_required", "Only a Draft Showcase can accept media.");
+        var stored = await files.StorePrivateVideoAsync(stream, fileName, contentType, size, ct);
+        sample.CurrentVersion().ReplaceVideo(
+            stored.StorageKey, SafeFileName(fileName), stored.ContentType, stored.Size);
+        audit.AddCurrent("ShowcaseVersionUploaded", "TeacherTeachingSample", sample.Id.ToString(), "Draft MP4 media uploaded.");
+        try { await db.SaveChangesAsync(ct); }
+        catch
+        {
+            await files.DeletePrivateFileAsync(stored.StorageKey, ct);
+            throw;
+        }
+        return MapShowcase(sample);
+    }
+
+    public async Task SubmitShowcaseAsync(
+        string teacherId, Guid id, string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockShowcaseAsync(id, ct);
+        var sample = await OwnedShowcaseAsync(teacherId, id, tracking: true, ct);
+        ApplyVersionToSample(sample, version);
+        await RequireActiveQualificationAsync(teacherId, sample.SubjectId, ct);
+        await RequireValidTopicAsync(sample.SubjectId, sample.CurrentVersion().TopicId, ct);
+        sample.Submit(teacherId, clock.GetUtcNow());
+        await NotifyQualityReviewersAsync(sample, ct);
+        audit.AddCurrent("ShowcaseSubmitted", "TeacherTeachingSample", sample.Id.ToString(), $"Showcase version {sample.CurrentVersion().VersionNumber} submitted.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    public async Task<TeacherShowcaseDto> CreateShowcaseVersionAsync(
+        string teacherId, Guid id, string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockShowcaseAsync(id, ct);
+        var sample = await OwnedShowcaseAsync(teacherId, id, tracking: true, ct);
+        ApplyVersionToSample(sample, version);
+        if (sample.Versions.Count >= _showcaseOptions.MaxVersionsPerShowcase)
+            throw new DomainException("sample_version_limit", "The Showcase version limit has been reached.");
+        sample.CreateNextVersion(clock.GetUtcNow());
+        audit.AddCurrent("ShowcaseVersionCreated", "TeacherTeachingSample", sample.Id.ToString(), $"Showcase version {sample.CurrentVersion().VersionNumber} created.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return MapShowcase(sample);
+    }
+
+    public async Task ArchiveShowcaseAsync(
+        string teacherId, Guid id, string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockShowcaseAsync(id, ct);
+        var sample = await OwnedShowcaseAsync(teacherId, id, tracking: true, ct);
+        ApplyVersionToSample(sample, version);
+        sample.Archive(clock.GetUtcNow());
+        audit.AddCurrent("ShowcaseArchived", "TeacherTeachingSample", sample.Id.ToString(), "Teacher archived approved Showcase.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    public async Task ReorderShowcasesAsync(
+        string teacherId, ShowcaseOrderInput input, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        var ids = input.Ids?.Distinct().ToArray() ?? [];
+        if (ids.Length is 0 or > 6 || ids.Length != (input.Ids?.Count ?? 0))
+            throw new DomainException("invalid_sample_order", "Supply each approved Showcase exactly once.");
+        var samples = await db.TeacherTeachingSamples.Where(x =>
+            x.TeacherId == teacherId && x.SourceType == TeachingSampleSourceType.TeacherShowcase
+            && x.ModerationStatus == ShowcaseModerationStatus.Approved && x.ArchivedAt == null).ToArrayAsync(ct);
+        if (samples.Length != ids.Length || samples.Any(x => !ids.Contains(x.Id)))
+            throw new DomainException("invalid_sample_order", "Supply each approved Showcase exactly once.");
+        var now = clock.GetUtcNow();
+        for (var index = 0; index < ids.Length; index++)
+            samples.Single(x => x.Id == ids[index]).SetDisplayOrder(index, now);
+        audit.AddCurrent("ShowcaseReordered", "TeacherTeachingSample", teacherId, "Approved Teacher Showcases reordered.");
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(
+        ShowcaseModerationStatus? status, int page, int pageSize, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        if (status is not null and not (ShowcaseModerationStatus.Submitted or ShowcaseModerationStatus.UnderReview))
+            throw new DomainException("invalid_sample_status", "The moderation queue supports Submitted and UnderReview.");
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var query =
+            from version in db.TeacherTeachingSampleVersions.AsNoTracking()
+            join sample in db.TeacherTeachingSamples.AsNoTracking()
+                on version.TeacherTeachingSampleId equals sample.Id
+            join user in db.Users.AsNoTracking() on sample.TeacherId equals user.Id
+            join subject in db.Subjects.AsNoTracking() on sample.SubjectId equals subject.Id
+            join topicValue in db.Topics.AsNoTracking() on version.TopicId equals topicValue.Id into topicRows
+            from topic in topicRows.DefaultIfEmpty()
+            where sample.SourceType == TeachingSampleSourceType.TeacherShowcase
+                && sample.CurrentVersionId == version.Id && sample.ArchivedAt == null
+                && (status.HasValue
+                    ? version.Status == status
+                    : version.Status == ShowcaseModerationStatus.Submitted
+                        || version.Status == ShowcaseModerationStatus.UnderReview)
+            select new { version, sample, user, subject, topic };
+        var total = await query.CountAsync(ct);
+        var rows = await query.OrderBy(x => x.version.SubmittedAt).ThenBy(x => x.version.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
+        return new(rows.Select(x => new ShowcaseQueueItemDto(
+            x.sample.Id, x.version.Id, x.version.VersionNumber, x.sample.TeacherId, x.user.FullName,
+            x.sample.SubjectId, x.subject.Name, x.subject.NameAr, x.version.TopicId,
+            x.topic == null ? null : x.topic.Name, x.topic == null ? null : x.topic.NameAr,
+            x.version.Title, x.version.Description, x.version.OriginalFileName ?? "showcase.mp4",
+            x.version.FileSize, x.version.SubmittedAt!.Value, x.version.Status,
+            x.version.AssignedReviewerId, Convert.ToBase64String(x.version.RowVersion))).ToArray(),
+            page, pageSize, total);
+    }
+
+    public async Task StartShowcaseReviewAsync(
+        string reviewerId, Guid id, Guid versionId, string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockShowcaseAsync(id, ct);
+        var sample = await ReviewableShowcaseAsync(id, versionId, ct);
+        ApplyVersion(sample.CurrentVersion(), version);
+        sample.StartReview(reviewerId, clock.GetUtcNow());
+        audit.AddCurrent("ShowcaseReviewStarted", "TeacherTeachingSample", id.ToString(), $"Showcase version {sample.CurrentVersion().VersionNumber} review started.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    public async Task DecideShowcaseAsync(
+        string reviewerId, Guid id, Guid versionId, ShowcaseDecisionInput input,
+        string version, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockShowcaseAsync(id, ct);
+        var sample = await ReviewableShowcaseAsync(id, versionId, ct);
+        await LockShowcaseSubjectAsync(sample.TeacherId, sample.SubjectId, ct);
+        ApplyVersion(sample.CurrentVersion(), version);
+        if (input.Decision == ShowcaseDecision.Approve)
+        {
+            await RequireActiveQualificationAsync(sample.TeacherId, sample.SubjectId, ct);
+            await RequireValidTopicAsync(sample.SubjectId, sample.CurrentVersion().TopicId, ct);
+            var versionEntity = sample.CurrentVersion();
+            if (versionEntity.StorageKey is null
+                || !await files.PrivateFileExistsAsync(versionEntity.StorageKey, ct))
+                throw new DomainException("inaccessible_media", "Showcase media is unavailable.");
+            var teacherPublicCount = await db.TeacherTeachingSamples.CountAsync(x =>
+                x.TeacherId == sample.TeacherId && x.Id != sample.Id
+                && x.SourceType == TeachingSampleSourceType.TeacherShowcase
+                && x.ModerationStatus == ShowcaseModerationStatus.Approved && x.ArchivedAt == null, ct);
+            var subjectPublicCount = await db.TeacherTeachingSamples.CountAsync(x =>
+                x.TeacherId == sample.TeacherId && x.SubjectId == sample.SubjectId && x.Id != sample.Id
+                && x.SourceType == TeachingSampleSourceType.TeacherShowcase
+                && x.ModerationStatus == ShowcaseModerationStatus.Approved && x.ArchivedAt == null, ct);
+            if (teacherPublicCount >= _showcaseOptions.MaxPublicPerTeacher
+                || subjectPublicCount >= _showcaseOptions.MaxPublicPerSubject)
+                throw new DomainException("sample_public_limit", "Archive an approved Showcase before approving another.");
+        }
+        sample.Decide(
+            reviewerId, input.Decision, input.ReasonCode,
+            input.TeacherVisibleNote, input.InternalNote, clock.GetUtcNow());
+        var status = sample.ModerationStatus!.Value;
+        await notifications.QueueAsync(
+            sample.TeacherId, $"Showcase{status}", $"Teacher Showcase {status}",
+            input.TeacherVisibleNote ?? $"Your Teacher Showcase was {status.ToString().ToLowerInvariant()}.",
+            "/app/Tafseel-Teacher-Dashboard.dc.html?section=samples",
+            $"showcase:{sample.Id}:version:{versionId}:decision:{status}", true, ct);
+        audit.AddCurrent(
+            status switch
+            {
+                ShowcaseModerationStatus.Approved => "ShowcaseApproved",
+                ShowcaseModerationStatus.ChangesRequested => "ShowcaseChangesRequested",
+                _ => "ShowcaseRejected"
+            },
+            "TeacherTeachingSample", id.ToString(),
+            $"Showcase version {sample.CurrentVersion().VersionNumber} decision: {status}.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    public async Task<SampleFile> OpenShowcaseVersionAsync(
+        string requesterId, bool canReview, Guid id, Guid versionId, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        var row = await (
+            from version in db.TeacherTeachingSampleVersions.AsNoTracking()
+            join sample in db.TeacherTeachingSamples.AsNoTracking()
+                on version.TeacherTeachingSampleId equals sample.Id
+            where sample.Id == id && version.Id == versionId
+                && sample.SourceType == TeachingSampleSourceType.TeacherShowcase
+            select new { version, sample }).SingleOrDefaultAsync(ct)
+            ?? throw new DomainException("sample_not_found", "Teacher Showcase was not found.");
+        var owner = string.Equals(row.sample.TeacherId, requesterId, StringComparison.Ordinal);
+        var reviewable = canReview && row.version.Status != ShowcaseModerationStatus.Draft;
+        if (!owner && !reviewable)
+            throw new DomainException("sample_not_found", "Teacher Showcase was not found.");
+        if (row.version.StorageKey is null
+            || !await files.PrivateFileExistsAsync(row.version.StorageKey, ct))
+            throw new DomainException("inaccessible_media", "Showcase media is unavailable.");
+        return new(await files.OpenPrivateVideoAsync(row.version.StorageKey, ct), "video/mp4");
     }
 
     public async Task<AvailabilityRuleDto> AddAvailabilityRuleAsync(string teacherId, AvailabilityRuleInput input, CancellationToken ct)
@@ -520,6 +831,7 @@ internal sealed class MarketplaceService(
         try
         {
             await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            await LockScheduleAsync(teacherId, ct);
             if (await db.TeacherAvailabilityRules.AnyAsync(x => x.TeacherId == teacherId
                     && x.DayOfWeek == input.DayOfWeek && x.Start < input.End && input.Start < x.End, ct))
                 throw new DomainException("availability_conflict", "The availability rule overlaps an existing rule.");
@@ -542,18 +854,42 @@ internal sealed class MarketplaceService(
 
     public async Task RemoveAvailabilityRuleAsync(string teacherId, Guid id, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockScheduleAsync(teacherId, ct);
         var rule = await db.TeacherAvailabilityRules.SingleOrDefaultAsync(x => x.Id == id && x.TeacherId == teacherId, ct)
             ?? throw new DomainException("availability_not_owned", "Availability rule was not found.");
+        var reserving = await db.LiveSessionBookings.AsNoTracking()
+            .Where(x => x.TeacherId == teacherId
+                && (x.Status == LiveSessionStatus.AwaitingPayment
+                    || x.Status == LiveSessionStatus.Confirmed)
+                && x.EndsAt > clock.GetUtcNow())
+            .ToArrayAsync(ct);
+        if (reserving.Any(booking => RuleContains(rule, booking.StartsAt, booking.EndsAt)))
+            throw new DomainException(
+                "availability_booking_conflict",
+                "The availability rule contains a reserved future session.");
         db.Remove(rule);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<AvailabilityExceptionDto> AddAvailabilityExceptionAsync(string teacherId, AvailabilityExceptionInput input, CancellationToken ct)
     {
         await RequireTeacherAsync(teacherId, ct);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockScheduleAsync(teacherId, ct);
         var item = new TeacherAvailabilityException(teacherId, input.StartsAt, input.EndsAt, input.Reason ?? "");
+        if (await db.LiveSessionBookings.AsNoTracking().AnyAsync(x =>
+                x.TeacherId == teacherId
+                && (x.Status == LiveSessionStatus.AwaitingPayment
+                    || x.Status == LiveSessionStatus.Confirmed)
+                && x.StartsAt < item.EndsAt && item.StartsAt < x.EndsAt, ct))
+            throw new DomainException(
+                "availability_booking_conflict",
+                "An availability exception cannot overlap a reserved session.");
         db.Add(item);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return Map(item);
     }
 
@@ -693,13 +1029,13 @@ internal sealed class MarketplaceService(
         var teacherId = profile.TeacherId;
         var subjects = await db.TeacherSubjectQualifications.AsNoTracking().Where(x => x.TeacherId == teacherId
                 && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null)
-            .Join(db.Subjects, x => x.SubjectId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
+            .Join(db.Subjects, x => x.SubjectId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
         var topics = await db.TeacherTopics.AsNoTracking().Where(x => x.TeacherId == teacherId)
-            .Join(db.Topics, x => x.TopicId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
+            .Join(db.Topics, x => x.TopicId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
         var languages = await db.TeacherLanguages.AsNoTracking().Where(x => x.TeacherId == teacherId)
-            .Join(db.TeachingLanguages, x => x.LanguageId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
+            .Join(db.TeachingLanguages, x => x.LanguageId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
         var levels = await db.TeacherEducationLevels.AsNoTracking().Where(x => x.TeacherId == teacherId)
-            .Join(db.EducationLevels, x => x.EducationLevelId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name)).ToArrayAsync(ct);
+            .Join(db.EducationLevels, x => x.EducationLevelId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
         var hasActiveQualification = subjects.Length > 0;
         var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking().AnyAsync(x => x.TeacherId == teacherId, ct);
         var servicesQuery =
@@ -708,7 +1044,9 @@ internal sealed class MarketplaceService(
                 on ts.ServiceCatalogItemId equals type.Id
             where ts.TeacherId == teacherId
             select new { ts, type };
-        var samplesQuery = db.TeacherTeachingSamples.AsNoTracking().Where(x => x.TeacherId == teacherId);
+        var samplesQuery = db.TeacherTeachingSamples.AsNoTracking()
+            .Include(x => x.Versions)
+            .Where(x => x.TeacherId == teacherId);
         if (publicOnly)
         {
             servicesQuery = servicesQuery.Where(x => x.ts.IsActive
@@ -719,18 +1057,46 @@ internal sealed class MarketplaceService(
                 && x.type.IsActive
                 && x.type.IsPublic
                 && x.type.TeacherSelectable);
-            samplesQuery = samplesQuery.Where(x => x.PublishedAt != null
+            samplesQuery = samplesQuery.Where(x =>
+                (x.SourceType == TeachingSampleSourceType.QualificationGenerated && x.PublishedAt != null
+                    || ShowcasesEnabled
+                        && x.SourceType == TeachingSampleSourceType.TeacherShowcase
+                        && x.ModerationStatus == ShowcaseModerationStatus.Approved
+                        && x.ArchivedAt == null && x.ApprovedVersionId != null && x.PublishedAt != null)
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
                     && q.SubjectId == x.SubjectId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
         }
         var services = (await servicesQuery.ToArrayAsync(ct))
             .OrderBy(x => x.type.DisplayOrder).ThenBy(x => x.ts.CreatedAt)
             .Select(x => Map(x.ts, x.type, profile.IsPublished, hasActiveQualification, hasAvailability))
             .ToArray();
-        var samples = (await samplesQuery.ToArrayAsync(ct)).Select(Map).ToArray();
-        var rules = (await db.TeacherAvailabilityRules.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
-        var exceptions = (await db.TeacherAvailabilityExceptions.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
+        var sampleRows = await samplesQuery
+            .OrderBy(x => x.SourceType).ThenBy(x => x.DisplayOrder).ThenBy(x => x.CreatedAt).ThenBy(x => x.Id)
+            .ToArrayAsync(ct);
+        if (publicOnly)
+        {
+            var available = new List<TeacherTeachingSample>(sampleRows.Length);
+            foreach (var sample in sampleRows)
+            {
+                var key = sample.SourceType == TeachingSampleSourceType.QualificationGenerated
+                    ? sample.StorageKey
+                    : sample.Versions.SingleOrDefault(x => x.Id == sample.ApprovedVersionId)?.StorageKey;
+                if (key is not null && await files.PrivateFileExistsAsync(key, ct))
+                    available.Add(sample);
+            }
+            sampleRows = available.ToArray();
+        }
+        var samples = sampleRows.Select(Map).ToArray();
+        var rules = publicOnly
+            ? []
+            : (await db.TeacherAvailabilityRules.AsNoTracking()
+                .Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
+        var exceptions = publicOnly
+            ? []
+            : (await db.TeacherAvailabilityExceptions.AsNoTracking()
+                .Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
         var certifications = (await db.TeacherCertifications.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
         var experience = (await db.TeacherExperiences.AsNoTracking().Where(x => x.TeacherId == teacherId).ToArrayAsync(ct)).Select(Map).ToArray();
         var user = await db.Users.AsNoTracking().SingleAsync(x => x.Id == teacherId, ct);
@@ -738,15 +1104,19 @@ internal sealed class MarketplaceService(
             && !string.IsNullOrWhiteSpace(profile.Bio)
             && !string.IsNullOrWhiteSpace(profile.Country)
             && !string.IsNullOrWhiteSpace(profile.City);
-        var hasEligibleService = services.Any(x => x.IsActive && x.IsCatalogActive
-            && x.IsPublic && x.TeacherSelectable
-            && (!x.RequiresScheduling || hasAvailability));
+        var verifiedSubjectIds = subjects.Select(x => x.Id).ToHashSet();
         var blockers = new List<string>();
         if (!user.EmailConfirmed) blockers.Add("email_unconfirmed");
         if (user.IsSuspended) blockers.Add("account_suspended");
         if (!hasActiveQualification) blockers.Add("qualification_required");
         if (!profileComplete) blockers.Add("profile_incomplete");
-        if (!hasEligibleService) blockers.Add("eligible_active_service_required");
+        if (!services.Any(x => x.IsActive && x.IsCatalogActive && x.IsPublic && x.TeacherSelectable
+                && verifiedSubjectIds.Contains(x.SubjectId)))
+            blockers.Add("eligible_active_service_required");
+        else if (services.Any(x => x.IsActive && x.IsCatalogActive && x.IsPublic && x.TeacherSelectable
+                && verifiedSubjectIds.Contains(x.SubjectId) && x.RequiresScheduling)
+            && !hasAvailability)
+            blockers.Add("availability_required");
         var eligible = blockers.Count == 0;
         return new(
             teacherId, await TeacherNameAsync(teacherId, ct), profile.Headline, profile.Bio, profile.Country,
@@ -768,6 +1138,138 @@ internal sealed class MarketplaceService(
     private async Task<TeacherProfile> OwnedProfileAsync(string teacherId, CancellationToken ct) =>
         await db.TeacherProfiles.SingleOrDefaultAsync(x => x.TeacherId == teacherId, ct)
         ?? throw new DomainException("profile_not_found", "Teacher profile was not found.");
+
+    private bool ShowcasesEnabled =>
+        environment.IsDevelopment() || environment.IsEnvironment("Testing") || _showcaseOptions.Enabled;
+
+    private void RequireShowcasesEnabled()
+    {
+        if (!ShowcasesEnabled)
+            throw new DomainException(
+                "showcase_unavailable",
+                "Teacher Showcases are not enabled in this environment.");
+    }
+
+    private async Task<TeacherTeachingSample> OwnedShowcaseAsync(
+        string teacherId, Guid id, bool tracking, CancellationToken ct)
+    {
+        IQueryable<TeacherTeachingSample> query = db.TeacherTeachingSamples.Include(x => x.Versions);
+        if (!tracking) query = query.AsNoTracking();
+        return await query.SingleOrDefaultAsync(x =>
+                x.Id == id && x.TeacherId == teacherId
+                && x.SourceType == TeachingSampleSourceType.TeacherShowcase, ct)
+            ?? throw new DomainException("sample_not_owned", "Teacher Showcase was not found.");
+    }
+
+    private async Task<TeacherTeachingSample> ReviewableShowcaseAsync(
+        Guid id, Guid versionId, CancellationToken ct)
+    {
+        var sample = await db.TeacherTeachingSamples.Include(x => x.Versions)
+            .SingleOrDefaultAsync(x =>
+                x.Id == id && x.SourceType == TeachingSampleSourceType.TeacherShowcase
+                && x.CurrentVersionId == versionId && x.ArchivedAt == null, ct)
+            ?? throw new DomainException("sample_not_found", "Teacher Showcase was not found.");
+        if (sample.CurrentVersion().Id != versionId)
+            throw new DomainException("sample_version_not_found", "Teacher Showcase version was not found.");
+        return sample;
+    }
+
+    private async Task RequireShowcaseCapacityAsync(
+        string teacherId, Guid subjectId, CancellationToken ct)
+    {
+        var total = await db.TeacherTeachingSamples.CountAsync(x =>
+            x.TeacherId == teacherId && x.SourceType == TeachingSampleSourceType.TeacherShowcase
+            && x.ArchivedAt == null, ct);
+        var subject = await db.TeacherTeachingSamples.CountAsync(x =>
+            x.TeacherId == teacherId && x.SubjectId == subjectId
+            && x.SourceType == TeachingSampleSourceType.TeacherShowcase && x.ArchivedAt == null, ct);
+        if (total >= _showcaseOptions.MaxPublicPerTeacher
+            || subject >= _showcaseOptions.MaxPublicPerSubject)
+            throw new DomainException(
+                "sample_limit",
+                "Archive an existing Teacher Showcase before creating another.");
+    }
+
+    private async Task RequireValidTopicAsync(Guid subjectId, Guid? topicId, CancellationToken ct)
+    {
+        if (topicId.HasValue && !await db.Topics.AnyAsync(x =>
+                x.Id == topicId && x.SubjectId == subjectId && x.IsActive, ct))
+            throw new DomainException("invalid_topic", "An active topic in the selected subject is required.");
+    }
+
+    private async Task<bool> IsPublicSampleAsync(
+        TeacherTeachingSample sample, string? storageKey, CancellationToken ct)
+    {
+        if (!sample.IsPublished || storageKey is null)
+            return false;
+        if (sample.SourceType == TeachingSampleSourceType.TeacherShowcase
+            && (!ShowcasesEnabled || sample.ModerationStatus != ShowcaseModerationStatus.Approved
+                || sample.ArchivedAt.HasValue || sample.ApprovedVersionId is null))
+            return false;
+        return await db.TeacherProfiles.AsNoTracking().AnyAsync(x =>
+                x.TeacherId == sample.TeacherId && x.IsPublished, ct)
+            && await db.Users.AsNoTracking().AnyAsync(x =>
+                x.Id == sample.TeacherId && x.EmailConfirmed && !x.IsSuspended, ct)
+            && await db.Subjects.AsNoTracking().AnyAsync(x =>
+                x.Id == sample.SubjectId && x.IsActive, ct)
+            && await db.TeacherSubjectQualifications.AsNoTracking().AnyAsync(x =>
+                x.TeacherId == sample.TeacherId && x.SubjectId == sample.SubjectId
+                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct)
+            && await files.PrivateFileExistsAsync(storageKey, ct);
+    }
+
+    private async Task NotifyQualityReviewersAsync(
+        TeacherTeachingSample sample, CancellationToken ct)
+    {
+        var roleId = await db.Roles.AsNoTracking()
+            .Where(x => x.Name == Tafseel.Application.Authorization.Roles.QualityReviewer)
+            .Select(x => x.Id).SingleAsync(ct);
+        var reviewerIds = await db.UserRoles.AsNoTracking().Where(x => x.RoleId == roleId)
+            .Select(x => x.UserId).ToArrayAsync(ct);
+        foreach (var reviewerId in reviewerIds)
+            await notifications.QueueAsync(
+                reviewerId, "ShowcaseSubmitted", "Teacher Showcase submitted",
+                "A Teacher Showcase is ready for Quality review.",
+                "/app/Tafseel-Quality-Dashboard.dc.html?section=showcases",
+                $"showcase:{sample.Id}:version:{sample.CurrentVersionId}:submitted:{reviewerId}",
+                false, ct);
+    }
+
+    private Task LockShowcaseAsync(Guid id, CancellationToken ct) =>
+        db.Database.IsSqlServer()
+            ? db.Database.ExecuteSqlInterpolatedAsync(
+                $"EXEC sp_getapplock @Resource={"teacher-showcase:" + id}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
+            : Task.CompletedTask;
+
+    private Task LockShowcaseSubjectAsync(string teacherId, Guid subjectId, CancellationToken ct) =>
+        db.Database.IsSqlServer()
+            ? db.Database.ExecuteSqlInterpolatedAsync(
+                $"EXEC sp_getapplock @Resource={"teacher-showcase-subject:" + teacherId + ":" + subjectId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
+            : Task.CompletedTask;
+
+    private void ApplyVersion(TeacherTeachingSampleVersion versionEntity, string version)
+    {
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(version.Trim('"')); }
+        catch { throw new DomainException("invalid_concurrency_token", "The Showcase version is invalid."); }
+        db.Entry(versionEntity).Property(x => x.RowVersion).OriginalValue = bytes;
+    }
+
+    private void ApplyVersionToSample(TeacherTeachingSample sample, string version)
+    {
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(version.Trim('"')); }
+        catch { throw new DomainException("invalid_concurrency_token", "The Showcase version is invalid."); }
+        db.Entry(sample).Property(x => x.RowVersion).OriginalValue = bytes;
+    }
+
+    private static string SafeFileName(string fileName)
+    {
+        var name = Path.GetFileName(fileName);
+        if (name.Length is 0 or > 255)
+            throw new DomainException("invalid_file_name", "The uploaded file name is invalid.");
+        return name;
+    }
 
     private async Task<TeacherService> OwnedServiceAsync(string teacherId, Guid id, string version, CancellationToken ct)
     {
@@ -796,6 +1298,26 @@ internal sealed class MarketplaceService(
 
     private async Task<string> TeacherNameAsync(string teacherId, CancellationToken ct) =>
         await db.Users.AsNoTracking().Where(x => x.Id == teacherId).Select(x => x.FullName).SingleAsync(ct);
+
+    private Task LockScheduleAsync(string teacherId, CancellationToken ct) =>
+        db.Database.IsSqlServer()
+            ? db.Database.ExecuteSqlInterpolatedAsync(
+                $"EXEC sp_getapplock @Resource={"session-schedule:" + teacherId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
+            : Task.CompletedTask;
+
+    private static bool RuleContains(
+        TeacherAvailabilityRule rule,
+        DateTimeOffset startsAt,
+        DateTimeOffset endsAt)
+    {
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(rule.TimeZoneId);
+        var localStart = TimeZoneInfo.ConvertTime(startsAt, zone);
+        var localEnd = TimeZoneInfo.ConvertTime(endsAt, zone);
+        return localStart.Date == localEnd.Date
+            && localStart.DayOfWeek == rule.DayOfWeek
+            && TimeOnly.FromDateTime(localStart.DateTime) >= rule.Start
+            && TimeOnly.FromDateTime(localEnd.DateTime) <= rule.End;
+    }
 
     private static TeacherServiceDto Map(
         TeacherService x,
@@ -839,8 +1361,50 @@ internal sealed class MarketplaceService(
             canBook,
             Convert.ToBase64String(x.RowVersion));
     }
-    private static TeachingSampleDto Map(TeacherTeachingSample x) =>
-        new(x.Id, x.SubjectId, x.TopicId, x.Title, x.DurationSeconds, x.PublishedAt);
+    private static TeachingSampleDto Map(TeacherTeachingSample x)
+    {
+        if (x.SourceType == TeachingSampleSourceType.QualificationGenerated)
+            return new(
+                x.Id, x.SubjectId, x.TopicId, x.Title, x.DurationSeconds, x.PublishedAt,
+                "qualification_sample", "qualification_sample");
+        var versionId = x.ApprovedVersionId ?? x.CurrentVersionId;
+        var version = x.Versions.SingleOrDefault(item => item.Id == versionId)
+            ?? throw new DomainException("sample_version_not_found", "Teacher Showcase version was not found.");
+        return Map(x, version);
+    }
+
+    private static TeachingSampleDto Map(
+        TeacherTeachingSample sample, TeacherTeachingSampleVersion version) =>
+        new(
+            sample.Id, sample.SubjectId, version.TopicId, version.Title,
+            version.DurationSeconds, sample.PublishedAt,
+            sample.ModerationStatus == ShowcaseModerationStatus.Approved
+                ? "reviewed_showcase" : "teacher_showcase",
+            sample.ModerationStatus == ShowcaseModerationStatus.Approved
+                ? "reviewed_showcase" : "private_showcase",
+            version.Description, sample.DisplayOrder);
+
+    private static ShowcaseVersionDto MapShowcaseVersion(TeacherTeachingSampleVersion version) =>
+        new(
+            version.Id, version.VersionNumber, version.TopicId, version.Title, version.Description,
+            version.Status, version.OriginalFileName, version.ContentType, version.FileSize,
+            version.DurationSeconds, version.CreatedAt, version.SubmittedAt,
+            version.DecisionReasonCode, version.TeacherVisibleNote,
+            Convert.ToBase64String(version.RowVersion));
+
+    private static TeacherShowcaseDto MapShowcase(TeacherTeachingSample sample)
+    {
+        var current = sample.Versions.SingleOrDefault(x => x.Id == sample.CurrentVersionId)
+            ?? throw new DomainException("sample_version_not_found", "The current Showcase version was not found.");
+        return new(
+            sample.Id, sample.SubjectId, sample.SourceType,
+            sample.ModerationStatus ?? ShowcaseModerationStatus.Draft,
+            sample.CurrentVersionId, sample.ApprovedVersionId, sample.ArchivedAt,
+            sample.DisplayOrder, Convert.ToBase64String(sample.RowVersion),
+            MapShowcaseVersion(current),
+            sample.Versions.OrderByDescending(x => x.VersionNumber)
+                .Take(20).Select(MapShowcaseVersion).ToArray());
+    }
     private static AvailabilityRuleDto Map(TeacherAvailabilityRule x) =>
         new(x.Id, x.DayOfWeek, x.Start, x.End, x.TimeZoneId, x.SlotMinutes);
     private static AvailabilityExceptionDto Map(TeacherAvailabilityException x) =>

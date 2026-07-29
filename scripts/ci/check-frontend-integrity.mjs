@@ -67,6 +67,36 @@ for (const page of pages) {
   }
 }
 
+{
+  const browse = readFileSync("Tafseel-Browse-Teachers.dc.html", "utf8");
+  const profile = readFileSync("Tafseel-Teacher-Profile.dc.html", "utf8");
+  const shared = readFileSync("js/tafseel.js", "utf8");
+
+  if (/Online now|onlineOnly|weekOnly|Available this week/.test(browse))
+    throw new Error("Browse Teachers must not infer online state or use the legacy schedule-presence filter.");
+  if (!/Tafseel\.availabilityPath\(ids\)/.test(browse)
+      || !/availabilityByTeacher/.test(browse)
+      || !/\['availability', 'availability_field'/.test(browse))
+    throw new Error("Browse and comparison must use the canonical bounded availability batch.");
+  if (!/Tafseel\.availabilityPath\(\[teacherId\]\)/.test(profile)
+      || /profile\.availability/.test(profile))
+    throw new Error("Public Teacher Profile must use the summary and must not render raw weekly rules.");
+  for (const state of [
+    "available_today",
+    "next_available",
+    "no_upcoming_availability",
+    "no_schedule_configured",
+    "temporarily_unavailable",
+    "fully_booked",
+    "not_applicable"
+  ]) {
+    if (!shared.includes(state))
+      throw new Error(`Shared availability presenter is missing state '${state}'.`);
+  }
+  if (!/new Intl\.DateTimeFormat/.test(shared) || !/timeZone: zone/.test(shared))
+    throw new Error("Availability timestamps must be localized with Intl in the viewer timezone.");
+}
+
 const adminPage = "Tafseel-Admin-Dashboard.dc.html";
 if (!existsSync(adminPage))
   throw new Error(`Missing ${adminPage}`);
@@ -430,6 +460,12 @@ if (/grid-template-columns\s*:\s*repeat\(\s*3\s*,/.test(landing) && !/tf-stat-gr
   throw new Error("Landing must not keep an unmarked rigid repeat(3) grid.");
 if (/grid-template-columns\s*:\s*repeat\(\s*2\s*,/.test(landing) && !landing.includes("tf-cols-2") && !landing.includes("data-stack"))
   throw new Error("Landing must not keep an unmarked rigid repeat(2) reasons grid.");
+if (!/\/subjects\/featured/.test(landing) || !/take=4/.test(landing))
+  throw new Error("Landing featured subjects must load GET /subjects/featured?take=4 from the API.");
+if (/liveSubjects:\s*\(subjects\s*\|\|\s*\[\]\)\.map/.test(landing) && !/featured/.test(landing))
+  throw new Error("Landing must not render the full /subjects catalog as featured tiles.");
+if (!/subjectId=['"]?\s*\+\s*encodeURIComponent\(subject\.id\)/.test(landing))
+  throw new Error("Landing featured subject tiles must deep-link with subjectId, not a search name.");
 if (!/Tafseel\.api\.ready\(\)/.test(landing) || !/accountName/.test(landing))
   throw new Error("Landing must preserve and display the real signed-in session.");
 if (!/Tafseel-Auth\.dc\.html\?mode=register&role=teacher/.test(landing))
@@ -448,7 +484,27 @@ for (const page of ["Tafseel-Book-Session.dc.html", "Tafseel-Request.dc.html"]) 
   if (readFileSync(page, "utf8").includes("profile.responseTimeMinutes"))
     throw new Error(`${page} must not fabricate a public response-time claim.`);
 }
+{
+  const requestPage = readFileSync("Tafseel-Request.dc.html", "utf8");
+  if (!requestPage.includes("js/guided-request.js"))
+    throw new Error("Request page must load guided-request helpers.");
+  if (!requestPage.includes("If-Match") || !/uploaded\.version|uploaded && uploaded\.version/.test(requestPage))
+    throw new Error("Request page must chain attachment uploads with the latest version.");
+  if (!requestPage.includes("req_file_reselect_warning") && !requestPage.includes("fileReselectWarning"))
+    throw new Error("Request page must warn that files are not restored after refresh.");
+  if (!requestPage.includes("showSchedulingOnly") || !requestPage.includes("Tafseel-Book-Session.dc.html"))
+    throw new Error("Request page must redirect scheduling-only services to Book Session.");
+  if (!requestPage.includes("checklistItems") || (!requestPage.includes("composeDescription") && !requestPage.includes("buildDescription")))
+    throw new Error("Request page must expose checklist and description composition.");
+  const apiProgram = readFileSync("src/Tafseel.Api/Program.cs", "utf8");
+  if (!apiProgram.includes('"guided-request.js"') && !apiProgram.includes("guided-request.js"))
+    throw new Error("API static allowlist must serve js/guided-request.js.");
+}
 const studentDashboard = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
+if (/href\s*=\s*["']Tafseel-Request\.dc\.html["']/.test(studentDashboard))
+  throw new Error("Student Dashboard must not open the Request wizard without a Teacher.");
+if (!studentDashboard.includes("Tafseel-Browse-Teachers.dc.html") || !studentDashboard.includes("dash_new_request"))
+  throw new Error("Student Dashboard new-request CTA must route to Browse Teachers.");
 if (/rating:\s*String\(x\.rating\)/.test(studentDashboard) || !/x\.rating\s*!=\s*null/.test(studentDashboard))
   throw new Error("Student saved-teacher cards must distinguish missing ratings from a real zero.");
 const teacherDashboard = readFileSync("Tafseel-Teacher-Dashboard.dc.html", "utf8");
@@ -512,6 +568,25 @@ if (!/trend_unavailable/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "u
   throw new Error("Admin overview must expose Tafseel.t('trend_unavailable') when analytics APIs are absent.");
 if (!/chartsEmpty/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "utf8")))
   throw new Error("Admin overview must gate charts behind chartsEmpty / chartsReady.");
+{
+  const quality = readFileSync("Tafseel-Quality-Dashboard.dc.html", "utf8");
+  if (/Sami Mattar/.test(quality) || />SM</.test(quality))
+    throw new Error("Quality Dashboard must not hardcode reviewer identity.");
+  if (!/accountName/.test(quality))
+    throw new Error("Quality Dashboard must render the signed-in reviewer name.");
+}
+{
+  const student = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
+  if (/Welcome back, Noor/.test(student))
+    throw new Error("Student Dashboard must not hardcode greeting identity.");
+  if (!/Promise\.allSettled/.test(student))
+    throw new Error("Student Dashboard initial load must use Promise.allSettled.");
+  if (!/dash_search_unavailable/.test(student))
+    throw new Error("Student Dashboard must honestly disable unavailable search.");
+}
+if (!/\/admin\/reports\/popular-subjects/.test(readFileSync("Tafseel-Admin-Dashboard.dc.html", "utf8")))
+  throw new Error("Admin Dashboard must load popular subjects from the real reports API.");
+
 
 const comparisonPage = readFileSync("Tafseel-Browse-Teachers.dc.html", "utf8");
 for (const required of [
@@ -556,6 +631,9 @@ for (const key of [
       languageLabel: language => language.name,
       avatarUrl: () => 'default.svg',
       dashboardHrefForSession: () => '',
+      viewerTimeZone: () => ({ id: 'UTC', fallback: true }),
+      availabilityPath: () => '/live-sessions/availability-summaries',
+      availabilityText: summary => summary && summary.state || 'availability_error',
       toastClass: () => '',
       api: { errorMessage: () => 'error' }
     };
@@ -604,6 +682,63 @@ const css = readFileSync("css/tafseel.css", "utf8");
 for (const token of [".tf-page", ".tf-grid", ".tf-table-wrap", ".tf-stat-grid", ".tf-skip", ".tf-dashboard-shell"]) {
   if (!css.includes(token))
     throw new Error(`css/tafseel.css missing layout system class: ${token}`);
+}
+
+{
+  const teacherDash = readFileSync("Tafseel-Teacher-Dashboard.dc.html", "utf8");
+  const teacherMarkup = markupOf(teacherDash);
+  const teacherLogic = logicOf(teacherDash);
+  if (/Open messages/.test(teacherMarkup))
+    throw new Error("Teacher Dashboard must not expose a sidebar Open messages opener.");
+  if (/aria-label="Messages"[\s\S]{0,80}✉/.test(teacherMarkup) || /✉[\s\S]{0,120}onClick="\{\{\s*openChat\s*\}\}"/.test(teacherMarkup.split("<main")[0] || ""))
+    throw new Error("Teacher Dashboard header must not duplicate messaging via mail icon.");
+  if (!teacherLogic.includes("/teachers/me/eligible-subjects"))
+    throw new Error("Teacher Dashboard must load eligible subjects from /teachers/me/eligible-subjects.");
+  if (!teacherLogic.includes("/teachers/me/publication"))
+    throw new Error("Teacher Dashboard must call /teachers/me/publication for marketplace visibility.");
+  if (/finalPrice:\s*130|deliveryDate:\s*'2026-07-30'/.test(teacherLogic))
+    throw new Error("Teacher Dashboard must not hardcode accept modal price/date demo values.");
+  if (!/Promise\.allSettled/.test(teacherLogic))
+    throw new Error("Teacher Dashboard must load dashboard slices with Promise.allSettled.");
+  const navMatch = teacherLogic.match(/const NAV = \[([\s\S]*?)\];/);
+  if (!navMatch) throw new Error("Teacher Dashboard NAV definition missing.");
+  const navKeys = [...navMatch[1].matchAll(/\['([a-z_]+)'/g)].map(m => m[1]);
+  const requiredNav = ["overview","new","orders","sessions","services","samples","availability","messages","reviews","earnings","withdrawals","profile","settings"];
+  for (const key of requiredNav) {
+    if (!navKeys.includes(key))
+      throw new Error(`Teacher Dashboard NAV missing key: ${key}`);
+  }
+  if (!teacherDash.includes('id="active-orders"') || !teacherDash.includes('id="live-sessions"') || !teacherDash.includes('id="new-requests"'))
+    throw new Error("Teacher Dashboard overview sections must define new-requests, active-orders, and live-sessions anchors.");
+  if (!/overviewAnchors/.test(teacherLogic))
+    throw new Error("Teacher Dashboard nav must map overview anchors for new/orders/sessions.");
+  for (const expected of ["isServices","isSamples","isAvailability","isMessages","isReviewsSection","isEarnings","isWithdrawals","isProfile","isSettings"]) {
+    if (!teacherLogic.includes(expected + ":"))
+      throw new Error(`Teacher Dashboard missing section flag ${expected}.`);
+  }
+}
+
+{
+  const teacher = readFileSync("Tafseel-Teacher-Dashboard.dc.html", "utf8");
+  const quality = readFileSync("Tafseel-Quality-Dashboard.dc.html", "utf8");
+  const profile = readFileSync("Tafseel-Teacher-Profile.dc.html", "utf8");
+  for (const endpoint of ["/teachers/me/showcases", "/teachers/me/showcases/order"]) {
+    if (!teacher.includes(endpoint)) throw new Error(`Teacher Showcase UI missing endpoint: ${endpoint}`);
+  }
+  if (!teacher.includes('accept="video/mp4,.mp4"') || /\bpublish\b/i.test(markupOf(teacher).match(/showcase[\s\S]*?isAvailability/)?.[0] || ""))
+    throw new Error("Teacher Showcase UI must be MP4-only and must not expose direct publication.");
+  for (const endpoint of ["/teachers/showcase-moderation?pageSize=20", "/start-review", "/decision"]) {
+    if (!quality.includes(endpoint)) throw new Error(`Quality Showcase UI missing endpoint: ${endpoint}`);
+  }
+  if (!quality.includes('controls preload="metadata"') || /\bautoplay\b|\<iframe\b/i.test(quality))
+    throw new Error("Quality Showcase preview must use safe controls without autoplay or iframes.");
+  for (const trust of ["qualification_sample", "reviewed_showcase", "trust_qualification_sample", "trust_reviewed_showcase"]) {
+    if (!profile.includes(trust)) throw new Error(`Public profile missing explicit trust separation: ${trust}`);
+  }
+  if (!profile.includes('controls preload="metadata"') || /\bautoplay\b|\<iframe\b/i.test(profile))
+    throw new Error("Public Showcase preview must use safe controls without autoplay or iframes.");
+  if (!css.includes('[data-stack="showcase-review"]'))
+    throw new Error("Showcase review must collapse to one column on mobile.");
 }
 
 console.log(`Frontend integrity validation passed for ${pages.length} entry points.`);

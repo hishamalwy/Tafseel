@@ -637,16 +637,22 @@
         </sc-if>
         <sc-if value="{{ isServiceModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ serviceCodeLabel }}</span>
-            <input value="{{ catalogCode }}" onChange="{{ onCatalogCode }}" placeholder="live_session" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;font-family:var(--font-mono)" />
+            <span style="font-size:13px;font-weight:600">{{ serviceDescEnLabel }}</span>
+            <textarea value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" rows="3" maxlength="1000"
+              style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ serviceDetailLabel }}</span>
-            <input value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span style="font-size:13px;font-weight:600">{{ serviceDescArLabel }}</span>
+            <textarea dir="rtl" value="{{ catalogDetailAr }}" onChange="{{ onCatalogDetailAr }}" rows="3" maxlength="1000"
+              style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ serviceDisplayOrderLabel }}</span>
+            <input type="number" min="0" max="10000" sc-camel-value="{{ catalogDisplayOrder }}" onChange="{{ onCatalogDisplayOrder }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;max-width:160px" />
           </label>
           <label style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--text-2)">
-            <span>{{ serviceSchedulingLabel }}</span>
-            <input type="checkbox" checked="{{ catalogRequiresScheduling }}" onChange="{{ onCatalogRequiresScheduling }}" style="width:36px;height:21px;accent-color:var(--primary)" />
+            <span>{{ serviceActiveLabel }}</span>
+            <input type="checkbox" checked="{{ catalogIsActive }}" onChange="{{ onCatalogIsActive }}" style="width:36px;height:21px;accent-color:var(--primary)" />
           </label>
         </sc-if>
         <sc-if value="{{ isCouponModal }}" hint-placeholder-val="{{ false }}">
@@ -705,9 +711,29 @@
         <input value="{{ editName }}" onChange="{{ onEditName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
       </label>
       <sc-if value="{{ editShowNameAr }}" hint-placeholder-val="{{ false }}">
-        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px">
+        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
           <span style="font-size:13px;font-weight:600" data-i18n="admin_name_arabic">Arabic name</span>
           <input dir="rtl" value="{{ editNameAr }}" onChange="{{ onEditNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+        </label>
+      </sc-if>
+      <sc-if value="{{ editShowServiceFields }}" hint-placeholder-val="{{ false }}">
+        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+          <span style="font-size:13px;font-weight:600">{{ serviceDescEnLabel }}</span>
+          <textarea value="{{ editDetail }}" onChange="{{ onEditDetail }}" rows="3" maxlength="1000"
+            style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+          <span style="font-size:13px;font-weight:600">{{ serviceDescArLabel }}</span>
+          <textarea dir="rtl" value="{{ editDetailAr }}" onChange="{{ onEditDetailAr }}" rows="3" maxlength="1000"
+            style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+          <span style="font-size:13px;font-weight:600">{{ serviceDisplayOrderLabel }}</span>
+          <input type="number" min="0" max="10000" sc-camel-value="{{ editDisplayOrder }}" onChange="{{ onEditDisplayOrder }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;max-width:160px" />
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--text-2);margin-bottom:20px">
+          <span>{{ serviceActiveLabel }}</span>
+          <input type="checkbox" checked="{{ editIsActive }}" onChange="{{ onEditIsActive }}" style="width:36px;height:21px;accent-color:var(--primary)" />
         </label>
       </sc-if>
       <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -765,9 +791,10 @@ class Component extends DCLogic {
     catalogModal: false, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
     catalogDetailAr: '',
     catalogSubjectFilter: '',
-    catalogCode: '', catalogRequiresScheduling: false, catalogDiscountType: '0', catalogDiscountValue: 10,
+    catalogCode: '', catalogRequiresScheduling: false, catalogDisplayOrder: 0, catalogIsActive: true, catalogDiscountType: '0', catalogDiscountValue: 10,
     resourceModal: null, resourceName: '', resourceUrl: '',
-    editModal: null, editName: '', editNameAr: '', usersTotal: 0, liveWithdrawals: [],
+    editModal: null, editName: '', editNameAr: '', editDetail: '', editDetailAr: '', editDisplayOrder: 0, editIsActive: true, usersTotal: 0, liveWithdrawals: [],
+    livePopularSubjects: null,
     usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
 
@@ -819,7 +846,8 @@ class Component extends DCLogic {
         Tafseel.api.get('/admin/disputes?pageSize=100'),
         Tafseel.api.get('/admin/withdrawals?status=0&pageSize=100'),
         Tafseel.api.get('/admin/coupons'),
-        Tafseel.api.get('/admin/catalog/qualification-topics')
+        Tafseel.api.get('/admin/catalog/qualification-topics'),
+        Tafseel.api.get('/admin/reports/popular-subjects')
       ]);
     }).then(results => {
       if (!results) return;
@@ -859,12 +887,11 @@ class Component extends DCLogic {
       }));
       CATALOG_DATA.services = (settled(4) || []).map(x => ({
         id:x.id, name:x.name, nameAr:x.nameAr || '', active:x.isActive,
-        meta:[
-          'code: ' + (x.code || '—'),
-          x.teacherSelectable ? Tafseel.t('admin_service_teacher_selectable') : Tafseel.t('admin_service_teacher_hidden'),
-          x.requiresScheduling ? Tafseel.t('admin_service_scheduling_required') : Tafseel.t('admin_service_no_scheduling')
-        ].join(' · '),
-        code: x.code, detail: x.detail || ''
+        meta: (x.descriptionEn || x.detail || '').slice(0, 80),
+        code: x.code,
+        detail: x.descriptionEn || x.detail || '',
+        detailAr: x.descriptionAr || '',
+        displayOrder: x.displayOrder ?? 0
       }));
       const catalogErrors = {};
       if (failed(2)) catalogErrors.subjects = Tafseel.api.errorMessage(failed(2));
@@ -899,10 +926,14 @@ class Component extends DCLogic {
       const withdrawalsPayload = settled(6);
       if (failed(6)) errors.push(Tafseel.api.errorMessage(failed(6)));
 
+      const popularSubjects = settled(9);
+      if (failed(9)) errors.push(Tafseel.api.errorMessage(failed(9)));
+
       const firstCatalogError = catalogErrors.services || catalogErrors.subjects || catalogErrors.topics || catalogErrors.coupons || '';
       this.setState({
         liveMetrics: metrics || null,
         liveWithdrawals: withdrawalsPayload ? (withdrawalsPayload.items || []) : [],
+        livePopularSubjects: popularSubjects || null,
         usersTotal: usersPayload ? (usersPayload.totalCount || USERS.length) : 0,
         userOverrides: {},
         usersLoading: false,
@@ -1214,7 +1245,8 @@ class Component extends DCLogic {
       onAddCatalog: () => {
         this.setState({
           catalogModal: true, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
-          catalogDetail: '', catalogDetailAr: '', catalogCode: '', catalogRequiresScheduling: s.catalogKind === 'services',
+          catalogDetail: '', catalogDetailAr: '', catalogCode: '', catalogRequiresScheduling: false,
+          catalogDisplayOrder: 0, catalogIsActive: true,
           catalogDiscountType: '0', catalogDiscountValue: 10
         });
       },
@@ -1265,7 +1297,11 @@ class Component extends DCLogic {
                 version: c.version
               },
               editName: c.name,
-              editNameAr: c.nameAr || c.titleAr || ''
+              editNameAr: c.nameAr || c.titleAr || '',
+              editDetail: c.detail || '',
+              editDetailAr: c.detailAr || '',
+              editDisplayOrder: Number.isFinite(Number(c.displayOrder)) ? Number(c.displayOrder) : 0,
+              editIsActive: !!active
             }),
             onToggle: async () => {
               try {
@@ -1331,8 +1367,13 @@ class Component extends DCLogic {
       catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
       catalogDetailAr: s.catalogDetailAr || '', onCatalogDetailAr: e => this.setState({ catalogDetailAr: e.target.value }),
       catalogCode: s.catalogCode || '', onCatalogCode: e => this.setState({ catalogCode: e.target.value }),
-      catalogRequiresScheduling: !!s.catalogRequiresScheduling,
-      onCatalogRequiresScheduling: e => this.setState({ catalogRequiresScheduling: e.target.checked }),
+      catalogDisplayOrder: Number.isFinite(Number(s.catalogDisplayOrder)) ? Number(s.catalogDisplayOrder) : 0,
+      onCatalogDisplayOrder: e => {
+        const next = Number(e.target.value);
+        this.setState({ catalogDisplayOrder: Number.isFinite(next) ? next : 0 });
+      },
+      catalogIsActive: s.catalogIsActive !== false,
+      onCatalogIsActive: e => this.setState({ catalogIsActive: e.target.checked }),
       catalogDiscountType: String(s.catalogDiscountType ?? '0'),
       onCatalogDiscountType: e => this.setState({ catalogDiscountType: e.target.value }),
       catalogDiscountValue: Number.isFinite(Number(s.catalogDiscountValue)) ? Number(s.catalogDiscountValue) : 10,
@@ -1340,9 +1381,10 @@ class Component extends DCLogic {
         const next = Number(e.target.value);
         this.setState({ catalogDiscountValue: Number.isFinite(next) ? next : 10 });
       },
-      serviceCodeLabel: Tafseel.t('admin_service_code'),
-      serviceDetailLabel: Tafseel.t('admin_service_detail'),
-      serviceSchedulingLabel: Tafseel.t('admin_service_requires_scheduling'),
+      serviceDescEnLabel: Tafseel.t('admin_service_description_en'),
+      serviceDescArLabel: Tafseel.t('admin_service_description_ar'),
+      serviceDisplayOrderLabel: Tafseel.t('admin_service_display_order'),
+      serviceActiveLabel: Tafseel.t('admin_service_active'),
       couponCodeLabel: Tafseel.t('admin_coupon_code'),
       couponTypeLabel: Tafseel.t('admin_coupon_type'),
       couponValueLabel: Tafseel.t('admin_coupon_value'),
@@ -1395,25 +1437,27 @@ class Component extends DCLogic {
             }];
           } else if (s.catalogKind === 'services') {
             if (!s.catalogName.trim() || !(s.catalogNameAr || '').trim())
-              return this.flash('English name and Arabic name are required.');
-            if (!(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_service_code_required'));
+              return this.flash(Tafseel.t('admin_service_names_required'));
+            if (!(s.catalogDetail || '').trim() || !(s.catalogDetailAr || '').trim())
+              return this.flash(Tafseel.t('admin_service_descriptions_required'));
             created = await Tafseel.api.post('/admin/services', {
-              name: s.catalogName,
-              nameAr: s.catalogNameAr || '',
-              detail: s.catalogDetail || null,
-              code: s.catalogCode.trim().toLowerCase(),
-              requiresScheduling: !!s.catalogRequiresScheduling,
-              teacherSelectable: true,
-              isPublic: true,
-              allowedDurations: s.catalogRequiresScheduling ? [30, 60, 90, 120] : null
+              nameEn: s.catalogName.trim(),
+              nameAr: (s.catalogNameAr || '').trim(),
+              descriptionEn: (s.catalogDetail || '').trim(),
+              descriptionAr: (s.catalogDetailAr || '').trim(),
+              displayOrder: Number.isFinite(Number(s.catalogDisplayOrder)) ? Number(s.catalogDisplayOrder) : 0,
+              isActive: s.catalogIsActive !== false
             });
             CATALOG_DATA.services = [...CATALOG_DATA.services, {
-              id: created.id, name: created.name, nameAr: created.nameAr || '', active: created.isActive, code: created.code, detail: created.detail || '',
-              meta: [
-                'code: ' + (created.code || '—'),
-                created.teacherSelectable ? Tafseel.t('admin_service_teacher_selectable') : Tafseel.t('admin_service_teacher_hidden'),
-                created.requiresScheduling ? Tafseel.t('admin_service_scheduling_required') : Tafseel.t('admin_service_no_scheduling')
-              ].join(' · ')
+              id: created.id,
+              name: created.nameEn || created.name,
+              nameAr: created.nameAr || '',
+              active: created.isActive,
+              code: created.code,
+              detail: created.descriptionEn || created.detail || '',
+              detailAr: created.descriptionAr || '',
+              displayOrder: created.displayOrder ?? 0,
+              meta: (created.descriptionEn || created.detail || '').slice(0, 80)
             }];
           } else if (s.catalogKind === 'coupons') {
             if (!s.catalogName.trim() || !(s.catalogCode || '').trim()) return this.flash(Tafseel.t('admin_coupon_required'));
@@ -1436,15 +1480,60 @@ class Component extends DCLogic {
 
       editModal: !!s.editModal,
       editShowNameAr: !!s.editModal && (s.editModal.kind === 'subjects' || s.editModal.kind === 'services' || s.editModal.kind === 'assignments'),
+      editShowServiceFields: !!s.editModal && s.editModal.kind === 'services',
       editName: s.editName, onEditName: e => this.setState({ editName: e.target.value }),
       editNameAr: s.editNameAr || '', onEditNameAr: e => this.setState({ editNameAr: e.target.value }),
+      editDetail: s.editDetail || '', onEditDetail: e => this.setState({ editDetail: e.target.value }),
+      editDetailAr: s.editDetailAr || '', onEditDetailAr: e => this.setState({ editDetailAr: e.target.value }),
+      editDisplayOrder: Number.isFinite(Number(s.editDisplayOrder)) ? Number(s.editDisplayOrder) : 0,
+      onEditDisplayOrder: e => {
+        const next = Number(e.target.value);
+        this.setState({ editDisplayOrder: Number.isFinite(next) ? next : 0 });
+      },
+      editIsActive: s.editIsActive !== false,
+      onEditIsActive: e => this.setState({ editIsActive: e.target.checked }),
       closeEditModal: () => this.setState({ editModal: null }),
       confirmEditCatalog: async () => {
         if (!s.editModal || !s.editName.trim()) return this.flash('Name is required.');
         if (s.editModal.kind === 'assignments' && !(s.editNameAr || '').trim())
           return this.flash(Tafseel.t('admin_assignment_arabic_name_required'));
+        if (s.editModal.kind === 'services') {
+          if (!(s.editNameAr || '').trim())
+            return this.flash(Tafseel.t('admin_service_names_required'));
+          if (!(s.editDetail || '').trim() || !(s.editDetailAr || '').trim())
+            return this.flash(Tafseel.t('admin_service_descriptions_required'));
+        }
         try {
           const kind = s.editModal.kind === 'assignments' ? 'qualification-topics' : s.editModal.kind;
+          if (s.editModal.kind === 'services') {
+            await Tafseel.api.put('/admin/catalog/services/' + s.editModal.id, {
+              nameEn: s.editName.trim(),
+              nameAr: (s.editNameAr || '').trim(),
+              descriptionEn: (s.editDetail || '').trim(),
+              descriptionAr: (s.editDetailAr || '').trim(),
+              displayOrder: Number.isFinite(Number(s.editDisplayOrder)) ? Number(s.editDisplayOrder) : 0,
+              isActive: s.editIsActive !== false
+            });
+            CATALOG_DATA.services = (CATALOG_DATA.services || []).map(c =>
+              c.id === s.editModal.id
+                ? {
+                    ...c,
+                    name: s.editName.trim(),
+                    nameAr: (s.editNameAr || '').trim(),
+                    detail: (s.editDetail || '').trim(),
+                    detailAr: (s.editDetailAr || '').trim(),
+                    displayOrder: Number.isFinite(Number(s.editDisplayOrder)) ? Number(s.editDisplayOrder) : 0,
+                    active: s.editIsActive !== false,
+                    meta: (s.editDetail || '').trim().slice(0, 80)
+                  }
+                : c);
+            this.setState({
+              editModal: null,
+              catalogOverrides: { ...s.catalogOverrides, [s.editModal.id]: s.editIsActive !== false }
+            });
+            this.flash('Saved.');
+            return;
+          }
           await Tafseel.api.put('/admin/catalog/' + kind + '/' + s.editModal.id, {
             name: s.editName,
             detail: s.editModal.detail || null,
@@ -1509,14 +1598,14 @@ class Component extends DCLogic {
         { label:'Platform revenue', value:'SAR ' + s.liveMetrics.platformRevenue, icon:'%', delta:'Ledger balance', tone:'muted' },
         { label:'Open disputes', value:String(s.liveMetrics.openDisputes), icon:'⚠', delta:'Needs attention', tone:'warn' }
       ] : [
-        { label: 'Total users', value: '—', icon: '◈', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Active teachers', value: '—', icon: '✎', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Active students', value: '—', icon: '◍', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Pending applications', value: '—', icon: '◷', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Total orders', value: '—', icon: '⇩', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Confirmed payments', value: '—', icon: '$', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Platform revenue', value: '—', icon: '%', delta: 'No admin metrics yet', tone: 'muted' },
-        { label: 'Open disputes', value: '—', icon: '⚠', delta: 'No admin metrics yet', tone: 'muted' }
+        { label: 'Total users', value: Tafseel.t('analytics_unavailable'), icon: '◈', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Active teachers', value: Tafseel.t('analytics_unavailable'), icon: '✎', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Active students', value: Tafseel.t('analytics_unavailable'), icon: '◍', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Pending applications', value: Tafseel.t('analytics_unavailable'), icon: '◷', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Total orders', value: Tafseel.t('analytics_unavailable'), icon: '⇩', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Confirmed payments', value: Tafseel.t('analytics_unavailable'), icon: '$', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Platform revenue', value: Tafseel.t('analytics_unavailable'), icon: '%', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: 'Open disputes', value: Tafseel.t('analytics_unavailable'), icon: '⚠', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' }
       ]).map(m => ({ ...m, deltaStyle: 'font-size:12px;font-weight:600;color:' + (m.tone === 'warn' ? 'var(--warning)' : m.tone === 'ok' ? 'var(--success)' : 'var(--muted)') })),
 
       withdrawals: (s.liveWithdrawals || []).map(w => ({
@@ -1525,19 +1614,33 @@ class Component extends DCLogic {
         reject:async () => this.processWithdrawal(w, false)
       })),
 
-      // Time-series / share analytics require dedicated admin report APIs — never invent bars or MoM deltas.
+      // Time-series analytics require dedicated admin report APIs — never invent bars or MoM deltas.
+      // Popular subjects use GET /admin/reports/popular-subjects (order counts), not invented share %.
       revenueTrendLabel: Tafseel.t('trend_unavailable'),
       chartUnavailableLabel: Tafseel.t('chart_unavailable'),
       analyticsUnavailableLabel: Tafseel.t('analytics_unavailable'),
       approvalChartHint: Tafseel.t('chart_unavailable'),
       revenueChart: [],
       ordersChart: [],
-      subjectShare: [],
+      subjectShare: (() => {
+        const rows = s.livePopularSubjects;
+        if (!rows || !rows.length) return [];
+        const total = rows.reduce((n, r) => n + (Number(r.orders) || 0), 0);
+        return rows.slice(0, 6).map(r => {
+          const orders = Number(r.orders) || 0;
+          const pct = total > 0 ? Math.round((orders / total) * 100) : 0;
+          return {
+            label: r.name,
+            pct,
+            barStyle: 'display:block;height:100%;width:' + pct + '%;background:var(--primary);border-radius:99px'
+          };
+        });
+      })(),
       approvalChart: [],
       chartsEmpty: true,
       chartsReady: false,
-      subjectsEmpty: true,
-      subjectsReady: false,
+      subjectsEmpty: s.livePopularSubjects == null || !(s.livePopularSubjects && s.livePopularSubjects.length),
+      subjectsReady: !!(s.livePopularSubjects && s.livePopularSubjects.length),
       approvalEmpty: true,
       approvalReady: false,
 

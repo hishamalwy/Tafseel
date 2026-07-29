@@ -38,12 +38,24 @@ namespace Tafseel.Infrastructure;
 
 public static class DependencyInjection
 {
-    private static readonly (string Name, string Description, string Code, int DisplayOrder)[] CanonicalServices =
+    private static readonly (string Name, string NameAr, string Description, string DescriptionAr, string Code, int DisplayOrder)[] CanonicalServices =
     [
-        ("Custom recorded explanation", "A recorded video walking through your exact topic, step by step.", "recorded_explanation", 10),
-        ("Assignment guidance", "Coaching through your assignment, not ghostwriting.", "assignment_guidance", 20),
-        ("Exam revision", "Focused revision on your syllabus and past papers.", "exam_revision", 30),
-        ("Live session", "One-to-one video call with a shared whiteboard.", "live_session", 40)
+        ("Custom recorded explanation", "شرح مسجّل مخصص",
+            "A recorded video walking through your exact topic, step by step.",
+            "فيديو مسجل يشرح موضوعك تحديدًا خطوة بخطوة.",
+            "recorded_explanation", 10),
+        ("Assignment guidance", "إرشاد الواجبات",
+            "Coaching through your assignment, not ghostwriting.",
+            "توجيه منهجي لحل واجبك دون كتابته نيابة عنك.",
+            "assignment_guidance", 20),
+        ("Exam revision", "مراجعة الاختبار",
+            "Focused revision on your syllabus and past papers.",
+            "مراجعة مكثفة لمنهجك وأسئلة الاختبارات السابقة.",
+            "exam_revision", 30),
+        ("Live session", "جلسة مباشرة",
+            "One-to-one video call with a shared whiteboard.",
+            "مكالمة فيديو فردية مع سبورة مشتركة.",
+            "live_session", 40)
     ];
 
     private static readonly (string Name, string Code)[] CanonicalLanguages =
@@ -162,6 +174,23 @@ public static class DependencyInjection
             .Validate(x => x.WindowDays is >= 1 and <= 90,
                 "Dispute window must be between 1 and 90 days.")
             .ValidateOnStart();
+        services.AddOptions<TeacherShowcaseOptions>()
+            .Bind(configuration.GetSection(TeacherShowcaseOptions.SectionName))
+            .Validate(x => x.MaxPublicPerTeacher is >= 1 and <= 20
+                && x.MaxPublicPerSubject >= 1
+                && x.MaxPublicPerSubject <= x.MaxPublicPerTeacher
+                && x.MaxVersionsPerShowcase is >= 2 and <= 50,
+                "Teacher Showcase limits are invalid.")
+            .Validate(x => !environment.IsProduction() || !x.Enabled
+                || x.DurableObjectStorage
+                && x.MalwareScanning
+                && x.ReliableMediaProbing
+                && x.RetentionPolicy
+                && x.CopyrightReportingPolicy
+                && x.ModerationOperations
+                && x.SecureMediaDelivery,
+                "Production Teacher Showcases require explicitly validated Production media capabilities.")
+            .ValidateOnStart();
 
         services.AddOptions<EmailOptions>()
             .Bind(configuration.GetRequiredSection(EmailOptions.SectionName))
@@ -217,6 +246,8 @@ public static class DependencyInjection
             await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Database.MigrateAsync();
 
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        await BackfillCanonicalServiceLocalizationAsync(db);
+
         var staging = scope.ServiceProvider.GetService<IHostEnvironment>()?.IsStaging() == true;
         if (await IdentitySeedIsCurrentAsync(db, staging))
             return;
@@ -239,7 +270,12 @@ public static class DependencyInjection
             foreach (var service in CanonicalServices)
                 if (!await db.ServiceCatalogItems.AnyAsync(x => x.Code == service.Code))
                     db.Add(new ServiceCatalogItem(
-                        service.Name, service.Description, service.Code, displayOrder: service.DisplayOrder));
+                        service.Name,
+                        service.Description,
+                        service.Code,
+                        service.NameAr,
+                        service.DescriptionAr,
+                        displayOrder: service.DisplayOrder));
 
             foreach (var language in CanonicalLanguages)
                 if (!await db.TeachingLanguages.AnyAsync(x => x.Code == language.Code))
@@ -287,6 +323,31 @@ public static class DependencyInjection
 
             await transaction.CommitAsync();
         });
+    }
+
+    private static async Task BackfillCanonicalServiceLocalizationAsync(TafseelDbContext db)
+    {
+        var codes = CanonicalServices.Select(x => x.Code).ToArray();
+        var existing = await db.ServiceCatalogItems
+            .Where(x => codes.Contains(x.Code))
+            .ToArrayAsync();
+        if (existing.Length == 0)
+            return;
+
+        var changed = false;
+        foreach (var service in existing)
+        {
+            var canonical = CanonicalServices.First(x => x.Code == service.Code);
+            var beforeNameAr = service.NameAr;
+            var beforeDescriptionAr = service.DescriptionAr;
+            service.BackfillLocalization(canonical.NameAr, canonical.DescriptionAr);
+            if (!string.Equals(beforeNameAr, service.NameAr, StringComparison.Ordinal)
+                || !string.Equals(beforeDescriptionAr, service.DescriptionAr, StringComparison.Ordinal))
+                changed = true;
+        }
+
+        if (changed)
+            await db.SaveChangesAsync();
     }
 
     private static async Task<bool> IdentitySeedIsCurrentAsync(TafseelDbContext db, bool staging)

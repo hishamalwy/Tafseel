@@ -16,6 +16,8 @@ $required = @(
   "frontend/Tafseel-Admin-Dashboard.dc.html",
   "frontend/js/locales.js",
   "frontend/js/api.js",
+  "frontend/js/tafseel.js",
+  "frontend/js/guided-request.js",
   "frontend/js/chat-widget.js",
   "frontend/js/vendor/react.production.min.js",
   "frontend/js/vendor/react-dom.production.min.js",

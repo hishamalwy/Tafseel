@@ -13,6 +13,15 @@ public sealed class CatalogController(ICatalogService catalog) : ControllerBase
     public Task<IReadOnlyCollection<CatalogItemDto>> Subjects(CancellationToken ct) =>
         catalog.GetSubjectsAsync(false, ct);
 
+    /// <summary>
+    /// Landing featured subjects: active catalog ordered by DisplayOrder, then Name, then Id, Take(4).
+    /// DisplayOrder alone is the product selection rule (IsFeatured not used).
+    /// </summary>
+    [AllowAnonymous, HttpGet("subjects/featured")]
+    public Task<IReadOnlyCollection<CatalogItemDto>> FeaturedSubjects(
+        [FromQuery] int take = 4, CancellationToken ct = default) =>
+        catalog.GetFeaturedSubjectsAsync(take, ct);
+
     [HttpGet("topics")]
     public async Task<IActionResult> Topics(
         [FromQuery] Guid? subjectId,
@@ -87,7 +96,7 @@ public sealed class CatalogController(ICatalogService catalog) : ControllerBase
         Created("", await catalog.CreateLanguageAsync(input, ct));
 
     [Authorize(Policy = Permissions.SubjectsManage), HttpPost("admin/services")]
-    public async Task<IActionResult> CreateService(NamedCatalogInput input, CancellationToken ct) =>
+    public async Task<IActionResult> CreateService(ServiceCatalogInput input, CancellationToken ct) =>
         Created("", await catalog.CreateServiceAsync(input, ct));
 
     [Authorize(Policy = Permissions.SubjectsManage), HttpGet("admin/catalog/{type}")]
@@ -103,9 +112,18 @@ public sealed class CatalogController(ICatalogService catalog) : ControllerBase
             _ => BadRequest()
         };
 
+    [Authorize(Policy = Permissions.SubjectsManage), HttpPut("admin/catalog/services/{id:guid}")]
+    public async Task<IActionResult> UpdateService(Guid id, ServiceCatalogInput input, CancellationToken ct)
+    {
+        await catalog.UpdateServiceAsync(id, input, ct);
+        return NoContent();
+    }
+
     [Authorize(Policy = Permissions.SubjectsManage), HttpPut("admin/catalog/{type}/{id:guid}")]
     public async Task<IActionResult> Update(string type, Guid id, NamedCatalogInput input, CancellationToken ct)
     {
+        if (type.Equals("services", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { code = "invalid_catalog_type", message = "Use the bilingual service update contract." });
         await catalog.UpdateAsync(type, id, input, ct);
         return NoContent();
     }

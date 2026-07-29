@@ -39,11 +39,6 @@
       </sc-for>
     </nav>
     <div style="padding:16px;border-top:1px solid var(--border)">
-      <div style="background:var(--primary-soft);border-radius:var(--r-md);padding:14px">
-        <div style="font-size:13.5px;font-weight:700;color:var(--primary);margin-bottom:5px">Exam week coming?</div>
-        <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:10px">Emergency sessions are available the night before.</div>
-        <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:12.5px;font-weight:700">Find a teacher →</a>
-      </div>
       <button type="button" class="tf-dashboard-logout" onClick="{{ onLogout }}"><span aria-hidden="true">↪</span>{{ logoutLabel }}</button>
     </div>
   </aside>
@@ -55,8 +50,8 @@
       <button id="student-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="student-sidebar" style="{{ drawerToggleStyle }}">☰</button>
       <div style="flex:1;max-width:420px;display:flex;align-items:center;gap:10px;height:38px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)" data-hide-sm="1">
         <span aria-hidden="true" style="color:var(--muted);font-size:13px">⌕</span>
-        <label for="dash-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search your requests, teachers and files</label>
-        <input id="dash-q" data-i18n-ph="ph_dash_search" placeholder="Search requests, teachers, files…" style="flex:1;border:0;background:transparent;outline:none;font-size:14px;min-width:0" />
+        <label for="dash-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ searchUnavailableLabel }}</label>
+        <input id="dash-q" disabled aria-disabled="true" title="{{ searchUnavailableLabel }}" placeholder="{{ searchUnavailableLabel }}" style="flex:1;border:0;background:transparent;outline:none;font-size:14px;min-width:0;opacity:.65;cursor:not-allowed" />
       </div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
         <button type="button" onClick="{{ toggleNotifs }}" aria-label="Notifications" style="position:relative;width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">
@@ -65,7 +60,7 @@
             <span style="position:absolute;top:-5px;inset-inline-end:-5px;min-width:17px;height:17px;padding-inline:4px;border-radius:999px;background:var(--error);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center">{{ unread }}</span>
           </sc-if>
         </button>
-        <button type="button" onClick="{{ openChat }}" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</button>
+        <button type="button" onClick="{{ goMessages }}" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</button>
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
@@ -80,10 +75,10 @@
     <div style="display:flex;flex-direction:column;gap:22px">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div>
-          <h1 data-i18n="dash_h" style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:5px">Welcome back, Noor</h1>
-          <p data-i18n="dash_p" style="color:var(--muted);font-size:14.5px">You have 2 deliveries waiting for your review and a session tonight.</p>
+          <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:5px">{{ greetingTitle }}</h1>
+          <p style="color:var(--muted);font-size:14.5px">{{ greetingSub }}</p>
         </div>
-        <a href="Tafseel-Request.dc.html" style="height:42px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">＋ New request</a>
+        <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="dash_new_request" style="height:42px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">＋ Find a Teacher</a>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px">
@@ -209,6 +204,10 @@
           <h2 style="font-size:16px;font-weight:700">Recommended for your subjects</h2>
           <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:13.5px;font-weight:600">Browse all →</a>
         </div>
+        <sc-if value="{{ recommendedEmpty }}" hint-placeholder-val="{{ true }}">
+          <p class="tf-empty" role="status">{{ recommendedEmptyLabel }}</p>
+        </sc-if>
+        <sc-if value="{{ recommendedReady }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:6px">
           <sc-for list="{{ recommended }}" as="t" hint-placeholder-count="4">
             <article style="flex:none;width:262px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
@@ -232,6 +231,7 @@
             </article>
           </sc-for>
         </div>
+        </sc-if>
       </section>
     </div>
     </sc-if>
@@ -597,6 +597,7 @@ const STATUS_TONE = {
 
 const PAYMENT_STATS = [];
 const TRANSACTIONS = [];
+// PAYMENT_STATS / TRANSACTIONS kept empty — payments are derived from live orders in renderVals.
 const STUDENT_FILES = [];
 const MY_REVIEWS = [];
 const CONVERSATIONS = [];
@@ -611,7 +612,8 @@ class Component extends DCLogic {
     hasAvatar: false, accountUserId: '', avatarVersion: 0,
     currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
     notifyDeliveries: true, notifySessions: true,
-    timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: []
+    timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: [],
+    ordersLoaded: false
   };
 
   componentDidMount() {
@@ -635,7 +637,7 @@ class Component extends DCLogic {
         hasAvatar: !!session.hasAvatar,
         accountUserId: session.userId || ''
       });
-      return Promise.all([
+      return Promise.allSettled([
         Tafseel.api.get('/learning-requests/mine?pageSize=100'),
         Tafseel.api.get('/orders/mine?pageSize=100'),
         Tafseel.api.get('/favorite-teachers'),
@@ -644,39 +646,59 @@ class Component extends DCLogic {
         Tafseel.api.get('/notification-preferences'),
         Tafseel.api.get('/conversations?pageSize=50')
       ]);
-    }).then(data => {
-      if (!data) return;
-      const [requests, orders, favorites, notifications, sessions, preferences, conversations] = data;
+    }).then(results => {
+      if (!results) return;
+      const value = (i) => results[i] && results[i].status === 'fulfilled' ? results[i].value : null;
+      const fail = (i) => { if (results[i] && results[i].status === 'rejected') this.flash(Tafseel.api.errorMessage(results[i].reason)); };
+      const requests = value(0);
+      const orders = value(1);
+      const favorites = value(2);
+      const notifications = value(3);
+      const sessions = value(4);
+      const preferences = value(5);
+      const conversations = value(6);
+      [0, 1, 2, 3, 4, 5, 6].forEach(fail);
       const requestNames = ['Pending Teacher Review','Clarification Requested','Accepted','Declined','Cancelled'];
       const orderNames = ['Payment Required','In Progress','Delivered','Revision Requested','Completed','Cancelled'];
-      REQUESTS = requests.items.map(x => ({
-        id:x.id, title:x.title, service:'Learning request', teacher:x.teacherId,
-        status:requestNames[x.status], deadline:Tafseel.date(x.preferredDeliveryAt, { dateStyle:'medium' }),
-        amount:x.budget ? 'SAR ' + x.budget : 'Flexible', group:x.status >= 3 ? 'done' : 'active',
-        kind:'request', rawStatus:x.status, version:x.version
-      })).concat(orders.items.map(x => ({
-        id:x.id, title:'Order ' + x.id, service:'Personalized service', teacher:x.teacherId,
-        status:orderNames[x.status], deadline:Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }),
-        amount:x.currency + ' ' + x.studentTotal, group:x.status === 4 ? 'done' : (x.status === 2 || x.status === 3 ? 'action' : 'active'),
-        kind:'order', rawStatus:x.status, paymentStatus:x.paymentStatus, version:x.version
-      })));
-      SAVED_TEACHERS = favorites.map(x => ({
+      REQUESTS = [];
+      if (requests && requests.items) {
+        REQUESTS = REQUESTS.concat(requests.items.map(x => ({
+          id:x.id, title:x.title, service:'Learning request', teacher:x.teacherId,
+          status:requestNames[x.status], deadline:Tafseel.date(x.preferredDeliveryAt, { dateStyle:'medium' }),
+          amount:x.budget ? 'SAR ' + x.budget : 'Flexible', group:x.status >= 3 ? 'done' : 'active',
+          kind:'request', rawStatus:x.status, version:x.version
+        })));
+      }
+      if (orders && orders.items) {
+        REQUESTS = REQUESTS.concat(orders.items.map(x => ({
+          id:x.id, title:'Order ' + x.id, service:'Personalized service', teacher:x.teacherId,
+          status:orderNames[x.status], deadline:Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }),
+          amount:x.currency + ' ' + x.studentTotal, group:x.status === 4 ? 'done' : (x.status === 2 || x.status === 3 ? 'action' : 'active'),
+          kind:'order', rawStatus:x.status, paymentStatus:x.paymentStatus, version:x.version,
+          studentTotal: Number(x.studentTotal) || 0, currency: x.currency || 'SAR'
+        })));
+      }
+      SAVED_TEACHERS = favorites ? favorites.map(x => ({
         name:Tafseel.userName(x), subject:x.subjects.join(' · '),
         hasRating:x.rating != null && x.ratingCount > 0,
         rating:x.rating == null ? '' : Number(x.rating).toFixed(1),
         price:(x.currency || 'SAR') + ' ' + (x.startingPrice || 0)
-      }));
-      this.setState({ liveNotifs:notifications.items.map(x => ({
-        id:x.id, title:x.title, body:x.body, time:Tafseel.date(x.createdAt), read:!!x.readAt
-      })), read:notifications.items.filter(x => x.readAt).map(x => x.id),
-        notifyDeliveries:preferences.emailEnabled,
-        notifySessions:preferences.inAppEnabled,
-        liveConversations:conversations.items,
-        liveSessions:sessions.items.map(x => ({
+      })) : [];
+      this.setState({
+        liveNotifs: notifications && notifications.items ? notifications.items.map(x => ({
+          id:x.id, title:x.title, body:x.body, time:Tafseel.date(x.createdAt), read:!!x.readAt
+        })) : [],
+        read: notifications && notifications.items ? notifications.items.filter(x => x.readAt).map(x => x.id) : [],
+        notifyDeliveries: preferences ? preferences.emailEnabled : true,
+        notifySessions: preferences ? preferences.inAppEnabled : true,
+        prefsUnavailable: !preferences,
+        liveConversations: conversations && conversations.items ? conversations.items : [],
+        liveSessions: sessions && sessions.items ? sessions.items.map(x => ({
           id:x.id, teacher:x.teacherId, topic:x.title,
           when:Tafseel.date(x.startsAt), countdown:'Scheduled',
           urgent:x.status === 1, version:x.version
-        }))
+        })) : [],
+        ordersLoaded: !!orders
       });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -782,7 +804,21 @@ class Component extends DCLogic {
       toastClass: Tafseel.toastClass(s.toastLeaving),
       stop: e => e.stopPropagation(),
       goRequests: () => this.setState({ section: 'requests' }),
+      goMessages: () => navTo('messages'),
       openChat: () => window.TafseelChat && window.TafseelChat.open(),
+      searchUnavailableLabel: Tafseel.t('dash_search_unavailable'),
+      greetingTitle: (() => {
+        const name = Tafseel.userName(this._session);
+        const first = name ? name.split(/\s+/)[0] : '';
+        return first ? Tafseel.t('dash_greeting_named', { name: first }) : Tafseel.t('dash_greeting');
+      })(),
+      greetingSub: (() => {
+        const action = REQUESTS.filter(x => x.group === 'action').length;
+        const upcoming = (s.liveSessions || []).length;
+        if (action || upcoming)
+          return Tafseel.t('dash_sub_counts', { action: String(action), sessions: String(upcoming) });
+        return Tafseel.t('dash_sub_empty');
+      })(),
 
       navItems: NAV.map(([key, icon, label, badge]) => ({
         icon, label, badge: badge || 0,
@@ -894,12 +930,29 @@ class Component extends DCLogic {
       })),
 
       savedTeachers: SAVED_TEACHERS,
-      paymentStats: PAYMENT_STATS.length ? PAYMENT_STATS : [
-        { label:'Total spending', value:'—' },
-        { label:'In escrow', value:'—' },
-        { label:'Refunded', value:'—' }
-      ],
-      transactions: TRANSACTIONS,
+      paymentStats: (() => {
+        const orderRows = REQUESTS.filter(r => r.kind === 'order');
+        if (!s.ordersLoaded && !orderRows.length) {
+          return [
+            { label: Tafseel.t('dash_pay_total'), value: Tafseel.t('analytics_unavailable') },
+            { label: Tafseel.t('dash_pay_escrow'), value: Tafseel.t('analytics_unavailable') },
+            { label: Tafseel.t('dash_pay_refunded'), value: Tafseel.t('analytics_unavailable') }
+          ];
+        }
+        const paid = orderRows.filter(r => r.paymentStatus === 1 || r.rawStatus >= 1);
+        const escrow = orderRows.filter(r => r.rawStatus === 1 || r.rawStatus === 2 || r.rawStatus === 3);
+        const total = paid.reduce((n, r) => n + (r.studentTotal || 0), 0);
+        const escrowTotal = escrow.reduce((n, r) => n + (r.studentTotal || 0), 0);
+        const currency = (paid[0] && paid[0].currency) || (escrow[0] && escrow[0].currency) || 'SAR';
+        return [
+          { label: Tafseel.t('dash_pay_total'), value: currency + ' ' + total },
+          { label: Tafseel.t('dash_pay_escrow'), value: currency + ' ' + escrowTotal },
+          { label: Tafseel.t('dash_pay_refunded'), value: currency + ' 0' }
+        ];
+      })(),
+      transactions: REQUESTS.filter(r => r.kind === 'order').map(r => ({
+        id: r.id, title: r.title, amount: r.amount, status: r.status, when: r.deadline
+      })),
       studentFiles: STUDENT_FILES.map(f => ({ ...f, onDownload: () => this.flash('Downloading ' + f.name + '…') })),
       myReviews: MY_REVIEWS,
       conversations: s.liveConversations.map(c => {
@@ -909,7 +962,7 @@ class Component extends DCLogic {
           name: Tafseel.participantLabel(peerId),
           preview: c.latestMessage?.body || 'No messages yet',
           time: Tafseel.date(c.updatedAt),
-          unread: false
+          unread: !!(c.unreadCount)
         };
       }),
 
@@ -984,10 +1037,17 @@ class Component extends DCLogic {
       },
 
       stats: [
-        { label: 'Active requests', value: String(REQUESTS.filter(x => x.group !== 'done').length), icon: '◫', delta: '', tone: 'muted' },
-        { label: 'Upcoming sessions', value: String(s.liveSessions.length), icon: '◉', delta: '', tone: 'muted' },
-        { label: 'Completed lessons', value: String(REQUESTS.filter(x => x.group === 'done').length), icon: '✓', delta: '', tone: 'muted' },
-        { label: 'Total spending', value: '—', icon: '▤', delta: Tafseel.t('trend_unavailable'), tone: 'muted' }
+        { label: Tafseel.t('dash_stat_active'), value: String(REQUESTS.filter(x => x.group !== 'done').length), icon: '◫', delta: '', tone: 'muted' },
+        { label: Tafseel.t('dash_stat_sessions'), value: String(s.liveSessions.length), icon: '◉', delta: '', tone: 'muted' },
+        { label: Tafseel.t('dash_stat_completed'), value: String(REQUESTS.filter(x => x.group === 'done').length), icon: '✓', delta: '', tone: 'muted' },
+        { label: Tafseel.t('dash_stat_spending'), value: (() => {
+          const orderRows = REQUESTS.filter(r => r.kind === 'order');
+          if (!s.ordersLoaded && !orderRows.length) return Tafseel.t('analytics_unavailable');
+          const total = orderRows.filter(r => r.paymentStatus === 1 || r.rawStatus >= 1)
+            .reduce((n, r) => n + (r.studentTotal || 0), 0);
+          const currency = (orderRows[0] && orderRows[0].currency) || 'SAR';
+          return currency + ' ' + total;
+        })(), icon: '▤', delta: '', tone: 'muted' }
       ].map(st => ({
         ...st,
         deltaStyle: 'font-size:12.5px;font-weight:600;color:' + (st.tone === 'warn' ? 'var(--warning)' : st.tone === 'ok' ? 'var(--success)' : 'var(--muted)')
@@ -1045,6 +1105,9 @@ class Component extends DCLogic {
       })),
 
       recommended: [],
+      recommendedEmpty: true,
+      recommendedReady: false,
+      recommendedEmptyLabel: Tafseel.t('dash_recommended_unavailable'),
 
       unread,
       notifsOpen: s.notifsOpen,

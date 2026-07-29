@@ -44,9 +44,26 @@ public abstract class CatalogItem
 public sealed class Subject : CatalogItem
 {
     private Subject() { }
-    public Subject(string name, string icon, string nameAr = "") : base(name, nameAr) => Icon = icon.Trim();
+    public Subject(string name, string icon, string nameAr = "", int displayOrder = 0) : base(name, nameAr)
+    {
+        Icon = icon.Trim();
+        SetDisplayOrder(displayOrder);
+    }
     public string Icon { get; private set; } = "";
-    public void Update(string name, string icon, string? nameAr = null) { Rename(name, nameAr); Icon = icon.Trim(); }
+    public int DisplayOrder { get; private set; }
+    public void Update(string name, string icon, string? nameAr = null, int? displayOrder = null)
+    {
+        Rename(name, nameAr);
+        Icon = icon.Trim();
+        if (displayOrder.HasValue) SetDisplayOrder(displayOrder.Value);
+    }
+
+    private void SetDisplayOrder(int displayOrder)
+    {
+        if (displayOrder is < 0 or > 10000)
+            throw new DomainException("invalid_subject_display_order", "Subject display order is invalid.");
+        DisplayOrder = displayOrder;
+    }
 }
 
 public sealed class Topic : CatalogItem
@@ -181,9 +198,11 @@ public sealed class ServiceCatalogItem : CatalogItem
     private static readonly int[] SupportedLiveDurations = [30, 60, 90, 120];
     private ServiceCatalogItem() { }
     public ServiceCatalogItem(
-        string name,
-        string description,
+        string nameEn,
+        string descriptionEn,
         string code,
+        string nameAr,
+        string descriptionAr,
         string? type = null,
         bool isPublic = true,
         bool teacherSelectable = true,
@@ -191,14 +210,20 @@ public sealed class ServiceCatalogItem : CatalogItem
         IReadOnlyCollection<int>? allowedDurations = null,
         decimal? minPrice = null,
         decimal? maxPrice = null,
-        int displayOrder = 0,
-        string nameAr = "") : base(name, nameAr)
+        int displayOrder = 0) : base(nameEn, nameAr)
     {
-        Description = description.Trim();
+        if (string.IsNullOrWhiteSpace(nameAr))
+            throw new DomainException("service_name_ar_required", "Arabic service name is required.");
+        Description = RequiredLocalized(descriptionEn, "service_description_en_required");
+        DescriptionAr = RequiredLocalized(descriptionAr, "service_description_ar_required");
         SetCode(code);
         UpdateBehavior(type, isPublic, teacherSelectable, requiresScheduling, allowedDurations, minPrice, maxPrice, displayOrder);
+        if (IsActive) EnsureCompleteLocalization();
     }
+
+    public static string CodeFromEnglishName(string nameEn) => NormalizeCode(nameEn);
     public string Description { get; private set; } = "";
+    public string DescriptionAr { get; private set; } = "";
     public string Code { get; private set; } = "";
     public string Type { get; private set; } = "";
     public bool IsPublic { get; private set; } = true;
@@ -214,6 +239,50 @@ public sealed class ServiceCatalogItem : CatalogItem
             : AllowedDurationsCsv.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(int.Parse).ToArray();
 
+    public void ConfigureLocalizedContent(
+        string nameEn,
+        string nameAr,
+        string descriptionEn,
+        string descriptionAr,
+        int displayOrder,
+        bool? isActive = null)
+    {
+        if (string.IsNullOrWhiteSpace(nameAr))
+            throw new DomainException("service_name_ar_required", "Arabic service name is required.");
+        Rename(nameEn, nameAr);
+        Description = RequiredLocalized(descriptionEn, "service_description_en_required");
+        DescriptionAr = RequiredLocalized(descriptionAr, "service_description_ar_required");
+        if (displayOrder is < 0 or > 10000)
+            throw new DomainException("invalid_service_display_order", "Service display order is invalid.");
+        DisplayOrder = displayOrder;
+        if (isActive.HasValue)
+        {
+            if (isActive.Value) EnsureCompleteLocalization();
+            SetActive(isActive.Value);
+        }
+        else if (IsActive)
+            EnsureCompleteLocalization();
+    }
+
+    public void BackfillLocalization(string? nameAr, string? descriptionAr)
+    {
+        if (!string.IsNullOrWhiteSpace(nameAr) && string.IsNullOrWhiteSpace(NameAr))
+            Rename(Name, nameAr);
+        if (!string.IsNullOrWhiteSpace(descriptionAr) && string.IsNullOrWhiteSpace(DescriptionAr))
+            DescriptionAr = descriptionAr.Trim();
+    }
+
+    public void EnsureCompleteLocalization()
+    {
+        if (string.IsNullOrWhiteSpace(Name)
+            || string.IsNullOrWhiteSpace(NameAr)
+            || string.IsNullOrWhiteSpace(Description)
+            || string.IsNullOrWhiteSpace(DescriptionAr))
+            throw new DomainException(
+                "service_localization_incomplete",
+                "Active services require English and Arabic names and descriptions.");
+    }
+
     public void Update(
         string name,
         string description,
@@ -226,15 +295,24 @@ public sealed class ServiceCatalogItem : CatalogItem
         decimal? minPrice,
         decimal? maxPrice,
         int displayOrder,
-        string? nameAr = null)
+        string? nameAr = null,
+        string? descriptionAr = null)
     {
         Rename(name, nameAr);
-        Description = description.Trim();
+        Description = RequiredLocalized(description, "service_description_en_required");
+        if (descriptionAr is not null)
+            DescriptionAr = RequiredLocalized(descriptionAr, "service_description_ar_required");
         var normalized = NormalizeCode(code);
         if (!string.Equals(Code, normalized, StringComparison.Ordinal))
             throw new DomainException("service_code_immutable", "Service code cannot be changed after creation.");
         UpdateBehavior(type, isPublic, teacherSelectable, requiresScheduling, allowedDurations, minPrice, maxPrice, displayOrder);
+        if (IsActive) EnsureCompleteLocalization();
     }
+
+    private static string RequiredLocalized(string value, string code) =>
+        string.IsNullOrWhiteSpace(value)
+            ? throw new DomainException(code, "Localized service text is required.")
+            : value.Trim();
 
     private void SetCode(string code) => Code = NormalizeCode(code);
 

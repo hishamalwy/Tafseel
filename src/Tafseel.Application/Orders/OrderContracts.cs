@@ -23,7 +23,8 @@ public sealed record ReasonInput(
     [param: Required, NotWhiteSpace, StringLength(2000)] string Reason);
 
 public sealed record AttachmentDto(
-    Guid Id, string OriginalName, string ContentType, long Size, DateTimeOffset CreatedAt);
+    Guid Id, string OriginalName, string ContentType, long Size, DateTimeOffset CreatedAt,
+    string? Version = null);
 public sealed record ClarificationDto(Guid Id, string SenderId, string Message, DateTimeOffset CreatedAt);
 public sealed record LearningRequestDto(
     Guid Id, string StudentId, string TeacherId, Guid TeacherServiceId, string Title, string Description,

@@ -211,10 +211,10 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         };
         Assert.Equal(HttpStatusCode.Created,
             (await client.PostAsJsonAsync("/api/v1/teachers/me/availability/rules", valid)).StatusCode);
-        var available = JsonDocument.Parse(await factory.CreateClient()
-            .GetStringAsync("/api/v1/teachers?availableThisWeek=true")).RootElement;
-        Assert.Contains(available.GetProperty("items").EnumerateArray(),
-            x => x.GetProperty("teacherId").GetString() == teacher.Id);
+        var legacyAvailability = await factory.CreateClient()
+            .GetAsync("/api/v1/teachers?availableThisWeek=true");
+        Assert.Equal(HttpStatusCode.BadRequest, legacyAvailability.StatusCode);
+        Assert.Equal("availability_filter_unavailable", await CodeAsync(legacyAvailability));
         var overlap = await client.PostAsJsonAsync("/api/v1/teachers/me/availability/rules", new
         {
             dayOfWeek = DayOfWeek.Monday,
@@ -242,11 +242,6 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
                 endsAt = now.AddDays(8),
                 reason = "Vacation"
             })).StatusCode);
-        var unavailable = JsonDocument.Parse(await factory.CreateClient()
-            .GetStringAsync("/api/v1/teachers?availableThisWeek=true")).RootElement;
-        Assert.DoesNotContain(unavailable.GetProperty("items").EnumerateArray(),
-            x => x.GetProperty("teacherId").GetString() == teacher.Id);
-
         var concurrent = await Task.WhenAll(
             client.PostAsJsonAsync("/api/v1/teachers/me/availability/rules", new
             {
@@ -304,7 +299,8 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N");
         var subject = new Subject("Subject " + suffix, "code");
         var otherSubject = new Subject("Other " + suffix, "code");
-        var serviceType = new ServiceCatalogItem("Explanation " + suffix, "Custom explanation", "svc_" + suffix);
+        var serviceType = new ServiceCatalogItem(
+            "Explanation " + suffix, "Custom explanation", "svc_" + suffix, "شرح", "شرح مخصص");
         var topic = new Topic(subject.Id, "Topic " + suffix, "Intermediate");
         var language = new TeachingLanguage("Language " + suffix, suffix[..8]);
         var educationLevel = new EducationLevel("Level " + suffix);

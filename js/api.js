@@ -182,6 +182,11 @@
       }
       if (error instanceof TypeError && /fetch|network/i.test(error.message || ''))
         return Tafseel.t('network_error');
+      if (error && error.code) {
+        var key = 'api_error_' + error.code;
+        var translated = Tafseel.t(key);
+        if (translated !== key) return translated;
+      }
       return error && error.message || 'Something went wrong.';
     }
   };

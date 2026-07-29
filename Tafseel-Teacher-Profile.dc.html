@@ -150,28 +150,43 @@
       </sc-if>
 
       <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
-        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-          <h2 style="font-size:18px;font-weight:700;margin-bottom:6px" data-i18n="tp_samples_title">Teaching samples</h2>
-          <p style="font-size:14px;color:var(--muted);margin-bottom:18px" data-i18n="tp_samples_blurb">Recorded by the teacher and scored by the Tafseel quality team before approval.</p>
-          <sc-if value="{{ samplesEmpty }}" hint-placeholder-val="{{ false }}">
-            <p class="tf-empty" data-i18n="tp_samples_empty">No teaching samples published yet.</p>
-          </sc-if>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
-            <sc-for list="{{ samples }}" as="sm" hint-placeholder-count="4">
-              <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
-                <div style="position:relative;aspect-ratio:16/9;background:repeating-linear-gradient(135deg,var(--surface-2) 0 8px,var(--bg-alt) 8px 16px);display:grid;place-items:center">
-                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">video thumbnail</span>
-                  <button type="button" onClick="{{ sm.onWatch }}" aria-label="Watch sample" style="position:absolute;width:44px;height:44px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);font-size:15px;box-shadow:var(--shadow-md)">▶</button>
-                  <span style="position:absolute;inset-block-end:8px;inset-inline-end:8px;font-family:var(--font-mono);font-size:11px;background:oklch(0.2 0.02 265 / .78);color:#fff;padding:3px 7px;border-radius:5px">{{ sm.duration }}</span>
-                </div>
-                <div style="padding:14px">
-                  <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">{{ sm.title }}</div>
-                  <div style="font-size:12.5px;color:var(--muted)">{{ sm.meta }}</div>
-                </div>
-              </article>
-            </sc-for>
-          </div>
-        </section>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:6px" data-i18n="showcase_public_qualification_title">Qualification Samples</h2>
+            <p style="font-size:14px;color:var(--muted);margin-bottom:18px" data-i18n="trust_qualification_detail">Approved through subject qualification.</p>
+            <sc-if value="{{ qualificationSamplesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="showcase_public_empty">No published samples in this section.</p></sc-if>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+              <sc-for list="{{ qualificationSamples }}" as="sm" hint-placeholder-count="2">
+                <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
+                  <video src="{{ sm.contentUrl }}" controls preload="metadata" style="display:block;width:100%;aspect-ratio:16/9;background:#111"></video>
+                  <div style="padding:14px">
+                    <span style="display:inline-block;font-size:11px;font-weight:700;color:var(--success);margin-bottom:8px">{{ sm.trust }}</span>
+                    <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">{{ sm.title }}</div>
+                    <div style="font-size:12.5px;color:var(--muted)">{{ sm.meta }}</div>
+                  </div>
+                </article>
+              </sc-for>
+            </div>
+          </section>
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:6px" data-i18n="showcase_public_teacher_title">Teacher Showcases</h2>
+            <p style="font-size:14px;color:var(--muted);margin-bottom:18px" data-i18n="trust_showcase_detail">Reviewed by Tafseel. Approval does not verify every educational claim in the video.</p>
+            <sc-if value="{{ teacherShowcasesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="showcase_public_empty">No published samples in this section.</p></sc-if>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+              <sc-for list="{{ teacherShowcases }}" as="sm" hint-placeholder-count="2">
+                <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
+                  <video src="{{ sm.contentUrl }}" controls preload="metadata" style="display:block;width:100%;aspect-ratio:16/9;background:#111"></video>
+                  <div style="padding:14px">
+                    <span style="display:inline-block;font-size:11px;font-weight:700;color:var(--primary);margin-bottom:8px">{{ sm.trust }}</span>
+                    <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">{{ sm.title }}</div>
+                    <sc-if value="{{ sm.hasDescription }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--text-2);margin:6px 0">{{ sm.description }}</p></sc-if>
+                    <div style="font-size:12.5px;color:var(--muted)">{{ sm.meta }}</div>
+                  </div>
+                </article>
+              </sc-for>
+            </div>
+          </section>
+        </div>
       </sc-if>
 
       <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
@@ -210,24 +225,13 @@
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
             <h2 style="font-size:18px;font-weight:700" data-i18n="tp_availability_title">Availability</h2>
-            <span style="font-size:13px;color:var(--muted)">{{ availabilityNote }}</span>
           </div>
-          <sc-if value="{{ availabilityEmpty }}" hint-placeholder-val="{{ false }}">
-            <p class="tf-empty" data-i18n="tp_availability_empty">This teacher has not published weekly availability yet.</p>
+          <div role="status" aria-label="{{ availabilityAria }}" style="min-height:52px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text-2);line-height:1.5;overflow-wrap:anywhere">
+            {{ availabilityLabel }}
+          </div>
+          <sc-if value="{{ showAvailabilityBook }}" hint-placeholder-val="{{ false }}">
+            <a href="{{ bookHref }}" style="margin-top:14px;min-height:42px;padding-inline:16px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:14px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">{{ availabilityBookLabel }}</a>
           </sc-if>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
-            <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
-              <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:12px;background:var(--bg)">
-                <div style="font-size:13px;font-weight:700;margin-bottom:2px">{{ d.day }}</div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:10px">{{ d.date }}</div>
-                <div style="display:flex;flex-direction:column;gap:6px">
-                  <sc-for list="{{ d.slots }}" as="sl" hint-placeholder-count="2">
-                    <div style="{{ sl.style }}">{{ sl.time }}</div>
-                  </sc-for>
-                </div>
-              </div>
-            </sc-for>
-          </div>
         </section>
       </sc-if>
 
@@ -336,13 +340,6 @@ function initials(name) {
     .map(p => p[0].toUpperCase()).join('') || '·';
 }
 
-function formatTime(value) {
-  const text = String(value || '');
-  const parts = text.split(':');
-  if (parts.length >= 2) return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
-  return text;
-}
-
 function formatDateOnly(value) {
   if (!value) return '';
   try { return Tafseel.date(value, { dateStyle: 'medium' }); }
@@ -414,11 +411,6 @@ function dashboardFor(session) {
   return 'Tafseel-Student-Dashboard.dc.html';
 }
 
-function dayLabel(dayOfWeek) {
-  const base = new Date(Date.UTC(2024, 0, 7 + Number(dayOfWeek)));
-  return new Intl.DateTimeFormat(Tafseel.lang === 'ar' ? 'ar-SA' : 'en-US', { weekday: 'short', timeZone: 'UTC' }).format(base);
-}
-
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang,
@@ -430,6 +422,8 @@ class Component extends DCLogic {
     session: null,
     tab: 'about',
     serviceId: '',
+    availabilitySummary: null,
+    availabilityError: false,
     fav: false,
     toast: '',
     toastLeaving: false
@@ -456,9 +450,10 @@ class Component extends DCLogic {
     this.setState({ status: 'loading', teacherId });
     try {
       const session = await Tafseel.api.ready();
-      const [profile, reviewsPage] = await Promise.all([
+      const [profile, reviewsPage, availability] = await Promise.all([
         Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId)),
-        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews' + Tafseel.api.query({ pageSize: 50 }))
+        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews' + Tafseel.api.query({ pageSize: 50 })),
+        Tafseel.api.get(Tafseel.availabilityPath([teacherId])).catch(() => null)
       ]);
       let fav = false;
       if (session && (session.roles || []).includes('Student')) {
@@ -475,11 +470,19 @@ class Component extends DCLogic {
         session,
         profile,
         reviews: (reviewsPage && reviewsPage.items) || [],
+        availabilitySummary: availability && (availability.summaries || [])[0] || null,
+        availabilityError: !availability,
         fav,
         serviceId: preferredRequest ? preferredRequest.id : ''
       });
     } catch (error) {
-      this.setState({ status: 'unavailable', profile: null, reviews: [] });
+      this.setState({
+        status: 'unavailable',
+        profile: null,
+        reviews: [],
+        availabilitySummary: null,
+        availabilityError: false
+      });
       if (error && error.status && error.status !== 404)
         this.flash(Tafseel.api.errorMessage(error));
     }
@@ -512,8 +515,10 @@ class Component extends DCLogic {
     const profile = s.profile;
     const services = (profile && profile.services) || [];
     const selected = services.find(x => x.id === s.serviceId) || null;
-    const bookService = services.find(isBookableLiveService) || null;
-    const availability = (profile && profile.availability) || [];
+    const defaultBookService = services.find(isBookableLiveService) || null;
+    const bookService = services.find(x =>
+      s.availabilitySummary && x.id === s.availabilitySummary.teacherServiceId
+    ) || defaultBookService;
     const roleOk = canBookByRole(s.session);
     const canBook = !!(bookService && roleOk);
     const showBookUnavailable = s.status === 'ready' && roleOk && services.length > 0 && !canBook;
@@ -563,26 +568,6 @@ class Component extends DCLogic {
       });
     });
 
-    const byDay = {};
-    for (let i = 0; i < 7; i++) byDay[i] = [];
-    availability.forEach(rule => {
-      const day = Number(rule.dayOfWeek);
-      if (day >= 0 && day <= 6) byDay[day].push(rule);
-    });
-    const week = [0, 1, 2, 3, 4, 5, 6]
-      .filter(di => (byDay[di] || []).length > 0)
-      .map(di => {
-        const rules = byDay[di];
-        return {
-          day: dayLabel(di),
-          date: rules[0].timeZoneId || (profile && profile.timeZoneId) || '',
-          slots: rules.map(rule => ({
-            time: formatTime(rule.start) + ' – ' + formatTime(rule.end),
-            style: 'min-height:32px;padding:6px 8px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--text-2);text-align:center;'
-          }))
-        };
-      });
-
     const reviewItems = s.reviews || [];
     const avg = (getter) => {
       if (!reviewItems.length) return 0;
@@ -615,6 +600,17 @@ class Component extends DCLogic {
     const pageTitle = teacherName
       ? teacherName + ' ' + t('tp_page_title_suffix')
       : t('tp_page_title_fallback');
+    const named = item => s.lang === 'ar' && item && item.nameAr ? item.nameAr : item && item.name || '';
+    const subjectById = new Map(((profile && profile.subjects) || []).map(item => [item.id, named(item)]));
+    const topicById = new Map(((profile && profile.topics) || []).map(item => [item.id, named(item)]));
+    const publicSamples = ((profile && profile.samples) || []).map(sm => ({
+      ...sm,
+      trust: t(sm.trustCode === 'qualification_sample' ? 'trust_qualification_sample' : 'trust_reviewed_showcase'),
+      hasDescription: !!(sm.description || '').trim(),
+      meta: [subjectById.get(sm.subjectId), topicById.get(sm.topicId), sm.publishedAt ? formatDateOnly(sm.publishedAt) : '']
+        .filter(Boolean).join(' · '),
+      contentUrl: '/api/v1/teachers/samples/' + encodeURIComponent(sm.id) + '/content'
+    }));
 
     return {
       langLabel: t('language_target'),
@@ -672,6 +668,12 @@ class Component extends DCLogic {
       canRequest,
       canBook,
       showBookUnavailable,
+      availabilityLabel: s.availabilityError
+        ? t('availability_error')
+        : Tafseel.availabilityText(s.availabilitySummary),
+      availabilityAria: t('availability_field'),
+      availabilityBookLabel: t('availability_book_action'),
+      showAvailabilityBook: canBook,
 
       tabs: [
         { label: t('tp_tab_about'), ...tab('about') },
@@ -693,13 +695,10 @@ class Component extends DCLogic {
       topics,
       topicsEmpty: topics.length === 0,
 
-      samples: ((profile && profile.samples) || []).map(sm => ({
-        title: sm.title,
-        duration: formatDuration(sm.durationSeconds),
-        meta: sm.publishedAt ? formatDateOnly(sm.publishedAt) : '',
-        onWatch: () => window.open('/api/v1/teachers/samples/' + sm.id + '/content', '_blank', 'noopener')
-      })),
-      samplesEmpty: !((profile && profile.samples) || []).length,
+      qualificationSamples: publicSamples.filter(sm => sm.sourceCode === 'qualification_sample'),
+      qualificationSamplesEmpty: !publicSamples.some(sm => sm.sourceCode === 'qualification_sample'),
+      teacherShowcases: publicSamples.filter(sm => sm.sourceCode === 'reviewed_showcase'),
+      teacherShowcasesEmpty: !publicSamples.some(sm => sm.sourceCode === 'reviewed_showcase'),
 
       services: services.map(sv => {
         const urgent = /urgent|emergency|طارئ/i.test((sv.title || '') + ' ' + (sv.description || ''));
@@ -728,12 +727,6 @@ class Component extends DCLogic {
       selectedUnit: selected ? (selected.requiresScheduling ? t('tp_per_session') : t('tp_starting_price')) : '',
       selectedDelivery: selected ? formatDelivery(selected.deliveryHours) : '—',
       selectedRevisions: selected ? formatRevisions(selected.revisions) : '—',
-
-      week,
-      availabilityEmpty: availability.length === 0,
-      availabilityNote: (profile && profile.timeZoneId)
-        ? t('tp_timezone_note') + ' · ' + profile.timeZoneId
-        : t('tp_timezone_note'),
 
       ratingValue: rating != null && ratingCount > 0 ? rating.toFixed(1) : '—',
       ratingStars: rating != null && ratingCount > 0 ? stars(rating) : '',
