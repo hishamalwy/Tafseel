@@ -4,15 +4,15 @@ Last updated: 2026-07-29.
 
 ## Current Version
 
-No release tag is present. The shared `main` workspace advanced externally to commit `a0c82a4`; the final timeline keyboard and documentation changes remain uncommitted.
+No release tag is present. Current audited baseline is commit `5c59b0d` on `main`, plus unrelated pre-existing Teacher Application/localization working-tree changes and uncommitted F-005 documentation.
 
 ## Current Phase
 
-Owned Order Lifecycle Timeline completed locally after F-001 and F-002.
+F-005 revision-to-delivery linkage investigation completed without implementation.
 
 ## Current Milestone
 
-Production-correct startup, public teacher metric boundaries and the owned Order lifecycle timeline are completed locally.
+The owned Order timeline is complete, and F-005 is proven to require an explicit persisted relationship before it can be implemented safely.
 
 ## Current Architecture Status
 
@@ -26,7 +26,7 @@ Real payment and live-session providers are not registered, Production file stor
 
 ## Completed Phases
 
-Historical implementation phases 2–11 are complete and indexed in [INDEX.md](./INDEX.md). Current production-correction passes F-001, Teacher Qualification and F-002 are completed locally and remain uncommitted.
+Historical implementation phases 2–11 and completed production-correction passes are indexed in [INDEX.md](./INDEX.md). The F-005 investigation is documentation-only and remains uncommitted.
 
 ## Completed Features
 
@@ -45,7 +45,7 @@ Historical implementation phases 2–11 are complete and indexed in [INDEX.md](.
 | F-002 | High | Production Bug | Fixed locally |
 | F-003 | Critical | Deployment | Open |
 | F-004 | High | Deployment | Open |
-| F-005 | High | API Bug | Open |
+| F-005 | High | Missing Relationship | Investigated; not fixed |
 | F-006 | Medium | API Bug | Open |
 | F-007 | High | API Bug | Open |
 | F-008 | High | Business Rule | Blocked |
@@ -63,7 +63,7 @@ Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
 ## Pending Vertical Slices
 
-1. Revision-to-delivery version linkage.
+1. F-005 legacy-data, client-binding and revision-response relationship decisions.
 2. Favorites pagination.
 3. Availability and teacher capacity after rule approval.
 4. Teacher comparison after metric correction.
@@ -106,20 +106,16 @@ The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TA
 
 ## Test Coverage Summary
 
-Latest Owned Order Lifecycle Timeline validation:
+Latest F-005 investigation validation:
 
-- Locked restore, format verification and Release build: passed; 0 warnings and 0 errors.
-- Phase 5 Order integration suite and focused refund timeline test: 5 passed, 0 failed.
-- Domain, Application and Architecture tests: 63 passed, 0 failed.
-- Integration tests: 133 passed, 2 unrelated Marketplace time-out failures.
-- Frontend validation: passed across 12 entry points with 1,873 English/Arabic key pairs.
-- EF pending model changes: none.
-- Migration safety tests: 9 passed; publish smoke passed.
-- Populated browser timeline rendering remains unclaimed because no legitimate safe owned-Order fixture was available.
+- Release build: passed; 0 warnings and 0 errors.
+- Phase 5 Order integration suite: 4 passed, 0 failed.
+- Focused dispute and refund timeline integration tests: 2 passed, 0 failed.
+- No schema, migration, API, delivery, revision or timeline behavior changed.
 
 ## Deployment Status
 
-- Development: available; final keyboard and documentation changes are local and uncommitted.
+- Development: available; F-005 investigation documentation is local and uncommitted.
 - CI: not run remotely; equivalent local gates were exercised.
 - Staging: not deployed or validated during these passes.
 - Production: manual deployment remains; no deployment performed.
@@ -127,4 +123,4 @@ Latest Owned Order Lifecycle Timeline validation:
 
 ## Next Recommended Pass
 
-Focused F-005 revision-to-delivery version linkage evidence and schema decision.
+Decision-only F-005 pass for legacy-row policy, client target binding and whether revision-response delivery linkage is also required.

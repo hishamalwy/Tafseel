@@ -25,7 +25,8 @@
     lifecycle: null,
     current: null,
     demoDuration: null,
-    demoDurationInvalid: false
+    demoDurationInvalid: false,
+    wizardStep: 'details'
   };
 
   function t(key, values) {
@@ -65,7 +66,7 @@
     saveBtn.disabled = state.submitLoading || state.topicsLoading;
     submitBtn.disabled = state.submitLoading || state.topicsLoading;
     uploadBtn.disabled = state.submitLoading || state.topicsLoading || state.demoDurationInvalid;
-    saveBtn.textContent = state.submitLoading ? t('apply_saving') : t('apply_save');
+    saveBtn.textContent = state.submitLoading ? t('apply_saving') : t('apply_save_continue');
   }
 
   function errorText(error, fallbackKey) {
@@ -269,23 +270,107 @@
     validateSelectedDemoDuration();
   }
 
+  function statusKind(value) {
+    if (value === 0) return 'draft';
+    if (value === 1 || value === 2) return 'pending';
+    if (value === 3) return 'warning';
+    if (value === 4) return 'success';
+    if (value === 5 || value === 6) return 'error';
+    return 'draft';
+  }
+
   function renderApplications() {
     var list = document.getElementById('applications');
     list.innerHTML = state.applications.length
       ? state.applications.map(function (application) {
-          return '<button type="button" data-id="' + escape(application.id) + '"><strong>' +
-            escape(statusName(application.status)) + '</strong><br><span>' +
-            escape(application.subjectName || '') + ' · ' + escape(application.assignmentTitle || '') + '</span>' +
+          var active = state.current && state.current.id === application.id;
+          var subjectLabel = application.subjectName || t('apply_subject');
+          var topicLabelText = application.assignmentTitle || '';
+          var detailParts = [];
+          if (topicLabelText) detailParts.push(topicLabelText);
+          if (application.city) detailParts.push(application.city);
+          return '<button type="button" class="tf-apply-app' + (active ? ' is-active' : '') +
+            '" data-id="' + escape(application.id) + '">' +
+            '<span class="tf-apply-app-copy">' +
+            '<strong>' + escape(subjectLabel) + '</strong>' +
+            '<span>' + escape(detailParts.join(' · ') || statusName(application.status)) +
             (application.publicFeedback
-              ? '<br><span class="tf-muted">' + escape(application.publicFeedback) + '</span>'
-              : '') + '</button>';
+              ? '<br>' + escape(application.publicFeedback)
+              : '') +
+            '</span></span>' +
+            '<span class="tf-apply-app-status" data-kind="' + escape(statusKind(application.status)) + '">' +
+            escape(statusName(application.status)) + '</span></button>';
         }).join('')
-      : '<p class="tf-empty">' + escape(t('apply_none')) + '</p>';
+      : '';
+    list.hidden = state.applications.length === 0 || state.wizardStep === 'demo';
     list.querySelectorAll('[data-id]').forEach(function (button) {
       button.addEventListener('click', function () {
         selectApplication(button.dataset.id);
       });
     });
+  }
+
+  function defaultWizardStep(current) {
+    if (!current) return 'details';
+    if ([1, 2, 4, 5, 6].includes(current.status)) return 'review';
+    if (current.status === 0 || current.status === 3) return 'demo';
+    return 'details';
+  }
+
+  function renderReviewPanel(current) {
+    var badge = document.getElementById('review-status-badge');
+    var title = document.getElementById('review-title');
+    var body = document.getElementById('review-body');
+    var meta = document.getElementById('review-meta');
+    var newBtn = document.getElementById('review-new-application');
+    if (!current) {
+      badge.textContent = '';
+      meta.innerHTML = '';
+      newBtn.hidden = true;
+      return;
+    }
+    badge.textContent = statusName(current.status);
+    if (current.status === 4) {
+      title.textContent = t('apply_review_approved_title');
+      body.textContent = t('apply_review_approved_body');
+    } else if (current.status === 5) {
+      title.textContent = t('apply_review_rejected_title');
+      body.textContent = t('apply_review_rejected_body');
+    } else if (current.status === 3) {
+      title.textContent = t('apply_review_changes_title');
+      body.textContent = current.publicFeedback || t('apply_review_changes_body');
+    } else {
+      title.textContent = t('apply_review_pending_title');
+      body.textContent = t('apply_review_pending_body');
+    }
+    meta.innerHTML =
+      '<div><dt>' + escape(t('apply_subject')) + '</dt><dd>' + escape(current.subjectName || '—') + '</dd></div>' +
+      '<div><dt>' + escape(t('apply_topic')) + '</dt><dd>' + escape(current.assignmentTitle || '—') + '</dd></div>' +
+      '<div><dt>' + escape(t('apply_status_label')) + '</dt><dd>' + escape(statusName(current.status)) + '</dd></div>';
+    newBtn.hidden = [0, 3].includes(current.status);
+  }
+
+  function showWizardStep(step) {
+    state.wizardStep = step;
+    var panelDetails = document.getElementById('panel-details');
+    var panelDemo = document.getElementById('panel-demo');
+    var panelReview = document.getElementById('panel-review');
+    var assignment = document.getElementById('assignment-details');
+    var guidelines = document.querySelector('.tf-apply-guidelines');
+    panelDetails.hidden = step !== 'details';
+    panelDemo.hidden = step !== 'demo';
+    panelReview.hidden = step !== 'review';
+    if (guidelines) guidelines.hidden = step === 'review';
+    if (step === 'details' || step === 'demo') renderAssignment();
+    else assignment.hidden = true;
+    renderApplications();
+    renderStepper(state.current);
+    if (step === 'review') renderReviewPanel(state.current);
+    if (step === 'demo') {
+      panelDemo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (step === 'review') {
+      panelReview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   var STEPS = [
@@ -300,28 +385,88 @@
     error: 'apply_step_state_error'
   };
 
-  function renderStepper(current) {
-    var states;
-    if (!current) states = { details: 'current', demo: 'locked', review: 'locked' };
-    else if ([0, 3].includes(current.status))
-      states = { details: 'completed', demo: current.status === 3 ? 'error' : 'current', review: 'locked' };
-    else states = { details: 'completed', demo: 'completed', review: 'current' };
+  STEPS.forEach(function (entry) {
+    bindStepNavigation(document.getElementById(entry.id), entry.key);
+  });
 
-    var currentIndex = 0;
-    STEPS.forEach(function (step, index) {
-      var el = document.getElementById(step.id);
-      var stateValue = states[step.key];
-      el.dataset.state = stateValue;
-      if (stateValue === 'current' || stateValue === 'error') {
-        el.setAttribute('aria-current', 'step');
-        currentIndex = index;
-      } else el.removeAttribute('aria-current');
-      document.getElementById(step.id + '-state').textContent = t(STEP_STATE_KEYS[stateValue]);
+  function canVisitStep(step, current) {
+    if (step === 'details') return !current || [0, 3].includes(current.status);
+    if (step === 'demo') return !!(current && [0, 3].includes(current.status));
+    if (step === 'review') return !!(current && [1, 2, 4, 5, 6].includes(current.status));
+    return false;
+  }
+
+  function goToWizardStep(step) {
+    if (state.submitLoading || !canVisitStep(step, state.current) || step === state.wizardStep) return;
+    showWizardStep(step);
+  }
+
+  function bindStepNavigation(el, step) {
+    if (!el) return;
+    el.addEventListener('click', function () {
+      goToWizardStep(step);
     });
-    document.getElementById('step-summary').textContent = t('apply_step_of', {
-      index: currentIndex + 1,
-      total: STEPS.length,
-      label: t(STEPS[currentIndex].labelKey)
+    el.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      goToWizardStep(step);
+    });
+  }
+
+  function renderStepper(current) {
+    var step = state.wizardStep || defaultWizardStep(current);
+    var states = { details: 'locked', demo: 'locked', review: 'locked' };
+    if (step === 'details') {
+      states.details = 'current';
+      if (canVisitStep('demo', current)) states.demo = current && current.status === 3 ? 'error' : 'locked';
+    } else if (step === 'demo') {
+      states.details = canVisitStep('details', current) ? 'completed' : 'locked';
+      states.demo = current && current.status === 3 ? 'error' : 'current';
+    } else {
+      states.details = 'locked';
+      states.demo = 'locked';
+      states.review = 'current';
+      if (canVisitStep('details', current)) states.details = 'completed';
+      if (canVisitStep('demo', current)) states.demo = 'completed';
+    }
+
+    var currentIndex = Math.max(0, STEPS.findIndex(function (entry) { return entry.key === step; }));
+    STEPS.forEach(function (entry) {
+      var el = document.getElementById(entry.id);
+      var stateValue = states[entry.key];
+      var reachable = canVisitStep(entry.key, current);
+      el.dataset.state = stateValue;
+      el.classList.toggle('is-clickable', reachable && entry.key !== step);
+      if (reachable && entry.key !== step) {
+        el.setAttribute('role', 'button');
+        el.tabIndex = 0;
+        el.setAttribute('aria-disabled', 'false');
+      } else {
+        el.removeAttribute('role');
+        el.removeAttribute('tabIndex');
+        el.setAttribute('aria-disabled', reachable ? 'false' : 'true');
+      }
+      if (stateValue === 'current' || stateValue === 'error')
+        el.setAttribute('aria-current', 'step');
+      else el.removeAttribute('aria-current');
+      document.getElementById(entry.id + '-state').textContent = t(STEP_STATE_KEYS[stateValue]);
+    });
+
+    var summary = document.getElementById('step-summary');
+    summary.innerHTML = STEPS.map(function (entry, index) {
+      var shortLabel = (index + 1) + '. ' + t(entry.labelKey);
+      var reachable = canVisitStep(entry.key, current);
+      if (reachable) {
+        return '<button type="button" class="tf-apply-step-jump' +
+          (entry.key === step ? ' is-current' : '') +
+          '" data-step="' + escape(entry.key) + '">' + escape(shortLabel) + '</button>';
+      }
+      return '<span class="tf-apply-step-jump is-locked">' + escape(shortLabel) + '</span>';
+    }).join('<span class="tf-apply-step-jump-sep" aria-hidden="true">·</span>');
+    summary.querySelectorAll('[data-step]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        goToWizardStep(button.dataset.step);
+      });
     });
     document.getElementById('step-progress-fill').style.setProperty(
       '--tf-apply-progress-scale', String((currentIndex + 1) / STEPS.length));
@@ -335,8 +480,9 @@
     lifecycle.hidden = !lifecycle.textContent;
   }
 
-  function applyCurrentValues() {
+  function applyCurrentValues(options) {
     var current = state.current;
+    var step = options && options.step ? options.step : defaultWizardStep(current);
     subject.disabled = !!current && [0, 3].includes(current.status);
     if (current) {
       subject.value = current.subjectId;
@@ -345,11 +491,11 @@
       document.getElementById('years').value = String(current.experienceYears || 0);
       document.getElementById('degree').value = current.degree || '';
     }
-    demoForm.hidden = !current || ![0, 3].includes(current.status);
-    renderStepper(current);
-    if (current)
-      message(current.publicFeedback || statusName(current.status), current.status === 3 ? 'warning' : '');
-    renderAssignment();
+    if (current && current.status === 3 && current.publicFeedback)
+      message(current.publicFeedback, 'warning');
+    else if (!(options && options.keepMessage))
+      message('');
+    showWizardStep(step);
   }
 
   function renderInitial(selectedSubjectId) {
@@ -411,13 +557,20 @@
     applyCurrentValues();
   }
 
-  async function refreshApplications() {
+  async function refreshApplications(options) {
+    var preferredId = options && options.applicationId
+      || (state.current && state.current.id)
+      || null;
     state.applications = await Tafseel.api.get('/teacher-applications/mine');
-    state.current = state.applications.find(function (item) {
+    state.current = (preferredId && state.applications.find(function (item) {
+      return item.id === preferredId;
+    })) || state.applications.find(function (item) {
       return item.status === 0 || item.status === 3;
     }) || state.applications[0] || null;
-    renderApplications();
-    applyCurrentValues();
+    applyCurrentValues({
+      step: options && options.step,
+      keepMessage: !!(options && options.keepMessage)
+    });
   }
 
   function focusInvalid(input, text) {
@@ -478,6 +631,8 @@
 
   subject.addEventListener('change', function () {
     state.current = null;
+    subject.disabled = false;
+    showWizardStep('details');
     loadTopics().catch(function (error) {
       state.topicsError = errorText(error, 'apply_topics_error');
     });
@@ -504,6 +659,20 @@
     var hasFile = !!(demoInput.files && demoInput.files[0]);
     demoDrop.hidden = hasFile;
     if (!hasFile) demoDrop.classList.remove('is-dragover');
+  }
+
+  function fallbackDurationSeconds(assignment) {
+    var min = (assignment && assignment.minVideoSeconds) || 30;
+    var max = (assignment && assignment.maxVideoSeconds) || 600;
+    var expected = (assignment && assignment.expectedVideoSeconds) || min;
+    return Math.min(max, Math.max(min, expected));
+  }
+
+  function markDurationUnknown() {
+    state.demoDuration = null;
+    state.demoDurationInvalid = false;
+    setDemoFileState(t('apply_demo_duration_unknown'), 'warning');
+    setSubmitLoading(state.submitLoading);
   }
 
   function validateSelectedDemoDuration() {
@@ -546,16 +715,18 @@
     video.onloadedmetadata = function () {
       URL.revokeObjectURL(url);
       if (this.files[0] !== file) return;
-      state.demoDuration = Math.max(1, Math.round(video.duration));
+      var seconds = Math.round(video.duration);
+      if (!Number.isFinite(seconds) || seconds < 1) {
+        markDurationUnknown();
+        return;
+      }
+      state.demoDuration = seconds;
       validateSelectedDemoDuration();
     }.bind(this);
     video.onerror = function () {
       URL.revokeObjectURL(url);
       if (this.files[0] !== file) return;
-      state.demoDuration = null;
-      state.demoDurationInvalid = true;
-      setDemoFileState(t('apply_demo_duration_unknown'), 'error');
-      setSubmitLoading(state.submitLoading);
+      markDurationUnknown();
     }.bind(this);
     video.src = url;
   });
@@ -624,8 +795,12 @@
           { 'If-Match': state.current.version });
       else
         state.current = await Tafseel.api.post('/teacher-applications', input);
-      await refreshApplications();
-      message(t('apply_saved'), 'success');
+      await refreshApplications({
+        applicationId: state.current && state.current.id,
+        step: 'demo',
+        keepMessage: true
+      });
+      message(t('apply_saved_continue'), 'success');
     } catch (error) {
       state.submitError = errorText(error, 'apply_save_error');
       document.getElementById('submit-error').textContent = state.submitError;
@@ -633,6 +808,27 @@
     } finally {
       setSubmitLoading(false);
     }
+  });
+
+  document.getElementById('back-to-details').addEventListener('click', function () {
+    if (state.submitLoading) return;
+    showWizardStep('details');
+  });
+
+  document.getElementById('review-new-application').addEventListener('click', function () {
+    if (state.submitLoading) return;
+    state.current = null;
+    subject.disabled = false;
+    document.getElementById('city').value = '';
+    document.getElementById('years').value = '';
+    document.getElementById('degree').value = '';
+    demoInput.value = '';
+    state.demoDuration = null;
+    state.demoDurationInvalid = false;
+    demoFileInfo.hidden = true;
+    syncDemoDropVisibility();
+    message('');
+    showWizardStep('details');
   });
 
   demoForm.addEventListener('submit', async function (event) {
@@ -644,20 +840,20 @@
       demoInput.focus();
       return;
     }
-    if (state.demoDuration == null) {
-      message(t('apply_demo_duration_unknown'), 'error');
-      return;
-    }
     var assignment = getCurrentTopic();
     var min = (assignment && assignment.minVideoSeconds) || 0;
     var max = (assignment && assignment.maxVideoSeconds) || 600;
-    if (state.demoDuration < min || state.demoDuration > max) {
+    var durationUnknown = state.demoDuration == null;
+    var durationSeconds = durationUnknown
+      ? fallbackDurationSeconds(assignment)
+      : state.demoDuration;
+    if (!durationUnknown && (durationSeconds < min || durationSeconds > max)) {
       message(t('apply_duration_out_of_range', { min: formatDuration(min), max: formatDuration(max) }), 'error');
       return;
     }
     var data = new FormData();
     data.append('file', file);
-    data.append('durationSeconds', String(state.demoDuration));
+    data.append('durationSeconds', String(durationSeconds));
     setSubmitLoading(true);
     document.getElementById('demo-file-replace').disabled = true;
     document.getElementById('demo-file-remove').disabled = true;
@@ -667,9 +863,17 @@
         '/teacher-applications/' + state.current.id + '/demo',
         data,
         { 'If-Match': state.current.version });
-      await refreshApplications();
-      setDemoFileState(t('apply_demo_uploaded'), 'success');
-      message(t('apply_demo_uploaded'), 'success');
+      await refreshApplications({
+        applicationId: state.current && state.current.id,
+        step: 'demo',
+        keepMessage: true
+      });
+      setDemoFileState(
+        durationUnknown ? t('apply_demo_uploaded_duration_unknown') : t('apply_demo_uploaded'),
+        durationUnknown ? 'warning' : 'success');
+      message(
+        durationUnknown ? t('apply_demo_uploaded_duration_unknown') : t('apply_demo_uploaded'),
+        durationUnknown ? 'warning' : 'success');
     } catch (error) {
       var demoErrorText = error && error.code === 'invalid_demo_duration'
         ? t('apply_duration_out_of_range', { min: formatDuration(min), max: formatDuration(max) })
@@ -691,7 +895,11 @@
         '/teacher-applications/' + state.current.id + '/submit',
         null,
         { 'If-Match': state.current.version });
-      await refreshApplications();
+      await refreshApplications({
+        applicationId: state.current && state.current.id,
+        step: 'review',
+        keepMessage: true
+      });
       message(t('apply_submitted'), 'success');
     } catch (error) {
       message(errorText(error, 'apply_submit_error'), 'error');
@@ -721,6 +929,8 @@
     renderApplications();
     renderAssignment();
     renderLifecycle();
+    renderStepper(state.current);
+    if (state.wizardStep === 'review') renderReviewPanel(state.current);
   });
 
   (async function () {
@@ -729,8 +939,9 @@
     if (!(session.roles || []).includes('Teacher')) {
       document.getElementById('apply-skeleton').hidden = true;
       document.getElementById('apply-content').hidden = false;
-      form.hidden = true;
-      demoForm.hidden = true;
+      document.getElementById('panel-details').hidden = true;
+      document.getElementById('panel-demo').hidden = true;
+      document.getElementById('panel-review').hidden = true;
       message(t('apply_teacher_required'), 'error');
       return;
     }

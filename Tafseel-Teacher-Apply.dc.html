@@ -56,7 +56,21 @@
     .tf-apply-step[data-state="completed"]{color:var(--text-2);border-color:var(--border-strong)}
     .tf-apply-step[data-state="locked"]{opacity:.55}
     .tf-apply-step[data-state="error"]{background:var(--error-soft);border-color:color-mix(in oklab,var(--error) 35%,var(--border));color:var(--error)}
+    .tf-apply-step.is-clickable{
+      cursor:pointer;opacity:1;
+    }
+    .tf-apply-step.is-clickable:hover{
+      border-color:var(--border-strong);color:var(--text);background:var(--surface-2);
+    }
+    .tf-apply-step[aria-disabled="true"]{cursor:default}
     .tf-apply-step-summary{display:none;margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--text-2)}
+    .tf-apply-step-summary .tf-apply-step-jump{
+      appearance:none;border:0;background:transparent;padding:0;margin:0;
+      font:inherit;font-weight:700;color:var(--text-2);cursor:pointer;
+    }
+    .tf-apply-step-summary .tf-apply-step-jump.is-current{color:var(--primary)}
+    .tf-apply-step-summary .tf-apply-step-jump.is-locked{opacity:.5;cursor:default;font-weight:600}
+    .tf-apply-step-summary .tf-apply-step-jump-sep{margin:0 6px;color:var(--muted);font-weight:600}
     .tf-apply-progress-track{display:none;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-bottom:18px}
     .tf-apply-progress-fill{
       display:block;height:100%;width:100%;border-radius:inherit;background:var(--primary);
@@ -165,6 +179,71 @@
       border-color:var(--border-strong);background:var(--surface-2);
     }
 
+    .tf-apply-guidelines{
+      margin:0 0 18px;padding:16px 18px;border:1px solid var(--border);border-radius:var(--r-md);
+      background:var(--surface-2);
+    }
+    .tf-apply-guidelines h2{
+      margin:0 0 10px;font-size:14px;font-weight:800;color:var(--text-2);letter-spacing:-.01em;
+    }
+    .tf-apply-guidelines ul{
+      margin:0;padding-inline-start:1.15em;display:grid;gap:8px;
+      color:var(--text);font-size:13.5px;line-height:1.55;
+    }
+
+    .tf-apply-apps{margin-block:0 18px}
+    .tf-apply-app{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+      width:100%;padding:16px 18px;text-align:start;
+      border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);
+      cursor:pointer;color:inherit;font:inherit;
+    }
+    .tf-apply-app:hover{border-color:var(--border-strong);background:var(--surface-2)}
+    .tf-apply-app.is-active{
+      border-color:var(--primary);background:var(--primary-soft);
+      box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 22%,transparent);
+    }
+    .tf-apply-app-copy{min-width:0;flex:1;display:grid;gap:4px}
+    .tf-apply-app-copy strong{font-size:15px;font-weight:800;color:var(--text)}
+    .tf-apply-app-copy span{font-size:13px;color:var(--muted);line-height:1.45}
+    .tf-apply-app-status{
+      flex:none;align-self:center;height:28px;padding:0 10px;display:inline-flex;align-items:center;
+      border-radius:var(--r-sm);font-size:12px;font-weight:800;background:var(--surface-2);color:var(--text-2);
+      border:1px solid var(--border);
+    }
+    .tf-apply-app-status[data-kind="draft"]{background:var(--surface-2);color:var(--text-2)}
+    .tf-apply-app-status[data-kind="pending"]{background:var(--primary-soft);color:var(--primary);border-color:color-mix(in oklab,var(--primary) 30%,var(--border))}
+    .tf-apply-app-status[data-kind="success"]{background:var(--success-soft, color-mix(in oklab, #22c55e 14%, transparent));color:var(--success, #16a34a)}
+    .tf-apply-app-status[data-kind="warning"]{background:var(--warning-soft, color-mix(in oklab, #f59e0b 16%, transparent));color:var(--warning, #b45309)}
+    .tf-apply-app-status[data-kind="error"]{background:var(--error-soft);color:var(--error)}
+
+    .tf-apply-panel-head{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;
+    }
+    .tf-apply-panel-head h2{
+      font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;
+    }
+    .tf-apply-review{
+      padding:28px 22px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);
+      text-align:center;display:grid;gap:12px;justify-items:center;
+    }
+    .tf-apply-review h2{
+      font-family:var(--font-display);font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:-.02em;margin:0;
+    }
+    .tf-apply-review .tf-muted{max-width:48ch;margin:0}
+    .tf-apply-review-badge{
+      height:30px;padding:0 12px;display:inline-flex;align-items:center;border-radius:var(--r-sm);
+      font-size:12.5px;font-weight:800;background:var(--primary-soft);color:var(--primary);
+      border:1px solid color-mix(in oklab,var(--primary) 28%,var(--border));
+    }
+    .tf-apply-review-meta{
+      margin:8px 0 0;padding:14px 16px;width:min(100%,420px);display:grid;gap:8px;
+      border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);text-align:start;
+    }
+    .tf-apply-review-meta div{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+    .tf-apply-review-meta dt{color:var(--muted);font-weight:600}
+    .tf-apply-review-meta dd{margin:0;font-weight:700;color:var(--text)}
+
     @media(max-width:720px){
       [data-stack="apply"] .tf-app-header{
         height:auto;min-height:68px;padding-block:12px;gap:10px;flex-wrap:wrap;
@@ -213,7 +292,21 @@
       </div>
       <div id="apply-content" hidden>
       <div id="lifecycle-status" class="tf-alert" role="status" hidden></div>
-      <div id="applications" class="tf-list" aria-live="polite"></div>
+      <div id="applications" class="tf-list tf-apply-apps" aria-live="polite"></div>
+
+      <aside class="tf-apply-guidelines" aria-labelledby="apply-guidelines-title">
+        <h2 id="apply-guidelines-title" data-i18n="apply_general_guidelines_title">General instructions</h2>
+        <ul>
+          <li data-i18n="apply_general_guideline_1">Choose one subject and one qualification topic. Approval applies only to that subject.</li>
+          <li data-i18n="apply_general_guideline_2">Use only the official task materials when recording your teaching demo.</li>
+          <li data-i18n="apply_general_guideline_3">Upload a clear MP4 demo within the required duration, then submit for quality review.</li>
+          <li data-i18n="apply_general_guideline_4">After submission, wait for the review status. You will see updates here.</li>
+        </ul>
+      </aside>
+
+      <article id="assignment-details" class="tf-assignment" hidden></article>
+
+      <section id="panel-details" class="tf-apply-panel">
       <form id="application-form" class="tf-form">
         <div class="tf-grid-2">
           <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
@@ -228,15 +321,21 @@
           <div id="teaching-languages" class="tf-chip-row"></div>
           <p id="languages-error" class="tf-field-help tf-field-error-text" role="status"></p>
         </fieldset>
-        <article id="assignment-details" class="tf-assignment" hidden></article>
         <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required autocomplete="organization-title"></div>
         <div class="tf-form-actions">
-          <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save">Save application</button>
+          <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save_continue">Save and continue</button>
         </div>
         <p id="submit-error" class="tf-field-help tf-field-error-text" role="alert"></p>
       </form>
-      <form id="demo-form" class="tf-form" hidden>
-        <h2 data-i18n="apply_demo_title" style="font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0">Teaching demo</h2>
+      </section>
+
+      <section id="panel-demo" class="tf-apply-panel" hidden>
+      <form id="demo-form" class="tf-form">
+        <div class="tf-apply-panel-head">
+          <h2 data-i18n="apply_demo_title">Teaching demo</h2>
+          <button type="button" id="back-to-details" class="tf-button tf-button-secondary" data-i18n="apply_back_to_details">Back to details</button>
+        </div>
+        <p class="tf-muted" data-i18n="apply_demo_step_intro">Upload your teaching demo for the selected topic, then submit it for quality review.</p>
         <div class="tf-field">
           <span id="demo-label" class="tf-legend" data-i18n="apply_demo_file">Video file</span>
           <label class="tf-file-drop" id="demo-drop" for="demo" aria-labelledby="demo-label">
@@ -264,6 +363,20 @@
           <button id="submit-application" class="tf-button tf-button-secondary" type="button" data-i18n="apply_submit_review">Submit for review</button>
         </div>
       </form>
+      </section>
+
+      <section id="panel-review" class="tf-apply-panel" hidden>
+        <div class="tf-apply-review" id="review-panel">
+          <div class="tf-apply-review-badge" id="review-status-badge"></div>
+          <h2 id="review-title" data-i18n="apply_review_pending_title">Application pending review</h2>
+          <p class="tf-muted" id="review-body" data-i18n="apply_review_pending_body">Your application was submitted successfully. Please wait while the quality team reviews it. You can check the status here anytime.</p>
+          <dl class="tf-apply-review-meta" id="review-meta"></dl>
+          <div class="tf-form-actions">
+            <button type="button" id="review-new-application" class="tf-button tf-button-secondary" data-i18n="apply_start_new" hidden>Start another application</button>
+          </div>
+        </div>
+      </section>
+
       <p id="apply-status" class="tf-status" role="status" aria-live="polite"></p>
       </div>
     </section>

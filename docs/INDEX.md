@@ -12,6 +12,7 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Teacher Qualification Browser Validation](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) | 2026-07-29 | Validated locally | Browser-validated the qualification workflow and fixed lifecycle-message localization. |
 | [F-002 Public Teacher Metrics Integrity](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) | 2026-07-29 | Fixed locally | Removed unsupported public teacher metrics and ranking while preserving verified review and qualification evidence. |
 | [Owned Order Lifecycle Timeline](./features/PHASE2_ORDER_TIMELINE_REPORT.md) | 2026-07-29 | Completed locally | Added an owned, localized timeline using only persisted Order evidence. |
+| [F-005 Revision-to-Delivery Linkage Investigation](./audits/F005_REVISION_DELIVERY_LINKAGE_INVESTIGATION.md) | 2026-07-29 | Investigated | Proved that revision targets are not persisted and schema change is required. |
 
 ## Architecture
 
@@ -45,6 +46,7 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Phase 11 Audit Findings](./audits/phase-11-audit-findings.md) | 2026-07-26 | Historical | Full hardening audit |
 | [Final UI/UX Audit](./audits/final-ui-ux-audit.md) | 2026-07-28 | Historical | Final UI/UX review |
 | [Frontend Completeness Audit](./audits/frontend-completeness-audit.md) | 2026-07-28 | Historical | Frontend/API completeness review |
+| [F-005 Revision-to-Delivery Linkage Investigation](./audits/F005_REVISION_DELIVERY_LINKAGE_INVESTIGATION.md) | 2026-07-29 | Investigated | Revision target relationship and downstream impact audit |
 | [Tafseel Phase 0–1 Audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md) | 2026-07-29 | Completed | Current architecture and 24-capability gap audit |
 
 ## Fix Reports
