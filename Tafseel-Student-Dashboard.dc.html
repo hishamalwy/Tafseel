@@ -133,7 +133,16 @@
                     <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
                     <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
                     <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
-                    <td style="padding:14px 20px;text-align:end"><sc-if value="{{ r.actionLabel }}"><button type="button" onClick="{{ r.onAction }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">{{ r.actionLabel }}</button></sc-if></td>
+                    <td style="padding:14px 20px;text-align:end">
+                      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+                        <sc-if value="{{ r.timelineLabel }}">
+                          <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.timelineLabel }}</button>
+                        </sc-if>
+                        <sc-if value="{{ r.actionLabel }}">
+                          <button type="button" onClick="{{ r.onAction }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.actionLabel }}</button>
+                        </sc-if>
+                      </div>
+                    </td>
                   </tr>
                 </sc-for>
               </tbody>
@@ -245,6 +254,7 @@
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
                   <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Amount</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,6 +268,11 @@
                     <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
                     <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
                     <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
+                    <td style="padding:14px 20px;text-align:end">
+                      <sc-if value="{{ r.timelineLabel }}">
+                        <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);white-space:nowrap">{{ r.timelineLabel }}</button>
+                      </sc-if>
+                    </td>
                   </tr>
                 </sc-for>
               </tbody>
@@ -515,6 +530,50 @@
   </div>
 </sc-if>
 
+<sc-if value="{{ timelineOrder }}" hint-placeholder-val="{{ false }}">
+  <div role="presentation" onClick="{{ closeTimeline }}" onKeyDown="{{ timelineKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+    <div role="dialog" aria-modal="true" aria-labelledby="student-order-timeline-title" onClick="{{ stop }}" style="width:min(560px,100%);max-height:min(84vh,760px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg)">
+      <div style="position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;gap:16px;padding:20px;border-bottom:1px solid var(--border);background:var(--surface)">
+        <div style="min-width:0;flex:1">
+          <h2 id="student-order-timeline-title" style="font-size:18px;font-weight:800;margin-bottom:4px">{{ timelineTitle }}</h2>
+          <div style="font-size:12px;color:var(--muted);overflow-wrap:anywhere">{{ timelineOrderLabel }}</div>
+        </div>
+        <button data-order-timeline-close type="button" autofocus onClick="{{ closeTimeline }}" aria-label="{{ timelineCloseLabel }}" title="{{ timelineCloseLabel }}" style="width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:20px">×</button>
+      </div>
+      <div style="padding:20px">
+        <sc-if value="{{ timelineLoading }}" hint-placeholder-val="{{ true }}">
+          <div role="status" aria-live="polite" style="padding:28px 12px;text-align:center;color:var(--muted)">{{ timelineLoadingLabel }}</div>
+        </sc-if>
+        <sc-if value="{{ timelineError }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="padding:24px;border:1px solid var(--error);border-radius:var(--r-md);background:var(--error-soft)">
+            <p style="font-size:14px;color:var(--text);margin-bottom:12px">{{ timelineErrorLabel }}</p>
+            <button type="button" onClick="{{ retryTimeline }}" style="height:36px;padding-inline:14px;border:0;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700">{{ timelineRetryLabel }}</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ timelineEmpty }}" hint-placeholder-val="{{ false }}">
+          <p role="status" style="padding:28px 12px;text-align:center;color:var(--muted)">{{ timelineEmptyLabel }}</p>
+        </sc-if>
+        <sc-if value="{{ timelineHasEvents }}" hint-placeholder-val="{{ false }}">
+          <ol aria-label="{{ timelineTitle }}" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+            <sc-for list="{{ timelineEvents }}" as="event" hint-placeholder-count="5">
+              <li style="display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;position:relative;padding-block:0 22px">
+                <span aria-hidden="true" style="width:12px;height:12px;margin-top:5px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)"></span>
+                <div style="min-width:0">
+                  <div style="font-size:14.5px;font-weight:700;overflow-wrap:anywhere">{{ event.title }}</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px">{{ event.actor }} · {{ event.occurredAt }}</div>
+                  <sc-if value="{{ event.details }}">
+                    <div style="font-size:13px;color:var(--text-2);margin-top:6px;overflow-wrap:anywhere">{{ event.details }}</div>
+                  </sc-if>
+                </div>
+              </li>
+            </sc-for>
+          </ol>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
   <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
@@ -551,7 +610,8 @@ class Component extends DCLogic {
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
     hasAvatar: false, accountUserId: '', avatarVersion: 0,
     currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
-    notifyDeliveries: true, notifySessions: true
+    notifyDeliveries: true, notifySessions: true,
+    timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: []
   };
 
   componentDidMount() {
@@ -621,6 +681,7 @@ class Component extends DCLogic {
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() {
+    this._timelineRequest = null;
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
   }
@@ -628,6 +689,36 @@ class Component extends DCLogic {
 
   flash(msg) {
     Tafseel.flash(this, msg);
+  }
+
+  async openTimeline(item, trigger) {
+    const request = item.id + ':' + Date.now();
+    this._timelineRequest = request;
+    if (!this._timelineReturnFocus)
+      this._timelineReturnFocus = trigger || document.activeElement;
+    this.setState({ timelineOrder:item, timelineLoading:true, timelineError:false, timelineEvents:[] });
+    setTimeout(() => {
+      const close = document.querySelector('[data-order-timeline-close]');
+      if (close) close.focus();
+    }, 0);
+    try {
+      const events = await Tafseel.api.get('/orders/' + encodeURIComponent(item.id) + '/timeline');
+      if (this._timelineRequest === request)
+        this.setState({ timelineLoading:false, timelineEvents:Array.isArray(events) ? events : [] });
+    } catch (error) {
+      if (this._timelineRequest === request) {
+        this.setState({ timelineLoading:false, timelineError:true, timelineEvents:[] });
+        this.flash(Tafseel.api.errorMessage(error));
+      }
+    }
+  }
+
+  closeTimeline() {
+    this._timelineRequest = null;
+    this.setState({ timelineOrder:null, timelineLoading:false, timelineError:false, timelineEvents:[] });
+    const trigger = this._timelineReturnFocus;
+    this._timelineReturnFocus = null;
+    setTimeout(() => { if (trigger && trigger.focus) trigger.focus(); }, 0);
   }
 
   async orderAction(item) {
@@ -762,9 +853,28 @@ class Component extends DCLogic {
           ...r,
           actionLabel:r.kind === 'order' && r.status === 'Payment Required' ? 'Pay' : r.kind === 'order' && ['In Progress','Delivered','Revision Requested'].includes(r.status) ? 'Manage' : '',
           onAction:() => this.orderAction(r),
+          timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
+          onTimeline:event => this.openTimeline(r, event.currentTarget),
           statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
         };
       }),
+
+      timelineOrder:s.timelineOrder,
+      timelineTitle:Tafseel.t('order_timeline_title'),
+      timelineOrderLabel:s.timelineOrder ? s.timelineOrder.title : '',
+      timelineCloseLabel:Tafseel.t('order_timeline_close'),
+      timelineLoading:s.timelineLoading,
+      timelineLoadingLabel:Tafseel.t('order_timeline_loading'),
+      timelineError:s.timelineError,
+      timelineErrorLabel:Tafseel.t('order_timeline_error'),
+      timelineRetryLabel:Tafseel.t('order_timeline_retry'),
+      timelineEmpty:!s.timelineLoading && !s.timelineError && s.timelineOrder && s.timelineEvents.length === 0,
+      timelineEmptyLabel:Tafseel.t('order_timeline_empty'),
+      timelineHasEvents:!s.timelineLoading && !s.timelineError && s.timelineEvents.length > 0,
+      timelineEvents:s.timelineEvents.map(event => Tafseel.orderTimelineEvent(event)),
+      closeTimeline:() => this.closeTimeline(),
+      retryTimeline:event => s.timelineOrder && this.openTimeline(s.timelineOrder, event.currentTarget),
+      timelineKeyDown:event => { if (event.key === 'Escape') this.closeTimeline(); },
 
       allSessions: s.liveSessions.map(se => ({
         ...se,
@@ -908,6 +1018,8 @@ class Component extends DCLogic {
           ...r,
           actionLabel:r.kind === 'order' && r.status === 'Payment Required' ? 'Pay' : r.kind === 'order' && ['In Progress','Delivered','Revision Requested'].includes(r.status) ? 'Manage' : '',
           onAction:() => this.orderAction(r),
+          timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
+          onTimeline:event => this.openTimeline(r, event.currentTarget),
           statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
         };
       }),

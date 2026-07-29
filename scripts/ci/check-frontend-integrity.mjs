@@ -158,6 +158,13 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       toastClass: (leaving) => leaving ? 'tf-toast is-leaving' : 'tf-toast',
       flash() {},
       toggleTheme() {}, toggleLang() {},
+      defaultAvatar: 'assets/brand/default-avatar.svg',
+      avatarUrl: function (userId, hasAvatar) {
+        return hasAvatar && userId
+          ? '/api/v1/users/' + encodeURIComponent(userId) + '/avatar'
+          : this.defaultAvatar;
+      },
+      userName: function (user) { return user && (user.fullName || user.name || '') || ''; },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -266,6 +273,13 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       toastClass: (leaving) => leaving ? 'tf-toast is-leaving' : 'tf-toast',
       flash() {},
       toggleTheme() {}, toggleLang() {},
+      defaultAvatar: 'assets/brand/default-avatar.svg',
+      avatarUrl: function (userId, hasAvatar) {
+        return hasAvatar && userId
+          ? '/api/v1/users/' + encodeURIComponent(userId) + '/avatar'
+          : this.defaultAvatar;
+      },
+      userName: function (user) { return user && (user.fullName || user.name || '') || ''; },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -300,6 +314,13 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       toastClass: (leaving) => leaving ? 'tf-toast is-leaving' : 'tf-toast',
       flash() {},
       toggleTheme() {}, toggleLang() {},
+      defaultAvatar: 'assets/brand/default-avatar.svg',
+      avatarUrl: function (userId, hasAvatar) {
+        return hasAvatar && userId
+          ? '/api/v1/users/' + encodeURIComponent(userId) + '/avatar'
+          : this.defaultAvatar;
+      },
+      userName: function (user) { return user && (user.fullName || user.name || '') || ''; },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -430,6 +451,32 @@ for (const page of ["Tafseel-Book-Session.dc.html", "Tafseel-Request.dc.html"]) 
 const studentDashboard = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
 if (/rating:\s*String\(x\.rating\)/.test(studentDashboard) || !/x\.rating\s*!=\s*null/.test(studentDashboard))
   throw new Error("Student saved-teacher cards must distinguish missing ratings from a real zero.");
+const teacherDashboard = readFileSync("Tafseel-Teacher-Dashboard.dc.html", "utf8");
+for (const [name, dashboard] of [
+  ["Student", studentDashboard],
+  ["Teacher", teacherDashboard]
+]) {
+  if (!/\/orders\/['"]?\s*\+\s*encodeURIComponent\(item\.id\)\s*\+\s*['"]\/timeline/.test(dashboard))
+    throw new Error(`${name} Dashboard must load the canonical owned Order timeline endpoint.`);
+  for (const state of ["timelineLoading", "timelineError", "timelineEmpty", "timelineHasEvents"])
+    if (!dashboard.includes(state))
+      throw new Error(`${name} Dashboard Order timeline is missing its ${state} state.`);
+  if (!/role="dialog"[^>]*aria-modal="true"/.test(dashboard) || !/<ol[^>]*aria-label/.test(dashboard))
+    throw new Error(`${name} Dashboard Order timeline must preserve dialog and ordered-list semantics.`);
+}
+const sharedUi = readFileSync("js/tafseel.js", "utf8");
+if (!/orderTimelineEvent:\s*function/.test(sharedUi))
+  throw new Error("Order timeline event localization must stay in the shared frontend helper.");
+const localeSource = readFileSync("js/locales.js", "utf8");
+for (const key of [
+  "order_timeline_title",
+  "order_timeline_event_awaiting_payment",
+  "order_timeline_event_delivery_uploaded",
+  "order_timeline_event_revision_requested"
+]) {
+  if ((localeSource.match(new RegExp(`"${key}"`, "g")) || []).length !== 2)
+    throw new Error(`Order timeline locale key ${key} must exist once in English and Arabic.`);
+}
 
 const auth = readFileSync("Tafseel-Auth.dc.html", "utf8");
 if (!/role\s*===\s*['"]teacher['"]\s*\?\s*['"]teacher['"]\s*:\s*['"]student['"]/.test(auth))

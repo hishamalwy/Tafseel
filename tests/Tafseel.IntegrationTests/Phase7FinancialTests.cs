@@ -101,6 +101,7 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
     {
         var data = await SeedAsync();
         var student = await ClientAsync(data.Student.Email);
+        var teacher = await ClientAsync(data.Teacher.Email);
         var admin = await ClientAsync(data.Admin.Email);
         var payment = await InitiateAsync(student, data.OrderId, "init-refund");
         var paymentId = payment.GetProperty("id").GetGuid();
@@ -140,6 +141,16 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
             Assert.Single(await db.LedgerEntries.Where(x =>
                 x.ReferenceType == "Refund" && x.ReferenceId == refund.Id.ToString()).ToArrayAsync());
         }
+        var studentTimeline = JsonDocument.Parse(
+            await student.GetStringAsync($"/api/v1/orders/{data.OrderId}/timeline")).RootElement;
+        var teacherTimeline = JsonDocument.Parse(
+            await teacher.GetStringAsync($"/api/v1/orders/{data.OrderId}/timeline")).RootElement;
+        Assert.Equal(studentTimeline.GetRawText(), teacherTimeline.GetRawText());
+        var timelineTypes = studentTimeline.EnumerateArray()
+            .Select(x => x.GetProperty("eventType").GetString()).ToArray();
+        Assert.Contains("payment_confirmed", timelineTypes);
+        Assert.Contains("payment_refunded", timelineTypes);
+        Assert.Contains("cancelled", timelineTypes);
     }
 
     [Fact]
