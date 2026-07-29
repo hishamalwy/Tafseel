@@ -36,6 +36,7 @@ internal sealed class CatalogService(
                 MinVideoSeconds: x.MinVideoSeconds, ExpectedVideoSeconds: x.ExpectedVideoSeconds,
                 MaxVideoSeconds: x.MaxVideoSeconds, EvaluationGuidance: x.EvaluationGuidance,
                 EvaluationGuidanceAr: x.EvaluationGuidanceAr,
+                NameAr: string.IsNullOrWhiteSpace(x.TitleAr) ? x.NameAr : x.TitleAr,
                 Resources: resources.Where(r => r.QualificationAssignmentId == x.Id)
                     .Select(r => new CatalogResourceDto(
                         r.Id, r.DisplayName, r.DisplayNameAr,
@@ -143,7 +144,8 @@ internal sealed class CatalogService(
                 DisplayOrder: x.DisplayOrder, TitleAr: x.TitleAr, InstructionsAr: x.InstructionsAr,
                 MinVideoSeconds: x.MinVideoSeconds, ExpectedVideoSeconds: x.ExpectedVideoSeconds,
                 MaxVideoSeconds: x.MaxVideoSeconds, EvaluationGuidance: x.EvaluationGuidance,
-                EvaluationGuidanceAr: x.EvaluationGuidanceAr), ct);
+                EvaluationGuidanceAr: x.EvaluationGuidanceAr,
+                NameAr: string.IsNullOrWhiteSpace(x.TitleAr) ? x.NameAr : x.TitleAr), ct);
     }
 
     public Task<CatalogItemDto> CreateEducationLevelAsync(NamedCatalogInput input, CancellationToken ct) =>
@@ -186,8 +188,17 @@ internal sealed class CatalogService(
                 break;
             case "qualification-topics":
                 var qualificationTopic = await Required(db.QualificationTopics, id, ct);
-                qualificationTopic.Update(
-                    input.Name, input.Detail ?? "", input.MaxVideoSeconds ?? qualificationTopic.MaxVideoSeconds);
+                qualificationTopic.Configure(
+                    input.Name,
+                    input.NameAr ?? qualificationTopic.TitleAr,
+                    input.Detail ?? qualificationTopic.Instructions,
+                    input.InstructionsAr ?? qualificationTopic.InstructionsAr,
+                    qualificationTopic.ExpectedVideoSeconds,
+                    qualificationTopic.MinVideoSeconds,
+                    input.MaxVideoSeconds ?? qualificationTopic.MaxVideoSeconds,
+                    qualificationTopic.EvaluationGuidance,
+                    qualificationTopic.EvaluationGuidanceAr,
+                    qualificationTopic.DisplayOrder);
                 break;
             case "education-levels":
                 (await Required(db.EducationLevels, id, ct)).Rename(input.Name);

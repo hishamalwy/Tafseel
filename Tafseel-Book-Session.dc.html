@@ -362,11 +362,9 @@ class Component extends DCLogic {
     const total = base + premium;
     const subjects = profile && profile.subjects ? profile.subjects.map(x => x.name).filter(Boolean) : [];
     const rating = profile && profile.rating ? Number(profile.rating).toFixed(1) : '';
-    const replyHours = profile ? Math.max(1, Math.round((profile.responseTimeMinutes || 60) / 60)) : 1;
     const teacherMeta = [
       subjects[0] || (service && service.title) || '',
-      rating ? rating + ' ★' : '',
-      'Replies in ~' + replyHours + 'h'
+      rating ? rating + ' ★' : ''
     ].filter(Boolean).join(' · ');
     const week = showBooking ? this.buildWeek() : [];
     const slotCount = (s.slots || []).length;

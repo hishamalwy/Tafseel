@@ -41,6 +41,11 @@ public sealed record OrderDto(
 public sealed record DeliveryDto(
     Guid Id, string OriginalName, string ContentType, long Size, string Message, DateTimeOffset CreatedAt);
 
+public sealed record OrderTimelineMetadataDto(int? RevisionSequence = null, string? OriginalName = null);
+public sealed record OrderTimelineEventDto(
+    string Id, string EventType, DateTimeOffset OccurredAt, string ActorRole,
+    OrderTimelineMetadataDto? Metadata = null);
+
 public sealed record PrivateFile(Stream Content, string ContentType, string FileName);
 
 public interface IOrderService
@@ -57,6 +62,8 @@ public interface IOrderService
     Task CancelRequestAsync(string studentId, Guid requestId, string version, CancellationToken ct);
     Task<PagedResult<OrderDto>> GetStudentOrdersAsync(string studentId, int page, int pageSize, CancellationToken ct);
     Task<PagedResult<OrderDto>> GetTeacherOrdersAsync(string teacherId, int page, int pageSize, CancellationToken ct);
+    Task<IReadOnlyCollection<OrderTimelineEventDto>> GetTimelineAsync(
+        string userId, Guid orderId, CancellationToken ct);
     Task StartOrderAsync(string teacherId, Guid orderId, string version, CancellationToken ct);
     Task<DeliveryDto> DeliverAsync(string teacherId, Guid orderId, Stream stream, string fileName, string contentType, long size, string message, string version, CancellationToken ct);
     Task<PrivateFile> OpenDeliveryAsync(string userId, Guid deliveryId, CancellationToken ct);

@@ -439,11 +439,9 @@ class Component extends DCLogic {
     });
 
     const subjects = profile && profile.subjects ? profile.subjects.map(x => x.name).filter(Boolean) : [];
-    const replyHours = profile ? Math.max(1, Math.round((profile.responseTimeMinutes || 60) / 60)) : 1;
     const teacherName = profile ? Tafseel.userName(profile) : '';
     const teacherMeta = [
-      subjects[0] || (service && service.title) || '',
-      t('req_replies_in', { hours: String(replyHours) })
+      subjects[0] || (service && service.title) || ''
     ].filter(Boolean).join(' · ');
     const teacherIntro = profile
       ? t('req_requesting_from', { name: teacherName, subject: subjects[0] || (service && service.title) || '—' })

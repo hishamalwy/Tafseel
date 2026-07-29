@@ -4,17 +4,17 @@ Last updated: 2026-07-29.
 
 ## Current Version
 
-No release tag is present. Current audited baseline is commit `6c42d7e` on `main`, plus uncommitted F-001 and documentation-standardization changes.
+No release tag is present. Current audited baseline is commit `6c42d7e` on `main`, plus uncommitted F-001, qualification and F-002 changes.
 
 ## Current Phase
 
-Teacher qualification application API, validation, loading and task UX fixed locally after documentation standardization and F-001.
+F-002 public teacher metrics integrity fixed locally after the conditionally verified Teacher Qualification Application pass.
 
 ## Current Milestone
 
-Production-correct startup boundary completed locally; first roadmap vertical slice is pending.
+Production-correct startup and public teacher metric boundaries are completed locally; the owned order lifecycle timeline is pending.
 
-## Architecture Status
+## Current Architecture Status
 
 The Domain/Application/Infrastructure/API layering is intact. Existing Identity/JWT, EF Core/SQL Server, SignalR messaging, Resend email, finance foundations and DC/React frontend conventions remain unchanged. Documentation now has canonical architecture summaries and accepted ADRs.
 
@@ -24,18 +24,24 @@ The Domain/Application/Infrastructure/API layering is intact. Existing Identity/
 
 Real payment and live-session providers are not registered, Production file storage is not proven durable/shared, financial terminology/policy remains unresolved, and the current uncommitted state has not passed CI or Staging validation.
 
-## Completed Production Fixes
+## Completed Phases
+
+Historical implementation phases 2–11 are complete and indexed in [INDEX.md](./INDEX.md). Current production-correction passes F-001, Teacher Qualification and F-002 are completed locally and remain uncommitted.
+
+## Completed Features
 
 | Finding | Status | Report |
 |---|---|---|
 | F-001 Development-only identity initialization | Fixed locally | [F-001 report](./fixes/TAFSEEL_F001_IDENTITY_INITIALIZATION_FIX_REPORT.md) |
 | Teacher qualification application contract and UX | Fixed locally | [Teacher qualification report](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) |
+| Teacher qualification application browser validation | Conditionally Verified | [Browser validation report](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) |
+| F-002 Public teacher metrics integrity | Fixed locally | [F-002 report](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) |
 
 ## Open Findings
 
 | ID | Severity | Classification | Status |
 |---|---|---|---|
-| F-002 | High | Production Bug | Open |
+| F-002 | High | Production Bug | Fixed locally |
 | F-003 | Critical | Deployment | Open |
 | F-004 | High | Deployment | Open |
 | F-005 | High | API Bug | Open |
@@ -54,31 +60,30 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
-## Planned Vertical Slices
+## Pending Vertical Slices
 
 1. Owned order lifecycle timeline from existing persisted evidence.
 2. Revision-to-delivery version linkage.
 3. Favorites pagination.
 4. Availability and teacher capacity after rule approval.
-5. Real event-derived public teacher metrics.
-6. Teacher comparison after metric correction.
-7. Student learning preferences.
-8. Explainable deterministic matching.
-9. Teacher/student analytics after event instrumentation.
-10. Quality trends, trust extensions, learning timeline and portfolio moderation.
+5. Teacher comparison after metric correction.
+6. Student learning preferences.
+7. Explainable deterministic matching.
+8. Teacher/student analytics after event instrumentation.
+9. Quality trends, trust extensions, learning timeline and portfolio moderation.
 
 ## Known Risks
 
 1. **Critical:** Production payment and live-session workflows have no real registered providers.
 2. **High:** Local file storage durability, multi-instance behavior and malware scanning are unproven.
-3. **High:** Public teacher performance fields are not fully event-derived.
+3. **High:** Completed-work and response-time formulas remain unapproved; F-002 prevents them from being presented publicly until evidence rules exist.
 4. **High:** Revision records do not identify their target delivery version.
 5. **High:** Additional portfolio publication has no distinct moderation state.
 6. **Medium:** SignalR multi-instance delivery is not verified.
 7. **Medium:** The DC/Babel runtime requires broader CSP allowances.
 8. **Medium:** One Marketplace query-count integration test remains order/isolation sensitive.
 
-## Business Rule Decisions Pending
+## Blocked By Business Rules
 
 Unresolved decisions include:
 
@@ -95,20 +100,21 @@ Unresolved decisions include:
 - New service-type lifecycle rules.
 - Content-feed moderation/storage scope.
 - Referral eligibility, accounting, fraud and refund rules.
+- Teacher qualification assignment/resource scenarios and multi-subject application behavior remain unverified; the application is therefore **Conditionally Verified**.
 
 The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md).
 
-## Test Summary
+## Test Coverage Summary
 
-Latest teacher qualification validation:
+Latest F-002 validation:
 
 - Locked restore, format verification and Release build: passed; 0 warnings and 0 errors.
-- Provider-neutral solution tests: 138 passed, 0 failed.
-- Focused teacher qualification authorization/integration tests: 3 passed.
-- Frontend syntax/integrity and 1,811-key localization parity: passed.
+- Provider-neutral solution tests: 142 passed, 0 failed.
+- Focused Marketplace/favorites/review aggregate tests: 3 passed individually.
+- Focused F002 frontend integrity: passed across six public consumers with English/Arabic key parity.
 - EF pending model changes: none.
-- Publish smoke: passed.
-- Authenticated dynamic browser viewport verification remains pending because the existing local servers returned empty responses.
+- Repository-wide frontend validation remains red on unrelated avatar-helper and Quality Dashboard localization changes.
+- Browser sort/overflow checks passed at 375 px and 1440 px; live card rendering was blocked by the unrelated avatar-helper mismatch.
 
 ## Deployment Status
 
@@ -120,4 +126,4 @@ Latest teacher qualification validation:
 
 ## Next Recommended Pass
 
-Complete the authenticated teacher-qualification browser matrix against a working app host, then implement the owned order lifecycle timeline using only existing persisted request/order histories, deliveries and revision records.
+Owned Order Lifecycle Timeline using existing persisted evidence only.

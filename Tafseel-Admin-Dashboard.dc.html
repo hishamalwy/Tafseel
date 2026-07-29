@@ -364,6 +364,17 @@
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">{{ catalogTitle }}</h1>
           <button type="button" onClick="{{ onAddCatalog }}" disabled="{{ catalogAddDisabled }}" aria-disabled="{{ catalogAddDisabled }}" style="height:38px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ catalogAddLabel }}</button>
         </div>
+        <sc-if value="{{ showCatalogSubjectFilter }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;color:var(--text-2);flex-wrap:wrap">
+            <span style="font-weight:600">{{ catalogSubjectFilterLabel }}</span>
+            <select value="{{ catalogSubjectFilter }}" onChange="{{ onCatalogSubjectFilter }}" style="height:36px;min-width:220px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:13.5px;color:var(--text)">
+              <option value="">{{ catalogAllSubjectsLabel }}</option>
+              <sc-for list="{{ catalogFilterSubjects }}" as="sub" hint-placeholder-count="4">
+                <option value="{{ sub.id }}">{{ sub.name }}</option>
+              </sc-for>
+            </select>
+          </label>
+        </sc-if>
         <sc-if value="{{ catalogNote }}" hint-placeholder-val="{{ false }}">
           <p style="font-size:13px;color:var(--muted);margin-bottom:14px">{{ catalogNote }}</p>
         </sc-if>
@@ -373,14 +384,20 @@
         <sc-if value="{{ catalogEmpty }}" hint-placeholder-val="{{ false }}">
           <div role="status" class="tf-empty-enter" style="padding:28px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;color:var(--muted)">{{ catalogEmptyLabel }}</div>
         </sc-if>
+        <sc-if value="{{ catalogFilterEmpty }}" hint-placeholder-val="{{ false }}">
+          <div role="status" class="tf-empty-enter" style="padding:28px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;color:var(--muted)">{{ catalogFilterEmptyLabel }}</div>
+        </sc-if>
         <div style="display:flex;flex-direction:column;gap:10px">
           <sc-for list="{{ catalogItems }}" as="c" hint-placeholder-count="6">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px">
               <div>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span style="font-size:14.5px;font-weight:700">{{ c.name }}</span>
-                  <sc-if value="{{ c.nameAr }}" hint-placeholder-val="{{ false }}">
-                    <span dir="rtl" style="font-size:13px;color:var(--text-2)">{{ c.nameAr }}</span>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span style="font-size:14.5px;font-weight:700">{{ c.displayName }}</span>
+                  <sc-if value="{{ c.displayNameAlt }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:13px;color:var(--text-2)">{{ c.displayNameAlt }}</span>
+                  </sc-if>
+                  <sc-if value="{{ c.subjectName }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:11.5px;font-weight:600;color:var(--text-2);background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px 8px">{{ c.subjectName }}</span>
                   </sc-if>
                 </div>
                 <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ c.meta }}</div>
@@ -492,8 +509,57 @@
     </sc-if>
 
     <sc-if value="{{ isSettingsPage }}" hint-placeholder-val="{{ false }}">
-      <div style="max-width:480px">
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Platform settings</h1>
+      <div style="max-width:560px;display:flex;flex-direction:column;gap:20px">
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+            <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+              <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:13px;font-weight:600;cursor:pointer">
+                  {{ accountChangePhoto }}
+                  <input type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden onChange="{{ onAvatarFile }}" />
+                </label>
+                <sc-if value="{{ hasCustomAvatar }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ onClearAvatar }}" style="height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2)">{{ accountRemovePhoto }}</button>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountPrimaryName }}</span>
+            <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" maxlength="200" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountEnglishName }}</span>
+            <input value="{{ settingsNameEnglish }}" onChange="{{ onSettingsNameEnglish }}" maxlength="200" dir="ltr" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span style="font-size:12px;color:var(--muted)">{{ accountEnglishHint }}</span>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">Email</span>
+            <input value="{{ settingsEmail }}" readonly style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px" />
+          </label>
+          <button type="button" onClick="{{ onSaveAccount }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountSaveProfile }}</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
+            <input type="password" value="{{ currentPassword }}" onChange="{{ onCurrentPassword }}" autocomplete="current-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountNewPassword }}</span>
+            <input type="password" value="{{ newPassword }}" onChange="{{ onNewPassword }}" minlength="10" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            <span style="font-size:12px;color:var(--muted)">{{ accountPasswordHint }}</span>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ accountConfirmPassword }}</span>
+            <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPassword }}" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
+          <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
+        </div>
+        <h2 style="font-size:17px;margin:8px 0 0">Platform settings</h2>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Platform commission rate (%)</span>
@@ -507,7 +573,7 @@
             <span>Maintenance mode</span>
             <input type="checkbox" checked="{{ maintenanceMode }}" onChange="{{ onMaintenanceMode }}" style="width:38px;height:22px;accent-color:var(--primary)" />
           </label>
-          <button type="button" onClick="{{ onSavePlatformSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
+          <button type="button" onClick="{{ onSavePlatformSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save platform settings</button>
         </div>
       </div>
     </sc-if>
@@ -559,8 +625,13 @@
         </sc-if>
         <sc-if value="{{ isAssignmentModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600" data-i18n="admin_assignment_instructions">Teacher instructions</span>
-            <textarea value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" rows="5" maxlength="2000"
+            <span style="font-size:13px;font-weight:600" data-i18n="admin_assignment_instructions">Teacher instructions (English)</span>
+            <textarea value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" rows="4" maxlength="2000"
+              style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600" data-i18n="admin_assignment_instructions_ar">Teacher instructions (Arabic)</span>
+            <textarea dir="rtl" value="{{ catalogDetailAr }}" onChange="{{ onCatalogDetailAr }}" rows="4" maxlength="2000"
               style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
         </sc-if>
@@ -688,7 +759,12 @@ class Component extends DCLogic {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, navKey: 'overview', page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
     userQ: '', userRole: 'all', selected: [], userOverrides: {}, catalogOverrides: {}, pagination: 1, toast: '', toastLeaving: false, contentFade: 'in',
     commissionRate: 15, requireReview: true, maintenanceMode: false,
+    settingsName: '', settingsNameEnglish: '', settingsEmail: '',
+    hasAvatar: false, accountUserId: '', avatarVersion: 0, accountBusy: false,
+    currentPassword: '', newPassword: '', confirmPassword: '',
     catalogModal: false, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
+    catalogDetailAr: '',
+    catalogSubjectFilter: '',
     catalogCode: '', catalogRequiresScheduling: false, catalogDiscountType: '0', catalogDiscountValue: 10,
     resourceModal: null, resourceName: '', resourceUrl: '',
     editModal: null, editName: '', editNameAr: '', usersTotal: 0, liveWithdrawals: [],
@@ -726,6 +802,14 @@ class Component extends DCLogic {
         this.setState({ usersLoading: false, usersLoadError: Tafseel.t('admin_session_required'), listLoading: false });
         return null;
       }
+      this._session = session;
+      this.setState({
+        settingsName: session.fullName || '',
+        settingsNameEnglish: session.fullNameEnglish || '',
+        settingsEmail: session.email || '',
+        hasAvatar: !!session.hasAvatar,
+        accountUserId: session.userId || ''
+      });
       return Promise.allSettled([
         Tafseel.api.get('/admin/users?pageSize=100'),
         Tafseel.api.get('/admin/metrics'),
@@ -761,9 +845,17 @@ class Component extends DCLogic {
 
       const mapCatalog = (payload) => (payload || []).map(x => ({ id:x.id, name:x.name, nameAr:x.nameAr || '', meta:x.detail || '', active:x.isActive }));
       CATALOG_DATA.subjects = mapCatalog(settled(2));
-      CATALOG_DATA.topics = mapCatalog(settled(3));
+      CATALOG_DATA.topics = (settled(3) || []).map(x => ({
+        id: x.id, name: x.name, meta: x.detail || '', active: x.isActive, subjectId: x.parentId || ''
+      }));
       CATALOG_DATA.assignments = (settled(8) || []).map(x => ({
-        id:x.id, name:x.name, meta:x.detail || '', active:x.isActive, resources:x.resources || []
+        id:x.id, name:x.name,
+        nameAr: x.titleAr || x.nameAr || '',
+        titleAr: x.titleAr || '',
+        meta:x.detail || '',
+        instructionsAr: x.instructionsAr || '',
+        active:x.isActive, resources:x.resources || [],
+        subjectId: x.parentId || ''
       }));
       CATALOG_DATA.services = (settled(4) || []).map(x => ({
         id:x.id, name:x.name, nameAr:x.nameAr || '', active:x.isActive,
@@ -874,6 +966,7 @@ class Component extends DCLogic {
     } else if (catalogKeys.includes(key)) {
       patch.page = 'catalog';
       patch.catalogKind = key;
+      patch.catalogSubjectFilter = '';
     } else if (listKeys.includes(key)) {
       patch.page = 'list';
       patch.listKind = key;
@@ -965,6 +1058,95 @@ class Component extends DCLogic {
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       defaultAvatar: Tafseel.defaultAvatar,
+      accountAvatar: Tafseel.avatarUrl(s.accountUserId || (this._session && this._session.userId), s.hasAvatar, s.avatarVersion),
+      hasCustomAvatar: !!s.hasAvatar,
+      accountBusy: !!s.accountBusy,
+      accountProfileTitle: Tafseel.t('account_profile'),
+      accountPrimaryName: Tafseel.t('account_primary_name'),
+      accountEnglishName: Tafseel.t('account_english_name'),
+      accountEnglishHint: Tafseel.t('account_english_hint'),
+      accountChangePhoto: Tafseel.t('account_change_photo'),
+      accountRemovePhoto: Tafseel.t('account_remove_photo'),
+      accountPhotoHint: Tafseel.t('account_photo_hint'),
+      accountPasswordTitle: Tafseel.t('account_password'),
+      accountCurrentPassword: Tafseel.t('account_current_password'),
+      accountNewPassword: Tafseel.t('account_new_password'),
+      accountConfirmPassword: Tafseel.t('account_confirm_password'),
+      accountSaveProfile: Tafseel.t('account_save_profile'),
+      accountUpdatePassword: Tafseel.t('account_update_password'),
+      accountPasswordHint: Tafseel.t('account_password_hint'),
+      settingsName: s.settingsName || '',
+      onSettingsName: e => this.setState({ settingsName: e.target.value }),
+      settingsNameEnglish: s.settingsNameEnglish || '',
+      onSettingsNameEnglish: e => this.setState({ settingsNameEnglish: e.target.value }),
+      settingsEmail: s.settingsEmail || '',
+      currentPassword: s.currentPassword || '',
+      onCurrentPassword: e => this.setState({ currentPassword: e.target.value }),
+      newPassword: s.newPassword || '',
+      onNewPassword: e => this.setState({ newPassword: e.target.value }),
+      confirmPassword: s.confirmPassword || '',
+      onConfirmPassword: e => this.setState({ confirmPassword: e.target.value }),
+      onAvatarFile: async e => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file || s.accountBusy) return;
+        const data = new FormData();
+        data.append('file', file);
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.upload('/auth/avatar', data);
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({ hasAvatar: !!profile.hasAvatar, accountUserId: profile.userId || s.accountUserId, avatarVersion: Date.now() });
+          this.flash(Tafseel.t('account_photo_updated'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onClearAvatar: async () => {
+        if (!s.hasAvatar || s.accountBusy) return;
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.delete('/auth/avatar');
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({ hasAvatar: !!profile.hasAvatar, avatarVersion: Date.now() });
+          this.flash(Tafseel.t('account_photo_removed'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onSaveAccount: async () => {
+        if (s.accountBusy) return;
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.put('/auth/profile', {
+            fullName: s.settingsName,
+            fullNameEnglish: s.settingsNameEnglish
+          });
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({
+            settingsName: profile.fullName || '',
+            settingsNameEnglish: profile.fullNameEnglish || '',
+            hasAvatar: !!profile.hasAvatar
+          });
+          this.flash(Tafseel.t('account_profile_saved'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onChangePassword: async () => {
+        if (s.accountBusy) return;
+        if (!s.newPassword || s.newPassword !== s.confirmPassword) {
+          this.flash(Tafseel.t('account_password_mismatch'));
+          return;
+        }
+        this.setState({ accountBusy: true });
+        try {
+          await Tafseel.api.put('/auth/password', {
+            currentPassword: s.currentPassword,
+            newPassword: s.newPassword
+          });
+          this.flash(Tafseel.t('account_password_changed'));
+          setTimeout(() => { location.href = 'Tafseel-Auth.dc.html'; }, 900);
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
       contentFade: s.contentFade,
@@ -1031,31 +1213,74 @@ class Component extends DCLogic {
       onAddCatalog: () => {
         this.setState({
           catalogModal: true, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
-          catalogDetail: '', catalogCode: '', catalogRequiresScheduling: s.catalogKind === 'services',
+          catalogDetail: '', catalogDetailAr: '', catalogCode: '', catalogRequiresScheduling: s.catalogKind === 'services',
           catalogDiscountType: '0', catalogDiscountValue: 10
         });
       },
-      catalogItems: (CATALOG_DATA[s.catalogKind] || []).map(c => {
-        const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
-        return {
-          ...c, active,
-          canManageResources: s.catalogKind === 'assignments',
-          onResources: () => this.setState({ resourceModal:c, resourceName:'', resourceUrl:'' }),
-          onEdit: () => this.setState({ editModal: { kind: s.catalogKind, id: c.id, detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta, version: c.version }, editName: c.name, editNameAr: c.nameAr || '' }),
-          onToggle: async () => {
-            try {
-              if (s.catalogKind === 'coupons') {
-                await Tafseel.api.patch('/admin/coupons/' + c.id + '/active', { isActive: !active });
-              } else {
-                const kind = s.catalogKind === 'assignments' ? 'qualification-topics' : s.catalogKind;
-                await Tafseel.api.patch('/admin/catalog/' + kind + '/' + c.id + '/active', { isActive:!active });
-              }
-              this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
-              this.flash(c.name + (active ? ' deactivated' : ' activated'));
-            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-          }
+      showCatalogSubjectFilter: s.catalogKind === 'assignments' || s.catalogKind === 'topics',
+      catalogSubjectFilterLabel: Tafseel.t('admin_filter_by_subject'),
+      catalogAllSubjectsLabel: Tafseel.t('admin_all_subjects'),
+      catalogSubjectFilter: s.catalogSubjectFilter || '',
+      onCatalogSubjectFilter: e => this.setState({ catalogSubjectFilter: e.target.value || '' }),
+      catalogFilterSubjects: (() => {
+        const used = new Set((CATALOG_DATA[s.catalogKind] || []).map(c => c.subjectId).filter(Boolean));
+        return (CATALOG_DATA.subjects || [])
+          .filter(sub => used.has(sub.id))
+          .map(sub => ({
+            id: sub.id,
+            name: (s.lang === 'ar' && sub.nameAr) ? sub.nameAr : sub.name
+          }));
+      })(),
+      catalogItems: (() => {
+        const subjectLabel = (subjectId) => {
+          const sub = (CATALOG_DATA.subjects || []).find(x => x.id === subjectId);
+          if (!sub) return '';
+          return (s.lang === 'ar' && sub.nameAr) ? sub.nameAr : sub.name;
         };
-      }),
+        let rows = CATALOG_DATA[s.catalogKind] || [];
+        if ((s.catalogKind === 'assignments' || s.catalogKind === 'topics') && s.catalogSubjectFilter)
+          rows = rows.filter(c => c.subjectId === s.catalogSubjectFilter);
+        return rows.map(c => {
+          const active = s.catalogOverrides[c.id] !== undefined ? s.catalogOverrides[c.id] : c.active;
+          const subjectName = (s.catalogKind === 'assignments' || s.catalogKind === 'topics')
+            ? subjectLabel(c.subjectId)
+            : '';
+          const arabicName = c.nameAr || c.titleAr || '';
+          const displayName = (s.lang === 'ar' && arabicName) ? arabicName : c.name;
+          const displayNameAlt = (s.lang === 'ar' && arabicName) ? c.name : arabicName;
+          return {
+            ...c,
+            displayName,
+            displayNameAlt,
+            active, subjectName,
+            canManageResources: s.catalogKind === 'assignments',
+            onResources: () => this.setState({ resourceModal:c, resourceName:'', resourceUrl:'' }),
+            onEdit: () => this.setState({
+              editModal: {
+                kind: s.catalogKind,
+                id: c.id,
+                detail: s.catalogKind === 'services' ? (c.detail || '') : c.meta,
+                instructionsAr: c.instructionsAr || '',
+                version: c.version
+              },
+              editName: c.name,
+              editNameAr: c.nameAr || c.titleAr || ''
+            }),
+            onToggle: async () => {
+              try {
+                if (s.catalogKind === 'coupons') {
+                  await Tafseel.api.patch('/admin/coupons/' + c.id + '/active', { isActive: !active });
+                } else {
+                  const kind = s.catalogKind === 'assignments' ? 'qualification-topics' : s.catalogKind;
+                  await Tafseel.api.patch('/admin/catalog/' + kind + '/' + c.id + '/active', { isActive:!active });
+                }
+                this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
+                this.flash(c.name + (active ? ' deactivated' : ' activated'));
+              } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+            }
+          };
+        });
+      })(),
 
       resourceModal: !!s.resourceModal,
       assignmentResources: (s.resourceModal?.resources || []).map(x => ({
@@ -1097,12 +1322,13 @@ class Component extends DCLogic {
       isSubjectScopedModal: s.catalogKind === 'topics' || s.catalogKind === 'assignments',
       isServiceModal: s.catalogKind === 'services',
       isCouponModal: s.catalogKind === 'coupons',
-      isNameArModal: s.catalogKind === 'subjects' || s.catalogKind === 'services',
+      isNameArModal: s.catalogKind === 'subjects' || s.catalogKind === 'services' || s.catalogKind === 'assignments',
       catalogModalTitle: { subjects:'Add subject', topics:'Add topic', assignments:Tafseel.t('admin_add_qualification_assignment'), services:'Add service', coupons:'Add coupon' }[s.catalogKind],
       catalogName: s.catalogName, onCatalogName: e => this.setState({ catalogName: e.target.value }),
       catalogNameAr: s.catalogNameAr || '', onCatalogNameAr: e => this.setState({ catalogNameAr: e.target.value }),
       catalogIcon: s.catalogIcon, onCatalogIcon: e => this.setState({ catalogIcon: e.target.value }),
       catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
+      catalogDetailAr: s.catalogDetailAr || '', onCatalogDetailAr: e => this.setState({ catalogDetailAr: e.target.value }),
       catalogCode: s.catalogCode || '', onCatalogCode: e => this.setState({ catalogCode: e.target.value }),
       catalogRequiresScheduling: !!s.catalogRequiresScheduling,
       onCatalogRequiresScheduling: e => this.setState({ catalogRequiresScheduling: e.target.checked }),
@@ -1138,16 +1364,33 @@ class Component extends DCLogic {
           } else if (s.catalogKind === 'topics') {
             if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash('Subject and name are required.');
             created = await Tafseel.api.post('/admin/topics', { subjectId: s.catalogSubjectId, name: s.catalogName, difficulty: s.catalogDifficulty });
-            CATALOG_DATA.topics = [...CATALOG_DATA.topics, { id: created.id, name: created.name, meta: created.detail || '', active: created.isActive }];
+            CATALOG_DATA.topics = [...CATALOG_DATA.topics, {
+              id: created.id, name: created.name, meta: created.detail || '', active: created.isActive,
+              subjectId: created.parentId || s.catalogSubjectId
+            }];
           } else if (s.catalogKind === 'assignments') {
             if (!s.catalogSubjectId || !s.catalogName.trim() || !s.catalogDetail.trim())
               return this.flash('Subject, title, and instructions are required.');
+            if (!(s.catalogNameAr || '').trim())
+              return this.flash(Tafseel.t('admin_assignment_arabic_name_required'));
             created = await Tafseel.api.post('/admin/qualification-topics', {
-              subjectId: s.catalogSubjectId, name: s.catalogName, instructions: s.catalogDetail,
+              subjectId: s.catalogSubjectId,
+              name: s.catalogName,
+              titleAr: (s.catalogNameAr || '').trim(),
+              instructions: s.catalogDetail,
+              instructionsAr: (s.catalogDetailAr || '').trim(),
               minVideoSeconds: 30, expectedVideoSeconds: 180, maxVideoSeconds: 180
             });
             CATALOG_DATA.assignments = [...CATALOG_DATA.assignments, {
-              id: created.id, name: created.name, meta: created.detail || '', active: created.isActive
+              id: created.id,
+              name: created.name,
+              nameAr: created.titleAr || created.nameAr || s.catalogNameAr || '',
+              titleAr: created.titleAr || s.catalogNameAr || '',
+              meta: created.detail || '',
+              instructionsAr: created.instructionsAr || s.catalogDetailAr || '',
+              active: created.isActive,
+              resources: created.resources || [],
+              subjectId: created.parentId || s.catalogSubjectId
             }];
           } else if (s.catalogKind === 'services') {
             if (!s.catalogName.trim() || !(s.catalogNameAr || '').trim())
@@ -1191,19 +1434,31 @@ class Component extends DCLogic {
       },
 
       editModal: !!s.editModal,
-      editShowNameAr: !!s.editModal && (s.editModal.kind === 'subjects' || s.editModal.kind === 'services'),
+      editShowNameAr: !!s.editModal && (s.editModal.kind === 'subjects' || s.editModal.kind === 'services' || s.editModal.kind === 'assignments'),
       editName: s.editName, onEditName: e => this.setState({ editName: e.target.value }),
       editNameAr: s.editNameAr || '', onEditNameAr: e => this.setState({ editNameAr: e.target.value }),
       closeEditModal: () => this.setState({ editModal: null }),
       confirmEditCatalog: async () => {
         if (!s.editModal || !s.editName.trim()) return this.flash('Name is required.');
+        if (s.editModal.kind === 'assignments' && !(s.editNameAr || '').trim())
+          return this.flash(Tafseel.t('admin_assignment_arabic_name_required'));
         try {
           const kind = s.editModal.kind === 'assignments' ? 'qualification-topics' : s.editModal.kind;
           await Tafseel.api.put('/admin/catalog/' + kind + '/' + s.editModal.id, {
-            name: s.editName, detail: s.editModal.detail || null, nameAr: s.editNameAr || ''
+            name: s.editName,
+            detail: s.editModal.detail || null,
+            nameAr: s.editNameAr || '',
+            instructionsAr: s.editModal.instructionsAr || null
           });
           CATALOG_DATA[s.editModal.kind] = (CATALOG_DATA[s.editModal.kind] || []).map(c =>
-            c.id === s.editModal.id ? { ...c, name: s.editName, nameAr: s.editNameAr || '' } : c);
+            c.id === s.editModal.id
+              ? {
+                  ...c,
+                  name: s.editName,
+                  nameAr: s.editNameAr || '',
+                  titleAr: s.editModal.kind === 'assignments' ? (s.editNameAr || '') : c.titleAr
+                }
+              : c);
           this.setState({ editModal: null });
           this.flash('Saved.');
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
@@ -1307,9 +1562,16 @@ class Component extends DCLogic {
       pageUsersReady: !s.usersLoading && !s.usersLoadError && pageRoleFiltered.length > 0,
       catalogLoadError: (s.catalogErrors && s.catalogErrors[s.catalogKind]) || '',
       catalogEmpty: !(s.catalogErrors && s.catalogErrors[s.catalogKind]) && (CATALOG_DATA[s.catalogKind] || []).length === 0,
+      catalogFilterEmpty: !(s.catalogErrors && s.catalogErrors[s.catalogKind])
+        && (s.catalogKind === 'assignments' || s.catalogKind === 'topics')
+        && !!(s.catalogSubjectFilter)
+        && (CATALOG_DATA[s.catalogKind] || []).length > 0
+        && (CATALOG_DATA[s.catalogKind] || []).every(c => c.subjectId !== s.catalogSubjectFilter),
+      catalogFilterEmptyLabel: Tafseel.t('admin_empty_subject_filter'),
       catalogEmptyLabel: {
         subjects: Tafseel.t('admin_empty_subjects'),
         topics: Tafseel.t('admin_empty_topics'),
+        assignments: Tafseel.t('admin_empty_assignments'),
         services: Tafseel.t('admin_empty_services'),
         coupons: Tafseel.t('admin_empty_coupons')
       }[s.catalogKind] || Tafseel.t('admin_empty_generic'),

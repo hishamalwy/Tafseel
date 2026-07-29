@@ -542,7 +542,24 @@ html.tf-reveal-on .tf-student-manual-card.is-in{
 .tf-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .tf-field{display:grid;gap:7px}
 .tf-field label{font-size:13px;font-weight:700;color:var(--text-2)}
-.tf-field input,.tf-field select,.tf-field textarea{width:100%;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding:11px 12px;outline:none}
+.tf-field input,.tf-field select,.tf-field textarea{width:100%;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);padding:11px 12px;outline:none;line-height:1.4;font:inherit;box-sizing:border-box;color:var(--text)}
+.tf-field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+.tf-field select{
+  height:42px;
+  min-height:42px;
+  padding-block:0;
+  display:block;
+}
+.tf-field select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-inline-end:34px;
+  background-color:var(--bg);
+  background-repeat:no-repeat;
+  background-size:8px 8px,8px 8px;
+  background-position:right 16px center,right 12px center;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%)
+}
+html[dir="rtl"] .tf-field select{background-position:left 12px center,left 16px center}
 .tf-field input:focus,.tf-field select:focus,.tf-field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 18%,transparent)}
 .tf-field-help{font-size:12px;line-height:1.5;color:var(--muted)}
 .tf-field textarea{min-height:110px;resize:vertical}

@@ -80,12 +80,10 @@
     <div style="display:flex;align-items:center;gap:10px">
       <label for="sort" style="font-size:13.5px;color:var(--muted)" data-i18n="browse_sort">Sort by</label>
       <select id="sort" value="{{ sort }}" onChange="{{ onSort }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:500">
-        <option value="recommended">Recommended</option>
+        <option value="name" data-i18n="browse_sort_name">Name</option>
         <option value="rating">Highest rated</option>
         <option value="price-asc">Lowest price</option>
         <option value="price-desc">Highest price</option>
-        <option value="response">Fastest response</option>
-        <option value="experience">Most experienced</option>
       </select>
     </div>
   </div>
@@ -206,7 +204,7 @@
           <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;transition:all var(--t)" style-hover="border-color:var(--border-strong);box-shadow:var(--shadow-md)">
             <div style="display:flex;gap:14px;margin-bottom:14px">
               <div style="position:relative;flex:none">
-                <img src="{{ defaultAvatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);object-fit:cover" />
+                <img src="{{ t.avatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);object-fit:cover" />
                 <span title="{{ t.onlineLabel }}" style="{{ t.dotStyle }}"></span>
               </div>
               <div style="flex:1;min-width:0">
@@ -215,14 +213,14 @@
                   <span title="Verified teacher" style="flex:none;width:15px;height:15px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:9px;display:grid;place-items:center">✓</span>
                   <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--warning-soft);color:var(--warning)">{{ t.level }}</span>
                 </div>
-                <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ t.subject }} · {{ t.years }}</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:7px;font-size:13px">
-                  <span style="color:var(--warning)">★</span>
-                  <span style="font-weight:700">{{ t.rating }}</span>
-                  <span style="color:var(--muted)">({{ t.reviews }})</span>
-                  <span style="color:var(--border-strong)">|</span>
-                  <span style="color:var(--muted)">{{ t.completed }}</span>
-                </div>
+                <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ t.subject }}</div>
+                <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:7px;font-size:13px">
+                    <span style="color:var(--warning)">★</span>
+                    <span style="font-weight:700">{{ t.rating }}</span>
+                    <span style="color:var(--muted)">({{ t.reviews }})</span>
+                  </div>
+                </sc-if>
               </div>
               <button type="button" onClick="{{ t.onFav }}" aria-label="Save teacher" aria-pressed="{{ t.fav }}" style="{{ t.favStyle }}">{{ t.favIcon }}</button>
             </div>
@@ -236,7 +234,6 @@
             </div>
 
             <div style="display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:16px">
-              <span>⏱ {{ t.response }}</span>
               <span>🗣 {{ t.languages }}</span>
             </div>
 
@@ -296,7 +293,7 @@ class Component extends DCLogic {
     lang: Tafseel.lang, theme: Tafseel.theme,
     q: '', subject: 'All subjects', level: 'All levels', service: 'All services',
     minRating: 0, maxPrice: 400, langs: [], verifiedOnly: false, onlineOnly: false, weekOnly: false,
-    sort: 'recommended', page: 1, favs: [], compare: [], toast: '', toastLeaving: false,
+    sort: 'name', page: 1, favs: [], compare: [], toast: '', toastLeaving: false,
     teachersLoading: true, teachersError: '', languageOptions: [], session: null, sessionChecked: false
   };
 
@@ -319,14 +316,15 @@ class Component extends DCLogic {
     ]).then(([page, languages]) => {
         TEACHERS = page.items.map(t => ({
           id:t.teacherId, name:Tafseel.userName(t), subject:t.subjects[0] || 'General',
-          level:t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
-          years:'Verified experience', exp:0, rating:t.rating, reviews:t.ratingCount,
-          completed:t.completedOrders + ' requests', bio:t.headline, skills:t.subjects,
-          response:'Replies in ~' + Math.max(1, Math.round(t.responseTimeMinutes / 60)) + 'h',
-          responseMins:t.responseTimeMinutes, languages:(t.languages || []).join(' · '), langs:t.languages || [],
-          price:t.startingPrice || 0, online:false, verified:t.verified, thisWeek:false,
+          level:t.rating != null && t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
+          hasRating:t.rating != null && t.ratingCount > 0,
+          rating:t.rating == null ? null : Number(t.rating),
+          reviews:t.ratingCount, bio:t.headline, skills:t.subjects,
+          languages:(t.languages || []).join(' · '), langs:t.languages || [],
+          price:t.startingPrice, online:false, verified:t.verified, thisWeek:false,
           levels:[], services:[],
-          profileHref:'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId)
+          profileHref:'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId),
+          avatar: Tafseel.avatarUrl(t.teacherId, t.hasAvatar)
         }));
         this.setState({ page: 1, languageOptions: languages, teachersLoading: false, teachersError: '' });
       })
@@ -368,8 +366,8 @@ class Component extends DCLogic {
       if (s.subject !== 'All subjects' && t.subject !== s.subject) return false;
       if (s.level !== 'All levels' && !t.levels.includes(s.level)) return false;
       if (s.service !== 'All services' && !t.services.includes(s.service)) return false;
-      if (t.rating < s.minRating) return false;
-      if (t.price > s.maxPrice) return false;
+      if (s.minRating && (t.rating == null || t.rating < s.minRating)) return false;
+      if (t.price != null && t.price > s.maxPrice) return false;
       if (s.langs.length && !s.langs.some(language => t.langs.includes(language))) return false;
       if (s.verifiedOnly && !t.verified) return false;
       if (s.onlineOnly && !t.online) return false;
@@ -377,14 +375,15 @@ class Component extends DCLogic {
       return true;
     });
     const by = {
-      rating: (a, b) => b.rating - a.rating,
-      'price-asc': (a, b) => a.price - b.price,
-      'price-desc': (a, b) => b.price - a.price,
-      response: (a, b) => a.responseMins - b.responseMins,
-      experience: (a, b) => b.exp - a.exp,
-      recommended: (a, b) => (b.rating * 20 + b.reviews / 20) - (a.rating * 20 + a.reviews / 20)
+      name: (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+      rating: (a, b) => (b.rating != null) - (a.rating != null) ||
+        (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+      'price-asc': (a, b) => (a.price ?? Number.MAX_VALUE) - (b.price ?? Number.MAX_VALUE) ||
+        a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+      'price-desc': (a, b) => (b.price ?? -1) - (a.price ?? -1) ||
+        a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
     };
-    return out.sort(by[this.state.sort] || by.recommended);
+    return out.sort(by[this.state.sort] || by.name);
   }
 
   renderVals() {
@@ -427,7 +426,7 @@ class Component extends DCLogic {
       hasSession: !!session,
       isGuest: s.sessionChecked && !session,
       accountName: session ? Tafseel.userName(session) : '',
-      accountAvatar: Tafseel.defaultAvatar,
+      accountAvatar: Tafseel.avatarUrl(s.session && s.session.userId, s.session && s.session.hasAvatar),
       defaultAvatar: Tafseel.defaultAvatar,
       accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
       teacherJoinHref,

@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Tafseel.Application.Authorization;
 using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Marketplace;
+using Tafseel.Domain.Orders;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
 
@@ -91,6 +92,11 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         await using (var scope = factory.Services.CreateAsyncScope())
             Assert.Equal(1, await scope.ServiceProvider.GetRequiredService<TafseelDbContext>()
                 .FavoriteTeachers.CountAsync(x => x.StudentId == student.Id && x.TeacherId == teacher.Id));
+        var favorites = JsonDocument.Parse(await client.GetStringAsync("/api/v1/favorite-teachers")).RootElement;
+        var favorite = Assert.Single(favorites.EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, favorite.GetProperty("rating").ValueKind);
+        Assert.Equal(JsonValueKind.Null, favorite.GetProperty("completedOrders").ValueKind);
+        Assert.Equal(JsonValueKind.Null, favorite.GetProperty("responseTimeMinutes").ValueKind);
         Assert.Equal(HttpStatusCode.NoContent,
             (await client.DeleteAsync($"/api/v1/favorite-teachers/{teacher.Id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent,
@@ -101,6 +107,24 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
     public async Task Public_search_has_fixed_sort_pagination_filters_and_two_queries()
     {
         var teacher = await SeedTeacherAsync(approved: true, withService: true);
+        var student = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            foreach (var cancelled in new[] { false, true })
+            {
+                var request = new LearningRequest(
+                    student.Id, teacher.Id, teacher.ServiceId!.Value, "Metric evidence",
+                    "Persisted non-completed order.", DateTimeOffset.UtcNow.AddDays(3), 100, DateTimeOffset.UtcNow);
+                request.Accept(teacher.Id, Guid.NewGuid().ToString("N"), DateTimeOffset.UtcNow);
+                var order = new Order(
+                    request.Id, student.Id, teacher.Id, teacher.ServiceId.Value, 100, "SAR",
+                    8, 15, DateTimeOffset.UtcNow.AddDays(2), 1, DateTimeOffset.UtcNow);
+                if (cancelled) order.CancelBeforePayment(student.Id, DateTimeOffset.UtcNow);
+                db.AddRange(request, order);
+            }
+            await db.SaveChangesAsync();
+        }
         var client = factory.CreateClient();
         factory.Commands.Reset();
         var response = await client.GetAsync(
@@ -114,14 +138,59 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         var item = Assert.Single(json.GetProperty("items").EnumerateArray(), x =>
             x.GetProperty("teacherId").GetString() == teacher.Id);
         Assert.Single(item.GetProperty("languages").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, item.GetProperty("rating").ValueKind);
+        Assert.Equal(0, item.GetProperty("ratingCount").GetInt32());
+        Assert.Equal(JsonValueKind.Null, item.GetProperty("completedOrders").ValueKind);
+        Assert.Equal(JsonValueKind.Null, item.GetProperty("responseTimeMinutes").ValueKind);
+        Assert.True(item.GetProperty("verified").GetBoolean());
         Assert.InRange(factory.Commands.ReadCount, 1, 2);
 
         var invalid = await client.GetAsync("/api/v1/teachers?sort=raw-sql");
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
 
         Assert.Equal("invalid_sort", await CodeAsync(invalid));
-        foreach (var sort in new[] { "recommended", "highest-rated", "lowest-price", "highest-price", "fastest-response", "most-experienced" })
+        foreach (var sort in new[] { "name", "highest-rated", "lowest-price", "highest-price" })
             (await client.GetAsync($"/api/v1/teachers?sort={sort}")).EnsureSuccessStatusCode();
+        var defaultOrder = JsonDocument.Parse(await client.GetStringAsync("/api/v1/teachers?pageSize=50"))
+            .RootElement.GetProperty("items").EnumerateArray()
+            .Select(x => x.GetProperty("teacherId").GetString()).ToArray();
+        var repeatedOrder = JsonDocument.Parse(await client.GetStringAsync("/api/v1/teachers?pageSize=50"))
+            .RootElement.GetProperty("items").EnumerateArray()
+            .Select(x => x.GetProperty("teacherId").GetString()).ToArray();
+        Assert.Equal(defaultOrder, repeatedOrder);
+        foreach (var sort in new[] { "recommended", "fastest-response", "most-experienced" })
+        {
+            var unsupported = await client.GetAsync($"/api/v1/teachers?sort={sort}");
+            Assert.Equal(HttpStatusCode.BadRequest, unsupported.StatusCode);
+            Assert.Equal("invalid_sort", await CodeAsync(unsupported));
+        }
+
+        var profile = JsonDocument.Parse(await client.GetStringAsync($"/api/v1/teachers/{teacher.Id}")).RootElement;
+        Assert.Equal(JsonValueKind.Null, profile.GetProperty("rating").ValueKind);
+        Assert.Equal(0, profile.GetProperty("ratingCount").GetInt32());
+        Assert.Equal(JsonValueKind.Null, profile.GetProperty("completedOrders").ValueKind);
+        Assert.Equal(JsonValueKind.Null, profile.GetProperty("responseTimeMinutes").ValueKind);
+
+        var owner = await ClientForAsync(teacher.Email);
+        var update = await owner.PutAsJsonAsync("/api/v1/teachers/me", new
+        {
+            headline = "Clear explanations",
+            bio = "Detailed professional teacher biography.",
+            country = "Egypt",
+            city = "Cairo",
+            timeZoneId = "Egypt Standard Time",
+            responseTimeMinutes = 45,
+            rating = 5,
+            ratingCount = 999,
+            completedOrders = 999
+        });
+        Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
+        var ownProfile = JsonDocument.Parse(await owner.GetStringAsync("/api/v1/teachers/me")).RootElement;
+        Assert.Equal(JsonValueKind.Null, ownProfile.GetProperty("rating").ValueKind);
+        Assert.Equal(0, ownProfile.GetProperty("ratingCount").GetInt32());
+        Assert.Equal(JsonValueKind.Null, ownProfile.GetProperty("completedOrders").ValueKind);
+        Assert.Equal(45, ownProfile.GetProperty("responseTimeMinutes").GetInt32());
+
         var online = await client.GetAsync("/api/v1/teachers?onlineOnly=true");
         Assert.Equal(HttpStatusCode.BadRequest, online.StatusCode);
         Assert.Equal("online_status_unavailable", await CodeAsync(online));

@@ -104,7 +104,7 @@ public sealed class QualificationTopic : CatalogItem
         if (minimumSeconds < 30 || maximumSeconds > 600
             || minimumSeconds > expectedSeconds || expectedSeconds > maximumSeconds)
             throw new DomainException("invalid_video_duration", "Assignment duration limits are invalid.");
-        Rename(name);
+        Rename(name, titleAr);
         TitleAr = titleAr?.Trim() ?? "";
         Instructions = instructions?.Trim() ?? "";
         InstructionsAr = instructionsAr?.Trim() ?? "";

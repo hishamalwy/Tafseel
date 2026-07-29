@@ -15,7 +15,7 @@ public sealed record TeacherSearch(
     bool VerifiedOnly = false,
     bool AvailableThisWeek = false,
     bool OnlineOnly = false,
-    string Sort = "recommended",
+    string Sort = "name",
     int Page = 1,
     int PageSize = 12);
 
@@ -25,15 +25,16 @@ public sealed record TeacherCardDto(
     string Headline,
     string Country,
     bool Verified,
-    decimal Rating,
+    decimal? Rating,
     int RatingCount,
-    int CompletedOrders,
-    int ResponseTimeMinutes,
+    int? CompletedOrders,
+    int? ResponseTimeMinutes,
     decimal? StartingPrice,
     string? Currency,
     IReadOnlyCollection<string> Subjects,
     IReadOnlyCollection<string> Languages,
-    string? FullNameEnglish = null);
+    string? FullNameEnglish = null,
+    bool HasAvatar = false);
 
 public sealed record TeacherProfileDto(
     string TeacherId,
@@ -44,10 +45,10 @@ public sealed record TeacherProfileDto(
     string City,
     string TimeZoneId,
     bool Verified,
-    decimal Rating,
+    decimal? Rating,
     int RatingCount,
-    int CompletedOrders,
-    int ResponseTimeMinutes,
+    int? CompletedOrders,
+    int? ResponseTimeMinutes,
     IReadOnlyCollection<NamedItemDto> Subjects,
     IReadOnlyCollection<NamedItemDto> Topics,
     IReadOnlyCollection<NamedItemDto> Languages,
@@ -64,7 +65,8 @@ public sealed record TeacherProfileDto(
     IReadOnlyCollection<string>? PublicationBlockingReasons = null,
     bool IsPubliclyVisible = false,
     IReadOnlyCollection<Guid>? VerifiedSubjectIds = null,
-    string? FullNameEnglish = null);
+    string? FullNameEnglish = null,
+    bool HasAvatar = false);
 
 public sealed record NamedItemDto(Guid Id, string Name);
 public sealed record UpdateTeacherProfile(

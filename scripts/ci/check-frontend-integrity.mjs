@@ -377,6 +377,12 @@ if (!/verifiedOnly:\s*false/.test(browse))
   throw new Error("Browse Teachers must not silently enable verified-only filtering.");
 if (!/languageChecks/.test(browse) || !/t\.languages/.test(browse))
   throw new Error("Browse Teachers language checkboxes must use real teacher language data.");
+if (/value="(?:recommended|response|experience)"/.test(browse))
+  throw new Error("Browse Teachers must not expose unsupported performance sorts.");
+if (/t\.(?:completed|response)\b|responseTimeMinutes|completedOrders/.test(browse))
+  throw new Error("Browse Teachers must not present unsupported completion or response metrics.");
+if (!/t\.rating\s*!=\s*null/.test(browse))
+  throw new Error("Browse Teachers must distinguish missing ratings from a real zero.");
 
 const quality = readFileSync("Tafseel-Quality-Dashboard.dc.html", "utf8");
 if (/let\s+APPLICATIONS\s*=\s*\[\s*\{/.test(quality))
@@ -407,6 +413,23 @@ if (!/Tafseel\.api\.ready\(\)/.test(landing) || !/accountName/.test(landing))
   throw new Error("Landing must preserve and display the real signed-in session.");
 if (!/Tafseel-Auth\.dc\.html\?mode=register&role=teacher/.test(landing))
   throw new Error("Landing teacher CTAs must enter Teacher registration directly.");
+if (/teacher\.responseTimeMinutes|fast responses|answering fast/.test(landing))
+  throw new Error("Landing must not present unsupported teacher response-time claims.");
+if (!/teacher\.rating\s*!=\s*null/.test(landing))
+  throw new Error("Landing must distinguish missing ratings from a real zero.");
+
+const publicProfile = readFileSync("Tafseel-Teacher-Profile.dc.html", "utf8");
+if (/profile\.(?:completedOrders|responseTimeMinutes)/.test(publicProfile))
+  throw new Error("Public Teacher Profile must not present unsupported completion or response metrics.");
+if (!/profile\.rating\s*!=\s*null/.test(publicProfile))
+  throw new Error("Public Teacher Profile must distinguish missing ratings from a real zero.");
+for (const page of ["Tafseel-Book-Session.dc.html", "Tafseel-Request.dc.html"]) {
+  if (readFileSync(page, "utf8").includes("profile.responseTimeMinutes"))
+    throw new Error(`${page} must not fabricate a public response-time claim.`);
+}
+const studentDashboard = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
+if (/rating:\s*String\(x\.rating\)/.test(studentDashboard) || !/x\.rating\s*!=\s*null/.test(studentDashboard))
+  throw new Error("Student saved-teacher cards must distinguish missing ratings from a real zero.");
 
 const auth = readFileSync("Tafseel-Auth.dc.html", "utf8");
 if (!/role\s*===\s*['"]teacher['"]\s*\?\s*['"]teacher['"]\s*:\s*['"]student['"]/.test(auth))

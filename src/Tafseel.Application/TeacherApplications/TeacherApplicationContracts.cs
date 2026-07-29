@@ -130,4 +130,6 @@ public interface IFileStorageService
         Stream stream, string fileName, string contentType, long size, string category, CancellationToken cancellationToken);
     Task<Stream> OpenPrivateFileAsync(string storageKey, CancellationToken cancellationToken);
     Task DeletePrivateFileAsync(string storageKey, CancellationToken cancellationToken);
+    Task<StoredFile> StoreAvatarAsync(
+        Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken);
 }

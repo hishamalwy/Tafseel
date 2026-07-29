@@ -111,6 +111,11 @@ public sealed class OrdersController(IOrderService orders) : ControllerBase
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
         orders.GetTeacherOrdersAsync(UserId(), page, pageSize, ct);
 
+    [Authorize, HttpGet("{id:guid}/timeline")]
+    public Task<IReadOnlyCollection<OrderTimelineEventDto>> Timeline(
+        Guid id, CancellationToken ct) =>
+        orders.GetTimelineAsync(UserId(), id, ct);
+
     [Authorize(Policy = Permissions.RequestsAccept), HttpPost("{id:guid}/start")]
     public async Task<IActionResult> Start(
         Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)

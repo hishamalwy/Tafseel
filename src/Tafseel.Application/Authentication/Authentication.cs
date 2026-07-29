@@ -15,13 +15,16 @@ public sealed record AuthenticatedUser(
     string AccessToken,
     DateTimeOffset AccessTokenExpiresAt,
     string RefreshToken,
-    DateTimeOffset RefreshTokenExpiresAt);
+    DateTimeOffset RefreshTokenExpiresAt,
+    bool HasAvatar = false);
 public sealed record CurrentUser(
     string UserId,
     string Email,
     string FullName,
     string FullNameEnglish,
-    IReadOnlyCollection<string> Roles);
+    IReadOnlyCollection<string> Roles,
+    bool HasAvatar = false);
+public sealed record AvatarFile(Stream Content, string ContentType);
 public sealed record PasswordResetResult(bool Succeeded, IReadOnlyCollection<string>? Details = null);
 
 public enum AuthenticationError
@@ -59,6 +62,10 @@ public interface IAuthenticationService
     Task<CurrentUser?> GetUserAsync(string userId, CancellationToken cancellationToken);
     Task<CurrentUser?> UpdateProfileAsync(
         string userId, string fullName, string fullNameEnglish, CancellationToken cancellationToken);
+    Task<CurrentUser?> SetAvatarAsync(
+        string userId, Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken);
+    Task<CurrentUser?> ClearAvatarAsync(string userId, CancellationToken cancellationToken);
+    Task<AvatarFile?> OpenAvatarAsync(string userId, CancellationToken cancellationToken);
     Task<PasswordResetResult> ChangePasswordAsync(
         string userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
     Task RequestEmailConfirmationAsync(string email, string lang, CancellationToken cancellationToken);

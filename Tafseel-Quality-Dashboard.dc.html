@@ -157,10 +157,59 @@
       </sc-if>
 
       <sc-if value="{{ isSettingsPage }}" hint-placeholder-val="{{ false }}">
-        <div style="max-width:480px">
-          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Settings</h1>
+        <div style="max-width:560px;display:flex;flex-direction:column;gap:16px">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+              <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+                <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <label style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:13px;font-weight:600;cursor:pointer">
+                    {{ accountChangePhoto }}
+                    <input type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden onChange="{{ onAvatarFile }}" />
+                  </label>
+                  <sc-if value="{{ hasCustomAvatar }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ onClearAvatar }}" style="height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2)">{{ accountRemovePhoto }}</button>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountPrimaryName }}</span>
+              <input value="{{ settingsName }}" onChange="{{ onSettingsName }}" maxlength="200" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountEnglishName }}</span>
+              <input value="{{ settingsNameEnglish }}" onChange="{{ onSettingsNameEnglish }}" maxlength="200" dir="ltr" autocomplete="name" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+              <span style="font-size:12px;color:var(--muted)">{{ accountEnglishHint }}</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">Email</span>
+              <input value="{{ settingsEmail }}" readonly style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px" />
+            </label>
+            <button type="button" onClick="{{ onSaveAccount }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountSaveProfile }}</button>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
+              <input type="password" value="{{ currentPassword }}" onChange="{{ onCurrentPassword }}" autocomplete="current-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountNewPassword }}</span>
+              <input type="password" value="{{ newPassword }}" onChange="{{ onNewPassword }}" minlength="10" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+              <span style="font-size:12px;color:var(--muted)">{{ accountPasswordHint }}</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600">{{ accountConfirmPassword }}</span>
+              <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPassword }}" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+            </label>
+            <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
+          </div>
+          <h2 style="font-size:17px;margin:8px 0 0">Notifications</h2>
           <sc-if value="{{ prefsUnavailable }}" hint-placeholder-val="{{ false }}">
-            <p role="status" style="margin-bottom:14px;font-size:13.5px;color:var(--muted)" data-i18n="quality_prefs_unavailable">Notification preferences could not be loaded for this session.</p>
+            <p role="status" style="margin:0;font-size:13.5px;color:var(--muted)" data-i18n="quality_prefs_unavailable">Notification preferences could not be loaded for this session.</p>
           </sc-if>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
@@ -171,7 +220,7 @@
               <span>Auto-assign applications to me (not available)</span>
               <input type="checkbox" disabled style="width:38px;height:22px;accent-color:var(--primary)" />
             </label>
-            <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save changes</button>
+            <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">Save notification settings</button>
           </div>
         </div>
       </sc-if>
@@ -313,7 +362,10 @@ class Component extends DCLogic {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false,
     statusTab: 'all', view: 'list', page: 'overview', navKey: 'overview', currentId: null,
     scores: {}, comment: '', internalNotes: '', needsReason: false, toast: '', toastLeaving: false,
-    queueLoading: true, queueError: ''
+    queueLoading: true, queueError: '',
+    settingsName: '', settingsNameEnglish: '', settingsEmail: '',
+    hasAvatar: false, accountUserId: '', avatarVersion: 0, accountBusy: false,
+    currentPassword: '', newPassword: '', confirmPassword: ''
   };
 
   componentDidMount() {
@@ -321,6 +373,14 @@ class Component extends DCLogic {
     Tafseel.installDashboardDrawer(this, { sidebarId: 'quality-sidebar', toggleId: 'quality-drawer-toggle' });
     Tafseel.api.requireRoles(['QualityReviewer']).then(session => {
       if (!session) return;
+      this._session = session;
+      this.setState({
+        settingsName: session.fullName || '',
+        settingsNameEnglish: session.fullNameEnglish || '',
+        settingsEmail: session.email || '',
+        hasAvatar: !!session.hasAvatar,
+        accountUserId: session.userId || ''
+      });
       return this.loadQueue();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -473,6 +533,95 @@ class Component extends DCLogic {
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       defaultAvatar: Tafseel.defaultAvatar,
+      accountAvatar: Tafseel.avatarUrl(s.accountUserId || (this._session && this._session.userId), s.hasAvatar, s.avatarVersion),
+      hasCustomAvatar: !!s.hasAvatar,
+      accountBusy: !!s.accountBusy,
+      accountProfileTitle: Tafseel.t('account_profile'),
+      accountPrimaryName: Tafseel.t('account_primary_name'),
+      accountEnglishName: Tafseel.t('account_english_name'),
+      accountEnglishHint: Tafseel.t('account_english_hint'),
+      accountChangePhoto: Tafseel.t('account_change_photo'),
+      accountRemovePhoto: Tafseel.t('account_remove_photo'),
+      accountPhotoHint: Tafseel.t('account_photo_hint'),
+      accountPasswordTitle: Tafseel.t('account_password'),
+      accountCurrentPassword: Tafseel.t('account_current_password'),
+      accountNewPassword: Tafseel.t('account_new_password'),
+      accountConfirmPassword: Tafseel.t('account_confirm_password'),
+      accountSaveProfile: Tafseel.t('account_save_profile'),
+      accountUpdatePassword: Tafseel.t('account_update_password'),
+      accountPasswordHint: Tafseel.t('account_password_hint'),
+      settingsName: s.settingsName || '',
+      onSettingsName: e => this.setState({ settingsName: e.target.value }),
+      settingsNameEnglish: s.settingsNameEnglish || '',
+      onSettingsNameEnglish: e => this.setState({ settingsNameEnglish: e.target.value }),
+      settingsEmail: s.settingsEmail || '',
+      currentPassword: s.currentPassword || '',
+      onCurrentPassword: e => this.setState({ currentPassword: e.target.value }),
+      newPassword: s.newPassword || '',
+      onNewPassword: e => this.setState({ newPassword: e.target.value }),
+      confirmPassword: s.confirmPassword || '',
+      onConfirmPassword: e => this.setState({ confirmPassword: e.target.value }),
+      onAvatarFile: async e => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file || s.accountBusy) return;
+        const data = new FormData();
+        data.append('file', file);
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.upload('/auth/avatar', data);
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({ hasAvatar: !!profile.hasAvatar, accountUserId: profile.userId || s.accountUserId, avatarVersion: Date.now() });
+          this.flash(Tafseel.t('account_photo_updated'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onClearAvatar: async () => {
+        if (!s.hasAvatar || s.accountBusy) return;
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.delete('/auth/avatar');
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({ hasAvatar: !!profile.hasAvatar, avatarVersion: Date.now() });
+          this.flash(Tafseel.t('account_photo_removed'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onSaveAccount: async () => {
+        if (s.accountBusy) return;
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.put('/auth/profile', {
+            fullName: s.settingsName,
+            fullNameEnglish: s.settingsNameEnglish
+          });
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({
+            settingsName: profile.fullName || '',
+            settingsNameEnglish: profile.fullNameEnglish || '',
+            hasAvatar: !!profile.hasAvatar
+          });
+          this.flash(Tafseel.t('account_profile_saved'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onChangePassword: async () => {
+        if (s.accountBusy) return;
+        if (!s.newPassword || s.newPassword !== s.confirmPassword) {
+          this.flash(Tafseel.t('account_password_mismatch'));
+          return;
+        }
+        this.setState({ accountBusy: true });
+        try {
+          await Tafseel.api.put('/auth/password', {
+            currentPassword: s.currentPassword,
+            newPassword: s.newPassword
+          });
+          this.flash(Tafseel.t('account_password_changed'));
+          setTimeout(() => { location.href = 'Tafseel-Auth.dc.html'; }, 900);
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
       logoutLabel: Tafseel.t('admin_logout'),
       onLogout: async () => {
         try { await Tafseel.api.logout(); } finally { location.href = 'Tafseel-Auth.dc.html'; }

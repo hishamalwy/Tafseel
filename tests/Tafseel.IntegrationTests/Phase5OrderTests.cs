@@ -183,6 +183,51 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var immutable = await SendAsync(student, HttpMethod.Post, $"/api/v1/orders/{orderId}/revision",
             new { reason = "After complete." }, version);
         Assert.Equal(HttpStatusCode.Conflict, immutable.StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await factory.CreateClient().GetAsync($"/api/v1/orders/{orderId}/timeline")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await otherStudent.GetAsync($"/api/v1/orders/{orderId}/timeline")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await otherTeacher.GetAsync($"/api/v1/orders/{orderId}/timeline")).StatusCode);
+        var admin = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Admin);
+        var quality = await Pass3TestData.CreateUserAsync(factory.Services, Roles.QualityReviewer);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await (await ClientForAsync(admin.Email)).GetAsync($"/api/v1/orders/{orderId}/timeline")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await (await ClientForAsync(quality.Email)).GetAsync($"/api/v1/orders/{orderId}/timeline")).StatusCode);
+
+        var studentTimeline = JsonDocument.Parse(
+            await student.GetStringAsync($"/api/v1/orders/{orderId}/timeline")).RootElement;
+        var teacherTimeline = JsonDocument.Parse(
+            await teacher.GetStringAsync($"/api/v1/orders/{orderId}/timeline")).RootElement;
+        Assert.Equal(studentTimeline.GetRawText(), teacherTimeline.GetRawText());
+        var timelineItems = studentTimeline.EnumerateArray().ToArray();
+        var eventTypes = timelineItems.Select(x => x.GetProperty("eventType").GetString()).ToArray();
+        Assert.Equal(1, eventTypes.Count(x => x == "awaiting_payment"));
+        Assert.Equal(1, eventTypes.Count(x => x == "payment_confirmed"));
+        Assert.Equal(1, eventTypes.Count(x => x == "work_started"));
+        Assert.Equal(2, eventTypes.Count(x => x == "delivery_uploaded"));
+        Assert.Equal(1, eventTypes.Count(x => x == "revision_requested"));
+        Assert.Equal(1, eventTypes.Count(x => x == "completed"));
+        Assert.Equal("teacher", timelineItems.Single(x =>
+            x.GetProperty("eventType").GetString() == "awaiting_payment").GetProperty("actorRole").GetString());
+        Assert.Equal("system", timelineItems.Single(x =>
+            x.GetProperty("eventType").GetString() == "payment_confirmed").GetProperty("actorRole").GetString());
+        Assert.Equal("student", timelineItems.Single(x =>
+            x.GetProperty("eventType").GetString() == "revision_requested").GetProperty("actorRole").GetString());
+        var deliveryItems = timelineItems.Where(x =>
+            x.GetProperty("eventType").GetString() == "delivery_uploaded").ToArray();
+        Assert.Equal(new[] { "delivery.pdf", "revised.pdf" },
+            deliveryItems.Select(x => x.GetProperty("metadata").GetProperty("originalName").GetString()).Order());
+        Assert.Equal(1,
+            timelineItems.Single(x => x.GetProperty("eventType").GetString() == "revision_requested")
+                .GetProperty("metadata").GetProperty("revisionSequence").GetInt32());
+        Assert.DoesNotContain("storageKey", studentTimeline.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("provider", studentTimeline.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("reason", studentTimeline.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        var occurredAt = timelineItems.Select(x => x.GetProperty("occurredAt").GetDateTimeOffset()).ToArray();
+        Assert.Equal(occurredAt.Order(), occurredAt);
     }
 
     [Fact]

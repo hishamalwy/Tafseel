@@ -660,6 +660,17 @@
 
     defaultAvatar: 'assets/brand/default-avatar.svg',
 
+    avatarUrl: function (userId, hasAvatar, version) {
+      if (hasAvatar && userId) {
+        var base = (window.TAFSEEL_API_BASE || '/api/v1').replace(/\/$/, '');
+        var url = base + '/users/' + encodeURIComponent(userId) + '/avatar';
+        if (version != null && version !== '')
+          url += (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(version);
+        return url;
+      }
+      return this.defaultAvatar;
+    },
+
     userName: function (user) {
       if (!user) return '';
       return this.lang === 'en' && String(user.fullNameEnglish || '').trim()
@@ -674,6 +685,24 @@
       if (roles.indexOf('Teacher') >= 0) return 'Tafseel-Teacher-Dashboard.dc.html';
       if (roles.indexOf('Student') >= 0) return 'Tafseel-Student-Dashboard.dc.html';
       return 'Tafseel-Landing.dc.html';
+    },
+
+    orderTimelineEvent: function (event) {
+      var metadata = event && event.metadata || {};
+      var details = [];
+      if (metadata.revisionSequence != null)
+        details.push(this.t('order_timeline_revision_sequence', {
+          n: this.number(metadata.revisionSequence)
+        }));
+      if (metadata.originalName)
+        details.push(this.t('order_timeline_delivery_file', { name: metadata.originalName }));
+      return {
+        id: event.id,
+        title: this.t('order_timeline_event_' + event.eventType),
+        actor: this.t('order_timeline_actor_' + event.actorRole),
+        occurredAt: this.date(event.occurredAt),
+        details: details.join(' · ')
+      };
     },
 
     number: function (value, options) {

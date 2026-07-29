@@ -49,6 +49,10 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
         var review = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
         var reviewId = review.GetProperty("id").GetGuid();
         Assert.Equal(4.6m, review.GetProperty("overallScore").GetDecimal());
+        var ratedProfile = JsonDocument.Parse(await factory.CreateClient()
+            .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}")).RootElement;
+        Assert.Equal(4.6m, ratedProfile.GetProperty("rating").GetDecimal());
+        Assert.Equal(1, ratedProfile.GetProperty("ratingCount").GetInt32());
         Assert.Equal(HttpStatusCode.Conflict,
             (await student.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", new
             {
@@ -73,6 +77,10 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
         Assert.False(stored.IsVisible);
         Assert.Equal(0m, await db.TeacherProfiles.Where(x => x.TeacherId == data.Teacher.Id)
             .Select(x => x.AverageRating).SingleAsync());
+        var hiddenProfile = JsonDocument.Parse(await factory.CreateClient()
+            .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}")).RootElement;
+        Assert.Equal(JsonValueKind.Null, hiddenProfile.GetProperty("rating").ValueKind);
+        Assert.Equal(0, hiddenProfile.GetProperty("ratingCount").GetInt32());
         Assert.True(await db.AuditLogEntries.AnyAsync(x =>
             x.Action == "ReviewModerated" && x.EntityId == reviewId.ToString()));
     }

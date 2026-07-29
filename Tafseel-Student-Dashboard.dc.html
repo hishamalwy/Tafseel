@@ -214,8 +214,10 @@
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:14px">
-                <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
-                <span style="color:var(--muted)">· from {{ t.price }}</span>
+                <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
+                  <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
+                </sc-if>
+                <span style="color:var(--muted)">from {{ t.price }}</span>
               </div>
               <a href="Tafseel-Teacher-Profile.dc.html" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
             </article>
@@ -425,9 +427,20 @@
       <div style="max-width:560px;display:flex;flex-direction:column;gap:16px">
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
-          <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
             <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
-            <span style="font-size:13px;color:var(--muted)">{{ accountDefaultPhoto }}</span>
+            <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+              <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="height:36px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:13px;font-weight:600;cursor:pointer">
+                  {{ accountChangePhoto }}
+                  <input type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden onChange="{{ onAvatarFile }}" />
+                </label>
+                <sc-if value="{{ hasCustomAvatar }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ onClearAvatar }}" style="height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2)">{{ accountRemovePhoto }}</button>
+                </sc-if>
+              </div>
+            </div>
           </div>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">{{ accountPrimaryName }}</span>
@@ -536,6 +549,7 @@ class Component extends DCLogic {
     read: [], toast: '', toastLeaving: false, liveNotifs: [], liveSessions: [],
     liveConversations: [],
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
+    hasAvatar: false, accountUserId: '', avatarVersion: 0,
     currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
     notifyDeliveries: true, notifySessions: true
   };
@@ -557,7 +571,9 @@ class Component extends DCLogic {
       this.setState({
         settingsName:session.fullName || '',
         settingsNameEnglish:session.fullNameEnglish || '',
-        settingsEmail:session.email || ''
+        settingsEmail:session.email || '',
+        hasAvatar: !!session.hasAvatar,
+        accountUserId: session.userId || ''
       });
       return Promise.all([
         Tafseel.api.get('/learning-requests/mine?pageSize=100'),
@@ -585,7 +601,9 @@ class Component extends DCLogic {
         kind:'order', rawStatus:x.status, paymentStatus:x.paymentStatus, version:x.version
       })));
       SAVED_TEACHERS = favorites.map(x => ({
-        name:Tafseel.userName(x), subject:x.subjects.join(' · '), rating:String(x.rating),
+        name:Tafseel.userName(x), subject:x.subjects.join(' · '),
+        hasRating:x.rating != null && x.ratingCount > 0,
+        rating:x.rating == null ? '' : Number(x.rating).toFixed(1),
         price:(x.currency || 'SAR') + ' ' + (x.startingPrice || 0)
       }));
       this.setState({ liveNotifs:notifications.items.map(x => ({
@@ -696,7 +714,47 @@ class Component extends DCLogic {
       isMessages: s.section === 'messages',
       isSettings: s.section === 'settings',
       accountName: Tafseel.userName(this._session) || 'Student',
-      accountAvatar: Tafseel.defaultAvatar,
+      accountAvatar: Tafseel.avatarUrl(s.accountUserId || (this._session && this._session.userId), s.hasAvatar, s.avatarVersion),
+      hasCustomAvatar: !!s.hasAvatar,
+      accountChangePhoto: Tafseel.t('account_change_photo'),
+      accountRemovePhoto: Tafseel.t('account_remove_photo'),
+      accountPhotoHint: Tafseel.t('account_photo_hint'),
+      onAvatarFile: async e => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file || s.accountBusy) return;
+        const data = new FormData();
+        data.append('file', file);
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.upload('/auth/avatar', data);
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({
+            hasAvatar: !!profile.hasAvatar,
+            accountUserId: profile.userId || s.accountUserId,
+            avatarVersion: Date.now()
+          });
+          this.flash(Tafseel.t('account_photo_updated'));
+        } catch (error) {
+          this.flash(Tafseel.api.errorMessage(error));
+        } finally {
+          this.setState({ accountBusy: false });
+        }
+      },
+      onClearAvatar: async () => {
+        if (!s.hasAvatar || s.accountBusy) return;
+        this.setState({ accountBusy: true });
+        try {
+          const profile = await Tafseel.api.delete('/auth/avatar');
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
+          this.setState({ hasAvatar: !!profile.hasAvatar, avatarVersion: Date.now() });
+          this.flash(Tafseel.t('account_photo_removed'));
+        } catch (error) {
+          this.flash(Tafseel.api.errorMessage(error));
+        } finally {
+          this.setState({ accountBusy: false });
+        }
+      },
 
       allRequests: REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).map(r => {
         const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
@@ -754,7 +812,6 @@ class Component extends DCLogic {
       accountPrimaryName: Tafseel.t('account_primary_name'),
       accountEnglishName: Tafseel.t('account_english_name'),
       accountEnglishHint: Tafseel.t('account_english_hint'),
-      accountDefaultPhoto: Tafseel.t('account_default_photo'),
       accountPasswordTitle: Tafseel.t('account_password'),
       accountCurrentPassword: Tafseel.t('account_current_password'),
       accountNewPassword: Tafseel.t('account_new_password'),
@@ -776,10 +833,12 @@ class Component extends DCLogic {
             inAppEnabled:s.notifySessions,
             emailEnabled:s.notifyDeliveries
           });
-          this._session = { ...this._session, ...profile };
+          this._session = Tafseel.api.applyUser(profile) || { ...this._session, ...profile };
           this.setState({
             settingsName:profile.fullName || '',
-            settingsNameEnglish:profile.fullNameEnglish || ''
+            settingsNameEnglish:profile.fullNameEnglish || '',
+            hasAvatar: !!profile.hasAvatar,
+            accountUserId: profile.userId || s.accountUserId
           });
           this.flash(Tafseel.t('account_profile_saved'));
         } catch (error) {

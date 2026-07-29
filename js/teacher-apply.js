@@ -23,7 +23,9 @@
     profile: null,
     applications: [],
     lifecycle: null,
-    current: null
+    current: null,
+    demoDuration: null,
+    demoDurationInvalid: false
   };
 
   function t(key, values) {
@@ -36,6 +38,23 @@
     return node.innerHTML;
   }
 
+  function formatDuration(totalSeconds) {
+    var seconds = Math.max(0, Math.round(totalSeconds || 0));
+    var minutes = Math.floor(seconds / 60);
+    var remainder = seconds % 60;
+    return minutes + ':' + (remainder < 10 ? '0' : '') + remainder;
+  }
+
+  function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return '';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function getCurrentTopic() {
+    return state.topics.find(function (entry) { return entry.id === topic.value; });
+  }
+
   function message(text, kind) {
     status.textContent = text || '';
     status.dataset.kind = kind || '';
@@ -43,9 +62,9 @@
 
   function setSubmitLoading(next) {
     state.submitLoading = !!next;
-    [saveBtn, uploadBtn, submitBtn].forEach(function (button) {
-      if (button) button.disabled = state.submitLoading || state.topicsLoading;
-    });
+    saveBtn.disabled = state.submitLoading || state.topicsLoading;
+    submitBtn.disabled = state.submitLoading || state.topicsLoading;
+    uploadBtn.disabled = state.submitLoading || state.topicsLoading || state.demoDurationInvalid;
     saveBtn.textContent = state.submitLoading ? t('apply_saving') : t('apply_save');
   }
 
@@ -71,7 +90,9 @@
   }
 
   function topicLabel(item) {
-    return document.documentElement.lang === 'ar' && item.titleAr ? item.titleAr : item.name;
+    if (document.documentElement.lang === 'ar')
+      return item.titleAr || item.nameAr || item.name;
+    return item.name;
   }
 
   function statusName(value) {
@@ -96,7 +117,7 @@
     var chosen = new Set(selected || selectedLanguageIds());
     languageBox.innerHTML = state.languages.map(function (language) {
       var id = 'teaching-language-' + language.id;
-      return '<label for="' + escape(id) + '" style="min-height:40px;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text-2)">' +
+      return '<label for="' + escape(id) + '" class="tf-lang-chip">' +
         '<input id="' + escape(id) + '" type="checkbox" value="' + escape(language.id) + '"' +
         (chosen.has(language.id) ? ' checked' : '') + '><span data-i18n-skip>' +
         escape(Tafseel.languageLabel(language)) + '</span></label>';
@@ -124,15 +145,27 @@
   }
 
   function renderAssignment() {
-    var item = state.topics.find(function (entry) { return entry.id === topic.value; });
+    var item = getCurrentTopic();
     var card = document.getElementById('assignment-details');
+    var durationRules = document.getElementById('demo-duration-rules');
     if (!item) {
       card.hidden = true;
+      durationRules.textContent = '';
       return;
     }
+    var minSeconds = item.minVideoSeconds || 30;
+    var maxSeconds = item.maxVideoSeconds || 600;
+    var expectedSeconds = item.expectedVideoSeconds || maxSeconds;
+    var requiredRange = t('apply_duration_required', {
+      range: formatDuration(minSeconds) + '–' + formatDuration(maxSeconds)
+    });
+    var recommended = t('apply_duration_recommended', { value: formatDuration(expectedSeconds) });
+    durationRules.textContent = requiredRange + ' · ' + recommended;
     var ar = document.documentElement.lang === 'ar';
-    var primaryTitle = ar && item.titleAr ? item.titleAr : item.name;
-    var secondaryTitle = ar ? item.name : item.titleAr;
+    var primaryTitle = ar
+      ? (item.titleAr || item.nameAr || item.name)
+      : item.name;
+    var secondaryTitle = ar ? item.name : (item.titleAr || item.nameAr);
     var instructions = ar && item.instructionsAr ? item.instructionsAr : item.detail;
     var guidance = ar && item.evaluationGuidanceAr
       ? item.evaluationGuidanceAr
@@ -156,27 +189,25 @@
         ? '<p class="tf-assignment-title-alt" lang="' + (ar ? 'en' : 'ar') + '" dir="' +
           (ar ? 'ltr' : 'rtl') + '">' + escape(secondaryTitle) + '</p>'
         : '') +
+      '<h3>' + escape(t('apply_overview')) + '</h3>' +
+      '<div class="tf-assignment-meta">' +
+      '<span class="tf-badge">' + escape(requiredRange) + '</span>' +
+      '<span class="tf-badge">' + escape(recommended) + '</span>' +
+      '<span class="tf-badge">' + escape(t('apply_allowed_format')) + '</span></div>' +
       '<h3>' + escape(t('apply_instructions')) + '</h3>' +
       '<p class="tf-assignment-instructions">' + escape(instructions || t('apply_instructions_missing')) + '</p>' +
-      '<div class="tf-assignment-meta">' +
-      '<span>' + escape(t('apply_minimum_duration', { seconds: item.minVideoSeconds || 30 })) + '</span>' +
-      '<span>' + escape(t('apply_expected_duration', {
-        seconds: item.expectedVideoSeconds || item.maxVideoSeconds || 180
-      })) + '</span>' +
-      '<span>' + escape(t('apply_maximum_duration', { seconds: item.maxVideoSeconds || 180 })) + '</span></div>' +
       '<h3>' + escape(t('apply_evaluation')) + '</h3>' +
       '<p class="tf-assignment-instructions">' + escape(guidance || t('apply_evaluation_missing')) + '</p>' +
       (resources
         ? '<h3>' + escape(t('apply_assignment_resources')) + '</h3><ul class="tf-assignment-resources">' +
           resources + '</ul>'
-        : '<p class="tf-muted">' + escape(t('apply_no_resources')) + '</p>') +
+        : '<h3>' + escape(t('apply_assignment_resources')) + '</h3><p class="tf-empty">' +
+          escape(t('apply_no_resources')) + '</p>') +
+      '<h3>' + escape(t('apply_important_notes')) + '</h3>' +
       '<div class="tf-alert" data-kind="warning" role="note">' +
       escape(t('apply_material_warning')) + '</div>';
     card.hidden = false;
-    var duration = document.getElementById('duration');
-    duration.min = item.minVideoSeconds || 30;
-    duration.max = item.maxVideoSeconds || 600;
-    duration.value = item.expectedVideoSeconds || item.maxVideoSeconds || 180;
+    validateSelectedDemoDuration();
   }
 
   function renderApplications() {
@@ -190,12 +221,59 @@
               ? '<br><span class="tf-muted">' + escape(application.publicFeedback) + '</span>'
               : '') + '</button>';
         }).join('')
-      : '<p class="tf-muted">' + escape(t('apply_none')) + '</p>';
+      : '<p class="tf-empty">' + escape(t('apply_none')) + '</p>';
     list.querySelectorAll('[data-id]').forEach(function (button) {
       button.addEventListener('click', function () {
         selectApplication(button.dataset.id);
       });
     });
+  }
+
+  var STEPS = [
+    { id: 'step-details', key: 'details', labelKey: 'apply_step_label_details' },
+    { id: 'step-demo', key: 'demo', labelKey: 'apply_step_label_demo' },
+    { id: 'step-review', key: 'review', labelKey: 'apply_step_label_review' }
+  ];
+  var STEP_STATE_KEYS = {
+    current: 'apply_step_state_current',
+    completed: 'apply_step_state_completed',
+    locked: 'apply_step_state_locked',
+    error: 'apply_step_state_error'
+  };
+
+  function renderStepper(current) {
+    var states;
+    if (!current) states = { details: 'current', demo: 'locked', review: 'locked' };
+    else if ([0, 3].includes(current.status))
+      states = { details: 'completed', demo: current.status === 3 ? 'error' : 'current', review: 'locked' };
+    else states = { details: 'completed', demo: 'completed', review: 'current' };
+
+    var currentIndex = 0;
+    STEPS.forEach(function (step, index) {
+      var el = document.getElementById(step.id);
+      var stateValue = states[step.key];
+      el.dataset.state = stateValue;
+      if (stateValue === 'current' || stateValue === 'error') {
+        el.setAttribute('aria-current', 'step');
+        currentIndex = index;
+      } else el.removeAttribute('aria-current');
+      document.getElementById(step.id + '-state').textContent = t(STEP_STATE_KEYS[stateValue]);
+    });
+    document.getElementById('step-summary').textContent = t('apply_step_of', {
+      index: currentIndex + 1,
+      total: STEPS.length,
+      label: t(STEPS[currentIndex].labelKey)
+    });
+    document.getElementById('step-progress-fill').style.setProperty(
+      '--tf-apply-progress-scale', String((currentIndex + 1) / STEPS.length));
+  }
+
+  function renderLifecycle() {
+    var lifecycle = document.getElementById('lifecycle-status');
+    lifecycle.textContent = state.lifecycle
+      ? Tafseel.localizeText(state.lifecycle.nextAction || '')
+      : '';
+    lifecycle.hidden = !lifecycle.textContent;
   }
 
   function applyCurrentValues() {
@@ -209,11 +287,7 @@
       document.getElementById('degree').value = current.degree || '';
     }
     demoForm.hidden = !current || ![0, 3].includes(current.status);
-    document.getElementById('step-details').dataset.active = String(!current);
-    document.getElementById('step-demo').dataset.active =
-      String(!!current && [0, 3].includes(current.status));
-    document.getElementById('step-review').dataset.active =
-      String(!!current && ![0, 3].includes(current.status));
+    renderStepper(current);
     if (current)
       message(current.publicFeedback || statusName(current.status), current.status === 3 ? 'warning' : '');
     renderAssignment();
@@ -231,9 +305,7 @@
     renderLanguages(((state.profile && state.profile.languages) || []).map(function (item) { return item.id; }));
     renderApplications();
     applyCurrentValues();
-    var lifecycle = document.getElementById('lifecycle-status');
-    lifecycle.textContent = state.lifecycle && state.lifecycle.nextAction || '';
-    lifecycle.hidden = !lifecycle.textContent;
+    renderLifecycle();
     document.getElementById('topics-error').textContent = state.topicsError;
     document.getElementById('apply-skeleton').hidden = true;
     document.getElementById('apply-content').hidden = false;
@@ -356,18 +428,119 @@
     state.languagesError = '';
     document.getElementById('languages-error').textContent = '';
   });
-  document.getElementById('demo').addEventListener('change', function () {
+  var demoInput = document.getElementById('demo');
+  var demoDrop = document.getElementById('demo-drop');
+  var demoFileInfo = document.getElementById('demo-file-info');
+  var demoFileName = document.getElementById('demo-file-name');
+  var demoFileMeta = document.getElementById('demo-file-meta');
+  var demoFileState = document.getElementById('demo-file-state');
+
+  function setDemoFileState(text, kind) {
+    demoFileState.textContent = text || '';
+    demoFileInfo.dataset.kind = kind || '';
+  }
+
+  function syncDemoDropVisibility() {
+    if (!demoDrop) return;
+    var hasFile = !!(demoInput.files && demoInput.files[0]);
+    demoDrop.hidden = hasFile;
+    if (!hasFile) demoDrop.classList.remove('is-dragover');
+  }
+
+  function validateSelectedDemoDuration() {
+    if (!demoInput.files[0] || state.demoDuration == null) return;
+    var assignment = getCurrentTopic();
+    var min = (assignment && assignment.minVideoSeconds) || 0;
+    var max = (assignment && assignment.maxVideoSeconds) || 600;
+    if (state.demoDuration < min || state.demoDuration > max) {
+      state.demoDurationInvalid = true;
+      setDemoFileState(t('apply_duration_out_of_range', {
+        min: formatDuration(min), max: formatDuration(max)
+      }), 'error');
+    } else {
+      state.demoDurationInvalid = false;
+      setDemoFileState(t('apply_demo_meta', {
+        size: formatFileSize(demoInput.files[0].size), duration: formatDuration(state.demoDuration)
+      }), '');
+    }
+    setSubmitLoading(state.submitLoading);
+  }
+
+  demoInput.addEventListener('change', function () {
     var file = this.files[0];
-    if (!file) return;
+    state.demoDuration = null;
+    state.demoDurationInvalid = false;
+    if (!file) {
+      demoFileInfo.hidden = true;
+      syncDemoDropVisibility();
+      setSubmitLoading(state.submitLoading);
+      return;
+    }
+    demoFileName.textContent = file.name;
+    demoFileMeta.textContent = formatFileSize(file.size);
+    setDemoFileState(t('apply_demo_extracting'), '');
+    demoFileInfo.hidden = false;
+    syncDemoDropVisibility();
     var video = document.createElement('video');
     var url = URL.createObjectURL(file);
     video.preload = 'metadata';
     video.onloadedmetadata = function () {
-      document.getElementById('duration').value = String(Math.max(1, Math.round(video.duration)));
       URL.revokeObjectURL(url);
-    };
-    video.onerror = function () { URL.revokeObjectURL(url); };
+      if (this.files[0] !== file) return;
+      state.demoDuration = Math.max(1, Math.round(video.duration));
+      validateSelectedDemoDuration();
+    }.bind(this);
+    video.onerror = function () {
+      URL.revokeObjectURL(url);
+      if (this.files[0] !== file) return;
+      state.demoDuration = null;
+      state.demoDurationInvalid = true;
+      setDemoFileState(t('apply_demo_duration_unknown'), 'error');
+      setSubmitLoading(state.submitLoading);
+    }.bind(this);
     video.src = url;
+  });
+
+  if (demoDrop) {
+    ['dragenter', 'dragover'].forEach(function (type) {
+      demoDrop.addEventListener(type, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        demoDrop.classList.add('is-dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (type) {
+      demoDrop.addEventListener(type, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        demoDrop.classList.remove('is-dragover');
+      });
+    });
+    demoDrop.addEventListener('drop', function (event) {
+      var files = event.dataTransfer && event.dataTransfer.files;
+      if (!files || !files.length) return;
+      try {
+        var transfer = new DataTransfer();
+        transfer.items.add(files[0]);
+        demoInput.files = transfer.files;
+        demoInput.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (_) {
+        demoInput.click();
+      }
+    });
+  }
+
+  document.getElementById('demo-file-replace').addEventListener('click', function () {
+    demoInput.click();
+  });
+
+  document.getElementById('demo-file-remove').addEventListener('click', function () {
+    demoInput.value = '';
+    state.demoDuration = null;
+    state.demoDurationInvalid = false;
+    demoFileInfo.hidden = true;
+    syncDemoDropVisibility();
+    setSubmitLoading(state.submitLoading);
   });
 
   form.addEventListener('submit', async function (event) {
@@ -406,33 +579,48 @@
   demoForm.addEventListener('submit', async function (event) {
     event.preventDefault();
     if (!state.current || state.submitLoading) return;
-    var file = document.getElementById('demo').files[0];
-    var duration = Number(document.getElementById('duration').value);
+    var file = demoInput.files[0];
     if (!file) {
       message(t('apply_demo_file'), 'error');
-      document.getElementById('demo').focus();
+      demoInput.focus();
       return;
     }
-    if (!Number.isFinite(duration) || duration < 1 || duration > 600) {
-      message(t('apply_duration'), 'error');
-      document.getElementById('duration').focus();
+    if (state.demoDuration == null) {
+      message(t('apply_demo_duration_unknown'), 'error');
+      return;
+    }
+    var assignment = getCurrentTopic();
+    var min = (assignment && assignment.minVideoSeconds) || 0;
+    var max = (assignment && assignment.maxVideoSeconds) || 600;
+    if (state.demoDuration < min || state.demoDuration > max) {
+      message(t('apply_duration_out_of_range', { min: formatDuration(min), max: formatDuration(max) }), 'error');
       return;
     }
     var data = new FormData();
     data.append('file', file);
-    data.append('durationSeconds', String(duration));
+    data.append('durationSeconds', String(state.demoDuration));
     setSubmitLoading(true);
+    document.getElementById('demo-file-replace').disabled = true;
+    document.getElementById('demo-file-remove').disabled = true;
+    setDemoFileState(t('apply_demo_uploading'), '');
     try {
       await Tafseel.api.upload(
         '/teacher-applications/' + state.current.id + '/demo',
         data,
         { 'If-Match': state.current.version });
       await refreshApplications();
+      setDemoFileState(t('apply_demo_uploaded'), 'success');
       message(t('apply_demo_uploaded'), 'success');
     } catch (error) {
-      message(errorText(error, 'apply_demo_error'), 'error');
+      var demoErrorText = error && error.code === 'invalid_demo_duration'
+        ? t('apply_duration_out_of_range', { min: formatDuration(min), max: formatDuration(max) })
+        : errorText(error, 'apply_demo_error');
+      setDemoFileState(demoErrorText, 'error');
+      message(demoErrorText, 'error');
     } finally {
       setSubmitLoading(false);
+      document.getElementById('demo-file-replace').disabled = false;
+      document.getElementById('demo-file-remove').disabled = false;
     }
   });
 
@@ -453,6 +641,11 @@
     }
   });
 
+  document.getElementById('logout-button').addEventListener('click', async function () {
+    await Tafseel.api.logout().catch(function () {});
+    location.replace('Tafseel-Auth.dc.html');
+  });
+
   document.addEventListener('tafseel:change', function () {
     var subjectId = subject.value;
     var topicId = topic.value;
@@ -468,6 +661,7 @@
     renderLanguages(languageIds);
     renderApplications();
     renderAssignment();
+    renderLifecycle();
   });
 
   (async function () {
@@ -476,6 +670,8 @@
     if (!(session.roles || []).includes('Teacher')) {
       document.getElementById('apply-skeleton').hidden = true;
       document.getElementById('apply-content').hidden = false;
+      form.hidden = true;
+      demoForm.hidden = true;
       message(t('apply_teacher_required'), 'error');
       return;
     }

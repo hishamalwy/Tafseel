@@ -10,6 +10,7 @@ public sealed class FileStorageOptions
     public string RootPath { get; init; } = "App_Data";
     public long MaxDemoBytes { get; init; } = 250 * 1024 * 1024;
     public long MaxAttachmentBytes { get; init; } = 50 * 1024 * 1024;
+    public long MaxAvatarBytes { get; init; } = 2 * 1024 * 1024;
 }
 
 internal sealed class LocalFileStorageService(IOptions<FileStorageOptions> options) : IFileStorageService
@@ -107,6 +108,44 @@ internal sealed class LocalFileStorageService(IOptions<FileStorageOptions> optio
         if (File.Exists(target))
             File.Delete(target);
         return Task.CompletedTask;
+    }
+
+    public async Task<StoredFile> StoreAvatarAsync(
+        Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken)
+    {
+        if (size is <= 0 || size > _options.MaxAvatarBytes)
+            throw new DomainException("invalid_avatar_size", "Avatar must be between 1 byte and 2 MB.");
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        var expected = extension switch
+        {
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => ""
+        };
+        if (expected.Length == 0 || !string.Equals(expected, contentType, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException("invalid_avatar_type", "Only JPEG and PNG avatars are allowed.");
+
+        var header = new byte[8];
+        var read = await stream.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, cancellationToken);
+        var valid = extension switch
+        {
+            ".png" => read == 8 && header.SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+            _ => read >= 3 && header[0] == 0xff && header[1] == 0xd8 && header[2] == 0xff
+        };
+        if (!valid)
+            throw new DomainException("invalid_avatar_signature", "Avatar content does not match its file type.");
+
+        var key = Path.Combine(
+            "profile-avatars",
+            DateTime.UtcNow.ToString("yyyy"),
+            DateTime.UtcNow.ToString("MM"),
+            $"{Guid.NewGuid():N}{extension}");
+        var target = Resolve(key, mustExist: false);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        await using var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true);
+        await output.WriteAsync(header.AsMemory(0, read), cancellationToken);
+        await stream.CopyToAsync(output, cancellationToken);
+        return new(key.Replace('\\', '/'), size, contentType);
     }
 
     private string Resolve(string storageKey, bool mustExist)

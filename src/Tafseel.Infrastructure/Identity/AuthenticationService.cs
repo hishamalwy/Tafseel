@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Tafseel.Application.Authentication;
 using Tafseel.Application.Authorization;
 using Tafseel.Application.Email;
+using Tafseel.Application.TeacherApplications;
 using Tafseel.Infrastructure.Email;
 using Tafseel.Infrastructure.Persistence;
 
@@ -19,6 +20,7 @@ namespace Tafseel.Infrastructure.Identity;
 internal sealed class AuthenticationService(
     UserManager<ApplicationUser> users,
     TafseelDbContext db,
+    IFileStorageService files,
     IOptions<JwtOptions> options,
     IOptions<EmailOptions> emailOptions,
     IEmailSender email,
@@ -188,8 +190,7 @@ internal sealed class AuthenticationService(
         if (user is null)
             return null;
 
-        return new(user.Id, user.Email!, user.FullName, user.FullNameEnglish,
-            (await users.GetRolesAsync(user)).ToArray());
+        return MapCurrent(user, await users.GetRolesAsync(user));
     }
 
     public async Task<CurrentUser?> UpdateProfileAsync(
@@ -205,9 +206,64 @@ internal sealed class AuthenticationService(
         if (!result.Succeeded)
             throw new ValidationException(string.Join("; ", result.Errors.Select(x => x.Description)));
 
-        return new(user.Id, user.Email!, user.FullName, user.FullNameEnglish,
-            (await users.GetRolesAsync(user)).ToArray());
+        return MapCurrent(user, await users.GetRolesAsync(user));
     }
+
+    public async Task<CurrentUser?> SetAvatarAsync(
+        string userId, Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null || user.IsSuspended)
+            return null;
+
+        var stored = await files.StoreAvatarAsync(stream, fileName, contentType, size, cancellationToken);
+        var previousKey = user.AvatarStorageKey;
+        user.AvatarStorageKey = stored.StorageKey;
+        user.AvatarContentType = stored.ContentType;
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            await files.DeletePrivateFileAsync(stored.StorageKey, cancellationToken);
+            throw new ValidationException(string.Join("; ", result.Errors.Select(x => x.Description)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(previousKey))
+            await files.DeletePrivateFileAsync(previousKey, cancellationToken);
+
+        return MapCurrent(user, await users.GetRolesAsync(user));
+    }
+
+    public async Task<CurrentUser?> ClearAvatarAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return null;
+
+        var previousKey = user.AvatarStorageKey;
+        user.AvatarStorageKey = null;
+        user.AvatarContentType = null;
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new ValidationException(string.Join("; ", result.Errors.Select(x => x.Description)));
+
+        if (!string.IsNullOrWhiteSpace(previousKey))
+            await files.DeletePrivateFileAsync(previousKey, cancellationToken);
+
+        return MapCurrent(user, await users.GetRolesAsync(user));
+    }
+
+    public async Task<AvatarFile?> OpenAvatarAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null || string.IsNullOrWhiteSpace(user.AvatarStorageKey))
+            return null;
+
+        var content = await files.OpenPrivateFileAsync(user.AvatarStorageKey, cancellationToken);
+        return new(content, user.AvatarContentType ?? "image/jpeg");
+    }
+
+    private static CurrentUser MapCurrent(ApplicationUser user, IList<string> roles) =>
+        new(user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(), user.HasAvatar);
 
     public async Task<PasswordResetResult> ChangePasswordAsync(
         string userId,
@@ -491,7 +547,7 @@ internal sealed class AuthenticationService(
 
         return new(new(
             user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(),
-            accessToken, expires, rawRefreshToken, storedRefreshToken.ExpiresAt));
+            accessToken, expires, rawRefreshToken, storedRefreshToken.ExpiresAt, user.HasAvatar));
     }
 
     private static string Hash(string token) =>

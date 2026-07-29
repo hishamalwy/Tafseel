@@ -6,10 +6,14 @@ public sealed class ApplicationUser : IdentityUser
 {
     public required string FullName { get; set; }
     public string FullNameEnglish { get; set; } = "";
+    public string? AvatarStorageKey { get; set; }
+    public string? AvatarContentType { get; set; }
     public bool IsSuspended { get; set; }
     public DateTimeOffset? EmailConfirmationSentAt { get; set; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public ICollection<RefreshToken> RefreshTokens { get; } = [];
+
+    public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarStorageKey);
 }
 
 public sealed class RefreshToken

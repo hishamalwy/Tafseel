@@ -124,6 +124,46 @@ public sealed class AuthController(
     }
 
     [Authorize]
+    [EnableRateLimiting("upload")]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    [HttpPost("avatar")]
+    public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue("sub");
+        if (userId is null)
+            return Unauthorized();
+        if (file is null || file.Length <= 0)
+            return Error(400, "invalid_avatar", "An avatar image is required.");
+
+        await using var stream = file.OpenReadStream();
+        var user = await authentication.SetAvatarAsync(
+            userId, stream, file.FileName, file.ContentType, file.Length, cancellationToken);
+        return user is null ? NotFound() : Ok(user);
+    }
+
+    [Authorize]
+    [HttpDelete("avatar")]
+    public async Task<IActionResult> ClearAvatar(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue("sub");
+        if (userId is null)
+            return Unauthorized();
+        var user = await authentication.ClearAvatarAsync(userId, cancellationToken);
+        return user is null ? NotFound() : Ok(user);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("~/api/v1/users/{userId}/avatar")]
+    public async Task<IActionResult> Avatar(string userId, CancellationToken cancellationToken)
+    {
+        var file = await authentication.OpenAvatarAsync(userId, cancellationToken);
+        if (file is null)
+            return NotFound();
+        Response.Headers.CacheControl = "public, max-age=300";
+        return File(file.Content, file.ContentType, enableRangeProcessing: true);
+    }
+
+    [Authorize]
     [EnableRateLimiting("auth")]
     [HttpPut("password")]
     public async Task<IActionResult> ChangePassword(
@@ -201,6 +241,7 @@ public sealed class AuthController(
             user.FullName,
             user.FullNameEnglish,
             user.Roles,
+            user.HasAvatar,
             user.AccessToken,
             user.AccessTokenExpiresAt
         });

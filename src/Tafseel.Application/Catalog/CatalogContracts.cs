@@ -87,7 +87,8 @@ public sealed record NamedCatalogInput(
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal? MinPrice = null,
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal? MaxPrice = null,
     [param: Range(0, 10000)] int? DisplayOrder = null,
-    [param: StringLength(200)] string? NameAr = null);
+    [param: StringLength(200)] string? NameAr = null,
+    [param: StringLength(2000)] string? InstructionsAr = null);
 
 public interface ICatalogService
 {

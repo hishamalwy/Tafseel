@@ -105,6 +105,20 @@
       return session;
     },
     me: function () { return currentUser; },
+    /** Merge profile fields into the in-memory session (keeps tokens). */
+    applyUser: function (user) {
+      if (!user || !currentUser) return currentUser;
+      currentUser = Object.assign({}, currentUser, {
+        userId: user.userId || currentUser.userId,
+        email: user.email || currentUser.email,
+        fullName: user.fullName != null ? user.fullName : currentUser.fullName,
+        fullNameEnglish: user.fullNameEnglish != null ? user.fullNameEnglish : currentUser.fullNameEnglish,
+        roles: user.roles || currentUser.roles,
+        hasAvatar: !!user.hasAvatar
+      });
+      document.dispatchEvent(new CustomEvent('tafseel:auth', { detail: currentUser }));
+      return currentUser;
+    },
     /** In-memory access token for authenticated realtime clients (never log or persist). */
     accessToken: function () { return accessToken || ''; },
     logout: async function () {

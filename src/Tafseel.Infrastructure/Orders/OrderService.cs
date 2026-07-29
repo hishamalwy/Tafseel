@@ -196,6 +196,76 @@ internal sealed class OrderService(
         string teacherId, int page, int pageSize, CancellationToken ct) =>
         OrderPageAsync(db.Orders.Where(x => x.TeacherId == teacherId), page, pageSize, teacherView: true, ct);
 
+    public async Task<IReadOnlyCollection<OrderTimelineEventDto>> GetTimelineAsync(
+        string userId, Guid orderId, CancellationToken ct)
+    {
+        var ownership = await db.Orders.AsNoTracking()
+            .Where(x => x.Id == orderId && (x.StudentId == userId || x.TeacherId == userId))
+            .Select(x => new { x.StudentId, x.TeacherId })
+            .SingleOrDefaultAsync(ct)
+            ?? throw new DomainException("order_not_owned", "Order was not found.");
+
+        var rows = new List<TimelineRow>(87);
+        var history = await db.Set<OrderStatusHistory>().AsNoTracking()
+            .Where(x => x.OrderId == orderId
+                && (x.NextStatus == OrderStatus.AwaitingPayment
+                    || x.NextStatus == OrderStatus.InProgress
+                    || x.NextStatus == OrderStatus.Completed
+                    || x.NextStatus == OrderStatus.Cancelled))
+            .Select(x => new { x.Id, x.NextStatus, x.ActorId, x.CreatedAt })
+            .ToArrayAsync(ct);
+        rows.AddRange(history.Select(x => new TimelineRow(
+            $"order-status:{x.Id:N}",
+            x.NextStatus switch
+            {
+                OrderStatus.AwaitingPayment => "awaiting_payment",
+                OrderStatus.InProgress => "work_started",
+                OrderStatus.Completed => "completed",
+                _ => "cancelled"
+            },
+            x.CreatedAt,
+            ActorRole(x.ActorId, ownership.StudentId, ownership.TeacherId),
+            10,
+            null)));
+
+        var payment = await db.Payments.AsNoTracking()
+            .Where(x => x.OrderId == orderId)
+            .Select(x => new { x.Id, x.ConfirmedAt, x.RefundedAt })
+            .SingleOrDefaultAsync(ct);
+        if (payment?.ConfirmedAt is DateTimeOffset confirmedAt)
+            rows.Add(new(
+                $"payment-confirmed:{payment.Id:N}", "payment_confirmed",
+                confirmedAt, "system", 20, null));
+        if (payment?.RefundedAt is DateTimeOffset refundedAt)
+            rows.Add(new(
+                $"payment-refunded:{payment.Id:N}", "payment_refunded",
+                refundedAt, "system", 20, null));
+
+        var deliveries = await db.OrderDeliveries.AsNoTracking()
+            .Where(x => x.OrderId == orderId)
+            .Select(x => new { x.Id, x.OriginalName, x.CreatedAt })
+            .ToArrayAsync(ct);
+        rows.AddRange(deliveries.Select(x => new TimelineRow(
+            $"delivery:{x.Id:N}", "delivery_uploaded", x.CreatedAt, "teacher", 30,
+            new(null, x.OriginalName))));
+
+        var revisions = await db.Set<RevisionRequest>().AsNoTracking()
+            .Where(x => x.OrderId == orderId)
+            .Select(x => new { x.Id, x.Sequence, x.CreatedAt })
+            .ToArrayAsync(ct);
+        rows.AddRange(revisions.Select(x => new TimelineRow(
+            $"revision:{x.Id:N}", "revision_requested", x.CreatedAt, "student", 40,
+            new(x.Sequence))));
+
+        return rows
+            .OrderBy(x => x.OccurredAt)
+            .ThenBy(x => x.SourcePriority)
+            .ThenBy(x => x.Id, StringComparer.Ordinal)
+            .Select(x => new OrderTimelineEventDto(
+                x.Id, x.EventType, x.OccurredAt, x.ActorRole, x.Metadata))
+            .ToArray();
+    }
+
     public async Task StartOrderAsync(string teacherId, Guid orderId, string version, CancellationToken ct)
     {
         var order = await OwnedOrderAsync(teacherId, orderId, teacher: true, version, ct);
@@ -342,6 +412,9 @@ internal sealed class OrderService(
     private static string SafeName(string fileName) =>
         Path.GetFileName(fileName) is { Length: > 0 and <= 255 } name ? name : "attachment";
 
+    private static string ActorRole(string actorId, string studentId, string teacherId) =>
+        actorId == studentId ? "student" : actorId == teacherId ? "teacher" : "system";
+
     private static LearningRequestDto Map(LearningRequest x) =>
         new(x.Id, x.StudentId, x.TeacherId, x.TeacherServiceId, x.Title, x.Description,
             x.PreferredDeliveryAt, x.Budget, x.Status, x.CreatedAt,
@@ -360,4 +433,8 @@ internal sealed class OrderService(
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt);
     private static DeliveryDto Map(OrderDelivery x) =>
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.Message, x.CreatedAt);
+
+    private sealed record TimelineRow(
+        string Id, string EventType, DateTimeOffset OccurredAt, string ActorRole,
+        int SourcePriority, OrderTimelineMetadataDto? Metadata);
 }

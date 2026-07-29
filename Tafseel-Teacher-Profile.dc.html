@@ -66,7 +66,7 @@
 
   <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:24px;display:flex;gap:28px;flex-wrap:wrap">
     <div style="position:relative;flex:none">
-      <img src="{{ accountAvatar }}" alt="" width="132" height="132" style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);object-fit:cover" />
+      <img src="{{ teacherAvatar }}" alt="" width="132" height="132" style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);object-fit:cover" />
     </div>
 
     <div style="flex:1;min-width:280px">
@@ -286,9 +286,6 @@
           <div style="display:flex;justify-content:space-between;font-size:13.5px">
             <span style="color:var(--muted)" data-i18n="tp_revisions">Revisions</span><span style="font-weight:600">{{ selectedRevisions }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:13.5px">
-            <span style="color:var(--muted)" data-i18n="tp_response_time">Response time</span><span style="font-weight:600">{{ responseLabel }}</span>
-          </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <sc-if value="{{ canRequest }}" hint-placeholder-val="{{ true }}">
@@ -371,14 +368,6 @@ function formatRevisions(n) {
   const count = Number(n) || 0;
   if (count <= 0) return Tafseel.t('tp_no_revisions');
   return count + ' ' + Tafseel.t('tp_free_revisions');
-}
-
-function formatResponse(minutes) {
-  const m = Number(minutes) || 0;
-  if (m <= 0) return '—';
-  if (m < 60) return '~' + m + ' ' + Tafseel.t('tp_minutes');
-  const hours = Math.max(1, Math.round(m / 60));
-  return '~' + hours + ' ' + (hours === 1 ? Tafseel.t('tp_hour') : Tafseel.t('tp_hours'));
 }
 
 function formatDuration(seconds) {
@@ -550,10 +539,8 @@ class Component extends DCLogic {
       metaParts.push([profile.city, profile.country].filter(Boolean).join(', '));
     if (languages.length) metaParts.push(t('tp_teaches_in') + ' ' + languages.join(', '));
 
-    const rating = profile ? Number(profile.rating) || 0 : 0;
+    const rating = profile && profile.rating != null ? Number(profile.rating) : null;
     const ratingCount = profile ? Number(profile.ratingCount) || 0 : 0;
-    const completed = profile ? Number(profile.completedOrders) || 0 : 0;
-    const responseMins = profile ? Number(profile.responseTimeMinutes) || 0 : 0;
 
     const bioText = (profile && profile.bio || '').trim();
     const bioParagraphs = bioText ? bioText.split(/\n+/).map(p => p.trim()).filter(Boolean) : [];
@@ -645,18 +632,17 @@ class Component extends DCLogic {
 
       accountHref,
       accountLabel,
-      accountAvatar: Tafseel.defaultAvatar,
+      accountAvatar: Tafseel.avatarUrl(session && session.userId, session && session.hasAvatar),
+      teacherAvatar: Tafseel.avatarUrl(s.teacherId, profile && profile.hasAvatar),
 
       teacherName,
       teacherMeta: metaParts.join(' · ') || (profile && profile.headline) || '',
       breadcrumbSubject: subjects[0] ? subjects[0] + ' ' + t('tp_teachers_suffix') : t('nav_browse'),
       verified: !!(profile && profile.verified),
-      topRated: rating >= 4.8 && ratingCount >= 20,
+      topRated: rating != null && rating >= 4.8 && ratingCount >= 20,
 
-      headStats: profile ? [
-        { value: rating.toFixed(1) + ' ★', label: ratingCount + ' ' + t('tp_stat_reviews') },
-        { value: String(completed), label: t('tp_stat_completed') },
-        { value: formatResponse(responseMins), label: t('tp_stat_response') }
+      headStats: rating != null && ratingCount > 0 ? [
+        { value: rating.toFixed(1) + ' ★', label: ratingCount + ' ' + t('tp_stat_reviews') }
       ] : [],
 
       fav: s.fav,
@@ -742,7 +728,6 @@ class Component extends DCLogic {
       selectedUnit: selected ? (selected.requiresScheduling ? t('tp_per_session') : t('tp_starting_price')) : '',
       selectedDelivery: selected ? formatDelivery(selected.deliveryHours) : '—',
       selectedRevisions: selected ? formatRevisions(selected.revisions) : '—',
-      responseLabel: formatResponse(responseMins),
 
       week,
       availabilityEmpty: availability.length === 0,
@@ -750,9 +735,11 @@ class Component extends DCLogic {
         ? t('tp_timezone_note') + ' · ' + profile.timeZoneId
         : t('tp_timezone_note'),
 
-      ratingValue: rating ? rating.toFixed(1) : '—',
-      ratingStars: stars(rating || 0),
-      reviewsSummary: Tafseel.t('tp_reviews_based_on', { n: String(ratingCount || completed || reviewItems.length) }),
+      ratingValue: rating != null && ratingCount > 0 ? rating.toFixed(1) : '—',
+      ratingStars: rating != null && ratingCount > 0 ? stars(rating) : '',
+      reviewsSummary: ratingCount
+        ? Tafseel.t('tp_reviews_based_on', { n: String(ratingCount) })
+        : t('tp_reviews_empty'),
       breakdown,
       reviews: reviewItems.map(rv => ({
         initials: '★',

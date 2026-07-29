@@ -9,6 +9,8 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Documentation Standardization](./reports/DOCUMENTATION_STANDARDIZATION_REPORT.md) | 2026-07-29 | Completed | Organized historical documentation and established the living status/index convention. |
 | [F-001 Identity Initialization](./fixes/TAFSEEL_F001_IDENTITY_INITIALIZATION_FIX_REPORT.md) | 2026-07-29 | Fixed locally | Restricted normal identity initialization to Development. |
 | [Teacher Qualification Application](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) | 2026-07-29 | Fixed locally | Stabilized the language API, initial form loading, validation and assignment material UX. |
+| [Teacher Qualification Browser Validation](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) | 2026-07-29 | Validated locally | Browser-validated the qualification workflow and fixed lifecycle-message localization. |
+| [F-002 Public Teacher Metrics Integrity](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) | 2026-07-29 | Fixed locally | Removed unsupported public teacher metrics and ranking while preserving verified review and qualification evidence. |
 
 ## Architecture
 
@@ -62,6 +64,8 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Final Hardening and Readiness](./fixes/final-hardening-report.md) | 2026-07-26 | Final readiness findings | Historical |
 | [F-001 Identity Initialization](./fixes/TAFSEEL_F001_IDENTITY_INITIALIZATION_FIX_REPORT.md) | 2026-07-29 | F-001 | Fixed locally |
 | [Teacher Qualification Application](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) | 2026-07-29 | Teacher qualification API/form/task UX | Fixed locally |
+| [Teacher Qualification Browser Validation](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) | 2026-07-29 | Runtime qualification workflow validation | Validated locally |
+| [F-002 Public Teacher Metrics Integrity](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) | 2026-07-29 | F-002 | Fixed locally |
 
 ## Feature Reports
 

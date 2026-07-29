@@ -268,11 +268,18 @@ app.MapGet("/app/js/vendor/{file}", (string file) =>
 app.MapGet("/app/css/tafseel.css", () =>
     Results.File(Path.Combine(frontendRoot, "css", "tafseel.css"), "text/css; charset=utf-8"));
 app.MapGet("/app/assets/brand/{file}", (string file) =>
-    file is "tafseel-mark.png" or "tafseel-mark-dark.png" or "favicon.ico"
-        ? Results.File(
-            Path.Combine(frontendRoot, "assets", "brand", file),
-            file.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ? "image/x-icon" : "image/png")
-        : Results.NotFound());
+{
+    var contentType = file switch
+    {
+        "tafseel-mark.png" or "tafseel-mark-dark.png" => "image/png",
+        "favicon.ico" => "image/x-icon",
+        "default-avatar.svg" => "image/svg+xml",
+        _ => null
+    };
+    return contentType is null
+        ? Results.NotFound()
+        : Results.File(Path.Combine(frontendRoot, "assets", "brand", file), contentType);
+});
 app.MapGet("/favicon.ico", () =>
     Results.File(Path.Combine(frontendRoot, "assets", "brand", "favicon.ico"), "image/x-icon"));
 app.MapGet("/app/assets/fonts/thmanyah-sans/{file}", (string file) =>

@@ -11,53 +11,188 @@
   <script src="js/api.js" defer></script>
   <script src="js/teacher-apply.js" defer></script>
   <style>
-    .tf-apply-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0}
-    .tf-apply-step{padding:10px;border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:18px;font-weight:700;text-align:center}
-    .tf-apply-step[data-active="true"]{background:var(--primary-soft);color:var(--primary)}
-    .tf-assignment{margin:14px 0;padding:18px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)}
-    .tf-assignment h2{font-size:24px;margin:0 0 4px}.tf-assignment h3{font-size:17px;margin:18px 0 8px}
-    .tf-assignment-title-alt{margin:0 0 12px;color:var(--text-2);font-size:17px;font-weight:700}
-    .tf-assignment-instructions{white-space:pre-wrap}.tf-assignment-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .tf-assignment-meta span{padding:5px 9px;border-radius:99px;background:var(--surface);font-size:12px;color:var(--text-2)}
-    .tf-assignment-resources{display:grid;gap:8px;padding:0;list-style:none}
-    .tf-assignment-resource{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)}
-    .tf-assignment-resource small{display:block;color:var(--muted)}.tf-assignment-resource a{flex:none}
+    /* Page-specific layout — tokens come from the shared design system. */
+    [data-stack="apply"] .tf-workflow{
+      align-items:start;
+      padding:clamp(20px,4vw,40px) clamp(14px,3vw,24px) 48px;
+      background:
+        radial-gradient(520px 320px at 8% 0%, color-mix(in oklab, var(--primary) 10%, transparent), transparent 70%),
+        radial-gradient(420px 280px at 100% 12%, color-mix(in oklab, #D9FF43 10%, transparent), transparent 72%),
+        var(--bg-alt);
+    }
+    [data-stack="apply"] .tf-panel{
+      width:min(100%,820px);
+      margin-inline:auto;
+    }
+    [data-stack="apply"] .tf-panel > h1{
+      font-family:var(--font-display);
+      font-size:clamp(26px,4vw,34px);
+      font-weight:800;
+      letter-spacing:-.02em;
+      line-height:1.15;
+      margin:0 0 8px;
+    }
+    [data-stack="apply"] .tf-panel > .tf-muted{
+      margin:0 0 4px;
+      max-width:58ch;
+    }
+    .tf-logout-link{
+      height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+      background:var(--surface);color:var(--text-2);font-weight:700;font-size:13px;cursor:pointer;
+    }
+    .tf-logout-link:hover{border-color:var(--border-strong);color:var(--text)}
+
+    .tf-apply-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:22px 0 8px;padding:0;list-style:none}
+    .tf-apply-step{
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      min-height:44px;padding:10px 12px;border-radius:var(--r-sm);
+      border:1px solid var(--border);background:var(--surface);
+      color:var(--muted);font-size:13px;font-weight:700;text-align:center;
+    }
+    .tf-apply-step[data-state="current"]{
+      background:var(--primary-soft);border-color:color-mix(in oklab,var(--primary) 35%,var(--border));
+      color:var(--primary);box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 18%,transparent);
+    }
+    .tf-apply-step[data-state="completed"]{color:var(--text-2);border-color:var(--border-strong)}
+    .tf-apply-step[data-state="locked"]{opacity:.55}
+    .tf-apply-step[data-state="error"]{background:var(--error-soft);border-color:color-mix(in oklab,var(--error) 35%,var(--border));color:var(--error)}
+    .tf-apply-step-summary{display:none;margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--text-2)}
+    .tf-apply-progress-track{display:none;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-bottom:18px}
+    .tf-apply-progress-fill{
+      display:block;height:100%;width:100%;border-radius:inherit;background:var(--primary);
+      transform-origin:left center;
+      transform:scaleX(var(--tf-apply-progress-scale,0));
+      transition:transform 220ms ease;
+    }
+    html[dir="rtl"] .tf-apply-progress-fill{transform-origin:right center}
+
+    .tf-assignment{
+      margin:4px 0;padding:18px 18px 16px;border:1px solid var(--border);
+      border-radius:var(--r-md);background:var(--surface-2);
+    }
+    .tf-assignment h2{font-family:var(--font-display);font-size:clamp(20px,3vw,26px);margin:0 0 4px;letter-spacing:-.02em}
+    .tf-assignment h3{font-size:14px;font-weight:800;margin:18px 0 8px;color:var(--text-2);letter-spacing:-.01em}
+    .tf-assignment-title-alt{margin:0 0 12px;color:var(--muted);font-size:15px;font-weight:600}
+    .tf-assignment-instructions{white-space:pre-wrap;margin:0;line-height:1.55;color:var(--text)}
+    .tf-assignment-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .tf-assignment-resources{display:grid;gap:8px;padding:0;margin:0;list-style:none}
+    .tf-assignment-resource{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);
+    }
+    .tf-assignment-resource small{display:block;color:var(--muted);margin-top:2px}
+    .tf-assignment-resource a{flex:none}
+
     .tf-apply-skeleton{display:grid;gap:14px;padding-block:12px}
-    .tf-skeleton-line,.tf-skeleton-box{background:var(--surface-2);border-radius:var(--r-sm);animation:tf-pulse 1.2s ease-in-out infinite alternate}
-    .tf-skeleton-line{height:42px}.tf-skeleton-box{height:150px}.tf-skeleton-line:last-child{width:38%}
-    .tf-field-error{min-height:20px;margin:5px 0 0;color:var(--error);font-size:13px}
-    @keyframes tf-pulse{to{opacity:.45}}
-    @media(prefers-reduced-motion:reduce){.tf-skeleton-line,.tf-skeleton-box{animation:none}}
-    @media(max-width:640px){
-      .tf-apply-steps{grid-template-columns:1fr}.tf-workflow{padding-inline:14px}
-      .tf-assignment-resource{align-items:flex-start;flex-direction:column}.tf-assignment-resource a{width:100%}
+    .tf-fieldset-reset{border:0;padding:0;margin:0}
+    .tf-legend{font-weight:700;margin-bottom:6px;font-size:13px;color:var(--text-2)}
+    .tf-fieldset-hint{font-size:13px;margin:0 0 10px}
+    .tf-chip-row{display:flex;gap:10px;flex-wrap:wrap}
+    .tf-lang-chip{
+      min-height:42px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;
+      border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);
+      color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer;user-select:none;
+      transition:border-color var(--t),background var(--t),color var(--t);
+    }
+    .tf-lang-chip input{width:16px;height:16px;accent-color:var(--primary);margin:0;flex:none}
+    .tf-lang-chip:hover{border-color:var(--border-strong);color:var(--text)}
+    .tf-lang-chip:has(input:checked){
+      border-color:var(--primary);background:var(--primary-soft);color:var(--primary);
+      box-shadow:0 0 0 1px color-mix(in oklab,var(--primary) 28%,transparent);
+    }
+    .tf-field-error-text{min-height:20px;color:var(--error);font-weight:600}
+
+    .tf-demo-file{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      margin-top:10px;padding:14px 16px;
+    }
+    .tf-demo-file strong{word-break:break-word}
+    .tf-demo-file-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    .tf-file-drop{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+      min-height:168px;padding:24px 20px;text-align:center;cursor:pointer;
+      border:1.5px dashed var(--border-strong);border-radius:var(--r-md);
+      background:var(--bg);color:var(--text-2);
+      transition:border-color var(--t),background var(--t),box-shadow var(--t);
+    }
+    .tf-file-drop:hover,
+    .tf-file-drop.is-dragover{
+      border-color:var(--primary);
+      background:var(--primary-soft);
+      box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 14%,transparent);
+    }
+    .tf-file-drop:has(:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
+    .tf-file-drop[hidden]{display:none !important}
+    .tf-file-drop-icon{
+      width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
+      background:var(--primary-soft);color:var(--primary);flex:none;
+    }
+    .tf-file-drop-icon svg{display:block;width:24px;height:24px}
+    .tf-file-drop-copy{display:grid;gap:4px;max-width:34ch}
+    .tf-file-drop-title{font-size:14.5px;font-weight:700;color:var(--text);line-height:1.35}
+    .tf-file-drop-hint{font-size:12.5px;color:var(--muted);line-height:1.45}
+    .tf-file-drop-cta{
+      margin-top:4px;height:36px;padding:0 14px;display:inline-flex;align-items:center;
+      border-radius:var(--r-sm);border:1px solid var(--border-strong);
+      background:var(--surface);color:var(--text);font-size:13px;font-weight:700;
+    }
+
+    [data-stack="apply"] .tf-form-actions{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    }
+    [data-stack="apply"] .tf-form-actions .tf-button{min-width:148px}
+    [data-stack="apply"] .tf-list button{
+      transition:border-color var(--t),background var(--t);
+    }
+    [data-stack="apply"] .tf-list button:hover{
+      border-color:var(--border-strong);background:var(--surface-2);
+    }
+
+    @media(max-width:720px){
+      [data-stack="apply"] .tf-app-header{
+        height:auto;min-height:68px;padding-block:12px;gap:10px;flex-wrap:wrap;
+      }
+      [data-stack="apply"] .tf-actions{margin-inline-start:auto}
+      .tf-apply-steps{display:none}
+      .tf-apply-step-summary,.tf-apply-progress-track{display:block}
+      .tf-assignment-resource{align-items:stretch;flex-direction:column}
+      .tf-assignment-resource a{width:100%;justify-content:center;display:inline-flex;align-items:center}
+      [data-stack="apply"] .tf-form-actions{flex-direction:column;align-items:stretch}
+      [data-stack="apply"] .tf-form-actions .tf-button{width:100%;min-width:0}
+      .tf-demo-file{align-items:stretch}
+      .tf-demo-file-actions{width:100%}
+      .tf-demo-file-actions .tf-button{flex:1;min-width:0}
     }
   </style>
 </head>
-<body>
+<body data-stack="apply">
   <a class="tf-skip" href="#apply-main">Skip to main content</a>
   <header class="tf-app-header">
     <a class="tf-brand" href="Tafseel-Landing.dc.html"><img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="26" height="26" style="flex:none;object-fit:contain" /><span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span></a>
     <div class="tf-actions">
-      <button class="tf-button tf-button-secondary tf-lang-toggle" data-tafseel-language type="button" aria-label="Switch language"></button>
-      <button class="tf-button tf-button-secondary tf-theme-toggle" data-tafseel-theme type="button" aria-label="Toggle dark mode"></button>
+      <button class="tf-lang-toggle" data-tafseel-language type="button" aria-label="Switch language"></button>
+      <button class="tf-theme-toggle" data-tafseel-theme type="button" aria-label="Toggle dark mode"></button>
+      <button class="tf-logout-link" id="logout-button" type="button" data-i18n="apply_logout">Log out</button>
     </div>
   </header>
   <main id="apply-main" class="tf-workflow">
     <section class="tf-panel" aria-labelledby="apply-title">
       <h1 id="apply-title" data-i18n="apply_title">Teacher qualification</h1>
       <p class="tf-muted" data-i18n="apply_intro">Choose one subject-specific demo topic. Approval applies only to that subject.</p>
-      <div class="tf-apply-steps" aria-label="Application progress">
-        <div class="tf-apply-step" id="step-details" data-active="true" data-i18n="apply_step_details">1. Details</div>
-        <div class="tf-apply-step" id="step-demo" data-i18n="apply_step_demo">2. Demo</div>
-        <div class="tf-apply-step" id="step-review" data-i18n="apply_step_review">3. Review</div>
-      </div>
+      <ol class="tf-apply-steps" aria-label="Application progress">
+        <li class="tf-apply-step" id="step-details"><span data-i18n="apply_step_details">1. Details</span><span class="tf-sr-only" id="step-details-state"></span></li>
+        <li class="tf-apply-step" id="step-demo"><span data-i18n="apply_step_demo">2. Demo</span><span class="tf-sr-only" id="step-demo-state"></span></li>
+        <li class="tf-apply-step" id="step-review"><span data-i18n="apply_step_review">3. Review</span><span class="tf-sr-only" id="step-review-state"></span></li>
+      </ol>
+      <p class="tf-apply-step-summary" id="step-summary" role="status"></p>
+      <div class="tf-apply-progress-track" aria-hidden="true"><span class="tf-apply-progress-fill" id="step-progress-fill"></span></div>
       <div id="apply-skeleton" class="tf-apply-skeleton" role="status" aria-live="polite">
         <span data-i18n="apply_loading">Loading application…</span>
-        <div class="tf-skeleton-line" aria-hidden="true"></div>
-        <div class="tf-skeleton-line" aria-hidden="true"></div>
-        <div class="tf-skeleton-box" aria-hidden="true"></div>
-        <div class="tf-skeleton-line" aria-hidden="true"></div>
+        <div class="tf-skeleton" style="height:42px" aria-hidden="true"></div>
+        <div class="tf-skeleton" style="height:42px" aria-hidden="true"></div>
+        <div class="tf-skeleton" style="height:150px" aria-hidden="true"></div>
+        <div class="tf-skeleton" style="height:42px;width:38%" aria-hidden="true"></div>
       </div>
       <div id="apply-content" hidden>
       <div id="lifecycle-status" class="tf-alert" role="status" hidden></div>
@@ -65,28 +200,48 @@
       <form id="application-form" class="tf-form">
         <div class="tf-grid-2">
           <div class="tf-field"><label for="subject" data-i18n="apply_subject">Subject</label><select id="subject" required></select></div>
-          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select><p id="topics-error" class="tf-field-error" role="status"></p></div>
+          <div class="tf-field"><label for="topic" data-i18n="apply_topic">Qualification topic</label><select id="topic" required aria-describedby="topics-error"></select><p id="topics-error" class="tf-field-help tf-field-error-text" role="status"></p></div>
           <div class="tf-field"><label for="city" data-i18n="apply_city">City</label><input id="city" maxlength="150" required autocomplete="address-level2"></div>
-          <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" value="0" required></div>
+          <div class="tf-field"><label for="years" data-i18n="apply_years">Years of experience</label><input id="years" type="number" min="0" max="80" required></div>
         </div>
-        <fieldset class="tf-field" style="border:0;padding:0;margin:0">
-          <legend data-i18n="apply_languages" style="font-weight:700;margin-bottom:6px">Teaching languages</legend>
-          <p class="tf-muted" data-i18n="apply_languages_hint" style="font-size:13px;margin:0 0 10px">Choose every language you can teach in.</p>
-          <div id="teaching-languages" style="display:flex;gap:10px;flex-wrap:wrap" aria-describedby="languages-error"></div>
-          <p id="languages-error" class="tf-field-error" role="status"></p>
+        <fieldset class="tf-field tf-fieldset-reset" aria-describedby="languages-error">
+          <legend class="tf-legend" data-i18n="apply_languages">Teaching languages</legend>
+          <p class="tf-muted tf-fieldset-hint" data-i18n="apply_languages_hint">Choose every language you can teach in.</p>
+          <div id="teaching-languages" class="tf-chip-row"></div>
+          <p id="languages-error" class="tf-field-help tf-field-error-text" role="status"></p>
         </fieldset>
         <article id="assignment-details" class="tf-assignment" hidden></article>
         <div class="tf-field"><label for="degree" data-i18n="apply_degree">Degree or relevant qualification</label><input id="degree" maxlength="300" required autocomplete="organization-title"></div>
-        <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save">Save application</button>
-        <p id="submit-error" class="tf-field-error" role="alert"></p>
+        <div class="tf-form-actions">
+          <button class="tf-button" type="submit" id="save-application" data-i18n="apply_save">Save application</button>
+        </div>
+        <p id="submit-error" class="tf-field-help tf-field-error-text" role="alert"></p>
       </form>
       <form id="demo-form" class="tf-form" hidden>
-        <h2 data-i18n="apply_demo_title">Teaching demo</h2>
-        <div class="tf-grid-2">
-          <div class="tf-field"><label for="demo" data-i18n="apply_demo_file">Video file</label><input id="demo" type="file" accept="video/*" required></div>
-          <div class="tf-field"><label for="duration" data-i18n="apply_duration">Duration in seconds</label><input id="duration" type="number" min="1" max="600" value="180" required></div>
+        <h2 data-i18n="apply_demo_title" style="font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0">Teaching demo</h2>
+        <div class="tf-field">
+          <span id="demo-label" class="tf-legend" data-i18n="apply_demo_file">Video file</span>
+          <label class="tf-file-drop" id="demo-drop" for="demo" aria-labelledby="demo-label">
+            <input id="demo" class="tf-sr-only" type="file" accept="video/*" required aria-describedby="demo-duration-rules">
+            <span class="tf-file-drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            </span>
+            <span class="tf-file-drop-copy">
+              <span class="tf-file-drop-title" data-i18n="apply_demo_pick">Drag a video here or click to choose</span>
+              <span class="tf-file-drop-hint" data-i18n="apply_allowed_format">Allowed format: MP4 video only</span>
+            </span>
+            <span class="tf-file-drop-cta" data-i18n="apply_demo_browse">Browse files</span>
+          </label>
+          <p class="tf-field-help" id="demo-duration-rules"></p>
+          <div id="demo-file-info" class="tf-alert tf-demo-file" hidden>
+            <span><strong id="demo-file-name"></strong><br><span id="demo-file-meta" class="tf-muted"></span><br><span id="demo-file-state" class="tf-muted"></span></span>
+            <span class="tf-demo-file-actions">
+              <button type="button" id="demo-file-replace" class="tf-button tf-button-secondary" data-i18n="apply_demo_replace_file">Replace file</button>
+              <button type="button" id="demo-file-remove" class="tf-button tf-button-secondary" data-i18n="apply_demo_remove_file">Remove</button>
+            </span>
+          </div>
         </div>
-        <div class="tf-actions">
+        <div class="tf-form-actions">
           <button class="tf-button" type="submit" id="upload-demo" data-i18n="apply_upload_demo">Upload demo</button>
           <button id="submit-application" class="tf-button tf-button-secondary" type="button" data-i18n="apply_submit_review">Submit for review</button>
         </div>

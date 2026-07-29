@@ -73,6 +73,9 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         {
             user.Property(x => x.FullName).HasMaxLength(200);
             user.Property(x => x.FullNameEnglish).HasMaxLength(200);
+            user.Property(x => x.AvatarStorageKey).HasMaxLength(500);
+            user.Property(x => x.AvatarContentType).HasMaxLength(100);
+            user.Ignore(x => x.HasAvatar);
             user.HasMany(x => x.RefreshTokens).WithOne(x => x.User).HasForeignKey(x => x.UserId);
         });
 
