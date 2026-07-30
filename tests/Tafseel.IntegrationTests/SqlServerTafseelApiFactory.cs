@@ -57,8 +57,14 @@ internal static class SqlServerTestDatabase
 public sealed class CountingCommandInterceptor : DbCommandInterceptor
 {
     private int _readCount;
+    private int _writeCount;
     public int ReadCount => Volatile.Read(ref _readCount);
-    public void Reset() => Interlocked.Exchange(ref _readCount, 0);
+    public int WriteCount => Volatile.Read(ref _writeCount);
+    public void Reset()
+    {
+        Interlocked.Exchange(ref _readCount, 0);
+        Interlocked.Exchange(ref _writeCount, 0);
+    }
     public override InterceptionResult<DbDataReader> ReaderExecuting(
         DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
     {
@@ -70,6 +76,19 @@ public sealed class CountingCommandInterceptor : DbCommandInterceptor
         CancellationToken cancellationToken = default)
     {
         Interlocked.Increment(ref _readCount);
+        return ValueTask.FromResult(result);
+    }
+    public override InterceptionResult<int> NonQueryExecuting(
+        DbCommand command, CommandEventData eventData, InterceptionResult<int> result)
+    {
+        Interlocked.Increment(ref _writeCount);
+        return result;
+    }
+    public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+        DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
+        CancellationToken cancellationToken = default)
+    {
+        Interlocked.Increment(ref _writeCount);
         return ValueTask.FromResult(result);
     }
 }

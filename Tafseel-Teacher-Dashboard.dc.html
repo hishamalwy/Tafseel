@@ -160,9 +160,12 @@
                   <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ o.deadline }}</td>
                   <td style="padding:14px 12px;text-align:end;font-weight:700;font-size:14px;white-space:nowrap">{{ o.price }}</td>
                   <td style="padding:14px 20px;text-align:end">
-                    <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+                    <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap">
+                      <span style="{{ o.statusChipStyle }}">{{ o.statusLabel }}</span>
                       <button type="button" onClick="{{ o.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ o.timelineLabel }}</button>
-                      <button type="button" onClick="{{ o.onAction }}" style="{{ o.actionStyle }}">{{ o.actionLabel }}</button>
+                      <sc-if value="{{ o.actionLabel }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ o.onAction }}" disabled="{{ o.actionBusy }}" style="{{ o.actionStyle }}">{{ o.actionLabel }}</button>
+                      </sc-if>
                     </div>
                   </td>
                 </tr>
@@ -643,6 +646,35 @@
   </div>
 </sc-if>
 
+<sc-if value="{{ deliveryModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeDeliveryModal }}">
+    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ deliveryModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">{{ deliveryModalTitle }}</h2>
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">{{ deliveryModal.title }}</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">{{ deliveryChooseFileLabel }}</span>
+          <input type="file" onChange="{{ onDeliveryFileChange }}" style="padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:13.5px" />
+          <sc-if value="{{ deliveryFileName }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:12.5px;color:var(--muted)">{{ deliveryFileName }}</span>
+          </sc-if>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">{{ deliveryMessageLabel }}</span>
+          <textarea value="{{ deliveryMessage }}" onChange="{{ onDeliveryMessage }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+        </label>
+        <sc-if value="{{ deliveryError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="font-size:13px;color:var(--error)">{{ deliveryError }}</p>
+        </sc-if>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onClick="{{ closeDeliveryModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ deliveryCancelLabel }}</button>
+        <button type="button" onClick="{{ confirmDelivery }}" disabled="{{ deliveryBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ deliverySubmitLabel }}</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ serviceModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeServiceModal }}">
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ serviceModalTitle }}" onClick="{{ stop }}" style="width:min(520px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;max-height:min(90vh,720px);overflow:auto">
@@ -761,20 +793,13 @@ let PENDING = [];
 
 let ORDERS = [];
 
-const STAGE_ACTION = {
-  awaiting_payment: 'td_stage_waiting_payment',
-  progress: 'td_stage_start_work',
-  ready: 'td_stage_upload_delivery',
-  revision: 'td_stage_revision',
-  completed: 'td_stage_completed',
-  cancelled: 'td_stage_cancelled'
-};
-
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, section: 'overview',
     orderTab: 'all', declined: [], acceptModal: null, acceptBusy: false,
     finalPrice: '', deliveryDate: '', revisions: '2', notes: '', toast: '', toastLeaving: false, onboarding: null, publicationBusy: false,
+    deliveryModal: null, deliveryBusy: false, deliveryError: '', deliveryFile: null, deliveryFileName: '', deliveryMessage: '',
+    busyOrderId: '',
     balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
     subjectsCatalog: [], servicesCatalog: [], eligibleSubjects: [],
     showcases: [], showcaseLoading: true, showcaseError: '', showcaseBusy: false,
@@ -840,7 +865,6 @@ class Component extends DCLogic {
       const eligible = value(8) || [];
       const servicesCatalog = value(9) || [];
       const showcases = value(10);
-      const ORDER_STAGES = ['awaiting_payment','progress','ready','revision','completed','cancelled'];
       const mapFiles = (attachments) => (attachments || []).map(a => ({
         id: a.id,
         name: a.originalName || Tafseel.t('common_photo'),
@@ -877,6 +901,7 @@ class Component extends DCLogic {
       }));
       ORDERS = orders && orders.items ? orders.items.map(x => {
         const files = requestFilesById[x.learningRequestId] || [];
+        const presentation = Tafseel.orderPresentation(x.status, x.paymentStatus, 'teacher');
         return {
           id:x.id,
           learningRequestId:x.learningRequestId,
@@ -884,7 +909,10 @@ class Component extends DCLogic {
           student: Tafseel.partyName(x, 'student'),
           deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
           price:Tafseel.money(x.teacherNet != null ? x.teacherNet : x.price, x.currency || 'SAR'),
-          stage:ORDER_STAGES[x.status] || 'awaiting_payment',
+          rawStatus:Number(x.status),
+          stage:presentation.stage,
+          action:presentation.action,
+          statusLabelKey:presentation.labelKey,
           version:x.version,
           files,
           hasFiles: files.length > 0
@@ -944,7 +972,6 @@ class Component extends DCLogic {
         Tafseel.api.get('/learning-requests/assigned?pageSize=100'),
         Tafseel.api.get('/orders/assigned?pageSize=100')
       ]);
-      const ORDER_STAGES = ['awaiting_payment','progress','ready','revision','completed','cancelled'];
       const mapFiles = (attachments) => (attachments || []).map(a => ({
         id: a.id,
         name: a.originalName || Tafseel.t('common_photo'),
@@ -980,6 +1007,7 @@ class Component extends DCLogic {
       }));
       ORDERS = orders && orders.items ? orders.items.map(x => {
         const files = requestFilesById[x.learningRequestId] || [];
+        const presentation = Tafseel.orderPresentation(x.status, x.paymentStatus, 'teacher');
         return {
           id:x.id,
           learningRequestId:x.learningRequestId,
@@ -987,7 +1015,10 @@ class Component extends DCLogic {
           student: Tafseel.partyName(x, 'student'),
           deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
           price:Tafseel.money(x.teacherNet != null ? x.teacherNet : x.price, x.currency || 'SAR'),
-          stage:ORDER_STAGES[x.status] || 'awaiting_payment',
+          rawStatus:Number(x.status),
+          stage:presentation.stage,
+          action:presentation.action,
+          statusLabelKey:presentation.labelKey,
           version:x.version,
           files,
           hasFiles: files.length > 0
@@ -1746,42 +1777,45 @@ class Component extends DCLogic {
 
       orderTabs,
       noOrders: filteredOrders.length === 0,
-      orders: filteredOrders.map(o => ({
-        ...o,
-        actionLabel: Tafseel.t(STAGE_ACTION[o.stage] || 'order_status_unknown'),
-        timelineLabel:Tafseel.t('order_timeline_view'),
-        onTimeline:event => this.openTimeline(o, event.currentTarget),
-        actionStyle: 'height:32px;padding:0 13px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
-          (o.stage === 'ready' ? 'border:0;background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onAction: async () => {
-          try {
-            if (o.stage === 'progress') {
-              await Tafseel.api.post('/orders/' + o.id + '/start', null, { 'If-Match':o.version });
-              this.flash(Tafseel.t('td_stage_start_work'));
-              await this.reloadAssigned();
+      orders: filteredOrders.map(o => {
+        const busy = s.busyOrderId === o.id;
+        const actionLabelKey = o.action === 'start' ? 'td_stage_start_work'
+          : o.action === 'deliver' ? (o.stage === 'revision' ? 'td_action_submit_revision' : 'td_stage_upload_delivery')
+          : '';
+        return {
+          ...o,
+          statusLabel: Tafseel.t(o.statusLabelKey),
+          statusChipStyle: Tafseel.statusToneStyle('order', o.rawStatus)
+            + ';display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap',
+          actionLabel: actionLabelKey ? Tafseel.t(actionLabelKey) : '',
+          actionBusy: busy,
+          timelineLabel:Tafseel.t('order_timeline_view'),
+          onTimeline:event => this.openTimeline(o, event.currentTarget),
+          actionStyle: 'height:32px;padding:0 13px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
+            (o.action === 'start' || o.action === 'deliver' ? 'border:0;background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+          onAction: async () => {
+            if (busy) return;
+            if (o.action === 'start') {
+              this.setState({ busyOrderId: o.id });
+              try {
+                await Tafseel.api.post('/orders/' + o.id + '/start', null, { 'If-Match':o.version });
+                this.flash(Tafseel.t('td_stage_start_work'));
+                await this.reloadAssigned();
+              } catch (error) {
+                this.flash(Tafseel.api.errorMessage(error));
+              } finally {
+                this.setState({ busyOrderId: '' });
+              }
               return;
             }
-            if (o.stage === 'ready') {
-              const picker = document.createElement('input');
-              picker.type = 'file';
-              picker.onchange = async () => {
-                if (!picker.files[0]) return;
-                try {
-                  const data = new FormData();
-                  data.append('file', picker.files[0]);
-                  data.append('message', prompt(Tafseel.t('toast_prompt_delivery_message')) || Tafseel.t('toast_delivery_uploaded'));
-                  await Tafseel.api.upload('/orders/' + o.id + '/deliveries', data, { 'If-Match':o.version });
-                  this.flash(Tafseel.t('toast_delivery_uploaded'));
-                  await this.reloadAssigned();
-                } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-              };
-              picker.click();
-              return;
+            if (o.action === 'deliver') {
+              this.setState({
+                deliveryModal: o, deliveryFile: null, deliveryFileName: '', deliveryMessage: '', deliveryError: ''
+              });
             }
-            this.flash(Tafseel.t(STAGE_ACTION[o.stage] || 'order_status_unknown') + ' — ' + o.title);
-          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-        }
-      })),
+          }
+        };
+      }),
 
       timelineOrder:s.timelineOrder,
       timelineTitle:Tafseel.t('order_timeline_title'),
@@ -1859,7 +1893,50 @@ class Component extends DCLogic {
         }
       },
       acceptBusy: !!s.acceptBusy,
-      acceptConfirmLabel: s.acceptBusy ? Tafseel.t('apply_saving') : Tafseel.t('td_accept_request')
+      acceptConfirmLabel: s.acceptBusy ? Tafseel.t('apply_saving') : Tafseel.t('td_accept_request'),
+
+      deliveryModal: s.deliveryModal,
+      deliveryModalTitle: s.deliveryModal && s.deliveryModal.stage === 'revision'
+        ? Tafseel.t('td_action_submit_revision') : Tafseel.t('td_delivery_modal_title'),
+      deliveryChooseFileLabel: Tafseel.t('td_delivery_choose_file'),
+      deliveryMessageLabel: Tafseel.t('td_delivery_message_label'),
+      deliveryCancelLabel: Tafseel.t('td_delivery_cancel'),
+      deliverySubmitLabel: s.deliveryBusy ? Tafseel.t('apply_saving') : Tafseel.t('td_delivery_submit'),
+      deliveryFileName: s.deliveryFileName,
+      deliveryMessage: s.deliveryMessage,
+      deliveryError: s.deliveryError,
+      deliveryBusy: !!s.deliveryBusy,
+      onDeliveryFileChange: e => {
+        const file = e.target.files && e.target.files[0];
+        this.setState({ deliveryFile: file || null, deliveryFileName: file ? file.name : '', deliveryError: '' });
+      },
+      onDeliveryMessage: e => this.setState({ deliveryMessage: e.target.value }),
+      closeDeliveryModal: () => {
+        if (s.deliveryBusy) return;
+        this.setState({ deliveryModal: null, deliveryFile: null, deliveryFileName: '', deliveryMessage: '', deliveryError: '' });
+      },
+      confirmDelivery: async () => {
+        const o = s.deliveryModal;
+        if (!o || s.deliveryBusy) return;
+        if (!s.deliveryFile) {
+          this.setState({ deliveryError: Tafseel.t('td_delivery_file_required') });
+          return;
+        }
+        this.setState({ deliveryBusy: true, deliveryError: '' });
+        try {
+          const data = new FormData();
+          data.append('file', s.deliveryFile);
+          data.append('message', (s.deliveryMessage || '').trim());
+          await Tafseel.api.upload('/orders/' + o.id + '/deliveries', data, { 'If-Match':o.version });
+          this.setState({
+            deliveryModal: null, deliveryBusy: false, deliveryFile: null, deliveryFileName: '', deliveryMessage: ''
+          });
+          this.flash(Tafseel.t('toast_delivery_uploaded'));
+          await this.reloadAssigned();
+        } catch (error) {
+          this.setState({ deliveryBusy: false, deliveryError: Tafseel.api.errorMessage(error) });
+        }
+      }
     };
   }
 }

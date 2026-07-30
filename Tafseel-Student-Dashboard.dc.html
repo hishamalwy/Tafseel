@@ -621,6 +621,97 @@
   </div>
 </sc-if>
 
+<sc-if value="{{ reviewModal }}" hint-placeholder-val="{{ false }}">
+  <div role="presentation" onClick="{{ closeReviewModal }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+    <div role="dialog" aria-modal="true" aria-labelledby="student-review-title" onClick="{{ stop }}" style="width:min(560px,100%);max-height:min(88vh,780px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg)">
+      <div style="position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;gap:16px;padding:20px;border-bottom:1px solid var(--border);background:var(--surface)">
+        <div style="min-width:0;flex:1">
+          <h2 id="student-review-title" style="font-size:18px;font-weight:800;margin-bottom:4px">{{ reviewModalTitle }}</h2>
+          <div style="font-size:12px;color:var(--muted);overflow-wrap:anywhere">{{ reviewOrderTitle }}</div>
+        </div>
+        <button type="button" autofocus onClick="{{ closeReviewModal }}" disabled="{{ reviewBusy }}" aria-label="{{ sdReviewClose }}" title="{{ sdReviewClose }}" style="width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:20px">×</button>
+      </div>
+      <div style="padding:20px">
+        <div style="margin-bottom:16px">
+          <span style="font-size:12px;color:var(--muted)">{{ reviewTeacherLabel }}</span>
+          <div style="font-size:14.5px;font-weight:700">{{ reviewTeacherName }}</div>
+        </div>
+        <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">{{ reviewHistoryLabel }}</h3>
+        <sc-if value="{{ reviewNoDeliveries }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px">{{ sdReviewNoFiles }}</p>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+          <sc-for list="{{ reviewDeliveries }}" as="d" hint-placeholder-count="1">
+            <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:14px">
+              <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
+                <span style="font-size:12.5px;color:var(--muted)">{{ d.when }}</span>
+              </div>
+              <p style="font-size:13.5px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
+              <button type="button" onClick="{{ d.onDownload }}" style="font-family:var(--font-mono);font-size:12px;padding:5px 10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ d.fileName }}</button>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ reviewError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="font-size:13px;color:var(--error);margin-bottom:14px">{{ reviewError }}</p>
+        </sc-if>
+        <sc-if value="{{ showRevisionForm }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+            <span style="font-size:13px;font-weight:600">{{ sdReviewRevisionReasonLabel }}</span>
+            <textarea value="{{ revisionReason }}" onChange="{{ onRevisionReason }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+          </label>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button type="button" onClick="{{ cancelRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
+            <button type="button" onClick="{{ submitRevisionRequest }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionRequestRevision }}</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showApproveActions }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <sc-if value="{{ revisionAvailable }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ openRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionRequestRevision }}</button>
+            </sc-if>
+            <button type="button" onClick="{{ approveDelivery }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--success,var(--primary));color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionApprove }}</button>
+          </div>
+          <sc-if value="{{ revisionLimitReached }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:12.5px;color:var(--muted);margin-top:10px;text-align:end">{{ sdReviewRevisionLimitReached }}</p>
+          </sc-if>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ rateModal }}" hint-placeholder-val="{{ false }}">
+  <div role="presentation" onClick="{{ closeRateModal }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+    <div role="dialog" aria-modal="true" aria-labelledby="student-rate-title" onClick="{{ stop }}" style="width:min(480px,100%);max-height:min(88vh,760px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
+      <h2 id="student-rate-title" style="font-size:18px;font-weight:800;margin-bottom:4px">{{ rateModalTitle }}</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">{{ rateModal.teacher }}</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px">
+        <sc-for list="{{ rateSliders }}" as="rs" hint-placeholder-count="5">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600;display:flex;justify-content:space-between"><span>{{ rs.label }}</span><span>{{ rs.value }}/5</span></span>
+            <input type="range" min="1" max="5" step="1" sc-camel-value="{{ rs.value }}" onChange="{{ rs.onChange }}" />
+          </label>
+        </sc-for>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600">{{ sdRateCommentLabel }}</span>
+          <textarea value="{{ rateComment }}" onChange="{{ onRateComment }}" placeholder="{{ sdRateCommentPlaceholder }}" rows="4" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px">
+          <input type="checkbox" checked="{{ rateRecommends }}" onChange="{{ onRateRecommends }}" />
+          <span>{{ sdRateRecommends }}</span>
+        </label>
+        <sc-if value="{{ rateError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="font-size:13px;color:var(--error)">{{ rateError }}</p>
+        </sc-if>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onClick="{{ closeRateModal }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
+        <button type="button" onClick="{{ submitReview }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdRateSubmitLabel }}</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
   <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
@@ -651,6 +742,10 @@ class Component extends DCLogic {
     learnPrefsLanguages: [], learnPrefsBusy: false, learnPrefsLoading: false,
     learnPrefsError: '', learnPrefsSuccess: '',
     timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: [],
+    reviewModal: null, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: '',
+    rateModal: null, rateBusy: false, rateError: '',
+    rateClarity: 5, rateKnowledge: 5, rateCommunication: 5, rateOnTime: 5, rateValue: 5,
+    rateComment: '', rateRecommends: true,
     ordersLoaded: false
   };
 
@@ -816,27 +911,110 @@ class Component extends DCLogic {
     setTimeout(() => { if (trigger && trigger.focus) trigger.focus(); }, 0);
   }
 
-  async orderAction(item) {
+  /** Canonical action button (label/style/handler) for one projected work row. Single source
+   * used by both the overview and full work-list tables, avoiding drift between them. */
+  orderActionRender(r) {
+    if (r.kind !== 'order' || !r.action) return { actionLabel: '', actionBtnStyle: '', onAction: () => {} };
+    const labelKey = r.action === 'pay' ? 'sd_action_pay'
+      : r.action === 'review' ? 'sd_action_review_delivery'
+      : r.action === 'rate' ? 'sd_action_rate_teacher'
+      : '';
+    const onAction = r.action === 'pay'
+      ? () => { location.href = 'Tafseel-Payment.dc.html?orderId=' + encodeURIComponent(r.id); }
+      : r.action === 'review' ? () => this.openReviewModal(r)
+      : r.action === 'rate' ? () => this.openRateModal(r)
+      : () => {};
+    return {
+      actionLabel: labelKey ? Tafseel.t(labelKey) : '',
+      onAction,
+      actionBtnStyle: 'height:32px;padding-inline:12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:12.5px;cursor:pointer'
+    };
+  }
+
+  openReviewModal(order) {
+    this.setState({
+      reviewModal: order, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: ''
+    });
+  }
+
+  closeReviewModal() {
+    if (this.state.reviewBusy) return;
+    this.setState({ reviewModal: null, reviewError: '', showRevisionForm: false, revisionReason: '' });
+  }
+
+  async approveDelivery() {
+    const order = this.state.reviewModal;
+    if (!order || this.state.reviewBusy) return;
+    if (!confirm(Tafseel.t('sd_review_approve_confirm'))) return;
+    this.setState({ reviewBusy: true, reviewError: '' });
     try {
-      if (item.kind === 'order' && item.rawStatus === 0) {
-        location.href = 'Tafseel-Payment.dc.html?orderId=' + encodeURIComponent(item.id);
-        return;
-      }
-      const choice = prompt(Tafseel.t('toast_prompt_order_choice'));
-      if (choice === 'complete')
-        await Tafseel.api.post('/orders/' + item.id + '/complete', null, { 'If-Match':item.version });
-      else if (choice === 'revision') {
-        const reason = prompt(Tafseel.t('toast_prompt_revision_reason'));
-        if (!reason) return;
-        await Tafseel.api.post('/orders/' + item.id + '/revision', { reason }, { 'If-Match':item.version });
-      } else if (choice === 'dispute') {
-        const reason = prompt(Tafseel.t('toast_prompt_dispute_reason'));
-        if (!reason) return;
-        await Tafseel.api.post('/disputes', { orderId:item.id, reason });
-      } else return;
-      this.flash(Tafseel.t('toast_order_updated'));
-      this.reload();
-    } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      await Tafseel.api.post('/orders/' + order.id + '/complete', null, { 'If-Match': order.version });
+      this.setState({ reviewModal: null, reviewBusy: false });
+      this.flash(Tafseel.t('sd_review_approved_toast'));
+      await this.reload();
+    } catch (error) {
+      this.setState({ reviewBusy: false, reviewError: Tafseel.api.errorMessage(error) });
+    }
+  }
+
+  async submitRevisionRequest() {
+    const order = this.state.reviewModal;
+    const reason = (this.state.revisionReason || '').trim();
+    if (!order || this.state.reviewBusy) return;
+    if (!reason) {
+      this.setState({ reviewError: Tafseel.t('sd_review_revision_reason_required') });
+      return;
+    }
+    this.setState({ reviewBusy: true, reviewError: '' });
+    try {
+      await Tafseel.api.post('/orders/' + order.id + '/revision', { reason }, { 'If-Match': order.version });
+      this.setState({ reviewModal: null, reviewBusy: false, showRevisionForm: false, revisionReason: '' });
+      this.flash(Tafseel.t('sd_review_revision_requested_toast'));
+      await this.reload();
+    } catch (error) {
+      this.setState({ reviewBusy: false, reviewError: Tafseel.api.errorMessage(error) });
+    }
+  }
+
+  openRateModal(order) {
+    this.setState({
+      rateModal: order, rateBusy: false, rateError: '',
+      rateClarity: 5, rateKnowledge: 5, rateCommunication: 5, rateOnTime: 5, rateValue: 5,
+      rateComment: '', rateRecommends: true
+    });
+  }
+
+  closeRateModal() {
+    if (this.state.rateBusy) return;
+    this.setState({ rateModal: null, rateError: '' });
+  }
+
+  async submitReview() {
+    const s = this.state;
+    const order = s.rateModal;
+    if (!order || s.rateBusy) return;
+    const comment = (s.rateComment || '').trim();
+    if (!comment) {
+      this.setState({ rateError: Tafseel.t('sd_rate_comment_required') });
+      return;
+    }
+    this.setState({ rateBusy: true, rateError: '' });
+    try {
+      await Tafseel.api.post('/orders/' + order.id + '/review', {
+        explanationClarity: Number(s.rateClarity),
+        subjectKnowledge: Number(s.rateKnowledge),
+        communication: Number(s.rateCommunication),
+        onTimeDelivery: Number(s.rateOnTime),
+        valueForMoney: Number(s.rateValue),
+        comment,
+        recommends: !!s.rateRecommends
+      });
+      this.setState({ rateModal: null, rateBusy: false });
+      this.flash(Tafseel.t('sd_rate_submitted_toast'));
+      await this.reload();
+    } catch (error) {
+      this.setState({ rateBusy: false, rateError: Tafseel.api.errorMessage(error) });
+    }
   }
 
   renderVals() {
@@ -957,18 +1135,12 @@ class Component extends DCLogic {
       },
 
       allRequests: Tafseel.filterStudentWorkList(REQUESTS, s.filter).map(r => {
-        const pay = r.kind === 'order' && r.rawStatus === 0;
-        const manage = r.kind === 'order' && [1, 2, 3].includes(r.rawStatus);
         return {
           ...r,
-          actionLabel: pay ? Tafseel.t('sd_action_pay') : manage ? Tafseel.t('sd_action_manage') : '',
-          onAction:() => this.orderAction(r),
+          ...this.orderActionRender(r),
           timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
           onTimeline:event => this.openTimeline(r, event.currentTarget),
-          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus),
-          actionBtnStyle: pay
-            ? 'height:32px;padding-inline:12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:12.5px;cursor:pointer'
-            : 'height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);cursor:pointer'
+          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus)
         };
       }),
 
@@ -988,6 +1160,64 @@ class Component extends DCLogic {
       closeTimeline:() => this.closeTimeline(),
       retryTimeline:event => s.timelineOrder && this.openTimeline(s.timelineOrder, event.currentTarget),
       timelineKeyDown:event => Tafseel.modalKeyDown(event, () => this.closeTimeline()),
+
+      reviewModal: s.reviewModal,
+      reviewModalTitle: Tafseel.t('sd_review_modal_title'),
+      reviewOrderTitle: s.reviewModal ? s.reviewModal.title : '',
+      reviewTeacherLabel: Tafseel.t('sd_review_teacher_label'),
+      reviewTeacherName: s.reviewModal ? s.reviewModal.teacher : '',
+      reviewHistoryLabel: Tafseel.t('sd_review_history_label'),
+      reviewNoDeliveries: !!s.reviewModal && (!s.reviewModal.deliveries || s.reviewModal.deliveries.length === 0),
+      reviewDeliveries: (s.reviewModal && s.reviewModal.deliveries || []).map(d => ({
+        when: Tafseel.date(d.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
+        message: (d.message || '').trim() || Tafseel.t('sd_review_no_message'),
+        fileName: d.originalName || Tafseel.t('td_download_file', { name: '' }),
+        onDownload: () => Tafseel.api.openBlob(
+          '/orders/deliveries/' + encodeURIComponent(d.id) + '/content',
+          { download: true, fileName: d.originalName || 'delivery' }
+        ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
+      })),
+      reviewError: s.reviewError,
+      reviewBusy: !!s.reviewBusy,
+      showRevisionForm: !!s.showRevisionForm,
+      showApproveActions: !s.showRevisionForm,
+      revisionReason: s.revisionReason,
+      onRevisionReason: e => this.setState({ revisionReason: e.target.value, reviewError: '' }),
+      revisionAvailable: !!s.reviewModal && s.reviewModal.revisionsUsed < s.reviewModal.revisionAllowance,
+      revisionLimitReached: !!s.reviewModal && s.reviewModal.revisionsUsed >= s.reviewModal.revisionAllowance,
+      openRevisionForm: () => this.setState({ showRevisionForm: true, reviewError: '' }),
+      cancelRevisionForm: () => this.setState({ showRevisionForm: false, revisionReason: '', reviewError: '' }),
+      closeReviewModal: () => this.closeReviewModal(),
+      approveDelivery: () => this.approveDelivery(),
+      submitRevisionRequest: () => this.submitRevisionRequest(),
+      sdReviewClose: Tafseel.t('sd_review_close'),
+      sdActionApprove: Tafseel.t('sd_action_approve'),
+      sdActionRequestRevision: Tafseel.t('sd_action_request_revision'),
+      sdReviewRevisionReasonLabel: Tafseel.t('sd_review_revision_reason_label'),
+      sdReviewNoFiles: Tafseel.t('sd_review_no_files'),
+      sdReviewRevisionLimitReached: Tafseel.t('sd_review_revision_limit_reached'),
+
+      rateModal: s.rateModal,
+      rateModalTitle: Tafseel.t('sd_rate_modal_title'),
+      rateSliders: [
+        { label: Tafseel.t('sd_rate_clarity'), value: s.rateClarity, onChange: e => this.setState({ rateClarity: e.target.value }) },
+        { label: Tafseel.t('sd_rate_knowledge'), value: s.rateKnowledge, onChange: e => this.setState({ rateKnowledge: e.target.value }) },
+        { label: Tafseel.t('sd_rate_communication'), value: s.rateCommunication, onChange: e => this.setState({ rateCommunication: e.target.value }) },
+        { label: Tafseel.t('sd_rate_ontime'), value: s.rateOnTime, onChange: e => this.setState({ rateOnTime: e.target.value }) },
+        { label: Tafseel.t('sd_rate_value'), value: s.rateValue, onChange: e => this.setState({ rateValue: e.target.value }) }
+      ],
+      rateComment: s.rateComment,
+      onRateComment: e => this.setState({ rateComment: e.target.value, rateError: '' }),
+      rateRecommends: !!s.rateRecommends,
+      onRateRecommends: e => this.setState({ rateRecommends: e.target.checked }),
+      rateError: s.rateError,
+      rateBusy: !!s.rateBusy,
+      closeRateModal: () => this.closeRateModal(),
+      submitReview: () => this.submitReview(),
+      sdRateCommentLabel: Tafseel.t('sd_rate_comment_label'),
+      sdRateCommentPlaceholder: Tafseel.t('sd_rate_comment_placeholder'),
+      sdRateRecommends: Tafseel.t('sd_rate_recommends'),
+      sdRateSubmitLabel: s.rateBusy ? Tafseel.t('apply_saving') : Tafseel.t('sd_rate_submit'),
 
       allSessions: s.liveSessions.map(se => ({
         ...se,
@@ -1245,18 +1475,12 @@ class Component extends DCLogic {
       })),
 
       requests: rows.map(r => {
-        const pay = r.kind === 'order' && r.rawStatus === 0;
-        const manage = r.kind === 'order' && [1, 2, 3].includes(r.rawStatus);
         return {
           ...r,
-          actionLabel: pay ? Tafseel.t('sd_action_pay') : manage ? Tafseel.t('sd_action_manage') : '',
-          onAction:() => this.orderAction(r),
+          ...this.orderActionRender(r),
           timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
           onTimeline:event => this.openTimeline(r, event.currentTarget),
-          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus),
-          actionBtnStyle: pay
-            ? 'height:32px;padding-inline:12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:12.5px;cursor:pointer'
-            : 'height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);cursor:pointer'
+          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus)
         };
       }),
 

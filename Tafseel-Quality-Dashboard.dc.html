@@ -342,8 +342,19 @@
                   </sc-for>
                 </div>
               </sc-if>
-              <video src="{{ current.demoUrl }}" controls preload="metadata"
-                style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
+              <sc-if value="{{ demoLoading }}" hint-placeholder-val="{{ true }}">
+                <div role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;color:#fff;margin-bottom:12px;font-size:13.5px">{{ demoLoadingLabel }}</div>
+              </sc-if>
+              <sc-if value="{{ demoLoadError }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;color:#fff;margin-bottom:12px;padding:20px;text-align:center">
+                  <span style="font-size:13.5px">{{ demoErrorLabel }}</span>
+                  <button type="button" onClick="{{ downloadDemo }}" style="height:36px;padding-inline:14px;border:0;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:13px">{{ demoDownloadLabel }}</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ demoReady }}" hint-placeholder-val="{{ false }}">
+                <video src="{{ demoBlobUrl }}" controls preload="metadata"
+                  style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
+              </sc-if>
               <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
                 <span>{{ durationLabel }}</span>
                 <span>{{ submissionVersionLabel }}</span>
@@ -468,6 +479,7 @@ class Component extends DCLogic {
     showcaseLoading: true, showcaseError: '', showcaseCurrentId: '',
     showcaseFeedback: '', showcaseInternalNote: '', showcaseReasonCode: '',
     showcasePreviewUrl: '', showcaseBusy: false,
+    demoBlobUrl: '', demoLoading: false, demoLoadError: '',
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
     hasAvatar: false, accountUserId: '', avatarVersion: 0, accountBusy: false,
     currentPassword: '', newPassword: '', confirmPassword: ''
@@ -556,7 +568,6 @@ class Component extends DCLogic {
             { k: Tafseel.t('apply_degree'), v: x.degree || '—' },
             { k: Tafseel.t('compare_field_experience'), v: Tafseel.t('quality_years', { n: String(x.experienceYears || 0) }) }
           ],
-          demoUrl: '/api/v1/teacher-applications/' + x.id + '/demo/content',
           demoDuration: x.demoDurationSeconds ? Math.floor(x.demoDurationSeconds / 60) + ':' + String(x.demoDurationSeconds % 60).padStart(2, '0') : '—',
           submissionVersion: x.submissionVersion || 1,
           version: x.version,
@@ -641,7 +652,23 @@ class Component extends DCLogic {
         await Tafseel.api.post('/teacher-applications/' + id + '/start-review', { priority:1 }, { 'If-Match':item.version });
         await this.loadQueue();
       }
-      this.setState({ view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false });
+      if (this._demoBlobUrl) { URL.revokeObjectURL(this._demoBlobUrl); this._demoBlobUrl = ''; }
+      this.setState({
+        view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false,
+        demoBlobUrl: '', demoLoading: true, demoLoadError: ''
+      });
+      // <video src> cannot carry the in-memory bearer token, so the demo is fetched as an
+      // authenticated blob (same pattern as the Showcase preview below) rather than pointed
+      // straight at the API URL — a raw src there 401s silently and renders as a black rectangle.
+      try {
+        const file = await Tafseel.api.blob('/teacher-applications/' + id + '/demo/content');
+        if (this.state.currentId !== id) return; // navigated away while fetching
+        this._demoBlobUrl = URL.createObjectURL(file.blob);
+        this.setState({ demoBlobUrl: this._demoBlobUrl, demoLoading: false });
+      } catch (demoError) {
+        if (this.state.currentId !== id) return;
+        this.setState({ demoLoading: false, demoLoadError: Tafseel.api.errorMessage(demoError) });
+      }
     } catch (error) {
       this.flash(Tafseel.api.errorMessage(error));
     }
@@ -977,6 +1004,21 @@ class Component extends DCLogic {
       demoTopicLabel: current ? Tafseel.t('quality_demo_topic', { topic: current.demoTopic }) : '',
       durationLabel: current ? Tafseel.t('quality_duration', { duration: current.demoDuration }) : '',
       submissionVersionLabel: current ? Tafseel.t('quality_submission_version', { version: String(current.submissionVersion) }) : '',
+
+      demoBlobUrl: s.demoBlobUrl,
+      demoLoading: !!s.demoLoading,
+      demoLoadError: s.demoLoadError,
+      demoReady: !s.demoLoading && !s.demoLoadError && !!s.demoBlobUrl,
+      demoLoadingLabel: Tafseel.t('quality_demo_loading'),
+      demoErrorLabel: s.demoLoadError ? Tafseel.t('quality_demo_playback_error', { detail: s.demoLoadError }) : '',
+      demoDownloadLabel: Tafseel.t('quality_demo_download'),
+      downloadDemo: () => {
+        if (!current) return;
+        Tafseel.api.openBlob(
+          '/teacher-applications/' + current.id + '/demo/content',
+          { download: true, fileName: 'demo-' + current.id + '.mp4' }
+        ).catch(error => this.flash(Tafseel.api.errorMessage(error)));
+      },
 
       statusTabs: [
         { key: 'all', label: Tafseel.t('quality_tab_all') },

@@ -12,7 +12,7 @@ The Final Production Readiness Audit (Step 8 / 8) is complete: **READY FOR STAGI
 
 ## Current Milestone
 
-Roadmap Steps 1–9 are recorded. **Product Bug Fix Sprints 1–3** closed end-user integrity/i18n gaps. **Step 9 Production Infrastructure** added Azure Blob storage, configuration-driven provider selection, fail-closed Production gates, opt-in Application Insights, and ops runbooks. **Mock Payment Simulator** enables full Student→Payment→Delivery lifecycle in Development (and explicitly enabled Staging) through the canonical webhook path. **Order/Request UX separation** ensures Accepted Learning Requests never appear beside their Orders on the Student dashboard. **Remaining Production cutover blockers:** real PSP adapter, real meeting provider, provisioned Azure Blob/Insights secrets, backup drill evidence.
+Roadmap Steps 1–9 are recorded. **Product Bug Fix Sprints 1–3** closed end-user integrity/i18n gaps. **Step 9 Production Infrastructure** added Azure Blob storage, configuration-driven provider selection, fail-closed Production gates, opt-in Application Insights, and ops runbooks. **Mock Payment Simulator** enables full Student→Payment→Delivery lifecycle in Development (and explicitly enabled Staging) through the canonical webhook path. **Order/Request UX separation** ensures Accepted Learning Requests never appear beside their Orders on the Student dashboard. **Post-Payment Order Lifecycle Recovery** fixed the payment-state projection bug that blocked the canonical lifecycle past payment confirmation, and browser-proved Start Work → Delivery → Revision → Completion → Review → Rating end-to-end for the first time. **Remaining Production cutover blockers:** real PSP adapter, real meeting provider, provisioned Azure Blob/Insights secrets, backup drill evidence.
 
 ## Current Architecture Status
 
@@ -60,6 +60,9 @@ Historical implementation phases 2–11 and completed production-correction pass
 | Production Operational Readiness (Step 9) | Conditionally ready | [Operational readiness report](./reports/PRODUCTION_OPERATIONAL_READINESS_REPORT.md) |
 | Mock Payment End-to-End Simulator | Completed locally | [Mock payment simulator report](./reports/MOCK_PAYMENT_SIMULATOR_REPORT.md) |
 | Order vs Request UX Separation | Conditionally verified | [Order/Request UX separation report](./fixes/ORDER_REQUEST_UX_SEPARATION_REPORT.md) |
+| Order Journey Browser Certification | Blocked (superseded same day) | [Order journey browser certification report](./fixes/ORDER_JOURNEY_BROWSER_CERTIFICATION.md) |
+| Post-Payment Order Lifecycle Recovery | **Recovered and verified** | [Recovery report](./fixes/POST_PAYMENT_ORDER_LIFECYCLE_RECOVERY_REPORT.md) |
+| RoleBootstrap Fast-Path CI Fix | Fixed | [RoleBootstrap fix report](./fixes/ROLE_BOOTSTRAP_FAST_PATH_CI_FIX_REPORT.md) |
 
 ## Open Findings
 
@@ -73,6 +76,9 @@ Historical implementation phases 2–11 and completed production-correction pass
 | F-007 | High | API Bug | Open |
 | F-008 | High | Business Rule | Blocked |
 | F-009 | Medium | Technical Debt | Open |
+| F-010 | Critical | UI Bug | **Fixed** — canonical `Tafseel.orderPresentation()` helper now derives stage/action from `Order.Status` **and** `Order.PaymentStatus` together on both dashboards. See [recovery report](./fixes/POST_PAYMENT_ORDER_LIFECYCLE_RECOVERY_REPORT.md). |
+| F-011 | High | UI Bug | **Fixed** — `componentDidUpdate` was comparing against a `prevState` argument the DC runtime never provides (only `prevProps`); now tracks step via an instance field. Live-verified zero console errors across the Request/Dashboard/Payment/Checkout pages. |
+| F-012 | Medium | Localization Bug | **Fixed** — key added; a new `check-localization-usage.mjs` CI check now catches referenced-but-undefined keys generally (paired-key parity alone could not). |
 
 Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md).
 
@@ -96,6 +102,7 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 | BUG-001 display-name regression | Verified — `participantLabel` no longer renders GUID prefixes; Order/Messages show real names |
 | Product Bug Fix Sprint 3 | Conditionally verified — Quality rawStatus/priority/chrome + Admin nav/money/status; email ADR + full viewport matrix remain |
 | Production Operational Readiness | Conditionally ready — Azure Blob + config-driven providers + ops docs; real PSP/meeting adapters still required for Production boot |
+| Post-Payment Order Lifecycle Recovery | Completed and browser-verified — F-010/F-011/F-012 fixed; full canonical lifecycle (Start Work → Delivery → Revision → Approve → Completed → Review → Rating) proven end-to-end through real UI controls |
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
@@ -104,11 +111,13 @@ Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 1. F-003 — real `IPaymentProvider` sandbox + Production fail-closed (highest Critical blocker).
 2. F-003 companion — real `ILiveSessionLinkProvider`.
 3. Phase 1 — Azure Blob Provider (ADR-011 / F-004); Production Showcase stays disabled.
-4. Fix or waive `RoleBootstrapTests` provider-neutral failure observed in Step 8 audit.
-5. Seed published qualified Teachers for deferred trust-badge browser smoke.
-6. F-005 revision-to-delivery relationship decision.
-7. Favorites pagination (F-006).
-8. Highly Rated and other performance badges only after formula business rules.
+4. Seed published qualified Teachers for deferred trust-badge browser smoke.
+5. F-005 revision-to-delivery relationship decision.
+6. Favorites pagination (F-006).
+7. Highly Rated and other performance badges only after formula business rules.
+8. Admin review-moderation queue list endpoint (`GET /admin/reviews`) — reviews can be moderated by ID but not discovered through the UI; identified during the lifecycle recovery pass, not built (out of that pass's explicit scope).
+9. Student account-level Files tab (`STUDENT_FILES`) is a hardcoded-empty stub outside the Order Review modal's (now-fixed) delivery download.
+10. Manually confirm Quality demo-video playback outside this session's sandboxed browser test tool — the auth fix is confirmed (200 OK, real bytes via the authenticated blob path); full frame playback couldn't be confirmed inside the sandbox itself.
 
 ## Known Risks
 
@@ -147,6 +156,25 @@ Unresolved decisions include:
 The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md).
 
 ## Test Coverage Summary
+
+Latest Post-Payment Order Lifecycle Recovery (full canonical lifecycle, live browser):
+
+- Release build, Domain (69), Application (5), Architecture (1), provider-neutral Integration (195) suites all passed unchanged — no backend code was touched.
+- Frontend integrity (13 entry points), localization (2,630 paired keys), new usage-coverage check (13 pages + 5 scripts, catches referenced-but-undefined keys that pairing alone misses), `git diff --check` all passed.
+- F-010/F-011/F-012 fixed and live-verified: Start Work → Upload Delivery → Student Review → Request Revision → Teacher resubmits → Student Approves → Order Completed → Student rates Teacher → rating shows correctly on public Browse Teachers ("★ 5 (1)"), all through real browser clicks, zero console errors observed throughout.
+- RoleBootstrap 3-vs-4 CI failure fixed (Stale Test, not a production bug) — all 10 RoleBootstrapTests and the full 195-test provider-neutral suite pass.
+- Quality demo-video black-screen root cause (missing auth on `<video src>`) fixed and confirmed via network trace (200 OK, real bytes); full visual playback blocked from confirmation by this session's browser-test sandbox, not the app.
+- Arabic/RTL/Dark at 375px and English/LTR/Light at 1440px spot-checked on the Teacher Dashboard — correct alignment, no horizontal scroll.
+- See [Post-Payment Order Lifecycle Recovery](./fixes/POST_PAYMENT_ORDER_LIFECYCLE_RECOVERY_REPORT.md) for full detail, including deliberate scope decisions and remaining gaps (Admin review-moderation list endpoint, Student general Files tab).
+
+Latest Order Journey Browser Certification (full live-browser Student→Payment→Delivery UAT):
+
+- Release build, frontend integrity (13 entry points), localization (2,586 paired keys), `git diff --check` passed.
+- Fresh non-seeded accounts driven through registration, teacher qualification/approval, profile publish, service creation, Learning Request, Teacher Accept, Order creation, Payment, and Mock Checkout webhook confirmation — all correct, single-row, no GUID leakage.
+- **Blocked** immediately after payment confirmation: F-010 (Order.Status-only stage derivation ignores PaymentStatus) leaves no working Start-Work/next-step control on either dashboard. Start Work, Upload Delivery, Approve, Completed unverified.
+- Payment retry after already-paid confirmed safe (idempotent, no double charge) — UI-only defect, not financial.
+- Also found: F-011 (React error #185 infinite loop from Request wizard load onward) and F-012 (missing `td_stat_pending_withdrawal` locale key).
+- See [Order Journey Browser Certification](./fixes/ORDER_JOURNEY_BROWSER_CERTIFICATION.md) for full detail.
 
 Latest Limited Guided Request UX validation:
 

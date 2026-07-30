@@ -805,15 +805,17 @@
 
       var orderRows = orders.map(function (x) {
         var status = Number(x.status);
-        var group = status === 4 ? 'done'
-          : (status === 0 || status === 2 || status === 3 ? 'action' : 'active');
+        var presentation = self.orderPresentation(status, x.paymentStatus, 'student');
+        var group = status === 4 ? 'done' : (presentation.action ? 'action' : 'active');
         return {
           id: x.id,
           learningRequestId: x.learningRequestId,
           title: self.orderTitle(x),
           service: self.t('dash_service_personalized'),
           teacher: self.partyName(x, 'teacher'),
-          status: self.orderStatusLabel(x.status),
+          status: self.t(presentation.labelKey),
+          stage: presentation.stage,
+          action: presentation.action,
           deadline: self.date(x.agreedDeliveryAt, { dateStyle: 'medium' }),
           amount: self.money(x.studentTotal, x.currency || 'SAR'),
           group: group,
@@ -822,7 +824,10 @@
           paymentStatus: x.paymentStatus,
           version: x.version,
           studentTotal: Number(x.studentTotal) || 0,
-          currency: x.currency || 'SAR'
+          currency: x.currency || 'SAR',
+          deliveries: x.deliveries || [],
+          revisionAllowance: Number(x.revisionAllowance) || 0,
+          revisionsUsed: Number(x.revisionsUsed) || 0
         };
       });
 
@@ -886,6 +891,11 @@
       return this.t(keys[status] || 'req_status_unknown');
     },
 
+    /**
+     * Deprecated: does not consider PaymentStatus, so an AwaitingPayment order
+     * that is already Paid is mislabeled as still needing payment. Use
+     * orderPresentation() for anything that renders a status chip or action.
+     */
     orderStatusLabel: function (status) {
       var keys = [
         'order_status_payment_required',
@@ -896,6 +906,70 @@
         'order_status_cancelled'
       ];
       return this.t(keys[status] || 'order_status_unknown');
+    },
+
+    /**
+     * Canonical Order presentation projection. Single source of truth for both
+     * dashboards — derives stage/label/action from Order.Status AND
+     * Order.PaymentStatus together (never Status alone), per role.
+     *
+     * OrderStatus: 0 AwaitingPayment, 1 InProgress, 2 Delivered, 3 RevisionRequested,
+     *              4 Completed, 5 Cancelled.
+     * OrderPaymentStatus: 0 Pending, 1 Paid, 2 Failed, 3 Refunded.
+     *
+     * Returns { stage, labelKey, action, isTerminal } where action is one of
+     * null | 'pay' | 'start' | 'deliver' | 'review' | 'rate' — the single primary
+     * action available to the given role for this Order, or null when the row
+     * should show a plain (non-clickable) status chip only. 'rate' is offered
+     * optimistically to the student on every Completed order; the backend's
+     * one-review-per-order guard is the source of truth for eligibility (no
+     * separate "already reviewed" lookup is made here).
+     */
+    orderPresentation: function (rawStatus, paymentStatus, role) {
+      var status = Number(rawStatus);
+      if (status === 5) return { stage: 'cancelled', labelKey: 'order_status_cancelled', action: null, isTerminal: true };
+      if (status === 4)
+        return {
+          stage: 'completed',
+          labelKey: 'order_status_completed',
+          action: role === 'student' ? 'rate' : null,
+          isTerminal: true
+        };
+      if (status === 3)
+        return {
+          stage: 'revision',
+          labelKey: 'order_status_revision',
+          action: role === 'teacher' ? 'deliver' : null,
+          isTerminal: false
+        };
+      if (status === 2)
+        return {
+          stage: 'delivered',
+          labelKey: 'order_status_delivered',
+          action: role === 'student' ? 'review' : null,
+          isTerminal: false
+        };
+      if (status === 1)
+        return {
+          stage: 'in_progress',
+          labelKey: 'order_status_in_progress',
+          action: role === 'teacher' ? 'deliver' : null,
+          isTerminal: false
+        };
+      // status === 0 (AwaitingPayment): the payment flag — not Status — decides what's next.
+      if (Number(paymentStatus) === 1)
+        return {
+          stage: 'payment_confirmed',
+          labelKey: 'order_status_payment_confirmed',
+          action: role === 'teacher' ? 'start' : null,
+          isTerminal: false
+        };
+      return {
+        stage: 'awaiting_payment',
+        labelKey: 'order_status_payment_required',
+        action: role === 'student' ? 'pay' : null,
+        isTerminal: false
+      };
     },
 
     /** Status chip colors keyed by kind + numeric status — never by localized label. */

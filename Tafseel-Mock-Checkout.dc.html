@@ -83,6 +83,12 @@
           <p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:0" data-i18n="mock_pay_confirmed_body">The canonical webhook path verified this payment. Continue to your dashboard to start work and delivery.</p>
         </div>
         <a href="{{ returnHref }}" style="height:46px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px" data-i18n="mock_pay_return">Return to dashboard</a>
+        <sc-if value="{{ autoReturnActive }}" hint-placeholder-val="{{ false }}">
+          <div role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--muted)">
+            <span>{{ autoReturnLabel }}</span>
+            <button type="button" onClick="{{ onCancelAutoReturn }}" style="border:0;background:none;padding:0;font-size:12.5px;font-weight:600;color:var(--primary);cursor:pointer">{{ cancelAutoReturnLabel }}</button>
+          </div>
+        </sc-if>
       </sc-if>
 
       <sc-if value="{{ showFailed }}" hint-placeholder-val="{{ false }}">
@@ -110,14 +116,35 @@ class Component extends DCLogic {
     loading: true, unavailable: false, submitting: false,
     providerReference: '', session: null, lastOutcome: null,
     returnPath: '/app/Tafseel-Student-Dashboard.dc.html',
-    toast: '', toastLeaving: false
+    toast: '', toastLeaving: false, autoReturnSeconds: 0
   };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     this.bootstrap();
   }
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
+  componentWillUnmount() { Tafseel.offChange(this._sub); this.cancelAutoReturn(); }
+
+  /** Accessible, cancellable auto-return (WCAG 2.2.1): starts only after the backend has
+   * confirmed payment via the signed webhook, never as a substitute for that confirmation. */
+  startAutoReturn(path) {
+    this.cancelAutoReturn();
+    this.setState({ autoReturnSeconds: 8 });
+    this._autoReturnTimer = setInterval(() => {
+      const next = this.state.autoReturnSeconds - 1;
+      if (next <= 0) {
+        this.cancelAutoReturn();
+        location.href = path;
+        return;
+      }
+      this.setState({ autoReturnSeconds: next });
+    }, 1000);
+  }
+  cancelAutoReturn() {
+    clearInterval(this._autoReturnTimer);
+    this._autoReturnTimer = null;
+    if (this.state.autoReturnSeconds !== 0) this.setState({ autoReturnSeconds: 0 });
+  }
   componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
 
   flash(msg) { Tafseel.flash(this, msg, 3200); }
@@ -173,6 +200,7 @@ class Component extends DCLogic {
       });
       if (confirmed) {
         this.flash(Tafseel.t('mock_pay_toast_confirmed'));
+        this.startAutoReturn(result.returnUrl || s.returnPath);
       } else {
         this.flash(Tafseel.t('mock_pay_toast_failed'));
       }
@@ -221,7 +249,12 @@ class Component extends DCLogic {
       actionOpacity: s.submitting ? '0.65' : '1',
       actionCursor: s.submitting ? 'wait' : 'pointer',
       onSucceed: () => this.complete(true),
-      onFail: () => this.complete(false)
+      onFail: () => this.complete(false),
+
+      autoReturnActive: confirmed && s.autoReturnSeconds > 0,
+      autoReturnLabel: Tafseel.t('mock_pay_auto_return', { seconds: String(s.autoReturnSeconds) }),
+      cancelAutoReturnLabel: Tafseel.t('mock_pay_auto_return_cancel'),
+      onCancelAutoReturn: () => this.cancelAutoReturn()
     };
   }
 }

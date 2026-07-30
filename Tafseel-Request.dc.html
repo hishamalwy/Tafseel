@@ -395,9 +395,15 @@ class Component extends DCLogic {
     Tafseel.offChange(this._sub);
     clearTimeout(this._draftTimer);
   }
-  componentDidUpdate(prev) {
+  componentDidUpdate() {
+    // The DC runtime's componentDidUpdate only ever receives prevProps (see support.js
+    // StreamableLogic#componentDidUpdate) — step lives in state, so comparing against a
+    // "prev" argument here always saw prev.step as undefined and fired setState on every
+    // single update, which retriggered componentDidUpdate again: an unconditional render
+    // loop (React error #185). Track the last-announced step on the instance instead.
     Tafseel.translate();
-    if (prev && prev.step !== this.state.step) {
+    if (this._lastAnnouncedStep !== this.state.step) {
+      this._lastAnnouncedStep = this.state.step;
       const heading = document.getElementById('req-step-heading');
       if (heading && typeof heading.focus === 'function') heading.focus();
       this.setState({ liveMessage: t('req_step_announced', { step: String(this.state.step) }) });
