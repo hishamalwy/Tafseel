@@ -21,6 +21,19 @@ builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration).WriteTo.Console());
 
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+
+var applicationInsightsConnection =
+    builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+    ?? builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(applicationInsightsConnection))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = applicationInsightsConnection;
+        options.EnableAdaptiveSampling = true;
+    });
+}
+
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
     options.InvalidModelStateResponseFactory = context =>
     {
@@ -177,7 +190,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<TafseelDbContext>("database", tags: ["ready"]);
+    .AddDbContextCheck<TafseelDbContext>("database", tags: ["ready"])
+    .AddCheck<Tafseel.Infrastructure.Files.FileStorageHealthCheck>("file-storage", tags: ["ready"]);
 builder.Services.AddSignalR();
 if (builder.Environment.IsDevelopment())
 {
@@ -247,7 +261,8 @@ var frontendPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     "Tafseel-Landing.dc.html", "Tafseel-Browse-Teachers.dc.html", "Tafseel-Teacher-Profile.dc.html",
     "Tafseel-Request.dc.html", "Tafseel-Student-Dashboard.dc.html", "Tafseel-Teacher-Dashboard.dc.html",
     "Tafseel-Quality-Dashboard.dc.html", "Tafseel-Admin-Dashboard.dc.html", "Tafseel-Auth.dc.html",
-    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html"
+    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html",
+    "Tafseel-Mock-Checkout.dc.html"
 };
 app.MapGet("/", () => Results.Redirect("/app/Tafseel-Landing.dc.html"));
 app.MapGet("/app/Tafseel-Chat.dc.html", () => Results.Redirect("/app/Tafseel-Student-Dashboard.dc.html?section=messages", permanent: true));

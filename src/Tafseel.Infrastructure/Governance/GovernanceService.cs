@@ -15,6 +15,7 @@ using Tafseel.Domain.Finance;
 using Tafseel.Domain.Governance;
 using Tafseel.Domain.Orders;
 using Tafseel.Infrastructure.Identity;
+using Tafseel.Infrastructure.Marketplace;
 using Tafseel.Infrastructure.Messaging;
 using Tafseel.Infrastructure.Persistence;
 
@@ -63,6 +64,8 @@ internal sealed class GovernanceService(
     public async Task<PagedResult<ReviewDto>> GetTeacherReviewsAsync(
         string teacherId, int page, int pageSize, CancellationToken ct)
     {
+        if (!await TeacherPublicQueries.IsBrowsableAsync(db, teacherId, ct))
+            throw new DomainException("teacher_not_found", "Teacher was not found.");
         page = Math.Max(page, 1); pageSize = Math.Clamp(pageSize, 1, 100);
         var query = db.TeacherReviews.Where(x => x.TeacherId == teacherId && x.IsVisible);
         var total = await query.CountAsync(ct);

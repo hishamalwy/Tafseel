@@ -64,6 +64,9 @@
   --warning-soft:oklch(0.96 0.045 72);
   --error:oklch(0.565 0.175 25);
   --error-soft:oklch(0.958 0.03 25);
+  --danger:var(--error);
+  --danger-soft:var(--error-soft);
+  --success-ink:#FFFFFF;
   --info:oklch(0.58 0.12 240);
   --info-soft:oklch(0.955 0.03 240);
 
@@ -105,10 +108,13 @@ html[data-theme="dark"]{
   --warm-soft:color-mix(in oklab, #FF6B5F 20%, #1C1E26);
   --success:oklch(0.70 0.12 155);
   --success-soft:oklch(0.29 0.05 155);
+  --success-ink:#121318;
   --warning:oklch(0.78 0.13 72);
   --warning-soft:oklch(0.31 0.055 72);
   --error:oklch(0.68 0.16 25);
   --error-soft:oklch(0.30 0.06 25);
+  --danger:var(--error);
+  --danger-soft:var(--error-soft);
   --info-soft:oklch(0.29 0.05 240);
   --shadow-sm:0 1px 2px oklch(0 0 0 / .3);
   --shadow-md:0 4px 16px -4px oklch(0 0 0 / .35);
@@ -202,7 +208,14 @@ html[dir="rtl"] .tf-row-slide:hover{transform:translateX(-2px)}
 .tf-empty-enter{animation:tf-fade 240ms ease both}
 .tf-section-swap[data-fade="out"]{opacity:0;transform:translateY(6px);transition:opacity 140ms ease,transform 140ms ease}
 .tf-section-swap[data-fade="in"]{opacity:1;transform:none;transition:opacity 220ms ease,transform 220ms ease}
-.tf-toast{animation:tf-rise 220ms ease both}
+.tf-toast{
+  position:fixed;inset-inline:16px;inset-block-end:var(--tf-toast-offset,24px);z-index:90;
+  margin-inline:auto;width:fit-content;max-width:min(420px,calc(100vw - 32px));
+  padding:12px 16px;border-radius:var(--r-md);border:1px solid var(--border);
+  background:var(--surface);color:var(--text);box-shadow:var(--shadow-md);
+  font-size:14px;font-weight:600;line-height:1.4;text-align:center;
+  animation:tf-rise 220ms ease both
+}
 .tf-toast.is-leaving{animation:tf-toast-out 180ms ease forwards}
 @keyframes tf-toast-out{to{opacity:0;transform:translateY(8px)}}
 .tf-modal-enter{animation:tf-rise 200ms ease both}
@@ -574,11 +587,21 @@ html[dir="rtl"] .tf-field select{background-position:left 12px center,left 16px 
 .tf-password-toggle:hover,.tf-password-toggle:focus-visible{color:var(--primary);outline:none}
 .tf-password-toggle:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 18%,transparent)}
 .tf-password-toggle svg{display:block;width:20px;height:20px;pointer-events:none}
-.tf-button{height:42px;border:0;border-radius:var(--r-sm);padding-inline:18px;background:var(--primary);color:var(--primary-ink);font-weight:700}
-.tf-button:disabled{cursor:wait;opacity:.65}
+.tf-button{height:42px;border:0;border-radius:var(--r-sm);padding-inline:18px;background:var(--primary);color:var(--primary-ink);font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;font:inherit;transition:background var(--t),border-color var(--t),color var(--t),opacity var(--t)}
+.tf-button:hover{background:var(--primary-hover);color:var(--primary-ink)}
+.tf-button:disabled,.tf-button[aria-disabled="true"]{cursor:not-allowed;opacity:.5;pointer-events:none}
+.tf-button[aria-busy="true"]:disabled{cursor:wait}
 .tf-button-secondary{border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}
+.tf-button-secondary:hover{background:var(--surface-2);color:var(--text)}
+.tf-button-danger{background:var(--error);color:var(--primary-ink);border:0}
+.tf-button-danger:hover{background:color-mix(in oklab,var(--error) 85%,black);color:var(--primary-ink)}
+.tf-button-ghost{background:transparent;border:1px solid var(--border);color:var(--text);height:38px;padding-inline:14px;font-weight:600}
+.tf-button-ghost:hover{background:var(--surface-2)}
+.tf-button-sm{height:36px;padding-inline:14px;font-size:13.5px;font-weight:600}
+.tf-button-block{width:100%}
 .tf-button-link{justify-self:center;border:0;background:transparent;color:var(--primary);font-weight:700;padding:4px 8px}
 .tf-button-link:hover{text-decoration:underline}
+.tf-img-avatar{object-fit:cover;background:var(--surface-2)}
 .tf-dashboard-logout{width:100%;min-height:44px;margin-top:12px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--error);font-weight:700}
 .tf-dashboard-logout:hover{border-color:var(--error);background:var(--error-soft)}
 .tf-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -680,11 +703,14 @@ button:disabled,a[aria-disabled="true"]{opacity:.5;cursor:not-allowed;pointer-ev
   --touch-min:44px;
 }
 .tf-skip{
-  position:absolute;inset-inline-start:12px;top:12px;z-index:100;
+  position:absolute;inset-inline-start:12px;inset-block-start:12px;z-index:100;
   padding:10px 14px;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);
-  font-weight:700;font-size:13px;transform:translateY(-140%);transition:transform 160ms ease;
+  font-weight:700;font-size:13px;transform:translateY(-160%);transition:transform 160ms ease;
 }
-.tf-skip:focus,.tf-skip:focus-visible{transform:none;outline:2px solid var(--highlight);outline-offset:2px}
+.tf-skip:focus,.tf-skip:focus-visible{
+  transform:translateY(0);outline:none;
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 30%,transparent);
+}
 .tf-page{width:100%;max-width:100%;padding:var(--page-pad);display:flex;flex-direction:column;gap:var(--s-3)}
 .tf-container{width:100%;max-width:100%;box-sizing:border-box}
 .tf-stack{display:flex;flex-direction:column;gap:var(--s-2)}

@@ -11,6 +11,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Student dashboard — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
@@ -97,8 +98,8 @@
       <div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start" data-stack="main">
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <h2 style="font-size:16px;font-weight:700">Recent requests</h2>
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <h2 style="font-size:16px;font-weight:700">{{ workSectionTitle }}</h2>
+            <div style="display:flex;gap:4px;flex-wrap:wrap" role="tablist" aria-label="{{ workSectionTitle }}">
               <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
                 <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.active }}" style="{{ f.style }}">{{ f.label }}</button>
               </sc-for>
@@ -106,15 +107,15 @@
           </div>
           <div style="overflow-x:auto">
             <table>
-              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Your recent explanation requests</caption>
+              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ workSectionTitle }}</caption>
               <thead>
                 <tr style="background:var(--surface-2)">
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Request</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Teacher</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Amount</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colWork }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colTeacher }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colDeadline }}</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAmount }}</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,7 +135,7 @@
                           <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.timelineLabel }}</button>
                         </sc-if>
                         <sc-if value="{{ r.actionLabel }}">
-                          <button type="button" onClick="{{ r.onAction }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.actionLabel }}</button>
+                          <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
                         </sc-if>
                       </div>
                     </td>
@@ -145,14 +146,14 @@
           </div>
           <sc-if value="{{ noRequests }}" hint-placeholder-val="{{ false }}">
             <div class="tf-empty-enter" style="padding:52px 24px;text-align:center">
-              <div style="font-size:15px;font-weight:700;margin-bottom:6px">Nothing here yet</div>
-              <p style="font-size:14px;color:var(--muted);margin-bottom:16px">No requests with this status right now.</p>
-              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600">Browse teachers →</a>
+              <div style="font-size:15px;font-weight:700;margin-bottom:6px">{{ workEmptyTitle }}</div>
+              <p style="font-size:14px;color:var(--muted);margin-bottom:16px">{{ workEmptyBody }}</p>
+              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600" data-i18n="dash_browse_teachers">Browse teachers →</a>
             </div>
           </sc-if>
-          <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:13px;color:var(--muted)">Showing {{ shownCount }} of 18 requests</span>
-            <button type="button" onClick="{{ goRequests }}" style="border:0;background:none;padding:0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--primary)">View all →</button>
+          <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="font-size:13px;color:var(--muted)">{{ workShowingLabel }}</span>
+            <button type="button" onClick="{{ goRequests }}" style="border:0;background:none;padding:0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--primary)" data-i18n="sd_view_all_work">View all →</button>
           </div>
         </section>
 
@@ -212,7 +213,7 @@
           <sc-for list="{{ recommended }}" as="t" hint-placeholder-count="4">
             <article style="flex:none;width:262px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
               <div style="display:flex;gap:12px;margin-bottom:12px">
-                <span style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                <img class="tf-img-avatar" src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
                 <div style="min-width:0">
                   <div style="display:flex;align-items:center;gap:5px">
                     <span style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
@@ -227,7 +228,7 @@
                 </sc-if>
                 <span style="color:var(--muted)">from {{ t.price }}</span>
               </div>
-              <a href="Tafseel-Teacher-Profile.dc.html" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
+              <a href="{{ t.profileHref }}" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
             </article>
           </sc-for>
         </div>
@@ -238,9 +239,9 @@
 
     <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">My requests</h1>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ myWorkTitle }}</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-wrap:wrap">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-wrap:wrap" role="tablist" aria-label="{{ myWorkTitle }}">
             <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.active }}" style="{{ f.style }}">{{ f.label }}</button>
             </sc-for>
@@ -249,12 +250,12 @@
             <table>
               <thead>
                 <tr style="background:var(--surface-2)">
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Request</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Teacher</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Amount</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colWork }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colTeacher }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colDeadline }}</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAmount }}</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,15 +270,26 @@
                     <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
                     <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
                     <td style="padding:14px 20px;text-align:end">
-                      <sc-if value="{{ r.timelineLabel }}">
-                        <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);white-space:nowrap">{{ r.timelineLabel }}</button>
-                      </sc-if>
+                      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+                        <sc-if value="{{ r.timelineLabel }}">
+                          <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);white-space:nowrap;cursor:pointer">{{ r.timelineLabel }}</button>
+                        </sc-if>
+                        <sc-if value="{{ r.actionLabel }}">
+                          <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
+                        </sc-if>
+                      </div>
                     </td>
                   </tr>
                 </sc-for>
               </tbody>
             </table>
           </div>
+          <sc-if value="{{ noAllRequests }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-empty-enter" style="padding:48px 24px;text-align:center">
+              <div style="font-size:15px;font-weight:700;margin-bottom:6px">{{ workEmptyTitle }}</div>
+              <p style="font-size:14px;color:var(--muted)">{{ workEmptyBody }}</p>
+            </div>
+          </sc-if>
         </div>
       </div>
     </sc-if>
@@ -313,17 +325,19 @@
           <sc-for list="{{ savedTeachers }}" as="t" hint-placeholder-count="4">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
               <div style="display:flex;gap:12px;margin-bottom:12px">
-                <span style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                <img class="tf-img-avatar" src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
                 <div style="min-width:0">
                   <div style="font-size:14.5px;font-weight:700">{{ t.name }}</div>
                   <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:14px">
-                <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
+                <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
+                  <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
+                </sc-if>
                 <span style="color:var(--muted)">· from {{ t.price }}</span>
               </div>
-              <a href="Tafseel-Teacher-Profile.dc.html" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
+              <a href="{{ t.profileHref }}" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
             </article>
           </sc-for>
         </div>
@@ -472,11 +486,11 @@
             <span id="settings-email-note" style="font-size:12px;color:var(--muted)">Email changes require a separate verified flow.</span>
           </label>
           <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-            <span>Email notifications</span>
+            <span>{{ settingsEmailNotifications }}</span>
             <input type="checkbox" checked="{{ notifyDeliveries }}" onChange="{{ onNotifyDeliveries }}" style="width:38px;height:22px;accent-color:var(--primary)" />
           </label>
           <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-            <span>In-app notifications</span>
+            <span>{{ settingsInAppNotifications }}</span>
             <input type="checkbox" checked="{{ notifySessions }}" onChange="{{ onNotifySessions }}" style="width:38px;height:22px;accent-color:var(--primary)" />
           </label>
           <button type="button" onClick="{{ onSaveSettings }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px;margin-top:6px">{{ accountSaveProfile }}</button>
@@ -544,7 +558,7 @@
         <h2 style="font-size:16px;font-weight:700">Notifications</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <button type="button" onClick="{{ markAll }}" style="border:0;background:none;color:var(--primary);font-size:13px;font-weight:600">Mark all read</button>
-          <button type="button" onClick="{{ closeNotifs }}" aria-label="Close notifications" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">✕</button>
+          <button type="button" onClick="{{ closeNotifs }}" aria-label="{{ notifsCloseLabel }}" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">✕</button>
         </div>
       </div>
       <div style="flex:1;overflow-y:auto">
@@ -616,18 +630,6 @@
 let REQUESTS = [];
 let SAVED_TEACHERS = [];
 
-const STATUS_TONE = {
-  'Pending Teacher Review': ['var(--warning-soft)', 'var(--warning)'],
-  'Accepted': ['var(--info-soft)', 'var(--info)'],
-  'Payment Required': ['var(--error-soft)', 'var(--error)'],
-  'In Progress': ['var(--primary-soft)', 'var(--primary)'],
-  'Delivered': ['var(--accent-soft)', 'var(--accent)'],
-  'Revision Requested': ['var(--warning-soft)', 'var(--warning)'],
-  'Completed': ['var(--success-soft)', 'var(--success)'],
-  'Cancelled': ['var(--surface-2)', 'var(--muted)'],
-  'Disputed': ['var(--error-soft)', 'var(--error)']
-};
-
 const PAYMENT_STATS = [];
 const TRANSACTIONS = [];
 // PAYMENT_STATS / TRANSACTIONS kept empty — payments are derived from live orders in renderVals.
@@ -659,8 +661,12 @@ class Component extends DCLogic {
     const created = (query.get('requestCreated') || '').trim();
     if (section) this.setState({ section });
     if (created) {
-      const shortId = created.length > 8 ? created.slice(0, 8) + '…' : created;
-      this.flash(Tafseel.t('dash_request_created', { id: shortId }));
+      this.flash(Tafseel.t('dash_request_created_ok'));
+      try {
+        const url = new URL(location.href);
+        url.searchParams.delete('requestCreated');
+        history.replaceState({}, '', url.pathname + url.search + url.hash);
+      } catch (_) { /* ignore */ }
     }
     Tafseel.installDashboardDrawer(this, { sidebarId: 'student-sidebar', toggleId: 'student-drawer-toggle' });
     Tafseel.api.requireRoles(['Student']).then(session => {
@@ -698,35 +704,21 @@ class Component extends DCLogic {
       const learningPrefs = value(7);
       const languages = value(8);
       [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(fail);
-      const requestNames = ['Pending Teacher Review','Clarification Requested','Accepted','Declined','Cancelled'];
-      const orderNames = ['Payment Required','In Progress','Delivered','Revision Requested','Completed','Cancelled'];
-      REQUESTS = [];
-      if (requests && requests.items) {
-        REQUESTS = REQUESTS.concat(requests.items.map(x => ({
-          id:x.id, title:x.title, service:'Learning request', teacher:x.teacherId,
-          status:requestNames[x.status], deadline:Tafseel.date(x.preferredDeliveryAt, { dateStyle:'medium' }),
-          amount:x.budget ? 'SAR ' + x.budget : 'Flexible', group:x.status >= 3 ? 'done' : 'active',
-          kind:'request', rawStatus:x.status, version:x.version
-        })));
-      }
-      if (orders && orders.items) {
-        REQUESTS = REQUESTS.concat(orders.items.map(x => ({
-          id:x.id, title:'Order ' + x.id, service:'Personalized service', teacher:x.teacherId,
-          status:orderNames[x.status], deadline:Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }),
-          amount:x.currency + ' ' + x.studentTotal, group:x.status === 4 ? 'done' : (x.status === 2 || x.status === 3 ? 'action' : 'active'),
-          kind:'order', rawStatus:x.status, paymentStatus:x.paymentStatus, version:x.version,
-          studentTotal: Number(x.studentTotal) || 0, currency: x.currency || 'SAR'
-        })));
-      }
+      REQUESTS = Tafseel.projectStudentWorkList(
+        requests && requests.items,
+        orders && orders.items
+      );
       SAVED_TEACHERS = favorites ? favorites.map(x => ({
         name:Tafseel.userName(x), subject:x.subjects.join(' · '),
         hasRating:x.rating != null && x.ratingCount > 0,
         rating:x.rating == null ? '' : Number(x.rating).toFixed(1),
-        price:(x.currency || 'SAR') + ' ' + (x.startingPrice || 0)
+        price:Tafseel.money(x.startingPrice || 0, x.currency || 'SAR'),
+        avatar: Tafseel.avatarUrl(x.teacherId, x.hasAvatar),
+        profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(x.teacherId)
       })) : [];
       this.setState({
         liveNotifs: notifications && notifications.items ? notifications.items.map(x => ({
-          id:x.id, title:x.title, body:x.body, time:Tafseel.date(x.createdAt), read:!!x.readAt
+          id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x), time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type
         })) : [],
         read: notifications && notifications.items ? notifications.items.filter(x => x.readAt).map(x => x.id) : [],
         notifyDeliveries: preferences ? preferences.emailEnabled : true,
@@ -734,8 +726,8 @@ class Component extends DCLogic {
         prefsUnavailable: !preferences,
         liveConversations: conversations && conversations.items ? conversations.items : [],
         liveSessions: sessions && sessions.items ? sessions.items.map(x => ({
-          id:x.id, teacher:x.teacherId, topic:x.title,
-          when:Tafseel.date(x.startsAt), countdown:'Scheduled',
+          id:x.id, teacher: Tafseel.partyName(x, 'teacher'), topic:x.title,
+          when:Tafseel.date(x.startsAt), countdown:Tafseel.t('dash_session_scheduled'),
           urgent:x.status === 1, version:x.version
         })) : [],
         ordersLoaded: !!orders,
@@ -766,6 +758,32 @@ class Component extends DCLogic {
 
   flash(msg) {
     Tafseel.flash(this, msg);
+  }
+
+  reload() {
+    return Tafseel.api.requireRoles(['Student']).then(session => {
+      if (!session) return null;
+      this._session = session;
+      return Promise.all([
+        Tafseel.api.get('/learning-requests/mine?pageSize=100'),
+        Tafseel.api.get('/orders/mine?pageSize=100'),
+        Tafseel.api.get('/notifications?pageSize=100')
+      ]);
+    }).then(results => {
+      if (!results) return;
+      const [requests, orders, notifications] = results;
+      REQUESTS = Tafseel.projectStudentWorkList(
+        requests && requests.items,
+        orders && orders.items
+      );
+      this.setState({
+        liveNotifs: notifications && notifications.items ? notifications.items.map(x => ({
+          id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x), time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type
+        })) : [],
+        read: notifications && notifications.items ? notifications.items.filter(x => x.readAt).map(x => x.id) : [],
+        ordersLoaded: !!orders
+      });
+    }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
 
   async openTimeline(item, trigger) {
@@ -800,23 +818,24 @@ class Component extends DCLogic {
 
   async orderAction(item) {
     try {
-      if (item.status === 'Payment Required') {
-        const result = await Tafseel.api.post('/payments/orders/' + item.id, null, { 'Idempotency-Key':'payment-' + item.id });
-        return this.flash('Payment started: ' + result.checkoutReference);
+      if (item.kind === 'order' && item.rawStatus === 0) {
+        location.href = 'Tafseel-Payment.dc.html?orderId=' + encodeURIComponent(item.id);
+        return;
       }
-      const choice = prompt('Type complete, revision, or dispute:');
+      const choice = prompt(Tafseel.t('toast_prompt_order_choice'));
       if (choice === 'complete')
         await Tafseel.api.post('/orders/' + item.id + '/complete', null, { 'If-Match':item.version });
       else if (choice === 'revision') {
-        const reason = prompt('What needs revision?');
+        const reason = prompt(Tafseel.t('toast_prompt_revision_reason'));
         if (!reason) return;
         await Tafseel.api.post('/orders/' + item.id + '/revision', { reason }, { 'If-Match':item.version });
       } else if (choice === 'dispute') {
-        const reason = prompt('Describe the dispute:');
+        const reason = prompt(Tafseel.t('toast_prompt_dispute_reason'));
         if (!reason) return;
         await Tafseel.api.post('/disputes', { orderId:item.id, reason });
       } else return;
-      this.flash('Order updated.');
+      this.flash(Tafseel.t('toast_order_updated'));
+      this.reload();
     } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
   }
 
@@ -824,17 +843,16 @@ class Component extends DCLogic {
     const s = this.state;
     const NOTIFS = s.liveNotifs || [];
     const unread = NOTIFS.filter(n => !(s.read || []).includes(n.id)).length;
-    const requestCount = (typeof REQUESTS !== 'undefined' ? REQUESTS : []).length;
+    const requestCount = REQUESTS.filter(x => x.kind === 'request' || (x.kind === 'order' && x.group !== 'done')).length;
     const sessionCount = (s.liveSessions || []).length;
     const unreadMessages = (s.liveConversations || []).reduce((n, c) => n + (c.unreadCount || 0), 0);
     const NAV = [
-      ['overview', '◱', 'Overview', 0], ['requests', '◫', 'My Requests', requestCount], ['sessions', '◉', 'Live Sessions', sessionCount],
-      ['messages', '✉', 'Messages', unreadMessages], ['saved', '♡', 'Saved Teachers', 0], ['payments', '▤', 'Payments', 0],
-      ['files', '⇩', 'Files', 0], ['reviews', '★', 'Reviews', 0], ['notifications', '🔔', 'Notifications', unread], ['settings', '⚙', 'Settings', 0]
+      ['overview', '◱', 'sd_nav_overview', 0], ['requests', '◫', 'sd_nav_requests', requestCount], ['sessions', '◉', 'sd_nav_sessions', sessionCount],
+      ['messages', '✉', 'sd_nav_messages', unreadMessages], ['saved', '♡', 'sd_nav_saved', 0], ['payments', '▤', 'sd_nav_payments', 0],
+      ['files', '⇩', 'sd_nav_files', 0], ['reviews', '★', 'sd_nav_reviews', 0], ['notifications', '🔔', 'sd_nav_notifications', unread], ['settings', '⚙', 'sd_nav_settings', 0]
     ];
 
-    const groups = { all: null, action: 'action', active: 'active', done: 'done' };
-    const rows = REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).slice(0, 6);
+    const rows = Tafseel.filterStudentWorkList(REQUESTS, s.filter).slice(0, 6);
 
     // Activity chart requires a dedicated analytics endpoint — do not invent weekly bars.
 
@@ -875,8 +893,8 @@ class Component extends DCLogic {
         return Tafseel.t('dash_sub_empty');
       })(),
 
-      navItems: NAV.map(([key, icon, label, badge]) => ({
-        icon, label, badge: badge || 0,
+      navItems: NAV.map(([key, icon, labelKey, badge]) => ({
+        icon, label: Tafseel.t(labelKey), badge: badge || 0,
         current: s.section === key ? 'page' : 'false',
         style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
           (s.section === key
@@ -938,15 +956,19 @@ class Component extends DCLogic {
         }
       },
 
-      allRequests: REQUESTS.filter(r => !groups[s.filter] || r.group === groups[s.filter]).map(r => {
-        const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
+      allRequests: Tafseel.filterStudentWorkList(REQUESTS, s.filter).map(r => {
+        const pay = r.kind === 'order' && r.rawStatus === 0;
+        const manage = r.kind === 'order' && [1, 2, 3].includes(r.rawStatus);
         return {
           ...r,
-          actionLabel:r.kind === 'order' && r.status === 'Payment Required' ? 'Pay' : r.kind === 'order' && ['In Progress','Delivered','Revision Requested'].includes(r.status) ? 'Manage' : '',
+          actionLabel: pay ? Tafseel.t('sd_action_pay') : manage ? Tafseel.t('sd_action_manage') : '',
           onAction:() => this.orderAction(r),
           timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
           onTimeline:event => this.openTimeline(r, event.currentTarget),
-          statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
+          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus),
+          actionBtnStyle: pay
+            ? 'height:32px;padding-inline:12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:12.5px;cursor:pointer'
+            : 'height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);cursor:pointer'
         };
       }),
 
@@ -976,7 +998,7 @@ class Component extends DCLogic {
           ? 'border:0;background:var(--primary);color:var(--primary-ink);'
           : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
         onJoin: async () => {
-          if (!se.id || !se.urgent) return this.flash('This session is not ready to join.');
+          if (!se.id || !se.urgent) return this.flash(Tafseel.t('toast_session_not_ready'));
           try {
             const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
             location.href = join.url;
@@ -1011,13 +1033,18 @@ class Component extends DCLogic {
       studentFiles: STUDENT_FILES.map(f => ({ ...f, onDownload: () => this.flash('Downloading ' + f.name + '…') })),
       myReviews: MY_REVIEWS,
       conversations: s.liveConversations.map(c => {
-        const peerId = (c.participantIds || []).find(id => id !== this._session?.userId) || (c.participantIds || [])[0];
+        const peer = (c.participants || []).find(p => p.userId !== (this._session && this._session.userId))
+          || (c.participants || [])[0];
+        const peerId = peer && peer.userId
+          || (c.participantIds || []).find(id => id !== (this._session && this._session.userId))
+          || (c.participantIds || [])[0];
         return {
-          initials: Tafseel.participantInitials(peerId),
-          name: Tafseel.participantLabel(peerId),
-          preview: c.latestMessage?.body || 'No messages yet',
+          initials: Tafseel.participantInitials(peer || ''),
+          name: Tafseel.participantLabel(peer || {}),
+          preview: (c.latestMessage && c.latestMessage.body) || Tafseel.t('chat_no_conversations'),
           time: Tafseel.date(c.updatedAt),
-          unread: !!(c.unreadCount)
+          unread: !!(c.unreadCount),
+          onOpen: () => window.TafseelChat && window.TafseelChat.open(peerId)
         };
       }),
 
@@ -1039,6 +1066,9 @@ class Component extends DCLogic {
       accountPasswordHint: Tafseel.t('account_password_hint'),
       notifyDeliveries: s.notifyDeliveries, onNotifyDeliveries: e => this.setState({ notifyDeliveries: e.target.checked }),
       notifySessions: s.notifySessions, onNotifySessions: e => this.setState({ notifySessions: e.target.checked }),
+      settingsEmailNotifications: Tafseel.t('settings_email_notifications_label'),
+      settingsInAppNotifications: Tafseel.t('settings_inapp_notifications_label'),
+      notifsCloseLabel: Tafseel.t('notifs_close'),
       learnPrefsTitle: Tafseel.t('learn_prefs_title'),
       learnPrefsIntro: Tafseel.t('learn_prefs_intro'),
       learnPrefsGuarantee: Tafseel.t('learn_prefs_guarantee'),
@@ -1184,17 +1214,10 @@ class Component extends DCLogic {
       },
 
       stats: [
-        { label: Tafseel.t('dash_stat_active'), value: String(REQUESTS.filter(x => x.group !== 'done').length), icon: '◫', delta: '', tone: 'muted' },
+        { label: Tafseel.t('dash_stat_pending_requests'), value: String(REQUESTS.filter(x => x.kind === 'request').length), icon: '◫', delta: '', tone: 'muted' },
+        { label: Tafseel.t('dash_stat_open_orders'), value: String(REQUESTS.filter(x => x.kind === 'order' && x.group !== 'done').length), icon: '▤', delta: '', tone: 'muted' },
         { label: Tafseel.t('dash_stat_sessions'), value: String(s.liveSessions.length), icon: '◉', delta: '', tone: 'muted' },
-        { label: Tafseel.t('dash_stat_completed'), value: String(REQUESTS.filter(x => x.group === 'done').length), icon: '✓', delta: '', tone: 'muted' },
-        { label: Tafseel.t('dash_stat_spending'), value: (() => {
-          const orderRows = REQUESTS.filter(r => r.kind === 'order');
-          if (!s.ordersLoaded && !orderRows.length) return Tafseel.t('analytics_unavailable');
-          const total = orderRows.filter(r => r.paymentStatus === 1 || r.rawStatus >= 1)
-            .reduce((n, r) => n + (r.studentTotal || 0), 0);
-          const currency = (orderRows[0] && orderRows[0].currency) || 'SAR';
-          return currency + ' ' + total;
-        })(), icon: '▤', delta: '', tone: 'muted' }
+        { label: Tafseel.t('dash_stat_completed'), value: String(REQUESTS.filter(x => x.kind === 'order' && x.group === 'done').length), icon: '✓', delta: '', tone: 'muted' }
       ].map(st => ({
         ...st,
         deltaStyle: 'font-size:12.5px;font-weight:600;color:' + (st.tone === 'warn' ? 'var(--warning)' : st.tone === 'ok' ? 'var(--success)' : 'var(--muted)')
@@ -1207,8 +1230,10 @@ class Component extends DCLogic {
       activityChartLabel: Tafseel.t('chart_unavailable'),
 
       filters: [
-        { key: 'all', label: 'All' }, { key: 'action', label: 'Needs action' },
-        { key: 'active', label: 'In progress' }, { key: 'done', label: 'Completed' }
+        { key: 'all', label: Tafseel.t('sd_filter_all') },
+        { key: 'pending', label: Tafseel.t('sd_filter_pending_requests') },
+        { key: 'orders', label: Tafseel.t('sd_filter_orders') },
+        { key: 'done', label: Tafseel.t('sd_filter_done') }
       ].map(f => ({
         label: f.label,
         active: s.filter === f.key,
@@ -1220,19 +1245,39 @@ class Component extends DCLogic {
       })),
 
       requests: rows.map(r => {
-        const [bg, fg] = STATUS_TONE[r.status] || STATUS_TONE.Completed;
+        const pay = r.kind === 'order' && r.rawStatus === 0;
+        const manage = r.kind === 'order' && [1, 2, 3].includes(r.rawStatus);
         return {
           ...r,
-          actionLabel:r.kind === 'order' && r.status === 'Payment Required' ? 'Pay' : r.kind === 'order' && ['In Progress','Delivered','Revision Requested'].includes(r.status) ? 'Manage' : '',
+          actionLabel: pay ? Tafseel.t('sd_action_pay') : manage ? Tafseel.t('sd_action_manage') : '',
           onAction:() => this.orderAction(r),
           timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
           onTimeline:event => this.openTimeline(r, event.currentTarget),
-          statusStyle:'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:' + bg + ';color:' + fg
+          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus),
+          actionBtnStyle: pay
+            ? 'height:32px;padding-inline:12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:12.5px;cursor:pointer'
+            : 'height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);cursor:pointer'
         };
       }),
 
       noRequests: rows.length === 0,
       shownCount: rows.length,
+      noAllRequests: Tafseel.filterStudentWorkList(REQUESTS, s.filter).length === 0,
+      workTotalCount: String(Tafseel.filterStudentWorkList(REQUESTS, s.filter).length),
+      workSectionTitle: Tafseel.t('sd_work_section_title'),
+      workEmptyTitle: Tafseel.t('sd_work_empty_title'),
+      workEmptyBody: Tafseel.t('sd_work_empty_body'),
+      workShowingLabel: Tafseel.t('sd_work_showing', {
+        shown: String(rows.length),
+        total: String(Tafseel.filterStudentWorkList(REQUESTS, s.filter).length)
+      }),
+      colWork: Tafseel.t('sd_col_work'),
+      colTeacher: Tafseel.t('sd_col_teacher'),
+      colStatus: Tafseel.t('sd_col_status'),
+      colDeadline: Tafseel.t('sd_col_deadline'),
+      colAmount: Tafseel.t('sd_col_amount'),
+      colAction: Tafseel.t('sd_col_action'),
+      myWorkTitle: Tafseel.t('sd_my_work_title'),
 
       sessions: s.liveSessions.slice(0, 2).map(se => ({
         ...se,
@@ -1243,7 +1288,7 @@ class Component extends DCLogic {
           ? 'border:0;background:var(--primary);color:var(--primary-ink);'
           : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
         onJoin: async () => {
-          if (!se.id || !se.urgent) return this.flash('This session is not ready to join.');
+          if (!se.id || !se.urgent) return this.flash(Tafseel.t('toast_session_not_ready'));
           try {
             const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
             location.href = join.url;
@@ -1264,7 +1309,7 @@ class Component extends DCLogic {
         try {
           await Tafseel.api.post('/notifications/read');
           this.setState({ read: NOTIFS.map(n => n.id) });
-          this.flash('All notifications marked as read');
+          this.flash(Tafseel.t('toast_notifs_marked_read'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
       notifications: NOTIFS.map(n => {

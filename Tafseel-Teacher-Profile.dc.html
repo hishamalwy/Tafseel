@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{{ pageTitle }}</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
@@ -72,13 +73,13 @@
     <div style="flex:1;min-width:280px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">{{ teacherName }}</h1>
-        <sc-if value="{{ verified }}" hint-placeholder-val="{{ true }}">
-          <span title="Verified teacher" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ <span data-i18n="tp_verified">Verified</span></span>
-        </sc-if>
-        <sc-if value="{{ topRated }}" hint-placeholder-val="{{ false }}">
-          <span style="display:inline-flex;align-items:center;height:26px;padding-inline:10px;border-radius:999px;background:var(--warning-soft);color:var(--warning);font-size:12.5px;font-weight:700" data-i18n="tp_top_rated">Top rated</span>
+        <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}">
+          <span title="{{ trustBadgeDetail }}" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ <span data-i18n="trust_badge_qualified_on_tafseel">Qualified on Tafseel</span></span>
         </sc-if>
       </div>
+      <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5" data-i18n="trust_badge_qualified_on_tafseel_detail">Has an active approved subject qualification on Tafseel.</p>
+      </sc-if>
       <p style="font-size:15.5px;color:var(--text-2);margin-bottom:14px">{{ teacherMeta }}</p>
       <div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:18px">
         <sc-for list="{{ headStats }}" as="h" hint-placeholder-count="3">
@@ -635,7 +636,10 @@ class Component extends DCLogic {
       teacherMeta: metaParts.join(' · ') || (profile && profile.headline) || '',
       breadcrumbSubject: subjects[0] ? subjects[0] + ' ' + t('tp_teachers_suffix') : t('nav_browse'),
       verified: !!(profile && profile.verified),
-      topRated: rating != null && rating >= 4.8 && ratingCount >= 20,
+      qualifiedOnTafseel: !!(profile && Array.isArray(profile.trustBadges)
+        && profile.trustBadges.some(b => b && b.code === 'qualified_on_tafseel'))
+        || !!(profile && profile.verified),
+      trustBadgeDetail: t('trust_badge_qualified_on_tafseel_detail'),
 
       headStats: rating != null && ratingCount > 0 ? [
         { value: rating.toFixed(1) + ' ★', label: ratingCount + ' ' + t('tp_stat_reviews') }

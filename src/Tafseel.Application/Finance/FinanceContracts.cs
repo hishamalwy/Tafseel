@@ -25,7 +25,8 @@ public sealed record WithdrawalDto(
     string? ProviderReference, DateTimeOffset CreatedAt, string Version);
 public sealed record AdminWithdrawalDto(
     Guid Id, string TeacherId, decimal Amount, string Currency, WithdrawalStatus Status,
-    string? ProviderReference, DateTimeOffset CreatedAt, string Version);
+    string? ProviderReference, DateTimeOffset CreatedAt, string Version,
+    string? TeacherDisplayName = null, string? TeacherDisplayNameEnglish = null);
 public sealed record ProcessWithdrawal(
     bool Approve,
     [param: StringLength(200)] string? ProviderReference);
@@ -74,4 +75,51 @@ public sealed class PaymentOptions
     public string Provider { get; init; } = "Mock";
     public string WebhookSecret { get; init; } = "";
     public bool AutoReleaseEnabled { get; init; }
+    /// <summary>Mock-provider controls. Ignored when Provider is not Mock.</summary>
+    public MockPaymentOptions Mock { get; init; } = new();
+}
+
+/// <summary>
+/// Development / explicitly enabled Staging mock PSP controls.
+/// Production must keep SimulatorEnabled=false (and Provider != Mock).
+/// </summary>
+public sealed class MockPaymentOptions
+{
+    /// <summary>When Provider=Mock, must remain true. Production forbids Provider=Mock entirely.</summary>
+    public bool Enabled { get; init; } = true;
+    /// <summary>Exposes the browser checkout simulator and server-side signed webhook helper.</summary>
+    public bool SimulatorEnabled { get; init; }
+    /// <summary>Relative app path after a simulated outcome (open-redirect safe).</summary>
+    public string DefaultReturnPath { get; init; } = "/app/Tafseel-Student-Dashboard.dc.html";
+}
+
+public sealed record PaymentCapabilitiesDto(string Provider, bool MockSimulatorEnabled);
+
+public sealed record MockSimulatorSessionDto(
+    string ProviderReference,
+    Guid PaymentId,
+    decimal Amount,
+    string Currency,
+    PaymentStatus Status,
+    Guid? OrderId,
+    Guid? LiveSessionBookingId);
+
+public sealed record MockSimulatorCompleteRequest(
+    [param: Required, StringLength(200)] string ProviderReference,
+    bool Succeeded,
+    [param: StringLength(300)] string? ReturnPath);
+
+public sealed record MockSimulatorCompleteResponse(
+    PaymentStatus Status,
+    Guid PaymentId,
+    string ReturnUrl);
+
+public interface IMockPaymentSimulator
+{
+    bool IsActive { get; }
+    PaymentCapabilitiesDto GetCapabilities();
+    Task<MockSimulatorSessionDto> GetSessionAsync(
+        string studentId, string providerReference, CancellationToken ct);
+    Task<MockSimulatorCompleteResponse> CompleteAsync(
+        string studentId, MockSimulatorCompleteRequest input, CancellationToken ct);
 }

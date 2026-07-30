@@ -8,8 +8,21 @@
     return node.innerHTML;
   }
   function other(conversation) {
-    return (conversation.participants || []).find(function (x) { return x.userId !== session.userId; })
-      || { displayName: 'Tafseel member', initials: 'TM', role: '' };
+    var peer = (conversation.participants || []).find(function (x) { return x.userId !== session.userId; });
+    if (peer) {
+      var name = window.Tafseel
+        ? Tafseel.participantLabel(peer)
+        : (peer.displayName || '');
+      var initials = window.Tafseel
+        ? Tafseel.participantInitials(peer)
+        : (peer.initials || '··');
+      return { displayName: name, initials: initials, role: peer.role || '' };
+    }
+    return {
+      displayName: window.Tafseel ? Tafseel.t('name_unavailable') : 'Name unavailable',
+      initials: '··',
+      role: ''
+    };
   }
   function inject() {
     var style = document.createElement('style');
@@ -100,12 +113,41 @@
     document.querySelector('[data-back]').onclick = function () { document.querySelector('.tf-chat-widget').dataset.pane = 'list'; };
     document.querySelector('.tf-chat-compose').onsubmit = async function (event) {
       event.preventDefault();
-      var input = this.querySelector('input'), body = input.value.trim();
-      if (!active || !body) return;
-      await Tafseel.api.post('/conversations/' + active.id + '/messages', { body: body });
-      input.value = '';
-      await select(active.id);
+      var form = this;
+      var input = form.querySelector('input'), body = input.value.trim();
+      var btn = form.querySelector('button[type="submit"]');
+      if (!active || !body || form.dataset.sending === 'true') return;
+      form.dataset.sending = 'true';
+      if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+      try {
+        await Tafseel.api.post('/conversations/' + active.id + '/messages', { body: body });
+        input.value = '';
+        await select(active.id);
+      } catch (error) {
+        var msg = (window.Tafseel && Tafseel.api && Tafseel.api.errorMessage)
+          ? Tafseel.api.errorMessage(error)
+          : 'Message could not be sent.';
+        var status = form.querySelector('[data-chat-status]');
+        if (!status) {
+          status = document.createElement('p');
+          status.className = 'tf-status';
+          status.setAttribute('data-chat-status', '1');
+          status.setAttribute('role', 'alert');
+          status.dataset.kind = 'error';
+          form.prepend(status);
+        }
+        status.dataset.kind = 'error';
+        status.textContent = msg;
+      } finally {
+        form.dataset.sending = 'false';
+        if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+      }
     };
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      var widget = document.querySelector('.tf-chat-widget');
+      if (widget && widget.dataset.open === 'true') widget.dataset.open = 'false';
+    });
     await loadList();
     await connect();
     timer = setInterval(function () { if (!hub && document.visibilityState === 'visible') loadList().catch(function () {}); }, 12000);

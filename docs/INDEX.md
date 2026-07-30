@@ -24,7 +24,21 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Student Learning Preferences Decision](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md) | 2026-07-30 | Decision complete | Approved limited global Student learning defaults with per-request override and Description composition as request truth. |
 | [Limited Student Learning Preferences MVP](./features/STUDENT_LEARNING_PREFERENCES_MVP_REPORT.md) | 2026-07-30 | Conditionally verified | Implemented typed Student learning defaults, Student GET/PUT API, Dashboard settings and Guided Request prefill with draft precedence. |
 | [Student Learning Preferences Migration](./database/STUDENT_LEARNING_PREFERENCES_MVP_MIGRATION.md) | 2026-07-30 | Generated; not applied | Additive `StudentLearningPreferences` table with Restrict FKs and style allowlist check. |
-| [Teacher Reputation and Badges Decision](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md) | 2026-07-30 | Decision complete | Approved Trust-Only MVP: qualification-derived badge on read; performance badges blocked pending formulas. |
+| [Teacher Reputation and Badges Decision](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md) | 2026-07-30 | Decision complete | Trust-Only MVP: 20-badge inventory; only qualification-derived badge ready; performance/milestones blocked. |
+| [Limited Teacher Trust Badge MVP](./features/TEACHER_TRUST_BADGE_MVP_REPORT.md) | 2026-07-30 | Conditionally verified | Projected `qualified_on_tafseel` on marketplace DTOs; removed Top rated invent; no migration. |
+| [Teacher Showcase Production Hardening Plan](./reports/TEACHER_SHOWCASE_PRODUCTION_HARDENING_PLAN.md) | 2026-07-30 | Decision complete | Azure Blob + hybrid delivery, quarantine scan, isolated probe, retention/copyright/ops gates; Production Showcase remains disabled. |
+| [Step 7 Teacher Public Profile Hardening Investigation](./audits/STEP7_TEACHER_PUBLIC_PROFILE_HARDENING_INVESTIGATION.md) | 2026-07-30 | Investigation complete | Evidence audit of public Teacher fields; F-002/ADR-010 sound; favorites/reviews/sample-count/DTO overshare gaps remain. |
+| [Step 7 Public Profile Hardening](./fixes/STEP7_PUBLIC_PROFILE_HARDENING_REPORT.md) | 2026-07-30 | Completed | Canonical Browse eligibility for Favorites/Reviews; SampleCount parity; public DTO privacy; active catalog filters; unsupported copy cleaned. |
+| [Final Production Readiness Audit](./audits/FINAL_PRODUCTION_READINESS_AUDIT.md) | 2026-07-30 | Completed | Full-system evidence audit; Staging validation ready; Production blocked by providers/storage/ops. |
+| [Final Production Readiness Report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md) | 2026-07-30 | Completed | Executive readiness verdict and required-before Staging/Production lists. |
+| [Product UX Polish](./fixes/PRODUCT_UX_POLISH_REPORT.md) | 2026-07-30 | Completed locally | Pre-production UI/UX hardening: navigation honesty, busy states, a11y tokens, RTL/LTR/theme FOUC. |
+| [Product Bug Fix Sprint 1](./fixes/PRODUCT_BUG_FIX_SPRINT_01_REPORT.md) | 2026-07-30 | Completed locally | GUID name projections, accept lifecycle lists, teacher attachment download, status/notification i18n. |
+| [Product Bug Fix Sprint 2](./fixes/PRODUCT_BUG_FIX_SPRINT_02_REPORT.md) | 2026-07-30 | Completed locally | Seeded UAT, notification bodies, Pay/Start-work fixes, dashboard localization. |
+| [BUG-001 Display Name Regression](./fixes/BUG001_DISPLAY_NAME_REGRESSION_FIX_REPORT.md) | 2026-07-30 | Verified | Removed `مشارك {guid}` / ID-as-name fallbacks; canonical party-name rule. |
+| [Product Bug Fix Sprint 3](./fixes/PRODUCT_BUG_FIX_SPRINT_03_REPORT.md) | 2026-07-30 | Conditionally verified | Residual Admin/Quality localization, Quality rawStatus filters, Admin money/status, browser AR checks. |
+| [Production Operational Readiness](./reports/PRODUCTION_OPERATIONAL_READINESS_REPORT.md) | 2026-07-30 | Conditionally ready | Azure Blob storage, config-driven providers, fail-closed Production, ops runbooks. |
+| [Mock Payment End-to-End Simulator](./reports/MOCK_PAYMENT_SIMULATOR_REPORT.md) | 2026-07-30 | Completed locally | Dev/Staging Mock checkout simulator via canonical webhook path; Production forbidden. |
+| [Order vs Request UX Separation](./fixes/ORDER_REQUEST_UX_SEPARATION_REPORT.md) | 2026-07-30 | Conditionally verified | Student work list separates Pending Requests from Orders; no Accepted+Pay duplicates. |
 
 ## Architecture
 
@@ -34,6 +48,10 @@ This index is append-only for immutable historical reports. New reports belong i
 - [Security](./architecture/SECURITY.md)
 - [Deployment](./architecture/DEPLOYMENT.md)
 - [Deployment runbook](./architecture/DEPLOYMENT_RUNBOOK.md)
+- [Production checklist](./operations/PRODUCTION_CHECKLIST.md)
+- [Operations runbook](./operations/RUNBOOK.md)
+- [Backup and restore](./operations/BACKUP_AND_RESTORE.md)
+- [Environment configuration](./operations/ENVIRONMENT_CONFIGURATION.md)
 - [Legacy architecture overview](./architecture.md)
 - [Proposed domain model](./proposed-domain-model.md) — historical proposal
 - [Proposed API contracts](./proposed-api-contracts.md) — historical proposal
@@ -59,6 +77,9 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Final UI/UX Audit](./audits/final-ui-ux-audit.md) | 2026-07-28 | Historical | Final UI/UX review |
 | [Frontend Completeness Audit](./audits/frontend-completeness-audit.md) | 2026-07-28 | Historical | Frontend/API completeness review |
 | [F-005 Revision-to-Delivery Linkage Investigation](./audits/F005_REVISION_DELIVERY_LINKAGE_INVESTIGATION.md) | 2026-07-29 | Investigated | Revision target relationship and downstream impact audit |
+| [Step 7 Teacher Public Profile Hardening Investigation](./audits/STEP7_TEACHER_PUBLIC_PROFILE_HARDENING_INVESTIGATION.md) | 2026-07-30 | Investigation complete | Public Teacher field truthfulness, privacy, and cross-surface consistency audit |
+| [Step 7 Public Profile Hardening](./fixes/STEP7_PUBLIC_PROFILE_HARDENING_REPORT.md) | 2026-07-30 | Completed | Favorites/Reviews eligibility, SampleCount parity, public DTO privacy, catalog filter parity |
+| [Final Production Readiness Audit](./audits/FINAL_PRODUCTION_READINESS_AUDIT.md) | 2026-07-30 | Completed | Architecture through ops evidence audit with executable validation log |
 | [Tafseel Phase 0–1 Audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md) | 2026-07-29 | Completed | Current architecture and 24-capability gap audit |
 
 ## Fix Reports
@@ -81,6 +102,12 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Teacher Qualification Application](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) | 2026-07-29 | Teacher qualification API/form/task UX | Fixed locally |
 | [Teacher Qualification Browser Validation](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) | 2026-07-29 | Runtime qualification workflow validation | Validated locally |
 | [F-002 Public Teacher Metrics Integrity](./fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md) | 2026-07-29 | F-002 | Fixed locally |
+| [Step 7 Public Profile Hardening](./fixes/STEP7_PUBLIC_PROFILE_HARDENING_REPORT.md) | 2026-07-30 | Public Teacher privacy / eligibility | Completed |
+| [Product UX Polish](./fixes/PRODUCT_UX_POLISH_REPORT.md) | 2026-07-30 | Pre-production UI/UX hardening | Completed locally |
+| [Product Bug Fix Sprint 1](./fixes/PRODUCT_BUG_FIX_SPRINT_01_REPORT.md) | 2026-07-30 | GUID names / accept lists / attachments / i18n | Completed locally |
+| [Product Bug Fix Sprint 2](./fixes/PRODUCT_BUG_FIX_SPRINT_02_REPORT.md) | 2026-07-30 | Seeded UAT / notif bodies / Pay+Start / dashboards i18n | Completed locally |
+| [BUG-001 Display Name Regression](./fixes/BUG001_DISPLAY_NAME_REGRESSION_FIX_REPORT.md) | 2026-07-30 | `مشارك {guid}` / ID-as-name fallbacks removed | Verified |
+| [Product Bug Fix Sprint 3](./fixes/PRODUCT_BUG_FIX_SPRINT_03_REPORT.md) | 2026-07-30 | Residual Admin/Quality i18n + Quality rawStatus filters | Conditionally verified |
 
 ## Feature Reports
 
@@ -102,6 +129,11 @@ This index is append-only for immutable historical reports. New reports belong i
 | Limited Teacher Showcase MVP | Conditionally verified | [Teacher Showcase MVP](./features/TEACHER_SHOWCASE_MVP_REPORT.md) |
 | Limited Guided Request UX | Conditionally verified | [Guided Request UX](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) |
 | Limited Student Learning Preferences MVP | Conditionally verified | [Learning Preferences MVP](./features/STUDENT_LEARNING_PREFERENCES_MVP_REPORT.md) |
+| Limited Teacher Trust Badge MVP | Conditionally verified | [Teacher Trust Badge MVP](./features/TEACHER_TRUST_BADGE_MVP_REPORT.md) |
+| Teacher Showcase Production Hardening | Decision complete | [Showcase production hardening plan](./reports/TEACHER_SHOWCASE_PRODUCTION_HARDENING_PLAN.md) |
+| Teacher Public Profile Hardening Investigation | Investigation complete | [Step 7 investigation](./audits/STEP7_TEACHER_PUBLIC_PROFILE_HARDENING_INVESTIGATION.md) |
+| Teacher Public Profile Hardening | Completed | [Step 7 hardening report](./fixes/STEP7_PUBLIC_PROFILE_HARDENING_REPORT.md) |
+| Final Production Readiness Audit | Completed — Staging validation ready; Production not ready | [Final readiness report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md) |
 
 Additional historical reports:
 
@@ -113,6 +145,8 @@ Additional historical reports:
 - [Student Request Assistant Decision Report](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md)
 - [Student Learning Preferences Decision Report](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md)
 - [Teacher Reputation and Badges Decision Report](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md)
+- [Teacher Showcase Production Hardening Plan](./reports/TEACHER_SHOWCASE_PRODUCTION_HARDENING_PLAN.md)
+- [Final Production Readiness Report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md)
 
 ## ADR (Architecture Decisions)
 
@@ -126,4 +160,5 @@ Additional historical reports:
 | [ADR-007](./decisions/ADR-007-TEACHER-PORTFOLIO-MODERATION.md) | Proposed | MP4-only Teacher showcase with immutable versions, Quality moderation and explicit trust labels |
 | [ADR-008](./decisions/ADR-008-STUDENT-REQUEST-ASSISTANT.md) | Proposed | Guided Learning Request wizard enhancement without AI, Draft status or a second request domain |
 | [ADR-009](./decisions/ADR-009-STUDENT-LEARNING-PREFERENCES.md) | Proposed | Limited global Student learning defaults with per-request override; no profiling or matching |
-| [ADR-010](./decisions/ADR-010-TEACHER-REPUTATION-AND-BADGES.md) | Proposed | Trust-Only Teacher reputation: qualification-derived badge; performance badges deferred |
+| [ADR-010](./decisions/ADR-010-TEACHER-REPUTATION-AND-BADGES.md) | Proposed | Trust-Only: 20-badge inventory; only `qualified_on_tafseel` ready from evidence |
+| [ADR-011](./decisions/ADR-011-TEACHER-SHOWCASE-PRODUCTION-MEDIA.md) | Proposed | Azure Blob + hybrid SAS/proxy, quarantine scan, isolated probe, retention and Production gates for Showcase media |

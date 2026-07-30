@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Tafseel — Education, Tailored to You.</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
@@ -17,7 +18,7 @@
 <script src="js/api.js"></script>
 </helmet>
 
-<a href="#main" style="position:absolute;inset-inline-start:-9999px;top:8px;background:var(--primary);color:var(--primary-ink);padding:8px 14px;border-radius:var(--r-sm);z-index:99" style-focus="inset-inline-start:8px">Skip to content</a>
+<a href="#main" class="tf-skip">Skip to content</a>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
   <div data-public-header class="tf-shell" style="height:68px;display:flex;align-items:center;gap:32px">
@@ -274,10 +275,17 @@
       <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;white-space:nowrap">{{ browseAllLabel }}</a>
     </div>
     <div class="tf-landing-card-grid tf-landing-card-grid-featured" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:16px" data-reveal-group>
-      <sc-for list="{{ teachers }}" as="t" hint-placeholder-count="4">
+      <sc-if value="{{ teachersLoading }}" hint-placeholder-val="{{ true }}">
+        <p class="tf-muted" role="status">{{ teachersLoadingLabel }}</p>
+      </sc-if>
+      <sc-if value="{{ teachersEmpty }}" hint-placeholder-val="{{ false }}">
+        <p class="tf-empty" role="status">{{ teachersEmptyLabel }}</p>
+      </sc-if>
+      <sc-if value="{{ teachersReady }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ teachers }}" as="t" hint-placeholder-count="0">
         <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;transition:all var(--t)" style-hover="border-color:var(--border-strong);box-shadow:var(--shadow-md)">
           <div style="display:flex;gap:12px;margin-bottom:14px">
-            <div style="width:56px;height:56px;flex:none;border-radius:14px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px);display:grid;place-items:center;font-family:var(--font-mono);font-size:8px;color:var(--muted)">photo</div>
+            <img class="tf-img-avatar" data-tf-avatar src="{{ t.avatar }}" alt="" width="56" height="56" style="width:56px;height:56px;flex:none;border-radius:14px;border:1px solid var(--border)" />
             <div style="min-width:0;flex:1">
               <div style="display:flex;align-items:center;gap:6px">
                 <span style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
@@ -307,17 +315,18 @@
               <div style="font-size:11.5px;color:var(--muted)">from</div>
               <div style="font-weight:700;font-size:15px">{{ t.price }}</div>
             </div>
-            <a href="Tafseel-Browse-Teachers.dc.html" onClick="{{ t.onOpen }}" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text);transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
+            <a href="{{ t.profileHref }}" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text);transition:all var(--t)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
           </div>
         </article>
       </sc-for>
+      </sc-if>
     </div>
   </section>
 
   <section id="pricing" class="tf-shell" style="padding-block:16px 80px">
     <h2 data-i18n="svc_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:8px">Six ways to get help</h2>
     <p data-i18n="svc_p" style="color:var(--muted);font-size:16px;margin-bottom:28px">Pick the format that fits the week you’re having.</p>
-    <div class="tf-landing-services-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px" data-reveal-group>
+    <div class="tf-landing-services-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px" data-reveal-group>
       <sc-for list="{{ services }}" as="sv" hint-placeholder-count="4">
         <article class="tf-service-card">
           <h3 class="tf-service-card-title">{{ sv.name }}</h3>
@@ -328,7 +337,7 @@
   </section>
 
   <section id="why" style="background:var(--bg-alt);border-block:1px solid var(--border)">
-    <div class="tf-shell tf-landing-why-grid" style="padding-block:80px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:56px">
+    <div class="tf-shell tf-landing-why-grid" style="padding-block:80px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:56px">
       <div data-reveal="left">
         <h2 data-i18n="why_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:12px">Why students trust Tafseel</h2>
         <p data-i18n="why_p" style="color:var(--muted);font-size:16px;line-height:1.65;margin-bottom:24px">We review every teacher before they can accept a single request, and we hold every payment until you say the work is done.</p>
@@ -356,12 +365,15 @@
   </section>
 
   <section style="padding:80px 0">
-    <h2 data-i18n="test_h" class="tf-shell" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin-bottom:28px">What students say</h2>
+    <div class="tf-shell" style="margin-bottom:28px">
+      <p style="font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">{{ storiesEyebrow }}</p>
+      <h2 data-i18n="test_h" style="font-size:clamp(26px,3.2vw,34px);letter-spacing:-.03em;font-weight:800;margin:0">{{ storiesTitle }}</h2>
+      <p style="color:var(--muted);font-size:14.5px;margin-top:8px;max-width:52ch">{{ storiesNote }}</p>
+    </div>
     <div class="tf-marquee-mask">
       <div class="tf-marquee-track" dir="ltr" style="gap:16px">
-        <sc-for list="{{ testimonialLoop }}" as="tm" hint-placeholder-count="16">
-          <figure dir="auto" class="tf-testimonial-card" style="margin:0;width:320px;flex:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:16px">
-            <div style="color:var(--warning);font-size:14px;letter-spacing:2px">★★★★★</div>
+        <sc-for list="{{ testimonialLoop }}" as="tm" hint-placeholder-count="0">
+          <figure dir="auto" class="tf-testimonial-card" style="margin:0;width:min(320px,85vw);flex:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:16px">
             <blockquote style="margin:0;font-size:15.5px;line-height:1.65;color:var(--text-2)">{{ tm.quote }}</blockquote>
             <figcaption style="margin-top:auto;display:flex;align-items:center;gap:12px;border-top:1px solid var(--border);padding-top:16px">
               <span style="width:36px;height:36px;flex:none;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--text-2)">{{ tm.initials }}</span>
@@ -377,7 +389,7 @@
   </section>
 
   <section class="tf-shell" style="padding-block:0 88px">
-    <div class="tf-landing-cta-split" style="position:relative;overflow:hidden;border-radius:var(--r-xl);border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-md);padding:clamp(28px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px" data-reveal>
+    <div class="tf-landing-cta-split" style="position:relative;overflow:hidden;border-radius:var(--r-xl);border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow-md);padding:clamp(28px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:48px" data-reveal>
       <div style="position:absolute;z-index:0;width:340px;height:340px;border-radius:50%;filter:blur(10px);background:radial-gradient(closest-side,color-mix(in oklab,var(--primary) 12%,transparent),transparent);top:-160px;inset-inline-end:-100px;pointer-events:none"></div>
       <div class="tf-landing-cta-split-primary" style="position:relative;z-index:1;border-inline-end:1px solid var(--border);padding-inline-end:48px">
         <h3 data-i18n="cta1_h" style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px">Get your first explanation this week</h3>
@@ -526,10 +538,8 @@ class Component extends DCLogic {
         topics: teacher.subjects.slice(0, 2),
         status: teacher.verified ? 'Verified teacher' : 'Teacher',
         price: teacher.startingPrice == null ? 'Ask for price' : (teacher.currency || 'SAR') + ' ' + teacher.startingPrice,
-        onOpen: event => {
-          event.preventDefault();
-          location.href = 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId);
-        }
+        avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar),
+        profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId)
       })) : null,
       liveServices: services ? (services || []).slice(0, 6).map(sv => ({
         name: sv.nameEn || sv.name || '',
@@ -801,6 +811,14 @@ class Component extends DCLogic {
         { n: '04', title: ar ? 'استلم وافهم' : 'Learn with Confidence', body: ar ? 'استلم فيديو شرح مخصص أو احجز جلسة مباشرة، ولا يُحوّل المبلغ للمعلم إلا بعد رضاك عن الخدمة.' : 'Receive a personalized video explanation or book a live session. Your payment is only released to the tutor once you\'re satisfied.' }
       ],
       teachers: this.state.liveTeachers || [],
+      teachersLoading: this.state.liveTeachers == null,
+      teachersEmpty: Array.isArray(this.state.liveTeachers) && this.state.liveTeachers.length === 0,
+      teachersReady: Array.isArray(this.state.liveTeachers) && this.state.liveTeachers.length > 0,
+      teachersLoadingLabel: ar ? 'جاري تحميل المعلمين…' : 'Loading teachers…',
+      teachersEmptyLabel: ar ? 'لا يوجد معلمون متاحون للعرض الآن.' : 'No teachers are available to feature right now.',
+      storiesEyebrow: ar ? 'سيناريوهات توضيحية' : 'Illustrative scenarios',
+      storiesTitle: ar ? 'كيف تبدو رحلة التعلم' : 'How learning journeys can look',
+      storiesNote: ar ? 'أمثلة تسويقية توضيحية — ليست تقييمات حقيقية من طلاب.' : 'Marketing illustrations — not verified student reviews.',
       services: this.state.liveServices && this.state.liveServices.length
         ? this.state.liveServices.map(localizeService)
         : fallbackServices.map(localizeService),
@@ -836,7 +854,7 @@ class Component extends DCLogic {
         ]},
         { title: ar ? 'للطلاب' : 'Students', links: [
           { label: ar ? 'لوحة الطالب' : 'Student dashboard', href: 'Tafseel-Student-Dashboard.dc.html' },
-          { label: ar ? 'اطلب شرحًا' : 'Request an explanation', href: 'Tafseel-Request.dc.html' },
+          { label: ar ? 'اطلب شرحًا' : 'Request an explanation', href: 'Tafseel-Browse-Teachers.dc.html' },
           { label: ar ? 'احجز جلسة مباشرة' : 'Book a live session', href: 'Tafseel-Browse-Teachers.dc.html' },
           { label: ar ? 'حماية الطالب' : 'Student protection', href: '#why' }
         ]},

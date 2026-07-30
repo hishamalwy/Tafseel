@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Checkout — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
@@ -40,8 +41,8 @@
 
   <sc-if value="{{ isUnavailable }}" hint-placeholder-val="{{ false }}">
     <div style="max-width:440px;margin:60px auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px">
-      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px">Checkout unavailable</h1>
-      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px">This page needs a valid order or live session. Open an item from your Student Dashboard to continue.</p>
+      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px" data-i18n="pay_unavailable_title">Checkout unavailable</h1>
+      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px" data-i18n="pay_unavailable_body">This page needs a valid order or live session. Open an item from your Student Dashboard to continue.</p>
       <a href="Tafseel-Student-Dashboard.dc.html" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">Go to Student Dashboard</a>
     </div>
   </sc-if>
@@ -62,22 +63,22 @@
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:10px">Secure checkout</h2>
-          <p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:0">We start a secure payment with the provider. Confirmation arrives via webhook — Tafseel never collects card details on this page.</p>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:10px" data-i18n="pay_secure_checkout">Secure checkout</h2>
+          <p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:14px" data-i18n="pay_secure_blurb">We start a secure payment with the provider. Confirmation arrives via webhook — Tafseel never collects card details on this page.</p>
+          <sc-if value="{{ showMockMethod }}" hint-placeholder-val="{{ false }}">
+            <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);cursor:default">
+              <input type="radio" checked disabled style="margin-top:3px" />
+              <span>
+                <strong style="display:block;font-size:14px" data-i18n="pay_method_mock">Mock payment (simulator)</strong>
+                <span style="display:block;font-size:12.5px;color:var(--muted);margin-top:2px" data-i18n="pay_method_mock_hint">Development / Staging only. Opens the provider simulator after you pay.</span>
+              </span>
+            </label>
+          </sc-if>
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
           <h2 style="font-size:15px;font-weight:700;margin-bottom:8px" data-i18n="pay_discount_code">Discount code</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input value="{{ couponCode }}" onChange="{{ onCouponCode }}" placeholder="WELCOME20" data-i18n-placeholder="pay_coupon_ph" aria-label="Discount code" style="flex:1;min-width:160px;height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;font-family:var(--font-mono)" />
-            <button type="button" onClick="{{ onApplyCoupon }}" style="height:40px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px" data-i18n="pay_apply_coupon">Apply</button>
-            <sc-if value="{{ hasCoupon }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ onRemoveCoupon }}" style="height:40px;padding:0 12px;border:0;background:transparent;color:var(--muted);font-weight:600;font-size:13px" data-i18n="pay_remove_coupon">Remove coupon</button>
-            </sc-if>
-          </div>
-          <sc-if value="{{ hasCoupon }}" hint-placeholder-val="{{ false }}">
-            <p class="tf-price-flash" style="font-size:13px;color:var(--success);margin:10px 0 0" data-i18n="pay_coupon_applied">Coupon applied</p>
-          </sc-if>
+          <p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin:0" data-i18n="pay_coupon_unavailable">Coupon codes are not available yet. The payment API does not expose coupon validation or application.</p>
         </section>
       </div>
 
@@ -134,7 +135,7 @@ class Component extends DCLogic {
     loading: true, unavailable: false, submitting: false,
     kind: null, itemId: null, item: null,
     checkoutReference: '', toast: '', toastLeaving: false,
-    idempotencyKey: '', couponCode: '', appliedCoupon: ''
+    idempotencyKey: '', mockSimulatorEnabled: false
   };
 
   componentDidMount() {
@@ -152,6 +153,12 @@ class Component extends DCLogic {
     try {
       const session = await Tafseel.api.requireRoles(['Student']);
       if (!session) return;
+
+      let mockMethod = false;
+      try {
+        const caps = await Tafseel.api.get('/payments/mock/capabilities');
+        mockMethod = !!(caps && (caps.mockSimulatorEnabled || String(caps.provider || '').toLowerCase() === 'mock'));
+      } catch (_) { mockMethod = false; }
 
       const query = new URLSearchParams(location.search);
       const orderId = (query.get('orderId') || '').trim();
@@ -174,7 +181,8 @@ class Component extends DCLogic {
         this.setState({
           loading: false, unavailable: false,
           kind: 'order', itemId: item.id, item,
-          idempotencyKey: 'payment-order-' + item.id
+          idempotencyKey: 'payment-order-' + item.id,
+          mockSimulatorEnabled: mockMethod
         });
         return;
       }
@@ -188,7 +196,8 @@ class Component extends DCLogic {
       this.setState({
         loading: false, unavailable: false,
         kind: 'liveSession', itemId: item.id, item,
-        idempotencyKey: 'payment-session-' + item.id
+        idempotencyKey: 'payment-session-' + item.id,
+        mockSimulatorEnabled: mockMethod
       });
     } catch (error) {
       this.setState({ loading: false, unavailable: true });
@@ -204,13 +213,18 @@ class Component extends DCLogic {
       const path = s.kind === 'order'
         ? '/payments/orders/' + s.itemId
         : '/payments/live-sessions/' + s.itemId;
-      const result = await Tafseel.api.post(path, s.appliedCoupon ? { couponCode: s.appliedCoupon } : {}, {
+      const result = await Tafseel.api.post(path, {}, {
         'Idempotency-Key': s.idempotencyKey || ('payment-' + s.itemId)
       });
       this.setState({
         submitting: false,
         checkoutReference: result.checkoutReference || (result.payment && result.payment.providerReference) || ''
       });
+      const checkout = (result.checkoutReference || '').trim();
+      if (/^(\/|https?:)/i.test(checkout)) {
+        location.href = checkout.startsWith('/') ? checkout : checkout;
+        return;
+      }
     } catch (error) {
       this.setState({ submitting: false });
       this.flash(Tafseel.api.errorMessage(error));
@@ -222,8 +236,12 @@ class Component extends DCLogic {
     if (kind === 'order') {
       const currency = item.currency || 'SAR';
       return {
-        title: Tafseel.t('pay_order_title'),
-        subtitle: Tafseel.t('pay_order_id_label') + ' ' + item.id,
+        title: item.requestTitle
+          ? Tafseel.orderTitle(item)
+          : Tafseel.t('pay_order_title'),
+        subtitle: item.requestTitle
+          ? Tafseel.t('pay_order_title')
+          : '',
         lines: [
           { label: Tafseel.t('pay_service_price'), value: money(currency, item.price) },
           { label: Tafseel.t('pay_platform_fee'), value: money(currency, item.studentFeeAmount) }
@@ -267,6 +285,7 @@ class Component extends DCLogic {
       isUnavailable: !s.loading && s.unavailable && !initiated,
       showCheckout: !s.loading && !s.unavailable && !initiated && !!s.item,
       showSuccess: initiated,
+      showMockMethod: !!s.mockSimulatorEnabled,
 
       itemTitle: summary.title,
       itemSubtitle: summary.subtitle,
@@ -278,18 +297,7 @@ class Component extends DCLogic {
       payLabel: s.submitting ? Tafseel.t('pay_submitting') : Tafseel.t('pay_securely'),
       payOpacity: s.submitting ? '0.65' : '1',
       payCursor: s.submitting ? 'wait' : 'pointer',
-      onPay: () => this.pay(),
-
-      couponCode: s.couponCode || '',
-      onCouponCode: e => this.setState({ couponCode: e.target.value }),
-      hasCoupon: !!s.appliedCoupon,
-      onApplyCoupon: () => {
-        const code = (s.couponCode || '').trim();
-        if (!code) return this.flash(Tafseel.t('pay_coupon_invalid'));
-        this.setState({ appliedCoupon: code });
-        this.flash(Tafseel.t('pay_coupon_applied'));
-      },
-      onRemoveCoupon: () => this.setState({ appliedCoupon: '', couponCode: '' })
+      onPay: () => this.pay()
     };
   }
 }

@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
@@ -42,15 +43,15 @@
   <div style="display:flex;flex-direction:column;min-width:0">
     <header data-admin-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
       <button id="admin-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="admin-sidebar" style="{{ drawerToggleStyle }}">☰</button>
-      <div style="font-size:15px;font-weight:700" data-hide-sm="1">Platform overview</div>
+      <div style="font-size:15px;font-weight:700" data-hide-sm="1">{{ overviewTitle }}</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
           <span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:10.5px;font-weight:800">AD</span>
-          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">Admin</span>
+          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ adminBadge }}</span>
         </div>
-        <button type="button" onClick="{{ onLogout }}" aria-label="Log out" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--error)" style-hover="background:var(--error-soft);border-color:var(--error);">{{ logoutLabel }}</button>
+        <button type="button" onClick="{{ onLogout }}" aria-label="{{ logoutLabel }}" style="height:36px;padding:0 12px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--error)" style-hover="background:var(--error-soft);border-color:var(--error);">{{ logoutLabel }}</button>
       </div>
     </header>
 
@@ -58,8 +59,8 @@
     <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;flex-direction:column;gap:22px">
       <div>
-        <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">Platform overview</h1>
-        <p style="color:var(--muted);font-size:14.5px">Tafseel at a glance — 26 Jul 2026</p>
+        <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ overviewTitle }}</h1>
+        <p style="color:var(--muted);font-size:14.5px">{{ overviewSubtitle }}</p>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
@@ -78,7 +79,7 @@
       <div data-stack="charts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:stretch">
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;min-height:200px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px">
-            <h2 style="font-size:15px;font-weight:700">Revenue growth</h2>
+            <h2 style="font-size:15px;font-weight:700">{{ chartRevenueLabel }}</h2>
             <span style="font-size:12.5px;color:var(--muted);font-weight:600">{{ revenueTrendLabel }}</span>
           </div>
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:110px">
@@ -95,14 +96,14 @@
           </div>
         </section>
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;min-height:200px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Pending withdrawals</h2>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">{{ withdrawalsTitle }}</h2>
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:110px">
             <sc-if value="{{ hasWithdrawals }}" hint-placeholder-val="{{ false }}">
               <sc-for list="{{ withdrawals }}" as="w" hint-placeholder-count="0">
                 <div style="display:flex;align-items:center;gap:12px;padding-block:10px;border-top:1px solid var(--border)">
                   <div style="flex:1"><strong>{{ w.amount }}</strong><div style="font-size:12px;color:var(--muted)">{{ w.teacher }}</div></div>
-                  <button type="button" onClick="{{ w.reject }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">Reject</button>
-                  <button type="button" onClick="{{ w.approve }}" style="height:32px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm)">Approve</button>
+                  <button type="button" onClick="{{ w.reject }}" disabled="{{ w.busy }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">{{ rejectLabel }}</button>
+                  <button type="button" onClick="{{ w.approve }}" disabled="{{ w.busy }}" style="height:32px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm)">{{ approveLabel }}</button>
                 </div>
               </sc-for>
             </sc-if>
@@ -113,7 +114,7 @@
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;min-height:200px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Orders by month</h2>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">{{ chartOrdersLabel }}</h2>
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:110px">
             <sc-if value="{{ chartsEmpty }}" hint-placeholder-val="{{ true }}">
               <p class="tf-empty" role="status" style="padding:0">{{ chartUnavailableLabel }}</p>
@@ -129,7 +130,7 @@
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;min-height:200px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Popular subjects</h2>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ chartSubjectsLabel }}</h2>
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:110px">
             <sc-if value="{{ subjectsEmpty }}" hint-placeholder-val="{{ true }}">
               <p class="tf-empty" role="status" style="padding:0">{{ analyticsUnavailableLabel }}</p>
@@ -152,7 +153,7 @@
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;min-height:200px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">Teacher approval rate</h2>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">{{ chartApprovalLabel }}</h2>
           <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px">{{ approvalChartHint }}</p>
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:110px">
             <sc-if value="{{ approvalEmpty }}" hint-placeholder-val="{{ true }}">
@@ -461,8 +462,8 @@
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px;border-top:1px solid var(--border);font-size:13.5px">
                 <span style="color:var(--text-2)">{{ w.teacher }} · {{ w.amount }}</span>
                 <span style="display:flex;gap:8px">
-                  <button type="button" onClick="{{ w.reject }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:0 10px">Reject</button>
-                  <button type="button" onClick="{{ w.approve }}" style="height:32px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);padding:0 10px">Approve</button>
+                  <button type="button" onClick="{{ w.reject }}" disabled="{{ w.busy }}" style="height:32px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:0 10px">{{ rejectLabel }}</button>
+                  <button type="button" onClick="{{ w.approve }}" disabled="{{ w.busy }}" style="height:32px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);padding:0 10px">{{ approveLabel }}</button>
                 </span>
               </div>
             </sc-for>
@@ -492,7 +493,7 @@
             </sc-if>
           </section>
           <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Orders by month</h2>
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">{{ chartOrdersLabel }}</h2>
             <sc-if value="{{ chartsEmpty }}" hint-placeholder-val="{{ true }}">
               <p class="tf-empty" role="status">{{ chartUnavailableLabel }}</p>
             </sc-if>
@@ -793,7 +794,7 @@ class Component extends DCLogic {
     catalogSubjectFilter: '',
     catalogCode: '', catalogRequiresScheduling: false, catalogDisplayOrder: 0, catalogIsActive: true, catalogDiscountType: '0', catalogDiscountValue: 10,
     resourceModal: null, resourceName: '', resourceUrl: '',
-    editModal: null, editName: '', editNameAr: '', editDetail: '', editDetailAr: '', editDisplayOrder: 0, editIsActive: true, usersTotal: 0, liveWithdrawals: [],
+    editModal: null, editName: '', editNameAr: '', editDetail: '', editDetailAr: '', editDisplayOrder: 0, editIsActive: true, usersTotal: 0, liveWithdrawals: [], withdrawalBusyId: '',
     livePopularSubjects: null,
     usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
@@ -903,8 +904,8 @@ class Component extends DCLogic {
       if (couponsPayload) {
         CATALOG_DATA.coupons = (couponsPayload || []).map(x => ({
           id: x.id, name: x.name, active: x.isActive, version: x.version,
-          meta: x.code + ' · ' + (x.discountType === 1 ? ('SAR ' + x.discountValue) : (x.discountValue + '%'))
-            + (x.expiresAt ? (' · exp ' + Tafseel.date(x.expiresAt, { dateStyle: 'medium' })) : ''),
+          meta: x.code + ' · ' + (x.discountType === 1 ? Tafseel.money(x.discountValue, 'SAR') : (x.discountValue + '%'))
+            + (x.expiresAt ? (' · ' + Tafseel.t('admin_coupon_exp', { date: Tafseel.date(x.expiresAt, { dateStyle: 'medium' }) })) : ''),
           code: x.code, discountType: x.discountType, discountValue: x.discountValue
         }));
       } else if (failed(7)) {
@@ -915,7 +916,7 @@ class Component extends DCLogic {
       const listErrors = {};
       if (disputesPayload) {
         LIST_DATA.disputes = (disputesPayload.items || []).map(x => ({
-          title:'Order ' + x.orderId, meta:x.reason, status:x.status === 2 ? 'Resolved' : 'Open',
+          title: Tafseel.t('td_order'), meta:x.reason, statusKey:x.status === 2 ? 'resolved' : 'open', status:Tafseel.t(x.status === 2 ? 'admin_status_resolved' : 'admin_status_open'),
           tone:x.status === 2 ? 'success' : 'error'
         }));
       } else if (failed(5)) {
@@ -1037,29 +1038,37 @@ class Component extends DCLogic {
   }
 
   async processWithdrawal(item, approve) {
-    const providerReference = approve ? prompt('Provider payout reference:') : null;
+    if (this.state.withdrawalBusyId) return;
+    const providerReference = approve ? prompt(Tafseel.t('admin_prompt_payout_reference')) : null;
     if (approve && !providerReference) return;
+    this.setState({ withdrawalBusyId: item.id });
     try {
       await Tafseel.api.post('/withdrawals/' + item.id + '/process', {
         approve, providerReference
       }, { 'If-Match':item.version, 'Idempotency-Key':'withdrawal-' + item.id + '-' + approve });
-      this.setState({ liveWithdrawals:(this.state.liveWithdrawals || []).filter(x => x.id !== item.id) });
-      this.flash(approve ? 'Withdrawal approved' : 'Withdrawal rejected');
-    } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      this.setState({
+        liveWithdrawals:(this.state.liveWithdrawals || []).filter(x => x.id !== item.id),
+        withdrawalBusyId: ''
+      });
+      this.flash(approve ? Tafseel.t('toast_withdrawal_approved') : Tafseel.t('toast_withdrawal_rejected'));
+    } catch (error) {
+      this.setState({ withdrawalBusyId: '' });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
   }
 
   renderVals() {
     const s = this.state;
     // Application review queue belongs on the Quality Reviewer dashboard, not Admin nav.
     const NAV = [
-      ['overview','◱','Overview'], ['users','◈','Users'], ['students','◍','Students'], ['teachers','✎','Teachers'],
-      ['reviewers','◑','Quality Reviewers'], ['subjects','∑','Subjects'],
-      ['topics','◫','Topics'], ['assignments','▣',Tafseel.t('admin_qualification_assignments')], ['services','▤','Services'], ['requests','⇩','Requests'], ['sessions','◉','Live Sessions'],
-      ['payments','$','Payments'], ['withdrawals','⇧','Withdrawals'], ['reviews','★','Reviews'], ['disputes','⚠','Disputes'],
-      ['coupons','%','Coupons'], ['reports','▥','Reports'], ['settings','⚙','Platform Settings']
+      ['overview','◱',Tafseel.t('admin_nav_overview')], ['users','◈',Tafseel.t('admin_nav_users')], ['students','◍',Tafseel.t('admin_nav_students')], ['teachers','✎',Tafseel.t('admin_nav_teachers')],
+      ['reviewers','◑',Tafseel.t('admin_nav_reviewers')], ['subjects','∑',Tafseel.t('admin_nav_subjects')],
+      ['topics','◫',Tafseel.t('admin_nav_topics')], ['assignments','▣',Tafseel.t('admin_qualification_assignments')], ['services','▤',Tafseel.t('admin_nav_services')], ['requests','⇩',Tafseel.t('admin_list_requests')], ['sessions','◉',Tafseel.t('admin_list_sessions')],
+      ['payments','$',Tafseel.t('admin_nav_payments')], ['withdrawals','⇧',Tafseel.t('admin_nav_withdrawals')], ['reviews','★',Tafseel.t('admin_list_reviews')], ['disputes','⚠',Tafseel.t('admin_list_disputes')],
+      ['coupons','%',Tafseel.t('admin_nav_coupons')], ['reports','▥',Tafseel.t('admin_nav_reports')], ['settings','⚙',Tafseel.t('admin_nav_settings')]
     ];
     // Real counts only — no static demo badges. Zero/blank until the backing data has actually loaded.
-    const openDisputeCount = LIST_DATA.disputes.filter(d => d.status === 'Open').length;
+    const openDisputeCount = LIST_DATA.disputes.filter(d => d.statusKey === 'open').length;
     const NAV_BADGES = {
       withdrawals: (s.liveWithdrawals || []).length,
       disputes: openDisputeCount
@@ -1216,32 +1225,44 @@ class Component extends DCLogic {
       isReportsPage: s.page === 'reports',
       isSettingsPage: s.page === 'settings',
 
-      usersPageTitle: { all:'Users', Student:'Students', Teacher:'Teachers', Reviewer:'Quality reviewers' }[s.pageRole] || 'Users',
+      usersPageTitle: {
+        all: Tafseel.t('admin_nav_users'),
+        Student: Tafseel.t('admin_nav_students'),
+        Teacher: Tafseel.t('admin_nav_teachers'),
+        Reviewer: Tafseel.t('admin_nav_reviewers')
+      }[s.pageRole] || Tafseel.t('admin_nav_users'),
       pageUsers: pageRolePaging.slice
         .map(u => {
           const [bg, fg] = statusTone[u.status] || statusTone.Active;
           return {
-            ...u, initials: u.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
+            ...u, initials: String(u.name || '—').split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '—',
             statusStyle: 'display:inline-flex;height:22px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + bg + ';color:' + fg,
-            toggleLabel: u.status === 'Suspended' ? 'Activate' : 'Suspend',
+            status: Tafseel.t(u.status === 'Suspended' ? 'admin_status_suspended' : 'admin_status_active'),
+            toggleLabel: Tafseel.t(u.status === 'Suspended' ? 'admin_activate' : 'admin_suspend'),
             onToggle: async () => {
               const next = u.status === 'Suspended' ? 'Active' : 'Suspended';
               try {
                 await Tafseel.api.put('/admin/users/' + encodeURIComponent(u.id) + '/suspension', { suspended:next === 'Suspended' });
                 this.setState({ userOverrides: { ...s.userOverrides, [u.id]: next } });
-                this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+                this.flash(Tafseel.t(next === 'Suspended' ? 'admin_toast_user_suspended' : 'admin_toast_user_activated', { name: u.name || Tafseel.t('name_unavailable') }));
               } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
             }
           };
         }),
 
-      catalogTitle: { subjects:'Subjects', topics:'Topics', assignments:Tafseel.t('admin_qualification_assignments'), services:'Services', coupons:'Coupons' }[s.catalogKind],
+      catalogTitle: {
+        subjects: Tafseel.t('admin_nav_subjects'),
+        topics: Tafseel.t('admin_nav_topics'),
+        assignments: Tafseel.t('admin_qualification_assignments'),
+        services: Tafseel.t('admin_nav_services'),
+        coupons: Tafseel.t('admin_nav_coupons')
+      }[s.catalogKind],
       catalogAddLabel: {
         subjects: Tafseel.t('admin_add_subject'), topics: Tafseel.t('admin_add_topic'), assignments:Tafseel.t('admin_add_assignment'),
         services: Tafseel.t('admin_add_service'), coupons: Tafseel.t('admin_add_coupon')
       }[s.catalogKind],
       catalogAddDisabled: false,
-      catalogNote: '',
+      catalogNote: s.catalogKind === 'services' ? Tafseel.t('admin_services_note') : (s.catalogKind === 'coupons' ? Tafseel.t('admin_coupons_note') : ''),
       onAddCatalog: () => {
         this.setState({
           catalogModal: true, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
@@ -1312,7 +1333,7 @@ class Component extends DCLogic {
                   await Tafseel.api.patch('/admin/catalog/' + kind + '/' + c.id + '/active', { isActive:!active });
                 }
                 this.setState({ catalogOverrides:{ ...s.catalogOverrides, [c.id]:!active } });
-                this.flash(c.name + (active ? ' deactivated' : ' activated'));
+                this.flash(Tafseel.t(active ? 'admin_toast_item_deactivated' : 'admin_toast_item_activated', { name: c.name || Tafseel.t('name_unavailable') }));
               } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
             }
           };
@@ -1401,11 +1422,11 @@ class Component extends DCLogic {
           let created;
           if (s.catalogKind === 'subjects') {
             if (!s.catalogName.trim() || !s.catalogIcon.trim() || !(s.catalogNameAr || '').trim())
-              return this.flash('English name, Arabic name, and icon are required.');
+              return this.flash(Tafseel.t('admin_validation_subject_icon'));
             created = await Tafseel.api.post('/admin/subjects', { name: s.catalogName, icon: s.catalogIcon, nameAr: s.catalogNameAr || '' });
             CATALOG_DATA.subjects = [...CATALOG_DATA.subjects, { id: created.id, name: created.name, nameAr: created.nameAr || '', meta: created.detail || '', active: created.isActive }];
           } else if (s.catalogKind === 'topics') {
-            if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash('Subject and name are required.');
+            if (!s.catalogSubjectId || !s.catalogName.trim()) return this.flash(Tafseel.t('admin_validation_subject_name'));
             created = await Tafseel.api.post('/admin/topics', { subjectId: s.catalogSubjectId, name: s.catalogName, difficulty: s.catalogDifficulty });
             CATALOG_DATA.topics = [...CATALOG_DATA.topics, {
               id: created.id, name: created.name, meta: created.detail || '', active: created.isActive,
@@ -1413,7 +1434,7 @@ class Component extends DCLogic {
             }];
           } else if (s.catalogKind === 'assignments') {
             if (!s.catalogSubjectId || !s.catalogName.trim() || !s.catalogDetail.trim())
-              return this.flash('Subject, title, and instructions are required.');
+              return this.flash(Tafseel.t('admin_validation_assignment'));
             if (!(s.catalogNameAr || '').trim())
               return this.flash(Tafseel.t('admin_assignment_arabic_name_required'));
             created = await Tafseel.api.post('/admin/qualification-topics', {
@@ -1470,11 +1491,11 @@ class Component extends DCLogic {
             });
             CATALOG_DATA.coupons = [...CATALOG_DATA.coupons, {
               id: created.id, name: created.name, active: created.isActive, version: created.version, code: created.code,
-              meta: created.code + ' · ' + (created.discountType === 1 ? ('SAR ' + created.discountValue) : (created.discountValue + '%'))
+              meta: created.code + ' · ' + (created.discountType === 1 ? Tafseel.money(created.discountValue, 'SAR') : (created.discountValue + '%'))
             }];
           } else return;
           this.setState({ catalogModal: false });
-          this.flash(created.name + ' added.');
+          this.flash(Tafseel.t('admin_toast_item_added', { name: created.name || Tafseel.t('name_unavailable') }));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
 
@@ -1494,7 +1515,7 @@ class Component extends DCLogic {
       onEditIsActive: e => this.setState({ editIsActive: e.target.checked }),
       closeEditModal: () => this.setState({ editModal: null }),
       confirmEditCatalog: async () => {
-        if (!s.editModal || !s.editName.trim()) return this.flash('Name is required.');
+        if (!s.editModal || !s.editName.trim()) return this.flash(Tafseel.t('admin_validation_name'));
         if (s.editModal.kind === 'assignments' && !(s.editNameAr || '').trim())
           return this.flash(Tafseel.t('admin_assignment_arabic_name_required'));
         if (s.editModal.kind === 'services') {
@@ -1531,7 +1552,7 @@ class Component extends DCLogic {
               editModal: null,
               catalogOverrides: { ...s.catalogOverrides, [s.editModal.id]: s.editIsActive !== false }
             });
-            this.flash('Saved.');
+            this.flash(Tafseel.t('admin_toast_saved'));
             return;
           }
           await Tafseel.api.put('/admin/catalog/' + kind + '/' + s.editModal.id, {
@@ -1550,7 +1571,7 @@ class Component extends DCLogic {
                 }
               : c);
           this.setState({ editModal: null });
-          this.flash('Saved.');
+          this.flash(Tafseel.t('admin_toast_saved'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
 
@@ -1586,30 +1607,32 @@ class Component extends DCLogic {
       },
       requireReview: s.requireReview, onRequireReview: e => this.setState({ requireReview: e.target.checked }),
       maintenanceMode: s.maintenanceMode, onMaintenanceMode: e => this.setState({ maintenanceMode: e.target.checked }),
-      onSavePlatformSettings: () => this.flash('Production settings are deployment-managed and cannot be changed here.'),
+      onSavePlatformSettings: () => this.flash(Tafseel.t('admin_settings_locked')),
 
       metrics: (s.liveMetrics ? [
-        { label:'Total users', value:String(s.liveMetrics.totalUsers), icon:'◈', delta:'Current total', tone:'ok' },
-        { label:'Active teachers', value:String(s.liveMetrics.activeTeachers), icon:'✎', delta:'Active accounts', tone:'ok' },
-        { label:'Active students', value:String(s.liveMetrics.activeStudents), icon:'◍', delta:'Active accounts', tone:'ok' },
-        { label:'Pending applications', value:String(s.liveMetrics.pendingApplications), icon:'◷', delta:'Needs review', tone:'muted' },
-        { label:'Total orders', value:String(s.liveMetrics.totalOrders), icon:'⇩', delta:'All time', tone:'ok' },
-        { label:'Confirmed payments', value:'SAR ' + s.liveMetrics.confirmedPayments, icon:'$', delta:'Confirmed', tone:'ok' },
-        { label:'Platform revenue', value:'SAR ' + s.liveMetrics.platformRevenue, icon:'%', delta:'Ledger balance', tone:'muted' },
-        { label:'Open disputes', value:String(s.liveMetrics.openDisputes), icon:'⚠', delta:'Needs attention', tone:'warn' }
+        { label:Tafseel.t('admin_metric_total_users'), value:String(s.liveMetrics.totalUsers), icon:'◈', delta:Tafseel.t('admin_metric_delta_total'), tone:'ok' },
+        { label:Tafseel.t('admin_metric_active_teachers'), value:String(s.liveMetrics.activeTeachers), icon:'✎', delta:Tafseel.t('admin_metric_delta_active'), tone:'ok' },
+        { label:Tafseel.t('admin_metric_active_students'), value:String(s.liveMetrics.activeStudents), icon:'◍', delta:Tafseel.t('admin_metric_delta_active'), tone:'ok' },
+        { label:Tafseel.t('admin_metric_pending_applications'), value:String(s.liveMetrics.pendingApplications), icon:'◷', delta:Tafseel.t('admin_metric_delta_review'), tone:'muted' },
+        { label:Tafseel.t('admin_metric_total_orders'), value:String(s.liveMetrics.totalOrders), icon:'⇩', delta:Tafseel.t('admin_metric_delta_all_time'), tone:'ok' },
+        { label:Tafseel.t('admin_metric_confirmed_payments'), value:Tafseel.money(s.liveMetrics.confirmedPayments, 'SAR'), icon:'$', delta:Tafseel.t('admin_metric_delta_confirmed'), tone:'ok' },
+        { label:Tafseel.t('admin_metric_platform_revenue'), value:Tafseel.money(s.liveMetrics.platformRevenue, 'SAR'), icon:'%', delta:Tafseel.t('admin_metric_delta_ledger'), tone:'muted' },
+        { label:Tafseel.t('admin_metric_open_disputes'), value:String(s.liveMetrics.openDisputes), icon:'⚠', delta:Tafseel.t('admin_metric_delta_attention'), tone:'warn' }
       ] : [
-        { label: 'Total users', value: Tafseel.t('analytics_unavailable'), icon: '◈', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Active teachers', value: Tafseel.t('analytics_unavailable'), icon: '✎', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Active students', value: Tafseel.t('analytics_unavailable'), icon: '◍', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Pending applications', value: Tafseel.t('analytics_unavailable'), icon: '◷', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Total orders', value: Tafseel.t('analytics_unavailable'), icon: '⇩', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Confirmed payments', value: Tafseel.t('analytics_unavailable'), icon: '$', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Platform revenue', value: Tafseel.t('analytics_unavailable'), icon: '%', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
-        { label: 'Open disputes', value: Tafseel.t('analytics_unavailable'), icon: '⚠', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' }
+        { label: Tafseel.t('admin_metric_total_users'), value: Tafseel.t('analytics_unavailable'), icon: '◈', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_active_teachers'), value: Tafseel.t('analytics_unavailable'), icon: '✎', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_active_students'), value: Tafseel.t('analytics_unavailable'), icon: '◍', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_pending_applications'), value: Tafseel.t('analytics_unavailable'), icon: '◷', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_total_orders'), value: Tafseel.t('analytics_unavailable'), icon: '⇩', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_confirmed_payments'), value: Tafseel.t('analytics_unavailable'), icon: '$', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_platform_revenue'), value: Tafseel.t('analytics_unavailable'), icon: '%', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' },
+        { label: Tafseel.t('admin_metric_open_disputes'), value: Tafseel.t('analytics_unavailable'), icon: '⚠', delta: Tafseel.t('analytics_unavailable'), tone: 'muted' }
       ]).map(m => ({ ...m, deltaStyle: 'font-size:12px;font-weight:600;color:' + (m.tone === 'warn' ? 'var(--warning)' : m.tone === 'ok' ? 'var(--success)' : 'var(--muted)') })),
 
       withdrawals: (s.liveWithdrawals || []).map(w => ({
-        teacher:w.teacherId, amount:w.currency + ' ' + w.amount,
+        teacher: Tafseel.partyName(w, 'teacher'),
+        amount:Tafseel.money(w.amount, w.currency || 'SAR'),
+        busy: s.withdrawalBusyId === w.id,
         approve:async () => this.processWithdrawal(w, true),
         reject:async () => this.processWithdrawal(w, false)
       })),
@@ -1685,17 +1708,18 @@ class Component extends DCLogic {
         const checked = s.selected.includes(u.id);
         return {
           ...u,
-          initials: u.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
+          initials: String(u.name || '—').split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '—',
           statusStyle: 'display:inline-flex;height:22px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + bg + ';color:' + fg,
           checked,
           onCheck: () => this.setState({ selected: checked ? s.selected.filter(id => id !== u.id) : s.selected.concat(u.id) }),
-          toggleLabel: u.status === 'Suspended' ? 'Activate' : 'Suspend',
+          status: Tafseel.t(u.status === 'Suspended' ? 'admin_status_suspended' : 'admin_status_active'),
+          toggleLabel: Tafseel.t(u.status === 'Suspended' ? 'admin_activate' : 'admin_suspend'),
           onToggle: async () => {
             const next = u.status === 'Suspended' ? 'Active' : 'Suspended';
             try {
               await Tafseel.api.put('/admin/users/' + encodeURIComponent(u.id) + '/suspension', { suspended:next === 'Suspended' });
               this.setState({ userOverrides:{ ...s.userOverrides, [u.id]:next } });
-              this.flash(u.name + (next === 'Suspended' ? ' suspended' : ' activated'));
+              this.flash(Tafseel.t(next === 'Suspended' ? 'admin_toast_user_suspended' : 'admin_toast_user_activated', { name: u.name || Tafseel.t('name_unavailable') }));
             } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
           }
         };
@@ -1713,11 +1737,21 @@ class Component extends DCLogic {
       usersShown: filtered.length,
       usersTotal: s.usersTotal || filtered.length,
       paymentRows: [
-        { label: 'Confirmed payments', value: 'SAR ' + Number(s.liveMetrics?.confirmedPayments || 0).toLocaleString() },
-        { label: 'Platform revenue', value: 'SAR ' + Number(s.liveMetrics?.platformRevenue || 0).toLocaleString() },
-        { label: 'Pending withdrawals', value: 'SAR ' + (s.liveWithdrawals || []).reduce((sum, w) => sum + w.amount, 0).toLocaleString() }
+        { label: Tafseel.t('admin_metric_confirmed_payments'), value: Tafseel.money(s.liveMetrics?.confirmedPayments || 0, 'SAR') },
+        { label: Tafseel.t('admin_metric_platform_revenue'), value: Tafseel.money(s.liveMetrics?.platformRevenue || 0, 'SAR') },
+        { label: Tafseel.t('admin_metric_pending_withdrawals'), value: Tafseel.money((s.liveWithdrawals || []).reduce((sum, w) => sum + (Number(w.amount) || 0), 0), 'SAR') }
       ],
-      disputes: LIST_DATA.disputes.filter(d => d.status === 'Open').slice(0, 3)
+      approveLabel: Tafseel.t('admin_approve'),
+      rejectLabel: Tafseel.t('admin_reject'),
+      overviewTitle: Tafseel.t('admin_overview_title'),
+      overviewSubtitle: Tafseel.t('admin_overview_subtitle'),
+      adminBadge: Tafseel.t('admin_role_badge'),
+      themeToggleLabel: Tafseel.t('req_toggle_theme'),
+      chartRevenueLabel: Tafseel.t('admin_chart_revenue'),
+      chartOrdersLabel: Tafseel.t('admin_chart_orders'),
+      chartSubjectsLabel: Tafseel.t('admin_chart_subjects'),
+      chartApprovalLabel: Tafseel.t('admin_chart_approval'),
+      disputes: LIST_DATA.disputes.filter(d => d.statusKey === 'open').slice(0, 3)
     };
   }
 }

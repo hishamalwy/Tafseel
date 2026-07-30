@@ -48,115 +48,116 @@ internal sealed class MarketplaceService(
         if (input.MinimumRating is < 0 or > 5 || input.MaximumPrice is <= 0)
             throw new DomainException("invalid_filter", "A marketplace filter is outside its allowed range.");
 
-        var query =
-            from profile in db.TeacherProfiles.AsNoTracking()
-            join user in db.Users.AsNoTracking() on profile.TeacherId equals user.Id
-            where profile.IsPublished && user.EmailConfirmed && !user.IsSuspended
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                && db.TeacherServices.Any(service => service.TeacherId == profile.TeacherId
-                    && service.IsActive
-                    && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                        && q.SubjectId == service.SubjectId
-                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                    && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
-                    && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
-                        && type.IsActive && type.IsPublic && type.TeacherSelectable))
-            select new { profile, user };
+        var query = TeacherPublicQueries.BrowsableTeachers(db);
 
         if (!string.IsNullOrWhiteSpace(input.Search))
         {
             var term = input.Search.Trim();
             query = query.Where(x =>
-                x.user.FullName.Contains(term) || x.profile.Headline.Contains(term) || x.profile.Bio.Contains(term));
+                x.User.FullName.Contains(term) || x.Profile.Headline.Contains(term) || x.Profile.Bio.Contains(term));
         }
         if (input.SubjectId.HasValue)
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
-                q.TeacherId == x.profile.TeacherId && q.SubjectId == input.SubjectId
+                q.TeacherId == x.Profile.TeacherId && q.SubjectId == input.SubjectId
                 && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
                 && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive)));
         if (input.TopicId.HasValue)
             query = query.Where(x => db.TeacherTopics.Any(t =>
-                t.TeacherId == x.profile.TeacherId && t.TopicId == input.TopicId));
+                t.TeacherId == x.Profile.TeacherId && t.TopicId == input.TopicId
+                && db.Topics.Any(topic => topic.Id == t.TopicId && topic.IsActive
+                    && db.Subjects.Any(subject => subject.Id == topic.SubjectId && subject.IsActive)
+                    && db.TeacherSubjectQualifications.Any(q =>
+                        q.TeacherId == x.Profile.TeacherId && q.SubjectId == topic.SubjectId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null))));
         if (input.EducationLevelId.HasValue)
             query = query.Where(x => db.TeacherEducationLevels.Any(level =>
-                level.TeacherId == x.profile.TeacherId && level.EducationLevelId == input.EducationLevelId));
+                level.TeacherId == x.Profile.TeacherId && level.EducationLevelId == input.EducationLevelId
+                && db.EducationLevels.Any(item => item.Id == level.EducationLevelId && item.IsActive)));
         if (input.ServiceTypeId.HasValue)
             query = query.Where(x => db.TeacherServices.Any(service =>
-                service.TeacherId == x.profile.TeacherId && service.IsActive
+                service.TeacherId == x.Profile.TeacherId && service.IsActive
                 && service.ServiceCatalogItemId == input.ServiceTypeId
                 && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId && type.IsActive)
                 && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)));
         if (input.MinimumRating is > 0)
-            query = query.Where(x => x.profile.RatingCount > 0
-                && x.profile.AverageRating >= input.MinimumRating);
+            query = query.Where(x => x.Profile.RatingCount > 0
+                && x.Profile.AverageRating >= input.MinimumRating);
         if (input.MaximumPrice.HasValue)
             query = query.Where(x => db.TeacherServices.Any(service =>
-                service.TeacherId == x.profile.TeacherId && service.IsActive && service.Price <= input.MaximumPrice
+                service.TeacherId == x.Profile.TeacherId && service.IsActive && service.Price <= input.MaximumPrice
                 && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId && type.IsActive)
                 && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)));
         if (input.LanguageIds is { Length: > 0 })
             query = query.Where(x => input.LanguageIds.All(languageId =>
                 db.TeacherLanguages.Any(language =>
-                    language.TeacherId == x.profile.TeacherId && language.LanguageId == languageId)));
+                    language.TeacherId == x.Profile.TeacherId && language.LanguageId == languageId
+                    && db.TeachingLanguages.Any(item => item.Id == language.LanguageId && item.IsActive))));
         if (input.VerifiedOnly)
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
-                q.TeacherId == x.profile.TeacherId
+                q.TeacherId == x.Profile.TeacherId
                 && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
         query = sort switch
         {
-            "highest-rated" => query.OrderByDescending(x => x.profile.RatingCount > 0)
-                .ThenByDescending(x => x.profile.AverageRating)
-                .ThenBy(x => x.user.FullName)
-                .ThenBy(x => x.profile.TeacherId),
+            "highest-rated" => query.OrderByDescending(x => x.Profile.RatingCount > 0)
+                .ThenByDescending(x => x.Profile.AverageRating)
+                .ThenBy(x => x.User.FullName)
+                .ThenBy(x => x.Profile.TeacherId),
             "lowest-price" => query.OrderBy(x => db.TeacherServices
-                .Where(s => s.TeacherId == x.profile.TeacherId && s.IsActive
+                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
                     && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                     && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                 .Min(s => (decimal?)s.Price) ?? decimal.MaxValue)
-                .ThenBy(x => x.user.FullName)
-                .ThenBy(x => x.profile.TeacherId),
+                .ThenBy(x => x.User.FullName)
+                .ThenBy(x => x.Profile.TeacherId),
             "highest-price" => query.OrderByDescending(x => db.TeacherServices
-                .Where(s => s.TeacherId == x.profile.TeacherId && s.IsActive
+                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
                     && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                     && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                 .Min(s => (decimal?)s.Price) ?? 0)
-                .ThenBy(x => x.user.FullName)
-                .ThenBy(x => x.profile.TeacherId),
-            _ => query.OrderBy(x => x.user.FullName)
-                .ThenBy(x => x.profile.TeacherId)
+                .ThenBy(x => x.User.FullName)
+                .ThenBy(x => x.Profile.TeacherId),
+            _ => query.OrderBy(x => x.User.FullName)
+                .ThenBy(x => x.Profile.TeacherId)
         };
 
         var count = await query.CountAsync(ct);
-        var rows = await query.Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(x => new TeacherCardDto(
-                x.profile.TeacherId,
-                x.user.FullName,
-                x.profile.Headline,
-                x.profile.Country,
-                db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.profile.TeacherId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null),
-                x.profile.RatingCount > 0 ? x.profile.AverageRating : null,
-                x.profile.RatingCount,
-                null,
-                null,
-                db.TeacherServices.Where(s => s.TeacherId == x.profile.TeacherId && s.IsActive
+        var pageRows = await query.Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => new
+            {
+                x.Profile.TeacherId,
+                x.User.FullName,
+                x.Profile.Headline,
+                x.Profile.Country,
+                Verified = db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.Profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
+                    && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive)),
+                Rating = x.Profile.RatingCount > 0 ? (decimal?)x.Profile.AverageRating : null,
+                x.Profile.RatingCount,
+                StartingPrice = db.TeacherServices.Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .Min(s => (decimal?)s.Price),
-                db.TeacherServices.Where(s => s.TeacherId == x.profile.TeacherId && s.IsActive
+                Currency = db.TeacherServices.Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
-                db.TeacherSubjectQualifications.Where(q => q.TeacherId == x.profile.TeacherId
-                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                Subjects = db.TeacherSubjectQualifications.Where(q => q.TeacherId == x.Profile.TeacherId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
+                        && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive))
                     .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray(),
-                db.TeacherLanguages.Where(language => language.TeacherId == x.profile.TeacherId)
-                    .Join(db.TeachingLanguages, language => language.LanguageId, item => item.Id, (_, item) => item.Name)
+                Languages = db.TeacherLanguages.Where(language => language.TeacherId == x.Profile.TeacherId)
+                    .Join(db.TeachingLanguages.Where(item => item.IsActive),
+                        language => language.LanguageId, item => item.Id, (_, item) => item.Name)
                     .ToArray(),
-                x.user.FullNameEnglish,
-                !string.IsNullOrEmpty(x.user.AvatarStorageKey)))
+                x.User.FullNameEnglish,
+                HasAvatar = !string.IsNullOrEmpty(x.User.AvatarStorageKey)
+            })
             .ToArrayAsync(ct);
+        var rows = pageRows.Select(x => new TeacherCardDto(
+            x.TeacherId, x.FullName, x.Headline, x.Country, x.Verified,
+            x.Rating, x.RatingCount, null, null, x.StartingPrice, x.Currency,
+            x.Subjects, x.Languages, x.FullNameEnglish, x.HasAvatar,
+            TrustBadges(x.Verified))).ToArray();
         return new(rows, page, pageSize, count);
     }
 
@@ -181,31 +182,18 @@ internal sealed class MarketplaceService(
             throw new DomainException(
                 "comparison_duplicate_teacher", "Each compared Teacher must be unique.");
 
-        var profiles = await (
-            from profile in db.TeacherProfiles.AsNoTracking()
-            join user in db.Users.AsNoTracking() on profile.TeacherId equals user.Id
-            where requestedIds.Contains(profile.TeacherId)
-                && profile.IsPublished && user.EmailConfirmed && !user.IsSuspended
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                && db.TeacherServices.Any(service => service.TeacherId == profile.TeacherId
-                    && service.IsActive
-                    && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                        && q.SubjectId == service.SubjectId
-                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                    && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
-                    && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
-                        && type.IsActive && type.IsPublic && type.TeacherSelectable))
-            select new
+        var profiles = await TeacherPublicQueries.BrowsableTeachers(db)
+            .Where(x => requestedIds.Contains(x.Profile.TeacherId))
+            .Select(x => new
             {
-                profile.TeacherId,
-                user.FullName,
-                user.FullNameEnglish,
-                HasAvatar = user.AvatarStorageKey != null && user.AvatarStorageKey != "",
-                profile.Headline,
-                profile.Bio,
-                Rating = profile.RatingCount > 0 ? (decimal?)profile.AverageRating : null,
-                profile.RatingCount
+                x.Profile.TeacherId,
+                x.User.FullName,
+                x.User.FullNameEnglish,
+                HasAvatar = x.User.AvatarStorageKey != null && x.User.AvatarStorageKey != "",
+                x.Profile.Headline,
+                x.Profile.Bio,
+                Rating = x.Profile.RatingCount > 0 ? (decimal?)x.Profile.AverageRating : null,
+                x.Profile.RatingCount
             }).ToArrayAsync(ct);
 
         var availableIds = profiles.Select(x => x.TeacherId).ToArray();
@@ -287,15 +275,7 @@ internal sealed class MarketplaceService(
                 Item = new TeacherComparisonExperienceDto(
                     x.Title, x.Organization, x.From, x.To)
             }).ToArrayAsync(ct);
-        var samples = await db.TeacherTeachingSamples.AsNoTracking()
-            .Where(x => availableIds.Contains(x.TeacherId) && x.PublishedAt != null
-                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.TeacherId
-                    && q.SubjectId == x.SubjectId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null))
-            .GroupBy(x => x.TeacherId)
-            .Select(x => new { TeacherId = x.Key, Count = x.Count() })
-            .ToArrayAsync(ct);
+        var sampleCounts = await CountPublicPlayableSamplesAsync(availableIds, ct);
 
         static IReadOnlyCollection<TItem> Items<TItem>(
             string teacherId, IEnumerable<(string TeacherId, TItem Item)> source) =>
@@ -307,22 +287,24 @@ internal sealed class MarketplaceService(
         var levelRows = educationLevels.Select(x => (x.TeacherId, x.Item)).ToArray();
         var serviceRows = services.Select(x => (x.TeacherId, x.Item)).ToArray();
         var experienceRows = experience.Select(x => (x.TeacherId, x.Item)).ToArray();
-        var sampleCounts = samples.ToDictionary(x => x.TeacherId, x => x.Count);
         var profileRows = profiles.ToDictionary(x => x.TeacherId, StringComparer.OrdinalIgnoreCase);
 
         var compared = requestedIds.Where(profileRows.ContainsKey).Select(teacherId =>
         {
             var profile = profileRows[teacherId];
+            var teacherSubjects = Items(teacherId, subjectRows);
+            var verified = teacherSubjects.Count > 0;
             var teacherServices = Items(teacherId, serviceRows);
             var startingService = teacherServices
                 .OrderBy(x => x.Price).ThenBy(x => x.Currency, StringComparer.Ordinal).FirstOrDefault();
             return new TeacherComparisonDto(
                 profile.TeacherId, profile.FullName, profile.FullNameEnglish, profile.HasAvatar,
-                profile.Headline, profile.Bio, true, profile.Rating, profile.RatingCount,
-                Items(teacherId, subjectRows), Items(teacherId, topicRows),
+                profile.Headline, profile.Bio, verified, profile.Rating, profile.RatingCount,
+                teacherSubjects, Items(teacherId, topicRows),
                 Items(teacherId, languageRows), Items(teacherId, levelRows), teacherServices,
                 startingService?.Price, startingService?.Currency,
-                Items(teacherId, experienceRows), sampleCounts.GetValueOrDefault(teacherId));
+                Items(teacherId, experienceRows), sampleCounts.GetValueOrDefault(teacherId),
+                TrustBadges(verified));
         }).ToArray();
 
         return new(ids.Length, ids.Length - compared.Length, compared);
@@ -330,20 +312,10 @@ internal sealed class MarketplaceService(
 
     public async Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct)
     {
+        if (!await TeacherPublicQueries.IsBrowsableAsync(db, teacherId, ct))
+            throw new DomainException("teacher_not_found", "Teacher was not found.");
         var profile = await db.TeacherProfiles.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.TeacherId == teacherId && x.IsPublished, ct)
-            ?? throw new DomainException("teacher_not_found", "Teacher was not found.");
-        if (!await db.Users.AnyAsync(x => x.Id == teacherId && x.EmailConfirmed && !x.IsSuspended, ct))
-            throw new DomainException("teacher_not_found", "Teacher was not found.");
-        if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId
-                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct)
-            || !await db.TeacherServices.AnyAsync(x => x.TeacherId == teacherId && x.IsActive
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
-                    && q.SubjectId == x.SubjectId && q.Status == TeacherQualificationStatus.Approved
-                    && q.RevokedAt == null)
-                && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId
-                    && type.IsActive && type.IsPublic && type.TeacherSelectable), ct))
-            throw new DomainException("teacher_not_found", "Teacher was not found.");
+            .SingleAsync(x => x.TeacherId == teacherId, ct);
         return await BuildProfileAsync(profile, publicOnly: true, ct);
     }
 
@@ -925,7 +897,7 @@ internal sealed class MarketplaceService(
 
     public async Task FavoriteAsync(string studentId, string teacherId, CancellationToken ct)
     {
-        if (!await db.TeacherProfiles.AnyAsync(x => x.TeacherId == teacherId && x.IsPublished, ct))
+        if (!await TeacherPublicQueries.IsBrowsableAsync(db, teacherId, ct))
             throw new DomainException("teacher_not_found", "Teacher was not found.");
         if (await db.FavoriteTeachers.AnyAsync(x => x.StudentId == studentId && x.TeacherId == teacherId, ct))
             return;
@@ -950,39 +922,48 @@ internal sealed class MarketplaceService(
 
     public async Task<IReadOnlyCollection<TeacherCardDto>> GetFavoritesAsync(string studentId, CancellationToken ct)
     {
-        var ids = await db.FavoriteTeachers.AsNoTracking().Where(x => x.StudentId == studentId)
-            .OrderByDescending(x => x.CreatedAt).Select(x => x.TeacherId).ToArrayAsync(ct);
-        if (ids.Length == 0) return [];
         var cards = await (
             from favorite in db.FavoriteTeachers.AsNoTracking()
-            join profile in db.TeacherProfiles.AsNoTracking() on favorite.TeacherId equals profile.TeacherId
-            join user in db.Users.AsNoTracking() on profile.TeacherId equals user.Id
-            where favorite.StudentId == studentId && profile.IsPublished
+            join browsable in TeacherPublicQueries.BrowsableTeachers(db)
+                on favorite.TeacherId equals browsable.Profile.TeacherId
+            where favorite.StudentId == studentId
             orderby favorite.CreatedAt descending
-            select new TeacherCardDto(
-                profile.TeacherId, user.FullName, profile.Headline, profile.Country,
-                db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null),
-                profile.RatingCount > 0 ? profile.AverageRating : null,
-                profile.RatingCount, null, null,
-                db.TeacherServices.Where(s => s.TeacherId == profile.TeacherId && s.IsActive
+            select new
+            {
+                browsable.Profile.TeacherId,
+                browsable.User.FullName,
+                browsable.Profile.Headline,
+                browsable.Profile.Country,
+                Verified = db.TeacherSubjectQualifications.Any(q => q.TeacherId == browsable.Profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
+                    && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive)),
+                Rating = browsable.Profile.RatingCount > 0 ? (decimal?)browsable.Profile.AverageRating : null,
+                browsable.Profile.RatingCount,
+                StartingPrice = db.TeacherServices.Where(s => s.TeacherId == browsable.Profile.TeacherId && s.IsActive
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .Min(s => (decimal?)s.Price),
-                db.TeacherServices.Where(s => s.TeacherId == profile.TeacherId && s.IsActive
+                Currency = db.TeacherServices.Where(s => s.TeacherId == browsable.Profile.TeacherId && s.IsActive
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
-                db.TeacherSubjectQualifications.Where(q => q.TeacherId == profile.TeacherId
-                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                Subjects = db.TeacherSubjectQualifications.Where(q => q.TeacherId == browsable.Profile.TeacherId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
+                        && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive))
                     .Join(db.Subjects, q => q.SubjectId, s => s.Id, (_, s) => s.Name).ToArray(),
-                db.TeacherLanguages.Where(language => language.TeacherId == profile.TeacherId)
-                    .Join(db.TeachingLanguages, language => language.LanguageId, item => item.Id, (_, item) => item.Name)
+                Languages = db.TeacherLanguages.Where(language => language.TeacherId == browsable.Profile.TeacherId)
+                    .Join(db.TeachingLanguages.Where(item => item.IsActive),
+                        language => language.LanguageId, item => item.Id, (_, item) => item.Name)
                     .ToArray(),
-                user.FullNameEnglish,
-                !string.IsNullOrEmpty(user.AvatarStorageKey)))
+                browsable.User.FullNameEnglish,
+                HasAvatar = !string.IsNullOrEmpty(browsable.User.AvatarStorageKey)
+            })
             .ToArrayAsync(ct);
-        return cards;
+        return cards.Select(x => new TeacherCardDto(
+            x.TeacherId, x.FullName, x.Headline, x.Country, x.Verified,
+            x.Rating, x.RatingCount, null, null, x.StartingPrice, x.Currency,
+            x.Subjects, x.Languages, x.FullNameEnglish, x.HasAvatar,
+            TrustBadges(x.Verified))).ToArray();
     }
 
     private async Task ReplaceTopicsAsync(string teacherId, Guid[] ids, CancellationToken ct)
@@ -1029,13 +1010,45 @@ internal sealed class MarketplaceService(
         var teacherId = profile.TeacherId;
         var subjects = await db.TeacherSubjectQualifications.AsNoTracking().Where(x => x.TeacherId == teacherId
                 && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null)
-            .Join(db.Subjects, x => x.SubjectId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
-        var topics = await db.TeacherTopics.AsNoTracking().Where(x => x.TeacherId == teacherId)
-            .Join(db.Topics, x => x.TopicId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
-        var languages = await db.TeacherLanguages.AsNoTracking().Where(x => x.TeacherId == teacherId)
-            .Join(db.TeachingLanguages, x => x.LanguageId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
-        var levels = await db.TeacherEducationLevels.AsNoTracking().Where(x => x.TeacherId == teacherId)
-            .Join(db.EducationLevels, x => x.EducationLevelId, x => x.Id, (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
+            .Join(db.Subjects.Where(s => s.IsActive), x => x.SubjectId, x => x.Id,
+                (_, x) => new NamedItemDto(x.Id, x.Name, x.NameAr)).ToArrayAsync(ct);
+        var topicsQuery =
+            from teacherTopic in db.TeacherTopics.AsNoTracking()
+            join topic in db.Topics.AsNoTracking() on teacherTopic.TopicId equals topic.Id
+            where teacherTopic.TeacherId == teacherId
+            select new { teacherTopic, topic };
+        var languagesQuery =
+            from teacherLanguage in db.TeacherLanguages.AsNoTracking()
+            join language in db.TeachingLanguages.AsNoTracking() on teacherLanguage.LanguageId equals language.Id
+            where teacherLanguage.TeacherId == teacherId
+            select new { teacherLanguage, language };
+        var levelsQuery =
+            from teacherLevel in db.TeacherEducationLevels.AsNoTracking()
+            join level in db.EducationLevels.AsNoTracking() on teacherLevel.EducationLevelId equals level.Id
+            where teacherLevel.TeacherId == teacherId
+            select new { teacherLevel, level };
+        if (publicOnly)
+        {
+            topicsQuery = topicsQuery.Where(x => x.topic.IsActive
+                && db.Subjects.Any(subject => subject.Id == x.topic.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q =>
+                    q.TeacherId == teacherId && q.SubjectId == x.topic.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
+            languagesQuery = languagesQuery.Where(x => x.language.IsActive);
+            levelsQuery = levelsQuery.Where(x => x.level.IsActive);
+        }
+        var topics = await topicsQuery
+            .OrderBy(x => x.topic.Name).ThenBy(x => x.topic.Id)
+            .Select(x => new NamedItemDto(x.topic.Id, x.topic.Name, x.topic.NameAr))
+            .ToArrayAsync(ct);
+        var languages = await languagesQuery
+            .OrderBy(x => x.language.Name).ThenBy(x => x.language.Id)
+            .Select(x => new NamedItemDto(x.language.Id, x.language.Name, x.language.NameAr))
+            .ToArrayAsync(ct);
+        var levels = await levelsQuery
+            .OrderBy(x => x.level.Name).ThenBy(x => x.level.Id)
+            .Select(x => new NamedItemDto(x.level.Id, x.level.Name, x.level.NameAr))
+            .ToArrayAsync(ct);
         var hasActiveQualification = subjects.Length > 0;
         var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking().AnyAsync(x => x.TeacherId == teacherId, ct);
         var servicesQuery =
@@ -1044,11 +1057,14 @@ internal sealed class MarketplaceService(
                 on ts.ServiceCatalogItemId equals type.Id
             where ts.TeacherId == teacherId
             select new { ts, type };
-        var samplesQuery = db.TeacherTeachingSamples.AsNoTracking()
-            .Include(x => x.Versions)
-            .Where(x => x.TeacherId == teacherId);
+        var samplesQuery = publicOnly
+            ? TeacherPublicQueries.VisibleSamples(db, ShowcasesEnabled).Where(x => x.TeacherId == teacherId)
+            : db.TeacherTeachingSamples.AsNoTracking()
+                .Include(x => x.Versions)
+                .Where(x => x.TeacherId == teacherId);
         if (publicOnly)
         {
+            samplesQuery = samplesQuery.Include(x => x.Versions);
             servicesQuery = servicesQuery.Where(x => x.ts.IsActive
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
                     && q.SubjectId == x.ts.SubjectId
@@ -1057,16 +1073,6 @@ internal sealed class MarketplaceService(
                 && x.type.IsActive
                 && x.type.IsPublic
                 && x.type.TeacherSelectable);
-            samplesQuery = samplesQuery.Where(x =>
-                (x.SourceType == TeachingSampleSourceType.QualificationGenerated && x.PublishedAt != null
-                    || ShowcasesEnabled
-                        && x.SourceType == TeachingSampleSourceType.TeacherShowcase
-                        && x.ModerationStatus == ShowcaseModerationStatus.Approved
-                        && x.ArchivedAt == null && x.ApprovedVersionId != null && x.PublishedAt != null)
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
-                    && q.SubjectId == x.SubjectId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
         }
         var services = (await servicesQuery.ToArrayAsync(ct))
             .OrderBy(x => x.type.DisplayOrder).ThenBy(x => x.ts.CreatedAt)
@@ -1118,22 +1124,62 @@ internal sealed class MarketplaceService(
             && !hasAvailability)
             blockers.Add("availability_required");
         var eligible = blockers.Count == 0;
+        var qualifiedOnTafseel = !user.IsSuspended && subjects.Length > 0;
         return new(
             teacherId, await TeacherNameAsync(teacherId, ct), profile.Headline, profile.Bio, profile.Country,
-            profile.City, profile.TimeZoneId, subjects.Length > 0,
+            publicOnly ? "" : profile.City,
+            publicOnly ? "" : profile.TimeZoneId,
+            subjects.Length > 0,
             profile.RatingCount > 0 ? profile.AverageRating : null, profile.RatingCount,
             null, publicOnly ? null : profile.ResponseTimeMinutes, subjects, topics, languages, levels,
             services, samples, rules, exceptions, certifications, experience,
             new LiveSessionBookingPolicyDto(
                 _liveSessionOptions.EmergencyPremiumPercent,
                 _liveSessionOptions.CancellationWindowHours),
-            profileComplete, eligible, blockers, profile.IsPublished && eligible,
-            subjects.Select(x => x.Id).ToArray(), user.FullNameEnglish, user.HasAvatar);
+            publicOnly ? false : profileComplete,
+            publicOnly ? false : eligible,
+            publicOnly ? [] : blockers,
+            publicOnly || (profile.IsPublished && eligible),
+            subjects.Select(x => x.Id).ToArray(), user.FullNameEnglish, user.HasAvatar,
+            TrustBadges(qualifiedOnTafseel));
     }
 
     private static TeacherProfileDto EmptyProfile(string teacherId, string name) =>
         new(teacherId, name, "", "", "", "", "UTC", false, null, 0, null, null,
-            [], [], [], [], [], [], [], [], [], [], null);
+            [], [], [], [], [], [], [], [], [], [], null,
+            TrustBadges: TrustBadges(false));
+
+    private async Task<Dictionary<string, int>> CountPublicPlayableSamplesAsync(
+        IReadOnlyCollection<string> teacherIds, CancellationToken ct)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (teacherIds.Count == 0) return counts;
+        var rows = await TeacherPublicQueries.VisibleSamples(db, ShowcasesEnabled)
+            .Where(x => teacherIds.Contains(x.TeacherId))
+            .Include(x => x.Versions)
+            .ToArrayAsync(ct);
+        foreach (var sample in rows)
+        {
+            var key = sample.SourceType == TeachingSampleSourceType.QualificationGenerated
+                ? sample.StorageKey
+                : sample.Versions.SingleOrDefault(x => x.Id == sample.ApprovedVersionId)?.StorageKey;
+            if (key is null || !await files.PrivateFileExistsAsync(key, ct))
+                continue;
+            counts[sample.TeacherId] = counts.GetValueOrDefault(sample.TeacherId) + 1;
+        }
+        return counts;
+    }
+
+    private static IReadOnlyCollection<TeacherTrustBadgeDto> TrustBadges(bool qualifiedOnTafseel) =>
+        qualifiedOnTafseel
+            ?
+            [
+                new TeacherTrustBadgeDto(
+                    TeacherTrustBadgeCodes.QualifiedOnTafseel,
+                    TeacherTrustBadgeCodes.CategoryVerification,
+                    TeacherTrustBadgeCodes.RuleVersionV1)
+            ]
+            : [];
 
     private async Task<TeacherProfile> OwnedProfileAsync(string teacherId, CancellationToken ct) =>
         await db.TeacherProfiles.SingleOrDefaultAsync(x => x.TeacherId == teacherId, ct)

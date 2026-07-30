@@ -42,11 +42,19 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
                 "bio", "educationLevels", "experience", "fullName", "fullNameEnglish",
                 "hasAvatar", "headline", "languages", "rating", "ratingCount", "sampleCount",
                 "services", "startingCurrency", "startingPrice", "subjects", "teacherId",
-                "topics", "verified"
+                "topics", "trustBadges", "verified"
             };
             Assert.All(compared, teacher =>
                 Assert.Equal(allowed, teacher.EnumerateObject().Select(x => x.Name).Order()));
             Assert.All(compared, teacher => Assert.True(teacher.GetProperty("verified").GetBoolean()));
+            Assert.All(compared, teacher =>
+            {
+                var badge = Assert.Single(teacher.GetProperty("trustBadges").EnumerateArray());
+                Assert.Equal("qualified_on_tafseel", badge.GetProperty("code").GetString());
+                Assert.Equal("verification", badge.GetProperty("category").GetString());
+                Assert.Equal("v1", badge.GetProperty("ruleVersion").GetString());
+                Assert.Equal(JsonValueKind.Null, badge.GetProperty("subjectId").ValueKind);
+            });
             Assert.All(compared, teacher => Assert.NotEmpty(teacher.GetProperty("services").EnumerateArray()));
             Assert.DoesNotContain("completedOrders", root.GetRawText(), StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("responseTimeMinutes", root.GetRawText(), StringComparison.OrdinalIgnoreCase);

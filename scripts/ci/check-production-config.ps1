@@ -18,5 +18,13 @@ if ($env:Cors__AllowedOrigins__0 -notmatch '^https://' -or $env:Cors__AllowedOri
   throw "CORS must contain an exact HTTPS origin."
 }
 if ($env:FileStorage__Provider -eq "Local") { throw "Production requires durable private object storage." }
+if ($env:FileStorage__Provider -eq "AzureBlob" -and (
+    [string]::IsNullOrWhiteSpace($env:FileStorage__AzureBlob__ConnectionString) -or
+    $env:FileStorage__AzureBlob__ConnectionString -like "REPLACE_*")) {
+  throw "Production Azure Blob connection string is missing or still a placeholder."
+}
+if ($env:Payments__Mock__SimulatorEnabled -eq "true" -or $env:Payments__Mock__Enabled -eq "true") {
+  throw "Mock payment simulator / Mock.Enabled are forbidden in Production."
+}
 if (-not [IO.Path]::IsPathRooted($env:DataProtection__KeysPath)) { throw "Production Data Protection keys require a durable absolute path." }
 Write-Output "Production configuration names and non-secret policy values passed."

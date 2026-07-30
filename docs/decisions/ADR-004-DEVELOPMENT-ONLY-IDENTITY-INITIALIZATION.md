@@ -18,6 +18,7 @@ Normal application startup invokes the initializer only in Development with migr
 - Staging and Production migrations remain manual.
 - Normal Staging startup cannot create demo identities.
 - Production configuration validation and fail-fast behavior remain independent and unchanged.
+- Development itself gets no demo identities either, by the same environment-check logic; ADR-012 adds an explicit, disabled-by-default, secret-sourced opt-in for Development only.
 
 ## Alternatives Considered
 

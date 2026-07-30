@@ -23,7 +23,9 @@ public sealed record LiveSessionDto(
     DateTimeOffset StartsAt, DateTimeOffset EndsAt, string StudentTimeZoneId, string TeacherTimeZoneId,
     decimal BasePrice, string Currency, decimal EmergencyPremiumPercent, decimal EmergencyPremiumAmount,
     decimal TotalPrice, int CancellationWindowHours, LiveSessionStatus Status, int RescheduleCount,
-    IReadOnlyCollection<AttachmentDto> Attachments, string Version);
+    IReadOnlyCollection<AttachmentDto> Attachments, string Version,
+    string? StudentDisplayName = null, string? TeacherDisplayName = null,
+    string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null);
 
 public sealed record BookableSlotDto(
     DateTimeOffset StartsAt, DateTimeOffset EndsAt, DateTime StudentLocalStart, string StudentTimeZoneId);

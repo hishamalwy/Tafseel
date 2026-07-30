@@ -4,6 +4,23 @@ using Tafseel.Domain.Marketplace;
 
 namespace Tafseel.Application.Marketplace;
 
+/// <summary>
+/// Stable trust-badge codes derived on read from production evidence (ADR-010).
+/// Not writable; never invent performance badges here.
+/// </summary>
+public static class TeacherTrustBadgeCodes
+{
+    public const string QualifiedOnTafseel = "qualified_on_tafseel";
+    public const string CategoryVerification = "verification";
+    public const string RuleVersionV1 = "v1";
+}
+
+public sealed record TeacherTrustBadgeDto(
+    string Code,
+    string Category,
+    string RuleVersion,
+    Guid? SubjectId = null);
+
 public sealed record TeacherSearch(
     string? Search,
     Guid? SubjectId,
@@ -35,7 +52,8 @@ public sealed record TeacherCardDto(
     IReadOnlyCollection<string> Subjects,
     IReadOnlyCollection<string> Languages,
     string? FullNameEnglish = null,
-    bool HasAvatar = false);
+    bool HasAvatar = false,
+    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null);
 
 public sealed record TeacherComparisonResultDto(
     int RequestedCount,
@@ -59,7 +77,8 @@ public sealed record TeacherComparisonDto(
     decimal? StartingPrice,
     string? StartingCurrency,
     IReadOnlyCollection<TeacherComparisonExperienceDto> Experience,
-    int SampleCount);
+    int SampleCount,
+    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null);
 public sealed record ComparisonNamedItemDto(Guid Id, string Name, string? NameAr);
 public sealed record TeacherComparisonServiceDto(
     string Title,
@@ -101,7 +120,8 @@ public sealed record TeacherProfileDto(
     bool IsPubliclyVisible = false,
     IReadOnlyCollection<Guid>? VerifiedSubjectIds = null,
     string? FullNameEnglish = null,
-    bool HasAvatar = false);
+    bool HasAvatar = false,
+    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null);
 
 public sealed record NamedItemDto(Guid Id, string Name, string? NameAr);
 public sealed record UpdateTeacherProfile(

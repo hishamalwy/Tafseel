@@ -195,6 +195,9 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
           : this.defaultAvatar;
       },
       userName: function (user) { return user && (user.fullName || user.name || '') || ''; },
+      money: function (value) { return String(value ?? 0); },
+      partyName: function () { return 'Teacher'; },
+      date: function () { return ''; },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -249,7 +252,7 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
         throw new Error(item.key + ' left other nav items active: ' + others.map(n => n.key).join(','));
       if (item.key === 'overview' && vals.isOverview !== true) throw new Error('overview section flag');
       if (item.key === 'users' && vals.isUsersPage !== true) throw new Error('users section flag');
-      if (item.key === 'students' && (vals.isUsersPage !== true || vals.usersPageTitle !== 'Students'))
+      if (item.key === 'students' && (vals.isUsersPage !== true || vals.usersPageTitle !== 'admin_nav_students'))
         throw new Error('students must open users page filtered to Students');
       if (item.key === 'subjects' && vals.isCatalogPage !== true) throw new Error('subjects catalog flag');
       if (item.key === 'requests' && vals.isSimpleListPage !== true) throw new Error('requests list flag');
@@ -310,6 +313,9 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
           : this.defaultAvatar;
       },
       userName: function (user) { return user && (user.fullName || user.name || '') || ''; },
+      money: function (value) { return String(value ?? 0); },
+      partyName: function () { return 'Teacher'; },
+      date: function () { return ''; },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -351,6 +357,9 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
           : this.defaultAvatar;
       },
       userName: function (user) { return user && (user.fullName || user.name || '') || ''; },
+      money: function (value) { return String(value ?? 0); },
+      partyName: function () { return 'Teacher'; },
+      date: function () { return ''; },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}

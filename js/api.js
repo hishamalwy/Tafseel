@@ -185,7 +185,7 @@
       if (error && error.code) {
         var key = 'api_error_' + error.code;
         var translated = Tafseel.t(key);
-        if (translated !== key) return translated;
+        if (translated.indexOf('⟦missing:') !== 0) return translated;
       }
       return error && error.message || 'Something went wrong.';
     }

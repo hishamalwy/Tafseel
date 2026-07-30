@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Browse teachers — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <style>
@@ -215,18 +216,19 @@
         </div>
       </sc-if>
 
-      <div class="tf-cascade" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px">
-        <sc-for list="{{ results }}" as="t" hint-placeholder-count="6">
+      <div class="tf-cascade" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px">
+        <sc-for list="{{ results }}" as="t" hint-placeholder-count="0">
           <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;transition:all var(--t)" style-hover="border-color:var(--border-strong);box-shadow:var(--shadow-md)">
             <div style="display:flex;gap:14px;margin-bottom:14px">
               <div style="position:relative;flex:none">
-                <img src="{{ t.avatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);object-fit:cover" />
+                <img class="tf-img-avatar" data-tf-avatar src="{{ t.avatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border)" />
               </div>
               <div style="flex:1;min-width:0">
-                <div style="display:flex;align-items:center;gap:6px">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                   <a href="{{ t.profileHref }}" style="font-weight:700;font-size:16px;color:var(--text)" style-hover="color:var(--primary)">{{ t.name }}</a>
-                  <span title="Verified teacher" style="flex:none;width:15px;height:15px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:9px;display:grid;place-items:center">✓</span>
-                  <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--warning-soft);color:var(--warning)">{{ t.level }}</span>
+                  <sc-if value="{{ t.qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}">
+                    <span title="{{ t.level }}" style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--primary-soft);color:var(--primary)">{{ t.level }}</span>
+                  </sc-if>
                 </div>
                 <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ t.subject }}</div>
                 <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
@@ -263,7 +265,7 @@
               </div>
               <div style="display:flex;gap:8px">
                 <a href="{{ t.profileHref }}" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">Profile</a>
-                <a href="{{ t.profileHref }}" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-size:13.5px;font-weight:600" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request</a>
+                <a href="{{ t.requestHref }}" style="height:38px;padding:0 14px;display:inline-flex;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-size:13.5px;font-weight:600" style-hover="background:var(--primary-hover);color:var(--primary-ink)">Request</a>
               </div>
             </div>
 
@@ -424,9 +426,14 @@ class Component extends DCLogic {
       Tafseel.api.get('/subjects'),
       Tafseel.api.get('/languages')
     ]).then(([page, subjects, languages]) => {
-        TEACHERS = page.items.map(t => ({
+        TEACHERS = page.items.map(t => {
+          var badges = Array.isArray(t.trustBadges) ? t.trustBadges : [];
+          var qualified = badges.some(function (b) { return b && b.code === 'qualified_on_tafseel'; })
+            || !!t.verified;
+          return {
           id: t.teacherId, name: Tafseel.userName(t), subject: t.subjects[0] || 'General',
-          level: t.rating != null && t.rating >= 4.8 && t.ratingCount >= 20 ? 'Top rated' : 'Verified',
+          level: qualified ? Tafseel.t('trust_badge_qualified_on_tafseel') : '',
+          qualifiedOnTafseel: qualified,
           hasRating: t.rating != null && t.ratingCount > 0,
           rating: t.rating == null ? null : Number(t.rating),
           reviews: t.ratingCount, bio: t.headline, skills: t.subjects,
@@ -434,8 +441,10 @@ class Component extends DCLogic {
           price: t.startingPrice, verified: t.verified,
           levels: [], services: [],
           profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.teacherId),
+          requestHref: 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(t.teacherId),
           avatar: Tafseel.avatarUrl(t.teacherId, t.hasAvatar)
-        }));
+          };
+        });
         const catalog = subjects || [];
         const subjectStillValid = !s.subjectId || catalog.some(item => item.id === s.subjectId);
         this.setState({
@@ -705,7 +714,10 @@ class Component extends DCLogic {
         avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar),
         profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId),
         profileLabel: Tafseel.t('compare_view_profile'),
-        verifiedLabel: Tafseel.t('compare_verified'),
+        verifiedLabel: (Array.isArray(teacher.trustBadges) && teacher.trustBadges.some(b => b && b.code === 'qualified_on_tafseel'))
+          || teacher.verified
+          ? Tafseel.t('trust_badge_qualified_on_tafseel')
+          : '',
         removeText: Tafseel.t('compare_remove'),
         removeLabel: Tafseel.t('compare_remove_teacher', { name }),
         onRemove: () => this.removeComparisonTeacher(teacher.teacherId),
@@ -783,6 +795,7 @@ class Component extends DCLogic {
       results: shown.map(t => ({
         ...t,
         profileHref: t.profileHref || ('Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(t.id)),
+        requestHref: t.requestHref || ('Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(t.id)),
         priceLabel: 'SAR ' + t.price,
         availabilityLabel: s.availabilityLoading && !s.availabilityByTeacher[t.id]
           ? Tafseel.t('availability_loading')

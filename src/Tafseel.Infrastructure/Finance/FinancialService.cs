@@ -26,7 +26,8 @@ internal sealed class FinancialService(
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
-            return new(Map(existing), existing.ProviderReference);
+            var retry = await provider.InitiateAsync(orderId, existing.Amount, existing.Currency, ct);
+            return new(Map(existing), retry.CheckoutReference);
         }
         var order = await db.Orders.SingleOrDefaultAsync(
                 x => x.Id == orderId && x.StudentId == studentId, ct)
@@ -61,7 +62,9 @@ internal sealed class FinancialService(
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
-            return new(Map(existing), existing.ProviderReference);
+            var retry = await provider.InitiateAsync(
+                liveSessionBookingId, existing.Amount, existing.Currency, ct);
+            return new(Map(existing), retry.CheckoutReference);
         }
         var booking = await db.LiveSessionBookings.SingleOrDefaultAsync(
                 x => x.Id == liveSessionBookingId && x.StudentId == studentId, ct)
@@ -353,9 +356,18 @@ internal sealed class FinancialService(
                 x.RowVersion
             })
             .ToArrayAsync(ct);
-        var items = rows.Select(x => new AdminWithdrawalDto(
-            x.Id, x.TeacherId, x.Amount, x.Currency, x.Status,
-            x.ProviderReference, x.CreatedAt, Convert.ToBase64String(x.RowVersion))).ToArray();
+        var teacherIds = rows.Select(x => x.TeacherId).Distinct().ToArray();
+        var names = await db.Users.AsNoTracking().Where(u => teacherIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.FullName, u.FullNameEnglish })
+            .ToDictionaryAsync(u => u.Id, u => (u.FullName, u.FullNameEnglish), ct);
+        var items = rows.Select(x =>
+        {
+            names.TryGetValue(x.TeacherId, out var name);
+            return new AdminWithdrawalDto(
+                x.Id, x.TeacherId, x.Amount, x.Currency, x.Status,
+                x.ProviderReference, x.CreatedAt, Convert.ToBase64String(x.RowVersion),
+                name.FullName, name.FullNameEnglish);
+        }).ToArray();
         return new(items, page, pageSize, total);
     }
 

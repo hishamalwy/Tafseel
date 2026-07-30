@@ -29,6 +29,7 @@ public class TafseelApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:SigningKey", "integration-tests-only-signing-key-32-bytes");
         builder.UseSetting("Resend:ApiToken", "integration-tests-only-resend-token");
         builder.UseSetting("Payments:WebhookSecret", "integration-tests-only-payment-webhook-secret");
+        builder.UseSetting("FileStorage:Provider", "Local");
         builder.UseSetting("FileStorage:RootPath", _filesPath);
         builder.ConfigureServices(services =>
         {

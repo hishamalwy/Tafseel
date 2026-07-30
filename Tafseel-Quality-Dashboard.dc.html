@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Quality review — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
@@ -45,10 +46,10 @@
   <div style="display:flex;flex-direction:column;min-width:0">
     <header data-dash-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
       <button id="quality-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="quality-sidebar" style="{{ drawerToggleStyle }}">☰</button>
-      <div style="font-size:15px;font-weight:700" data-hide-sm="1">Quality review</div>
+      <div style="font-size:15px;font-weight:700" data-hide-sm="1">{{ headerTitle }}</div>
       <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
           <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
@@ -59,8 +60,8 @@
     <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
       <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
         <div>
-          <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">Teacher applications</h1>
-          <p style="color:var(--muted);font-size:14.5px">Every teacher demo is scored on the same rubric before it can go live.</p>
+          <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ appsTitle }}</h1>
+          <p style="color:var(--muted);font-size:14.5px">{{ appsSubtitle }}</p>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
@@ -74,7 +75,7 @@
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <h2 style="font-size:16px;font-weight:700">Applications queue</h2>
+            <h2 style="font-size:16px;font-weight:700">{{ queueTitle }}</h2>
             <div role="tablist" style="display:flex;gap:4px;flex-wrap:wrap">
               <sc-for list="{{ statusTabs }}" as="tb" hint-placeholder-count="5">
                 <button type="button" role="tab" aria-selected="{{ tb.selected }}" onClick="{{ tb.onClick }}" style="{{ tb.style }}">{{ tb.label }}</button>
@@ -83,15 +84,15 @@
           </div>
           <div style="overflow-x:auto">
             <table>
-              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Teacher applications queue</caption>
+              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ queueCaption }}</caption>
               <thead>
                 <tr style="background:var(--surface-2)">
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Teacher</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Subject</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Submitted</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Priority</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Status</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colTeacher }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colSubject }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colSubmitted }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colPriority }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,7 +110,7 @@
                       <td style="padding:14px 12px"><span style="{{ a.priorityStyle }}">{{ a.priority }}</span></td>
                       <td style="padding:14px 12px"><span style="{{ a.statusStyle }}">{{ a.status }}</span></td>
                       <td style="padding:14px 20px;text-align:end">
-                        <button type="button" onClick="{{ a.onOpen }}" style="height:34px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">Review</button>
+                        <button type="button" onClick="{{ a.onOpen }}" style="height:34px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ reviewLabel }}</button>
                       </td>
                     </tr>
                   </sc-for>
@@ -118,7 +119,7 @@
             </table>
           </div>
           <sc-if value="{{ queueLoading }}" hint-placeholder-val="{{ false }}">
-            <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">Loading applications…</div>
+            <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">{{ queueLoadingLabel }}</div>
           </sc-if>
           <sc-if value="{{ queueError }}" hint-placeholder-val="{{ false }}">
             <div class="tf-empty-enter" role="alert" style="padding:48px 24px;text-align:center;color:var(--error);font-size:14px">{{ queueError }}</div>
@@ -211,7 +212,7 @@
 
       <sc-if value="{{ isReportsPage }}" hint-placeholder-val="{{ false }}">
         <div>
-          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Reports</h1>
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ reportsTitle }}</h1>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
             <sc-for list="{{ reportStats }}" as="r" hint-placeholder-count="4">
               <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
@@ -221,7 +222,7 @@
             </sc-for>
           </div>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Applications reviewed per week</h2>
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ reportsChartTitle }}</h2>
             <sc-if value="{{ reportChartEmpty }}" hint-placeholder-val="{{ true }}">
               <p class="tf-empty" data-i18n="quality_report_chart_unavailable">Weekly review analytics are not available yet.</p>
             </sc-if>
@@ -287,17 +288,17 @@
             </label>
             <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
           </div>
-          <h2 style="font-size:17px;margin:8px 0 0">Notifications</h2>
+          <h2 style="font-size:17px;margin:8px 0 0">{{ notificationsTitle }}</h2>
           <sc-if value="{{ prefsUnavailable }}" hint-placeholder-val="{{ false }}">
             <p role="status" style="margin:0;font-size:13.5px;color:var(--muted)" data-i18n="quality_prefs_unavailable">Notification preferences could not be loaded for this session.</p>
           </sc-if>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-              <span>Email me when a new application is submitted</span>
+              <span>{{ notifyNewAppsLabel }}</span>
               <input type="checkbox" checked="{{ notifyNewApps }}" onChange="{{ onNotifyNewApps }}" style="width:38px;height:22px;accent-color:var(--primary)" />
             </label>
             <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
-              <span>Auto-assign applications to me (not available)</span>
+              <span>{{ autoAssignLabel }}</span>
               <input type="checkbox" disabled style="width:38px;height:22px;accent-color:var(--primary)" />
             </label>
             <button type="button" onClick="{{ onSaveSettings }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ saveNotificationSettings }}</button>
@@ -307,7 +308,7 @@
 
       <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-          <button type="button" onClick="{{ backToList }}" style="border:0;background:none;color:var(--muted);font-size:13.5px;font-weight:600">← Back to queue</button>
+          <button type="button" onClick="{{ backToList }}" style="border:0;background:none;color:var(--muted);font-size:13.5px;font-weight:600">{{ backQueueLabel }}</button>
         </div>
         <div data-stack="review" style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;align-items:start">
           <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
@@ -316,7 +317,7 @@
                 <span style="width:56px;height:56px;flex:none;border-radius:16px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px)"></span>
                 <div>
                   <div style="font-size:18px;font-weight:800">{{ current.name }}</div>
-                  <div style="font-size:13.5px;color:var(--muted)">{{ current.subject }} · Applied {{ current.submitted }}</div>
+                  <div style="font-size:13.5px;color:var(--muted)">{{ current.subject }} · {{ appliedLabel }}</div>
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
@@ -330,8 +331,8 @@
             </section>
 
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-              <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Demo submission</h2>
-              <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px">Topic: {{ current.demoTopic }}</p>
+              <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">{{ demoTitle }}</h2>
+              <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px">{{ demoTopicLabel }}</p>
               <p style="font-size:13.5px;color:var(--text-2);margin-bottom:14px">{{ current.assignmentInstructions }}</p>
               <sc-if value="{{ current.hasResources }}" hint-placeholder-val="{{ false }}">
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
@@ -344,13 +345,13 @@
               <video src="{{ current.demoUrl }}" controls preload="metadata"
                 style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
               <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
-                <span>Duration: {{ current.demoDuration }}</span>
-                <span>Submission version {{ current.submissionVersion }}</span>
+                <span>{{ durationLabel }}</span>
+                <span>{{ submissionVersionLabel }}</span>
               </div>
             </section>
 
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-              <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">Evaluation rubric</h2>
+              <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">{{ rubricTitle }}</h2>
               <div style="display:flex;flex-direction:column;gap:16px">
                 <sc-for list="{{ rubric }}" as="r" hint-placeholder-count="9">
                   <div>
@@ -360,26 +361,26 @@
                     </div>
                     <div style="display:flex;gap:6px">
                       <sc-for list="{{ r.points }}" as="p" hint-placeholder-count="5">
-                        <button type="button" onClick="{{ p.onClick }}" aria-label="Score {{ p.n }}" aria-pressed="{{ p.active }}" style="{{ p.style }}">{{ p.n }}</button>
+                        <button type="button" onClick="{{ p.onClick }}" aria-label="{{ p.ariaLabel }}" aria-pressed="{{ p.active }}" style="{{ p.style }}">{{ p.n }}</button>
                       </sc-for>
                     </div>
                   </div>
                 </sc-for>
               </div>
               <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:14px;font-weight:700">Overall score</span>
+                <span style="font-size:14px;font-weight:700">{{ overallScoreLabel }}</span>
                 <span style="font-size:20px;font-weight:800">{{ overallScore }} / 5</span>
               </div>
             </section>
 
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-              <h2 style="font-size:16px;font-weight:700;margin-bottom:12px">Comments</h2>
+              <h2 style="font-size:16px;font-weight:700;margin-bottom:12px">{{ commentsTitle }}</h2>
               <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-                <span style="font-size:13px;font-weight:600">Feedback to teacher (required to reject or request changes)</span>
+                <span style="font-size:13px;font-weight:600">{{ feedbackLabel }}</span>
                 <textarea value="{{ comment }}" onChange="{{ onComment }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
               </label>
               <label style="display:flex;flex-direction:column;gap:6px">
-                <span style="font-size:13px;font-weight:600">Internal notes (not shared with teacher)</span>
+                <span style="font-size:13px;font-weight:600">{{ internalLabel }}</span>
                 <textarea value="{{ internalNotes }}" onChange="{{ onInternalNotes }}" rows="2" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
               </label>
             </section>
@@ -387,19 +388,19 @@
 
           <aside data-sticky="1" style="position:sticky;top:92px;display:flex;flex-direction:column;gap:14px">
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-              <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Decision</h2>
+              <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ decisionTitle }}</h2>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <button type="button" onClick="{{ onApprove }}" style="height:42px;border:0;background:var(--success);color:#fff;border-radius:var(--r-md);font-weight:700;font-size:14px">Approve</button>
-                <button type="button" onClick="{{ onRequestChanges }}" style="height:42px;border:1px solid var(--warning);background:var(--warning-soft);color:var(--warning);border-radius:var(--r-md);font-weight:700;font-size:14px">Request changes</button>
-                <button type="button" onClick="{{ onReject }}" style="height:42px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-md);font-weight:700;font-size:14px">Reject</button>
+                <button type="button" onClick="{{ onApprove }}" disabled="{{ decisionBusy }}" style="height:42px;border:0;background:var(--success);color:#fff;border-radius:var(--r-md);font-weight:700;font-size:14px">{{ approveLabel }}</button>
+                <button type="button" onClick="{{ onRequestChanges }}" disabled="{{ decisionBusy }}" style="height:42px;border:1px solid var(--warning);background:var(--warning-soft);color:var(--warning);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ requestChangesLabel }}</button>
+                <button type="button" onClick="{{ onReject }}" disabled="{{ decisionBusy }}" style="height:42px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ rejectLabel }}</button>
               </div>
               <sc-if value="{{ needsReason }}" hint-placeholder-val="{{ false }}">
-                <p style="margin-top:10px;font-size:12.5px;color:var(--error)">Add a comment above before rejecting or requesting changes.</p>
+                <p style="margin-top:10px;font-size:12.5px;color:var(--error)">{{ needsReasonLabel }}</p>
               </sc-if>
             </div>
 
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-              <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">Application history</h2>
+              <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">{{ historyTitle }}</h2>
               <div style="display:flex;flex-direction:column;gap:0">
                 <sc-if value="{{ hasHistory }}" hint-placeholder-val="{{ false }}">
                   <sc-for list="{{ history }}" as="h" hint-placeholder-count="0">
@@ -427,22 +428,42 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
-const RUBRIC_KEYS = ['Subject knowledge', 'Accuracy of information', 'Clarity of explanation', 'Communication skills', 'Teaching structure', 'Voice quality', 'Video quality', 'Student engagement', 'Professionalism'];
+const RUBRIC_KEYS = [
+  'quality_rubric_0', 'quality_rubric_1', 'quality_rubric_2', 'quality_rubric_3', 'quality_rubric_4',
+  'quality_rubric_5', 'quality_rubric_6', 'quality_rubric_7', 'quality_rubric_8'
+];
 
 let APPLICATIONS = [];
 let SHOWCASES = [];
 
 const STATUS_TONE = {
-  'Pending': ['var(--warning-soft)', 'var(--warning)'], 'Under Review': ['var(--info-soft)', 'var(--info)'],
-  'Changes Requested': ['var(--warning-soft)', 'var(--warning)'], 'Approved': ['var(--success-soft)', 'var(--success)'], 'Rejected': ['var(--error-soft)', 'var(--error)']
+  0: ['var(--surface-2)', 'var(--muted)'],
+  1: ['var(--warning-soft)', 'var(--warning)'],
+  2: ['var(--info-soft)', 'var(--info)'],
+  3: ['var(--warning-soft)', 'var(--warning)'],
+  4: ['var(--success-soft)', 'var(--success)'],
+  5: ['var(--error-soft)', 'var(--error)'],
+  6: ['var(--surface-2)', 'var(--muted)']
 };
-const PRIORITY_TONE = { 'High': ['var(--error-soft)', 'var(--error)'], 'Medium': ['var(--warning-soft)', 'var(--warning)'], 'Low': ['var(--surface-2)', 'var(--muted)'] };
+const PRIORITY_TONE = {
+  2: ['var(--error-soft)', 'var(--error)'],
+  1: ['var(--warning-soft)', 'var(--warning)'],
+  0: ['var(--surface-2)', 'var(--muted)']
+};
+const TAB_RAW_STATUS = {
+  all: null,
+  pending: 1,
+  underreview: 2,
+  changesrequested: 3,
+  approved: 4,
+  rejected: 5
+};
 
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false,
     statusTab: 'all', view: 'list', page: 'overview', navKey: 'overview', currentId: null,
-    scores: {}, comment: '', internalNotes: '', needsReason: false, toast: '', toastLeaving: false,
+    scores: {}, comment: '', internalNotes: '', needsReason: false, decisionBusy: false, toast: '', toastLeaving: false,
     queueLoading: true, queueError: '',
     showcaseLoading: true, showcaseError: '', showcaseCurrentId: '',
     showcaseFeedback: '', showcaseInternalNote: '', showcaseReasonCode: '',
@@ -500,17 +521,20 @@ class Component extends DCLogic {
       } catch (_) {
         preferences = null;
       }
-      const status = ['Draft','Pending','Under Review','Changes Requested','Approved','Rejected','Withdrawn'];
-      const priority = ['Low','Medium','High'];
+      const statusKeys = [
+        'apply_status_draft', 'apply_status_submitted', 'apply_status_under_review',
+        'apply_status_changes', 'apply_status_approved', 'apply_status_rejected', 'apply_status_withdrawn'
+      ];
       APPLICATIONS = (Array.isArray(items) ? items : []).map(x => {
-        const statusLabel = status[x.status] || 'Pending';
-        const priorityLabel = priority[x.priority] || 'Medium';
-        const teacherLabel = x.teacherDisplayName || 'Teacher';
+        const statusLabel = Tafseel.t(statusKeys[x.status] || 'apply_status_unknown');
+        const rawPriority = Number.isFinite(Number(x.priority)) ? Number(x.priority) : 1;
+        const priorityLabel = Tafseel.t(['priority_low', 'priority_medium', 'priority_high'][rawPriority] || 'priority_medium');
+        const teacherLabel = x.teacherDisplayName || Tafseel.t('name_unavailable');
         const initials = teacherLabel.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'TR';
         let resources = [];
         try { resources = JSON.parse(x.assignmentResourceManifest || '[]'); } catch (_) {}
         resources = resources.map(resource => ({
-          name: resource.DisplayName || resource.displayName || resource.OriginalFileName || resource.originalFileName || 'Resource',
+          name: resource.DisplayName || resource.displayName || resource.OriginalFileName || resource.originalFileName || Tafseel.t('quality_resource_fallback'),
           href: (resource.Type || resource.type) === 'File'
             ? '/api/v1/qualification-resources/' + (resource.Id || resource.id) + '/content'
             : (resource.Url || resource.url || '#')
@@ -519,15 +543,19 @@ class Component extends DCLogic {
           id: x.id,
           name: teacherLabel,
           initials,
-          subject: x.subjectName || (subjects.find(s => s.id === x.subjectId) || {}).name || 'Subject',
+          subject: x.subjectName || (subjects.find(s => s.id === x.subjectId) || {}).name || Tafseel.t('quality_subject_fallback'),
           submitted: x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle: 'medium' }) : '—',
           priority: priorityLabel,
+          rawPriority,
           status: statusLabel,
-          demoTopic: x.assignmentTitle || (topics.find(t => t.id === x.qualificationTopicId) || {}).name || 'Qualification demo',
+          demoTopic: x.assignmentTitle || (topics.find(t => t.id === x.qualificationTopicId) || {}).name || Tafseel.t('quality_demo_fallback'),
           assignmentInstructions: x.assignmentInstructions || '',
           resources,
           hasResources: resources.length > 0,
-          facts: [{ k: 'Degree', v: x.degree || '—' }, { k: 'Experience', v: String(x.experienceYears || 0) + ' years' }],
+          facts: [
+            { k: Tafseel.t('apply_degree'), v: x.degree || '—' },
+            { k: Tafseel.t('compare_field_experience'), v: Tafseel.t('quality_years', { n: String(x.experienceYears || 0) }) }
+          ],
           demoUrl: '/api/v1/teacher-applications/' + x.id + '/demo/content',
           demoDuration: x.demoDurationSeconds ? Math.floor(x.demoDurationSeconds / 60) + ':' + String(x.demoDurationSeconds % 60).padStart(2, '0') : '—',
           submissionVersion: x.submissionVersion || 1,
@@ -535,14 +563,15 @@ class Component extends DCLogic {
           rawStatus: x.status
         };
       });
-      const showcaseStatus = [
-        'Draft', 'Submitted', 'Under Review', 'Changes Requested', 'Approved', 'Rejected', 'Archived'
+      const showcaseStatusKeys = [
+        'showcase_status_draft', 'showcase_status_submitted', 'showcase_status_under_review',
+        'showcase_status_changes_requested', 'showcase_status_approved', 'showcase_status_rejected', 'showcase_status_archived'
       ];
       SHOWCASES = ((showcasePage && showcasePage.items) || []).map(x => ({
         id:x.sampleId,
         versionId:x.versionId,
         versionNumber:x.versionNumber,
-        name:x.teacherDisplayName,
+        name:x.teacherDisplayName || Tafseel.t('name_unavailable'),
         subject:Tafseel.lang === 'ar' && x.subjectNameAr ? x.subjectNameAr : x.subjectName,
         topic:Tafseel.lang === 'ar' && x.topicNameAr ? x.topicNameAr : (x.topicName || ''),
         title:x.title,
@@ -550,7 +579,7 @@ class Component extends DCLogic {
         fileName:x.originalFileName,
         fileSize:x.fileSize,
         submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '—',
-        status:showcaseStatus[x.status] || 'Submitted',
+        status:Tafseel.t(showcaseStatusKeys[x.status] || 'showcase_status_submitted'),
         rawStatus:x.status,
         assignedReviewerId:x.assignedReviewerId,
         version:x.version
@@ -620,28 +649,37 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
-    const pendingCount = APPLICATIONS.filter(a => a.status === 'Pending').length;
-    const underReviewCount = APPLICATIONS.filter(a => a.status === 'Under Review').length;
-    const changesCount = APPLICATIONS.filter(a => a.status === 'Changes Requested').length;
+    const pendingCount = APPLICATIONS.filter(a => a.rawStatus === 1).length;
+    const underReviewCount = APPLICATIONS.filter(a => a.rawStatus === 2).length;
+    const changesCount = APPLICATIONS.filter(a => a.rawStatus === 3).length;
+    const approvedCount = APPLICATIONS.filter(a => a.rawStatus === 4).length;
+    const rejectedCount = APPLICATIONS.filter(a => a.rawStatus === 5).length;
     const showcaseCount = SHOWCASES.length;
     const NAV = [
-      ['overview','◱','Overview',0], ['pending','◷','Pending Applications',pendingCount], ['review','◍','Under Review',underReviewCount],
-      ['changes','↺','Changes Requested',changesCount], ['approved','✓','Approved Teachers',0], ['rejected','✕','Rejected Applications',0],
-      ['reports','▤','Reports',0], ['settings','⚙','Settings',0]
+      ['overview','◱',Tafseel.t('qd_nav_overview'),0],
+      ['pending','◷',Tafseel.t('qd_nav_pending'),pendingCount],
+      ['review','◍',Tafseel.t('qd_nav_under_review'),underReviewCount],
+      ['changes','↺',Tafseel.t('qd_nav_changes'),changesCount],
+      ['approved','✓',Tafseel.t('qd_nav_approved'),approvedCount],
+      ['rejected','✕',Tafseel.t('qd_nav_rejected_apps'),rejectedCount],
+      ['showcases','▶',Tafseel.t('qd_nav_showcase'),showcaseCount],
+      ['reports','▤',Tafseel.t('qd_nav_reports'),0],
+      ['settings','⚙',Tafseel.t('qd_nav_settings'),0]
     ];
 
-    NAV.splice(NAV.length - 2, 0, ['showcases','▶',Tafseel.t('quality_showcase_nav'),showcaseCount]);
-    const filtered = APPLICATIONS.filter(a => s.statusTab === 'all' || a.status.toLowerCase().replace(' ', '') === s.statusTab);
+    const wantStatus = TAB_RAW_STATUS[s.statusTab];
+    const filtered = APPLICATIONS.filter(a => wantStatus == null || a.rawStatus === wantStatus);
     const current = APPLICATIONS.find(a => a.id === s.currentId) || filtered[0] || null;
     const currentShowcase = SHOWCASES.find(x => x.id === s.showcaseCurrentId) || null;
 
-    const rubric = RUBRIC_KEYS.map(label => {
-      const score = s.scores[label] || 0;
+    const rubric = RUBRIC_KEYS.map(key => {
+      const score = s.scores[key] || 0;
       return {
-        label, score,
+        label: Tafseel.t(key), score,
         points: [1, 2, 3, 4, 5].map(n => ({
           n, active: score === n,
-          onClick: () => this.setState({ scores: { ...s.scores, [label]: n } }),
+          ariaLabel: Tafseel.t('quality_score_aria', { n: String(n) }),
+          onClick: () => this.setState({ scores: { ...s.scores, [key]: n } }),
           style: 'width:32px;height:32px;border-radius:var(--r-sm);font-size:13px;font-weight:700;transition:all var(--t);' +
             (score === n ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border);background:var(--bg);color:var(--text-2);')
         }))
@@ -650,23 +688,29 @@ class Component extends DCLogic {
     const scored = Object.values(s.scores);
     const overallScore = scored.length ? (scored.reduce((a, b) => a + b, 0) / scored.length).toFixed(1) : '0.0';
 
-    const decide = async (label) => {
-      if (!current) return this.flash('No application selected.');
-      if ((label === 'Rejected' || label === 'Changes Requested') && !s.comment.trim()) {
+    const decide = async (decision) => {
+      if (s.decisionBusy) return;
+      if (!current) return this.flash(Tafseel.t('quality_flash_no_selection'));
+      if ((decision === 2 || decision === 1) && !s.comment.trim()) {
         this.setState({ needsReason: true });
         return;
       }
-      if (Object.keys(s.scores).length !== 9) return this.flash('Score all nine rubric criteria.');
+      if (Object.keys(s.scores).length !== 9) return this.flash(Tafseel.t('quality_flash_score_rubric'));
+      const actionKey = decision === 0 ? 'quality_approve' : decision === 1 ? 'quality_request_changes' : 'quality_reject';
+      this.setState({ decisionBusy: true });
       try {
         await Tafseel.api.post('/teacher-applications/' + current.id + '/decision', {
-          decision:{ Approved:0, 'Changes Requested':1, Rejected:2 }[label],
+          decision,
           scores:RUBRIC_KEYS.map((key, criterion) => ({ criterion, score:s.scores[key] })),
           comment:s.comment || null, internalNotes:s.internalNotes || null
         }, { 'If-Match':current.version });
         await this.loadQueue();
-        this.setState({ needsReason:false, view:'list' });
-        this.flash(label + ': ' + current.name);
-      } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        this.setState({ needsReason:false, view:'list', decisionBusy:false });
+        this.flash(Tafseel.t('quality_flash_decision', { action: Tafseel.t(actionKey), name: current.name }));
+      } catch (error) {
+        this.setState({ decisionBusy: false });
+        this.flash(Tafseel.api.errorMessage(error));
+      }
     };
 
     const navTo = (key) => {
@@ -876,7 +920,7 @@ class Component extends DCLogic {
             emailEnabled: s.notifyNewApps,
             inAppEnabled: s.inAppNotifications
           });
-          this.flash('Settings saved');
+          this.flash(Tafseel.t('td_settings_save_ok'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
       isReview: s.view === 'review' && !!current,
@@ -896,10 +940,51 @@ class Component extends DCLogic {
 
       queueLoading: s.queueLoading,
       queueError: s.queueError,
+      queueLoadingLabel: Tafseel.t('quality_loading_applications'),
+
+      appsTitle: Tafseel.t('quality_apps_title'),
+      appsSubtitle: Tafseel.t('quality_apps_subtitle'),
+      queueTitle: Tafseel.t('quality_queue_title'),
+      queueCaption: Tafseel.t('quality_queue_caption'),
+      colTeacher: Tafseel.t('quality_col_teacher'),
+      colSubject: Tafseel.t('quality_col_subject'),
+      colSubmitted: Tafseel.t('quality_col_submitted'),
+      colPriority: Tafseel.t('quality_col_priority'),
+      colStatus: Tafseel.t('quality_col_status'),
+      colAction: Tafseel.t('quality_col_action'),
+      reviewLabel: Tafseel.t('quality_review'),
+      headerTitle: Tafseel.t('quality_header'),
+      themeToggleLabel: Tafseel.t('req_toggle_theme'),
+      backQueueLabel: Tafseel.t('quality_back_queue'),
+      demoTitle: Tafseel.t('quality_demo_title'),
+      rubricTitle: Tafseel.t('quality_rubric_title'),
+      overallScoreLabel: Tafseel.t('quality_overall_score'),
+      commentsTitle: Tafseel.t('quality_comments_title'),
+      feedbackLabel: Tafseel.t('quality_feedback_label'),
+      internalLabel: Tafseel.t('quality_internal_label'),
+      decisionTitle: Tafseel.t('quality_decision_title'),
+      needsReasonLabel: Tafseel.t('quality_needs_reason'),
+      historyTitle: Tafseel.t('quality_history_title'),
+      approveLabel: Tafseel.t('quality_approve'),
+      requestChangesLabel: Tafseel.t('quality_request_changes'),
+      rejectLabel: Tafseel.t('quality_reject'),
+      reportsTitle: Tafseel.t('quality_reports_title'),
+      reportsChartTitle: Tafseel.t('quality_reports_chart'),
+      notificationsTitle: Tafseel.t('quality_notifications_title'),
+      notifyNewAppsLabel: Tafseel.t('quality_notify_new_apps'),
+      autoAssignLabel: Tafseel.t('quality_auto_assign_unavailable'),
+      appliedLabel: current ? Tafseel.t('quality_applied_on', { date: current.submitted }) : '',
+      demoTopicLabel: current ? Tafseel.t('quality_demo_topic', { topic: current.demoTopic }) : '',
+      durationLabel: current ? Tafseel.t('quality_duration', { duration: current.demoDuration }) : '',
+      submissionVersionLabel: current ? Tafseel.t('quality_submission_version', { version: String(current.submissionVersion) }) : '',
 
       statusTabs: [
-        { key: 'all', label: 'All' }, { key: 'pending', label: 'Pending' }, { key: 'underreview', label: 'Under Review' },
-        { key: 'changesrequested', label: 'Changes Requested' }, { key: 'approved', label: 'Approved' }, { key: 'rejected', label: 'Rejected' }
+        { key: 'all', label: Tafseel.t('quality_tab_all') },
+        { key: 'pending', label: Tafseel.t('apply_status_submitted') },
+        { key: 'underreview', label: Tafseel.t('apply_status_under_review') },
+        { key: 'changesrequested', label: Tafseel.t('apply_status_changes') },
+        { key: 'approved', label: Tafseel.t('apply_status_approved') },
+        { key: 'rejected', label: Tafseel.t('apply_status_rejected') }
       ].map(t => ({
         label: t.label, selected: s.statusTab === t.key,
         style: 'padding:7px 12px;border:0;background:none;font-size:13px;font-weight:600;border-radius:var(--r-sm);transition:all var(--t);' +
@@ -910,8 +995,8 @@ class Component extends DCLogic {
       noApplications: !s.queueLoading && !s.queueError && filtered.length === 0,
       hasApplications: filtered.length > 0,
       applications: filtered.map(a => {
-        const [sbg, sfg] = STATUS_TONE[a.status] || STATUS_TONE.Pending;
-        const [pbg, pfg] = PRIORITY_TONE[a.priority] || PRIORITY_TONE.Medium;
+        const [sbg, sfg] = STATUS_TONE[a.rawStatus] || STATUS_TONE[1];
+        const [pbg, pfg] = PRIORITY_TONE[a.rawPriority] || PRIORITY_TONE[1];
         return {
           ...a,
           initials: a.initials || '—',
@@ -931,14 +1016,15 @@ class Component extends DCLogic {
       comment: s.comment, onComment: e => this.setState({ comment: e.target.value, needsReason: false }),
       internalNotes: s.internalNotes, onInternalNotes: e => this.setState({ internalNotes: e.target.value }),
       needsReason: s.needsReason,
-      onApprove: () => decide('Approved'),
-      onRequestChanges: () => decide('Changes Requested'),
-      onReject: () => decide('Rejected'),
+      onApprove: () => decide(0),
+      onRequestChanges: () => decide(1),
+      onReject: () => decide(2),
+      decisionBusy: !!s.decisionBusy,
 
       hasHistory: !!(current && current.submitted),
       history: current && current.submitted ? [
         {
-          label: 'Application submitted',
+          label: Tafseel.t('quality_history_submitted'),
           time: current.submitted,
           dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--primary)'
         }

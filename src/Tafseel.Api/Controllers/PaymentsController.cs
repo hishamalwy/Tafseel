@@ -10,7 +10,7 @@ namespace Tafseel.Api.Controllers;
 
 [ApiController]
 [Route("api/v1")]
-public sealed class PaymentsController(IFinancialService finance) : ControllerBase
+public sealed class PaymentsController(IFinancialService finance, IPaymentProvider paymentProvider) : ControllerBase
 {
     [Authorize(Policy = Permissions.PaymentsViewOwn), EnableRateLimiting("payment")]
     [HttpPost("payments/orders/{orderId:guid}")]
@@ -36,13 +36,27 @@ public sealed class PaymentsController(IFinancialService finance) : ControllerBa
 
     [AllowAnonymous, EnableRateLimiting("payment"), RequestSizeLimit(64 * 1024)]
     [HttpPost("payments/webhooks/mock")]
+    public Task<IActionResult> MockWebhook(
+        [FromHeader(Name = "X-Mock-Signature"), Required] string signature, CancellationToken ct) =>
+        ProcessWebhookAsync("Mock", signature, ct);
+
+    /// <summary>
+    /// Provider-named webhook endpoint. Fail-closed when the path provider does not match
+    /// the configured/selected <see cref="IPaymentProvider.Name"/>.
+    /// Signature header: X-Mock-Signature (Mock) or X-Payment-Signature (future PSPs).
+    /// </summary>
+    [AllowAnonymous, EnableRateLimiting("payment"), RequestSizeLimit(64 * 1024)]
+    [HttpPost("payments/webhooks/{provider}")]
     public async Task<IActionResult> Webhook(
-        [FromHeader(Name = "X-Mock-Signature"), Required] string signature, CancellationToken ct)
+        string provider,
+        [FromHeader(Name = "X-Mock-Signature")] string? mockSignature,
+        [FromHeader(Name = "X-Payment-Signature")] string? paymentSignature,
+        CancellationToken ct)
     {
-        using var buffer = new MemoryStream();
-        await Request.Body.CopyToAsync(buffer, ct);
-        await finance.ProcessWebhookAsync(buffer.ToArray(), signature, ct);
-        return NoContent();
+        var signature = mockSignature ?? paymentSignature;
+        if (string.IsNullOrWhiteSpace(signature))
+            return BadRequest();
+        return await ProcessWebhookAsync(provider, signature, ct);
     }
 
     [Authorize(Policy = Permissions.PaymentsManage), HttpPost("payments/{id:guid}/refund")]
@@ -77,6 +91,17 @@ public sealed class PaymentsController(IFinancialService finance) : ControllerBa
     [Authorize(Policy = Permissions.ReportsView), HttpGet("admin/finance/reconciliation")]
     public Task<ReconciliationDto> Reconciliation(CancellationToken ct) =>
         finance.ReconcileAsync(ct);
+
+    private async Task<IActionResult> ProcessWebhookAsync(string provider, string signature, CancellationToken ct)
+    {
+        if (!string.Equals(provider, paymentProvider.Name, StringComparison.OrdinalIgnoreCase))
+            return Unauthorized();
+
+        using var buffer = new MemoryStream();
+        await Request.Body.CopyToAsync(buffer, ct);
+        await finance.ProcessWebhookAsync(buffer.ToArray(), signature, ct);
+        return NoContent();
+    }
 
     private string UserId() => User.FindFirstValue("sub") ?? throw new UnauthorizedAccessException();
 }

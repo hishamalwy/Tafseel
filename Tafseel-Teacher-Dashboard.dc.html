@@ -11,6 +11,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Teacher dashboard — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
   <script src="js/locales.js"></script>
@@ -86,7 +87,7 @@
       <section id="new-requests" style="display:flex;flex-direction:column;gap:14px">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <h2 style="font-size:16px;font-weight:700">New student requests</h2>
-          <span style="font-size:13px;color:var(--muted)">{{ pendingCount }} pending your response</span>
+          <span style="font-size:13px;color:var(--muted)">{{ pendingResponseLabel }}</span>
         </div>
         <sc-for list="{{ pending }}" as="q" hint-placeholder-count="3">
           <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
@@ -101,21 +102,21 @@
                 <div style="font-size:15px;font-weight:600;margin-bottom:6px">{{ q.topic }}</div>
                 <p style="font-size:13.5px;color:var(--text-2);line-height:1.55;margin-bottom:10px">{{ q.description }}</p>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
-                  <sc-for list="{{ q.files }}" as="fl" hint-placeholder-count="2">
-                    <span style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ fl }}</span>
+                  <sc-for list="{{ q.files }}" as="fl" hint-placeholder-count="0">
+                    <button type="button" onClick="{{ fl.onDownload }}" style="font-family:var(--font-mono);font-size:11px;padding:4px 9px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-weight:600" title="{{ fl.downloadLabel }}">{{ fl.name }}</button>
                   </sc-for>
                 </div>
               </div>
               <div style="text-align:end;flex:none">
-                <div style="font-size:12px;color:var(--muted);margin-bottom:2px">Budget</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:2px">{{ budgetLabel }}</div>
                 <div style="font-size:18px;font-weight:800;margin-bottom:10px">{{ q.budget }}</div>
-                <div style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">Due {{ q.deadline }}</div>
+                <div style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">{{ q.dueLabel }}</div>
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap">
-              <button type="button" onClick="{{ q.onAccept }}" style="height:36px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Accept</button>
-              <button type="button" onClick="{{ q.onDecline }}" style="height:36px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Decline</button>
-              <button type="button" onClick="{{ q.onClarify }}" style="height:36px;padding:0 16px;border:1px solid var(--border);background:none;color:var(--text-2);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">Request clarification</button>
+              <button type="button" onClick="{{ q.onAccept }}" style="height:36px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">{{ acceptLabel }}</button>
+              <button type="button" onClick="{{ q.onDecline }}" style="height:36px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">{{ declineLabel }}</button>
+              <button type="button" onClick="{{ q.onClarify }}" style="height:36px;padding:0 16px;border:1px solid var(--border);background:none;color:var(--text-2);border-radius:var(--r-sm);font-size:13.5px;font-weight:600">{{ clarifyLabel }}</button>
             </div>
           </article>
         </sc-for>
@@ -132,14 +133,14 @@
         </div>
         <div style="overflow-x:auto">
           <table>
-            <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Your active orders</caption>
+            <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ ordersCaption }}</caption>
             <thead>
               <tr style="background:var(--surface-2)">
-                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Order</th>
-                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Student</th>
-                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Deadline</th>
-                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">Price</th>
-                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">Action</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colOrder }}</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStudent }}</th>
+                <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colDeadline }}</th>
+                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colPrice }}</th>
+                <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
               </tr>
             </thead>
             <tbody>
@@ -147,7 +148,13 @@
                 <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                   <td style="padding:14px 20px">
                     <div style="font-size:14px;font-weight:600">{{ o.title }}</div>
-                    <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ o.id }}</div>
+                    <sc-if value="{{ o.hasFiles }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+                        <sc-for list="{{ o.files }}" as="fl" hint-placeholder-count="0">
+                          <button type="button" onClick="{{ fl.onDownload }}" style="font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ fl.name }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
                   </td>
                   <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2);white-space:nowrap">{{ o.student }}</td>
                   <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ o.deadline }}</td>
@@ -164,7 +171,7 @@
           </table>
         </div>
         <sc-if value="{{ noOrders }}" hint-placeholder-val="{{ false }}">
-          <div class="tf-empty-enter" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">No orders in this stage right now.</div>
+          <div class="tf-empty-enter" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">{{ ordersEmpty }}</div>
         </sc-if>
       </section>
 
@@ -491,6 +498,11 @@
             </ul>
           </sc-if>
         </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:13px;color:var(--muted)">{{ trustBadgeSectionLabel }}</div>
+          <div style="font-size:16px;font-weight:700">{{ trustBadgeStatusValue }}</div>
+          <p style="font-size:13.5px;color:var(--text-2);margin:0;line-height:1.55">{{ trustBadgeCriteria }}</p>
+        </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">{{ profileBioLabel }}</span>
@@ -597,35 +609,35 @@
 
 <sc-if value="{{ acceptModal }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeModal }}">
-    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Accept request" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Accept request</h2>
+    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ acceptRequestTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">{{ acceptRequestTitle }}</h2>
       <p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">{{ acceptModal.topic }}</p>
       <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Final price (SAR)</span>
+          <span style="font-size:13px;font-weight:600">{{ acceptFinalPrice }}</span>
           <input type="number" sc-camel-value="{{ finalPrice }}" onChange="{{ onFinalPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Delivery date</span>
+          <span style="font-size:13px;font-weight:600">{{ acceptDeliveryDate }}</span>
           <input type="date" sc-camel-value="{{ deliveryDate }}" onChange="{{ onDeliveryDate }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Number of revisions</span>
+          <span style="font-size:13px;font-weight:600">{{ acceptRevisions }}</span>
           <select value="{{ revisions }}" onChange="{{ onRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
-            <option value="0">No revisions</option>
-            <option value="1">1 revision</option>
-            <option value="2">2 revisions</option>
-            <option value="3">3 revisions</option>
+            <option value="0">{{ acceptNoRevisions }}</option>
+            <option value="1">{{ acceptOneRevision }}</option>
+            <option value="2">{{ acceptTwoRevisions }}</option>
+            <option value="3">{{ acceptThreeRevisions }}</option>
           </select>
         </label>
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Notes to student (optional)</span>
+          <span style="font-size:13px;font-weight:600">{{ acceptNotes }}</span>
           <textarea value="{{ notes }}" onChange="{{ onNotes }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
         </label>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
-        <button type="button" onClick="{{ confirmAccept }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Accept request</button>
+        <button type="button" onClick="{{ closeModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ cancelLabel }}</button>
+        <button type="button" onClick="{{ confirmAccept }}" disabled="{{ acceptBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ acceptConfirmLabel }}</button>
       </div>
     </div>
   </div>
@@ -749,12 +761,19 @@ let PENDING = [];
 
 let ORDERS = [];
 
-const STAGE_ACTION = { awaiting_payment:'Waiting for payment', progress:'In progress', ready:'Delivered', revision:'View revision', completed:'Completed', cancelled:'Cancelled' };
+const STAGE_ACTION = {
+  awaiting_payment: 'td_stage_waiting_payment',
+  progress: 'td_stage_start_work',
+  ready: 'td_stage_upload_delivery',
+  revision: 'td_stage_revision',
+  completed: 'td_stage_completed',
+  cancelled: 'td_stage_cancelled'
+};
 
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, section: 'overview',
-    orderTab: 'all', declined: [], acceptModal: null,
+    orderTab: 'all', declined: [], acceptModal: null, acceptBusy: false,
     finalPrice: '', deliveryDate: '', revisions: '2', notes: '', toast: '', toastLeaving: false, onboarding: null, publicationBusy: false,
     balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
     subjectsCatalog: [], servicesCatalog: [], eligibleSubjects: [],
@@ -822,29 +841,59 @@ class Component extends DCLogic {
       const servicesCatalog = value(9) || [];
       const showcases = value(10);
       const ORDER_STAGES = ['awaiting_payment','progress','ready','revision','completed','cancelled'];
-      PENDING = requests && requests.items ? requests.items.map(x => ({
+      const mapFiles = (attachments) => (attachments || []).map(a => ({
+        id: a.id,
+        name: a.originalName || Tafseel.t('common_photo'),
+        downloadLabel: Tafseel.t('td_download_file', { name: a.originalName || '' }),
+        onDownload: () => Tafseel.api.openBlob(
+          '/learning-requests/attachments/' + encodeURIComponent(a.id) + '/content',
+          { download: true, fileName: a.originalName || 'attachment' }
+        ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
+      }));
+      const requestItems = requests && requests.items ? requests.items : [];
+      const requestFilesById = {};
+      requestItems.forEach(x => { requestFilesById[x.id] = mapFiles(x.attachments); });
+      const orderLinkedRequests = Object.create(null);
+      ((orders && orders.items) || []).forEach(o => {
+        if (o && o.learningRequestId != null)
+          orderLinkedRequests[String(o.learningRequestId).toLowerCase()] = true;
+      });
+      // Pending = teacher-actionable only (PendingTeacherReview). Accepted work continues on Orders.
+      PENDING = requestItems.filter(x => {
+        if (x.status !== 0) return false;
+        return !orderLinkedRequests[String(x.id).toLowerCase()];
+      }).map(x => ({
         id:x.id,
-        student:x.studentDisplayName || Tafseel.participantLabel(x.studentId),
+        student: Tafseel.partyName(x, 'student'),
         subject:x.subjectName || '',
-        topic:x.title,
+        topic:Tafseel.requestTitle(x),
         description:x.description,
-        files:(x.attachments || []).map(a => a.originalName),
-        budget:x.budget != null ? ('SAR ' + x.budget) : Tafseel.t('td_budget_flexible'),
+        files: requestFilesById[x.id] || [],
+        budget:x.budget != null ? Tafseel.money(x.budget, 'SAR') : Tafseel.t('td_budget_flexible'),
         budgetValue:x.budget,
         preferredDeliveryAt:x.preferredDeliveryAt,
         deadline:Tafseel.date(x.preferredDeliveryAt),
         version:x.version
-      })) : [];
-      ORDERS = orders && orders.items ? orders.items.map(x => ({
-        id:x.id,
-        title:x.title || (Tafseel.t('td_order') + ' ' + x.id),
-        student:x.studentDisplayName || Tafseel.participantLabel(x.studentId),
-        deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
-        price:(x.currency || 'SAR') + ' ' + x.price,
-        stage:ORDER_STAGES[x.status] || 'awaiting_payment',
-        version:x.version
-      })) : [];
-      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      }));
+      ORDERS = orders && orders.items ? orders.items.map(x => {
+        const files = requestFilesById[x.learningRequestId] || [];
+        return {
+          id:x.id,
+          learningRequestId:x.learningRequestId,
+          title:Tafseel.orderTitle(x),
+          student: Tafseel.partyName(x, 'student'),
+          deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
+          price:Tafseel.money(x.teacherNet != null ? x.teacherNet : x.price, x.currency || 'SAR'),
+          stage:ORDER_STAGES[x.status] || 'awaiting_payment',
+          version:x.version,
+          files,
+          hasFiles: files.length > 0
+        };
+      }) : [];
+      const dayNames = [
+        Tafseel.t('td_day_sun'), Tafseel.t('td_day_mon'), Tafseel.t('td_day_tue'), Tafseel.t('td_day_wed'),
+        Tafseel.t('td_day_thu'), Tafseel.t('td_day_fri'), Tafseel.t('td_day_sat')
+      ];
       const availDays = profile && profile.availability && profile.availability.length
         ? [...new Set(profile.availability.map(x => dayNames[x.dayOfWeek]))]
         : [];
@@ -870,8 +919,8 @@ class Component extends DCLogic {
         showcaseError:results[10].status === 'rejected' ? Tafseel.api.errorMessage(results[10].reason) : '',
         liveSessions:sessions && sessions.items ? sessions.items.filter(x => x.status === 0 || x.status === 1).map(x => ({
           id:x.id,
-          student:x.studentDisplayName || Tafseel.participantLabel(x.studentId),
-          topic:x.title,
+          student: Tafseel.partyName(x, 'student'),
+          topic:Tafseel.requestTitle(x),
           when:Tafseel.date(x.startsAt),
           confirmed:x.status === 1
         })) : []
@@ -887,6 +936,67 @@ class Component extends DCLogic {
 
   flash(msg) {
     Tafseel.flash(this, msg, 2800);
+  }
+
+  async reloadAssigned() {
+    try {
+      const [requests, orders] = await Promise.all([
+        Tafseel.api.get('/learning-requests/assigned?pageSize=100'),
+        Tafseel.api.get('/orders/assigned?pageSize=100')
+      ]);
+      const ORDER_STAGES = ['awaiting_payment','progress','ready','revision','completed','cancelled'];
+      const mapFiles = (attachments) => (attachments || []).map(a => ({
+        id: a.id,
+        name: a.originalName || Tafseel.t('common_photo'),
+        downloadLabel: Tafseel.t('td_download_file', { name: a.originalName || '' }),
+        onDownload: () => Tafseel.api.openBlob(
+          '/learning-requests/attachments/' + encodeURIComponent(a.id) + '/content',
+          { download: true, fileName: a.originalName || 'attachment' }
+        ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
+      }));
+      const requestItems = requests && requests.items ? requests.items : [];
+      const requestFilesById = {};
+      requestItems.forEach(x => { requestFilesById[x.id] = mapFiles(x.attachments); });
+      const orderLinkedRequests = Object.create(null);
+      ((orders && orders.items) || []).forEach(o => {
+        if (o && o.learningRequestId != null)
+          orderLinkedRequests[String(o.learningRequestId).toLowerCase()] = true;
+      });
+      PENDING = requestItems.filter(x => {
+        if (x.status !== 0) return false;
+        return !orderLinkedRequests[String(x.id).toLowerCase()];
+      }).map(x => ({
+        id:x.id,
+        student: Tafseel.partyName(x, 'student'),
+        subject:x.subjectName || '',
+        topic:Tafseel.requestTitle(x),
+        description:x.description,
+        files: requestFilesById[x.id] || [],
+        budget:x.budget != null ? Tafseel.money(x.budget, 'SAR') : Tafseel.t('td_budget_flexible'),
+        budgetValue:x.budget,
+        preferredDeliveryAt:x.preferredDeliveryAt,
+        deadline:Tafseel.date(x.preferredDeliveryAt),
+        version:x.version
+      }));
+      ORDERS = orders && orders.items ? orders.items.map(x => {
+        const files = requestFilesById[x.learningRequestId] || [];
+        return {
+          id:x.id,
+          learningRequestId:x.learningRequestId,
+          title:Tafseel.orderTitle(x),
+          student: Tafseel.partyName(x, 'student'),
+          deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
+          price:Tafseel.money(x.teacherNet != null ? x.teacherNet : x.price, x.currency || 'SAR'),
+          stage:ORDER_STAGES[x.status] || 'awaiting_payment',
+          version:x.version,
+          files,
+          hasFiles: files.length > 0
+        };
+      }) : [];
+      this.setState({ declined: [] });
+    } catch (error) {
+      this.flash(Tafseel.api.errorMessage(error));
+    }
   }
 
   async loadShowcases() {
@@ -952,8 +1062,10 @@ class Component extends DCLogic {
     const trackedCurrency = (s.balances && s.balances.length ? s.balances[0].currency : 'SAR') || 'SAR';
     const trackedTotal = (s.balances || []).reduce((acc, b) => acc + Number(b.available) + Number(b.pendingWithdrawal), 0);
     const withdrawalBalance = (s.balances || []).find(x => Number(x.available) > 0) || (s.balances || [])[0] || { currency: 'SAR', available: 0 };
-    const withdrawalAvailableText = withdrawalBalance.currency + ' ' + Tafseel.number(withdrawalBalance.available);
-    const withdrawalButtonLabel = Number(withdrawalBalance.available) > 0 ? 'Withdraw' : 'No available balance';
+    const withdrawalAvailableText = Tafseel.money(withdrawalBalance.available, withdrawalBalance.currency || 'SAR');
+    const withdrawalButtonLabel = Number(withdrawalBalance.available) > 0
+      ? Tafseel.t('td_withdraw')
+      : Tafseel.t('td_no_available_balance');
     const newCount = PENDING.length;
     const orderCount = ORDERS.filter(o => o.stage !== 'completed' && o.stage !== 'cancelled').length;
     const sessionCount = (s.liveSessions || []).length;
@@ -992,10 +1104,31 @@ class Component extends DCLogic {
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
       stop: e => e.stopPropagation(),
-      earningsSummaryLabel: 'Tracked balance',
-      earningsSummaryValue: trackedCurrency + ' ' + Tafseel.number(trackedTotal),
+      earningsSummaryLabel: Tafseel.t('td_tracked_balance'),
+      earningsSummaryValue: Tafseel.money(trackedTotal, trackedCurrency),
       withdrawalAvailableText,
       withdrawalButtonLabel,
+      budgetLabel: Tafseel.t('td_label_budget'),
+      acceptLabel: Tafseel.t('td_action_accept'),
+      declineLabel: Tafseel.t('td_action_decline'),
+      clarifyLabel: Tafseel.t('td_action_clarify'),
+      colOrder: Tafseel.t('td_col_order'),
+      colStudent: Tafseel.t('td_col_student'),
+      colDeadline: Tafseel.t('td_col_deadline'),
+      colPrice: Tafseel.t('td_col_price'),
+      colAction: Tafseel.t('td_col_action'),
+      ordersCaption: Tafseel.t('td_orders_caption'),
+      ordersEmpty: Tafseel.t('td_orders_empty'),
+      acceptRequestTitle: Tafseel.t('td_accept_request'),
+      acceptFinalPrice: Tafseel.t('td_accept_final_price'),
+      acceptDeliveryDate: Tafseel.t('td_accept_delivery_date'),
+      acceptRevisions: Tafseel.t('td_accept_revisions'),
+      acceptNotes: Tafseel.t('td_accept_notes'),
+      acceptNoRevisions: Tafseel.t('td_accept_no_revisions'),
+      acceptOneRevision: Tafseel.t('td_accept_one_revision'),
+      acceptTwoRevisions: Tafseel.t('td_accept_n_revisions', { n: '2' }),
+      acceptThreeRevisions: Tafseel.t('td_accept_n_revisions', { n: '3' }),
+      cancelLabel: Tafseel.t('common_cancel'),
       goAvailability: () => {
         if (typeof this.closeDrawer === 'function') this.closeDrawer();
         this.setState({ section: 'availability' });
@@ -1091,6 +1224,12 @@ class Component extends DCLogic {
       publicationStatusValue: s.profile && s.profile.isPubliclyVisible ? Tafseel.t('td_publication_public') : Tafseel.t('td_publication_private'),
       publicationButtonLabel: s.profile && s.profile.isPubliclyVisible ? Tafseel.t('td_unpublish') : Tafseel.t('td_publish'),
       publicationBusy: !!s.publicationBusy,
+      trustBadgeSectionLabel: Tafseel.t('trust_badge_section'),
+      trustBadgeStatusValue: (s.profile && Array.isArray(s.profile.trustBadges)
+        && s.profile.trustBadges.some(b => b && b.code === 'qualified_on_tafseel'))
+        ? Tafseel.t('trust_badge_qualified_on_tafseel')
+        : Tafseel.t('trust_badge_not_qualified'),
+      trustBadgeCriteria: Tafseel.t('trust_badge_qualified_on_tafseel_detail'),
       hasMissingRequirements: !!(s.onboarding && s.onboarding.missingRequirements && s.onboarding.missingRequirements.length),
       missingRequirements: ((s.onboarding && s.onboarding.missingRequirements) || []).map(code => ({
         label: (() => { const key = 'td_missing_' + code; const t = Tafseel.t(key); return t === key ? code : t; })()
@@ -1456,8 +1595,8 @@ class Component extends DCLogic {
         const peer = (c.participants || []).find(p => p.userId !== this._session?.userId);
         const peerId = peer?.userId || (c.participantIds || []).find(id => id !== this._session?.userId) || '';
         return {
-          initials: peer?.initials || Tafseel.participantInitials(peerId),
-          name: peer?.displayName || Tafseel.participantLabel(peerId),
+          initials: Tafseel.participantInitials(peer || ''),
+          name: Tafseel.participantLabel(peer || {}),
           preview: c.latestMessage?.body || Tafseel.t('chat_no_messages'),
           time: Tafseel.date(c.updatedAt),
           peerId
@@ -1465,16 +1604,12 @@ class Component extends DCLogic {
       }),
 
       teacherReviews: (s.liveReviews || []).map(review => ({
-        student: review.studentDisplayName || Tafseel.t('td_anonymous_student'),
+        student: review.studentDisplayName
+          ? (Tafseel.partyDisplayName(review.studentDisplayName, review.studentDisplayNameEnglish) || Tafseel.t('name_unavailable'))
+          : Tafseel.t('td_anonymous_student'),
         stars:'★'.repeat(Math.max(0, Math.round(review.overallScore || 0))),
         body: review.originalComment || ''
       })),
-
-      teacherReviews: s.liveReviews.length ? s.liveReviews.map(review => ({
-        student:'Verified student',
-        stars:'★'.repeat(Math.round(review.overallScore)),
-        body:review.originalComment
-      })) : [],
 
       withdrawalHistory: [],
 
@@ -1577,9 +1712,11 @@ class Component extends DCLogic {
       ],
 
       pendingCount: PENDING.length - s.declined.length,
+      pendingResponseLabel: Tafseel.t('td_pending_your_response', { count: String(PENDING.length - s.declined.length) }),
       pending: PENDING.filter(q => !s.declined.includes(q.id)).map(q => {
         return {
           ...q,
+          dueLabel: Tafseel.t('td_label_due', { date: q.deadline }),
           urgency: '',
           urgencyStyle: 'display:none',
           onAccept: () => {
@@ -1588,20 +1725,20 @@ class Component extends DCLogic {
             this.setState({ acceptModal: q, finalPrice: price, deliveryDate: date });
           },
           onDecline: async () => {
-            const reason = prompt('Reason for declining this request:');
+            const reason = prompt(Tafseel.t('toast_prompt_decline_reason'));
             if (!reason) return;
             try {
               await Tafseel.api.post('/learning-requests/' + q.id + '/decline', { reason }, { 'If-Match':q.version });
               this.setState({ declined:s.declined.concat(q.id) });
-              this.flash('Request declined');
+              this.flash(Tafseel.t('toast_request_declined'));
             } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
           },
           onClarify: async () => {
-            const message = prompt('What clarification do you need?');
+            const message = prompt(Tafseel.t('toast_prompt_clarify'));
             if (!message) return;
             try {
               await Tafseel.api.post('/learning-requests/' + q.id + '/request-clarification', { message }, { 'If-Match':q.version });
-              this.flash('Clarification requested');
+              this.flash(Tafseel.t('toast_clarification_requested'));
             } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
           }
         };
@@ -1611,16 +1748,20 @@ class Component extends DCLogic {
       noOrders: filteredOrders.length === 0,
       orders: filteredOrders.map(o => ({
         ...o,
-        actionLabel: STAGE_ACTION[o.stage],
+        actionLabel: Tafseel.t(STAGE_ACTION[o.stage] || 'order_status_unknown'),
         timelineLabel:Tafseel.t('order_timeline_view'),
         onTimeline:event => this.openTimeline(o, event.currentTarget),
         actionStyle: 'height:32px;padding:0 13px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
           (o.stage === 'ready' ? 'border:0;background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
         onAction: async () => {
           try {
-            if (o.stage === 'accepted')
+            if (o.stage === 'progress') {
               await Tafseel.api.post('/orders/' + o.id + '/start', null, { 'If-Match':o.version });
-            else if (o.stage === 'ready') {
+              this.flash(Tafseel.t('td_stage_start_work'));
+              await this.reloadAssigned();
+              return;
+            }
+            if (o.stage === 'ready') {
               const picker = document.createElement('input');
               picker.type = 'file';
               picker.onchange = async () => {
@@ -1628,15 +1769,16 @@ class Component extends DCLogic {
                 try {
                   const data = new FormData();
                   data.append('file', picker.files[0]);
-                  data.append('message', prompt('Delivery message:') || 'Delivery uploaded.');
+                  data.append('message', prompt(Tafseel.t('toast_prompt_delivery_message')) || Tafseel.t('toast_delivery_uploaded'));
                   await Tafseel.api.upload('/orders/' + o.id + '/deliveries', data, { 'If-Match':o.version });
-                  this.flash('Delivery uploaded');
+                  this.flash(Tafseel.t('toast_delivery_uploaded'));
+                  await this.reloadAssigned();
                 } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
               };
               picker.click();
               return;
             }
-            this.flash(STAGE_ACTION[o.stage] + ' — ' + o.title);
+            this.flash(Tafseel.t(STAGE_ACTION[o.stage] || 'order_status_unknown') + ' — ' + o.title);
           } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
         }
       })),
@@ -1659,12 +1801,12 @@ class Component extends DCLogic {
       timelineKeyDown:event => Tafseel.modalKeyDown(event, () => this.closeTimeline()),
 
       earnings: (s.balances.length ? s.balances.flatMap(b => [
-        { label: 'Available balance', value: b.currency + ' ' + b.available },
-        { label: 'Pending withdrawal', value: b.currency + ' ' + b.pendingWithdrawal },
-        { label: 'Tracked balance', value: b.currency + ' ' + (Number(b.available) + Number(b.pendingWithdrawal)) }
+        { label: Tafseel.t('td_stat_available_balance'), value: (b.currency || 'SAR') + ' ' + Tafseel.number(Number(b.available) || 0) },
+        { label: Tafseel.t('td_stat_pending_withdrawal') || 'Pending withdrawal', value: (b.currency || 'SAR') + ' ' + Tafseel.number(Number(b.pendingWithdrawal) || 0) },
+        { label: 'Tracked balance', value: (b.currency || 'SAR') + ' ' + Tafseel.number((Number(b.available) || 0) + (Number(b.pendingWithdrawal) || 0)) }
       ]) : [
-        { label: 'Available balance', value: 'SAR 0' },
-        { label: 'Pending withdrawal', value: 'SAR 0' },
+        { label: Tafseel.t('td_stat_available_balance'), value: 'SAR 0' },
+        { label: Tafseel.t('td_stat_pending_withdrawal') || 'Pending withdrawal', value: 'SAR 0' },
         { label: 'Tracked balance', value: 'SAR 0' }
       ]),
       onWithdraw: async () => {
@@ -1676,7 +1818,7 @@ class Component extends DCLogic {
           await Tafseel.api.post('/withdrawals', { amount, currency:balance.currency }, {
             'Idempotency-Key':'withdrawal-' + Date.now()
           });
-          this.flash('Withdrawal requested.');
+          this.flash(Tafseel.t('toast_withdrawal_requested'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
       transactions: [],
@@ -1688,28 +1830,36 @@ class Component extends DCLogic {
             const join = await Tafseel.api.get('/live-sessions/' + session.id + '/join');
             location.href = join.url;
           } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-        } : (() => this.flash('This session is not ready to join.'))
+        } : (() => this.flash(Tafseel.t('toast_session_not_ready')))
       })),
 
       acceptModal: s.acceptModal,
       openChat: () => window.TafseelChat && window.TafseelChat.open(),
-      closeModal: () => this.setState({ acceptModal: null }),
+      closeModal: () => this.setState({ acceptModal: null, acceptBusy: false }),
       finalPrice: s.finalPrice, onFinalPrice: e => this.setState({ finalPrice: e.target.value }),
       deliveryDate: s.deliveryDate, onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
       revisions: s.revisions, onRevisions: e => this.setState({ revisions: e.target.value }),
       notes: s.notes, onNotes: e => this.setState({ notes: e.target.value }),
       confirmAccept: async () => {
         const q = s.acceptModal;
+        if (!q || s.acceptBusy) return;
+        this.setState({ acceptBusy: true });
         try {
           await Tafseel.api.post('/learning-requests/' + q.id + '/accept', {
             finalPrice:Number(s.finalPrice), currency:'SAR',
             agreedDeliveryAt:new Date(s.deliveryDate + 'T23:59:00Z').toISOString(),
             revisionAllowance:Number(s.revisions)
           }, { 'If-Match':q.version, 'Idempotency-Key':'accept-' + q.id });
-          this.setState({ acceptModal:null, declined:s.declined.concat(q.id) });
-          this.flash('Request accepted at SAR ' + s.finalPrice);
-        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-      }
+          this.setState({ acceptModal:null, acceptBusy:false, declined:s.declined.concat(q.id) });
+          this.flash(Tafseel.t('td_accept_ok'));
+          await this.reloadAssigned();
+        } catch (error) {
+          this.setState({ acceptBusy: false });
+          this.flash(Tafseel.api.errorMessage(error));
+        }
+      },
+      acceptBusy: !!s.acceptBusy,
+      acceptConfirmLabel: s.acceptBusy ? Tafseel.t('apply_saving') : Tafseel.t('td_accept_request')
     };
   }
 }

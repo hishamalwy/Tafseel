@@ -10,6 +10,7 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Log in — Tafseel</title>
+<script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
@@ -24,11 +25,13 @@
         <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
         <span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span>
       </a>
-      <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode">
-        <svg class="tf-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.3A8.5 8.5 0 0 1 9.7 3 7 7 0 1 0 21 14.3z"/></svg>
-        <svg class="tf-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0-5h1v3h-2V2zm0 17h1v3h-2v-3zM2 11h3v2H2v-2zm17 0h3v2h-3v-2zM4.2 4.2l2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zm14.1 14.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zM19.8 4.2l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1zM5.6 18.4l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-inline-start:auto">
+        <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode">
+          <svg class="tf-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 14.3A8.5 8.5 0 0 1 9.7 3 7 7 0 1 0 21 14.3z"/></svg>
+          <svg class="tf-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0-5h1v3h-2V2zm0 17h1v3h-2v-3zM2 11h3v2H2v-2zm17 0h3v2h-3v-2zM4.2 4.2l2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zm14.1 14.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4zM19.8 4.2l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1zM5.6 18.4l1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg>
+        </button>
+      </div>
     </div>
 
     <div class="tf-auth-card-wrap" style="position:relative;z-index:1;max-width:400px;margin:0 auto;width:100%;padding-block:40px">
@@ -86,15 +89,7 @@
               </div>
               <button class="tf-button" type="submit" disabled="{{ loginSubmitDisabled }}" style="height:44px;font-size:14.5px;margin-top:4px">{{ loginButtonLabel }}</button>
             </form>
-            <div style="display:flex;align-items:center;gap:10px;margin:18px 0 14px">
-              <span style="flex:1;height:1px;background:var(--border)"></span>
-              <span style="font-size:12px;color:var(--muted);font-weight:600">or</span>
-              <span style="flex:1;height:1px;background:var(--border)"></span>
-            </div>
-            <button type="button" class="tf-button tf-button-secondary" onClick="{{ onGoogleAuth }}" style="height:44px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px">
-              <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.5 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.9 2.5-2.5 4.6-4.6 6.1l6.3 5.3C40.5 36.9 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
-              Continue with Google
-            </button>
+
             <p style="text-align:center;font-size:13.5px;color:var(--muted);margin-top:16px">Don't have an account? <button type="button" onClick="{{ goRegister }}" style="border:0;background:none;padding:0;cursor:pointer;font-weight:700;color:var(--primary)">Sign up</button></p>
           </div>
         </sc-if>
@@ -200,15 +195,6 @@
               <button class="tf-button" type="submit" disabled="{{ registerSubmitDisabled }}" style="height:44px;font-size:14.5px;margin-top:2px">{{ registerButtonLabel }}</button>
             </form>
 
-            <div style="display:flex;align-items:center;gap:10px;margin:18px 0 14px">
-              <span style="flex:1;height:1px;background:var(--border)"></span>
-              <span style="font-size:12px;color:var(--muted);font-weight:600">or</span>
-              <span style="flex:1;height:1px;background:var(--border)"></span>
-            </div>
-            <button type="button" class="tf-button tf-button-secondary" onClick="{{ onGoogleAuth }}" style="height:44px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px">
-              <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.5 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.9 2.5-2.5 4.6-4.6 6.1l6.3 5.3C40.5 36.9 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
-              Continue with Google
-            </button>
             <p style="text-align:center;font-size:13.5px;color:var(--muted);margin-top:16px">Already have an account? <button type="button" onClick="{{ goLogin }}" style="border:0;background:none;padding:0;cursor:pointer;font-weight:700;color:var(--primary)">Log in</button></p>
           </div>
         </sc-if>
@@ -421,7 +407,6 @@ class Component extends DCLogic {
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
-      onGoogleAuth: () => this.flash('Google sign-in will be available soon.'),
 
       modeTabs: [{ id: 'login', label: 'Log in' }, { id: 'register', label: 'Sign up' }].map(m => ({
         label: m.label,

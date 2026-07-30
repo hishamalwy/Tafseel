@@ -279,7 +279,11 @@ internal sealed class LiveSessionService(
         var items = await query.AsNoTracking().OrderByDescending(x => x.StartsAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Include(x => x.Attachments).AsSplitQuery().ToArrayAsync(ct);
-        return new(items.Select(Map).ToArray(), page, pageSize, count);
+        var ids = items.SelectMany(x => new[] { x.StudentId, x.TeacherId }).Distinct().ToArray();
+        var people = await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id))
+            .Select(u => new { u.Id, u.FullName, u.FullNameEnglish })
+            .ToDictionaryAsync(u => u.Id, u => (u.FullName, (string?)u.FullNameEnglish), ct);
+        return new(items.Select(x => Map(x, people)).ToArray(), page, pageSize, count);
     }
 
     public async Task RescheduleAsync(
@@ -633,18 +637,18 @@ internal sealed class LiveSessionService(
             if (current is SqlException) return true;
         return false;
     }
-    private static LiveSessionDto Map(LiveSessionBooking x) =>
+    private static LiveSessionDto Map(
+        LiveSessionBooking x,
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null) =>
         new(x.Id, x.StudentId, x.TeacherId, x.TeacherServiceId, x.Title, x.Notes,
             x.StartsAt, x.EndsAt, x.StudentTimeZoneId, x.TeacherTimeZoneId,
             x.BasePrice, x.Currency, x.EmergencyPremiumPercent, x.EmergencyPremiumAmount,
             x.TotalPrice, x.CancellationWindowHours, x.Status, x.RescheduleCount,
             x.Attachments.Select(a => new AttachmentDto(
                 a.Id, a.OriginalName, a.ContentType, a.Size, a.CreatedAt)).ToArray(),
-            Convert.ToBase64String(x.RowVersion));
-}
-
-internal sealed class MockLiveSessionLinkProvider : ILiveSessionLinkProvider
-{
-    public Task<string> GetJoinUrlAsync(Guid bookingId, string joinKey, CancellationToken ct) =>
-        Task.FromResult($"https://meet.local/session/{bookingId:N}?key={Uri.EscapeDataString(joinKey)}");
+            Convert.ToBase64String(x.RowVersion),
+            names is not null && names.TryGetValue(x.StudentId, out var student) ? student.FullName : null,
+            names is not null && names.TryGetValue(x.TeacherId, out var teacher) ? teacher.FullName : null,
+            names is not null && names.TryGetValue(x.StudentId, out student) ? student.FullNameEnglish : null,
+            names is not null && names.TryGetValue(x.TeacherId, out teacher) ? teacher.FullNameEnglish : null);
 }

@@ -30,7 +30,9 @@ public sealed record LearningRequestDto(
     Guid Id, string StudentId, string TeacherId, Guid TeacherServiceId, string Title, string Description,
     DateTimeOffset PreferredDeliveryAt, decimal? Budget, LearningRequestStatus Status,
     DateTimeOffset CreatedAt, IReadOnlyCollection<AttachmentDto> Attachments,
-    IReadOnlyCollection<ClarificationDto> Clarifications, string Version);
+    IReadOnlyCollection<ClarificationDto> Clarifications, string Version,
+    string? StudentDisplayName = null, string? TeacherDisplayName = null,
+    string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null);
 
 public sealed record OrderDto(
     Guid Id, Guid LearningRequestId, string StudentId, string TeacherId, Guid TeacherServiceId,
@@ -38,7 +40,10 @@ public sealed record OrderDto(
     decimal StudentFeeAmount, decimal? TeacherCommissionAmount, decimal StudentTotal, decimal? TeacherNet,
     DateTimeOffset AgreedDeliveryAt, int RevisionAllowance, int RevisionsUsed,
     OrderStatus Status, OrderPaymentStatus PaymentStatus, OrderDeliveryState DeliveryState,
-    DateTimeOffset CreatedAt, IReadOnlyCollection<DeliveryDto> Deliveries, string Version);
+    DateTimeOffset CreatedAt, IReadOnlyCollection<DeliveryDto> Deliveries, string Version,
+    string? StudentDisplayName = null, string? TeacherDisplayName = null,
+    string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null,
+    string? RequestTitle = null);
 public sealed record DeliveryDto(
     Guid Id, string OriginalName, string ContentType, long Size, string Message, DateTimeOffset CreatedAt);
 

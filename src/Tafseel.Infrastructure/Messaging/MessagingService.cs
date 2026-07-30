@@ -73,8 +73,7 @@ internal sealed class MessagingService(
             .Include(x => x.Participants).Include(x => x.Messages).ThenInclude(x => x.Attachments)
             .AsSplitQuery().ToArrayAsync(ct);
         var participantIds = items.SelectMany(x => x.Participants).Select(x => x.UserId).Distinct().ToArray();
-        var people = await db.Users.AsNoTracking().Where(x => participantIds.Contains(x.Id))
-            .ToDictionaryAsync(x => x.Id, x => x.FullName, ct);
+        var people = await LoadPeopleAsync(participantIds, ct);
         var roleRows = await (
             from userRole in db.UserRoles.AsNoTracking()
             join role in db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
@@ -213,8 +212,7 @@ internal sealed class MessagingService(
     private async Task<ConversationDto> MapAsync(Conversation x, string userId, CancellationToken ct)
     {
         var ids = x.Participants.Select(p => p.UserId).ToArray();
-        var people = await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.FullName, ct);
+        var people = await LoadPeopleAsync(ids, ct);
         var roleRows = await (
             from userRole in db.UserRoles.AsNoTracking()
             join role in db.Roles.AsNoTracking() on userRole.RoleId equals role.Id
@@ -226,9 +224,24 @@ internal sealed class MessagingService(
         return Map(x, userId, people, roles);
     }
 
+    private async Task<IReadOnlyDictionary<string, PersonNames>> LoadPeopleAsync(
+        IReadOnlyCollection<string> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0)
+            return new Dictionary<string, PersonNames>();
+        return await db.Users.AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(
+                u => u.Id,
+                u => new PersonNames(
+                    string.IsNullOrWhiteSpace(u.FullName) ? "" : u.FullName.Trim(),
+                    string.IsNullOrWhiteSpace(u.FullNameEnglish) ? "" : u.FullNameEnglish.Trim()),
+                ct);
+    }
+
     private static ConversationDto Map(
         Conversation x, string userId,
-        IReadOnlyDictionary<string, string> people,
+        IReadOnlyDictionary<string, PersonNames> people,
         IReadOnlyDictionary<string, string> roles)
     {
         var readAt = x.Participants.Single(p => p.UserId == userId).LastReadAt;
@@ -239,13 +252,24 @@ internal sealed class MessagingService(
             x.UpdatedAt, Convert.ToBase64String(x.RowVersion),
             x.Participants.Select(p =>
             {
-                var name = people.GetValueOrDefault(p.UserId) ?? "Tafseel user";
-                var initials = string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                    .Take(2).Select(part => char.ToUpperInvariant(part[0])));
+                people.TryGetValue(p.UserId, out var names);
+                // Never project empty or missing names as IDs. Client localizes unavailable.
+                var primary = names.FullName;
+                var english = names.FullNameEnglish;
+                var label = !string.IsNullOrWhiteSpace(primary) ? primary
+                    : !string.IsNullOrWhiteSpace(english) ? english
+                    : "";
+                var initials = string.IsNullOrWhiteSpace(label)
+                    ? "··"
+                    : string.Concat(label.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                        .Take(2).Select(part => char.ToUpperInvariant(part[0])));
                 return new ConversationParticipantDto(
-                    p.UserId, name, initials, roles.GetValueOrDefault(p.UserId));
+                    p.UserId, label, initials, roles.GetValueOrDefault(p.UserId),
+                    string.IsNullOrWhiteSpace(english) ? null : english);
             }).ToArray());
     }
+
+    private readonly record struct PersonNames(string FullName, string FullNameEnglish);
     private static MessageDto Map(Message x) =>
         new(x.Id, x.ConversationId, x.SenderId, x.Body, x.CreatedAt, x.Attachments.Select(Map).ToArray());
     private static AttachmentDto Map(MessageAttachment x) =>

@@ -8,11 +8,11 @@ No release tag is present. Current audited baseline is commit `79be4cf` on `main
 
 ## Current Phase
 
-The Teacher Reputation and Badge Rules decision is complete. The Limited Student Learning Preferences MVP remains implemented locally and conditionally verified. The Limited Guided Request UX remains implemented locally and conditionally browser-verified. The Limited Teacher Showcase MVP remains implemented locally and conditionally browser-verified for Development/Testing and explicitly enabled Staging only.
+The Final Production Readiness Audit (Step 8 / 8) is complete: **READY FOR STAGING VALIDATION**, not Production. Critical blockers remain Mock-only payment/live-session providers (F-003), local file storage (F-004), ADR-011 Showcase media gates, and unproven backup/observability. Steps 5–7 trust badge / public-profile work remain as previously recorded.
 
 ## Current Milestone
 
-Approved Trust-Only Teacher reputation: qualification-derived `qualified_on_tafseel` projected on read, subject evidence retained, content Showcase labels kept separate, and performance badges blocked until formulas are approved. Student learning defaults and F-005 remain as previously recorded.
+Roadmap Steps 1–9 are recorded. **Product Bug Fix Sprints 1–3** closed end-user integrity/i18n gaps. **Step 9 Production Infrastructure** added Azure Blob storage, configuration-driven provider selection, fail-closed Production gates, opt-in Application Insights, and ops runbooks. **Mock Payment Simulator** enables full Student→Payment→Delivery lifecycle in Development (and explicitly enabled Staging) through the canonical webhook path. **Order/Request UX separation** ensures Accepted Learning Requests never appear beside their Orders on the Student dashboard. **Remaining Production cutover blockers:** real PSP adapter, real meeting provider, provisioned Azure Blob/Insights secrets, backup drill evidence.
 
 ## Current Architecture Status
 
@@ -20,9 +20,9 @@ The Domain/Application/Infrastructure/API layering is intact. Existing Identity/
 
 ## Production Readiness
 
-**Not Ready**
+**Not Ready for Production** — **READY FOR STAGING VALIDATION** (Mock/single-instance Staging only)
 
-Real payment and live-session providers are not registered, Production file storage is not proven durable/shared, financial terminology/policy remains unresolved, and the current uncommitted state has not passed CI or Staging validation.
+Real payment and live-session providers are not registered, Production file storage is not durable/shared, Showcase Production media gates are incomplete (feature correctly disabled), backup/restore and centralized observability are unproven, and browser E2E remains conditional. See [Final readiness report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md).
 
 ## Completed Phases
 
@@ -47,6 +47,19 @@ Historical implementation phases 2–11 and completed production-correction pass
 | Student Learning Preferences | Decision complete | [Preferences decision](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md) |
 | Limited Student Learning Preferences MVP | Conditionally verified | [Preferences MVP report](./features/STUDENT_LEARNING_PREFERENCES_MVP_REPORT.md) |
 | Teacher Reputation and Badge Rules | Decision complete | [Reputation badges decision](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md) |
+| Limited Teacher Trust Badge MVP | Conditionally verified | [Trust badge MVP report](./features/TEACHER_TRUST_BADGE_MVP_REPORT.md) |
+| Teacher Showcase Production Media Hardening | Decision complete | [Showcase production hardening plan](./reports/TEACHER_SHOWCASE_PRODUCTION_HARDENING_PLAN.md) |
+| Teacher Public Profile Hardening Investigation | Investigation complete | [Step 7 investigation](./audits/STEP7_TEACHER_PUBLIC_PROFILE_HARDENING_INVESTIGATION.md) |
+| Teacher Public Profile Hardening | Completed | [Step 7 hardening report](./fixes/STEP7_PUBLIC_PROFILE_HARDENING_REPORT.md) |
+| Final Production Readiness Audit | Completed | [Final readiness report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md) |
+| Product UX Polish (pre-production) | Completed locally | [UX polish report](./fixes/PRODUCT_UX_POLISH_REPORT.md) |
+| Product Bug Fix Sprint 1 | Completed locally | [Sprint 1 bug fix report](./fixes/PRODUCT_BUG_FIX_SPRINT_01_REPORT.md) |
+| Product Bug Fix Sprint 2 | Completed locally | [Sprint 2 bug fix report](./fixes/PRODUCT_BUG_FIX_SPRINT_02_REPORT.md) |
+| BUG-001 display-name regression | Verified | [BUG-001 report](./fixes/BUG001_DISPLAY_NAME_REGRESSION_FIX_REPORT.md) |
+| Product Bug Fix Sprint 3 | Conditionally verified | [Sprint 3 bug fix report](./fixes/PRODUCT_BUG_FIX_SPRINT_03_REPORT.md) |
+| Production Operational Readiness (Step 9) | Conditionally ready | [Operational readiness report](./reports/PRODUCTION_OPERATIONAL_READINESS_REPORT.md) |
+| Mock Payment End-to-End Simulator | Completed locally | [Mock payment simulator report](./reports/MOCK_PAYMENT_SIMULATOR_REPORT.md) |
+| Order vs Request UX Separation | Conditionally verified | [Order/Request UX separation report](./fixes/ORDER_REQUEST_UX_SEPARATION_REPORT.md) |
 
 ## Open Findings
 
@@ -73,19 +86,29 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 | Teacher Portfolio Moderation and Showcase Workflow | Limited MVP implemented locally; browser conditional |
 | Student Request Assistant and Guided Request UX | Decision complete; Limited Guided UX implemented locally; browser conditional |
 | Student Learning Preferences | Decision complete; Limited MVP implemented locally; browser/SQL conditional |
-| Teacher Reputation and Badge Rules | Decision complete; Trust-Only implementation not started |
+| Limited Teacher Trust Badge | Conditionally verified; SQL passed on TafseelLocal; browser chips pending seed |
+| Teacher Showcase Production Hardening | Decision complete; Phase 1 Blob provider next |
+| Teacher Public Profile Hardening | Completed |
+| Final Production Readiness Audit | Completed — Staging validation ready; Production blocked |
+| Product UX Polish | Completed locally — navigation/honesty/busy/a11y; residual modal Escape/toast adoption remain |
+| Product Bug Fix Sprint 1 | Completed locally — GUID names, accept lists, teacher file download; localization/button audit remain |
+| Product Bug Fix Sprint 2 | Completed locally — seeded UAT, notif bodies, Pay/Start-work, dashboard i18n; email lang BR + residual Admin chrome remain |
+| BUG-001 display-name regression | Verified — `participantLabel` no longer renders GUID prefixes; Order/Messages show real names |
+| Product Bug Fix Sprint 3 | Conditionally verified — Quality rawStatus/priority/chrome + Admin nav/money/status; email ADR + full viewport matrix remain |
+| Production Operational Readiness | Conditionally ready — Azure Blob + config-driven providers + ops docs; real PSP/meeting adapters still required for Production boot |
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
 ## Pending Vertical Slices
 
-1. Limited Teacher Trust Badge implementation.
-2. F-005 legacy-data, client-binding and revision-response relationship decisions.
-3. Favorites pagination.
-4. Explainable deterministic matching.
-5. Teacher/student analytics after event instrumentation.
-6. Quality trends, trust extensions and learning timeline.
-7. Highly Rated and other performance badges after formula business rules.
+1. F-003 — real `IPaymentProvider` sandbox + Production fail-closed (highest Critical blocker).
+2. F-003 companion — real `ILiveSessionLinkProvider`.
+3. Phase 1 — Azure Blob Provider (ADR-011 / F-004); Production Showcase stays disabled.
+4. Fix or waive `RoleBootstrapTests` provider-neutral failure observed in Step 8 audit.
+5. Seed published qualified Teachers for deferred trust-badge browser smoke.
+6. F-005 revision-to-delivery relationship decision.
+7. Favorites pagination (F-006).
+8. Highly Rated and other performance badges only after formula business rules.
 
 ## Known Risks
 
@@ -169,4 +192,4 @@ Latest Live-Session Availability validation:
 
 ## Next Recommended Pass
 
-Limited Teacher Trust Badge implementation: project `qualified_on_tafseel` into marketplace DTOs, localize explanations, remove frontend Top rated invent, keep Showcase content labels separate, and add revoke/visibility tests — without performance badges, migrations, ranking or restored F-002 metrics. See [ADR-010](./decisions/ADR-010-TEACHER-REPUTATION-AND-BADGES.md) and the [decision report](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md).
+Implement a real payment provider for F-003 (sandbox webhooks, idempotency, Production Mock forbidden). See the [Final Production Readiness Report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md) and [audit](./audits/FINAL_PRODUCTION_READINESS_AUDIT.md).

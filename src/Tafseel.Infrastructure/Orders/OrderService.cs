@@ -47,7 +47,7 @@ internal sealed class OrderService(
         await notifications.QueueAsync(service.TeacherId, "NewRequest", "New learning request",
             request.Title, $"/requests/{request.Id}", $"request:{request.Id}:created", true, ct);
         await db.SaveChangesAsync(ct);
-        return Map(request);
+        return await MapRequestAsync(request, ct);
     }
 
     public async Task<AttachmentDto> AddRequestAttachmentAsync(
@@ -152,7 +152,7 @@ internal sealed class OrderService(
             {
                 var existing = await OrderWithChildren().SingleAsync(x => x.LearningRequestId == requestId, ct);
                 await transaction.CommitAsync(ct);
-                return Map(existing, teacherView: true);
+                return await MapOrderAsync(existing, teacherView: true, ct);
             }
             ApplyVersion(request, version);
             var service = await db.TeacherServices.AsNoTracking().SingleOrDefaultAsync(x =>
@@ -175,7 +175,7 @@ internal sealed class OrderService(
                 $"order:{order.Id}:payment-required", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            return Map(order, teacherView: true);
+            return await MapOrderAsync(order, teacherView: true, ct);
         }
         catch (Exception exception) when (exception is DbUpdateConcurrencyException or DbUpdateException)
         {
@@ -186,7 +186,9 @@ internal sealed class OrderService(
                 && x.Status == LearningRequestStatus.Accepted
                 && x.AcceptanceIdempotencyKey == idempotencyKey, ct);
             if (accepted is not null)
-                return Map(await OrderWithChildren().SingleAsync(x => x.LearningRequestId == requestId, ct), teacherView: true);
+                return await MapOrderAsync(
+                    await OrderWithChildren().SingleAsync(x => x.LearningRequestId == requestId, ct),
+                    teacherView: true, ct);
             throw;
         }
     }
@@ -388,7 +390,9 @@ internal sealed class OrderService(
         var items = await query.AsNoTracking().OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Include(x => x.Attachments).Include(x => x.Clarifications).AsSplitQuery().ToArrayAsync(ct);
-        return new(items.Select(Map).ToArray(), page, pageSize, count);
+        var names = await ResolveUserNamesAsync(
+            items.SelectMany(x => new[] { x.StudentId, x.TeacherId }), ct);
+        return new(items.Select(x => Map(x, names)).ToArray(), page, pageSize, count);
     }
 
     private async Task<PagedResult<OrderDto>> OrderPageAsync(
@@ -400,8 +404,54 @@ internal sealed class OrderService(
         var items = await query.AsNoTracking().OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Include(x => x.Deliveries).AsSplitQuery().ToArrayAsync(ct);
-        return new(items.Select(x => Map(x, teacherView)).ToArray(), page, pageSize, count);
+        var names = await ResolveUserNamesAsync(
+            items.SelectMany(x => new[] { x.StudentId, x.TeacherId }), ct);
+        var requestIds = items.Select(x => x.LearningRequestId).Distinct().ToArray();
+        var titles = await db.LearningRequests.AsNoTracking()
+            .Where(x => requestIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Title, ct);
+        return new(items.Select(x => Map(x, teacherView, names, titles.GetValueOrDefault(x.LearningRequestId))).ToArray(),
+            page, pageSize, count);
     }
+
+    private async Task<LearningRequestDto> MapRequestAsync(LearningRequest request, CancellationToken ct)
+    {
+        var names = await ResolveUserNamesAsync([request.StudentId, request.TeacherId], ct);
+        return Map(request, names);
+    }
+
+    private async Task<OrderDto> MapOrderAsync(Order order, bool teacherView, CancellationToken ct)
+    {
+        var names = await ResolveUserNamesAsync([order.StudentId, order.TeacherId], ct);
+        var title = await db.LearningRequests.AsNoTracking()
+            .Where(x => x.Id == order.LearningRequestId)
+            .Select(x => x.Title)
+            .SingleOrDefaultAsync(ct);
+        return Map(order, teacherView, names, title);
+    }
+
+    private async Task<IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>> ResolveUserNamesAsync(
+        IEnumerable<string> userIds, CancellationToken ct)
+    {
+        var ids = userIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToArray();
+        if (ids.Length == 0)
+            return new Dictionary<string, (string, string?)>();
+        var rows = await db.Users.AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .Select(u => new { u.Id, u.FullName, u.FullNameEnglish })
+            .ToArrayAsync(ct);
+        return rows.ToDictionary(
+            x => x.Id,
+            x => (x.FullName, (string?)x.FullNameEnglish));
+    }
+
+    private static string? NameOf(
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)> names, string userId) =>
+        names.TryGetValue(userId, out var value) ? value.FullName : null;
+
+    private static string? EnglishNameOf(
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)> names, string userId) =>
+        names.TryGetValue(userId, out var value) ? value.FullNameEnglish : null;
 
     private IQueryable<LearningRequest> RequestWithChildren() =>
         db.LearningRequests.Include(x => x.Attachments).Include(x => x.Clarifications).AsSplitQuery();
@@ -426,20 +476,34 @@ internal sealed class OrderService(
     private static string ActorRole(string actorId, string studentId, string teacherId) =>
         actorId == studentId ? "student" : actorId == teacherId ? "teacher" : "system";
 
-    private static LearningRequestDto Map(LearningRequest x) =>
+    private static LearningRequestDto Map(
+        LearningRequest x,
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null) =>
         new(x.Id, x.StudentId, x.TeacherId, x.TeacherServiceId, x.Title, x.Description,
             x.PreferredDeliveryAt, x.Budget, x.Status, x.CreatedAt,
             x.Attachments.Select(a => Map(a)).ToArray(), x.Clarifications.Select(c =>
                 new ClarificationDto(c.Id, c.SenderId, c.Message, c.CreatedAt)).ToArray(),
-            Convert.ToBase64String(x.RowVersion));
-    private static OrderDto Map(Order x, bool teacherView) =>
+            Convert.ToBase64String(x.RowVersion),
+            names is null ? null : NameOf(names, x.StudentId),
+            names is null ? null : NameOf(names, x.TeacherId),
+            names is null ? null : EnglishNameOf(names, x.StudentId),
+            names is null ? null : EnglishNameOf(names, x.TeacherId));
+    private static OrderDto Map(
+        Order x, bool teacherView,
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null,
+        string? requestTitle = null) =>
         new(x.Id, x.LearningRequestId, x.StudentId, x.TeacherId, x.TeacherServiceId,
             x.Price, x.Currency, x.StudentFeePercent, teacherView ? x.TeacherCommissionPercent : null,
             x.StudentFeeAmount, teacherView ? x.TeacherCommissionAmount : null,
             x.StudentTotal, teacherView ? x.TeacherNet : null,
             x.AgreedDeliveryAt, x.RevisionAllowance, x.RevisionsUsed, x.Status,
             x.PaymentStatus, x.DeliveryState, x.CreatedAt,
-            x.Deliveries.Select(Map).ToArray(), Convert.ToBase64String(x.RowVersion));
+            x.Deliveries.Select(Map).ToArray(), Convert.ToBase64String(x.RowVersion),
+            names is null ? null : NameOf(names, x.StudentId),
+            names is null ? null : NameOf(names, x.TeacherId),
+            names is null ? null : EnglishNameOf(names, x.StudentId),
+            names is null ? null : EnglishNameOf(names, x.TeacherId),
+            requestTitle);
     private static AttachmentDto Map(LearningRequestAttachment x, string? version = null) =>
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt, version);
     private static DeliveryDto Map(OrderDelivery x) =>

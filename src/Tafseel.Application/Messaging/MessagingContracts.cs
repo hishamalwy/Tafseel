@@ -13,7 +13,8 @@ public sealed record MessageDto(
     Guid Id, Guid ConversationId, string SenderId, string Body, DateTimeOffset CreatedAt,
     IReadOnlyCollection<AttachmentDto> Attachments);
 public sealed record ConversationParticipantDto(
-    string UserId, string DisplayName, string Initials, string? Role);
+    string UserId, string DisplayName, string Initials, string? Role,
+    string? DisplayNameEnglish = null);
 public sealed record ConversationDto(
     Guid Id, ConversationScope Scope, Guid? ResourceId, IReadOnlyCollection<string> ParticipantIds,
     MessageDto? LatestMessage, int UnreadCount, DateTimeOffset UpdatedAt, string Version,

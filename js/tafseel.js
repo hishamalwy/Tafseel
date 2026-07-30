@@ -465,6 +465,7 @@
           format: function (v) { return self.number(v); }
         });
       });
+      self.bindAvatarFallbacks(document);
     },
 
     setPublicMenu: function (menu, toggle, open) {
@@ -642,20 +643,53 @@
       };
     },
 
-    /** Safe conversation label when API exposes only participant IDs (no display names). */
-    participantLabel: function (participantId) {
-      var id = String(participantId || '').trim();
-      if (!id) return this.t('chat_conversation');
-      var short = id.length > 8 ? id.slice(0, 8) : id;
-      return this.t('chat_participant', { id: short });
+    /**
+     * Safe conversation peer label. Never interpolates user IDs / GUID fragments.
+     * Prefer participant.displayName from the API; otherwise localized unavailable.
+     */
+    participantLabel: function (participantOrId) {
+      if (participantOrId && typeof participantOrId === 'object') {
+        var fromDto = this.partyDisplayName(participantOrId.displayName, participantOrId.displayNameEnglish);
+        if (fromDto) return fromDto;
+        return this.t('name_unavailable');
+      }
+      return this.t('name_unavailable');
     },
 
-    participantInitials: function (participantId) {
-      var parts = String(participantId || '').trim().split(/\s+/).filter(Boolean);
+    participantInitials: function (participantOrId) {
+      var label = '';
+      if (participantOrId && typeof participantOrId === 'object')
+        label = this.partyDisplayName(participantOrId.displayName, participantOrId.displayNameEnglish) || '';
+      else if (typeof participantOrId === 'string' && !this.looksLikeInternalId(participantOrId))
+        label = participantOrId;
+      var parts = String(label || '').trim().split(/\s+/).filter(Boolean);
       var initials = parts.slice(0, 2).map(function (part) {
         return Array.from(part)[0] || '';
       }).join('');
       return initials ? initials.toLocaleUpperCase() : '··';
+    },
+
+    /** True when a string looks like a user/order/request GUID or GUID prefix. */
+    looksLikeInternalId: function (value) {
+      var text = String(value || '').trim();
+      if (!text) return false;
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text))
+        return true;
+      if (/^[0-9a-f]{8}$/i.test(text)) return true;
+      return false;
+    },
+
+    /** Canonical person-name rule for raw bilingual fields (never IDs). */
+    partyDisplayName: function (primary, english) {
+      var isEn = this.lang === 'en';
+      var en = String(english || '').trim();
+      var ar = String(primary || '').trim();
+      if (this.looksLikeInternalId(en)) en = '';
+      if (this.looksLikeInternalId(ar)) ar = '';
+      if (isEn && en) return en;
+      if (ar) return ar;
+      if (en) return en;
+      return '';
     },
 
     defaultAvatar: 'assets/brand/default-avatar.svg',
@@ -671,11 +705,232 @@
       return this.defaultAvatar;
     },
 
+    bindAvatarFallbacks: function (root) {
+      var self = this;
+      var scope = root && root.querySelectorAll ? root : document;
+      scope.querySelectorAll('img.tf-img-avatar, img[data-tf-avatar]').forEach(function (img) {
+        if (img.dataset.tfAvatarBound === '1') return;
+        img.dataset.tfAvatarBound = '1';
+        img.addEventListener('error', function () {
+          var fallback = self.defaultAvatar;
+          if (!img.getAttribute('src') || img.getAttribute('src').indexOf(fallback) === -1) {
+            img.src = fallback;
+          }
+        });
+        var src = img.getAttribute('src') || '';
+        if (!src || src.indexOf('{{') >= 0 || src === 'null' || src === 'undefined') {
+          img.src = self.defaultAvatar;
+        }
+      });
+    },
+
     userName: function (user) {
       if (!user) return '';
-      return this.lang === 'en' && String(user.fullNameEnglish || '').trim()
-        ? user.fullNameEnglish
-        : (user.fullName || user.name || '');
+      return this.partyDisplayName(user.fullName || user.name, user.fullNameEnglish)
+        || this.t('name_unavailable');
+    },
+
+    /** Prefer localized display name fields from list DTOs; never show raw user IDs. */
+    partyName: function (dto, role) {
+      if (!dto) return this.t('name_unavailable');
+      var primary;
+      var english;
+      if (role === 'student') {
+        primary = dto.studentDisplayName;
+        english = dto.studentDisplayNameEnglish;
+      } else {
+        primary = dto.teacherDisplayName;
+        english = dto.teacherDisplayNameEnglish;
+      }
+      return this.partyDisplayName(primary, english) || this.t('name_unavailable');
+    },
+
+    /** Localized business title; never Order/Request GUID. */
+    orderTitle: function (dto) {
+      if (!dto) return this.t('td_order');
+      var title = String(dto.requestTitle || dto.title || '').trim();
+      if (title && !this.looksLikeInternalId(title)) return title;
+      return this.t('td_order');
+    },
+
+    requestTitle: function (dto) {
+      if (!dto) return this.t('dash_service_learning_request');
+      var title = String(dto.title || dto.requestTitle || '').trim();
+      if (title && !this.looksLikeInternalId(title)) return title;
+      return this.t('dash_service_learning_request');
+    },
+
+    /**
+     * Canonical Student dashboard projection.
+     * Pending Requests = open LearningRequests with no Order.
+     * Orders = canonical Order rows only.
+     * Completed = completed Orders only (never Accepted request + Order pairs).
+     */
+    projectStudentWorkList: function (requestItems, orderItems) {
+      var self = this;
+      var orders = Array.isArray(orderItems) ? orderItems : [];
+      var linked = Object.create(null);
+      orders.forEach(function (order) {
+        if (!order || order.learningRequestId == null) return;
+        linked[String(order.learningRequestId).toLowerCase()] = true;
+      });
+
+      var pendingRequests = (Array.isArray(requestItems) ? requestItems : [])
+        .filter(function (req) {
+          if (!req) return false;
+          var status = Number(req.status);
+          // Only teacher-pending / clarification — Accepted continues as Order.
+          if (status !== 0 && status !== 1) return false;
+          return !linked[String(req.id).toLowerCase()];
+        })
+        .map(function (x) {
+          return {
+            id: x.id,
+            learningRequestId: x.id,
+            title: self.requestTitle(x),
+            service: self.t('dash_service_learning_request'),
+            teacher: self.partyName(x, 'teacher'),
+            status: self.requestStatusLabel(x.status),
+            deadline: self.date(x.preferredDeliveryAt, { dateStyle: 'medium' }),
+            amount: x.budget != null ? self.money(x.budget, 'SAR') : self.t('td_budget_flexible'),
+            group: 'pending',
+            kind: 'request',
+            rawStatus: x.status,
+            version: x.version,
+            studentTotal: 0,
+            currency: 'SAR',
+            paymentStatus: null
+          };
+        });
+
+      var orderRows = orders.map(function (x) {
+        var status = Number(x.status);
+        var group = status === 4 ? 'done'
+          : (status === 0 || status === 2 || status === 3 ? 'action' : 'active');
+        return {
+          id: x.id,
+          learningRequestId: x.learningRequestId,
+          title: self.orderTitle(x),
+          service: self.t('dash_service_personalized'),
+          teacher: self.partyName(x, 'teacher'),
+          status: self.orderStatusLabel(x.status),
+          deadline: self.date(x.agreedDeliveryAt, { dateStyle: 'medium' }),
+          amount: self.money(x.studentTotal, x.currency || 'SAR'),
+          group: group,
+          kind: 'order',
+          rawStatus: status,
+          paymentStatus: x.paymentStatus,
+          version: x.version,
+          studentTotal: Number(x.studentTotal) || 0,
+          currency: x.currency || 'SAR'
+        };
+      });
+
+      return pendingRequests.concat(orderRows);
+    },
+
+    /** Filter projected student work rows by canonical UX buckets. */
+    filterStudentWorkList: function (rows, filterKey) {
+      var list = Array.isArray(rows) ? rows : [];
+      switch (filterKey) {
+        case 'pending':
+          return list.filter(function (r) { return r.kind === 'request'; });
+        case 'orders':
+          return list.filter(function (r) { return r.kind === 'order' && r.group !== 'done'; });
+        case 'action':
+          return list.filter(function (r) { return r.group === 'action'; });
+        case 'active':
+          return list.filter(function (r) {
+            return r.kind === 'request' || (r.kind === 'order' && r.group === 'active');
+          });
+        case 'done':
+          return list.filter(function (r) { return r.kind === 'order' && r.group === 'done'; });
+        case 'all':
+        default:
+          return list.filter(function (r) {
+            return r.kind === 'request' || (r.kind === 'order' && r.group !== 'done');
+          });
+      }
+    },
+
+    notificationTitle: function (notification) {
+      if (!notification) return '';
+      var key = 'notif_type_' + String(notification.type || '').toLowerCase();
+      var localized = this.t(key);
+      if (localized && localized.indexOf('⟦missing:') !== 0) return localized;
+      return notification.title || '';
+    },
+
+    /**
+     * Localize notification body by stable type at render time.
+     * Stored body is treated as {detail} when the template includes it (user text,
+     * titles, reasons). Fixed English bodies are replaced by locale templates.
+     */
+    notificationBody: function (notification) {
+      if (!notification) return '';
+      var detail = notification.body || '';
+      var key = 'notif_body_' + String(notification.type || '').toLowerCase();
+      var localized = this.t(key, { detail: detail });
+      if (localized && localized.indexOf('⟦missing:') !== 0) return localized;
+      return detail;
+    },
+
+    requestStatusLabel: function (status) {
+      var keys = [
+        'req_status_pending_review',
+        'req_status_clarification',
+        'req_status_accepted',
+        'req_status_declined',
+        'req_status_cancelled'
+      ];
+      return this.t(keys[status] || 'req_status_unknown');
+    },
+
+    orderStatusLabel: function (status) {
+      var keys = [
+        'order_status_payment_required',
+        'order_status_in_progress',
+        'order_status_delivered',
+        'order_status_revision',
+        'order_status_completed',
+        'order_status_cancelled'
+      ];
+      return this.t(keys[status] || 'order_status_unknown');
+    },
+
+    /** Status chip colors keyed by kind + numeric status — never by localized label. */
+    statusToneStyle: function (kind, rawStatus) {
+      var tones = {
+        request: {
+          0: ['var(--warning-soft)', 'var(--warning)'],
+          1: ['var(--info-soft)', 'var(--info)'],
+          2: ['var(--info-soft)', 'var(--info)'],
+          3: ['var(--surface-2)', 'var(--muted)'],
+          4: ['var(--surface-2)', 'var(--muted)']
+        },
+        order: {
+          0: ['var(--error-soft)', 'var(--error)'],
+          1: ['var(--primary-soft)', 'var(--primary)'],
+          2: ['var(--accent-soft)', 'var(--accent)'],
+          3: ['var(--warning-soft)', 'var(--warning)'],
+          4: ['var(--success-soft)', 'var(--success)'],
+          5: ['var(--surface-2)', 'var(--muted)']
+        }
+      };
+      var pair = (tones[kind] || {})[rawStatus] || ['var(--surface-2)', 'var(--muted)'];
+      return 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:'
+        + pair[0] + ';color:' + pair[1];
+    },
+
+    money: function (value, currency) {
+      var amount = Number(value);
+      if (!Number.isFinite(amount)) return this.t('td_unavailable');
+      var code = String(currency || 'SAR').trim() || 'SAR';
+      try {
+        return this.number(amount, { style: 'currency', currency: code, currencyDisplay: 'symbol' });
+      } catch (_) {
+        return code + ' ' + this.number(amount);
+      }
     },
 
     dashboardHrefForSession: function (session) {
@@ -785,9 +1040,6 @@
         dateStyle: 'medium',
         timeStyle: 'short'
       }).format(new Date(value));
-    },
-    money: function (value) {
-      return this.number(value, { style: 'currency', currency: 'SAR', currencyDisplay: 'symbol' });
     }
   };
 
