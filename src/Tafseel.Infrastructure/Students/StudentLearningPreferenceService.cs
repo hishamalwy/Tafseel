@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Tafseel.Application.Marketplace;
 using Tafseel.Application.Students;
 using Tafseel.Domain.Common;
@@ -25,6 +26,7 @@ public sealed class StudentLearningPreferenceService(TafseelDbContext db) : IStu
         var style = NormalizeStyle(input.ExplanationStyle);
         var languageId = await ResolveActiveLanguageIdAsync(input.PreferredTeachingLanguageId, ct);
         var now = DateTimeOffset.UtcNow;
+        var usesAppManagedRowVersion = IsSqliteProvider(db.Database);
 
         var item = await db.StudentLearningPreferences
             .SingleOrDefaultAsync(x => x.UserId == studentUserId, ct);
@@ -38,12 +40,16 @@ public sealed class StudentLearningPreferenceService(TafseelDbContext db) : IStu
 
             item = new StudentLearningPreference(studentUserId, now);
             item.Update(style, languageId, now);
+            if (usesAppManagedRowVersion)
+                item.AdvanceRowVersion();
             db.StudentLearningPreferences.Add(item);
         }
         else
         {
             ApplyExpectedVersion(item, input.Version);
             item.Update(style, languageId, now);
+            if (usesAppManagedRowVersion)
+                item.AdvanceRowVersion();
         }
 
         try
@@ -126,4 +132,7 @@ public sealed class StudentLearningPreferenceService(TafseelDbContext db) : IStu
 
         db.Entry(item).Property(x => x.RowVersion).OriginalValue = expected;
     }
+
+    private static bool IsSqliteProvider(DatabaseFacade database) =>
+        database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true;
 }

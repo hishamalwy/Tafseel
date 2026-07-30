@@ -821,7 +821,19 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             preference.HasKey(x => x.UserId);
             preference.Property(x => x.UserId).HasMaxLength(450);
             preference.Property(x => x.ExplanationStyle).HasMaxLength(32);
-            preference.Property(x => x.RowVersion).IsRowVersion();
+            // SQL Server: store-generated rowversion. SQLite EnsureCreated cannot populate
+            // IsRowVersion() columns (INSERT omits value → NOT NULL → DbUpdateException → 409).
+            if (IsSqliteProvider())
+            {
+                preference.Property(x => x.RowVersion)
+                    .IsConcurrencyToken()
+                    .IsRequired()
+                    .HasMaxLength(8);
+            }
+            else
+            {
+                preference.Property(x => x.RowVersion).IsRowVersion();
+            }
             preference.HasIndex(x => x.PreferredTeachingLanguageId);
             preference.HasOne<ApplicationUser>().WithOne()
                 .HasForeignKey<StudentLearningPreference>(x => x.UserId)
@@ -974,4 +986,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         file.Property<string>("ContentType").HasMaxLength(150);
         file.ToTable(table => table.HasCheckConstraint($"CK_{typeof(T).Name}_Size", "[Size] > 0"));
     }
+
+    private bool IsSqliteProvider() =>
+        Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true;
 }

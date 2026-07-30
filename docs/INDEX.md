@@ -22,6 +22,9 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Student Request Assistant Decision](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md) | 2026-07-29 | Decision complete | Approved a Limited Guided Request MVP that enhances the existing wizard without AI, Draft status or a second request domain. |
 | [Limited Guided Request UX](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) | 2026-07-29 | Conditionally verified | Implemented guided prompts, checklist, browser draft, Teacher-required entry and attachment version chaining without schema change. |
 | [Student Learning Preferences Decision](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md) | 2026-07-30 | Decision complete | Approved limited global Student learning defaults with per-request override and Description composition as request truth. |
+| [Limited Student Learning Preferences MVP](./features/STUDENT_LEARNING_PREFERENCES_MVP_REPORT.md) | 2026-07-30 | Conditionally verified | Implemented typed Student learning defaults, Student GET/PUT API, Dashboard settings and Guided Request prefill with draft precedence. |
+| [Student Learning Preferences Migration](./database/STUDENT_LEARNING_PREFERENCES_MVP_MIGRATION.md) | 2026-07-30 | Generated; not applied | Additive `StudentLearningPreferences` table with Restrict FKs and style allowlist check. |
+| [Teacher Reputation and Badges Decision](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md) | 2026-07-30 | Decision complete | Approved Trust-Only MVP: qualification-derived badge on read; performance badges blocked pending formulas. |
 
 ## Architecture
 
@@ -98,6 +101,7 @@ This index is append-only for immutable historical reports. New reports belong i
 | Live-session availability summary | Conditionally verified | [Live-Session Availability](./features/LIVE_SESSION_AVAILABILITY_SUMMARY_REPORT.md) |
 | Limited Teacher Showcase MVP | Conditionally verified | [Teacher Showcase MVP](./features/TEACHER_SHOWCASE_MVP_REPORT.md) |
 | Limited Guided Request UX | Conditionally verified | [Guided Request UX](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) |
+| Limited Student Learning Preferences MVP | Conditionally verified | [Learning Preferences MVP](./features/STUDENT_LEARNING_PREFERENCES_MVP_REPORT.md) |
 
 Additional historical reports:
 
@@ -108,6 +112,7 @@ Additional historical reports:
 - [Teacher Portfolio Moderation Decision Report](./reports/TEACHER_PORTFOLIO_MODERATION_DECISION_REPORT.md)
 - [Student Request Assistant Decision Report](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md)
 - [Student Learning Preferences Decision Report](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md)
+- [Teacher Reputation and Badges Decision Report](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md)
 
 ## ADR (Architecture Decisions)
 
@@ -121,3 +126,4 @@ Additional historical reports:
 | [ADR-007](./decisions/ADR-007-TEACHER-PORTFOLIO-MODERATION.md) | Proposed | MP4-only Teacher showcase with immutable versions, Quality moderation and explicit trust labels |
 | [ADR-008](./decisions/ADR-008-STUDENT-REQUEST-ASSISTANT.md) | Proposed | Guided Learning Request wizard enhancement without AI, Draft status or a second request domain |
 | [ADR-009](./decisions/ADR-009-STUDENT-LEARNING-PREFERENCES.md) | Proposed | Limited global Student learning defaults with per-request override; no profiling or matching |
+| [ADR-010](./decisions/ADR-010-TEACHER-REPUTATION-AND-BADGES.md) | Proposed | Trust-Only Teacher reputation: qualification-derived badge; performance badges deferred |

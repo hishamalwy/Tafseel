@@ -8,11 +8,11 @@ No release tag is present. Current audited baseline is commit `79be4cf` on `main
 
 ## Current Phase
 
-The Student Learning Preferences decision is complete. The Limited Guided Request UX remains implemented locally and conditionally browser-verified. The Limited Teacher Showcase MVP remains implemented locally and conditionally browser-verified for Development/Testing and explicitly enabled Staging only.
+The Teacher Reputation and Badge Rules decision is complete. The Limited Student Learning Preferences MVP remains implemented locally and conditionally verified. The Limited Guided Request UX remains implemented locally and conditionally browser-verified. The Limited Teacher Showcase MVP remains implemented locally and conditionally browser-verified for Development/Testing and explicitly enabled Staging only.
 
 ## Current Milestone
 
-Approved limited global Student learning defaults (explanation style + optional teaching language) with Guided Request prefill/override and Description composition as request truth. No profiling, matching or Learning Request schema change in the approved MVP. Marketplace Showcase trust separation and F-005 remain as previously recorded.
+Approved Trust-Only Teacher reputation: qualification-derived `qualified_on_tafseel` projected on read, subject evidence retained, content Showcase labels kept separate, and performance badges blocked until formulas are approved. Student learning defaults and F-005 remain as previously recorded.
 
 ## Current Architecture Status
 
@@ -45,6 +45,8 @@ Historical implementation phases 2–11 and completed production-correction pass
 | Student Request Assistant and Guided Request UX | Decision complete | [Request assistant decision](./reports/STUDENT_REQUEST_ASSISTANT_DECISION_REPORT.md) |
 | Limited Guided Request UX | Conditionally verified | [Guided Request UX report](./features/LIMITED_GUIDED_REQUEST_UX_REPORT.md) |
 | Student Learning Preferences | Decision complete | [Preferences decision](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md) |
+| Limited Student Learning Preferences MVP | Conditionally verified | [Preferences MVP report](./features/STUDENT_LEARNING_PREFERENCES_MVP_REPORT.md) |
+| Teacher Reputation and Badge Rules | Decision complete | [Reputation badges decision](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md) |
 
 ## Open Findings
 
@@ -70,18 +72,20 @@ Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.m
 | Teacher Availability and Capacity | Session-availability slice implemented locally; request capacity deferred |
 | Teacher Portfolio Moderation and Showcase Workflow | Limited MVP implemented locally; browser conditional |
 | Student Request Assistant and Guided Request UX | Decision complete; Limited Guided UX implemented locally; browser conditional |
-| Student Learning Preferences | Decision complete; implementation not started |
+| Student Learning Preferences | Decision complete; Limited MVP implemented locally; browser/SQL conditional |
+| Teacher Reputation and Badge Rules | Decision complete; Trust-Only implementation not started |
 
 Historical feature phases are indexed in [INDEX.md](./INDEX.md).
 
 ## Pending Vertical Slices
 
-1. Limited Student Learning Preferences implementation.
+1. Limited Teacher Trust Badge implementation.
 2. F-005 legacy-data, client-binding and revision-response relationship decisions.
 3. Favorites pagination.
 4. Explainable deterministic matching.
 5. Teacher/student analytics after event instrumentation.
 6. Quality trends, trust extensions and learning timeline.
+7. Highly Rated and other performance badges after formula business rules.
 
 ## Known Risks
 
@@ -107,7 +111,7 @@ Unresolved decisions include:
 - Matching weights, ownership, versioning and tie-breaking.
 - Complexity categories and override authority.
 - Learning outcome/mastery vocabulary and evidence.
-- Badge/achievement criteria and revocation.
+- Badge/achievement criteria and revocation for performance badges (Trust-Only qualification badge approved in ADR-010; Highly Rated and other performance rules remain open).
 - Portfolio retention/legal-hold, takedown appeals, Quality moderation service target and final display limits.
 - Quality trend formulas and enforcement separation.
 - Payment hold/settlement terminology and policy.
@@ -165,4 +169,4 @@ Latest Live-Session Availability validation:
 
 ## Next Recommended Pass
 
-Limited Student Learning Preferences implementation: typed preference entity, Student GET/PUT API, Dashboard Settings UI, Guided Request prefill with draft precedence, additive migration and ownership/validation tests — without matching, accessibility expansion or Learning Request schema changes. See [ADR-009](./decisions/ADR-009-STUDENT-LEARNING-PREFERENCES.md) and the [decision report](./reports/STUDENT_LEARNING_PREFERENCES_DECISION_REPORT.md).
+Limited Teacher Trust Badge implementation: project `qualified_on_tafseel` into marketplace DTOs, localize explanations, remove frontend Top rated invent, keep Showcase content labels separate, and add revoke/visibility tests — without performance badges, migrations, ranking or restored F-002 metrics. See [ADR-010](./decisions/ADR-010-TEACHER-REPUTATION-AND-BADGES.md) and the [decision report](./reports/TEACHER_REPUTATION_BADGES_DECISION_REPORT.md).

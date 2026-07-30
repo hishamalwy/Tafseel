@@ -645,7 +645,7 @@ class Component extends DCLogic {
     hasAvatar: false, accountUserId: '', avatarVersion: 0,
     currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
     notifyDeliveries: true, notifySessions: true,
-    learnPrefsStyle: '', learnPrefsLanguageId: '', learnPrefsVersion: null,
+    learnPrefsStyle: '', learnPrefsLanguageId: '', learnPrefsVersion: '',
     learnPrefsLanguages: [], learnPrefsBusy: false, learnPrefsLoading: false,
     learnPrefsError: '', learnPrefsSuccess: '',
     timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: [],
@@ -743,7 +743,7 @@ class Component extends DCLogic {
         learnPrefsLanguageId: learningPrefs && learningPrefs.preferredTeachingLanguage
           ? String(learningPrefs.preferredTeachingLanguage.id)
           : '',
-        learnPrefsVersion: learningPrefs && learningPrefs.version ? learningPrefs.version : null,
+        learnPrefsVersion: learningPrefs && learningPrefs.version ? learningPrefs.version : '',
         learnPrefsLanguages: Array.isArray(languages)
           ? languages.filter(x => x && x.isActive !== false).map(x => ({
             id: String(x.id),
@@ -1088,14 +1088,14 @@ class Component extends DCLogic {
           const saved = await Tafseel.api.put('/students/me/learning-preferences', {
             explanationStyle: s.learnPrefsStyle || null,
             preferredTeachingLanguageId: s.learnPrefsLanguageId || null,
-            version: s.learnPrefsVersion
+            version: s.learnPrefsVersion || null
           });
           this.setState({
             learnPrefsStyle: saved && saved.explanationStyle ? saved.explanationStyle : '',
             learnPrefsLanguageId: saved && saved.preferredTeachingLanguage
               ? String(saved.preferredTeachingLanguage.id)
               : '',
-            learnPrefsVersion: saved && saved.version ? saved.version : null,
+            learnPrefsVersion: saved && saved.version ? saved.version : '',
             learnPrefsSuccess: Tafseel.t('learn_prefs_saved'),
             learnPrefsBusy: false
           });
@@ -1114,12 +1114,12 @@ class Component extends DCLogic {
           const saved = await Tafseel.api.put('/students/me/learning-preferences', {
             explanationStyle: null,
             preferredTeachingLanguageId: null,
-            version: s.learnPrefsVersion
+            version: s.learnPrefsVersion || null
           });
           this.setState({
             learnPrefsStyle: '',
             learnPrefsLanguageId: '',
-            learnPrefsVersion: saved && saved.version ? saved.version : null,
+            learnPrefsVersion: saved && saved.version ? saved.version : '',
             learnPrefsSuccess: Tafseel.t('learn_prefs_reset_done'),
             learnPrefsBusy: false
           });

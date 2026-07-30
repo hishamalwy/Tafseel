@@ -60,4 +60,15 @@ public sealed class StudentLearningPreference
         PreferredTeachingLanguageId = preferredTeachingLanguageId;
         UpdatedAt = now;
     }
+
+    /// <summary>
+    /// Advances the concurrency token for providers that do not store-generate rowversion
+    /// (SQLite integration tests). SQL Server uses database rowversion instead.
+    /// </summary>
+    public void AdvanceRowVersion()
+    {
+        var next = new byte[8];
+        Random.Shared.NextBytes(next);
+        RowVersion = next;
+    }
 }
