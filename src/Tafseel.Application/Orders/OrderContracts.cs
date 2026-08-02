@@ -32,7 +32,9 @@ public sealed record LearningRequestDto(
     DateTimeOffset CreatedAt, IReadOnlyCollection<AttachmentDto> Attachments,
     IReadOnlyCollection<ClarificationDto> Clarifications, string Version,
     string? StudentDisplayName = null, string? TeacherDisplayName = null,
-    string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null);
+    string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null,
+    Guid? ServiceCatalogItemId = null, string? CatalogCode = null, string? CategoryCode = null,
+    string? OrderType = null, string? ServiceNameEnglish = null, string? ServiceNameArabic = null);
 
 public sealed record OrderDto(
     Guid Id, Guid LearningRequestId, string StudentId, string TeacherId, Guid TeacherServiceId,
@@ -43,7 +45,16 @@ public sealed record OrderDto(
     DateTimeOffset CreatedAt, IReadOnlyCollection<DeliveryDto> Deliveries, string Version,
     string? StudentDisplayName = null, string? TeacherDisplayName = null,
     string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null,
-    string? RequestTitle = null);
+    string? RequestTitle = null,
+    Guid? ServiceCatalogItemId = null, string? CatalogCode = null, string? CategoryCode = null,
+    string? OrderType = null, string? ServiceNameEnglish = null, string? ServiceNameArabic = null,
+    /// <summary>Owner-safe: whether this Order already has a TeacherReview (one per Order).</summary>
+    bool HasReview = false,
+    decimal? ReviewOverallScore = null,
+    string? ReviewComment = null,
+    bool? ReviewIsVisible = null,
+    DateTimeOffset? ReviewCreatedAt = null,
+    bool ReviewCanSubmit = false);
 public sealed record DeliveryDto(
     Guid Id, string OriginalName, string ContentType, long Size, string Message, DateTimeOffset CreatedAt);
 

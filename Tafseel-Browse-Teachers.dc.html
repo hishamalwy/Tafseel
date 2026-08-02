@@ -115,7 +115,7 @@
 
   <form onSubmit="{{ noop }}" role="search" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px;box-shadow:var(--shadow-sm);margin-bottom:24px">
     <div style="display:flex;align-items:center;gap:10px;padding-inline:12px;height:44px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg)">
-      <span aria-hidden="true" style="color:var(--muted);font-size:14px">⌕</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
       <label for="f-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search by teacher, topic or keyword</label>
       <input id="f-q" value="{{ q }}" onChange="{{ onQ }}" data-i18n-ph="ph_search" placeholder="Teacher, topic or keyword" style="flex:1;border:0;background:transparent;outline:none;font-size:14.5px;min-width:0" />
     </div>
@@ -180,7 +180,7 @@
       <div style="border-top:1px solid var(--border);padding-top:18px;display:flex;flex-direction:column;gap:14px">
         <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;color:var(--text-2)">
           <span>Verified only</span>
-          <input type="checkbox" checked="{{ verifiedOnly }}" onChange="{{ onVerified }}" style="width:38px;height:22px;accent-color:var(--primary)" />
+          <input type="checkbox" class="tf-switch" checked="{{ verifiedOnly }}" onChange="{{ onVerified }}" />
         </label>
       </div>
     </aside>
@@ -209,7 +209,7 @@
 
       <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
         <div class="tf-empty-enter" style="border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:64px 24px;text-align:center;background:var(--surface)">
-          <div style="width:52px;height:52px;border-radius:14px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 16px;font-size:20px;color:var(--muted)">⌕</div>
+          <div style="width:52px;height:52px;border-radius:14px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 16px;color:var(--muted)"><svg aria-hidden="true" viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg></div>
           <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">No teachers match these filters</h3>
           <p data-i18n="browse_empty_hint" style="color:var(--muted);font-size:14.5px;max-width:380px;margin:0 auto 20px">Try widening your price range or clearing some filters.</p>
           <button type="button" onClick="{{ clearFilters }}" style="height:40px;padding:0 20px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14px">Clear all filters</button>
@@ -239,10 +239,10 @@
                   </div>
                 </sc-if>
               </div>
-              <button type="button" onClick="{{ t.onFav }}" aria-label="Save teacher" aria-pressed="{{ t.fav }}" style="{{ t.favStyle }}">{{ t.favIcon }}</button>
+              <button type="button" onClick="{{ t.onFav }}" aria-label="Save teacher" aria-pressed="{{ t.fav }}" style="{{ t.favStyle }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="{{ t.favFill }}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:block"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg></button>
             </div>
 
-            <p style="font-size:14px;color:var(--text-2);line-height:1.55;margin-bottom:12px">{{ t.bio }}</p>
+            <p style="font-size:14px;color:var(--text-2);line-height:1.55;margin-bottom:12px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden">{{ t.bio }}</p>
 
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
               <sc-for list="{{ t.skills }}" as="sk" hint-placeholder-count="3">
@@ -707,7 +707,7 @@ class Component extends DCLogic {
       ['samples', 'compare_field_samples', teacher => Tafseel.t('compare_sample_count', { n: Tafseel.number(teacher.sampleCount || 0) })]
     ];
     const comparisonTeachers = s.compareTeachers.map(teacher => {
-      const name = s.lang === 'en' && teacher.fullNameEnglish ? teacher.fullNameEnglish : teacher.fullName;
+      const name = Tafseel.partyDisplayName(teacher.fullName, teacher.fullNameEnglish) || Tafseel.t('name_unavailable');
       return {
         ...teacher,
         name,
@@ -804,8 +804,8 @@ class Component extends DCLogic {
             : Tafseel.availabilityText(s.availabilityByTeacher[t.id]),
         availabilityAria: Tafseel.t('availability_field'),
         fav: s.favs.includes(t.id),
-        favIcon: s.favs.includes(t.id) ? '♥' : '♡',
-        favStyle: 'flex:none;width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);font-size:15px;line-height:1;color:' + (s.favs.includes(t.id) ? 'var(--error)' : 'var(--muted)'),
+        favFill: s.favs.includes(t.id) ? 'currentColor' : 'none',
+        favStyle: 'flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);transition:all var(--t);color:' + (s.favs.includes(t.id) ? 'var(--error)' : 'var(--muted)'),
         onFav: async () => {
           const next = this.toggleIn('favs', t.id);
           try {

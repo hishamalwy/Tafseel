@@ -19,6 +19,74 @@
 <script src="js/api.js"></script>
 <script src="js/vendor/signalr.min.js"></script>
 <script src="js/chat-widget.js"></script>
+<style>
+.tf-marketplace-services{display:flex;flex-direction:column;gap:22px;min-width:0}
+.tf-marketplace-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.tf-marketplace-head h1{margin:0 0 6px;font-family:var(--font-display);font-size:clamp(25px,3vw,34px);letter-spacing:-.025em}
+.tf-marketplace-head p{max-width:68ch;margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+.tf-marketplace-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
+.tf-marketplace-summary>div{padding:15px 18px;border-inline-start:1px solid var(--border)}
+.tf-marketplace-summary>div:first-child{border-inline-start:0}
+.tf-marketplace-summary strong{display:block;font-size:22px;line-height:1.1;margin-bottom:5px}
+.tf-marketplace-summary span{font-size:12.5px;color:var(--muted)}
+.tf-service-filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.tf-service-filter{min-height:44px;padding:0 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font:inherit;font-size:13px;font-weight:650;white-space:nowrap}
+.tf-service-filter[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.tf-service-category{display:flex;flex-direction:column;gap:10px}
+.tf-service-category-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:8px}
+.tf-service-category-head h2{margin:0;font-size:15px;font-weight:750}
+.tf-service-category-head span{font-size:12px;color:var(--muted)}
+.tf-service-catalog-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.tf-service-catalog-main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(250px,.8fr);gap:20px;padding:20px}
+.tf-service-identity{display:flex;align-items:flex-start;gap:13px;min-width:0}
+.tf-service-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:var(--r-md);background:var(--primary-soft);color:var(--primary);font-size:18px}
+.tf-service-identity h3{margin:0 0 5px;font-size:17px;line-height:1.25}
+.tf-service-identity p{margin:0;max-width:68ch;color:var(--muted);font-size:13px;line-height:1.55}
+.tf-service-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.tf-service-meta span,.tf-service-state{display:inline-flex;align-items:center;min-height:26px;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--text-2);font-size:11.5px;font-weight:650}
+.tf-service-state[data-tone="success"]{background:var(--success-soft);color:var(--success)}
+.tf-service-state[data-tone="warning"]{background:var(--warning-soft);color:var(--warning)}
+.tf-service-state[data-tone="info"]{background:var(--primary-soft);color:var(--primary)}
+.tf-service-state[data-tone="neutral"]{background:var(--surface-2);color:var(--muted)}
+.tf-service-policy{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;align-content:start}
+.tf-service-policy div{min-width:0}
+.tf-service-policy span{display:block;margin-bottom:3px;color:var(--muted);font-size:11.5px}
+.tf-service-policy strong{display:block;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.tf-service-configurations{border-top:1px solid var(--border);background:var(--surface-2)}
+.tf-service-config-row{display:grid;grid-template-columns:minmax(150px,.75fr) minmax(0,1.4fr) auto;align-items:center;gap:16px;padding:14px 20px;border-top:1px solid var(--border)}
+.tf-service-config-row:first-child{border-top:0}
+.tf-service-config-subject strong{display:block;font-size:13.5px;margin-bottom:4px}
+.tf-service-config-subject span{font-size:11.5px;color:var(--muted)}
+.tf-service-config-terms{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}
+.tf-service-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.tf-service-button{min-height:44px;padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;font-weight:700}
+.tf-service-button[data-primary="true"]{border-color:var(--primary);background:var(--primary);color:var(--primary-ink)}
+.tf-service-button:disabled{opacity:.48;cursor:not-allowed}
+.tf-service-empty-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 20px;border-top:1px solid var(--border);background:var(--surface-2)}
+.tf-service-empty-action p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
+.tf-service-modal-backdrop{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;background:oklch(0.2 0.02 265 / .48)}
+.tf-service-modal{width:min(720px,100%);max-height:min(90svh,820px);display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);overflow:hidden}
+.tf-service-modal header{padding:20px 22px 16px;border-bottom:1px solid var(--border)}
+.tf-service-modal header h2{margin:0 0 5px;font-size:19px}
+.tf-service-modal header p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
+.tf-service-modal-body{padding:20px 22px;overflow:auto;display:flex;flex-direction:column;gap:18px}
+.tf-service-policy-note{padding:12px 14px;border-radius:var(--r-md);background:var(--primary-soft);font-size:12.5px;line-height:1.55;color:var(--text-2)}
+.tf-service-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.tf-service-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tf-service-field[data-wide="true"]{grid-column:1/-1}
+.tf-service-field>span{font-size:12.5px;font-weight:700}
+.tf-service-field small{color:var(--muted);font-size:11.5px;line-height:1.4}
+.tf-service-field input,.tf-service-field select,.tf-service-field textarea{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font:inherit;font-size:13.5px}
+.tf-service-field textarea{min-height:96px;resize:vertical}
+.tf-service-availability{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid var(--border);border-radius:var(--r-md)}
+.tf-service-availability strong{display:block;font-size:13px;margin-bottom:3px}
+.tf-service-availability span{display:block;color:var(--muted);font-size:11.5px;line-height:1.4}
+.tf-service-availability input{width:42px;height:24px;accent-color:var(--primary);flex:none}
+.tf-service-modal footer{display:flex;justify-content:flex-end;gap:9px;padding:14px 22px;border-top:1px solid var(--border);background:var(--surface)}
+@media(max-width:860px){.tf-marketplace-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-marketplace-summary>div:nth-child(3){border-top:1px solid var(--border)}.tf-marketplace-summary>div:nth-child(3){border-inline-start:0}.tf-marketplace-summary>div:nth-child(4){border-top:1px solid var(--border)}.tf-service-catalog-main{grid-template-columns:1fr}.tf-service-config-row{grid-template-columns:1fr auto}.tf-service-config-terms{grid-column:1/-1;grid-row:2}}
+@media(max-width:560px){.tf-service-modal-backdrop{padding:0;align-items:end}.tf-service-modal{width:100%;max-height:94svh;border-radius:var(--r-lg) var(--r-lg) 0 0}.tf-service-modal footer{padding-bottom:max(14px,env(safe-area-inset-bottom))}.tf-service-fields{grid-template-columns:1fr}.tf-service-field[data-wide="true"]{grid-column:auto}.tf-service-catalog-main{padding:16px}.tf-service-config-row{grid-template-columns:1fr;padding:14px 16px}.tf-service-actions{justify-content:flex-start}.tf-service-empty-action{align-items:flex-start;flex-direction:column;padding:14px 16px}.tf-service-filters{overflow:visible;flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.tf-service-modal-backdrop,.tf-service-modal{animation:none!important}}
+</style>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -225,41 +293,148 @@
     </div>
     </sc-if>
 
-    <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ isQualifications }}" hint-placeholder-val="{{ false }}">
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">My services</h1>
-          <button type="button" onClick="{{ openAddService }}" style="height:38px;padding:0 14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13.5px">+ Add service</button>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+          <div>
+            <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0 0 6px">{{ qualificationsTitle }}</h1>
+            <p style="font-size:14px;color:var(--muted);margin:0;max-width:68ch">{{ qualificationsHint }}</p>
+          </div>
+          <button type="button" onClick="{{ onApplyAnotherSubject }}" style="height:40px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700">{{ applyAnotherSubjectLabel }}</button>
         </div>
-        <sc-if value="{{ hasNoServices }}" hint-placeholder-val="{{ false }}">
-          <p class="tf-empty-enter" style="font-size:14px;color:var(--muted);padding:28px 4px">No services yet.</p>
+        <sc-if value="{{ qualificationsLoading }}" hint-placeholder-val="{{ false }}">
+          <p role="status" class="tf-empty">{{ qualificationsLoadingText }}</p>
         </sc-if>
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <sc-for list="{{ myServices }}" as="sv" hint-placeholder-count="5">
-            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap">
-              <div>
-                <div style="font-size:15.5px;font-weight:700;margin-bottom:4px">{{ sv.name }}</div>
-                <div style="font-size:13px;color:var(--muted)">{{ sv.desc }}</div>
+        <sc-if value="{{ qualificationsError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="color:var(--error);font-size:14px">{{ qualificationsError }}</p>
+        </sc-if>
+        <sc-if value="{{ qualificationsEmpty }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-empty">{{ qualificationsEmptyText }}</p>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+          <sc-for list="{{ qualificationCards }}" as="card" hint-placeholder-count="0">
+            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+                <h2 style="font-size:16px;margin:0">{{ card.subject }}</h2>
+                <span style="{{ card.statusStyle }}">{{ card.status }}</span>
               </div>
-              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-                <span style="font-size:17px;font-weight:800">{{ sv.price }}</span>
-                <button type="button" onClick="{{ sv.onEdit }}" style="height:34px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">Edit</button>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)">
-                  <input type="checkbox" checked="{{ sv.active }}" onChange="{{ sv.onToggle }}" style="width:38px;height:22px;accent-color:var(--primary)" />
-                  Active
-                </label>
+              <div style="font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px">
+                <sc-if value="{{ card.submitted }}" hint-placeholder-val="{{ false }}"><span>{{ card.submitted }}</span></sc-if>
+                <sc-if value="{{ card.decided }}" hint-placeholder-val="{{ false }}"><span>{{ card.decided }}</span></sc-if>
+                <span>{{ card.sampleStatus }}</span>
+                <span>{{ card.nextAction }}</span>
               </div>
+              <sc-if value="{{ card.hasCta }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ card.onCta }}" style="height:36px;margin-top:auto;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700">{{ card.ctaLabel }}</button>
+              </sc-if>
             </article>
           </sc-for>
         </div>
+      </div>
+    </sc-if>
 
-        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-top:22px">
-          <h2 style="font-size:17px;margin-bottom:5px">{{ teacherShowcasesTitle }}</h2>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">{{ teacherShowcasesHint }}</p>
+    <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
+      <div class="tf-marketplace-services">
+        <div class="tf-marketplace-head">
+          <div>
+            <h1>{{ marketplaceServicesTitle }}</h1>
+            <p>{{ marketplaceServicesHint }}</p>
+          </div>
+        </div>
+
+        <div class="tf-marketplace-summary" aria-label="{{ marketplaceSummaryLabel }}">
+          <sc-for list="{{ marketplaceSummary }}" as="summary" hint-placeholder-count="4">
+            <div><strong>{{ summary.value }}</strong><span>{{ summary.label }}</span></div>
+          </sc-for>
+        </div>
+
+        <div class="tf-service-filters" aria-label="{{ marketplaceFilterLabel }}">
+          <sc-for list="{{ marketplaceFilters }}" as="filter" hint-placeholder-count="5">
+            <button type="button" class="tf-service-filter" aria-pressed="{{ filter.selected }}" onClick="{{ filter.onClick }}">{{ filter.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ marketplaceServicesError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="margin:0;padding:14px 16px;border-radius:var(--r-md);background:var(--error-soft);color:var(--error);font-size:13px">{{ marketplaceServicesError }}</p>
+        </sc-if>
+        <sc-if value="{{ marketplaceServicesEmpty }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-empty-enter" style="margin:0;padding:32px 4px;color:var(--muted);font-size:14px">{{ marketplaceServicesEmptyText }}</p>
+        </sc-if>
+
+        <sc-for list="{{ marketplaceServiceGroups }}" as="group" hint-placeholder-count="3">
+          <section class="tf-service-category">
+            <div class="tf-service-category-head"><h2>{{ group.label }}</h2><span>{{ group.countLabel }}</span></div>
+            <sc-for list="{{ group.services }}" as="service" hint-placeholder-count="3">
+              <article class="tf-service-catalog-card">
+                <div class="tf-service-catalog-main">
+                  <div class="tf-service-identity">
+                    <span class="tf-service-icon" aria-hidden="true">{{ service.icon }}</span>
+                    <div style="min-width:0">
+                      <h3>{{ service.name }}</h3>
+                      <p>{{ service.description }}</p>
+                      <div class="tf-service-meta">
+                        <span>{{ service.orderType }}</span>
+                        <span>{{ service.qualification }}</span>
+                        <span class="tf-service-state" data-tone="{{ service.stateTone }}">{{ service.stateLabel }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tf-service-policy" aria-label="{{ service.policyLabel }}">
+                    <div><span>{{ marketplaceRecommendedPriceLabel }}</span><strong>{{ service.recommendedPrice }}</strong></div>
+                    <div><span>{{ marketplaceAllowedPriceLabel }}</span><strong>{{ service.priceRange }}</strong></div>
+                    <div><span>{{ marketplaceDeliveryLabel }}</span><strong>{{ service.deliveryPolicy }}</strong></div>
+                    <div><span>{{ marketplaceRevisionLabel }}</span><strong>{{ service.revisionPolicy }}</strong></div>
+                  </div>
+                </div>
+
+                <sc-if value="{{ service.hasOfferings }}" hint-placeholder-val="{{ false }}">
+                  <div class="tf-service-configurations">
+                    <sc-for list="{{ service.offerings }}" as="offering" hint-placeholder-count="1">
+                      <div class="tf-service-config-row">
+                        <div class="tf-service-config-subject"><strong>{{ offering.subject }}</strong><span>{{ offering.state }}</span></div>
+                        <div class="tf-service-config-terms"><span>{{ offering.price }}</span><span>{{ offering.delivery }}</span><span>{{ offering.revisions }}</span></div>
+                        <div class="tf-service-actions">
+                          <button type="button" class="tf-service-button" onClick="{{ offering.onConfigure }}" disabled="{{ offering.configureDisabled }}">{{ offering.configureLabel }}</button>
+                          <button type="button" class="tf-service-button" data-primary="{{ offering.primaryToggle }}" onClick="{{ offering.onToggle }}" disabled="{{ offering.toggleDisabled }}">{{ offering.toggleLabel }}</button>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ service.showEnable }}" hint-placeholder-val="{{ false }}">
+                  <div class="tf-service-empty-action"><p>{{ service.enableHint }}</p><button type="button" class="tf-service-button" data-primary="true" onClick="{{ service.onEnable }}">{{ service.enableLabel }}</button></div>
+                </sc-if>
+                <sc-if value="{{ service.showUnavailable }}" hint-placeholder-val="{{ false }}">
+                  <div class="tf-service-empty-action"><p>{{ service.unavailableHint }}</p></div>
+                </sc-if>
+              </article>
+            </sc-for>
+          </section>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+          <div>
+            <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0 0 6px">{{ showcasePageTitle }}</h1>
+            <p style="font-size:14px;color:var(--muted);margin:0;max-width:68ch">{{ showcasePageHint }}</p>
+          </div>
+          <button type="button" onClick="{{ onFocusAddShowcase }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:800;font-size:14px;white-space:nowrap">{{ addShowcaseCtaLabel }}</button>
+        </div>
+
+        <section id="add-showcase-form" style="background:var(--surface);border:2px solid var(--primary);border-radius:var(--r-lg);padding:20px;margin-bottom:22px;scroll-margin-top:88px">
+          <h2 style="font-size:17px;margin:0 0 5px">{{ teacherShowcasesTitle }}</h2>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 16px">{{ teacherShowcasesHint }}</p>
+          <sc-if value="{{ showcaseNoSubjects }}" hint-placeholder-val="{{ false }}">
+            <p role="status" style="margin:0 0 14px;padding:12px 14px;border-radius:var(--r-sm);background:var(--warning-soft);color:var(--warning);font-size:13px">{{ showcaseNoSubjectsText }} <button type="button" onClick="{{ goQualificationsFromSamples }}" style="border:0;background:none;color:var(--primary);font:inherit;font-weight:700;padding:0;cursor:pointer">{{ showcaseGoQualifications }}</button></p>
+          </sc-if>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px">
             <label style="display:flex;flex-direction:column;gap:6px">
               <span style="font-size:13px;font-weight:600">{{ showcaseTitleLabel }}</span>
-              <input value="{{ showcaseTitle }}" onChange="{{ onShowcaseTitle }}" maxlength="200" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)" />
+              <input id="showcase-title-input" value="{{ showcaseTitle }}" onChange="{{ onShowcaseTitle }}" maxlength="200" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)" />
             </label>
             <label style="display:flex;flex-direction:column;gap:6px">
               <span style="font-size:13px;font-weight:600">{{ showcaseSubjectLabel }}</span>
@@ -284,10 +459,10 @@
             <span style="font-size:13px;font-weight:600">{{ showcaseDescriptionLabel }}</span>
             <textarea value="{{ showcaseDescription }}" onChange="{{ onShowcaseDescription }}" maxlength="2000" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);resize:vertical"></textarea>
           </label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-            <button type="button" onClick="{{ onSaveShowcaseDraft }}" disabled="{{ showcaseBusy }}" style="height:40px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700">{{ showcaseSaveLabel }}</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+            <button type="button" onClick="{{ onSaveShowcaseDraft }}" disabled="{{ showcaseBusy }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:800">{{ showcaseSaveLabel }}</button>
             <sc-if value="{{ showcaseEditing }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ onCancelShowcaseEdit }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ showcaseCancelLabel }}</button>
+              <button type="button" onClick="{{ onCancelShowcaseEdit }}" style="height:42px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ showcaseCancelLabel }}</button>
             </sc-if>
           </div>
           <p style="font-size:12px;color:var(--muted);margin-top:10px">{{ showcaseUploadHint }}</p>
@@ -302,7 +477,7 @@
         <sc-if value="{{ showcasesEmpty }}" hint-placeholder-val="{{ false }}">
           <p class="tf-empty">{{ showcasesEmptyText }}</p>
         </sc-if>
-        <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px">
           <sc-for list="{{ teacherShowcases }}" as="sm" hint-placeholder-count="0">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start">
               <div style="min-width:0">
@@ -349,13 +524,58 @@
             </article>
           </sc-for>
         </div>
-      </div>
-    </sc-if>
 
-    <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ showcasePageTitle }}</h1>
-        <p style="font-size:14px;color:var(--muted);margin-bottom:18px">{{ showcasePageHint }}</p>
+        <section style="margin-bottom:28px">
+          <h2 style="font-size:17px;margin-bottom:5px">{{ profileVideosTitle }}</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">{{ profileVideosHint }}</p>
+          <sc-if value="{{ profileVideosLoading }}" hint-placeholder-val="{{ false }}">
+            <p role="status" class="tf-empty">{{ profileVideosLoadingText }}</p>
+          </sc-if>
+          <sc-if value="{{ profileVideosError }}" hint-placeholder-val="{{ false }}">
+            <p role="alert" style="color:var(--error);font-size:14px">{{ profileVideosError }}</p>
+          </sc-if>
+          <sc-if value="{{ profileVideosEmpty }}" hint-placeholder-val="{{ false }}">
+            <p class="tf-empty">{{ profileVideosEmptyText }}</p>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ profileVideoCards }}" as="pv" hint-placeholder-count="0">
+              <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start">
+                <div style="min-width:0">
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <h3 style="font-size:15px;margin:0">{{ pv.title }}</h3>
+                    <span style="{{ pv.sourceStyle }}">{{ pv.source }}</span>
+                    <span style="{{ pv.visibilityStyle }}">{{ pv.visibility }}</span>
+                    <sc-if value="{{ pv.featured }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;background:var(--primary-soft);color:var(--primary)">{{ featuredLabel }}</span></sc-if>
+                  </div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:7px">{{ pv.meta }}</div>
+                  <div style="font-size:12.5px;color:var(--text-2);margin-top:4px">{{ pv.status }}</div>
+                  <sc-if value="{{ pv.blockReason }}" hint-placeholder-val="{{ false }}">
+                    <p style="font-size:12.5px;color:var(--warning);margin:8px 0 0">{{ pv.blockReason }}</p>
+                  </sc-if>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;min-width:148px">
+                  <button type="button" onClick="{{ pv.onPreview }}" style="height:34px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ previewVideoLabel }}</button>
+                  <sc-if value="{{ pv.canShow }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ pv.onShow }}" disabled="{{ profileVideoBusy }}" style="height:34px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700">{{ showOnProfileLabel }}</button>
+                  </sc-if>
+                  <sc-if value="{{ pv.canHide }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ pv.onHide }}" disabled="{{ profileVideoBusy }}" style="height:34px;border:1px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:600">{{ hideFromProfileLabel }}</button>
+                  </sc-if>
+                  <sc-if value="{{ pv.canFeature }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ pv.onFeature }}" disabled="{{ profileVideoBusy }}" style="height:34px;border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);border-radius:var(--r-sm);font-weight:700">{{ setFeaturedLabel }}</button>
+                  </sc-if>
+                  <sc-if value="{{ pv.canReorder }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px">
+                      <button type="button" onClick="{{ pv.onMoveEarlier }}" disabled="{{ profileVideoBusy }}" aria-label="{{ moveEarlierLabel }}" style="height:34px;flex:1;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">↑</button>
+                      <button type="button" onClick="{{ pv.onMoveLater }}" disabled="{{ profileVideoBusy }}" aria-label="{{ moveLaterLabel }}" style="height:34px;flex:1;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm)">↓</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+
         <h2 style="font-size:17px;margin-bottom:5px">{{ qualificationSamplesTitle }}</h2>
         <p style="font-size:13px;color:var(--muted);margin-bottom:14px">{{ qualificationSamplesHint }}</p>
         <sc-if value="{{ qualificationSamplesEmpty }}" hint-placeholder-val="{{ false }}">
@@ -676,65 +896,37 @@
 </sc-if>
 
 <sc-if value="{{ serviceModal }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeServiceModal }}">
-    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ serviceModalTitle }}" onClick="{{ stop }}" style="width:min(520px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px;max-height:min(90vh,720px);overflow:auto">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ serviceModalTitle }}</h2>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
-        <sc-if value="{{ serviceModalCreate }}" hint-placeholder-val="{{ true }}">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Subject</span>
-            <select value="{{ svcSubjectId }}" onChange="{{ onSvcSubjectId }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
-              <option value="">Choose a subject</option>
-              <sc-for list="{{ subjectOptions }}" as="sub" hint-placeholder-count="4">
-                <option value="{{ sub.id }}">{{ sub.name }}</option>
-              </sc-for>
-            </select>
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Service type</span>
-            <select value="{{ svcCatalogId }}" onChange="{{ onSvcCatalogId }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px">
-              <option value="">Choose a service type</option>
-              <sc-for list="{{ serviceTypeOptions }}" as="st" hint-placeholder-count="4">
-                <option value="{{ st.id }}">{{ st.name }}</option>
-              </sc-for>
-            </select>
-          </label>
-        </sc-if>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Title</span>
-          <input value="{{ svcTitle }}" onChange="{{ onSvcTitle }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">Description</span>
-          <textarea value="{{ svcDescription }}" onChange="{{ onSvcDescription }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
-        </label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Price</span>
-            <input type="number" min="0.01" step="0.01" sc-camel-value="{{ svcPrice }}" onChange="{{ onSvcPrice }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">Currency</span>
-            <input value="{{ svcCurrency }}" readonly style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px;color:var(--muted)" />
-          </label>
+  <div class="tf-service-modal-backdrop" onClick="{{ closeServiceModal }}" onKeyDown="{{ serviceDialogKeyDown }}">
+    <div data-teacher-service-dialog role="dialog" class="tf-service-modal tf-modal-enter" aria-modal="true" aria-labelledby="teacher-service-dialog-title" aria-describedby="teacher-service-dialog-description" onClick="{{ stop }}">
+      <header>
+        <h2 id="teacher-service-dialog-title">{{ serviceModalTitle }}</h2>
+        <p id="teacher-service-dialog-description">{{ serviceModalDescription }}</p>
+      </header>
+      <div class="tf-service-modal-body">
+        <div class="tf-service-policy-note">
+          <strong style="display:block;margin-bottom:4px">{{ serviceModalCatalogName }}</strong>
+          <span>{{ serviceModalPolicySummary }}</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <sc-if value="{{ showDeliveryFields }}" hint-placeholder-val="{{ true }}">
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13px;font-weight:600">{{ tdDeliveryHours }}</span>
-              <input type="number" min="1" max="8760" sc-camel-value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-            </label>
-            <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13px;font-weight:600">{{ tdRevisions }}</span>
-              <input type="number" min="0" max="20" sc-camel-value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-            </label>
+        <div class="tf-service-fields">
+          <sc-if value="{{ serviceModalEnable }}" hint-placeholder-val="{{ true }}">
+            <label class="tf-service-field" data-wide="true"><span>{{ marketplaceSubjectLabel }}</span><select id="teacher-service-subject" value="{{ svcSubjectId }}" onChange="{{ onSvcSubjectId }}" aria-describedby="teacher-service-subject-help"><option value="">{{ marketplaceChooseSubject }}</option><sc-for list="{{ serviceModalSubjectOptions }}" as="sub" hint-placeholder-count="3"><option value="{{ sub.id }}">{{ sub.name }}</option></sc-for></select><small id="teacher-service-subject-help">{{ marketplaceSubjectHelp }}</small></label>
           </sc-if>
+          <label class="tf-service-field"><span>{{ marketplacePriceLabel }}</span><input id="teacher-service-price" type="number" min="{{ svcMinimumPrice }}" max="{{ svcMaximumPrice }}" step="0.01" inputmode="decimal" sc-camel-value="{{ svcPrice }}" onChange="{{ onSvcPrice }}" aria-describedby="teacher-service-price-help" /><small id="teacher-service-price-help">{{ serviceModalPriceHelp }}</small></label>
+          <label class="tf-service-field"><span>{{ marketplaceCurrencyLabel }}</span><input value="{{ svcCurrency }}" readonly aria-readonly="true" /></label>
+          <sc-if value="{{ showDeliveryFields }}" hint-placeholder-val="{{ true }}">
+            <label class="tf-service-field"><span>{{ tdDeliveryHours }}</span><input id="teacher-service-delivery" type="number" min="{{ svcMinimumDelivery }}" max="{{ svcMaximumDelivery }}" inputmode="numeric" sc-camel-value="{{ svcDeliveryHours }}" onChange="{{ onSvcDeliveryHours }}" /><small>{{ serviceModalDeliveryHelp }}</small></label>
+            <label class="tf-service-field"><span>{{ tdRevisions }}</span><input id="teacher-service-revisions" type="number" min="0" max="{{ svcMaximumRevisions }}" inputmode="numeric" sc-camel-value="{{ svcRevisions }}" onChange="{{ onSvcRevisions }}" /><small>{{ serviceModalRevisionHelp }}</small></label>
+          </sc-if>
+          <label class="tf-service-field"><span>{{ marketplaceApproachEnLabel }}</span><textarea id="teacher-service-approach-en" maxlength="1000" dir="ltr" value="{{ svcApproachEn }}" onChange="{{ onSvcApproachEn }}"></textarea><small>{{ marketplaceApproachHelp }}</small></label>
+          <label class="tf-service-field"><span>{{ marketplaceApproachArLabel }}</span><textarea id="teacher-service-approach-ar" maxlength="1000" dir="rtl" value="{{ svcApproachAr }}" onChange="{{ onSvcApproachAr }}"></textarea><small>{{ marketplaceApproachHelp }}</small></label>
         </div>
+        <label class="tf-service-availability"><span><strong>{{ marketplaceAvailabilityLabel }}</strong><span>{{ serviceModalAvailabilityHelp }}</span></span><input id="teacher-service-available" type="checkbox" checked="{{ svcAvailable }}" onChange="{{ onSvcAvailable }}" /></label>
+        <sc-if value="{{ serviceModalLive }}" hint-placeholder-val="{{ false }}"><div class="tf-service-policy-note">{{ marketplaceLiveAvailabilityHelp }} <button type="button" onClick="{{ goAvailabilityFromService }}" style="border:0;background:none;color:var(--primary);font:inherit;font-weight:700;padding:0">{{ marketplaceManageAvailability }}</button></div></sc-if>
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeServiceModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
-        <button type="button" onClick="{{ confirmServiceModal }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Save service</button>
-      </div>
+      <footer>
+        <button type="button" class="tf-service-button" onClick="{{ closeServiceModal }}">{{ marketplaceCancelLabel }}</button>
+        <button type="button" class="tf-service-button" data-primary="true" onClick="{{ confirmServiceModal }}" disabled="{{ serviceBusy }}">{{ serviceModalSubmitLabel }}</button>
+      </footer>
     </div>
   </div>
 </sc-if>
@@ -801,12 +993,14 @@ class Component extends DCLogic {
     deliveryModal: null, deliveryBusy: false, deliveryError: '', deliveryFile: null, deliveryFileName: '', deliveryMessage: '',
     busyOrderId: '',
     balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
-    subjectsCatalog: [], servicesCatalog: [], eligibleSubjects: [],
+    subjectsCatalog: [], marketplaceServices: [], marketplaceServicesError: '', eligibleSubjects: [], serviceFilter: 'all',
+    qualificationCards: [], qualificationCardsError: '', qualificationCardsLoading: true,
+    profileVideos: [], profileVideosError: '', profileVideosLoading: true, profileVideoBusy: false,
     showcases: [], showcaseLoading: true, showcaseError: '', showcaseBusy: false,
     showcaseEditingId: '', showcaseTitle: '', showcaseDescription: '',
     showcaseSubjectId: '', showcaseTopicId: '', showcaseTopics: [],
-    serviceModal: null,
-    svcSubjectId: '', svcCatalogId: '', svcTitle: '', svcDescription: '',
+    serviceModal: null, serviceBusy: false, serviceDirty: false,
+    svcSubjectId: '', svcApproachEn: '', svcApproachAr: '', svcAvailable: true,
     svcPrice: 120, svcCurrency: 'SAR', svcDeliveryHours: 48, svcRevisions: 2,
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
     hasAvatar: false, accountUserId: '', avatarVersion: 0,
@@ -846,8 +1040,10 @@ class Component extends DCLogic {
         Tafseel.api.get('/teachers/' + encodeURIComponent(session.userId) + '/reviews?pageSize=50'),
         Tafseel.api.get('/conversations?pageSize=50'),
         Tafseel.api.get('/teachers/me/eligible-subjects'),
-        Tafseel.api.get('/services'),
-        Tafseel.api.get('/teachers/me/showcases?pageSize=20')
+        Tafseel.api.get('/teachers/me/marketplace-services'),
+        Tafseel.api.get('/teachers/me/showcases?pageSize=20'),
+        Tafseel.api.get('/teachers/me/qualifications'),
+        Tafseel.api.get('/teachers/me/profile-videos')
       ]);
     }).then(results => {
       if (!results) return;
@@ -863,8 +1059,10 @@ class Component extends DCLogic {
       const reviews = value(6);
       const conversations = value(7);
       const eligible = value(8) || [];
-      const servicesCatalog = value(9) || [];
+      const marketplaceServices = value(9) || [];
       const showcases = value(10);
+      const qualificationCards = value(11) || [];
+      const profileVideos = value(12) || [];
       const mapFiles = (attachments) => (attachments || []).map(a => ({
         id: a.id,
         name: a.originalName || Tafseel.t('common_photo'),
@@ -910,6 +1108,7 @@ class Component extends DCLogic {
           deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
           price:Tafseel.money(x.teacherNet != null ? x.teacherNet : x.price, x.currency || 'SAR'),
           rawStatus:Number(x.status),
+          paymentStatus:x.paymentStatus,
           stage:presentation.stage,
           action:presentation.action,
           statusLabelKey:presentation.labelKey,
@@ -941,10 +1140,17 @@ class Component extends DCLogic {
         liveReviews:reviews && reviews.items ? reviews.items : [],
         liveConversations:conversations && conversations.items ? conversations.items : [],
         eligibleSubjects:eligible,
-        servicesCatalog,
+        marketplaceServices,
+        marketplaceServicesError:results[9].status === 'rejected' ? Tafseel.api.errorMessage(results[9].reason) : '',
         showcases:showcases && showcases.items ? showcases.items : [],
         showcaseLoading:false,
         showcaseError:results[10].status === 'rejected' ? Tafseel.api.errorMessage(results[10].reason) : '',
+        qualificationCards,
+        qualificationCardsLoading:false,
+        qualificationCardsError:results[11].status === 'rejected' ? Tafseel.api.errorMessage(results[11].reason) : '',
+        profileVideos,
+        profileVideosLoading:false,
+        profileVideosError:results[12].status === 'rejected' ? Tafseel.api.errorMessage(results[12].reason) : '',
         liveSessions:sessions && sessions.items ? sessions.items.filter(x => x.status === 0 || x.status === 1).map(x => ({
           id:x.id,
           student: Tafseel.partyName(x, 'student'),
@@ -957,6 +1163,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     this._timelineRequest = null;
+    document.body.style.overflow = '';
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
   }
@@ -964,6 +1171,56 @@ class Component extends DCLogic {
 
   flash(msg) {
     Tafseel.flash(this, msg, 2800);
+  }
+
+  async reloadMarketplace() {
+    const [profile, marketplaceServices] = await Promise.all([
+      Tafseel.api.get('/teachers/me'),
+      Tafseel.api.get('/teachers/me/marketplace-services')
+    ]);
+    this.setState({ profile, marketplaceServices, marketplaceServicesError: '' });
+  }
+
+  openServiceModal(catalog, offering = null) {
+    this._serviceOpener = document.activeElement;
+    document.body.style.overflow = 'hidden';
+    const live = catalog.orderType === 'live' || !!(offering && offering.requiresScheduling);
+    this.setState({
+      serviceModal: { catalog, offering, mode: offering ? 'edit' : 'enable' },
+      serviceDirty: false,
+      svcSubjectId: offering ? offering.subjectId : '',
+      svcApproachEn: offering ? (offering.approachEn || '') : '',
+      svcApproachAr: offering ? (offering.approachAr || '') : '',
+      svcAvailable: offering ? !!offering.isActive : true,
+      svcPrice: offering ? offering.price : catalog.defaultPrice,
+      svcCurrency: offering ? offering.currency : (catalog.currencyCode || 'SAR'),
+      svcDeliveryHours: live ? 1 : (offering ? offering.deliveryHours : (catalog.defaultDeliveryHours || catalog.minimumDeliveryHours || 24)),
+      svcRevisions: live ? 0 : (offering ? offering.revisions : catalog.defaultRevisions)
+    });
+    setTimeout(() => document.querySelector('[data-teacher-service-dialog] input:not([readonly]), [data-teacher-service-dialog] select')?.focus(), 0);
+  }
+
+  closeServiceModal() {
+    if (this.state.serviceBusy) return;
+    if (this.state.serviceDirty && !confirm(Tafseel.t('td_marketplace_discard_confirm'))) return;
+    document.body.style.overflow = '';
+    this.setState({ serviceModal: null, serviceDirty: false });
+    setTimeout(() => this._serviceOpener?.focus?.(), 0);
+  }
+
+  serviceDialogKeyDown(event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeServiceModal();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const dialog = event.currentTarget.querySelector('[data-teacher-service-dialog]');
+    const focusable = [...dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])')];
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 
   async reloadAssigned() {
@@ -1016,6 +1273,7 @@ class Component extends DCLogic {
           deadline:x.agreedDeliveryAt ? Tafseel.date(x.agreedDeliveryAt, { dateStyle:'medium' }) : Tafseel.t('td_unavailable'),
           price:Tafseel.money(x.teacherNet != null ? x.teacherNet : x.price, x.currency || 'SAR'),
           rawStatus:Number(x.status),
+          paymentStatus:x.paymentStatus,
           stage:presentation.stage,
           action:presentation.action,
           statusLabelKey:presentation.labelKey,
@@ -1037,6 +1295,29 @@ class Component extends DCLogic {
       this.setState({ showcases:(page && page.items) || [], showcaseLoading:false });
     } catch (error) {
       this.setState({ showcaseLoading:false, showcaseError:Tafseel.api.errorMessage(error) });
+    }
+  }
+
+  async loadProfileVideos() {
+    try {
+      this.setState({ profileVideosLoading:true, profileVideosError:'' });
+      const profileVideos = await Tafseel.api.get('/teachers/me/profile-videos');
+      this.setState({ profileVideos: profileVideos || [], profileVideosLoading:false });
+    } catch (error) {
+      this.setState({ profileVideosLoading:false, profileVideosError:Tafseel.api.errorMessage(error) });
+    }
+  }
+
+  async loadQualifications() {
+    try {
+      this.setState({ qualificationCardsLoading:true, qualificationCardsError:'' });
+      const qualificationCards = await Tafseel.api.get('/teachers/me/qualifications');
+      this.setState({ qualificationCards: qualificationCards || [], qualificationCardsLoading:false });
+    } catch (error) {
+      this.setState({
+        qualificationCardsLoading:false,
+        qualificationCardsError:Tafseel.api.errorMessage(error)
+      });
     }
   }
 
@@ -1103,7 +1384,7 @@ class Component extends DCLogic {
     const unreadMessages = (s.liveConversations || []).reduce((n, c) => n + (c.unreadCount || 0), 0);
     const NAV = [
       ['overview','◱','td_nav_overview',0], ['new','✦','td_nav_new', newCount], ['orders','◫','td_nav_orders', orderCount], ['sessions','◉','td_nav_sessions', sessionCount],
-      ['services','▤','td_nav_services',0], ['samples','▶','td_nav_samples',0], ['availability','◷','td_nav_availability',0],
+      ['services','▤','td_nav_services',0], ['qualifications','✓','td_nav_qualifications',0], ['samples','▶','td_nav_samples',0], ['availability','◷','td_nav_availability',0],
       ['messages','✉','td_nav_messages', unreadMessages], ['reviews','★','td_nav_reviews',0], ['earnings','$','td_nav_earnings',0], ['withdrawals','⇩','td_nav_withdrawals',0],
       ['profile','◍','td_nav_profile',0], ['settings','⚙','td_nav_settings',0]
     ];
@@ -1121,6 +1402,25 @@ class Component extends DCLogic {
     }));
 
     const filteredOrders = ORDERS.filter(o => s.orderTab === 'all' || o.stage === s.orderTab);
+    const ar = document.documentElement.lang === 'ar';
+    const tr = (key, fallback) => { const value = Tafseel.t(key); return value === key ? fallback : value; };
+    const marketplace = (s.marketplaceServices || []).map(catalog => {
+      const offerings = catalog.offerings || [];
+      const activeCount = offerings.filter(x => x.isActive && !x.isSuperseded).length;
+      const needsConfiguration = offerings.some(x => !x.isSuperseded && x.configurationState !== 'configured' && x.configurationState !== 'disabled');
+      const filterState = activeCount ? 'enabled' : needsConfiguration ? 'needs_configuration' : catalog.canEnable ? 'available' : 'unavailable';
+      return { ...catalog, offerings, activeCount, needsConfiguration, filterState };
+    });
+    const visibleMarketplace = marketplace.filter(x => s.serviceFilter === 'all' || x.filterState === s.serviceFilter);
+    const categoryOrder = [...new Set(visibleMarketplace.map(x => x.categoryCode || 'other'))];
+    const marketplaceGroups = categoryOrder.map(category => ({
+      category,
+      items: visibleMarketplace.filter(x => (x.categoryCode || 'other') === category)
+    }));
+    const money = (value, currency) => Tafseel.money(Number(value || 0), currency || 'SAR');
+    const hours = value => tr('td_marketplace_hours_value', '{count} hours').replace('{count}', String(value));
+    const revisionValue = value => tr(Number(value) === 1 ? 'td_marketplace_revision_one' : 'td_marketplace_revision_value', Number(value) === 1 ? '1 revision' : '{count} revisions').replace('{count}', String(value));
+    const stateLabel = state => tr('td_marketplace_state_' + state, String(state || '').replaceAll('_', ' '));
 
     return {
       langLabel: Tafseel.t('language_target'),
@@ -1234,6 +1534,7 @@ class Component extends DCLogic {
 
       isOverview: s.section === 'overview' || !s.section,
       isServices: s.section === 'services',
+      isQualifications: s.section === 'qualifications',
       isSamples: s.section === 'samples',
       isAvailability: s.section === 'availability',
       isMessages: s.section === 'messages',
@@ -1302,127 +1603,135 @@ class Component extends DCLogic {
       accountUpdatePassword: Tafseel.t('account_update_password'),
       accountPasswordHint: Tafseel.t('account_password_hint'),
 
-      myServices: (s.profile && s.profile.services ? s.profile.services : []).map(sv => ({
-        id:sv.id, name:sv.title,
-        desc: sv.requiresScheduling
-          ? Tafseel.t('td_nav_sessions')
-          : (sv.deliveryHours + ' ' + Tafseel.t('td_delivery_hours') + ' · ' + sv.revisions + ' ' + Tafseel.t('td_revisions')),
-        price:sv.currency + ' ' + sv.price,
-        active:sv.isActive,
-        version:sv.version,
-        raw:sv,
-        onEdit: () => this.setState({
-          serviceModal: { mode: 'edit', service: sv },
-          svcSubjectId: sv.subjectId,
-          svcCatalogId: sv.serviceCatalogItemId,
-          svcTitle: sv.title,
-          svcDescription: sv.description,
-          svcPrice: sv.price,
-          svcCurrency: sv.currency || 'SAR',
-          svcDeliveryHours: sv.deliveryHours,
-          svcRevisions: sv.revisions
-        }),
-        onToggle: async () => {
-          if (!s.profile || !sv.version) return;
-          try {
-            await Tafseel.api.put('/teachers/me/services/' + sv.id + '/active',
-              { active:!sv.isActive }, { 'If-Match':sv.version });
-            const profile = await Tafseel.api.get('/teachers/me');
-            this.setState({ profile });
-            this.flash(sv.title + (sv.isActive ? ' paused' : ' re-activated'));
-          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-        }
+      marketplaceServicesTitle: tr('td_marketplace_services_title', 'Marketplace services'),
+      marketplaceServicesHint: tr('td_marketplace_services_hint', 'Choose from Tafseel services and configure only the terms you control.'),
+      marketplaceSummaryLabel: tr('td_marketplace_summary_label', 'Service summary'),
+      marketplaceSummary: [
+        ['available', marketplace.filter(x => x.canEnable).length],
+        ['enabled', marketplace.filter(x => x.activeCount).length],
+        ['needs_configuration', marketplace.filter(x => x.needsConfiguration).length],
+        ['unavailable', marketplace.filter(x => !x.canEnable).length]
+      ].map(([key, value]) => ({ value, label: tr('td_marketplace_summary_' + key, key.replaceAll('_', ' ')) })),
+      marketplaceFilterLabel: tr('td_marketplace_filter_label', 'Filter services'),
+      marketplaceFilters: ['all','available','enabled','needs_configuration','unavailable'].map(key => ({
+        label: tr('td_marketplace_filter_' + key, key.replaceAll('_', ' ')), selected: s.serviceFilter === key,
+        onClick: () => this.setState({ serviceFilter: key })
       })),
-      hasNoServices: !(s.profile && s.profile.services && s.profile.services.length),
-      openAddService: () => this.setState({
-        serviceModal: { mode: 'create' },
-        svcSubjectId: '', svcCatalogId: '', svcTitle: '', svcDescription: '',
-        svcPrice: 120, svcCurrency: 'SAR', svcDeliveryHours: 48, svcRevisions: 2
-      }),
-      serviceModal: !!s.serviceModal,
-      serviceModalCreate: !s.serviceModal || s.serviceModal.mode === 'create',
-      serviceModalTitle: s.serviceModal && s.serviceModal.mode === 'edit' ? 'Edit service' : 'Add service',
-      closeServiceModal: () => this.setState({ serviceModal: null }),
-      subjectOptions: (s.eligibleSubjects || []).map(x => ({
-        id: x.id,
-        name: (document.documentElement.lang === 'ar' && x.nameAr) ? x.nameAr : x.name
+      marketplaceServicesError: s.marketplaceServicesError,
+      marketplaceServicesEmpty: !s.marketplaceServicesError && visibleMarketplace.length === 0,
+      marketplaceServicesEmptyText: tr('td_marketplace_empty', 'No services match this filter.'),
+      marketplaceRecommendedPriceLabel: tr('td_marketplace_recommended_price', 'Recommended'),
+      marketplaceAllowedPriceLabel: tr('td_marketplace_allowed_price', 'Allowed price'),
+      marketplaceDeliveryLabel: tr('td_marketplace_delivery', 'Delivery'),
+      marketplaceRevisionLabel: tr('td_marketplace_revisions', 'Revisions'),
+      marketplaceServiceGroups: marketplaceGroups.map(group => ({
+        label: tr('admin_service_category_' + group.category, group.category.replaceAll('_', ' ')),
+        countLabel: tr(group.items.length === 1 ? 'td_marketplace_service_count_one' : 'td_marketplace_service_count', group.items.length === 1 ? '1 service' : '{count} services').replace('{count}', String(group.items.length)),
+        services: group.items.map(catalog => {
+          const currentSubjectIds = new Set(catalog.offerings.filter(x => !x.isSuperseded).map(x => String(x.subjectId)));
+          const eligible = (catalog.subjects || []).filter(x => x.isSubjectActive && x.isQualificationActive && !currentSubjectIds.has(String(x.id)));
+          const icon = ({ video:'▶', academic_support:'◆', live:'●', exam:'✓', notes:'≡', project:'◇' })[catalog.iconCode] || '•';
+          const cardState = catalog.activeCount ? 'configured' : catalog.needsConfiguration ? 'policy_correction_required' : catalog.availabilityState;
+          return {
+            icon, name: ar ? (catalog.nameAr || catalog.nameEn) : catalog.nameEn,
+            description: ar ? (catalog.descriptionAr || catalog.descriptionEn) : catalog.descriptionEn,
+            orderType: tr('td_marketplace_order_' + catalog.orderType, catalog.orderType.replaceAll('_', ' ')),
+            qualification: tr('td_marketplace_qualification_' + catalog.qualificationPolicy, catalog.qualificationPolicy.replaceAll('_', ' ')),
+            stateLabel: stateLabel(cardState),
+            stateTone: cardState === 'configured' ? 'success' : cardState === 'available' ? 'info' : cardState === 'disabled' ? 'neutral' : 'warning',
+            policyLabel: tr('td_marketplace_policy_label', 'Catalog policy'),
+            recommendedPrice: money(catalog.recommendedPrice, catalog.currencyCode),
+            priceRange: money(catalog.minimumPrice, catalog.currencyCode) + ' – ' + money(catalog.maximumPrice, catalog.currencyCode),
+            deliveryPolicy: catalog.orderType === 'live_session' ? tr('td_marketplace_live_scheduling', 'Live scheduling') : hours(catalog.minimumDeliveryHours) + ' – ' + hours(catalog.maximumDeliveryHours),
+            revisionPolicy: tr('td_marketplace_up_to_revisions', 'Up to {count}').replace('{count}', String(catalog.maximumRevisions)),
+            hasOfferings: catalog.offerings.length > 0,
+            offerings: catalog.offerings.map(offering => {
+              const subject = (catalog.subjects || []).find(x => String(x.id) === String(offering.subjectId));
+              const canConfigure = !offering.isSuperseded && offering.configurationState !== 'qualification_required' && catalog.isActive && catalog.isPublic && catalog.teacherSelectable;
+              return {
+                subject: subject ? (ar ? (subject.nameAr || subject.name) : subject.name) : tr('td_marketplace_unknown_subject', 'Subject unavailable'),
+                state: stateLabel(offering.configurationState), price: money(offering.price, offering.currency),
+                delivery: offering.requiresScheduling ? tr('td_marketplace_live_scheduling', 'Live scheduling') : hours(offering.deliveryHours),
+                revisions: revisionValue(offering.revisions),
+                configureLabel: tr('td_marketplace_configure', 'Configure'), configureDisabled: !canConfigure,
+                onConfigure: () => this.openServiceModal(catalog, offering), primaryToggle: !offering.isActive,
+                toggleLabel: offering.isActive ? tr('td_marketplace_disable', 'Disable') : tr('td_marketplace_reenable', 'Re-enable'),
+                toggleDisabled: offering.isSuperseded || (!offering.isActive && !canConfigure),
+                onToggle: async () => {
+                  if (offering.isActive && !confirm(tr('td_marketplace_disable_confirm', 'Disable this service? Existing orders and requests will continue.'))) return;
+                  try {
+                    await Tafseel.api.put('/teachers/me/services/' + offering.id + '/active', { active:!offering.isActive }, { 'If-Match':offering.version });
+                    await this.reloadMarketplace();
+                    this.flash(offering.isActive ? tr('td_marketplace_disabled', 'Service disabled') : tr('td_marketplace_reenabled', 'Service re-enabled'));
+                  } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+                }
+              };
+            }),
+            showEnable: catalog.canEnable && eligible.length > 0,
+            enableHint: catalog.offerings.length ? tr('td_marketplace_add_subject_hint', 'Offer this service for another qualified subject.') : tr('td_marketplace_enable_hint', 'Configure this service for an approved subject.'),
+            enableLabel: tr('td_marketplace_enable', 'Enable service'), onEnable: () => this.openServiceModal(catalog),
+            showUnavailable: !catalog.canEnable && catalog.offerings.length === 0,
+            unavailableHint: stateLabel(catalog.availabilityState)
+          };
+        })
       })),
-      serviceTypeOptions: (s.servicesCatalog || [])
-        .filter(x => x.teacherSelectable !== false && x.isPublic !== false)
-        .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0) || String(a.name).localeCompare(String(b.name)))
-        .map(x => ({
-          id: x.id,
-          name: (document.documentElement.lang === 'ar' && (x.nameAr || x.titleAr)) ? (x.nameAr || x.titleAr) : x.name,
-          requiresScheduling: !!x.requiresScheduling
-        })),
-      showDeliveryFields: (() => {
-        const selected = (s.servicesCatalog || []).find(x => String(x.id) === String(s.svcCatalogId));
-        return !(selected && selected.requiresScheduling);
-      })(),
-      tdDeliveryHours: Tafseel.t('td_delivery_hours'),
-      tdRevisions: Tafseel.t('td_revisions'),
-      svcSubjectId: s.svcSubjectId, onSvcSubjectId: e => this.setState({ svcSubjectId: e.target.value }),
-      svcCatalogId: s.svcCatalogId, onSvcCatalogId: e => {
-        const id = e.target.value;
-        const selected = (s.servicesCatalog || []).find(x => String(x.id) === String(id));
-        this.setState({
-          svcCatalogId: id,
-          ...(selected && selected.requiresScheduling ? { svcDeliveryHours: 1, svcRevisions: 0 } : {})
-        });
-      },
-      svcTitle: s.svcTitle, onSvcTitle: e => this.setState({ svcTitle: e.target.value }),
-      svcDescription: s.svcDescription, onSvcDescription: e => this.setState({ svcDescription: e.target.value }),
-      svcPrice: s.svcPrice, onSvcPrice: e => this.setState({ svcPrice: e.target.value }),
-      svcCurrency: s.svcCurrency || 'SAR',
-      svcDeliveryHours: s.svcDeliveryHours, onSvcDeliveryHours: e => this.setState({ svcDeliveryHours: e.target.value }),
-      svcRevisions: s.svcRevisions, onSvcRevisions: e => this.setState({ svcRevisions: e.target.value }),
+      serviceModal: !!s.serviceModal, serviceDialogKeyDown: e => this.serviceDialogKeyDown(e), serviceBusy: !!s.serviceBusy,
+      serviceModalEnable: !s.serviceModal || s.serviceModal.mode === 'enable',
+      serviceModalTitle: s.serviceModal && s.serviceModal.mode === 'edit' ? tr('td_marketplace_configure_title', 'Configure service') : tr('td_marketplace_enable_title', 'Enable service'),
+      serviceModalDescription: tr('td_marketplace_modal_description', 'Catalog identity is managed by Tafseel. Configure your offer terms below.'),
+      serviceModalCatalogName: s.serviceModal ? (ar ? (s.serviceModal.catalog.nameAr || s.serviceModal.catalog.nameEn) : s.serviceModal.catalog.nameEn) : '',
+      serviceModalPolicySummary: s.serviceModal ? money(s.serviceModal.catalog.minimumPrice, s.serviceModal.catalog.currencyCode) + ' – ' + money(s.serviceModal.catalog.maximumPrice, s.serviceModal.catalog.currencyCode) : '',
+      closeServiceModal: () => this.closeServiceModal(),
+      serviceModalSubjectOptions: s.serviceModal ? (s.serviceModal.catalog.subjects || []).filter(x => {
+        const current = new Set((s.serviceModal.catalog.offerings || []).filter(o => !o.isSuperseded).map(o => String(o.subjectId)));
+        return x.isSubjectActive && x.isQualificationActive && !current.has(String(x.id));
+      }).map(x => ({ id:x.id, name:ar ? (x.nameAr || x.name) : x.name })) : [],
+      marketplaceSubjectLabel: tr('td_marketplace_subject', 'Qualified subject'), marketplaceChooseSubject: tr('td_marketplace_choose_subject', 'Choose a subject'),
+      marketplaceSubjectHelp: tr('td_marketplace_subject_help', 'Only approved, active qualifications are available.'), marketplacePriceLabel: tr('td_marketplace_price', 'Your price'),
+      marketplaceCurrencyLabel: tr('td_marketplace_currency', 'Currency'), marketplaceApproachEnLabel: tr('td_marketplace_approach_en', 'Approach notes (English)'),
+      marketplaceApproachArLabel: tr('td_marketplace_approach_ar', 'Approach notes (Arabic)'), marketplaceApproachHelp: tr('td_marketplace_approach_help', 'Optional. Explain how you deliver this service.'),
+      marketplaceAvailabilityLabel: tr('td_marketplace_availability', 'Service availability'), serviceModalAvailabilityHelp: tr('td_marketplace_availability_help', 'Students can request this configured service when enabled.'),
+      marketplaceLiveAvailabilityHelp: tr('td_marketplace_live_availability_help', 'Live sessions also depend on your weekly availability.'), marketplaceManageAvailability: tr('td_marketplace_manage_availability', 'Manage availability'),
+      marketplaceCancelLabel: tr('common_cancel', 'Cancel'), serviceModalSubmitLabel: s.serviceModal && s.serviceModal.mode === 'edit' ? tr('td_marketplace_save', 'Save configuration') : tr('td_marketplace_enable_submit', 'Enable service'),
+      showDeliveryFields: !(s.serviceModal && s.serviceModal.catalog.orderType === 'live_session'), serviceModalLive: !!(s.serviceModal && s.serviceModal.catalog.orderType === 'live_session'),
+      tdDeliveryHours: Tafseel.t('td_delivery_hours'), tdRevisions: Tafseel.t('td_revisions'),
+      svcSubjectId: s.svcSubjectId, onSvcSubjectId: e => this.setState({ svcSubjectId:e.target.value, serviceDirty:true }),
+      svcPrice: s.svcPrice, onSvcPrice: e => this.setState({ svcPrice:e.target.value, serviceDirty:true }), svcCurrency: s.svcCurrency || 'SAR',
+      svcMinimumPrice: s.serviceModal ? s.serviceModal.catalog.minimumPrice : 0, svcMaximumPrice: s.serviceModal ? s.serviceModal.catalog.maximumPrice : 0,
+      serviceModalPriceHelp: s.serviceModal ? money(s.serviceModal.catalog.minimumPrice, s.serviceModal.catalog.currencyCode) + ' – ' + money(s.serviceModal.catalog.maximumPrice, s.serviceModal.catalog.currencyCode) : '',
+      svcDeliveryHours: s.svcDeliveryHours, onSvcDeliveryHours: e => this.setState({ svcDeliveryHours:e.target.value, serviceDirty:true }),
+      svcMinimumDelivery: s.serviceModal ? s.serviceModal.catalog.minimumDeliveryHours : 1, svcMaximumDelivery: s.serviceModal ? s.serviceModal.catalog.maximumDeliveryHours : 8760,
+      serviceModalDeliveryHelp: s.serviceModal ? hours(s.serviceModal.catalog.minimumDeliveryHours) + ' – ' + hours(s.serviceModal.catalog.maximumDeliveryHours) : '',
+      svcRevisions: s.svcRevisions, onSvcRevisions: e => this.setState({ svcRevisions:e.target.value, serviceDirty:true }), svcMaximumRevisions: s.serviceModal ? s.serviceModal.catalog.maximumRevisions : 0,
+      serviceModalRevisionHelp: s.serviceModal ? tr('td_marketplace_up_to_revisions', 'Up to {count}').replace('{count}', String(s.serviceModal.catalog.maximumRevisions)) : '',
+      svcApproachEn:s.svcApproachEn, onSvcApproachEn:e => this.setState({ svcApproachEn:e.target.value, serviceDirty:true }), svcApproachAr:s.svcApproachAr, onSvcApproachAr:e => this.setState({ svcApproachAr:e.target.value, serviceDirty:true }),
+      svcAvailable:!!s.svcAvailable, onSvcAvailable:e => this.setState({ svcAvailable:!!e.target.checked, serviceDirty:true }),
+      goAvailabilityFromService: () => { document.body.style.overflow=''; this.setState({ serviceModal:null, serviceDirty:false, section:'availability' }); },
       confirmServiceModal: async () => {
-        const title = String(s.svcTitle || '').trim();
-        const description = String(s.svcDescription || '').trim();
-        const price = Number(s.svcPrice);
-        const deliveryHours = Number(s.svcDeliveryHours);
-        const revisions = Number(s.svcRevisions);
-        if (!title) return this.flash('Title is required.');
-        if (!(price > 0)) return this.flash('Price must be greater than zero.');
+        if (!s.serviceModal || s.serviceBusy) return;
+        const catalog = s.serviceModal.catalog, price = Number(s.svcPrice), live = catalog.orderType === 'live_session';
+        const deliveryHours = live ? 1 : Number(s.svcDeliveryHours), revisions = live ? 0 : Number(s.svcRevisions);
+        if (s.serviceModal.mode === 'enable' && !s.svcSubjectId) return this.flash(tr('td_marketplace_subject_required', 'Choose a qualified subject.'));
+        if (!Number.isFinite(price) || price < Number(catalog.minimumPrice) || price > Number(catalog.maximumPrice)) return this.flash(tr('td_marketplace_price_invalid', 'Price is outside the catalog limits.'));
+        if (!live && (!Number.isInteger(deliveryHours) || deliveryHours < Number(catalog.minimumDeliveryHours) || deliveryHours > Number(catalog.maximumDeliveryHours))) return this.flash(tr('td_marketplace_delivery_invalid', 'Delivery is outside the catalog limits.'));
+        if (!live && (!Number.isInteger(revisions) || revisions < 0 || revisions > Number(catalog.maximumRevisions))) return this.flash(tr('td_marketplace_revisions_invalid', 'Revisions are outside the catalog limits.'));
+        this.setState({ serviceBusy:true });
         try {
-          if (s.serviceModal && s.serviceModal.mode === 'edit') {
-            const existing = s.serviceModal.service;
-            if (!description) return this.flash('Description is required.');
-            if (!(deliveryHours >= 1)) return this.flash('Delivery hours are required.');
-            if (!(revisions >= 0)) return this.flash('Revisions are required.');
-            await Tafseel.api.put('/teachers/me/services/' + existing.id, {
-              subjectId: existing.subjectId,
-              serviceCatalogItemId: existing.serviceCatalogItemId,
-              title,
-              description,
-              price,
-              currency: existing.currency || 'SAR',
-              deliveryHours,
-              revisions
-            }, { 'If-Match': existing.version });
-            this.flash('Service saved');
+          const payload = { subjectId:s.serviceModal.mode === 'edit' ? s.serviceModal.offering.subjectId : s.svcSubjectId, serviceCatalogItemId:catalog.id, price,
+            currency:s.svcCurrency || catalog.currencyCode, deliveryHours, revisions, approachEn:String(s.svcApproachEn || '').trim(), approachAr:String(s.svcApproachAr || '').trim(), isAvailable:!!s.svcAvailable };
+          if (s.serviceModal.mode === 'edit') {
+            const existing = s.serviceModal.offering;
+            await Tafseel.api.put('/teachers/me/services/' + existing.id, payload, { 'If-Match':existing.version });
+            this.flash(tr('td_marketplace_saved', 'Service configuration saved'));
           } else {
-            if (!s.svcSubjectId || !s.svcCatalogId) return this.flash('Subject and service type are required.');
-            if (!description) return this.flash('Description is required.');
-            const selectedType = (s.servicesCatalog || []).find(x => String(x.id) === String(s.svcCatalogId));
-            const scheduling = !!(selectedType && selectedType.requiresScheduling);
-            if (!scheduling && !(deliveryHours >= 1)) return this.flash('Delivery hours are required.');
-            if (!scheduling && !(revisions >= 0)) return this.flash('Revisions are required.');
-            await Tafseel.api.post('/teachers/me/services', {
-              subjectId: s.svcSubjectId,
-              serviceCatalogItemId: s.svcCatalogId,
-              title,
-              description,
-              price,
-              currency: 'SAR',
-              deliveryHours: scheduling ? 1 : deliveryHours,
-              revisions: scheduling ? 0 : revisions
-            });
-            this.flash(Tafseel.t('td_service_created'));
+            await Tafseel.api.post('/teachers/me/services', payload);
+            this.flash(tr('td_marketplace_enabled', 'Service enabled'));
           }
-          const profile = await Tafseel.api.get('/teachers/me');
-          this.setState({ profile, serviceModal: null });
-        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          await this.reloadMarketplace();
+          document.body.style.overflow = '';
+          this.setState({ serviceModal:null, serviceBusy:false, serviceDirty:false });
+          setTimeout(() => this._serviceOpener?.focus?.(), 0);
+        } catch (error) { this.setState({ serviceBusy:false }); this.flash(Tafseel.api.errorMessage(error)); }
       },
 
       showcasePageTitle:Tafseel.t('showcase_page_title'),
@@ -1438,7 +1747,18 @@ class Component extends DCLogic {
       showcaseTopicLabel:Tafseel.t('showcase_topic_label'),
       showcaseChooseSubject:Tafseel.t('showcase_choose_subject'),
       showcaseNoTopic:Tafseel.t('showcase_no_topic'),
-      showcaseSaveLabel:s.showcaseEditingId ? Tafseel.t('showcase_save_changes') : Tafseel.t('showcase_create_draft'),
+      showcaseSaveLabel:s.showcaseEditingId ? Tafseel.t('showcase_save_changes') : Tafseel.t('showcase_add_button'),
+      addShowcaseCtaLabel: Tafseel.t('showcase_add_button'),
+      showcaseNoSubjects: !(s.eligibleSubjects || []).length,
+      showcaseNoSubjectsText: tr('showcase_no_qualified_subject', 'You need an approved subject qualification before adding a Showcase.'),
+      showcaseGoQualifications: tr('showcase_go_qualifications', 'Open My Qualifications'),
+      goQualificationsFromSamples: () => this.setState({ section: 'qualifications' }),
+      onFocusAddShowcase: () => {
+        const form = document.getElementById('add-showcase-form');
+        const title = document.getElementById('showcase-title-input');
+        if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => { if (title && title.focus) title.focus(); }, 250);
+      },
       showcaseCancelLabel:Tafseel.t('common_cancel'),
       showcaseUploadHint:Tafseel.t('showcase_upload_hint'),
       showcaseLoadingText:Tafseel.t('showcase_loading'),
@@ -1487,6 +1807,7 @@ class Component extends DCLogic {
           } else await Tafseel.api.post('/teachers/me/showcases', body);
           this.resetShowcaseForm();
           await this.loadShowcases();
+          await this.loadProfileVideos();
           this.flash(Tafseel.t('showcase_draft_saved'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
         finally { this.setState({ showcaseBusy:false }); }
@@ -1500,6 +1821,150 @@ class Component extends DCLogic {
           onWatch:() => window.open('/api/v1/teachers/samples/' + sample.id + '/content', '_blank', 'noopener')
         })),
       qualificationSamplesEmpty:!((s.profile && s.profile.samples) || []).some(sample => sample.sourceCode === 'qualification_sample'),
+      qualificationsTitle: tr('td_qualifications_title', 'My Qualifications'),
+      qualificationsHint: tr('td_qualifications_hint', 'Track approved subjects and start an application for another subject.'),
+      applyAnotherSubjectLabel: tr('td_apply_another_subject', 'Apply for another subject'),
+      onApplyAnotherSubject: () => { location.href = 'Tafseel-Teacher-Apply.dc.html?mode=additional'; },
+      qualificationsLoading: !!s.qualificationCardsLoading,
+      qualificationsLoadingText: tr('td_qualifications_loading', 'Loading qualifications…'),
+      qualificationsError: s.qualificationCardsError || '',
+      qualificationsEmpty: !s.qualificationCardsLoading && !(s.qualificationCards || []).length,
+      qualificationsEmptyText: tr('td_qualifications_empty', 'No qualification subjects are available yet.'),
+      qualificationCards: (s.qualificationCards || []).map(card => {
+        const stateKey = ['Qualified','ApplicationInProgress','ChangesRequested','Rejected','Revoked','AvailableToApply','Unavailable'][card.state] || 'Unavailable';
+        const statusLabels = {
+          Qualified: tr('td_qual_state_qualified', 'Qualified'),
+          ApplicationInProgress: tr('td_qual_state_in_progress', 'Application in progress'),
+          ChangesRequested: tr('td_qual_state_changes', 'Changes requested'),
+          Rejected: tr('td_qual_state_rejected', 'Rejected'),
+          Revoked: tr('td_qual_state_revoked', 'Revoked'),
+          AvailableToApply: tr('td_qual_state_available', 'Available to apply'),
+          Unavailable: tr('td_qual_state_unavailable', 'Unavailable')
+        };
+        const tone = stateKey === 'Qualified' ? ['var(--success-soft)','var(--success)']
+          : stateKey === 'ChangesRequested' || stateKey === 'Rejected' || stateKey === 'Revoked' ? ['var(--warning-soft)','var(--warning)']
+          : stateKey === 'ApplicationInProgress' ? ['var(--primary-soft)','var(--primary)']
+          : ['var(--surface-2)','var(--text-2)'];
+        const subjectName = ar && card.subjectNameAr ? card.subjectNameAr : card.subjectName;
+        return {
+          subject: subjectName,
+          status: statusLabels[stateKey] || stateKey,
+          statusStyle: 'display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;background:' + tone[0] + ';color:' + tone[1],
+          submitted: card.submittedAt ? tr('td_qual_submitted', 'Submitted') + ': ' + Tafseel.date(card.submittedAt) : '',
+          decided: card.decidedAt ? tr('td_qual_decided', 'Decision') + ': ' + Tafseel.date(card.decidedAt)
+            : card.approvedAt ? tr('td_qual_approved', 'Approved') + ': ' + Tafseel.date(card.approvedAt) : '',
+          sampleStatus: card.demoUploaded
+            ? tr('td_qual_sample_uploaded', 'Qualification sample uploaded')
+            : tr('td_qual_sample_needed', 'Qualification sample not uploaded yet'),
+          nextAction: card.nextAction || '',
+          hasCta: !!(card.nextUrl || card.canApply),
+          ctaLabel: card.canApply
+            ? tr('td_qual_cta_apply', 'Apply')
+            : tr('td_qual_cta_continue', 'Continue'),
+          onCta: () => { location.href = card.nextUrl || 'Tafseel-Teacher-Apply.dc.html?mode=additional'; }
+        };
+      }),
+      profileVideosTitle: tr('td_profile_videos_title', 'Profile Videos'),
+      profileVideosHint: tr('td_profile_videos_hint', 'Choose which approved teaching videos appear on your public profile. Approval stays with Quality.'),
+      profileVideosLoading: !!s.profileVideosLoading,
+      profileVideosLoadingText: tr('td_profile_videos_loading', 'Loading profile videos…'),
+      profileVideosError: s.profileVideosError || '',
+      profileVideosEmpty: !s.profileVideosLoading && !(s.profileVideos || []).length,
+      profileVideosEmptyText: tr('td_profile_videos_empty', 'No teaching videos yet. Approved qualification samples and showcases will appear here.'),
+      profileVideoBusy: !!s.profileVideoBusy,
+      featuredLabel: tr('td_profile_video_featured', 'Featured'),
+      previewVideoLabel: tr('td_profile_video_preview', 'Preview'),
+      showOnProfileLabel: tr('td_profile_video_show', 'Show on profile'),
+      hideFromProfileLabel: tr('td_profile_video_hide', 'Hide from profile'),
+      setFeaturedLabel: tr('td_profile_video_set_featured', 'Set as featured'),
+      moveEarlierLabel: tr('td_profile_video_move_earlier', 'Move earlier'),
+      moveLaterLabel: tr('td_profile_video_move_later', 'Move later'),
+      profileVideoCards: (() => {
+        const videos = (s.profileVideos || []).slice().sort((a, b) => {
+          if (a.isProfileFeatured !== b.isProfileFeatured) return a.isProfileFeatured ? -1 : 1;
+          return (a.profileDisplayOrder || 0) - (b.profileDisplayOrder || 0);
+        });
+        const visible = videos.filter(x => x.isProfileVisible && x.isCurationEligible);
+        return videos.map(video => {
+          const subjectName = ar && video.subjectNameAr ? video.subjectNameAr : (video.subjectName || '');
+          const topicName = ar && video.topicNameAr ? video.topicNameAr : (video.topicName || '');
+          const source = video.sourceCode === 'qualification_sample'
+            ? tr('trust_qualification_sample', 'Qualification Sample')
+            : video.sourceCode === 'reviewed_showcase'
+              ? tr('trust_reviewed_showcase', 'Reviewed Showcase')
+              : tr('td_profile_video_showcase', 'Teacher Showcase');
+          const blockMap = {
+            pending_or_in_review: tr('td_profile_video_block_pending', 'Not selectable until Quality approves this video.'),
+            rejected: tr('td_profile_video_block_rejected', 'Rejected videos cannot be shown on the profile.'),
+            archived: tr('td_profile_video_block_archived', 'Archived videos cannot be shown on the profile.'),
+            qualification_inactive: tr('td_profile_video_block_qual', 'Subject qualification is no longer active.'),
+            not_eligible: tr('td_profile_video_block_ineligible', 'This video is not eligible for the public profile.')
+          };
+          const visibleIndex = visible.findIndex(x => x.id === video.id);
+          const mutateVisibility = async visibleFlag => {
+            if (s.profileVideoBusy) return;
+            this.setState({ profileVideoBusy: true });
+            try {
+              await Tafseel.api.put('/teachers/me/profile-videos/' + video.id + '/visibility',
+                { visible: visibleFlag }, { 'If-Match': video.version });
+              await this.loadProfileVideos();
+              this.flash(visibleFlag
+                ? tr('td_profile_video_shown', 'Video is now visible on your profile.')
+                : tr('td_profile_video_hidden', 'Video is hidden from your profile.'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+            finally { this.setState({ profileVideoBusy: false }); }
+          };
+          const setFeatured = async () => {
+            if (s.profileVideoBusy) return;
+            this.setState({ profileVideoBusy: true });
+            try {
+              await Tafseel.api.put('/teachers/me/profile-videos/' + video.id + '/featured',
+                { featured: true }, { 'If-Match': video.version });
+              await this.loadProfileVideos();
+              this.flash(tr('td_profile_video_featured_set', 'Featured video updated.'));
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+            finally { this.setState({ profileVideoBusy: false }); }
+          };
+          const move = async direction => {
+            if (s.profileVideoBusy || visibleIndex < 0) return;
+            const target = visibleIndex + direction;
+            if (target < 0 || target >= visible.length) return;
+            const ids = visible.map(x => x.id);
+            [ids[visibleIndex], ids[target]] = [ids[target], ids[visibleIndex]];
+            this.setState({ profileVideoBusy: true });
+            try {
+              await Tafseel.api.put('/teachers/me/profile-videos/order', { ids });
+              await this.loadProfileVideos();
+            } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+            finally { this.setState({ profileVideoBusy: false }); }
+          };
+          return {
+            title: video.title,
+            source,
+            sourceStyle: 'display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;background:var(--success-soft);color:var(--success)',
+            visibility: video.isProfileVisible
+              ? tr('td_profile_video_visible', 'Visible on profile')
+              : tr('td_profile_video_hidden_state', 'Hidden from profile'),
+            visibilityStyle: 'display:inline-flex;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;background:'
+              + (video.isProfileVisible ? 'var(--primary-soft)' : 'var(--surface-2)') + ';color:'
+              + (video.isProfileVisible ? 'var(--primary)' : 'var(--text-2)'),
+            featured: !!video.isProfileFeatured,
+            meta: [subjectName, topicName].filter(Boolean).join(' · '),
+            status: video.moderationStatus,
+            blockReason: video.curationBlockReason ? (blockMap[video.curationBlockReason] || video.curationBlockReason) : '',
+            canShow: !!video.isCurationEligible && !video.isProfileVisible,
+            canHide: !!video.isCurationEligible && !!video.isProfileVisible,
+            canFeature: !!video.isCurationEligible && !!video.isProfileVisible && !video.isProfileFeatured,
+            canReorder: !!video.isCurationEligible && !!video.isProfileVisible && visible.length > 1,
+            onPreview: () => window.open('/api/v1/teachers/samples/' + video.id + '/content', '_blank', 'noopener'),
+            onShow: () => mutateVisibility(true),
+            onHide: () => mutateVisibility(false),
+            onFeature: () => setFeatured(),
+            onMoveEarlier: () => move(-1),
+            onMoveLater: () => move(1)
+          };
+        });
+      })(),
       teacherShowcases:(s.showcases || []).map(sample => {
         const current = sample.currentVersion || {};
         const labels = [
@@ -1785,7 +2250,7 @@ class Component extends DCLogic {
         return {
           ...o,
           statusLabel: Tafseel.t(o.statusLabelKey),
-          statusChipStyle: Tafseel.statusToneStyle('order', o.rawStatus)
+          statusChipStyle: Tafseel.statusToneStyle('order', o.rawStatus, o.paymentStatus)
             + ';display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap',
           actionLabel: actionLabelKey ? Tafseel.t(actionLabelKey) : '',
           actionBusy: busy,

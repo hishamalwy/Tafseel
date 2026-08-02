@@ -125,8 +125,20 @@
                       <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
                       <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
                     </td>
-                    <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2);white-space:nowrap">{{ r.teacher }}</td>
-                    <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+                    <td style="padding:14px 12px">
+                      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                        <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
+                          <img class="tf-img-avatar" src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
+                        </sc-if>
+                        <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
+                      </div>
+                    </td>
+                    <td style="padding:14px 12px">
+                      <span style="{{ r.statusStyle }}">{{ r.status }}</span>
+                      <sc-if value="{{ r.showGuide }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:220px;line-height:1.4">{{ r.guideShort }}</div>
+                      </sc-if>
+                    </td>
                     <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
                     <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
                     <td style="padding:14px 20px;text-align:end">
@@ -265,8 +277,20 @@
                       <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
                       <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
                     </td>
-                    <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2);white-space:nowrap">{{ r.teacher }}</td>
-                    <td style="padding:14px 12px"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+                    <td style="padding:14px 12px">
+                      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                        <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
+                          <img class="tf-img-avatar" src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
+                        </sc-if>
+                        <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
+                      </div>
+                    </td>
+                    <td style="padding:14px 12px">
+                      <span style="{{ r.statusStyle }}">{{ r.status }}</span>
+                      <sc-if value="{{ r.showGuide }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:220px;line-height:1.4">{{ r.guideShort }}</div>
+                      </sc-if>
+                    </td>
                     <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
                     <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
                     <td style="padding:14px 20px;text-align:end">
@@ -374,34 +398,37 @@
 
     <sc-if value="{{ isFiles }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Files</h1>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <sc-for list="{{ studentFiles }}" as="f" hint-placeholder-count="6">
-            <div style="display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px">
-              <span style="width:36px;height:36px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:14px">{{ f.icon }}</span>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13.5px;font-weight:600">{{ f.name }}</div>
-                <div style="font-size:12px;color:var(--muted)">{{ f.meta }}</div>
-              </div>
-              <button type="button" onClick="{{ f.onDownload }}" style="height:32px;padding:0 13px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">Download</button>
-            </div>
-          </sc-for>
-        </div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:12px">{{ filesTitle }}</h1>
+        <div class="tf-order-guide" role="status" style="max-width:640px">{{ filesUnavailableBody }}</div>
       </div>
     </sc-if>
 
     <sc-if value="{{ isReviews }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">My reviews</h1>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:12px">{{ myReviewsTitle }}</h1>
+        <p class="tf-order-guide" style="margin-bottom:16px;max-width:640px">{{ myReviewsIntro }}</p>
+        <sc-if value="{{ myReviewsEmpty }}" hint-placeholder-val="{{ true }}">
+          <div class="tf-order-guide" role="status">{{ myReviewsEmptyLabel }}</div>
+        </sc-if>
         <div style="display:flex;flex-direction:column;gap:12px">
           <sc-for list="{{ myReviews }}" as="rv" hint-placeholder-count="3">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
-              <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap">
                 <span style="font-size:14.5px;font-weight:700">{{ rv.teacher }}</span>
-                <span style="color:var(--warning);font-size:13px;letter-spacing:2px">{{ rv.stars }}</span>
+                <span style="color:var(--warning);font-size:13px;font-weight:700">{{ rv.scoreLabel }}</span>
               </div>
+              <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ rv.service }}</div>
               <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:8px">{{ rv.body }}</p>
-              <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted)">{{ rv.date }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+                <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted)">{{ rv.date }}</div>
+                <span style="font-size:12px;color:var(--muted)">{{ rv.visibilityLabel }}</span>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" onClick="{{ rv.onOpenOrder }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ rv.openOrderLabel }}</button>
+                <sc-if value="{{ rv.hasProfile }}" hint-placeholder-val="{{ false }}">
+                  <a href="{{ rv.profileHref }}" style="height:32px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;font-weight:600;text-decoration:none;color:var(--text)">{{ rv.profileLabel }}</a>
+                </sc-if>
+              </div>
             </article>
           </sc-for>
         </div>
@@ -579,8 +606,8 @@
 
 <sc-if value="{{ timelineOrder }}" hint-placeholder-val="{{ false }}">
   <div role="presentation" onClick="{{ closeTimeline }}" onKeyDown="{{ timelineKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
-    <div role="dialog" aria-modal="true" aria-labelledby="student-order-timeline-title" onClick="{{ stop }}" style="width:min(560px,100%);max-height:min(84vh,760px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg)">
-      <div style="position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;gap:16px;padding:20px;border-bottom:1px solid var(--border);background:var(--surface)">
+    <div role="dialog" aria-modal="true" aria-labelledby="student-order-timeline-title" onClick="{{ stop }}" class="tf-order-dialog">
+      <div class="tf-order-dialog-head">
         <div style="min-width:0;flex:1">
           <h2 id="student-order-timeline-title" style="font-size:18px;font-weight:800;margin-bottom:4px">{{ timelineTitle }}</h2>
           <div style="font-size:12px;color:var(--muted);overflow-wrap:anywhere">{{ timelineOrderLabel }}</div>
@@ -588,6 +615,72 @@
         <button data-order-timeline-close type="button" autofocus onClick="{{ closeTimeline }}" aria-label="{{ timelineCloseLabel }}" title="{{ timelineCloseLabel }}" style="width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:20px">×</button>
       </div>
       <div style="padding:20px">
+        <sc-if value="{{ showTimelineHero }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-order-hero" aria-label="{{ timelineOrderLabel }}">
+            <div class="tf-order-hero-teacher">
+              <img class="tf-img-avatar tf-order-hero-avatar" src="{{ timelineTeacherAvatar }}" alt="" width="44" height="44" />
+              <div style="min-width:0">
+                <div style="font-size:15px;font-weight:700">{{ timelineTeacherName }}</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ timelineServiceName }}</div>
+              </div>
+              <span style="{{ timelineStatusStyle }}">{{ timelineStatusLabel }}</span>
+            </div>
+            <p class="tf-order-guide">{{ timelineGuide }}</p>
+            <ul class="tf-order-hero-facts">
+              <li><span>{{ timelineDeliveryLabel }}</span><strong>{{ timelineDeliveryValue }}</strong></li>
+              <li><span>{{ timelineRevisionsLabel }}</span><strong>{{ timelineRevisionsValue }}</strong></li>
+              <li><span>{{ timelineAmountLabel }}</span><strong>{{ timelineAmountValue }}</strong></li>
+              <li><span>{{ timelineOrderRefLabel }}</span><strong class="tf-pay-mono">{{ timelineOrderRef }}</strong></li>
+              <sc-if value="{{ showTimelineRequestRef }}" hint-placeholder-val="{{ false }}">
+                <li><span>{{ timelineRequestRefLabel }}</span><strong class="tf-pay-mono">{{ timelineRequestRef }}</strong></li>
+              </sc-if>
+            </ul>
+            <ol class="tf-order-progress" aria-label="{{ timelineProgressAria }}">
+              <sc-for list="{{ timelineProgressSteps }}" as="step" hint-placeholder-count="5">
+                <li class="tf-order-progress-step" data-state="{{ step.state }}" aria-current="{{ step.current }}">
+                  <span class="tf-order-progress-n" aria-hidden="true">{{ step.n }}</span>
+                  <span class="tf-order-progress-label">{{ step.label }}</span>
+                </li>
+              </sc-for>
+            </ol>
+            <sc-if value="{{ showTimelineAction }}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="tf-order-primary" data-order-rate-focus onClick="{{ timelineOnAction }}">{{ timelineActionLabel }}</button>
+            </sc-if>
+            <sc-if value="{{ showTimelineReviewState }}" hint-placeholder-val="{{ false }}">
+              <div class="tf-order-review-state" style="margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
+                <div style="font-size:13px;font-weight:700;margin-bottom:4px">{{ timelineReviewTitle }}</div>
+                <div style="font-size:13px;color:var(--text-2);margin-bottom:6px">{{ timelineReviewScore }}</div>
+                <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:8px">{{ timelineReviewComment }}</p>
+                <div style="font-size:12px;color:var(--muted)">{{ timelineReviewVisibility }}</div>
+                <sc-if value="{{ showTimelineProfileLink }}" hint-placeholder-val="{{ false }}">
+                  <a href="{{ timelineProfileHref }}" style="display:inline-flex;margin-top:10px;font-size:13px;font-weight:600;color:var(--primary)">{{ timelineProfileLabel }}</a>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showTimelineDeliveries }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:16px">
+                <h3 class="tf-order-events-heading">{{ timelineDeliveriesHeading }}</h3>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ timelineDeliveries }}" as="d" hint-placeholder-count="1">
+                    <div class="tf-order-delivery-card" data-latest="{{ d.isLatest }}" data-focus-delivery="{{ d.focus }}">
+                      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+                        <span style="font-size:12.5px;color:var(--muted)">{{ d.when }}</span>
+                        <span class="tf-order-delivery-meta">
+                          <sc-if value="{{ d.isLatest }}" hint-placeholder-val="{{ false }}">
+                            <span class="tf-order-latest-badge">{{ d.latestLabel }}</span>
+                          </sc-if>
+                          <span>{{ d.versionLabel }}</span>
+                        </span>
+                      </div>
+                      <p style="font-size:13.5px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
+                      <button type="button" onClick="{{ d.onDownload }}" style="font-family:var(--font-mono);font-size:12px;padding:8px 12px;min-height:40px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ d.fileName }}</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
         <sc-if value="{{ timelineLoading }}" hint-placeholder-val="{{ true }}">
           <div role="status" aria-live="polite" style="padding:28px 12px;text-align:center;color:var(--muted)">{{ timelineLoadingLabel }}</div>
         </sc-if>
@@ -601,10 +694,11 @@
           <p role="status" style="padding:28px 12px;text-align:center;color:var(--muted)">{{ timelineEmptyLabel }}</p>
         </sc-if>
         <sc-if value="{{ timelineHasEvents }}" hint-placeholder-val="{{ false }}">
-          <ol aria-label="{{ timelineTitle }}" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+          <h3 class="tf-order-events-heading">{{ timelineEventsHeading }}</h3>
+          <ol aria-label="{{ timelineTitle }}" class="tf-order-events">
             <sc-for list="{{ timelineEvents }}" as="event" hint-placeholder-count="5">
-              <li style="display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;position:relative;padding-block:0 22px">
-                <span aria-hidden="true" style="width:12px;height:12px;margin-top:5px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)"></span>
+              <li class="tf-order-event">
+                <span class="tf-order-event-dot" aria-hidden="true"></span>
                 <div style="min-width:0">
                   <div style="font-size:14.5px;font-weight:700;overflow-wrap:anywhere">{{ event.title }}</div>
                   <div style="font-size:12.5px;color:var(--muted);margin-top:3px">{{ event.actor }} · {{ event.occurredAt }}</div>
@@ -632,22 +726,37 @@
         <button type="button" autofocus onClick="{{ closeReviewModal }}" disabled="{{ reviewBusy }}" aria-label="{{ sdReviewClose }}" title="{{ sdReviewClose }}" style="width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:20px">×</button>
       </div>
       <div style="padding:20px">
-        <div style="margin-bottom:16px">
-          <span style="font-size:12px;color:var(--muted)">{{ reviewTeacherLabel }}</span>
-          <div style="font-size:14.5px;font-weight:700">{{ reviewTeacherName }}</div>
+        <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+          <img class="tf-img-avatar" src="{{ reviewTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
+          <div style="min-width:0">
+            <span style="font-size:12px;color:var(--muted)">{{ reviewTeacherLabel }}</span>
+            <div style="font-size:14.5px;font-weight:700">{{ reviewTeacherName }}</div>
+            <div style="font-size:12.5px;color:var(--muted)">{{ reviewServiceName }}</div>
+          </div>
         </div>
+        <p class="tf-order-guide" style="margin-bottom:16px">{{ reviewGuide }}</p>
+        <sc-if value="{{ showReviewRevisionsLeft }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">{{ reviewRevisionsLeft }}</p>
+        </sc-if>
         <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">{{ reviewHistoryLabel }}</h3>
         <sc-if value="{{ reviewNoDeliveries }}" hint-placeholder-val="{{ false }}">
           <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px">{{ sdReviewNoFiles }}</p>
         </sc-if>
         <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
           <sc-for list="{{ reviewDeliveries }}" as="d" hint-placeholder-count="1">
-            <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:14px">
-              <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <div class="tf-order-delivery-card" data-latest="{{ d.isLatest }}">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
                 <span style="font-size:12.5px;color:var(--muted)">{{ d.when }}</span>
+                <span class="tf-order-delivery-meta">
+                  <sc-if value="{{ d.isLatest }}" hint-placeholder-val="{{ false }}">
+                    <span class="tf-order-latest-badge">{{ d.latestLabel }}</span>
+                  </sc-if>
+                  <span>{{ d.versionLabel }}</span>
+                </span>
               </div>
+              <p style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">{{ d.noteLabel }}</p>
               <p style="font-size:13.5px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
-              <button type="button" onClick="{{ d.onDownload }}" style="font-family:var(--font-mono);font-size:12px;padding:5px 10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ d.fileName }}</button>
+              <button type="button" onClick="{{ d.onDownload }}" style="font-family:var(--font-mono);font-size:12px;padding:8px 12px;min-height:40px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ d.fileName }}</button>
             </div>
           </sc-for>
         </div>
@@ -659,13 +768,14 @@
             <span style="font-size:13px;font-weight:600">{{ sdReviewRevisionReasonLabel }}</span>
             <textarea value="{{ revisionReason }}" onChange="{{ onRevisionReason }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
+          <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
             <button type="button" onClick="{{ cancelRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
             <button type="button" onClick="{{ submitRevisionRequest }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionRequestRevision }}</button>
           </div>
         </sc-if>
         <sc-if value="{{ showApproveActions }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;gap:10px;justify-content:flex-end">
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.5">{{ reviewApproveHint }}</p>
+          <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
             <sc-if value="{{ revisionAvailable }}" hint-placeholder-val="{{ false }}">
               <button type="button" onClick="{{ openRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionRequestRevision }}</button>
             </sc-if>
@@ -681,32 +791,52 @@
 </sc-if>
 
 <sc-if value="{{ rateModal }}" hint-placeholder-val="{{ false }}">
-  <div role="presentation" onClick="{{ closeRateModal }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
-    <div role="dialog" aria-modal="true" aria-labelledby="student-rate-title" onClick="{{ stop }}" style="width:min(480px,100%);max-height:min(88vh,760px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
-      <h2 id="student-rate-title" style="font-size:18px;font-weight:800;margin-bottom:4px">{{ rateModalTitle }}</h2>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">{{ rateModal.teacher }}</p>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px">
-        <sc-for list="{{ rateSliders }}" as="rs" hint-placeholder-count="5">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600;display:flex;justify-content:space-between"><span>{{ rs.label }}</span><span>{{ rs.value }}/5</span></span>
-            <input type="range" min="1" max="5" step="1" sc-camel-value="{{ rs.value }}" onChange="{{ rs.onChange }}" />
-          </label>
-        </sc-for>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600">{{ sdRateCommentLabel }}</span>
-          <textarea value="{{ rateComment }}" onChange="{{ onRateComment }}" placeholder="{{ sdRateCommentPlaceholder }}" rows="4" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px">
-          <input type="checkbox" checked="{{ rateRecommends }}" onChange="{{ onRateRecommends }}" />
-          <span>{{ sdRateRecommends }}</span>
-        </label>
-        <sc-if value="{{ rateError }}" hint-placeholder-val="{{ false }}">
-          <p role="alert" style="font-size:13px;color:var(--error)">{{ rateError }}</p>
-        </sc-if>
+  <div role="presentation" onClick="{{ closeRateModal }}" onKeyDown="{{ rateKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+    <div role="dialog" aria-modal="true" aria-labelledby="student-rate-title" onClick="{{ stop }}" class="tf-order-dialog" style="width:min(520px,100%);max-height:min(88vh,780px);overflow:auto;padding:0">
+      <div class="tf-order-dialog-head">
+        <div style="min-width:0;flex:1">
+          <h2 id="student-rate-title" style="font-size:18px;font-weight:800;margin-bottom:4px">{{ rateModalTitle }}</h2>
+          <div style="font-size:12px;color:var(--muted);overflow-wrap:anywhere">{{ rateServiceName }}</div>
+        </div>
+        <button type="button" data-rate-close autofocus onClick="{{ closeRateModal }}" disabled="{{ rateBusy }}" aria-label="{{ sdReviewClose }}" title="{{ sdReviewClose }}" style="width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:20px">×</button>
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeRateModal }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
-        <button type="button" onClick="{{ submitReview }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdRateSubmitLabel }}</button>
+      <div style="padding:20px">
+        <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
+          <img class="tf-img-avatar" src="{{ rateTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
+          <div style="min-width:0">
+            <span style="font-size:12px;color:var(--muted)">{{ rateTeacherLabel }}</span>
+            <div style="font-size:14.5px;font-weight:700">{{ rateTeacherName }}</div>
+          </div>
+        </div>
+        <p class="tf-order-guide" style="margin-bottom:10px">{{ rateAboutService }}</p>
+        <p class="tf-order-guide" style="margin-bottom:16px">{{ ratePrivacyNote }}</p>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px">
+          <sc-for list="{{ rateSliders }}" as="rs" hint-placeholder-count="5">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600;display:flex;justify-content:space-between"><span>{{ rs.label }}</span><span>{{ rs.value }}/5</span></span>
+              <input type="range" min="1" max="5" step="1" sc-camel-value="{{ rs.value }}" onChange="{{ rs.onChange }}" aria-valuemin="1" aria-valuemax="5" aria-valuenow="{{ rs.value }}" />
+            </label>
+          </sc-for>
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600">{{ sdRateCommentLabel }}</span>
+            <textarea value="{{ rateComment }}" onChange="{{ onRateComment }}" placeholder="{{ sdRateCommentPlaceholder }}" rows="4" aria-invalid="{{ rateCommentInvalid }}" aria-describedby="student-rate-comment-hint" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
+            <span id="student-rate-comment-hint" style="font-size:12px;color:var(--muted)">{{ rateCommentHint }}</span>
+            <sc-if value="{{ rateCommentError }}" hint-placeholder-val="{{ false }}">
+              <span role="alert" style="font-size:12.5px;color:var(--error)">{{ rateCommentError }}</span>
+            </sc-if>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px">
+            <input type="checkbox" checked="{{ rateRecommends }}" onChange="{{ onRateRecommends }}" />
+            <span>{{ sdRateRecommends }}</span>
+          </label>
+          <sc-if value="{{ rateError }}" hint-placeholder-val="{{ false }}">
+            <p role="alert" style="font-size:13px;color:var(--error)">{{ rateError }}</p>
+          </sc-if>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button type="button" onClick="{{ closeRateModal }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
+          <button type="button" onClick="{{ submitReview }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdRateSubmitLabel }}</button>
+        </div>
       </div>
     </div>
   </div>
@@ -724,14 +854,28 @@ let SAVED_TEACHERS = [];
 const PAYMENT_STATS = [];
 const TRANSACTIONS = [];
 // PAYMENT_STATS / TRANSACTIONS kept empty — payments are derived from live orders in renderVals.
-const STUDENT_FILES = [];
-const MY_REVIEWS = [];
 const CONVERSATIONS = [];
 
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
-    section: 'overview', filter: 'all', drawer: false, compactNav: false, notifsOpen: false,
+    section: (() => {
+      try {
+        const q = (new URLSearchParams(location.search).get('section') || '').trim();
+        if (q === 'orders') return 'requests';
+        return q || 'overview';
+      } catch (_) { return 'overview'; }
+    })(),
+    filter: (() => {
+      try {
+        const sp = new URLSearchParams(location.search);
+        const section = (sp.get('section') || '').trim();
+        const filter = (sp.get('filter') || '').trim();
+        if (section === 'orders') return filter || 'orders';
+        return filter || 'all';
+      } catch (_) { return 'all'; }
+    })(),
+    drawer: false, compactNav: false, notifsOpen: false,
     read: [], toast: '', toastLeaving: false, liveNotifs: [], liveSessions: [],
     liveConversations: [],
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
@@ -743,9 +887,10 @@ class Component extends DCLogic {
     learnPrefsError: '', learnPrefsSuccess: '',
     timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: [],
     reviewModal: null, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: '',
-    rateModal: null, rateBusy: false, rateError: '',
+    rateModal: null, rateBusy: false, rateError: '', rateCommentError: '',
     rateClarity: 5, rateKnowledge: 5, rateCommunication: 5, rateOnTime: 5, rateValue: 5,
     rateComment: '', rateRecommends: true,
+    pendingDeepLink: null,
     ordersLoaded: false
   };
 
@@ -753,8 +898,35 @@ class Component extends DCLogic {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     const query = new URLSearchParams(location.search);
     const section = (query.get('section') || '').trim();
+    const filter = (query.get('filter') || '').trim();
+    const orderId = (query.get('orderId') || '').trim();
+    const focus = (query.get('focus') || '').trim();
+    // Payment success and mock return use ?section=orders — map to My Work + orders filter.
+    // Unknown section values must not blank the main pane.
+    if (section === 'orders') {
+      this.setState({
+        section: 'requests',
+        filter: filter || 'orders',
+        pendingDeepLink: orderId ? { orderId, focus } : null
+      });
+    } else if (section === 'requests' || section === 'overview' || section === 'sessions'
+      || section === 'messages' || section === 'saved' || section === 'payments'
+      || section === 'files' || section === 'reviews' || section === 'notifications'
+      || section === 'settings') {
+      const next = { section };
+      if (filter) next.filter = filter;
+      if (orderId) next.pendingDeepLink = { orderId, focus };
+      this.setState(next);
+    } else if (section) {
+      this.setState({ section: 'overview' });
+    } else if (orderId) {
+      this.setState({
+        section: 'requests',
+        filter: filter || 'done',
+        pendingDeepLink: { orderId, focus }
+      });
+    }
     const created = (query.get('requestCreated') || '').trim();
-    if (section) this.setState({ section });
     if (created) {
       this.flash(Tafseel.t('dash_request_created_ok'));
       try {
@@ -813,7 +985,8 @@ class Component extends DCLogic {
       })) : [];
       this.setState({
         liveNotifs: notifications && notifications.items ? notifications.items.map(x => ({
-          id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x), time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type
+          id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x),
+          time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type, link:x.link || ''
         })) : [],
         read: notifications && notifications.items ? notifications.items.filter(x => x.readAt).map(x => x.id) : [],
         notifyDeliveries: preferences ? preferences.emailEnabled : true,
@@ -842,6 +1015,7 @@ class Component extends DCLogic {
           ? Tafseel.api.errorMessage(results[7].reason)
           : '')
       });
+      this.applyPendingDeepLink();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() {
@@ -853,6 +1027,76 @@ class Component extends DCLogic {
 
   flash(msg) {
     Tafseel.flash(this, msg);
+  }
+
+  applyPendingDeepLink(forced) {
+    const pending = forced || this.state.pendingDeepLink;
+    if (!pending || !pending.orderId || !REQUESTS.length) return;
+    const order = REQUESTS.find(r => r.kind === 'order'
+      && String(r.id).toLowerCase() === String(pending.orderId).toLowerCase());
+    this.setState({ pendingDeepLink: null });
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('orderId');
+      url.searchParams.delete('focus');
+      history.replaceState({}, '', url.pathname + url.search + url.hash);
+    } catch (_) { /* ignore */ }
+    if (!order) {
+      this.flash(Tafseel.t('sd_notif_order_missing'));
+      return;
+    }
+    const focus = String(pending.focus || '').toLowerCase();
+    if (focus === 'rate' && order.action === 'rate') {
+      this.openRateModal(order);
+      return;
+    }
+    if (focus === 'pay' && order.action === 'pay') {
+      location.href = 'Tafseel-Payment.dc.html?orderId=' + encodeURIComponent(order.id);
+      return;
+    }
+    if (focus === 'delivery' || focus === 'review') {
+      if (order.action === 'review') this.openReviewModal(order);
+      else this.openTimeline(order);
+      return;
+    }
+    this.openTimeline(order);
+  }
+
+  openNotification(n) {
+    const route = typeof Tafseel.notificationRoute === 'function'
+      ? Tafseel.notificationRoute(n, 'student')
+      : { href: 'Tafseel-Student-Dashboard.dc.html', section: 'overview' };
+    const mark = !this.state.read.includes(n.id)
+      ? Tafseel.api.post('/notifications/read?id=' + encodeURIComponent(n.id)).catch(() => {})
+        .then(() => this.setState({ read: this.state.read.concat(n.id) }))
+      : Promise.resolve();
+    return mark.then(() => {
+      this.setState({ notifsOpen: false });
+      if (route.external && route.href) {
+        location.href = route.href;
+        return;
+      }
+      if (route.section === 'messages') {
+        this.setState({ section: 'messages' });
+        if (window.TafseelChat && window.TafseelChat.open) window.TafseelChat.open();
+        return;
+      }
+      if (route.orderId) {
+        const pending = { orderId: route.orderId, focus: route.focus || '' };
+        this.setState({
+          section: route.section || 'requests',
+          filter: route.filter || 'orders',
+          pendingDeepLink: pending
+        });
+        this.applyPendingDeepLink(pending);
+        return;
+      }
+      if (route.section) {
+        const next = { section: route.section };
+        if (route.filter) next.filter = route.filter;
+        this.setState(next);
+      }
+    });
   }
 
   reload() {
@@ -873,11 +1117,13 @@ class Component extends DCLogic {
       );
       this.setState({
         liveNotifs: notifications && notifications.items ? notifications.items.map(x => ({
-          id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x), time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type
+          id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x),
+          time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type, link:x.link || ''
         })) : [],
         read: notifications && notifications.items ? notifications.items.filter(x => x.readAt).map(x => x.id) : [],
         ordersLoaded: !!orders
       });
+      this.applyPendingDeepLink();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
 
@@ -931,6 +1177,71 @@ class Component extends DCLogic {
     };
   }
 
+  enrichWorkRow(r) {
+    const action = this.orderActionRender(r);
+    const guideKey = r.guideKey || (r.kind === 'order' && r.stage ? ('order_guide_' + r.stage) : '');
+    const guideFull = guideKey ? Tafseel.t(guideKey) : '';
+    const guideShort = guideFull && !r.action ? guideFull : '';
+    let statusStyle = '';
+    if (r.kind === 'order' && Number(r.rawStatus) === 0 && Number(r.paymentStatus) === 1) {
+      statusStyle = 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--info-soft);color:var(--info)';
+    } else if (typeof Tafseel.statusToneStyle === 'function') {
+      statusStyle = Tafseel.statusToneStyle(r.kind, r.rawStatus, r.paymentStatus);
+    }
+    return {
+      ...r,
+      ...action,
+      guideKey,
+      timelineLabel: r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
+      onTimeline: event => this.openTimeline(r, event.currentTarget),
+      statusStyle,
+      showTeacherAvatar: r.kind === 'order' && !!r.teacherAvatar,
+      teacherAvatar: r.teacherAvatar || (r.teacherId ? Tafseel.avatarUrl(r.teacherId, false) : Tafseel.defaultAvatar),
+      showGuide: !!guideShort,
+      guideShort: guideShort
+        ? (guideShort.length > 96 ? guideShort.slice(0, 93) + '…' : guideShort)
+        : ''
+    };
+  }
+
+  /** Local copy so timeline progress works even if a cached tafseel.js lacks the helper. */
+  orderProgressSteps(stage) {
+    if (typeof Tafseel.orderProgressSteps === 'function')
+      return Tafseel.orderProgressSteps(stage);
+    const steps = [
+      { key: 'payment', labelKey: 'order_step_payment' },
+      { key: 'work', labelKey: 'order_step_work' },
+      { key: 'delivery', labelKey: 'order_step_delivery' },
+      { key: 'review', labelKey: 'order_step_review' },
+      { key: 'done', labelKey: 'order_step_done' }
+    ];
+    const current = {
+      awaiting_payment: 0,
+      payment_confirmed: 1,
+      in_progress: 1,
+      delivered: 3,
+      revision: 2,
+      completed: 4,
+      cancelled: -1
+    }[String(stage || '')];
+    const idx = current == null ? -1 : current;
+    return steps.map((step, index) => {
+      let state = 'muted';
+      if (idx >= 0) {
+        if (index < idx) state = 'done';
+        else if (index === idx) state = 'current';
+        else state = 'upcoming';
+      }
+      return {
+        key: step.key,
+        n: String(index + 1),
+        label: Tafseel.t(step.labelKey),
+        state,
+        current: state === 'current' ? 'step' : false
+      };
+    });
+  }
+
   openReviewModal(order) {
     this.setState({
       reviewModal: order, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: ''
@@ -977,16 +1288,29 @@ class Component extends DCLogic {
   }
 
   openRateModal(order) {
+    if (!order || order.kind !== 'order') return;
+    if (!(order.reviewCanSubmit || (Number(order.rawStatus) === 4 && !order.hasReview))) {
+      this.flash(Tafseel.t('sd_rate_not_eligible'));
+      return;
+    }
+    if (!this._rateReturnFocus) this._rateReturnFocus = document.activeElement;
     this.setState({
-      rateModal: order, rateBusy: false, rateError: '',
+      rateModal: order, rateBusy: false, rateError: '', rateCommentError: '',
       rateClarity: 5, rateKnowledge: 5, rateCommunication: 5, rateOnTime: 5, rateValue: 5,
       rateComment: '', rateRecommends: true
     });
+    setTimeout(() => {
+      const close = document.querySelector('[data-rate-close]');
+      if (close) close.focus();
+    }, 0);
   }
 
   closeRateModal() {
     if (this.state.rateBusy) return;
-    this.setState({ rateModal: null, rateError: '' });
+    this.setState({ rateModal: null, rateError: '', rateCommentError: '' });
+    const trigger = this._rateReturnFocus;
+    this._rateReturnFocus = null;
+    setTimeout(() => { if (trigger && trigger.focus) trigger.focus(); }, 0);
   }
 
   async submitReview() {
@@ -995,10 +1319,14 @@ class Component extends DCLogic {
     if (!order || s.rateBusy) return;
     const comment = (s.rateComment || '').trim();
     if (!comment) {
-      this.setState({ rateError: Tafseel.t('sd_rate_comment_required') });
+      this.setState({ rateCommentError: Tafseel.t('sd_rate_comment_required'), rateError: '' });
       return;
     }
-    this.setState({ rateBusy: true, rateError: '' });
+    if (comment.length > 2000) {
+      this.setState({ rateCommentError: Tafseel.t('sd_rate_comment_too_long'), rateError: '' });
+      return;
+    }
+    this.setState({ rateBusy: true, rateError: '', rateCommentError: '' });
     try {
       await Tafseel.api.post('/orders/' + order.id + '/review', {
         explanationClarity: Number(s.rateClarity),
@@ -1134,49 +1462,147 @@ class Component extends DCLogic {
         }
       },
 
-      allRequests: Tafseel.filterStudentWorkList(REQUESTS, s.filter).map(r => {
-        return {
-          ...r,
-          ...this.orderActionRender(r),
-          timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
-          onTimeline:event => this.openTimeline(r, event.currentTarget),
-          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus)
-        };
-      }),
+      allRequests: Tafseel.filterStudentWorkList(REQUESTS, s.filter).map(r => this.enrichWorkRow(r)),
 
-      timelineOrder:s.timelineOrder,
-      timelineTitle:Tafseel.t('order_timeline_title'),
-      timelineOrderLabel:s.timelineOrder ? s.timelineOrder.title : '',
-      timelineCloseLabel:Tafseel.t('order_timeline_close'),
-      timelineLoading:s.timelineLoading,
-      timelineLoadingLabel:Tafseel.t('order_timeline_loading'),
-      timelineError:s.timelineError,
-      timelineErrorLabel:Tafseel.t('order_timeline_error'),
-      timelineRetryLabel:Tafseel.t('order_timeline_retry'),
-      timelineEmpty:!s.timelineLoading && !s.timelineError && s.timelineOrder && s.timelineEvents.length === 0,
-      timelineEmptyLabel:Tafseel.t('order_timeline_empty'),
-      timelineHasEvents:!s.timelineLoading && !s.timelineError && s.timelineEvents.length > 0,
-      timelineEvents:s.timelineEvents.map(event => Tafseel.orderTimelineEvent(event)),
-      closeTimeline:() => this.closeTimeline(),
-      retryTimeline:event => s.timelineOrder && this.openTimeline(s.timelineOrder, event.currentTarget),
-      timelineKeyDown:event => Tafseel.modalKeyDown(event, () => this.closeTimeline()),
+      timelineOrder: s.timelineOrder,
+      showTimelineHero: !!s.timelineOrder,
+      timelineTitle: Tafseel.t('order_timeline_title'),
+      timelineOrderLabel: s.timelineOrder ? s.timelineOrder.title : '',
+      timelineTeacherName: s.timelineOrder ? s.timelineOrder.teacher : '',
+      timelineTeacherAvatar: s.timelineOrder && s.timelineOrder.teacherAvatar
+        ? s.timelineOrder.teacherAvatar
+        : Tafseel.defaultAvatar,
+      timelineServiceName: s.timelineOrder ? s.timelineOrder.service : '',
+      timelineStatusLabel: s.timelineOrder ? s.timelineOrder.status : '',
+      timelineStatusStyle: (() => {
+        const o = s.timelineOrder;
+        if (!o) return '';
+        if (Number(o.rawStatus) === 0 && Number(o.paymentStatus) === 1)
+          return 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--info-soft);color:var(--info)';
+        return typeof Tafseel.statusToneStyle === 'function'
+          ? Tafseel.statusToneStyle('order', o.rawStatus, o.paymentStatus)
+          : '';
+      })(),
+      timelineGuide: s.timelineOrder && s.timelineOrder.guideKey
+        ? Tafseel.t(s.timelineOrder.guideKey)
+        : '',
+      timelineDeliveryLabel: Tafseel.t('order_hero_delivery'),
+      timelineDeliveryValue: s.timelineOrder ? s.timelineOrder.deadline : '—',
+      timelineRevisionsLabel: Tafseel.t('order_hero_revisions'),
+      timelineRevisionsValue: s.timelineOrder
+        ? String(s.timelineOrder.revisionsRemaining != null ? s.timelineOrder.revisionsRemaining : 0)
+        : '—',
+      timelineAmountLabel: Tafseel.t('order_hero_amount'),
+      timelineAmountValue: s.timelineOrder ? s.timelineOrder.amount : '—',
+      timelineOrderRefLabel: Tafseel.t('order_hero_order_ref'),
+      timelineOrderRef: s.timelineOrder ? (s.timelineOrder.orderRef || String(s.timelineOrder.id || '').slice(0, 8)) : '',
+      showTimelineRequestRef: !!(s.timelineOrder && s.timelineOrder.requestRef),
+      timelineRequestRefLabel: Tafseel.t('order_hero_request_ref'),
+      timelineRequestRef: s.timelineOrder ? s.timelineOrder.requestRef : '',
+      timelineProgressAria: Tafseel.t('order_progress_aria'),
+      timelineProgressSteps: s.timelineOrder
+        ? this.orderProgressSteps(s.timelineOrder.stage)
+        : [],
+      showTimelineAction: !!(s.timelineOrder && s.timelineOrder.action),
+      timelineActionLabel: s.timelineOrder ? this.orderActionRender(s.timelineOrder).actionLabel : '',
+      timelineOnAction: s.timelineOrder ? this.orderActionRender(s.timelineOrder).onAction : () => {},
+      showTimelineReviewState: !!(s.timelineOrder && s.timelineOrder.hasReview),
+      timelineReviewTitle: Tafseel.t('sd_completed_review_title'),
+      timelineReviewScore: s.timelineOrder && s.timelineOrder.reviewOverallScore != null
+        ? Tafseel.t('sd_completed_review_score', {
+          score: Number(s.timelineOrder.reviewOverallScore).toFixed(1)
+        })
+        : '',
+      timelineReviewComment: s.timelineOrder ? (s.timelineOrder.reviewComment || '') : '',
+      timelineReviewVisibility: s.timelineOrder && s.timelineOrder.hasReview
+        ? (s.timelineOrder.reviewIsVisible === false
+          ? Tafseel.t('sd_review_visibility_hidden')
+          : Tafseel.t('sd_review_visibility_public'))
+        : '',
+      showTimelineProfileLink: !!(s.timelineOrder && s.timelineOrder.profileHref),
+      timelineProfileHref: s.timelineOrder ? (s.timelineOrder.profileHref || '#') : '#',
+      timelineProfileLabel: Tafseel.t('sd_completed_view_profile'),
+      showTimelineDeliveries: !!(s.timelineOrder && s.timelineOrder.deliveries && s.timelineOrder.deliveries.length),
+      timelineDeliveriesHeading: Tafseel.t('sd_order_deliveries_heading'),
+      timelineDeliveries: (() => {
+        const list = (s.timelineOrder && s.timelineOrder.deliveries || []).slice().sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        const total = list.length;
+        return list.map((d, index) => {
+          const chronological = total - index;
+          return {
+            when: Tafseel.date(d.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
+            message: (d.message || '').trim() || Tafseel.t('sd_review_no_message'),
+            fileName: d.originalName || Tafseel.t('td_download_file', { name: '' }),
+            isLatest: index === 0,
+            focus: index === 0,
+            latestLabel: Tafseel.t('sd_review_latest_badge'),
+            versionLabel: Tafseel.t('sd_review_version', {
+              n: String(chronological),
+              total: String(total)
+            }),
+            onDownload: () => Tafseel.api.openBlob(
+              '/orders/deliveries/' + encodeURIComponent(d.id) + '/content',
+              { download: true, fileName: d.originalName || 'delivery' }
+            ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
+          };
+        });
+      })(),
+      timelineCloseLabel: Tafseel.t('order_timeline_close'),
+      timelineLoading: s.timelineLoading,
+      timelineLoadingLabel: Tafseel.t('order_timeline_loading'),
+      timelineError: s.timelineError,
+      timelineErrorLabel: Tafseel.t('order_timeline_error'),
+      timelineRetryLabel: Tafseel.t('order_timeline_retry'),
+      timelineEmpty: !s.timelineLoading && !s.timelineError && s.timelineOrder && s.timelineEvents.length === 0,
+      timelineEmptyLabel: Tafseel.t('order_timeline_empty'),
+      timelineHasEvents: !s.timelineLoading && !s.timelineError && s.timelineEvents.length > 0,
+      timelineEventsHeading: Tafseel.t('order_events_heading'),
+      timelineEvents: s.timelineEvents.map(event => Tafseel.orderTimelineEvent(event)),
+      closeTimeline: () => this.closeTimeline(),
+      retryTimeline: event => s.timelineOrder && this.openTimeline(s.timelineOrder, event.currentTarget),
+      timelineKeyDown: event => Tafseel.modalKeyDown(event, () => this.closeTimeline()),
 
       reviewModal: s.reviewModal,
       reviewModalTitle: Tafseel.t('sd_review_modal_title'),
       reviewOrderTitle: s.reviewModal ? s.reviewModal.title : '',
       reviewTeacherLabel: Tafseel.t('sd_review_teacher_label'),
       reviewTeacherName: s.reviewModal ? s.reviewModal.teacher : '',
+      reviewTeacherAvatar: s.reviewModal && s.reviewModal.teacherAvatar
+        ? s.reviewModal.teacherAvatar
+        : Tafseel.defaultAvatar,
+      reviewServiceName: s.reviewModal ? s.reviewModal.service : '',
+      reviewGuide: s.reviewModal && s.reviewModal.guideKey
+        ? Tafseel.t(s.reviewModal.guideKey)
+        : Tafseel.t('order_guide_delivered'),
       reviewHistoryLabel: Tafseel.t('sd_review_history_label'),
       reviewNoDeliveries: !!s.reviewModal && (!s.reviewModal.deliveries || s.reviewModal.deliveries.length === 0),
-      reviewDeliveries: (s.reviewModal && s.reviewModal.deliveries || []).map(d => ({
-        when: Tafseel.date(d.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
-        message: (d.message || '').trim() || Tafseel.t('sd_review_no_message'),
-        fileName: d.originalName || Tafseel.t('td_download_file', { name: '' }),
-        onDownload: () => Tafseel.api.openBlob(
-          '/orders/deliveries/' + encodeURIComponent(d.id) + '/content',
-          { download: true, fileName: d.originalName || 'delivery' }
-        ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
-      })),
+      reviewDeliveries: (() => {
+        const list = (s.reviewModal && s.reviewModal.deliveries || []).slice().sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        const total = list.length;
+        return list.map((d, index) => {
+          const chronological = total - index;
+          return {
+            when: Tafseel.date(d.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
+            message: (d.message || '').trim() || Tafseel.t('sd_review_no_message'),
+            noteLabel: Tafseel.t('sd_review_teacher_note'),
+            fileName: d.originalName || Tafseel.t('td_download_file', { name: '' }),
+            isLatest: index === 0,
+            latestLabel: Tafseel.t('sd_review_latest_badge'),
+            versionLabel: Tafseel.t('sd_review_version', {
+              n: String(chronological),
+              total: String(total)
+            }),
+            onDownload: () => Tafseel.api.openBlob(
+              '/orders/deliveries/' + encodeURIComponent(d.id) + '/content',
+              { download: true, fileName: d.originalName || 'delivery' }
+            ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
+          };
+        });
+      })(),
       reviewError: s.reviewError,
       reviewBusy: !!s.reviewBusy,
       showRevisionForm: !!s.showRevisionForm,
@@ -1185,6 +1611,13 @@ class Component extends DCLogic {
       onRevisionReason: e => this.setState({ revisionReason: e.target.value, reviewError: '' }),
       revisionAvailable: !!s.reviewModal && s.reviewModal.revisionsUsed < s.reviewModal.revisionAllowance,
       revisionLimitReached: !!s.reviewModal && s.reviewModal.revisionsUsed >= s.reviewModal.revisionAllowance,
+      showReviewRevisionsLeft: !!s.reviewModal && s.reviewModal.revisionAllowance > 0,
+      reviewRevisionsLeft: s.reviewModal
+        ? Tafseel.t('sd_review_revisions_left', {
+          n: String(Math.max(0, (s.reviewModal.revisionAllowance || 0) - (s.reviewModal.revisionsUsed || 0)))
+        })
+        : '',
+      reviewApproveHint: Tafseel.t('sd_review_approve_hint'),
       openRevisionForm: () => this.setState({ showRevisionForm: true, reviewError: '' }),
       cancelRevisionForm: () => this.setState({ showRevisionForm: false, revisionReason: '', reviewError: '' }),
       closeReviewModal: () => this.closeReviewModal(),
@@ -1199,6 +1632,17 @@ class Component extends DCLogic {
 
       rateModal: s.rateModal,
       rateModalTitle: Tafseel.t('sd_rate_modal_title'),
+      rateTeacherLabel: Tafseel.t('sd_review_teacher_label'),
+      rateTeacherName: s.rateModal ? s.rateModal.teacher : '',
+      rateTeacherAvatar: s.rateModal && s.rateModal.teacherAvatar
+        ? s.rateModal.teacherAvatar
+        : Tafseel.defaultAvatar,
+      rateServiceName: s.rateModal ? s.rateModal.service : '',
+      rateAboutService: Tafseel.t('sd_rate_about_service'),
+      ratePrivacyNote: Tafseel.t('sd_rate_privacy_note'),
+      rateCommentHint: Tafseel.t('sd_rate_comment_hint'),
+      rateCommentInvalid: !!s.rateCommentError,
+      rateCommentError: s.rateCommentError || '',
       rateSliders: [
         { label: Tafseel.t('sd_rate_clarity'), value: s.rateClarity, onChange: e => this.setState({ rateClarity: e.target.value }) },
         { label: Tafseel.t('sd_rate_knowledge'), value: s.rateKnowledge, onChange: e => this.setState({ rateKnowledge: e.target.value }) },
@@ -1207,17 +1651,19 @@ class Component extends DCLogic {
         { label: Tafseel.t('sd_rate_value'), value: s.rateValue, onChange: e => this.setState({ rateValue: e.target.value }) }
       ],
       rateComment: s.rateComment,
-      onRateComment: e => this.setState({ rateComment: e.target.value, rateError: '' }),
+      onRateComment: e => this.setState({ rateComment: e.target.value, rateError: '', rateCommentError: '' }),
       rateRecommends: !!s.rateRecommends,
       onRateRecommends: e => this.setState({ rateRecommends: e.target.checked }),
       rateError: s.rateError,
       rateBusy: !!s.rateBusy,
       closeRateModal: () => this.closeRateModal(),
+      rateKeyDown: event => Tafseel.modalKeyDown(event, () => this.closeRateModal()),
       submitReview: () => this.submitReview(),
       sdRateCommentLabel: Tafseel.t('sd_rate_comment_label'),
       sdRateCommentPlaceholder: Tafseel.t('sd_rate_comment_placeholder'),
       sdRateRecommends: Tafseel.t('sd_rate_recommends'),
       sdRateSubmitLabel: s.rateBusy ? Tafseel.t('apply_saving') : Tafseel.t('sd_rate_submit'),
+      sdReviewClose: Tafseel.t('sd_review_close'),
 
       allSessions: s.liveSessions.map(se => ({
         ...se,
@@ -1260,8 +1706,34 @@ class Component extends DCLogic {
       transactions: REQUESTS.filter(r => r.kind === 'order').map(r => ({
         id: r.id, title: r.title, amount: r.amount, status: r.status, when: r.deadline
       })),
-      studentFiles: STUDENT_FILES.map(f => ({ ...f, onDownload: () => this.flash('Downloading ' + f.name + '…') })),
-      myReviews: MY_REVIEWS,
+      filesTitle: Tafseel.t('sd_nav_files'),
+      filesUnavailableBody: Tafseel.t('sd_files_unavailable_body'),
+      myReviewsTitle: Tafseel.t('sd_nav_reviews'),
+      myReviewsIntro: Tafseel.t('sd_my_reviews_intro'),
+      myReviewsEmptyLabel: Tafseel.t('sd_my_reviews_empty'),
+      myReviews: (() => {
+        const rows = REQUESTS.filter(r => r.kind === 'order' && r.hasReview);
+        return rows.map(r => ({
+          teacher: r.teacher,
+          service: r.service,
+          body: r.reviewComment || '',
+          scoreLabel: r.reviewOverallScore != null
+            ? (Number(r.reviewOverallScore).toFixed(1) + ' ★')
+            : '',
+          date: r.reviewCreatedAt
+            ? Tafseel.date(r.reviewCreatedAt, { dateStyle: 'medium' })
+            : '',
+          visibilityLabel: r.reviewIsVisible === false
+            ? Tafseel.t('sd_review_visibility_hidden')
+            : Tafseel.t('sd_review_visibility_public'),
+          openOrderLabel: Tafseel.t('order_timeline_view'),
+          onOpenOrder: () => this.openTimeline(r),
+          hasProfile: !!r.profileHref,
+          profileHref: r.profileHref || '#',
+          profileLabel: Tafseel.t('sd_completed_view_profile')
+        }));
+      })(),
+      myReviewsEmpty: !REQUESTS.some(r => r.kind === 'order' && r.hasReview),
       conversations: s.liveConversations.map(c => {
         const peer = (c.participants || []).find(p => p.userId !== (this._session && this._session.userId))
           || (c.participants || [])[0];
@@ -1474,15 +1946,7 @@ class Component extends DCLogic {
         onClick: () => this.setState({ filter: f.key })
       })),
 
-      requests: rows.map(r => {
-        return {
-          ...r,
-          ...this.orderActionRender(r),
-          timelineLabel:r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
-          onTimeline:event => this.openTimeline(r, event.currentTarget),
-          statusStyle: Tafseel.statusToneStyle(r.kind, r.rawStatus)
-        };
-      }),
+      requests: rows.map(r => this.enrichWorkRow(r)),
 
       noRequests: rows.length === 0,
       shownCount: rows.length,
@@ -1542,12 +2006,7 @@ class Component extends DCLogic {
           ...n,
           style: 'display:flex;gap:12px;width:100%;padding:16px 20px;border:0;border-bottom:1px solid var(--border);text-align:start;background:' + (isRead ? 'transparent' : 'var(--primary-soft)'),
           dotStyle: 'flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:' + (isRead ? 'var(--border-strong)' : 'var(--primary)'),
-          onClick: async () => {
-            if (!s.read.includes(n.id)) {
-              await Tafseel.api.post('/notifications/read?id=' + n.id).catch(() => {});
-              this.setState({ read:s.read.concat(n.id) });
-            }
-          }
+          onClick: () => this.openNotification(n)
         };
       })
     };

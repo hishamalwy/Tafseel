@@ -1,3 +1,4 @@
+using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Common;
 
 namespace Tafseel.Domain.LiveSessions;
@@ -59,6 +60,12 @@ public sealed class LiveSessionBooking
     public string StudentId { get; private set; } = "";
     public string TeacherId { get; private set; } = "";
     public Guid TeacherServiceId { get; private set; }
+    public Guid? ServiceCatalogItemId { get; private set; }
+    public string CatalogCode { get; private set; } = "";
+    public string CategoryCode { get; private set; } = "";
+    public string OrderType { get; private set; } = "";
+    public string ServiceNameEnglish { get; private set; } = "";
+    public string ServiceNameArabic { get; private set; } = "";
     public string Title { get; private set; } = "";
     public string Notes { get; private set; } = "";
     public DateTimeOffset StartsAt { get; private set; }
@@ -79,6 +86,19 @@ public sealed class LiveSessionBooking
     public byte[] RowVersion { get; private set; } = [];
     public IReadOnlyCollection<LiveSessionStatusHistory> History => _history;
     public IReadOnlyCollection<LiveSessionAttachment> Attachments => _attachments;
+
+    public void CaptureServiceIdentity(ServiceCatalogItem catalog)
+    {
+        if (ServiceCatalogItemId.HasValue)
+            throw new DomainException("service_identity_immutable", "Service identity snapshot is immutable.");
+        catalog.EnsurePolicyComplete();
+        ServiceCatalogItemId = catalog.Id;
+        CatalogCode = catalog.Code;
+        CategoryCode = catalog.CategoryCode;
+        OrderType = catalog.OrderType;
+        ServiceNameEnglish = catalog.Name;
+        ServiceNameArabic = catalog.NameAr;
+    }
 
     public void ConfirmPayment(string actorId, DateTimeOffset now)
     {

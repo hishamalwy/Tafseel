@@ -412,6 +412,12 @@
   }
 
   // src/compile.ts
+  var BOOLEAN_DOM_PROPS = /* @__PURE__ */ new Set([
+    "allowFullScreen", "async", "autoFocus", "autoPlay", "controls", "default",
+    "defer", "disabled", "formNoValidate", "hidden", "inert", "loop", "multiple",
+    "muted", "noModule", "noValidate", "open", "playsInline", "readOnly", "required",
+    "reversed", "scoped", "seamless", "selected"
+  ]);
   function collectProps(node, kind, host) {
     const propGetters = [];
     const pseudoClasses = [];
@@ -801,6 +807,7 @@
       for (const [k, g] of propGetters) {
         let v = g(vals);
         if (k === "style" && typeof v === "string") v = cssToObj(v);
+        if (BOOLEAN_DOM_PROPS.has(k) && v === "") v = true;
         if ((k === "value" || k === "checked") && v === void 0) {
           v = k === "checked" ? false : "";
         }

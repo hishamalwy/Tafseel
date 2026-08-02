@@ -148,15 +148,44 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
         builder.Entity<ServiceCatalogItem>().Property(x => x.Code).HasMaxLength(50).IsUnicode(false);
         builder.Entity<ServiceCatalogItem>().HasIndex(x => x.Code).IsUnique();
         builder.Entity<ServiceCatalogItem>().Property(x => x.Type).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.CategoryCode).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.IconCode).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.OrderType).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.QualificationPolicy).HasMaxLength(50).IsUnicode(false);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.CurrencyCode).HasMaxLength(3).IsUnicode(false);
         builder.Entity<ServiceCatalogItem>().Property(x => x.AllowedDurationsCsv).HasMaxLength(100).IsUnicode(false);
         builder.Entity<ServiceCatalogItem>().Property(x => x.MinPrice).HasPrecision(18, 2);
         builder.Entity<ServiceCatalogItem>().Property(x => x.MaxPrice).HasPrecision(18, 2);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.DefaultPrice).HasPrecision(18, 2);
+        builder.Entity<ServiceCatalogItem>().Property(x => x.RecommendedPrice).HasPrecision(18, 2);
         builder.Entity<ServiceCatalogItem>().ToTable(table =>
         {
             table.HasCheckConstraint("CK_ServiceCatalogItems_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
-            table.HasCheckConstraint("CK_ServiceCatalogItems_PriceBounds",
-                "([MinPrice] IS NULL OR [MinPrice] > 0) AND ([MaxPrice] IS NULL OR [MaxPrice] > 0) AND ([MinPrice] IS NULL OR [MaxPrice] IS NULL OR [MinPrice] <= [MaxPrice])");
             table.HasCheckConstraint("CK_ServiceCatalogItems_Code", "[Code] <> ''");
+            if (Database.IsSqlServer())
+            {
+                table.HasCheckConstraint("CK_ServiceCatalogItems_PriceBounds",
+                    "([MinPrice] IS NULL OR [MinPrice] > 0) AND ([MaxPrice] IS NULL OR [MaxPrice] > 0) AND ([MinPrice] IS NULL OR [MaxPrice] IS NULL OR [MinPrice] <= [MaxPrice])");
+                table.HasCheckConstraint("CK_ServiceCatalogItems_PolicyCodes",
+                    "[CategoryCode] IN ('recorded_explanation','academic_support','live_learning','revision_exam_preparation','study_materials','project_guidance') " +
+                    "AND [IconCode] IN ('video','academic_support','live','exam','notes','project') " +
+                    "AND [OrderType] IN ('async_request','live_session') " +
+                    "AND [QualificationPolicy] = 'subject_qualification_required' AND [CurrencyCode] = 'SAR'");
+                table.HasCheckConstraint("CK_ServiceCatalogItems_PricePolicy",
+                    "[MinPrice] > 0 AND [MinPrice] <= [DefaultPrice] AND [DefaultPrice] <= [MaxPrice] " +
+                    "AND [MinPrice] <= [RecommendedPrice] AND [RecommendedPrice] <= [MaxPrice]");
+                table.HasCheckConstraint("CK_ServiceCatalogItems_DeliveryPolicy",
+                    "([OrderType] = 'live_session' AND [RequiresScheduling] = 1 AND [AllowedDurationsCsv] <> '' " +
+                    "AND [MinimumDeliveryHours] IS NULL AND [DefaultDeliveryHours] IS NULL " +
+                    "AND [RecommendedDeliveryHours] IS NULL AND [MaximumDeliveryHours] IS NULL " +
+                    "AND [DefaultRevisions] = 0 AND [MaximumRevisions] = 0) OR " +
+                    "([OrderType] = 'async_request' AND [RequiresScheduling] = 0 AND [AllowedDurationsCsv] = '' " +
+                    "AND [MinimumDeliveryHours] BETWEEN 1 AND 8760 AND [MaximumDeliveryHours] BETWEEN 1 AND 8760 " +
+                    "AND [MinimumDeliveryHours] <= [DefaultDeliveryHours] AND [DefaultDeliveryHours] <= [MaximumDeliveryHours] " +
+                    "AND [MinimumDeliveryHours] <= [RecommendedDeliveryHours] AND [RecommendedDeliveryHours] <= [MaximumDeliveryHours] " +
+                    "AND [DefaultRevisions] BETWEEN 0 AND 20 AND [MaximumRevisions] BETWEEN 0 AND 20 " +
+                    "AND [DefaultRevisions] <= [MaximumRevisions])");
+            }
         });
 
         builder.Entity<TeacherApplication>(application =>
@@ -308,20 +337,28 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             service.Property(x => x.TeacherId).HasMaxLength(450);
             service.Property(x => x.Title).HasMaxLength(200);
             service.Property(x => x.Description).HasMaxLength(2000);
+            service.Property(x => x.ApproachEn).HasMaxLength(1000);
+            service.Property(x => x.ApproachAr).HasMaxLength(1000);
             service.Property(x => x.Price).HasPrecision(18, 2);
             service.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
             service.Property(x => x.RowVersion).IsRowVersion();
+            service.Ignore(x => x.IsSuperseded);
             service.HasIndex(x => new { x.TeacherId, x.IsActive });
             service.HasIndex(x => new { x.SubjectId, x.ServiceCatalogItemId, x.IsActive, x.Price });
+            service.HasIndex(x => new { x.TeacherId, x.SubjectId, x.ServiceCatalogItemId })
+                .IsUnique()
+                .HasFilter("[SupersededByTeacherServiceId] IS NULL");
             service.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             service.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
             service.HasOne<ServiceCatalogItem>().WithMany().HasForeignKey(x => x.ServiceCatalogItemId).OnDelete(DeleteBehavior.Restrict);
+            service.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.SupersededByTeacherServiceId).OnDelete(DeleteBehavior.Restrict);
             service.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_TeacherServices_Price", "[Price] > 0");
                 table.HasCheckConstraint("CK_TeacherServices_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
                 table.HasCheckConstraint("CK_TeacherServices_DeliveryHours", "[DeliveryHours] BETWEEN 1 AND 8760");
                 table.HasCheckConstraint("CK_TeacherServices_Revisions", "[Revisions] BETWEEN 0 AND 20");
+                table.HasCheckConstraint("CK_TeacherServices_NotSelfSuperseded", "[SupersededByTeacherServiceId] IS NULL OR [SupersededByTeacherServiceId] <> [Id]");
             });
         });
         builder.Entity<TeacherTeachingSample>(sample =>
@@ -337,6 +374,11 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 .HasForeignKey(x => x.TeacherTeachingSampleId).OnDelete(DeleteBehavior.Restrict);
             sample.HasIndex(x => new { x.TeacherId, x.PublishedAt });
             sample.HasIndex(x => new { x.TeacherId, x.SourceType, x.ModerationStatus, x.ArchivedAt });
+            sample.HasIndex(x => new { x.TeacherId, x.IsProfileVisible, x.ProfileDisplayOrder });
+            sample.HasIndex(x => x.TeacherId)
+                .IsUnique()
+                .HasFilter("[IsProfileFeatured] = 1")
+                .HasDatabaseName("IX_TeacherTeachingSamples_OneFeaturedPerTeacher");
             sample.HasIndex(x => x.CurrentVersionId).IsUnique().HasFilter("[CurrentVersionId] IS NOT NULL");
             sample.HasIndex(x => x.ApprovedVersionId).IsUnique().HasFilter("[ApprovedVersionId] IS NOT NULL");
             sample.HasIndex(x => x.SourceDemoSubmissionId).IsUnique().HasFilter("[SourceDemoSubmissionId] IS NOT NULL");
@@ -354,6 +396,12 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 table.HasCheckConstraint(
                     "CK_TeacherTeachingSamples_ShowcasePublication",
                     "[SourceType] = 0 OR [PublishedAt] IS NULL OR ([ModerationStatus] = 4 AND [ApprovedVersionId] IS NOT NULL AND [ArchivedAt] IS NULL)");
+                table.HasCheckConstraint(
+                    "CK_TeacherTeachingSamples_ProfileDisplayOrder",
+                    "[ProfileDisplayOrder] >= 0");
+                table.HasCheckConstraint(
+                    "CK_TeacherTeachingSamples_FeaturedRequiresVisible",
+                    "[IsProfileFeatured] = 0 OR [IsProfileVisible] = 1");
             });
         });
         builder.Entity<TeacherTeachingSampleVersion>(version =>
@@ -437,6 +485,11 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             request.Property(x => x.Id).ValueGeneratedNever();
             request.Property(x => x.StudentId).HasMaxLength(450);
             request.Property(x => x.TeacherId).HasMaxLength(450);
+            request.Property(x => x.CatalogCode).HasMaxLength(50).IsUnicode(false);
+            request.Property(x => x.CategoryCode).HasMaxLength(50).IsUnicode(false);
+            request.Property(x => x.OrderType).HasMaxLength(50).IsUnicode(false);
+            request.Property(x => x.ServiceNameEnglish).HasMaxLength(200);
+            request.Property(x => x.ServiceNameArabic).HasMaxLength(200);
             request.Property(x => x.Title).HasMaxLength(200);
             request.Property(x => x.Description).HasMaxLength(5000);
             request.Property(x => x.Budget).HasPrecision(18, 2);
@@ -447,6 +500,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             request.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             request.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             request.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.TeacherServiceId).OnDelete(DeleteBehavior.Restrict);
+            request.HasOne<ServiceCatalogItem>().WithMany().HasForeignKey(x => x.ServiceCatalogItemId).OnDelete(DeleteBehavior.Restrict);
             request.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
             request.HasMany(x => x.Clarifications).WithOne().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
             request.HasMany(x => x.History).WithOne().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
@@ -486,6 +540,11 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             order.Property(x => x.Id).ValueGeneratedNever();
             order.Property(x => x.StudentId).HasMaxLength(450);
             order.Property(x => x.TeacherId).HasMaxLength(450);
+            order.Property(x => x.CatalogCode).HasMaxLength(50).IsUnicode(false);
+            order.Property(x => x.CategoryCode).HasMaxLength(50).IsUnicode(false);
+            order.Property(x => x.OrderType).HasMaxLength(50).IsUnicode(false);
+            order.Property(x => x.ServiceNameEnglish).HasMaxLength(200);
+            order.Property(x => x.ServiceNameArabic).HasMaxLength(200);
             foreach (var property in new[]
                      {
                          nameof(Order.Price), nameof(Order.StudentFeeAmount), nameof(Order.TeacherCommissionAmount),
@@ -503,6 +562,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             order.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             order.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             order.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.TeacherServiceId).OnDelete(DeleteBehavior.Restrict);
+            order.HasOne<ServiceCatalogItem>().WithMany().HasForeignKey(x => x.ServiceCatalogItemId).OnDelete(DeleteBehavior.Restrict);
             order.HasMany(x => x.History).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
             order.HasMany(x => x.Deliveries).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
             order.HasMany(x => x.Revisions).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
@@ -552,6 +612,11 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             booking.Property(x => x.Id).ValueGeneratedNever();
             booking.Property(x => x.StudentId).HasMaxLength(450);
             booking.Property(x => x.TeacherId).HasMaxLength(450);
+            booking.Property(x => x.CatalogCode).HasMaxLength(50).IsUnicode(false);
+            booking.Property(x => x.CategoryCode).HasMaxLength(50).IsUnicode(false);
+            booking.Property(x => x.OrderType).HasMaxLength(50).IsUnicode(false);
+            booking.Property(x => x.ServiceNameEnglish).HasMaxLength(200);
+            booking.Property(x => x.ServiceNameArabic).HasMaxLength(200);
             booking.Property(x => x.Title).HasMaxLength(200);
             booking.Property(x => x.Notes).HasMaxLength(2000);
             booking.Property(x => x.StudentTimeZoneId).HasMaxLength(100);
@@ -568,6 +633,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             booking.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             booking.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             booking.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.TeacherServiceId).OnDelete(DeleteBehavior.Restrict);
+            booking.HasOne<ServiceCatalogItem>().WithMany().HasForeignKey(x => x.ServiceCatalogItemId).OnDelete(DeleteBehavior.Restrict);
             booking.HasMany(x => x.History).WithOne().HasForeignKey(x => x.LiveSessionBookingId).OnDelete(DeleteBehavior.Restrict);
             booking.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.LiveSessionBookingId).OnDelete(DeleteBehavior.Restrict);
             booking.ToTable(table =>

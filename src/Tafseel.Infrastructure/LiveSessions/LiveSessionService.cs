@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tafseel.Application.Common;
+using Tafseel.Application.Catalog;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Orders;
 using Tafseel.Application.TeacherApplications;
@@ -97,6 +98,7 @@ internal sealed class LiveSessionService(
                 on service.ServiceCatalogItemId equals type.Id
             where requestedIds.Contains(service.TeacherId)
                 && service.IsActive
+                && service.SupersededByTeacherServiceId == null
                 && type.IsActive && type.IsPublic && type.TeacherSelectable
                 && db.TeacherProfiles.Any(profile =>
                     profile.TeacherId == service.TeacherId && profile.IsPublished)
@@ -232,6 +234,10 @@ internal sealed class LiveSessionService(
         var startsAt = ToUtc(input.LocalStart, input.StudentTimeZoneId);
         var endsAt = startsAt.AddMinutes(input.DurationMinutes);
         var service = await RequireBookableServiceAsync(null, input.TeacherServiceId, ct);
+        ServiceCatalogPolicyValidator.EnsureLiveSession(service.Type);
+        ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+            service.Type, service.Service.Price, service.Service.Currency,
+            service.Service.DeliveryHours, service.Service.Revisions);
         RequireDuration(service.Type, input.DurationMinutes);
         if (service.Service.TeacherId == studentId)
             throw new DomainException("self_booking_forbidden", "A student cannot book themselves.");
@@ -248,6 +254,7 @@ internal sealed class LiveSessionService(
                 input.Emergency ? _options.EmergencyPremiumPercent : 0,
                 _options.CancellationWindowHours,
                 Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), clock.GetUtcNow());
+            booking.CaptureServiceIdentity(service.Type);
             db.Add(booking);
             await notifications.QueueAsync(booking.TeacherId, "SessionBooking", "New live-session booking",
                 booking.Title, $"/live-sessions/{booking.Id}", $"session:{booking.Id}:booked", true, ct);
@@ -489,7 +496,7 @@ internal sealed class LiveSessionService(
             .SingleOrDefaultAsync(ct)
             ?? throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
 
-        if (!string.Equals(row.type.Code, LiveSessionCatalogCode, StringComparison.Ordinal)
+        if (row.type.OrderType != Domain.Catalog.ServiceOrderTypes.LiveSession
             || !row.type.RequiresScheduling)
             throw new DomainException("service_not_live_session", "Only the live_session catalog service can create a live session.");
         if (!row.type.IsActive)
@@ -498,9 +505,10 @@ internal sealed class LiveSessionService(
             throw new DomainException("catalog_service_unavailable", "The live session catalog service is not available for booking.");
         if (!row.service.IsActive)
             throw new DomainException("teacher_service_inactive", "The teacher has disabled this live session service.");
-        if (row.type.MinPrice.HasValue && row.service.Price < row.type.MinPrice.Value
-            || row.type.MaxPrice.HasValue && row.service.Price > row.type.MaxPrice.Value)
-            throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
+        if (row.service.IsSuperseded)
+            throw new DomainException("teacher_service_superseded", "This Teacher service has been superseded.");
+        ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+            row.type, row.service.Price, row.service.Currency, row.service.DeliveryHours, row.service.Revisions);
 
         var eligible = await db.TeacherProfiles.AsNoTracking().AnyAsync(profile =>
                 profile.TeacherId == row.service.TeacherId
@@ -650,5 +658,7 @@ internal sealed class LiveSessionService(
             names is not null && names.TryGetValue(x.StudentId, out var student) ? student.FullName : null,
             names is not null && names.TryGetValue(x.TeacherId, out var teacher) ? teacher.FullName : null,
             names is not null && names.TryGetValue(x.StudentId, out student) ? student.FullNameEnglish : null,
-            names is not null && names.TryGetValue(x.TeacherId, out teacher) ? teacher.FullNameEnglish : null);
+            names is not null && names.TryGetValue(x.TeacherId, out teacher) ? teacher.FullNameEnglish : null,
+            x.ServiceCatalogItemId, x.CatalogCode, x.CategoryCode, x.OrderType,
+            x.ServiceNameEnglish, x.ServiceNameArabic);
 }

@@ -16,6 +16,7 @@
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<script src="js/media-preview.js"></script>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -182,7 +183,7 @@
                   <button type="button" onClick="{{ closeShowcase }}" aria-label="{{ closeShowcaseLabel }}" style="border:0;background:none;font-size:20px">×</button>
                 </div>
                 <p style="font-size:14px;color:var(--text-2);margin:14px 0">{{ currentShowcase.description }}</p>
-                <video src="{{ showcasePreviewUrl }}" controls preload="metadata" style="width:100%;aspect-ratio:16/9;background:#111;border-radius:var(--r-md)"></video>
+                <video data-media-preview="true" data-media-kind="showcase" data-download-allowed="true" src="{{ showcasePreviewUrl }}" controls preload="metadata" aria-label="{{ currentShowcase.title }}" style="width:100%;aspect-ratio:16/9;background:#111;border-radius:var(--r-md)"></video>
                 <div style="font-size:12px;color:var(--muted);margin-top:8px">{{ currentShowcase.fileName }}</div>
               </div>
               <aside style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:13px">
@@ -352,7 +353,7 @@
                 </div>
               </sc-if>
               <sc-if value="{{ demoReady }}" hint-placeholder-val="{{ false }}">
-                <video src="{{ demoBlobUrl }}" controls preload="metadata"
+                <video data-media-preview="true" data-media-kind="qualification" data-download-allowed="true" src="{{ demoBlobUrl }}" controls preload="metadata" aria-label="{{ demoTopic }}"
                   style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
               </sc-if>
               <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
@@ -503,10 +504,11 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
+    if (this._demoBlobUrl) URL.revokeObjectURL(this._demoBlobUrl);
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
   }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
+  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); Tafseel.mediaPreview.sync(); }
 
   flash(msg) {
     Tafseel.flash(this, msg, 2800);

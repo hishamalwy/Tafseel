@@ -66,12 +66,12 @@ public static class DependencyInjection
 
     // Shared by Staging demo-user seeding and opt-in Development demo-user seeding (ADR-012):
     // both paths seed the same canonical accounts/roles, only the password source differs.
-    private static readonly (string Role, string Email, string FullName)[] DemoUserAccounts =
+    private static readonly (string Role, string Email, string FullName, string FullNameEnglish)[] DemoUserAccounts =
     [
-        (Roles.Admin, "admin@gmail.com", "Tafseel Admin"),
-        (Roles.Student, "student@gmail.com", "Tafseel Student"),
-        (Roles.Teacher, "teacher@gmail.com", "Tafseel Teacher"),
-        (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer")
+        (Roles.Admin, "admin@gmail.com", "Tafseel Admin", "Tafseel Admin"),
+        (Roles.Student, "student@gmail.com", "Tafseel Student", "Tafseel Student"),
+        (Roles.Teacher, "teacher@gmail.com", "معلم تفصيل", "Tafseel Teacher"),
+        (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer", "Tafseel Quality Reviewer")
     ];
 
     // Opt-in Development-only demo catalog content (ADR-013). Real production subjects/topics are
@@ -492,6 +492,7 @@ public static class DependencyInjection
                             UserName = account.Email,
                             Email = account.Email,
                             FullName = account.FullName,
+                            FullNameEnglish = account.FullNameEnglish,
                             EmailConfirmed = true
                         };
                         user.PasswordHash = hasher.HashPassword(user, "@Admin123");
@@ -638,6 +639,7 @@ public static class DependencyInjection
                     UserName = account.Email,
                     Email = account.Email,
                     FullName = account.FullName,
+                    FullNameEnglish = account.FullNameEnglish,
                     EmailConfirmed = true
                 };
                 // Standard UserManager.CreateAsync(user, password): runs full Identity password

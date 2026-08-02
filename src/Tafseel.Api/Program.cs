@@ -229,7 +229,7 @@ app.Use(async (context, next) =>
     headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
     headers.Append("Content-Security-Policy",
         "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; " +
-        "font-src 'self'; img-src 'self' data:; connect-src 'self' wss:; " +
+        "font-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' wss:; " +
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
     if (context.Request.Path.StartsWithSegments("/api"))
     {
@@ -273,7 +273,7 @@ app.MapGet("/app/{file}", (string file) =>
 app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
-    file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js"
+    file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js" or "media-preview.js"
         or "guided-request.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());

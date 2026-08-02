@@ -16,6 +16,29 @@
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<style>
+  .tf-catalog-overlay{position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265/.48);display:flex;align-items:center;justify-content:center;padding:20px}
+  .tf-catalog-dialog{width:min(1080px,100%);max-height:min(92dvh,900px);display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border-radius:var(--r-lg);box-shadow:0 24px 70px oklch(0.18 0.03 265/.28)}
+  .tf-catalog-header{flex:none;padding:20px 24px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .tf-catalog-header h2{font-size:19px;font-weight:750;margin:0 0 4px}.tf-catalog-header p{font-size:13px;color:var(--muted);margin:0}
+  .tf-catalog-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 24px}
+  .tf-catalog-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.75fr);gap:28px;align-items:start}
+  .tf-catalog-form{min-width:0}.tf-catalog-section{padding:22px 0;border-bottom:1px solid var(--border)}.tf-catalog-section:last-child{border-bottom:0}
+  .tf-catalog-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}.tf-catalog-section-head h3{font-size:15px;font-weight:750;margin:0 0 3px}.tf-catalog-section-head p{font-size:12.5px;color:var(--muted);margin:0;max-width:62ch}
+  .tf-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tf-field-grid[data-cols="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}.tf-policy-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .tf-field{display:flex;flex-direction:column;gap:6px;min-width:0}.tf-field>span:first-child{font-size:12.5px;font-weight:650;color:var(--text-2)}.tf-field input,.tf-field select,.tf-field textarea{width:100%;min-width:0;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font:inherit;font-size:14px;outline:none}.tf-field input,.tf-field select{height:42px;padding-inline:11px}.tf-field textarea{min-height:86px;padding:10px 11px;resize:vertical;line-height:1.55}.tf-field input:focus,.tf-field select:focus,.tf-field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}.tf-field [aria-invalid="true"]{border-color:var(--error)}
+  .tf-help{font-size:11.5px;color:var(--muted);line-height:1.45}.tf-field-error{font-size:11.5px;color:var(--error);font-weight:600}
+  .tf-input-unit{position:relative}.tf-input-unit input{padding-inline-end:48px}.tf-input-unit span{position:absolute;inset-inline-end:10px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted);pointer-events:none}.tf-formatted{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .tf-icon-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.tf-icon-option{min-width:0;min-height:58px;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);display:flex;align-items:center;gap:8px;text-align:start}.tf-icon-option[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}.tf-icon-option:focus-visible{outline:3px solid var(--primary-soft);outline-offset:2px}.tf-icon-glyph{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:var(--surface);font-size:16px;flex:none}.tf-icon-label{min-width:0;font-size:12px;font-weight:650;overflow-wrap:anywhere}
+  .tf-workflow-summary{padding:13px 14px;border-radius:var(--r-md);background:var(--info-soft);color:var(--text-2);font-size:13px;line-height:1.55}
+  .tf-switches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tf-switch-row{min-width:0;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}.tf-switch-copy{min-width:0}.tf-switch-copy strong{display:block;font-size:12.5px;margin-bottom:2px}.tf-switch-copy small{display:block;font-size:11.5px;color:var(--muted);line-height:1.35}.tf-switch-row input{width:36px;height:21px;accent-color:var(--primary);flex:none}
+  .tf-policy-preview{position:sticky;top:20px;margin:22px 0;padding-inline-start:24px;border-inline-start:1px solid var(--border);min-width:0}.tf-policy-preview h3{font-size:14px;margin:0 0 12px}.tf-preview-name{font-size:17px;font-weight:750;overflow-wrap:anywhere}.tf-preview-code{font:12px var(--font-mono);color:var(--muted);overflow-wrap:anywhere}.tf-preview-list{display:grid;gap:0;margin-top:14px}.tf-preview-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--border);font-size:12.5px}.tf-preview-row span{color:var(--muted)}.tf-preview-row strong{text-align:end;overflow-wrap:anywhere}
+  .tf-readiness{margin-top:14px;padding:13px 14px;border-radius:var(--r-md);background:var(--surface-2);font-size:12.5px}.tf-readiness[data-ready="true"]{background:var(--success-soft);color:var(--success)}.tf-readiness[data-ready="false"]{background:var(--warning-soft);color:var(--text)}.tf-readiness strong{display:block;margin-bottom:4px}.tf-readiness ul{margin:6px 0 0;padding-inline-start:18px;color:var(--text-2)}
+  .tf-catalog-footer{flex:none;position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:14px 24px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--surface);box-shadow:0 -10px 28px oklch(0.2 0.02 265/.06)}
+  .tf-catalog-footer button{min-height:42px;padding:0 17px;border-radius:var(--r-sm);font-weight:650;font-size:13.5px}.tf-catalog-cancel{border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}.tf-catalog-save{border:0;background:var(--primary);color:var(--primary-ink)}
+  @media(max-width:900px){.tf-catalog-layout{grid-template-columns:1fr}.tf-policy-preview{position:static;margin:0 0 22px;padding:20px 0 0;border-inline-start:0;border-top:1px solid var(--border)}.tf-policy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-switches{grid-template-columns:1fr}.tf-field-grid[data-cols="3"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:600px){.tf-catalog-overlay{padding:0;align-items:stretch}.tf-catalog-dialog{width:100%;max-height:100dvh;height:100dvh;border-radius:0}.tf-catalog-header{padding:17px 16px 13px}.tf-catalog-body{padding:0 16px}.tf-catalog-layout,.tf-field-grid,.tf-field-grid[data-cols="3"],.tf-policy-grid{grid-template-columns:1fr}.tf-icon-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-catalog-footer{padding-inline:16px}.tf-catalog-footer button{flex:1}.tf-field input,.tf-field select,.tf-field textarea{font-size:16px}}
+</style>
 </helmet>
 
 <div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
@@ -583,10 +606,14 @@
 </div>
 
 <sc-if value="{{ catalogModal }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeCatalogModal }}">
-    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ catalogModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">{{ catalogModalTitle }}</h2>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+  <div class="tf-catalog-overlay" onClick="{{ closeCatalogModal }}">
+    <div role="dialog" class="tf-catalog-dialog tf-modal-enter" data-catalog-dialog aria-modal="true" aria-labelledby="catalog-dialog-title" aria-describedby="catalog-dialog-description" onClick="{{ stop }}" onChange="{{ onCatalogFormChange }}">
+      <header class="tf-catalog-header">
+        <h2 id="catalog-dialog-title">{{ catalogModalTitle }}</h2>
+        <sc-if value="{{ isServiceModal }}" hint-placeholder-val="{{ false }}"><p id="catalog-dialog-description">{{ catalogModalDescription }}</p></sc-if>
+      </header>
+      <div class="tf-catalog-body">
+      <div style="display:flex;flex-direction:column;gap:14px">
         <sc-if value="{{ isSubjectScopedModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">Subject</span>
@@ -598,15 +625,17 @@
             </select>
           </label>
         </sc-if>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:13px;font-weight:600" data-i18n="admin_name_english">Name (English)</span>
-          <input value="{{ catalogName }}" onChange="{{ onCatalogName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
-        </label>
+        <sc-if value="{{ isNotServiceModal }}" hint-placeholder-val="{{ true }}">
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:13px;font-weight:600" data-i18n="admin_name_english">Name (English)</span>
+            <input value="{{ catalogName }}" onChange="{{ onCatalogName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
+          </label>
         <sc-if value="{{ isNameArModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600" data-i18n="admin_name_arabic">Arabic name</span>
             <input dir="rtl" value="{{ catalogNameAr }}" onChange="{{ onCatalogNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
+        </sc-if>
         </sc-if>
         <sc-if value="{{ isSubjectModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
@@ -637,24 +666,88 @@
           </label>
         </sc-if>
         <sc-if value="{{ isServiceModal }}" hint-placeholder-val="{{ false }}">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ serviceDescEnLabel }}</span>
-            <textarea value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" rows="3" maxlength="1000"
-              style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ serviceDescArLabel }}</span>
-            <textarea dir="rtl" value="{{ catalogDetailAr }}" onChange="{{ onCatalogDetailAr }}" rows="3" maxlength="1000"
-              style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
-          </label>
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:13px;font-weight:600">{{ serviceDisplayOrderLabel }}</span>
-            <input type="number" min="0" max="10000" sc-camel-value="{{ catalogDisplayOrder }}" onChange="{{ onCatalogDisplayOrder }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;max-width:160px" />
-          </label>
-          <label style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--text-2)">
-            <span>{{ serviceActiveLabel }}</span>
-            <input type="checkbox" checked="{{ catalogIsActive }}" onChange="{{ onCatalogIsActive }}" style="width:36px;height:21px;accent-color:var(--primary)" />
-          </label>
+          <div class="tf-catalog-layout">
+            <div class="tf-catalog-form">
+              <section class="tf-catalog-section">
+                <div class="tf-catalog-section-head"><div><h3>{{ servicePolicyLabels.identity }}</h3><p>{{ serviceIdentityHint }}</p></div></div>
+                <div class="tf-field-grid">
+                  <label class="tf-field"><span>{{ nameEnglishLabel }}</span><input id="catalog-name-en" dir="ltr" maxlength="200" value="{{ catalogName }}" onChange="{{ onCatalogName }}" aria-describedby="catalog-name-en-help catalog-policy-readiness" /><small id="catalog-name-en-help" class="tf-help">{{ serviceNameHelp }}</small></label>
+                  <label class="tf-field"><span>{{ nameArabicLabel }}</span><input id="catalog-name-ar" dir="rtl" maxlength="200" value="{{ catalogNameAr }}" onChange="{{ onCatalogNameAr }}" aria-describedby="catalog-name-ar-help catalog-policy-readiness" /><small id="catalog-name-ar-help" class="tf-help">{{ serviceNameHelp }}</small></label>
+                  <label class="tf-field"><span>{{ serviceDescEnLabel }}</span><textarea id="catalog-description-en" dir="ltr" maxlength="1000" value="{{ catalogDetail }}" onChange="{{ onCatalogDetail }}" aria-describedby="catalog-description-en-help catalog-policy-readiness"></textarea><small id="catalog-description-en-help" class="tf-help">{{ serviceDescriptionHelp }}</small></label>
+                  <label class="tf-field"><span>{{ serviceDescArLabel }}</span><textarea id="catalog-description-ar" dir="rtl" maxlength="1000" value="{{ catalogDetailAr }}" onChange="{{ onCatalogDetailAr }}" aria-describedby="catalog-description-ar-help catalog-policy-readiness"></textarea><small id="catalog-description-ar-help" class="tf-help">{{ serviceDescriptionHelp }}</small></label>
+                </div>
+                <div class="tf-field-grid" data-cols="3" style="margin-top:14px">
+                  <label class="tf-field"><span>{{ servicePolicyLabels.code }}</span><input id="catalog-code" dir="ltr" value="{{ catalogCode }}" onChange="{{ onCatalogCode }}" placeholder="recorded_explanation" pattern="[a-z][a-z0-9_]*" maxlength="100" aria-describedby="catalog-code-help catalog-policy-readiness" /><small id="catalog-code-help" class="tf-help">{{ serviceCodeHelp }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.category }}</span><select id="catalog-category" value="{{ catalogCategoryCode }}" onChange="{{ onCatalogCategoryCode }}" aria-describedby="catalog-category-help"><sc-for list="{{ serviceCategoryOptions }}" as="opt"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></select><small id="catalog-category-help" class="tf-help">{{ serviceCategoryHelp }}</small></label>
+                  <label class="tf-field"><span>{{ serviceDisplayOrderLabel }}</span><input type="number" min="0" max="10000" inputmode="numeric" sc-camel-value="{{ catalogDisplayOrder }}" onChange="{{ onCatalogDisplayOrder }}" /><small class="tf-help">{{ serviceDisplayOrderHelp }}</small></label>
+                </div>
+                <fieldset id="catalog-icons" tabindex="-1" style="border:0;padding:0;margin:16px 0 0"><legend style="font-size:12.5px;font-weight:650;margin-bottom:8px">{{ servicePolicyLabels.icon }}</legend><div class="tf-icon-picker"><sc-for list="{{ serviceIconOptions }}" as="opt"><button type="button" class="tf-icon-option" aria-pressed="{{ opt.selected }}" onClick="{{ opt.onSelect }}"><span class="tf-icon-glyph" aria-hidden="true">{{ opt.glyph }}</span><span class="tf-icon-label">{{ opt.label }}</span></button></sc-for></div></fieldset>
+              </section>
+
+              <section class="tf-catalog-section">
+                <div class="tf-catalog-section-head"><div><h3>{{ serviceWorkflowTitle }}</h3><p>{{ serviceWorkflowHint }}</p></div></div>
+                <div class="tf-field-grid">
+                  <label class="tf-field"><span>{{ servicePolicyLabels.orderType }}</span><select value="{{ catalogOrderType }}" onChange="{{ onCatalogOrderType }}"><sc-for list="{{ serviceOrderTypeOptions }}" as="opt"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></select></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.qualification }}</span><select value="{{ catalogQualificationPolicy }}" disabled><sc-for list="{{ serviceQualificationOptions }}" as="opt"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></select><small class="tf-help">{{ serviceQualificationHelp }}</small></label>
+                </div>
+                <div class="tf-workflow-summary" style="margin-top:14px">{{ createWorkflowSummary }}</div>
+                <sc-if value="{{ isLiveServiceCreate }}" hint-placeholder-val="{{ false }}">
+                  <fieldset id="catalog-durations" tabindex="-1" style="border:0;padding:0;margin:16px 0 0"><legend style="font-size:12.5px;font-weight:650;margin-bottom:8px">{{ servicePolicyLabels.durations }}</legend><div class="tf-icon-picker"><sc-for list="{{ serviceDurationOptions }}" as="opt"><button type="button" class="tf-icon-option" aria-pressed="{{ opt.selected }}" onClick="{{ opt.onSelect }}"><span class="tf-icon-label">{{ opt.label }}</span></button></sc-for></div></fieldset>
+                </sc-if>
+              </section>
+
+              <section class="tf-catalog-section">
+                <div class="tf-catalog-section-head"><div><h3>{{ servicePolicyLabels.commercial }}</h3><p>{{ servicePriceHelp }}</p></div></div>
+                <div class="tf-policy-grid">
+                  <label class="tf-field"><span>{{ servicePolicyLabels.minPrice }}</span><div class="tf-input-unit"><input id="catalog-minimum-price" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ catalogMinimumPrice }}" onChange="{{ onCatalogMinimumPrice }}" aria-describedby="catalog-price-help catalog-policy-readiness" /><span>SAR</span></div><small class="tf-formatted">{{ formattedCatalogMinimumPrice }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.defaultPrice }}</span><div class="tf-input-unit"><input type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ catalogDefaultPrice }}" onChange="{{ onCatalogDefaultPrice }}" /><span>SAR</span></div><small class="tf-formatted">{{ formattedCatalogDefaultPrice }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.recommendedPrice }}</span><div class="tf-input-unit"><input type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ catalogRecommendedPrice }}" onChange="{{ onCatalogRecommendedPrice }}" /><span>SAR</span></div><small class="tf-formatted">{{ formattedCatalogRecommendedPrice }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.maxPrice }}</span><div class="tf-input-unit"><input type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ catalogMaximumPrice }}" onChange="{{ onCatalogMaximumPrice }}" /><span>SAR</span></div><small class="tf-formatted">{{ formattedCatalogMaximumPrice }}</small></label>
+                </div>
+                <small id="catalog-price-help" class="tf-help">{{ servicePriceBoundaryHelp }}</small>
+                <sc-if value="{{ isAsyncServiceCreate }}" hint-placeholder-val="{{ true }}">
+                  <div class="tf-catalog-section-head" style="margin-top:20px"><div><h3>{{ servicePolicyLabels.delivery }}</h3><p>{{ serviceDeliveryHelp }}</p></div></div>
+                  <div class="tf-policy-grid">
+                    <label class="tf-field"><span>{{ servicePolicyLabels.minDelivery }}</span><div class="tf-input-unit"><input id="catalog-minimum-delivery" type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ catalogMinimumDeliveryHours }}" onChange="{{ onCatalogMinimumDeliveryHours }}" aria-describedby="catalog-policy-readiness" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ catalogMinimumDeliveryEquivalent }}</small></label>
+                    <label class="tf-field"><span>{{ servicePolicyLabels.defaultDelivery }}</span><div class="tf-input-unit"><input type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ catalogDefaultDeliveryHours }}" onChange="{{ onCatalogDefaultDeliveryHours }}" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ catalogDefaultDeliveryEquivalent }}</small></label>
+                    <label class="tf-field"><span>{{ servicePolicyLabels.recommendedDelivery }}</span><div class="tf-input-unit"><input type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ catalogRecommendedDeliveryHours }}" onChange="{{ onCatalogRecommendedDeliveryHours }}" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ catalogRecommendedDeliveryEquivalent }}</small></label>
+                    <label class="tf-field"><span>{{ servicePolicyLabels.maxDelivery }}</span><div class="tf-input-unit"><input type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ catalogMaximumDeliveryHours }}" onChange="{{ onCatalogMaximumDeliveryHours }}" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ catalogMaximumDeliveryEquivalent }}</small></label>
+                  </div>
+                  <div class="tf-catalog-section-head" style="margin-top:20px"><div><h3>{{ servicePolicyLabels.revisions }}</h3><p>{{ serviceRevisionHelp }}</p></div></div>
+                  <div class="tf-field-grid">
+                    <label class="tf-field"><span>{{ servicePolicyLabels.defaultRevisions }}</span><input id="catalog-default-revisions" type="number" min="0" max="20" inputmode="numeric" sc-camel-value="{{ catalogDefaultRevisions }}" onChange="{{ onCatalogDefaultRevisions }}" aria-describedby="catalog-policy-readiness" /></label>
+                    <label class="tf-field"><span>{{ servicePolicyLabels.maxRevisions }}</span><input type="number" min="0" max="20" inputmode="numeric" sc-camel-value="{{ catalogMaximumRevisions }}" onChange="{{ onCatalogMaximumRevisions }}" /></label>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ isLiveServiceCreate }}" hint-placeholder-val="{{ false }}"><p class="tf-help" style="margin-top:16px">{{ serviceLiveRevisionHelp }}</p></sc-if>
+              </section>
+
+              <section class="tf-catalog-section">
+                <div class="tf-catalog-section-head"><div><h3>{{ servicePolicyLabels.visibility }}</h3><p>{{ serviceVisibilityHelp }}</p></div></div>
+                <div class="tf-switches">
+                  <label class="tf-switch-row"><span class="tf-switch-copy"><strong>{{ servicePolicyLabels.public }}</strong><small>{{ servicePublicHelp }}</small></span><input type="checkbox" checked="{{ catalogIsPublic }}" onChange="{{ onCatalogIsPublic }}" /></label>
+                  <label class="tf-switch-row"><span class="tf-switch-copy"><strong>{{ servicePolicyLabels.selectable }}</strong><small>{{ serviceSelectableHelp }}</small></span><input type="checkbox" checked="{{ catalogTeacherSelectable }}" onChange="{{ onCatalogTeacherSelectable }}" /></label>
+                  <label class="tf-switch-row"><span class="tf-switch-copy"><strong>{{ serviceActiveLabel }}</strong><small>{{ serviceActiveHelp }}</small></span><input type="checkbox" checked="{{ catalogIsActive }}" onChange="{{ onCatalogIsActive }}" /></label>
+                </div>
+                <div id="catalog-policy-readiness" class="tf-readiness" data-ready="{{ createPolicyReady }}" role="status" aria-live="polite"><strong>{{ createReadinessLabel }}</strong><sc-if value="{{ createPolicyIssues.length }}" hint-placeholder-val="{{ true }}"><ul><sc-for list="{{ createPolicyIssues }}" as="issue"><li>{{ issue.label }}</li></sc-for></ul></sc-if></div>
+              </section>
+            </div>
+
+            <aside class="tf-policy-preview" aria-label="{{ servicePreviewTitle }}">
+              <h3>{{ servicePreviewTitle }}</h3><div class="tf-preview-name">{{ catalogName }}</div><div class="tf-preview-code">{{ catalogCode }}</div>
+              <div class="tf-preview-list">
+                <div class="tf-preview-row"><span>{{ servicePolicyLabels.category }}</span><strong>{{ createCategoryLabel }}</strong></div>
+                <div class="tf-preview-row"><span>{{ servicePolicyLabels.icon }}</span><strong>{{ createIconLabel }}</strong></div>
+                <div class="tf-preview-row"><span>{{ servicePolicyLabels.orderType }}</span><strong>{{ createWorkflowLabel }}</strong></div>
+                <div class="tf-preview-row"><span>{{ servicePolicyLabels.qualification }}</span><strong>{{ createQualificationLabel }}</strong></div>
+                <div class="tf-preview-row"><span>{{ servicePriceRangeLabel }}</span><strong>{{ createPriceRange }}</strong></div>
+                <div class="tf-preview-row"><span>{{ serviceDefaultPriceLabel }}</span><strong>{{ createDefaultPrice }}</strong></div>
+                <div class="tf-preview-row"><span>{{ serviceDeliveryOrDurationLabel }}</span><strong>{{ createDeliverySummary }}</strong></div>
+                <div class="tf-preview-row"><span>{{ servicePolicyLabels.revisions }}</span><strong>{{ createRevisionSummary }}</strong></div>
+                <div class="tf-preview-row"><span>{{ servicePolicyLabels.visibility }}</span><strong>{{ createVisibilitySummary }}</strong></div>
+              </div>
+            </aside>
+          </div>
         </sc-if>
         <sc-if value="{{ isCouponModal }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex;flex-direction:column;gap:6px">
@@ -675,10 +768,11 @@
           </label>
         </sc-if>
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeCatalogModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
-        <button type="button" onClick="{{ confirmAddCatalog }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ catalogModalTitle }}</button>
       </div>
+      <footer class="tf-catalog-footer">
+        <button type="button" class="tf-catalog-cancel" onClick="{{ closeCatalogModal }}">{{ cancelLabel }}</button>
+        <button type="button" class="tf-catalog-save" onClick="{{ confirmAddCatalog }}" disabled="{{ catalogBusy }}">{{ catalogSaveLabel }}</button>
+      </footer>
     </div>
   </div>
 </sc-if>
@@ -704,9 +798,11 @@
 </sc-if>
 
 <sc-if value="{{ editModal }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeEditModal }}">
-    <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="Rename catalog item" onClick="{{ stop }}" style="width:min(420px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px">Edit</h2>
+  <div class="tf-catalog-overlay" onClick="{{ closeEditModal }}">
+    <div role="dialog" class="tf-catalog-dialog tf-modal-enter" data-catalog-dialog aria-modal="true" aria-labelledby="edit-catalog-dialog-title" aria-describedby="edit-catalog-dialog-description" onClick="{{ stop }}" onChange="{{ onEditFormChange }}">
+      <header class="tf-catalog-header"><h2 id="edit-catalog-dialog-title">{{ editModalTitle }}</h2><p id="edit-catalog-dialog-description">{{ editModalDescription }}</p></header>
+      <div class="tf-catalog-body">
+      <sc-if value="{{ editNotServiceFields }}" hint-placeholder-val="{{ false }}">
       <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
         <span style="font-size:13px;font-weight:600" data-i18n="admin_name_english">Name (English)</span>
         <input value="{{ editName }}" onChange="{{ onEditName }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
@@ -717,30 +813,69 @@
           <input dir="rtl" value="{{ editNameAr }}" onChange="{{ onEditNameAr }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
         </label>
       </sc-if>
-      <sc-if value="{{ editShowServiceFields }}" hint-placeholder-val="{{ false }}">
-        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-          <span style="font-size:13px;font-weight:600">{{ serviceDescEnLabel }}</span>
-          <textarea value="{{ editDetail }}" onChange="{{ onEditDetail }}" rows="3" maxlength="1000"
-            style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-          <span style="font-size:13px;font-weight:600">{{ serviceDescArLabel }}</span>
-          <textarea dir="rtl" value="{{ editDetailAr }}" onChange="{{ onEditDetailAr }}" rows="3" maxlength="1000"
-            style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-          <span style="font-size:13px;font-weight:600">{{ serviceDisplayOrderLabel }}</span>
-          <input type="number" min="0" max="10000" sc-camel-value="{{ editDisplayOrder }}" onChange="{{ onEditDisplayOrder }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;max-width:160px" />
-        </label>
-        <label style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--text-2);margin-bottom:20px">
-          <span>{{ serviceActiveLabel }}</span>
-          <input type="checkbox" checked="{{ editIsActive }}" onChange="{{ onEditIsActive }}" style="width:36px;height:21px;accent-color:var(--primary)" />
-        </label>
       </sc-if>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeEditModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Cancel</button>
-        <button type="button" onClick="{{ confirmEditCatalog }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">Save</button>
+      <sc-if value="{{ editShowServiceFields }}" hint-placeholder-val="{{ false }}">
+        <div class="tf-catalog-layout">
+          <div class="tf-catalog-form">
+            <section class="tf-catalog-section">
+              <div class="tf-catalog-section-head"><div><h3>{{ servicePolicyLabels.identity }}</h3><p>{{ serviceIdentityHint }}</p></div></div>
+              <div class="tf-field-grid">
+                <label class="tf-field"><span>{{ nameEnglishLabel }}</span><input id="edit-name-en" dir="ltr" maxlength="200" value="{{ editName }}" onChange="{{ onEditName }}" aria-describedby="edit-policy-readiness" /></label>
+                <label class="tf-field"><span>{{ nameArabicLabel }}</span><input id="edit-name-ar" dir="rtl" maxlength="200" value="{{ editNameAr }}" onChange="{{ onEditNameAr }}" aria-describedby="edit-policy-readiness" /></label>
+                <label class="tf-field"><span>{{ serviceDescEnLabel }}</span><textarea id="edit-description-en" dir="ltr" maxlength="1000" value="{{ editDetail }}" onChange="{{ onEditDetail }}" aria-describedby="edit-policy-readiness"></textarea></label>
+                <label class="tf-field"><span>{{ serviceDescArLabel }}</span><textarea id="edit-description-ar" dir="rtl" maxlength="1000" value="{{ editDetailAr }}" onChange="{{ onEditDetailAr }}" aria-describedby="edit-policy-readiness"></textarea></label>
+              </div>
+              <div class="tf-field-grid" data-cols="3" style="margin-top:14px">
+                <label class="tf-field"><span>{{ servicePolicyLabels.code }}</span><input id="edit-code" dir="ltr" value="{{ editCode }}" disabled /><small class="tf-help">{{ serviceCodeLockedHelp }}</small></label>
+                <label class="tf-field"><span>{{ servicePolicyLabels.category }}</span><select id="edit-category" value="{{ editCategoryCode }}" onChange="{{ onEditCategoryCode }}"><sc-for list="{{ serviceCategoryOptions }}" as="opt"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></select></label>
+                <label class="tf-field"><span>{{ serviceDisplayOrderLabel }}</span><input type="number" min="0" max="10000" inputmode="numeric" sc-camel-value="{{ editDisplayOrder }}" onChange="{{ onEditDisplayOrder }}" /></label>
+              </div>
+              <fieldset id="edit-icons" style="border:0;padding:0;margin:16px 0 0"><legend style="font-size:12.5px;font-weight:650;margin-bottom:8px">{{ servicePolicyLabels.icon }}</legend><div class="tf-icon-picker"><sc-for list="{{ serviceIconOptions }}" as="opt"><button type="button" class="tf-icon-option" aria-pressed="{{ opt.editSelected }}" onClick="{{ opt.onEditSelect }}"><span class="tf-icon-glyph" aria-hidden="true">{{ opt.glyph }}</span><span class="tf-icon-label">{{ opt.label }}</span></button></sc-for></div></fieldset>
+            </section>
+
+            <section class="tf-catalog-section">
+              <div class="tf-catalog-section-head"><div><h3>{{ serviceWorkflowTitle }}</h3><p>{{ serviceWorkflowHint }}</p></div></div>
+              <sc-if value="{{ editImmutablePolicy }}" hint-placeholder-val="{{ false }}"><p role="note" class="tf-workflow-summary" style="margin-bottom:14px">{{ servicePolicyLabels.locked }}</p></sc-if>
+              <div class="tf-field-grid">
+                <label class="tf-field"><span>{{ servicePolicyLabels.orderType }}</span><select value="{{ editOrderType }}" onChange="{{ onEditOrderType }}" disabled="{{ editImmutablePolicy }}"><sc-for list="{{ serviceOrderTypeOptions }}" as="opt"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></select></label>
+                <label class="tf-field"><span>{{ servicePolicyLabels.qualification }}</span><select value="{{ editQualificationPolicy }}" disabled><sc-for list="{{ serviceQualificationOptions }}" as="opt"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></select></label>
+              </div>
+              <div class="tf-workflow-summary" style="margin-top:14px">{{ editWorkflowSummary }}</div>
+              <sc-if value="{{ isLiveServiceEdit }}" hint-placeholder-val="{{ false }}"><fieldset id="edit-durations" tabindex="-1" style="border:0;padding:0;margin:16px 0 0"><legend style="font-size:12.5px;font-weight:650;margin-bottom:8px">{{ servicePolicyLabels.durations }}</legend><div class="tf-icon-picker"><sc-for list="{{ serviceDurationOptions }}" as="opt"><button type="button" class="tf-icon-option" aria-pressed="{{ opt.editSelected }}" onClick="{{ opt.onEditSelect }}"><span class="tf-icon-label">{{ opt.label }}</span></button></sc-for></div></fieldset></sc-if>
+            </section>
+
+            <section class="tf-catalog-section">
+              <div class="tf-catalog-section-head"><div><h3>{{ servicePolicyLabels.commercial }}</h3><p>{{ servicePriceHelp }}</p></div></div>
+              <div class="tf-policy-grid">
+                <label class="tf-field"><span>{{ servicePolicyLabels.minPrice }}</span><div class="tf-input-unit"><input id="edit-minimum-price" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ editMinimumPrice }}" onChange="{{ onEditMinimumPrice }}" aria-describedby="edit-policy-readiness" /><span>SAR</span></div><small class="tf-formatted">{{ formattedEditMinimumPrice }}</small></label>
+                <label class="tf-field"><span>{{ servicePolicyLabels.defaultPrice }}</span><div class="tf-input-unit"><input type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ editDefaultPrice }}" onChange="{{ onEditDefaultPrice }}" /><span>SAR</span></div><small class="tf-formatted">{{ formattedEditDefaultPrice }}</small></label>
+                <label class="tf-field"><span>{{ servicePolicyLabels.recommendedPrice }}</span><div class="tf-input-unit"><input type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ editRecommendedPrice }}" onChange="{{ onEditRecommendedPrice }}" /><span>SAR</span></div><small class="tf-formatted">{{ formattedEditRecommendedPrice }}</small></label>
+                <label class="tf-field"><span>{{ servicePolicyLabels.maxPrice }}</span><div class="tf-input-unit"><input type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" sc-camel-value="{{ editMaximumPrice }}" onChange="{{ onEditMaximumPrice }}" /><span>SAR</span></div><small class="tf-formatted">{{ formattedEditMaximumPrice }}</small></label>
+              </div>
+              <sc-if value="{{ isAsyncServiceEdit }}" hint-placeholder-val="{{ true }}">
+                <div class="tf-catalog-section-head" style="margin-top:20px"><div><h3>{{ servicePolicyLabels.delivery }}</h3><p>{{ serviceDeliveryHelp }}</p></div></div>
+                <div class="tf-policy-grid">
+                  <label class="tf-field"><span>{{ servicePolicyLabels.minDelivery }}</span><div class="tf-input-unit"><input id="edit-minimum-delivery" type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ editMinimumDeliveryHours }}" onChange="{{ onEditMinimumDeliveryHours }}" aria-describedby="edit-policy-readiness" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ editMinimumDeliveryEquivalent }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.defaultDelivery }}</span><div class="tf-input-unit"><input type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ editDefaultDeliveryHours }}" onChange="{{ onEditDefaultDeliveryHours }}" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ editDefaultDeliveryEquivalent }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.recommendedDelivery }}</span><div class="tf-input-unit"><input type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ editRecommendedDeliveryHours }}" onChange="{{ onEditRecommendedDeliveryHours }}" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ editRecommendedDeliveryEquivalent }}</small></label>
+                  <label class="tf-field"><span>{{ servicePolicyLabels.maxDelivery }}</span><div class="tf-input-unit"><input type="number" min="1" max="8760" inputmode="numeric" sc-camel-value="{{ editMaximumDeliveryHours }}" onChange="{{ onEditMaximumDeliveryHours }}" /><span>{{ hoursUnit }}</span></div><small class="tf-formatted">{{ editMaximumDeliveryEquivalent }}</small></label>
+                </div>
+                <div class="tf-catalog-section-head" style="margin-top:20px"><div><h3>{{ servicePolicyLabels.revisions }}</h3><p>{{ serviceRevisionHelp }}</p></div></div>
+                <div class="tf-field-grid"><label class="tf-field"><span>{{ servicePolicyLabels.defaultRevisions }}</span><input id="edit-default-revisions" type="number" min="0" max="20" inputmode="numeric" sc-camel-value="{{ editDefaultRevisions }}" onChange="{{ onEditDefaultRevisions }}" aria-describedby="edit-policy-readiness" /></label><label class="tf-field"><span>{{ servicePolicyLabels.maxRevisions }}</span><input type="number" min="0" max="20" inputmode="numeric" sc-camel-value="{{ editMaximumRevisions }}" onChange="{{ onEditMaximumRevisions }}" /></label></div>
+              </sc-if>
+            </section>
+
+            <section class="tf-catalog-section">
+              <div class="tf-catalog-section-head"><div><h3>{{ servicePolicyLabels.visibility }}</h3><p>{{ serviceVisibilityHelp }}</p></div></div>
+              <div class="tf-switches"><label class="tf-switch-row"><span class="tf-switch-copy"><strong>{{ servicePolicyLabels.public }}</strong><small>{{ servicePublicHelp }}</small></span><input type="checkbox" checked="{{ editIsPublic }}" onChange="{{ onEditIsPublic }}" /></label><label class="tf-switch-row"><span class="tf-switch-copy"><strong>{{ servicePolicyLabels.selectable }}</strong><small>{{ serviceSelectableHelp }}</small></span><input type="checkbox" checked="{{ editTeacherSelectable }}" onChange="{{ onEditTeacherSelectable }}" /></label><label class="tf-switch-row"><span class="tf-switch-copy"><strong>{{ serviceActiveLabel }}</strong><small>{{ serviceActiveHelp }}</small></span><input type="checkbox" checked="{{ editIsActive }}" onChange="{{ onEditIsActive }}" /></label></div>
+              <div id="edit-policy-readiness" class="tf-readiness" data-ready="{{ editPolicyReady }}" role="status" aria-live="polite"><strong>{{ editReadinessLabel }}</strong><sc-if value="{{ editPolicyIssues.length }}" hint-placeholder-val="{{ false }}"><ul><sc-for list="{{ editPolicyIssues }}" as="issue"><li>{{ issue.label }}</li></sc-for></ul></sc-if></div>
+            </section>
+          </div>
+          <aside class="tf-policy-preview" aria-label="{{ servicePreviewTitle }}"><h3>{{ servicePreviewTitle }}</h3><div class="tf-preview-name">{{ editName }}</div><div class="tf-preview-code">{{ editCode }}</div><div class="tf-preview-list"><div class="tf-preview-row"><span>{{ servicePolicyLabels.category }}</span><strong>{{ editCategoryLabel }}</strong></div><div class="tf-preview-row"><span>{{ servicePolicyLabels.icon }}</span><strong>{{ editIconLabel }}</strong></div><div class="tf-preview-row"><span>{{ servicePolicyLabels.orderType }}</span><strong>{{ editWorkflowLabel }}</strong></div><div class="tf-preview-row"><span>{{ servicePolicyLabels.qualification }}</span><strong>{{ editQualificationLabel }}</strong></div><div class="tf-preview-row"><span>{{ servicePriceRangeLabel }}</span><strong>{{ editPriceRange }}</strong></div><div class="tf-preview-row"><span>{{ serviceDefaultPriceLabel }}</span><strong>{{ editDefaultPriceFormatted }}</strong></div><div class="tf-preview-row"><span>{{ serviceDeliveryOrDurationLabel }}</span><strong>{{ editDeliverySummary }}</strong></div><div class="tf-preview-row"><span>{{ servicePolicyLabels.revisions }}</span><strong>{{ editRevisionSummary }}</strong></div><div class="tf-preview-row"><span>{{ servicePolicyLabels.visibility }}</span><strong>{{ editVisibilitySummary }}</strong></div></div></aside>
+        </div>
+      </sc-if>
       </div>
+      <footer class="tf-catalog-footer"><button type="button" class="tf-catalog-cancel" onClick="{{ closeEditModal }}">{{ cancelLabel }}</button><button type="button" class="tf-catalog-save" onClick="{{ confirmEditCatalog }}" disabled="{{ editBusy }}">{{ editSaveLabel }}</button></footer>
     </div>
   </div>
 </sc-if>
@@ -781,6 +916,51 @@ const TONE_STYLE = {
   warning:['var(--warning-soft)','var(--warning)'], accent:['var(--accent-soft)','var(--accent)']
 };
 
+const SERVICE_CATEGORY_CODES = ['recorded_explanation','academic_support','live_learning','revision_exam_preparation','study_materials','project_guidance'];
+const SERVICE_ICON_CODES = ['video','academic_support','live','exam','notes','project'];
+const SERVICE_DURATION_OPTIONS = [30, 60, 90, 120];
+const serviceDurationValues = value => [...new Set(String(value || '').split(',').map(Number).filter(x => SERVICE_DURATION_OPTIONS.includes(x)))];
+
+function servicePolicyIssues(s, edit = false) {
+  const p = edit ? 'edit' : 'catalog';
+  const value = key => s[p + key];
+  const issues = [];
+  const add = (id, key) => issues.push({ id, label: Tafseel.t(key) });
+  const number = key => Number(value(key));
+  const ordered = values => values.every(Number.isFinite) && values.every((x, i) => i === 0 || values[i - 1] <= x);
+  if (!String(value('Name') || '').trim()) add(p + '-name-en', 'admin_service_missing_name_en');
+  if (!String(value('NameAr') || '').trim()) add(p + '-name-ar', 'admin_service_missing_name_ar');
+  if (!String(value('Detail') || '').trim()) add(p + '-description-en', 'admin_service_missing_description_en');
+  if (!String(value('DetailAr') || '').trim()) add(p + '-description-ar', 'admin_service_missing_description_ar');
+  if (!edit && !/^[a-z][a-z0-9_]*$/.test(String(value('Code') || ''))) add(p + '-code', 'admin_service_invalid_code');
+  if (!SERVICE_CATEGORY_CODES.includes(value('CategoryCode'))) add(p + '-category', 'admin_service_invalid_category');
+  if (!SERVICE_ICON_CODES.includes(value('IconCode'))) add(p + '-icons', 'admin_service_invalid_icon');
+  const prices = ['MinimumPrice','DefaultPrice','RecommendedPrice','MaximumPrice'].map(number);
+  if (!ordered(prices) || prices[0] < 0.01 || prices[3] > 1000000) add(p + '-minimum-price', 'admin_service_invalid_price_range');
+  if (value('OrderType') === 'async_request') {
+    const delivery = ['MinimumDeliveryHours','DefaultDeliveryHours','RecommendedDeliveryHours','MaximumDeliveryHours'].map(number);
+    if (!ordered(delivery) || delivery[0] < 1 || delivery[3] > 8760) add(p + '-minimum-delivery', 'admin_service_invalid_delivery_range');
+    const revisions = [number('DefaultRevisions'), number('MaximumRevisions')];
+    if (!ordered(revisions) || revisions[0] < 0 || revisions[1] > 20) add(p + '-default-revisions', 'admin_service_invalid_revision_range');
+  } else {
+    const durations = serviceDurationValues(value('AllowedDurations'));
+    if (!durations.length) add(p + '-durations', 'admin_service_duration_required');
+  }
+  return issues;
+}
+
+function serviceMoney(value, lang) {
+  const number = Number(value);
+  return Number.isFinite(number) ? new Intl.NumberFormat(lang === 'ar' ? 'ar-SA' : 'en-US', { maximumFractionDigits: 2 }).format(number) + ' SAR' : '—';
+}
+
+function deliveryEquivalent(value, lang) {
+  const hours = Number(value);
+  if (!Number.isFinite(hours) || hours < 1) return '—';
+  if (hours < 24 || hours % 24) return Tafseel.t('admin_service_hours_value', { count: hours });
+  return Tafseel.t('admin_service_days_value', { count: hours / 24 });
+}
+
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false, navKey: 'overview', page: 'overview', pageRole: 'all', catalogKind: 'subjects', listKind: 'requests',
@@ -792,9 +972,21 @@ class Component extends DCLogic {
     catalogModal: false, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard', catalogDetail: '',
     catalogDetailAr: '',
     catalogSubjectFilter: '',
-    catalogCode: '', catalogRequiresScheduling: false, catalogDisplayOrder: 0, catalogIsActive: true, catalogDiscountType: '0', catalogDiscountValue: 10,
+    catalogCode: '', catalogCategoryCode: 'academic_support', catalogIconCode: 'academic_support', catalogOrderType: 'async_request',
+    catalogQualificationPolicy: 'subject_qualification_required', catalogCurrencyCode: 'SAR',
+    catalogMinimumPrice: 0.01, catalogDefaultPrice: 120, catalogRecommendedPrice: 120, catalogMaximumPrice: 1000000,
+    catalogMinimumDeliveryHours: 1, catalogDefaultDeliveryHours: 48, catalogRecommendedDeliveryHours: 48, catalogMaximumDeliveryHours: 8760,
+    catalogDefaultRevisions: 2, catalogMaximumRevisions: 20, catalogAllowedDurations: '30,60',
+    catalogIsPublic: true, catalogTeacherSelectable: true, catalogDisplayOrder: 0, catalogIsActive: true, catalogBusy: false, catalogDirty: false,
+    catalogDiscountType: '0', catalogDiscountValue: 10,
     resourceModal: null, resourceName: '', resourceUrl: '',
-    editModal: null, editName: '', editNameAr: '', editDetail: '', editDetailAr: '', editDisplayOrder: 0, editIsActive: true, usersTotal: 0, liveWithdrawals: [], withdrawalBusyId: '',
+    editModal: null, editName: '', editNameAr: '', editDetail: '', editDetailAr: '', editDisplayOrder: 0, editIsActive: true,
+    editCode: '', editCategoryCode: 'academic_support', editIconCode: 'academic_support', editOrderType: 'async_request',
+    editQualificationPolicy: 'subject_qualification_required', editCurrencyCode: 'SAR', editMinimumPrice: 0.01, editDefaultPrice: 120,
+    editRecommendedPrice: 120, editMaximumPrice: 1000000, editMinimumDeliveryHours: 1, editDefaultDeliveryHours: 48,
+    editRecommendedDeliveryHours: 48, editMaximumDeliveryHours: 8760, editDefaultRevisions: 2, editMaximumRevisions: 20,
+    editAllowedDurations: '30,60', editIsPublic: true, editTeacherSelectable: true, editImmutablePolicy: false, editBusy: false, editDirty: false,
+    usersTotal: 0, liveWithdrawals: [], withdrawalBusyId: '',
     livePopularSubjects: null,
     usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
@@ -802,6 +994,23 @@ class Component extends DCLogic {
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     this._onKeydown = e => {
+      if (this.state.catalogModal || this.state.editModal) {
+        const dialog = document.querySelector('[data-catalog-dialog]');
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.closeCatalogEditor(this.state.editModal ? 'edit' : 'catalog');
+          return;
+        }
+        if (e.key === 'Tab' && dialog) {
+          const focusable = [...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(x => x.offsetParent !== null);
+          if (focusable.length) {
+            const first = focusable[0], last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        }
+        return;
+      }
       if (e.key === 'Escape' && this.state.drawer) this.closeDrawer();
     };
     document.addEventListener('keydown', this._onKeydown);
@@ -892,7 +1101,15 @@ class Component extends DCLogic {
         code: x.code,
         detail: x.descriptionEn || x.detail || '',
         detailAr: x.descriptionAr || '',
-        displayOrder: x.displayOrder ?? 0
+        displayOrder: x.displayOrder ?? 0,
+        categoryCode: x.categoryCode, iconCode: x.iconCode, orderType: x.orderType,
+        qualificationPolicy: x.qualificationPolicy, currencyCode: x.currencyCode,
+        minimumPrice: x.minPrice, defaultPrice: x.defaultPrice, recommendedPrice: x.recommendedPrice, maximumPrice: x.maxPrice,
+        minimumDeliveryHours: x.minimumDeliveryHours, defaultDeliveryHours: x.defaultDeliveryHours,
+        recommendedDeliveryHours: x.recommendedDeliveryHours, maximumDeliveryHours: x.maximumDeliveryHours,
+        defaultRevisions: x.defaultRevisions, maximumRevisions: x.maximumRevisions,
+        allowedDurations: x.allowedDurations || [], isPublic: x.isPublic, teacherSelectable: x.teacherSelectable,
+        hasReferences: !!x.hasReferences, enabledTeacherCount: x.enabledTeacherCount || 0
       }));
       const catalogErrors = {};
       if (failed(2)) catalogErrors.subjects = Tafseel.api.errorMessage(failed(2));
@@ -957,7 +1174,30 @@ class Component extends DCLogic {
     clearTimeout(this._contentTimer);
     document.body.style.overflow = '';
   }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
+  componentDidUpdate(_prevProps, prevState) {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    const wasOpen = !!(prevState && (prevState.catalogModal || prevState.editModal));
+    const isOpen = !!(this.state.catalogModal || this.state.editModal);
+    if (!wasOpen && isOpen) {
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.querySelector('[data-catalog-dialog] input:not([disabled]),[data-catalog-dialog] button:not([disabled])')?.focus(), 0);
+    } else if (wasOpen && !isOpen) {
+      document.body.style.overflow = '';
+      setTimeout(() => this._catalogOpener?.focus(), 0);
+    }
+  }
+
+  closeCatalogEditor(kind) {
+    const dirty = kind === 'edit' ? this.state.editDirty : this.state.catalogDirty;
+    if (dirty && !window.confirm(Tafseel.t('admin_service_discard_changes'))) return;
+    this.setState(kind === 'edit' ? { editModal: null, editDirty: false } : { catalogModal: false, catalogDirty: false });
+  }
+
+  focusPolicyIssue(issues) {
+    const target = issues.length ? document.getElementById(issues[0].id) : null;
+    if (target) { target.focus(); target.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+  }
 
   openDrawer() {
     if (!this.state.compactNav) return;
@@ -1088,6 +1328,12 @@ class Component extends DCLogic {
     const activePaging = s.page === 'users' ? pageRolePaging : overviewPaging;
 
     const statusTone = { Active: ['var(--success-soft)', 'var(--success)'], Suspended: ['var(--error-soft)', 'var(--error)'], Pending: ['var(--warning-soft)', 'var(--warning)'] };
+    const createPolicyIssues = s.catalogKind === 'services' ? servicePolicyIssues(s) : [];
+    const editPolicyIssues = s.editModal?.kind === 'services' ? servicePolicyIssues(s, true) : [];
+    const categoryLabel = code => Tafseel.t('admin_service_category_' + code);
+    const iconLabel = code => Tafseel.t('admin_service_icon_' + code);
+    const workflowLabel = code => Tafseel.t('admin_service_workflow_' + code);
+    const qualificationLabel = code => Tafseel.t('admin_service_qualification_' + code);
 
     return {
       langLabel: Tafseel.t('language_target'),
@@ -1264,10 +1510,15 @@ class Component extends DCLogic {
       catalogAddDisabled: false,
       catalogNote: s.catalogKind === 'services' ? Tafseel.t('admin_services_note') : (s.catalogKind === 'coupons' ? Tafseel.t('admin_coupons_note') : ''),
       onAddCatalog: () => {
+        this._catalogOpener = document.activeElement;
         this.setState({
           catalogModal: true, catalogName: '', catalogNameAr: '', catalogIcon: '', catalogSubjectId: '', catalogDifficulty: 'Standard',
-          catalogDetail: '', catalogDetailAr: '', catalogCode: '', catalogRequiresScheduling: false,
-          catalogDisplayOrder: 0, catalogIsActive: true,
+          catalogDetail: '', catalogDetailAr: '', catalogCode: '', catalogCategoryCode: 'academic_support', catalogIconCode: 'academic_support',
+          catalogOrderType: 'async_request', catalogQualificationPolicy: 'subject_qualification_required', catalogCurrencyCode: 'SAR',
+          catalogMinimumPrice: 0.01, catalogDefaultPrice: 120, catalogRecommendedPrice: 120, catalogMaximumPrice: 1000000,
+          catalogMinimumDeliveryHours: 1, catalogDefaultDeliveryHours: 48, catalogRecommendedDeliveryHours: 48, catalogMaximumDeliveryHours: 8760,
+          catalogDefaultRevisions: 2, catalogMaximumRevisions: 20, catalogAllowedDurations: '30,60',
+          catalogIsPublic: true, catalogTeacherSelectable: true, catalogDisplayOrder: 0, catalogIsActive: true, catalogBusy: false, catalogDirty: false,
           catalogDiscountType: '0', catalogDiscountValue: 10
         });
       },
@@ -1309,7 +1560,9 @@ class Component extends DCLogic {
             active, subjectName,
             canManageResources: s.catalogKind === 'assignments',
             onResources: () => this.setState({ resourceModal:c, resourceName:'', resourceUrl:'' }),
-            onEdit: () => this.setState({
+            onEdit: () => {
+              this._catalogOpener = document.activeElement;
+              this.setState({
               editModal: {
                 kind: s.catalogKind,
                 id: c.id,
@@ -1322,8 +1575,18 @@ class Component extends DCLogic {
               editDetail: c.detail || '',
               editDetailAr: c.detailAr || '',
               editDisplayOrder: Number.isFinite(Number(c.displayOrder)) ? Number(c.displayOrder) : 0,
-              editIsActive: !!active
-            }),
+              editIsActive: !!active,
+              editCode: c.code || '', editCategoryCode: c.categoryCode || 'academic_support', editIconCode: c.iconCode || 'academic_support',
+              editOrderType: c.orderType || 'async_request', editQualificationPolicy: c.qualificationPolicy || 'subject_qualification_required',
+              editCurrencyCode: c.currencyCode || 'SAR', editMinimumPrice: c.minimumPrice ?? 0.01, editDefaultPrice: c.defaultPrice ?? 120,
+              editRecommendedPrice: c.recommendedPrice ?? 120, editMaximumPrice: c.maximumPrice ?? 1000000,
+              editMinimumDeliveryHours: c.minimumDeliveryHours ?? 1, editDefaultDeliveryHours: c.defaultDeliveryHours ?? 48,
+              editRecommendedDeliveryHours: c.recommendedDeliveryHours ?? 48, editMaximumDeliveryHours: c.maximumDeliveryHours ?? 8760,
+              editDefaultRevisions: c.defaultRevisions ?? 2, editMaximumRevisions: c.maximumRevisions ?? 20,
+              editAllowedDurations: (c.allowedDurations || []).join(','), editIsPublic: c.isPublic !== false,
+              editTeacherSelectable: c.teacherSelectable !== false, editImmutablePolicy: !!c.hasReferences, editBusy: false, editDirty: false
+              });
+            },
             onToggle: async () => {
               try {
                 if (s.catalogKind === 'coupons') {
@@ -1379,15 +1642,44 @@ class Component extends DCLogic {
       isAssignmentModal: s.catalogKind === 'assignments',
       isSubjectScopedModal: s.catalogKind === 'topics' || s.catalogKind === 'assignments',
       isServiceModal: s.catalogKind === 'services',
+      isNotServiceModal: s.catalogKind !== 'services',
       isCouponModal: s.catalogKind === 'coupons',
       isNameArModal: s.catalogKind === 'subjects' || s.catalogKind === 'services' || s.catalogKind === 'assignments',
       catalogModalTitle: { subjects:'Add subject', topics:'Add topic', assignments:Tafseel.t('admin_add_qualification_assignment'), services:'Add service', coupons:'Add coupon' }[s.catalogKind],
+      catalogModalDescription: Tafseel.t('admin_service_editor_description'),
+      cancelLabel: Tafseel.t('common_cancel'),
+      nameEnglishLabel: Tafseel.t('admin_name_english'),
+      nameArabicLabel: Tafseel.t('admin_name_arabic'),
+      onCatalogFormChange: () => { if (!s.catalogDirty) this.setState({ catalogDirty: true }); },
       catalogName: s.catalogName, onCatalogName: e => this.setState({ catalogName: e.target.value }),
       catalogNameAr: s.catalogNameAr || '', onCatalogNameAr: e => this.setState({ catalogNameAr: e.target.value }),
       catalogIcon: s.catalogIcon, onCatalogIcon: e => this.setState({ catalogIcon: e.target.value }),
       catalogDetail: s.catalogDetail, onCatalogDetail: e => this.setState({ catalogDetail: e.target.value }),
       catalogDetailAr: s.catalogDetailAr || '', onCatalogDetailAr: e => this.setState({ catalogDetailAr: e.target.value }),
       catalogCode: s.catalogCode || '', onCatalogCode: e => this.setState({ catalogCode: e.target.value }),
+      catalogCategoryCode: s.catalogCategoryCode, onCatalogCategoryCode: e => this.setState({ catalogCategoryCode: e.target.value }),
+      catalogIconCode: s.catalogIconCode, onCatalogIconCode: e => this.setState({ catalogIconCode: e.target.value }),
+      catalogOrderType: s.catalogOrderType, onCatalogOrderType: e => {
+        const live = e.target.value === 'live_session';
+        this.setState({ catalogOrderType: e.target.value, catalogDefaultRevisions: live ? 0 : 2, catalogMaximumRevisions: live ? 0 : 20 });
+      },
+      catalogQualificationPolicy: s.catalogQualificationPolicy,
+      catalogCurrencyCode: s.catalogCurrencyCode,
+      catalogMinimumPrice: s.catalogMinimumPrice, onCatalogMinimumPrice: e => this.setState({ catalogMinimumPrice: Number(e.target.value) }),
+      catalogDefaultPrice: s.catalogDefaultPrice, onCatalogDefaultPrice: e => this.setState({ catalogDefaultPrice: Number(e.target.value) }),
+      catalogRecommendedPrice: s.catalogRecommendedPrice, onCatalogRecommendedPrice: e => this.setState({ catalogRecommendedPrice: Number(e.target.value) }),
+      catalogMaximumPrice: s.catalogMaximumPrice, onCatalogMaximumPrice: e => this.setState({ catalogMaximumPrice: Number(e.target.value) }),
+      catalogMinimumDeliveryHours: s.catalogMinimumDeliveryHours, onCatalogMinimumDeliveryHours: e => this.setState({ catalogMinimumDeliveryHours: Number(e.target.value) }),
+      catalogDefaultDeliveryHours: s.catalogDefaultDeliveryHours, onCatalogDefaultDeliveryHours: e => this.setState({ catalogDefaultDeliveryHours: Number(e.target.value) }),
+      catalogRecommendedDeliveryHours: s.catalogRecommendedDeliveryHours, onCatalogRecommendedDeliveryHours: e => this.setState({ catalogRecommendedDeliveryHours: Number(e.target.value) }),
+      catalogMaximumDeliveryHours: s.catalogMaximumDeliveryHours, onCatalogMaximumDeliveryHours: e => this.setState({ catalogMaximumDeliveryHours: Number(e.target.value) }),
+      catalogDefaultRevisions: s.catalogDefaultRevisions, onCatalogDefaultRevisions: e => this.setState({ catalogDefaultRevisions: Number(e.target.value) }),
+      catalogMaximumRevisions: s.catalogMaximumRevisions, onCatalogMaximumRevisions: e => this.setState({ catalogMaximumRevisions: Number(e.target.value) }),
+      catalogAllowedDurations: s.catalogAllowedDurations, onCatalogAllowedDurations: e => this.setState({ catalogAllowedDurations: e.target.value }),
+      catalogIsPublic: s.catalogIsPublic, onCatalogIsPublic: e => this.setState({ catalogIsPublic: e.target.checked }),
+      catalogTeacherSelectable: s.catalogTeacherSelectable, onCatalogTeacherSelectable: e => this.setState({ catalogTeacherSelectable: e.target.checked }),
+      isAsyncServiceCreate: s.catalogKind === 'services' && s.catalogOrderType === 'async_request',
+      isLiveServiceCreate: s.catalogKind === 'services' && s.catalogOrderType === 'live_session',
       catalogDisplayOrder: Number.isFinite(Number(s.catalogDisplayOrder)) ? Number(s.catalogDisplayOrder) : 0,
       onCatalogDisplayOrder: e => {
         const next = Number(e.target.value);
@@ -1395,6 +1687,8 @@ class Component extends DCLogic {
       },
       catalogIsActive: s.catalogIsActive !== false,
       onCatalogIsActive: e => this.setState({ catalogIsActive: e.target.checked }),
+      catalogBusy: !!s.catalogBusy,
+      catalogSaveLabel: s.catalogBusy ? Tafseel.t('admin_service_saving') : Tafseel.t('admin_service_save'),
       catalogDiscountType: String(s.catalogDiscountType ?? '0'),
       onCatalogDiscountType: e => this.setState({ catalogDiscountType: e.target.value }),
       catalogDiscountValue: Number.isFinite(Number(s.catalogDiscountValue)) ? Number(s.catalogDiscountValue) : 10,
@@ -1406,6 +1700,73 @@ class Component extends DCLogic {
       serviceDescArLabel: Tafseel.t('admin_service_description_ar'),
       serviceDisplayOrderLabel: Tafseel.t('admin_service_display_order'),
       serviceActiveLabel: Tafseel.t('admin_service_active'),
+      serviceIdentityHint: Tafseel.t('admin_service_identity_hint'), serviceNameHelp: Tafseel.t('admin_service_name_help'),
+      serviceDescriptionHelp: Tafseel.t('admin_service_description_help'), serviceCodeHelp: Tafseel.t('admin_service_code_help'),
+      serviceCodeLockedHelp: Tafseel.t('admin_service_code_locked_help'),
+      serviceCategoryHelp: Tafseel.t('admin_service_category_help'), serviceDisplayOrderHelp: Tafseel.t('admin_service_display_order_help'),
+      serviceWorkflowTitle: Tafseel.t('admin_service_workflow_title'), serviceWorkflowHint: Tafseel.t('admin_service_workflow_hint'),
+      serviceQualificationHelp: Tafseel.t('admin_service_qualification_help'), servicePriceHelp: Tafseel.t('admin_service_price_help'),
+      servicePriceBoundaryHelp: Tafseel.t('admin_service_price_boundary_help'), serviceDeliveryHelp: Tafseel.t('admin_service_delivery_help'),
+      serviceRevisionHelp: Tafseel.t('admin_service_revision_help'), serviceLiveRevisionHelp: Tafseel.t('admin_service_live_revision_help'),
+      serviceVisibilityHelp: Tafseel.t('admin_service_visibility_help'), servicePublicHelp: Tafseel.t('admin_service_public_help'),
+      serviceSelectableHelp: Tafseel.t('admin_service_selectable_help'), serviceActiveHelp: Tafseel.t('admin_service_active_help'),
+      servicePreviewTitle: Tafseel.t('admin_service_preview_title'), servicePriceRangeLabel: Tafseel.t('admin_service_price_range'),
+      serviceDefaultPriceLabel: Tafseel.t('admin_service_default_price'), serviceDeliveryOrDurationLabel: Tafseel.t('admin_service_delivery_or_duration'),
+      hoursUnit: Tafseel.t('admin_service_hours_unit'),
+      servicePolicyLabels: {
+        identity: Tafseel.t('admin_service_identity'), visibility: Tafseel.t('admin_service_visibility'),
+        commercial: Tafseel.t('admin_service_commercial'), delivery: Tafseel.t('admin_service_delivery'),
+        revisions: Tafseel.t('admin_service_revisions'), live: Tafseel.t('admin_service_live'),
+        code: Tafseel.t('admin_service_code'), category: Tafseel.t('admin_service_category'), icon: Tafseel.t('admin_service_icon'),
+        orderType: Tafseel.t('admin_service_order_type'), qualification: Tafseel.t('admin_service_qualification'), currency: Tafseel.t('admin_service_currency'),
+        minPrice: Tafseel.t('admin_service_min_price'), defaultPrice: Tafseel.t('admin_service_default_price'), recommendedPrice: Tafseel.t('admin_service_recommended_price'), maxPrice: Tafseel.t('admin_service_max_price'),
+        minDelivery: Tafseel.t('admin_service_min_delivery'), defaultDelivery: Tafseel.t('admin_service_default_delivery'), recommendedDelivery: Tafseel.t('admin_service_recommended_delivery'), maxDelivery: Tafseel.t('admin_service_max_delivery'),
+        defaultRevisions: Tafseel.t('admin_service_default_revisions'), maxRevisions: Tafseel.t('admin_service_max_revisions'), durations: Tafseel.t('admin_service_durations'),
+        public: Tafseel.t('admin_service_public'), selectable: Tafseel.t('admin_service_selectable'), locked: Tafseel.t('admin_service_policy_locked')
+      },
+      serviceCategoryOptions: SERVICE_CATEGORY_CODES.map(value => ({ value, label: categoryLabel(value) })),
+      serviceIconOptions: SERVICE_ICON_CODES.map(value => ({
+        value, label: iconLabel(value), glyph: ({ video:'▶', academic_support:'✎', live:'◉', exam:'✓', notes:'▤', project:'◇' })[value],
+        selected: s.catalogIconCode === value,
+        editSelected: s.editIconCode === value,
+        onSelect: () => this.setState({ catalogIconCode: value, catalogDirty: true }),
+        onEditSelect: () => this.setState({ editIconCode: value, editDirty: true })
+      })),
+      serviceOrderTypeOptions: ['async_request','live_session'].map(value => ({ value, label: workflowLabel(value) })),
+      serviceQualificationOptions: ['subject_qualification_required'].map(value => ({ value, label: qualificationLabel(value) })),
+      serviceDurationOptions: SERVICE_DURATION_OPTIONS.map(value => ({
+        value,
+        label: Tafseel.t('admin_service_minutes_value', { count: value }),
+        selected: String(s.catalogAllowedDurations || '').split(',').map(Number).includes(value),
+        editSelected: String(s.editAllowedDurations || '').split(',').map(Number).includes(value),
+        onSelect: () => {
+          const values = new Set(serviceDurationValues(s.catalogAllowedDurations));
+          values.has(value) ? values.delete(value) : values.add(value);
+          this.setState({ catalogAllowedDurations: [...values].sort((a,b) => a-b).join(','), catalogDirty: true });
+        },
+        onEditSelect: () => {
+          const values = new Set(serviceDurationValues(s.editAllowedDurations));
+          values.has(value) ? values.delete(value) : values.add(value);
+          this.setState({ editAllowedDurations: [...values].sort((a,b) => a-b).join(','), editDirty: true });
+        }
+      })),
+      createPolicyIssues,
+      createPolicyReady: createPolicyIssues.length === 0,
+      createReadinessLabel: Tafseel.t(createPolicyIssues.length ? 'admin_service_incomplete_policy' : 'admin_service_ready_activate'),
+      createWorkflowSummary: Tafseel.t(s.catalogOrderType === 'live_session' ? 'admin_service_live_summary' : 'admin_service_async_summary'),
+      createCategoryLabel: categoryLabel(s.catalogCategoryCode), createIconLabel: iconLabel(s.catalogIconCode),
+      createWorkflowLabel: workflowLabel(s.catalogOrderType), createQualificationLabel: qualificationLabel(s.catalogQualificationPolicy),
+      createPriceRange: serviceMoney(s.catalogMinimumPrice, s.lang) + ' – ' + serviceMoney(s.catalogMaximumPrice, s.lang),
+      createDefaultPrice: serviceMoney(s.catalogDefaultPrice, s.lang),
+      createDeliverySummary: s.catalogOrderType === 'live_session'
+        ? serviceDurationValues(s.catalogAllowedDurations).map(x => Tafseel.t('admin_service_minutes_value', { count:x })).join('، ')
+        : deliveryEquivalent(s.catalogDefaultDeliveryHours, s.lang),
+      createRevisionSummary: s.catalogOrderType === 'live_session' ? '0' : String(s.catalogDefaultRevisions) + ' / ' + String(s.catalogMaximumRevisions),
+      createVisibilitySummary: [s.catalogIsPublic ? Tafseel.t('admin_service_public') : Tafseel.t('admin_service_not_public'), s.catalogTeacherSelectable ? Tafseel.t('admin_service_selectable') : Tafseel.t('admin_service_not_selectable')].join(' · '),
+      formattedCatalogMinimumPrice: serviceMoney(s.catalogMinimumPrice, s.lang), formattedCatalogDefaultPrice: serviceMoney(s.catalogDefaultPrice, s.lang),
+      formattedCatalogRecommendedPrice: serviceMoney(s.catalogRecommendedPrice, s.lang), formattedCatalogMaximumPrice: serviceMoney(s.catalogMaximumPrice, s.lang),
+      catalogMinimumDeliveryEquivalent: deliveryEquivalent(s.catalogMinimumDeliveryHours, s.lang), catalogDefaultDeliveryEquivalent: deliveryEquivalent(s.catalogDefaultDeliveryHours, s.lang),
+      catalogRecommendedDeliveryEquivalent: deliveryEquivalent(s.catalogRecommendedDeliveryHours, s.lang), catalogMaximumDeliveryEquivalent: deliveryEquivalent(s.catalogMaximumDeliveryHours, s.lang),
       couponCodeLabel: Tafseel.t('admin_coupon_code'),
       couponTypeLabel: Tafseel.t('admin_coupon_type'),
       couponValueLabel: Tafseel.t('admin_coupon_value'),
@@ -1416,8 +1777,9 @@ class Component extends DCLogic {
       catalogSubjectId: s.catalogSubjectId, onCatalogSubjectId: e => this.setState({ catalogSubjectId: e.target.value }),
       catalogDifficulty: s.catalogDifficulty, onCatalogDifficulty: e => this.setState({ catalogDifficulty: e.target.value }),
       subjectOptions: CATALOG_DATA.subjects.map(sub => ({ id: sub.id, name: sub.name })),
-      closeCatalogModal: () => this.setState({ catalogModal: false }),
+      closeCatalogModal: () => this.closeCatalogEditor('catalog'),
       confirmAddCatalog: async () => {
+        if (s.catalogBusy) return;
         try {
           let created;
           if (s.catalogKind === 'subjects') {
@@ -1457,15 +1819,32 @@ class Component extends DCLogic {
               subjectId: created.parentId || s.catalogSubjectId
             }];
           } else if (s.catalogKind === 'services') {
-            if (!s.catalogName.trim() || !(s.catalogNameAr || '').trim())
-              return this.flash(Tafseel.t('admin_service_names_required'));
-            if (!(s.catalogDetail || '').trim() || !(s.catalogDetailAr || '').trim())
-              return this.flash(Tafseel.t('admin_service_descriptions_required'));
+            const issues = servicePolicyIssues(s);
+            if (issues.length) {
+              this.flash(Tafseel.t('admin_service_fix_policy'));
+              this.focusPolicyIssue(issues);
+              return;
+            }
+            this.setState({ catalogBusy: true });
+            const live = s.catalogOrderType === 'live_session';
             created = await Tafseel.api.post('/admin/services', {
               nameEn: s.catalogName.trim(),
               nameAr: (s.catalogNameAr || '').trim(),
               descriptionEn: (s.catalogDetail || '').trim(),
               descriptionAr: (s.catalogDetailAr || '').trim(),
+              code: (s.catalogCode || '').trim() || null,
+              categoryCode: s.catalogCategoryCode, iconCode: s.catalogIconCode, orderType: s.catalogOrderType,
+              qualificationPolicy: s.catalogQualificationPolicy, currencyCode: s.catalogCurrencyCode,
+              minimumPrice: s.catalogMinimumPrice, defaultPrice: s.catalogDefaultPrice,
+              recommendedPrice: s.catalogRecommendedPrice, maximumPrice: s.catalogMaximumPrice,
+              minimumDeliveryHours: live ? null : s.catalogMinimumDeliveryHours,
+              defaultDeliveryHours: live ? null : s.catalogDefaultDeliveryHours,
+              recommendedDeliveryHours: live ? null : s.catalogRecommendedDeliveryHours,
+              maximumDeliveryHours: live ? null : s.catalogMaximumDeliveryHours,
+              defaultRevisions: live ? 0 : s.catalogDefaultRevisions,
+              maximumRevisions: live ? 0 : s.catalogMaximumRevisions,
+              allowedDurations: live ? serviceDurationValues(s.catalogAllowedDurations) : [],
+              isPublic: !!s.catalogIsPublic, teacherSelectable: !!s.catalogTeacherSelectable,
               displayOrder: Number.isFinite(Number(s.catalogDisplayOrder)) ? Number(s.catalogDisplayOrder) : 0,
               isActive: s.catalogIsActive !== false
             });
@@ -1478,6 +1857,15 @@ class Component extends DCLogic {
               detail: created.descriptionEn || created.detail || '',
               detailAr: created.descriptionAr || '',
               displayOrder: created.displayOrder ?? 0,
+              categoryCode: created.categoryCode, iconCode: created.iconCode, orderType: created.orderType,
+              qualificationPolicy: created.qualificationPolicy, currencyCode: created.currencyCode,
+              minimumPrice: created.minPrice, defaultPrice: created.defaultPrice,
+              recommendedPrice: created.recommendedPrice, maximumPrice: created.maxPrice,
+              minimumDeliveryHours: created.minimumDeliveryHours, defaultDeliveryHours: created.defaultDeliveryHours,
+              recommendedDeliveryHours: created.recommendedDeliveryHours, maximumDeliveryHours: created.maximumDeliveryHours,
+              defaultRevisions: created.defaultRevisions, maximumRevisions: created.maximumRevisions,
+              allowedDurations: created.allowedDurations || [], isPublic: created.isPublic, teacherSelectable: created.teacherSelectable,
+              hasReferences: !!created.hasReferences,
               meta: (created.descriptionEn || created.detail || '').slice(0, 80)
             }];
           } else if (s.catalogKind === 'coupons') {
@@ -1494,14 +1882,19 @@ class Component extends DCLogic {
               meta: created.code + ' · ' + (created.discountType === 1 ? Tafseel.money(created.discountValue, 'SAR') : (created.discountValue + '%'))
             }];
           } else return;
-          this.setState({ catalogModal: false });
+          this.setState({ catalogModal: false, catalogDirty: false });
           this.flash(Tafseel.t('admin_toast_item_added', { name: created.name || Tafseel.t('name_unavailable') }));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { if (s.catalogKind === 'services') this.setState({ catalogBusy: false }); }
       },
 
       editModal: !!s.editModal,
+      editModalTitle: Tafseel.t('admin_service_edit_title'),
+      editModalDescription: Tafseel.t('admin_service_editor_description'),
+      onEditFormChange: () => { if (!s.editDirty) this.setState({ editDirty: true }); },
       editShowNameAr: !!s.editModal && (s.editModal.kind === 'subjects' || s.editModal.kind === 'services' || s.editModal.kind === 'assignments'),
       editShowServiceFields: !!s.editModal && s.editModal.kind === 'services',
+      editNotServiceFields: !!s.editModal && s.editModal.kind !== 'services',
       editName: s.editName, onEditName: e => this.setState({ editName: e.target.value }),
       editNameAr: s.editNameAr || '', onEditNameAr: e => this.setState({ editNameAr: e.target.value }),
       editDetail: s.editDetail || '', onEditDetail: e => this.setState({ editDetail: e.target.value }),
@@ -1513,25 +1906,82 @@ class Component extends DCLogic {
       },
       editIsActive: s.editIsActive !== false,
       onEditIsActive: e => this.setState({ editIsActive: e.target.checked }),
-      closeEditModal: () => this.setState({ editModal: null }),
+      editCode: s.editCode, editCategoryCode: s.editCategoryCode, onEditCategoryCode: e => this.setState({ editCategoryCode: e.target.value }),
+      editIconCode: s.editIconCode, onEditIconCode: e => this.setState({ editIconCode: e.target.value }),
+      editOrderType: s.editOrderType, onEditOrderType: e => {
+        const live = e.target.value === 'live_session';
+        this.setState({ editOrderType: e.target.value, editDefaultRevisions: live ? 0 : 2, editMaximumRevisions: live ? 0 : 20 });
+      },
+      editQualificationPolicy: s.editQualificationPolicy, editCurrencyCode: s.editCurrencyCode,
+      editMinimumPrice: s.editMinimumPrice, onEditMinimumPrice: e => this.setState({ editMinimumPrice: Number(e.target.value) }),
+      editDefaultPrice: s.editDefaultPrice, onEditDefaultPrice: e => this.setState({ editDefaultPrice: Number(e.target.value) }),
+      editRecommendedPrice: s.editRecommendedPrice, onEditRecommendedPrice: e => this.setState({ editRecommendedPrice: Number(e.target.value) }),
+      editMaximumPrice: s.editMaximumPrice, onEditMaximumPrice: e => this.setState({ editMaximumPrice: Number(e.target.value) }),
+      editMinimumDeliveryHours: s.editMinimumDeliveryHours, onEditMinimumDeliveryHours: e => this.setState({ editMinimumDeliveryHours: Number(e.target.value) }),
+      editDefaultDeliveryHours: s.editDefaultDeliveryHours, onEditDefaultDeliveryHours: e => this.setState({ editDefaultDeliveryHours: Number(e.target.value) }),
+      editRecommendedDeliveryHours: s.editRecommendedDeliveryHours, onEditRecommendedDeliveryHours: e => this.setState({ editRecommendedDeliveryHours: Number(e.target.value) }),
+      editMaximumDeliveryHours: s.editMaximumDeliveryHours, onEditMaximumDeliveryHours: e => this.setState({ editMaximumDeliveryHours: Number(e.target.value) }),
+      editDefaultRevisions: s.editDefaultRevisions, onEditDefaultRevisions: e => this.setState({ editDefaultRevisions: Number(e.target.value) }),
+      editMaximumRevisions: s.editMaximumRevisions, onEditMaximumRevisions: e => this.setState({ editMaximumRevisions: Number(e.target.value) }),
+      editAllowedDurations: s.editAllowedDurations, onEditAllowedDurations: e => this.setState({ editAllowedDurations: e.target.value }),
+      editIsPublic: s.editIsPublic, onEditIsPublic: e => this.setState({ editIsPublic: e.target.checked }),
+      editTeacherSelectable: s.editTeacherSelectable, onEditTeacherSelectable: e => this.setState({ editTeacherSelectable: e.target.checked }),
+      editImmutablePolicy: s.editImmutablePolicy, isAsyncServiceEdit: s.editOrderType === 'async_request', isLiveServiceEdit: s.editOrderType === 'live_session',
+      editBusy: !!s.editBusy,
+      editSaveLabel: s.editBusy ? Tafseel.t('admin_service_saving') : Tafseel.t('admin_service_save'),
+      editPolicyIssues,
+      editPolicyReady: editPolicyIssues.length === 0,
+      editReadinessLabel: Tafseel.t(editPolicyIssues.length ? 'admin_service_incomplete_policy' : (s.editIsActive ? 'admin_service_ready_active' : 'admin_service_ready_activate')),
+      editWorkflowSummary: Tafseel.t(s.editOrderType === 'live_session' ? 'admin_service_live_summary' : 'admin_service_async_summary'),
+      editCategoryLabel: categoryLabel(s.editCategoryCode), editIconLabel: iconLabel(s.editIconCode),
+      editWorkflowLabel: workflowLabel(s.editOrderType), editQualificationLabel: qualificationLabel(s.editQualificationPolicy),
+      editPriceRange: serviceMoney(s.editMinimumPrice, s.lang) + ' – ' + serviceMoney(s.editMaximumPrice, s.lang),
+      editDefaultPriceFormatted: serviceMoney(s.editDefaultPrice, s.lang),
+      editDeliverySummary: s.editOrderType === 'live_session'
+        ? serviceDurationValues(s.editAllowedDurations).map(x => Tafseel.t('admin_service_minutes_value', { count:x })).join('، ')
+        : deliveryEquivalent(s.editDefaultDeliveryHours, s.lang),
+      editRevisionSummary: s.editOrderType === 'live_session' ? '0' : String(s.editDefaultRevisions) + ' / ' + String(s.editMaximumRevisions),
+      editVisibilitySummary: [s.editIsPublic ? Tafseel.t('admin_service_public') : Tafseel.t('admin_service_not_public'), s.editTeacherSelectable ? Tafseel.t('admin_service_selectable') : Tafseel.t('admin_service_not_selectable')].join(' · '),
+      formattedEditMinimumPrice: serviceMoney(s.editMinimumPrice, s.lang), formattedEditDefaultPrice: serviceMoney(s.editDefaultPrice, s.lang),
+      formattedEditRecommendedPrice: serviceMoney(s.editRecommendedPrice, s.lang), formattedEditMaximumPrice: serviceMoney(s.editMaximumPrice, s.lang),
+      editMinimumDeliveryEquivalent: deliveryEquivalent(s.editMinimumDeliveryHours, s.lang), editDefaultDeliveryEquivalent: deliveryEquivalent(s.editDefaultDeliveryHours, s.lang),
+      editRecommendedDeliveryEquivalent: deliveryEquivalent(s.editRecommendedDeliveryHours, s.lang), editMaximumDeliveryEquivalent: deliveryEquivalent(s.editMaximumDeliveryHours, s.lang),
+      closeEditModal: () => this.closeCatalogEditor('edit'),
       confirmEditCatalog: async () => {
+        if (s.editBusy) return;
         if (!s.editModal || !s.editName.trim()) return this.flash(Tafseel.t('admin_validation_name'));
         if (s.editModal.kind === 'assignments' && !(s.editNameAr || '').trim())
           return this.flash(Tafseel.t('admin_assignment_arabic_name_required'));
         if (s.editModal.kind === 'services') {
-          if (!(s.editNameAr || '').trim())
-            return this.flash(Tafseel.t('admin_service_names_required'));
-          if (!(s.editDetail || '').trim() || !(s.editDetailAr || '').trim())
-            return this.flash(Tafseel.t('admin_service_descriptions_required'));
+          const issues = servicePolicyIssues(s, true);
+          if (issues.length) {
+            this.flash(Tafseel.t('admin_service_fix_policy'));
+            this.focusPolicyIssue(issues);
+            return;
+          }
         }
         try {
           const kind = s.editModal.kind === 'assignments' ? 'qualification-topics' : s.editModal.kind;
           if (s.editModal.kind === 'services') {
+            this.setState({ editBusy: true });
+            const live = s.editOrderType === 'live_session';
             await Tafseel.api.put('/admin/catalog/services/' + s.editModal.id, {
               nameEn: s.editName.trim(),
               nameAr: (s.editNameAr || '').trim(),
               descriptionEn: (s.editDetail || '').trim(),
               descriptionAr: (s.editDetailAr || '').trim(),
+              code: s.editCode,
+              categoryCode: s.editCategoryCode, iconCode: s.editIconCode, orderType: s.editOrderType,
+              qualificationPolicy: s.editQualificationPolicy, currencyCode: s.editCurrencyCode,
+              minimumPrice: s.editMinimumPrice, defaultPrice: s.editDefaultPrice,
+              recommendedPrice: s.editRecommendedPrice, maximumPrice: s.editMaximumPrice,
+              minimumDeliveryHours: live ? null : s.editMinimumDeliveryHours,
+              defaultDeliveryHours: live ? null : s.editDefaultDeliveryHours,
+              recommendedDeliveryHours: live ? null : s.editRecommendedDeliveryHours,
+              maximumDeliveryHours: live ? null : s.editMaximumDeliveryHours,
+              defaultRevisions: live ? 0 : s.editDefaultRevisions, maximumRevisions: live ? 0 : s.editMaximumRevisions,
+              allowedDurations: live ? serviceDurationValues(s.editAllowedDurations) : [],
+              isPublic: !!s.editIsPublic, teacherSelectable: !!s.editTeacherSelectable,
               displayOrder: Number.isFinite(Number(s.editDisplayOrder)) ? Number(s.editDisplayOrder) : 0,
               isActive: s.editIsActive !== false
             });
@@ -1545,11 +1995,23 @@ class Component extends DCLogic {
                     detailAr: (s.editDetailAr || '').trim(),
                     displayOrder: Number.isFinite(Number(s.editDisplayOrder)) ? Number(s.editDisplayOrder) : 0,
                     active: s.editIsActive !== false,
+                    categoryCode: s.editCategoryCode, iconCode: s.editIconCode, orderType: s.editOrderType,
+                    qualificationPolicy: s.editQualificationPolicy, currencyCode: s.editCurrencyCode,
+                    minimumPrice: s.editMinimumPrice, defaultPrice: s.editDefaultPrice,
+                    recommendedPrice: s.editRecommendedPrice, maximumPrice: s.editMaximumPrice,
+                    minimumDeliveryHours: live ? null : s.editMinimumDeliveryHours,
+                    defaultDeliveryHours: live ? null : s.editDefaultDeliveryHours,
+                    recommendedDeliveryHours: live ? null : s.editRecommendedDeliveryHours,
+                    maximumDeliveryHours: live ? null : s.editMaximumDeliveryHours,
+                    defaultRevisions: live ? 0 : s.editDefaultRevisions, maximumRevisions: live ? 0 : s.editMaximumRevisions,
+                    allowedDurations: live ? serviceDurationValues(s.editAllowedDurations) : [],
+                    isPublic: !!s.editIsPublic, teacherSelectable: !!s.editTeacherSelectable,
                     meta: (s.editDetail || '').trim().slice(0, 80)
                   }
                 : c);
             this.setState({
               editModal: null,
+              editDirty: false,
               catalogOverrides: { ...s.catalogOverrides, [s.editModal.id]: s.editIsActive !== false }
             });
             this.flash(Tafseel.t('admin_toast_saved'));
@@ -1573,6 +2035,7 @@ class Component extends DCLogic {
           this.setState({ editModal: null });
           this.flash(Tafseel.t('admin_toast_saved'));
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+        finally { if (s.editModal?.kind === 'services') this.setState({ editBusy: false }); }
       },
 
       listTitle: { requests: Tafseel.t('admin_list_requests'), sessions: Tafseel.t('admin_list_sessions'), reviews: Tafseel.t('admin_list_reviews'), disputes: Tafseel.t('admin_list_disputes') }[s.listKind],

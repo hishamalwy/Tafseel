@@ -144,14 +144,18 @@ public sealed class TeacherService
     public Guid ServiceCatalogItemId { get; private set; }
     public string Title { get; private set; } = "";
     public string Description { get; private set; } = "";
+    public string ApproachEn { get; private set; } = "";
+    public string ApproachAr { get; private set; } = "";
     public decimal Price { get; private set; }
     public string Currency { get; private set; } = "";
     public int DeliveryHours { get; private set; }
     public int Revisions { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public Guid? SupersededByTeacherServiceId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
+    public bool IsSuperseded => SupersededByTeacherServiceId.HasValue;
 
     public void Update(string title, string description, decimal price, string currency, int deliveryHours, int revisions, DateTimeOffset now)
     {
@@ -173,9 +177,42 @@ public sealed class TeacherService
         UpdatedAt = now;
     }
 
+    public void Configure(
+        decimal price, string currency, int deliveryHours, int revisions,
+        string? approachEn, string? approachAr, DateTimeOffset now)
+    {
+        approachEn = approachEn?.Trim() ?? "";
+        approachAr = approachAr?.Trim() ?? "";
+        currency = currency?.Trim().ToUpperInvariant() ?? "";
+        if (price is <= 0 or > 1_000_000 || currency.Length != 3)
+            throw new DomainException("invalid_service_price", "A positive price and three-letter currency are required.");
+        if (deliveryHours is < 1 or > 8760 || revisions is < 0 or > 20)
+            throw new DomainException("invalid_service_terms", "Service delivery or revision terms are invalid.");
+        if (approachEn.Length > 1000 || approachAr.Length > 1000)
+            throw new DomainException("invalid_teacher_service_approach", "Teacher approach notes must not exceed 1,000 characters per language.");
+        Price = price;
+        Currency = currency;
+        DeliveryHours = deliveryHours;
+        Revisions = revisions;
+        ApproachEn = approachEn;
+        ApproachAr = approachAr;
+        UpdatedAt = now;
+    }
+
     public void SetActive(bool active, DateTimeOffset now)
     {
+        if (active && IsSuperseded)
+            throw new DomainException("teacher_service_superseded", "A superseded Teacher service cannot be enabled.");
         IsActive = active;
+        UpdatedAt = now;
+    }
+
+    public void SupersedeBy(Guid canonicalTeacherServiceId, DateTimeOffset now)
+    {
+        if (canonicalTeacherServiceId == Id)
+            throw new DomainException("teacher_service_self_supersession", "A Teacher service cannot supersede itself.");
+        SupersededByTeacherServiceId = canonicalTeacherServiceId;
+        IsActive = false;
         UpdatedAt = now;
     }
 }
@@ -238,6 +275,9 @@ public sealed class TeacherTeachingSample
     public DateTimeOffset? PublishedAt { get; private set; }
     public DateTimeOffset? ArchivedAt { get; private set; }
     public int DisplayOrder { get; private set; }
+    public bool IsProfileVisible { get; private set; }
+    public int ProfileDisplayOrder { get; private set; }
+    public bool IsProfileFeatured { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
     public bool IsPublished => PublishedAt.HasValue && ArchivedAt is null;
     public Guid? SourceTeacherApplicationId { get; private init; }
@@ -322,6 +362,7 @@ public sealed class TeacherTeachingSample
             ApprovedVersionId = version.Id;
             PublishedAt = now;
             ArchivedAt = null;
+            IsProfileVisible = true;
         }
         UpdatedAt = now;
     }
@@ -378,11 +419,57 @@ public sealed class TeacherTeachingSample
         UpdatedAt = now;
     }
 
+    public bool IsCurationEligible()
+    {
+        if (SourceType == TeachingSampleSourceType.QualificationGenerated)
+            return PublishedAt.HasValue;
+        return ModerationStatus == ShowcaseModerationStatus.Approved
+            && ArchivedAt is null
+            && ApprovedVersionId.HasValue
+            && PublishedAt.HasValue;
+    }
+
+    public void SetProfileVisibility(bool visible, DateTimeOffset now)
+    {
+        EnsureCurationEligible();
+        IsProfileVisible = visible;
+        if (!visible)
+            IsProfileFeatured = false;
+        UpdatedAt = now;
+    }
+
+    public void SetProfileFeatured(bool featured, DateTimeOffset now)
+    {
+        EnsureCurationEligible();
+        if (featured && !IsProfileVisible)
+            throw new DomainException(
+                "profile_video_not_visible",
+                "A featured profile video must also be visible on the profile.");
+        IsProfileFeatured = featured;
+        UpdatedAt = now;
+    }
+
+    public void ClearProfileFeatured(DateTimeOffset now)
+    {
+        if (!IsProfileFeatured) return;
+        IsProfileFeatured = false;
+        UpdatedAt = now;
+    }
+
+    public void SetProfileDisplayOrder(int order, DateTimeOffset now)
+    {
+        if (order < 0)
+            throw new DomainException("invalid_profile_video_order", "Profile display order must be zero or greater.");
+        ProfileDisplayOrder = order;
+        UpdatedAt = now;
+    }
+
     public void Publish(DateTimeOffset now)
     {
         if (SourceType != TeachingSampleSourceType.QualificationGenerated)
             throw new DomainException("direct_sample_publication_forbidden", "Teacher Showcases require Quality approval.");
         PublishedAt ??= now;
+        IsProfileVisible = true;
     }
 
     public void Unpublish() => PublishedAt = null;
@@ -412,6 +499,14 @@ public sealed class TeacherTeachingSample
         };
         sample.Publish(now);
         return sample;
+    }
+
+    private void EnsureCurationEligible()
+    {
+        if (!IsCurationEligible())
+            throw new DomainException(
+                "profile_video_not_eligible",
+                "Only approved, eligible teaching videos can be curated on the profile.");
     }
 
     private void RequireShowcase()

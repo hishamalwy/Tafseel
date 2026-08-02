@@ -10,13 +10,18 @@
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{{ pageTitle }}</title>
+<meta property="og:title" content="{{ pageTitle }}" />
+<meta name="twitter:title" content="{{ pageTitle }}" />
 <script src="js/boot-prefs.js"></script>
-<link rel="stylesheet" href="css/tafseel.css" />
+<link rel="stylesheet" href="css/tafseel.css?v=prestage-ux-1" />
 <link rel="icon" href="assets/brand/favicon.ico" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<script src="js/media-preview.js?v=prestage-ux-1"></script>
 </helmet>
+
+<a href="#main" class="tf-skip">Skip to content</a>
 
 <header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
   <div class="tf-shell" style="height:68px;display:flex;align-items:center;gap:32px">
@@ -24,12 +29,12 @@
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="30" height="30" style="flex:none;object-fit:contain" />
       <span translate="no" class="tf-mursala" style="font-weight:900;font-size:19px;letter-spacing:0">تفصيــل</span>
     </a>
-    <nav class="tf-nav-track" aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
+    <nav data-hide-sm class="tf-nav-track" aria-label="Primary" style="display:flex;align-items:center;gap:4px;flex:1">
       <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Browse Teachers</a>
       <a href="Tafseel-Landing.dc.html#subjects" data-i18n="nav_subjects" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Subjects</a>
       <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="background:var(--surface-2);color:var(--text)">Become a Teacher</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:8px;flex:none">
+    <div class="tf-public-header-actions" style="display:flex;align-items:center;gap:8px;flex:none;margin-inline-start:auto">
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <a href="{{ accountHref }}" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
@@ -40,7 +45,7 @@
   </div>
 </header>
 
-<main class="tf-shell" style="padding-block:24px 96px">
+<main id="main" class="tf-shell tf-profile-page" style="padding-block:24px 96px">
   <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="tf-skeleton" style="height:18px;width:240px"></div>
@@ -59,266 +64,49 @@
   </sc-if>
 
   <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
-  <nav aria-label="Breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:20px">
+  <nav class="tf-profile-breadcrumb" aria-label="Breadcrumb">
     <a href="Tafseel-Landing.dc.html" data-i18n="tp_home" style="color:var(--muted)" style-hover="color:var(--text)">Home</a><span>/</span>
     <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">{{ breadcrumbSubject }}</a><span>/</span>
     <span style="color:var(--text-2);font-weight:500">{{ teacherName }}</span>
   </nav>
 
-  <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:24px;display:flex;gap:28px;flex-wrap:wrap">
-    <div style="position:relative;flex:none">
-      <img src="{{ teacherAvatar }}" alt="" width="132" height="132" style="width:132px;height:132px;border-radius:20px;border:1px solid var(--border);object-fit:cover" />
-    </div>
 
-    <div style="flex:1;min-width:280px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-        <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">{{ teacherName }}</h1>
-        <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}">
-          <span title="{{ trustBadgeDetail }}" style="display:inline-flex;align-items:center;gap:6px;height:26px;padding-inline:10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700">✓ <span data-i18n="trust_badge_qualified_on_tafseel">Qualified on Tafseel</span></span>
+  <div class="tf-profile-marketplace-layout">
+    <div class="tf-profile-main-column">
+      <section class="tf-profile-video-hero" aria-labelledby="featured-sample-title" tabindex="0" onKeyDown="{{ onCarouselKeyDown }}" onTouchStart="{{ onCarouselTouchStart }}" onTouchEnd="{{ onCarouselTouchEnd }}">
+        <sc-if value="{{ hasFeaturedSample }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-profile-media-heading"><h2 id="featured-sample-title">{{ featuredSample.title }}</h2><sc-if value="{{ featuredSample.headingMeta }}" hint-placeholder-val="{{ true }}"><span class="tf-profile-media-meta">{{ featuredSample.headingMeta }}</span></sc-if></div>
+          <div class="tf-profile-video-stage">
+            <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><button type="button" class="tf-profile-carousel-arrow tf-profile-carousel-prev" aria-label="{{ previousVideoLabel }}" onClick="{{ onPreviousSample }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" /></svg></button></sc-if>
+            <div class="tf-media-frame"><button type="button" class="tf-media-play" data-media-play aria-hidden="true" hidden><span aria-hidden="true">&#9654;</span></button><div class="tf-profile-video-overlay"><span class="{{ featuredSample.trustClass }}">{{ featuredSample.trust }}</span><div><sc-if value="{{ featuredSample.subjectName }}" hint-placeholder-val="{{ true }}"><span>{{ featuredSample.subjectName }}</span></sc-if><sc-if value="{{ hasDuration }}" hint-placeholder-val="{{ false }}"><span>{{ durationText }}</span></sc-if></div></div><video data-media-preview="true" data-download-allowed="true" src="{{ featuredSample.contentUrl }}" fetchpriority="high" controls preload="metadata" playsinline aria-label="{{ featuredSample.title }}"></video></div>
+            <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><button type="button" class="tf-profile-carousel-arrow tf-profile-carousel-next" aria-label="{{ nextVideoLabel }}" onClick="{{ onNextSample }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6" /></svg></button></sc-if>
+          </div>
+          <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-carousel-position" role="status" aria-live="polite">{{ samplePositionLabel }}</div></sc-if>
+          <div class="tf-profile-media-caption"><p>{{ featuredSample.descriptionText }}</p><sc-if value="{{ featuredSample.isShowcase }}" hint-placeholder-val="{{ false }}"><p class="tf-profile-moderation-note" data-i18n="showcase_reviewed_description">Reviewed by Tafseel. Approval does not verify every educational claim.</p></sc-if></div>
         </sc-if>
-      </div>
-      <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}">
-        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5" data-i18n="trust_badge_qualified_on_tafseel_detail">Has an active approved subject qualification on Tafseel.</p>
-      </sc-if>
-      <p style="font-size:15.5px;color:var(--text-2);margin-bottom:14px">{{ teacherMeta }}</p>
-      <div style="display:flex;flex-wrap:wrap;gap:28px;margin-bottom:18px">
-        <sc-for list="{{ headStats }}" as="h" hint-placeholder-count="3">
-          <div>
-            <div style="font-size:19px;font-weight:800;letter-spacing:-.02em">{{ h.value }}</div>
-            <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ h.label }}</div>
-          </div>
-        </sc-for>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" style="{{ favStyle }}">{{ favLabel }}</button>
-        <button type="button" onClick="{{ onShare }}" style="height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600">↗ <span data-i18n="tp_share">Share</span></button>
-        <a href="{{ chatHref }}" style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">✉ <span data-i18n="tp_message">Message</span></a>
-      </div>
-    </div>
-  </section>
+        <sc-if value="{{ samplesEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-empty-media"><span>&#9675;</span><strong data-i18n="showcase_no_media">No media is available.</strong><p data-i18n="tp_samples_empty">No teaching samples published yet.</p></div></sc-if>
+      </section>
 
-  <div data-stack="profile" style="display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:24px;align-items:start">
-    <div>
-      <div role="tablist" aria-label="Profile sections" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto">
-        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5">
-          <button type="button" role="tab" aria-selected="{{ tb.selected }}" onClick="{{ tb.onClick }}" style="{{ tb.style }}">{{ tb.label }}</button>
-        </sc-for>
-      </div>
+      <section class="tf-profile-identity-card" aria-labelledby="profile-heading"><div class="tf-profile-hero-identity">
+        <div class="tf-profile-identity-lockup"><img class="tf-profile-avatar" src="{{ teacherAvatar }}" alt="{{ teacherName }}" width="132" height="132" /><div class="tf-profile-hero-copy"><div class="tf-profile-eyebrow" data-i18n="tp_teacher_profile_label">Teacher profile</div><div class="tf-profile-name-row"><h1 id="profile-heading">{{ teacherName }}</h1></div><p class="tf-profile-headline">{{ teacherHeadline }}</p></div></div>
+        <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-qualification"><span class="tf-profile-qualification-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7.5 12 3 3 6-7" /></svg></span><div><strong data-i18n="trust_badge_qualified_on_tafseel">Qualified on Tafseel</strong><p data-i18n="trust_badge_qualified_on_tafseel_detail">Has an active approved subject qualification on Tafseel.</p></div></div></sc-if>
+        <div class="tf-profile-chip-row"><sc-for list="{{ subjectChips }}" as="chip" hint-placeholder-count="3"><span class="tf-profile-chip">{{ chip }}</span></sc-for><sc-if value="{{ hasLanguages }}" hint-placeholder-val="{{ true }}"><span class="tf-profile-chip tf-profile-chip-language" data-i18n-skip>{{ languageSummary }}</span></sc-if></div>
+        <div class="tf-profile-stats"><sc-for list="{{ headStats }}" as="h" hint-placeholder-count="1"><div><strong>{{ h.value }}</strong><span>{{ h.label }}</span></div></sc-for></div>
+        <div class="tf-profile-hero-actions"><button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" class="{{ favClass }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg><span>{{ favLabel }}</span></button><button type="button" onClick="{{ onShare }}" class="tf-profile-secondary-action"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" /></svg><span data-i18n="tp_share">Share</span></button><a href="{{ chatHref }}" class="tf-profile-secondary-action"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 18.5 3.5 21l.8-4A8 8 0 1 1 7 19.2" /></svg><span data-i18n="tp_message">Message</span></a></div>
+        <sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><p class="tf-profile-mobile-no-service" role="status" data-i18n="tp_services_empty">No services available.</p></sc-if>
+      </div></section>
+      <section id="profile-services" class="tf-profile-market-section tf-profile-services" aria-labelledby="services-heading"><div class="tf-profile-section-heading"><h2 id="services-heading" data-i18n="tp_tab_services">Services</h2></div><sc-if value="{{ servicesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="tp_services_empty">No services available.</p></sc-if><sc-for list="{{ services }}" as="sv" hint-placeholder-count="5"><article class="{{ sv.cardClass }}"><div class="tf-profile-service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="{{ sv.iconPath }}" /></svg></div><div class="tf-profile-service-copy"><div class="tf-profile-service-title"><h3>{{ sv.name }}</h3><sc-if value="{{ sv.badge }}" hint-placeholder-val="{{ false }}"><span class="tf-profile-service-badge">{{ sv.badge }}</span></sc-if></div><p class="tf-profile-service-description">{{ sv.desc }}</p><div class="tf-profile-service-meta"><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>{{ sv.delivery }}</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5m10.2 0A7.5 7.5 0 0 0 6.4 6.7L4 9m16 6-2.4 2.3A7.5 7.5 0 0 1 4.8 12" /></svg>{{ sv.revisions }}</span></div></div><div class="tf-profile-service-price"><strong>{{ sv.price }}</strong><button type="button" class="{{ sv.selectClass }}" aria-pressed="{{ sv.selected }}" onClick="{{ sv.onSelect }}">{{ sv.btnLabel }}</button></div></article></sc-for></section>
 
-      <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;flex-direction:column;gap:24px">
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:12px" data-i18n="tp_about">About</h2>
-            <sc-for list="{{ bioParagraphs }}" as="bp" hint-placeholder-count="2">
-              <p style="font-size:15px;line-height:1.7;color:var(--text-2);margin-bottom:12px">{{ bp }}</p>
-            </sc-for>
-            <sc-if value="{{ bioEmpty }}" hint-placeholder-val="{{ false }}">
-              <p class="tf-empty" data-i18n="tp_bio_empty">No bio published yet.</p>
-            </sc-if>
-          </section>
+      <section id="profile-reviews" class="tf-profile-market-section tf-profile-reviews" aria-labelledby="reviews-heading"><div class="tf-profile-section-heading"><h2 id="reviews-heading" data-i18n="tp_tab_reviews">Reviews</h2></div><sc-if value="{{ hasReviews }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-review-summary"><div><div class="tf-profile-rating-value">{{ ratingValue }}</div><div class="tf-profile-review-stars">{{ ratingStars }}</div><div class="tf-profile-review-summary-copy">{{ reviewsSummary }}</div></div><div class="tf-profile-review-breakdown"><sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5"><div><span class="tf-profile-review-label">{{ b.label }}</span><span class="tf-profile-review-bar"><span style="{{ b.barStyle }}"></span></span><strong>{{ b.score }}</strong></div></sc-for></div></div></sc-if><sc-if value="{{ reviewsEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-reviews-empty"><span class="tf-profile-reviews-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 18.5 4 21l1-4a8 8 0 1 1 3 2.2M9 12h6m-6-3h6" /></svg></span><div><strong data-i18n="tp_reviews_first_title">Be the first student to review this teacher.</strong><p data-i18n="tp_reviews_first_body">After completing your first lesson, you’ll be able to leave a review.</p></div></div></sc-if><div class="tf-profile-review-list"><sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3"><article class="tf-profile-review-card"><div class="tf-profile-review-head"><img src="{{ rv.avatar }}" alt="" width="40" height="40" class="tf-profile-review-avatar" /><div><strong>{{ rv.name }}</strong><span>{{ rv.service }} · {{ rv.date }}</span></div><span class="tf-profile-review-stars">{{ rv.stars }}</span></div><p>{{ rv.body }}</p></article></sc-for></div></section>
 
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:16px" data-i18n="tp_education_experience">Education &amp; experience</h2>
-            <sc-if value="{{ timelineEmpty }}" hint-placeholder-val="{{ false }}">
-              <p class="tf-empty" data-i18n="tp_timeline_empty">No education or experience listed yet.</p>
-            </sc-if>
-            <div style="display:flex;flex-direction:column;gap:0">
-              <sc-for list="{{ timeline }}" as="tl" hint-placeholder-count="4">
-                <div style="display:flex;gap:16px;padding-block:14px;border-bottom:1px solid var(--border)">
-                  <div style="width:34px;height:34px;flex:none;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-size:14px;color:var(--text-2)">{{ tl.icon }}</div>
-                  <div>
-                    <div style="font-size:15px;font-weight:600">{{ tl.title }}</div>
-                    <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ tl.meta }}</div>
-                  </div>
-                  <div style="margin-inline-start:auto;font-family:var(--font-mono);font-size:12px;color:var(--muted);white-space:nowrap">{{ tl.years }}</div>
-                </div>
-              </sc-for>
-            </div>
-          </section>
+      <section id="profile-about" class="tf-profile-market-section tf-profile-about" aria-labelledby="about-heading"><div class="tf-profile-section-heading"><h2 id="about-heading" data-i18n="tp_about_teacher">About this teacher</h2></div><sc-if value="{{ showBio }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-bio-card"><sc-for list="{{ bioParagraphs }}" as="bp" hint-placeholder-count="2"><p class="tf-profile-bio-text">{{ bp }}</p></sc-for></div></sc-if><sc-if value="{{ showTimeline }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-timeline-card"><h3 data-i18n="tp_education_experience">Education &amp; experience</h3><div class="tf-profile-timeline"><sc-for list="{{ timeline }}" as="tl" hint-placeholder-count="4"><div class="tf-profile-timeline-item"><span class="tf-profile-timeline-icon">{{ tl.icon }}</span><div><strong>{{ tl.title }}</strong><span>{{ tl.meta }}</span></div><time>{{ tl.years }}</time></div></sc-for></div></div></sc-if><div class="tf-profile-about-rail"><div><h3 data-i18n="tp_subjects_topics">Subjects &amp; topics</h3><sc-if value="{{ topicsEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="tp_topics_empty">No subjects or topics listed yet.</p></sc-if><div class="tf-profile-topic-list"><sc-for list="{{ topics }}" as="tp" hint-placeholder-count="8"><span>{{ tp }}</span></sc-for></div></div><div><h3 data-i18n="tp_languages">Teaching languages</h3><sc-if value="{{ hasLanguages }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-topic-list"><span data-i18n-skip>{{ languageSummary }}</span></div></sc-if></div></div></section>
 
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:14px" data-i18n="tp_subjects_topics">Subjects &amp; topics</h2>
-            <sc-if value="{{ topicsEmpty }}" hint-placeholder-val="{{ false }}">
-              <p class="tf-empty" data-i18n="tp_topics_empty">No subjects or topics listed yet.</p>
-            </sc-if>
-            <div style="display:flex;flex-wrap:wrap;gap:8px">
-              <sc-for list="{{ topics }}" as="tp" hint-placeholder-count="8">
-                <span style="font-size:13px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ tp }}</span>
-              </sc-for>
-            </div>
-          </section>
-        </div>
-      </sc-if>
-
-      <sc-if value="{{ isSamples }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;flex-direction:column;gap:18px">
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:6px" data-i18n="showcase_public_qualification_title">Qualification Samples</h2>
-            <p style="font-size:14px;color:var(--muted);margin-bottom:18px" data-i18n="trust_qualification_detail">Approved through subject qualification.</p>
-            <sc-if value="{{ qualificationSamplesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="showcase_public_empty">No published samples in this section.</p></sc-if>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
-              <sc-for list="{{ qualificationSamples }}" as="sm" hint-placeholder-count="2">
-                <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
-                  <video src="{{ sm.contentUrl }}" controls preload="metadata" style="display:block;width:100%;aspect-ratio:16/9;background:#111"></video>
-                  <div style="padding:14px">
-                    <span style="display:inline-block;font-size:11px;font-weight:700;color:var(--success);margin-bottom:8px">{{ sm.trust }}</span>
-                    <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">{{ sm.title }}</div>
-                    <div style="font-size:12.5px;color:var(--muted)">{{ sm.meta }}</div>
-                  </div>
-                </article>
-              </sc-for>
-            </div>
-          </section>
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-            <h2 style="font-size:18px;font-weight:700;margin-bottom:6px" data-i18n="showcase_public_teacher_title">Teacher Showcases</h2>
-            <p style="font-size:14px;color:var(--muted);margin-bottom:18px" data-i18n="trust_showcase_detail">Reviewed by Tafseel. Approval does not verify every educational claim in the video.</p>
-            <sc-if value="{{ teacherShowcasesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="showcase_public_empty">No published samples in this section.</p></sc-if>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
-              <sc-for list="{{ teacherShowcases }}" as="sm" hint-placeholder-count="2">
-                <article style="border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)">
-                  <video src="{{ sm.contentUrl }}" controls preload="metadata" style="display:block;width:100%;aspect-ratio:16/9;background:#111"></video>
-                  <div style="padding:14px">
-                    <span style="display:inline-block;font-size:11px;font-weight:700;color:var(--primary);margin-bottom:8px">{{ sm.trust }}</span>
-                    <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">{{ sm.title }}</div>
-                    <sc-if value="{{ sm.hasDescription }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--text-2);margin:6px 0">{{ sm.description }}</p></sc-if>
-                    <div style="font-size:12.5px;color:var(--muted)">{{ sm.meta }}</div>
-                  </div>
-                </article>
-              </sc-for>
-            </div>
-          </section>
-        </div>
-      </sc-if>
-
-      <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
-        <section style="display:flex;flex-direction:column;gap:14px">
-          <sc-if value="{{ servicesEmpty }}" hint-placeholder-val="{{ false }}">
-            <p class="tf-empty" data-i18n="tp_services_empty">No services available.</p>
-          </sc-if>
-          <sc-for list="{{ services }}" as="sv" hint-placeholder-count="5">
-            <article class="{{ sv.cardClass }}" style="{{ sv.cardStyle }}">
-              <div style="display:flex;gap:16px;align-items:flex-start">
-                <div style="width:40px;height:40px;flex:none;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:16px">{{ sv.icon }}</div>
-                <div style="flex:1;min-width:0">
-                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <h3 style="font-size:16.5px;font-weight:700">{{ sv.name }}</h3>
-                    <sc-if value="{{ sv.badge }}" hint-placeholder-val="{{ false }}">
-                      <span style="font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--error-soft);color:var(--error)">{{ sv.badge }}</span>
-                    </sc-if>
-                  </div>
-                  <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-top:6px">{{ sv.desc }}</p>
-                  <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--text-2)">
-                    <span>⏱ {{ sv.delivery }}</span>
-                    <span>↺ {{ sv.revisions }}</span>
-                  </div>
-                </div>
-                <div style="text-align:end;flex:none">
-                  <div style="font-size:18px;font-weight:800">{{ sv.price }}</div>
-                  <button type="button" onClick="{{ sv.onSelect }}" style="{{ sv.btnStyle }}">{{ sv.btnLabel }}</button>
-                </div>
-              </div>
-            </article>
-          </sc-for>
-        </section>
-      </sc-if>
-
-      <sc-if value="{{ isAvailability }}" hint-placeholder-val="{{ false }}">
-        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-            <h2 style="font-size:18px;font-weight:700" data-i18n="tp_availability_title">Availability</h2>
-          </div>
-          <div role="status" aria-label="{{ availabilityAria }}" style="min-height:52px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text-2);line-height:1.5;overflow-wrap:anywhere">
-            {{ availabilityLabel }}
-          </div>
-          <sc-if value="{{ showAvailabilityBook }}" hint-placeholder-val="{{ false }}">
-            <a href="{{ bookHref }}" style="margin-top:14px;min-height:42px;padding-inline:16px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:14px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">{{ availabilityBookLabel }}</a>
-          </sc-if>
-        </section>
-      </sc-if>
-
-      <sc-if value="{{ isReviews }}" hint-placeholder-val="{{ false }}">
-        <section style="display:flex;flex-direction:column;gap:16px">
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px">
-            <div>
-              <div style="font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1">{{ ratingValue }}</div>
-              <div style="color:var(--warning);font-size:15px;letter-spacing:3px;margin-block:6px">{{ ratingStars }}</div>
-              <div style="font-size:13.5px;color:var(--muted)">{{ reviewsSummary }}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:9px">
-              <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5">
-                <div style="display:flex;align-items:center;gap:12px">
-                  <span style="font-size:13px;color:var(--text-2);width:120px;flex:none">{{ b.label }}</span>
-                  <span style="flex:1;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden">
-                    <span style="{{ b.barStyle }}"></span>
-                  </span>
-                  <span style="font-size:13px;font-weight:700;width:28px;text-align:end">{{ b.score }}</span>
-                </div>
-              </sc-for>
-            </div>
-          </div>
-          <sc-if value="{{ reviewsEmpty }}" hint-placeholder-val="{{ false }}">
-            <p class="tf-empty" data-i18n="tp_reviews_empty">No reviews yet.</p>
-          </sc-if>
-          <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3">
-            <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                <img src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
-                <div style="flex:1">
-                  <div style="font-size:14.5px;font-weight:600">{{ rv.name }}</div>
-                  <div style="font-size:12.5px;color:var(--muted)">{{ rv.service }} · {{ rv.date }}</div>
-                </div>
-                <span style="color:var(--warning);font-size:13px;letter-spacing:2px">{{ rv.stars }}</span>
-              </div>
-              <p style="font-size:14.5px;line-height:1.65;color:var(--text-2)">{{ rv.body }}</p>
-            </article>
-          </sc-for>
-        </section>
-      </sc-if>
+      <section id="profile-availability" class="tf-profile-market-section tf-profile-availability" aria-labelledby="availability-heading"><div class="tf-profile-section-heading"><h2 id="availability-heading" data-i18n="tp_availability_title">Availability</h2><p data-i18n="tp_timezone_note">Times shown in the teacher's time zone</p></div><div class="tf-profile-availability-value" role="status" aria-label="{{ availabilityAria }}">{{ availabilityLabel }}</div><sc-if value="{{ showAvailabilityBook }}" hint-placeholder-val="{{ false }}"><a class="tf-profile-primary-action tf-profile-inline-cta" href="{{ bookHref }}">{{ availabilityBookLabel }}</a></sc-if></section>
     </div>
 
-    <aside data-sticky="1" style="position:sticky;top:92px;display:flex;flex-direction:column;gap:14px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-md);padding:22px">
-        <div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:10px" data-i18n="tp_selected_service">Selected service</div>
-        <div style="font-size:17px;font-weight:700;margin-bottom:4px">{{ selectedName }}</div>
-        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px">
-          <span style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{ selectedPrice }}</span>
-          <span style="font-size:13px;color:var(--muted)">{{ selectedUnit }}</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:9px;padding-block:14px;border-block:1px solid var(--border);margin-bottom:16px">
-          <div style="display:flex;justify-content:space-between;font-size:13.5px">
-            <span style="color:var(--muted)" data-i18n="tp_estimated_delivery">Estimated delivery</span><span style="font-weight:600">{{ selectedDelivery }}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:13.5px">
-            <span style="color:var(--muted)" data-i18n="tp_revisions">Revisions</span><span style="font-weight:600">{{ selectedRevisions }}</span>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <sc-if value="{{ canRequest }}" hint-placeholder-val="{{ true }}">
-            <a href="{{ requestHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)" data-i18n="tp_request_service">Request this service</a>
-          </sc-if>
-          <sc-if value="{{ canBook }}" hint-placeholder-val="{{ true }}">
-            <a href="{{ bookHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)" data-i18n="tp_book_live">Book a live session</a>
-          </sc-if>
-          <sc-if value="{{ showBookUnavailable }}" hint-placeholder-val="{{ false }}">
-            <div class="tf-unavailable" data-i18n="tp_book_unavailable">Live sessions are not available for this teacher right now.</div>
-          </sc-if>
-          <a href="{{ chatHref }}" style="height:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--surface-2);color:var(--text)" data-i18n="tp_contact">Contact teacher</a>
-        </div>
-      </div>
-
-      <div style="background:var(--success-soft);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;display:flex;gap:12px">
-        <span style="font-size:16px;color:var(--success)">🛡</span>
-        <div>
-          <div style="font-size:13.5px;font-weight:700;color:var(--success);margin-bottom:3px" data-i18n="tp_protected_payment">Protected payment</div>
-          <div style="font-size:13px;color:var(--text-2);line-height:1.5" data-i18n="tp_protected_blurb">Your payment is held by Tafseel and released only after you approve the delivery.</div>
-        </div>
-      </div>
-
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;font-size:13px;color:var(--muted);line-height:1.55" data-i18n="tp_privacy_note">
-        Contact details are shared only after a request is paid — keep the conversation on Tafseel so disputes stay covered.
-      </div>
-    </aside>
+    <aside class="tf-profile-sidebar" data-sticky="1"><div class="tf-profile-conversion-card"><div class="tf-profile-eyebrow" data-i18n="tp_selected_service">Selected service</div><h2>{{ selectedName }}</h2><div class="tf-profile-conversion-price"><span class="tf-profile-conversion-price-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v18m4-14.5c0-1.4-1.8-2.5-4-2.5S8 5.1 8 6.5 9.8 9 12 9s4 1.1 4 2.5S14.2 14 12 14s-4 1.1-4 2.5S9.8 19 12 19s4-1.1 4-2.5" /></svg></span><div><strong>{{ selectedPrice }}</strong><span>{{ selectedUnit }}</span></div></div><div class="tf-profile-service-facts"><div><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg><span data-i18n="tp_estimated_delivery">Estimated delivery</span></span><strong>{{ selectedDelivery }}</strong></div><div><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5m10.2 0A7.5 7.5 0 0 0 6.4 6.7L4 9m16 6-2.4 2.3A7.5 7.5 0 0 1 4.8 12" /></svg><span data-i18n="tp_revisions">Revisions</span></span><strong>{{ selectedRevisions }}</strong></div></div><sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><a class="tf-profile-primary-action" href="{{ heroCtaHref }}">{{ heroCtaLabel }}</a></sc-if><sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-hero-note" data-i18n="tp_services_empty">No services available.</div></sc-if><a href="{{ chatHref }}" class="tf-profile-contact-cta" data-i18n="tp_message">Message</a><div class="tf-profile-protection"><span class="tf-profile-protection-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3 5 6v5c0 4.6 2.9 8.4 7 10 4.1-1.6 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /></svg></span><div><strong data-i18n="tp_protected_payment">Protected payment</strong><span data-i18n="tp_protected_blurb">Your payment is held by Tafseel and released only after you approve the delivery.</span></div></div><p class="tf-profile-privacy" data-i18n="tp_privacy_note">Contact details are shared only after a request is paid — keep the conversation on Tafseel so disputes stay covered.</p></div></aside>
   </div>
+  <sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-mobile-cta"><div><span>{{ selectedName }}</span><strong>{{ selectedPrice }}</strong></div><a href="{{ heroCtaHref }}">{{ heroCtaLabel }}</a></div></sc-if>
   </sc-if>
 </main>
 
@@ -329,16 +117,11 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 const STAFF_ROLES = ['Teacher', 'Admin', 'QualityReviewer'];
+Tafseel.defaultAvatar = 'assets/brand/default-avatar.svg?v=premium-1';
 
 function readTeacherId() {
   const q = new URLSearchParams(location.search);
   return String(q.get('id') || q.get('teacherId') || '').trim();
-}
-
-function initials(name) {
-  return String(name || '')
-    .split(/\s+/).filter(Boolean).slice(0, 2)
-    .map(p => p[0].toUpperCase()).join('') || '·';
 }
 
 function formatDateOnly(value) {
@@ -368,13 +151,6 @@ function formatRevisions(n) {
   return count + ' ' + Tafseel.t('tp_free_revisions');
 }
 
-function formatDuration(seconds) {
-  const s = Math.max(0, Number(seconds) || 0);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return m + ':' + String(r).padStart(2, '0');
-}
-
 function formatMoney(currency, price) {
   const code = (currency || 'SAR').toUpperCase();
   if (code === 'SAR' && Tafseel.money) {
@@ -383,12 +159,34 @@ function formatMoney(currency, price) {
   return code + ' ' + Tafseel.number(price);
 }
 
-function serviceIcon(service) {
+function formatMediaDuration(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  if (!total) return '';
+  const minutes = Math.floor(total / 60);
+  return minutes + ':' + String(total % 60).padStart(2, '0');
+}
+
+function carouselNavigationVisible(samples) {
+  return Array.isArray(samples) && samples.length > 1;
+}
+
+function carouselKeyDelta(key, isRtl) {
+  if (key === 'ArrowLeft') return isRtl ? 1 : -1;
+  if (key === 'ArrowRight') return isRtl ? -1 : 1;
+  return 0;
+}
+
+function carouselSwipeDelta(distance) {
+  if (Math.abs(distance) < 48) return 0;
+  return distance < 0 ? 1 : -1;
+}
+
+function serviceIconPath(service) {
   const code = String(service.serviceCatalogCode || '').toLowerCase();
-  if (code === 'live_session' || service.requiresScheduling) return '◉';
-  if (code === 'exam_revision') return '◷';
-  if (code === 'assignment_guidance') return '✎';
-  return '▶';
+  if (code === 'live_session' || service.requiresScheduling) return 'M8 10h8m-8 4h5m7-2-3.8-3.1A8 8 0 1 0 5 18.5L3 21l.8-4';
+  if (code === 'exam_revision') return 'm5 12 4 4L19 6M5 5h6M5 19h14';
+  if (code === 'assignment_guidance') return 'm4 16.5-.7 4.2 4.2-.7L18 9.5 14.5 6 4 16.5ZM13 7.5l3.5 3.5';
+  return 'M7 4.5v15l12-7.5-12-7.5Z';
 }
 
 function isBookableLiveService(service) {
@@ -421,8 +219,9 @@ class Component extends DCLogic {
     profile: null,
     reviews: [],
     session: null,
-    tab: 'about',
     serviceId: '',
+    selectedSampleId: '',
+    mediaDuration: '',
     availabilitySummary: null,
     availabilityError: false,
     fav: false,
@@ -433,10 +232,79 @@ class Component extends DCLogic {
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     this.load();
+    this._onResize = () => this._syncMobileCtaClearance();
+    window.addEventListener('resize', this._onResize);
+    window.addEventListener('orientationchange', this._onResize);
   }
 
-  componentWillUnmount() { Tafseel.offChange(this._sub); }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
+  componentWillUnmount() {
+    Tafseel.offChange(this._sub);
+    if (this._featuredVideo && this._onMediaDuration)
+      this._featuredVideo.removeEventListener('loadedmetadata', this._onMediaDuration);
+    window.removeEventListener('resize', this._onResize);
+    window.removeEventListener('orientationchange', this._onResize);
+    clearTimeout(this._clearanceTimer);
+  }
+
+  _syncMobileCtaClearance() {
+    // Debounced: the initial load() sequence can fire several state updates in quick succession (session
+    // ready, favorites fetch, etc.); only measuring once updates have actually stopped avoids acting on a
+    // mid-sequence, not-yet-settled DOM.
+    clearTimeout(this._clearanceTimer);
+    this._clearanceTimer = setTimeout(() => this._measureMobileCtaClearance(), 120);
+  }
+
+  _measureMobileCtaClearance() {
+    const bar = document.querySelector('.tf-profile-mobile-cta');
+    const row = document.querySelector('.tf-profile-identity-card .tf-profile-hero-actions');
+    const root = document.documentElement;
+    if (!bar || !row || getComputedStyle(bar).display === 'none') {
+      root.style.setProperty('--tf-profile-mobile-clearance', '0px');
+      return;
+    }
+    // Reset to the neutral baseline before measuring: a clearance value applied by a previous run would
+    // otherwise mask the true overlap (the row it moved would look "clear" only because of its own fix),
+    // which caused the clearance to be zeroed back out on the next measurement and the overlap to return.
+    root.style.setProperty('--tf-profile-mobile-clearance', '0px');
+    void row.getBoundingClientRect();
+    const barTop = bar.getBoundingClientRect().top;
+    const scrollTop = document.body.scrollTop;
+    const rowRect = row.getBoundingClientRect();
+    const rowDocTop = rowRect.top + scrollTop;
+    const rowDocBottom = rowRect.bottom + scrollTop;
+    if (rowDocTop >= window.innerHeight) return;
+    const overlap = Math.max(0, rowDocBottom - barTop);
+    if (overlap > 0) root.style.setProperty('--tf-profile-mobile-clearance', (overlap + 8) + 'px');
+  }
+
+  _trackAvatarLoad() {
+    const avatar = document.querySelector('.tf-profile-identity-card .tf-profile-avatar');
+    if (!avatar || avatar === this._trackedAvatar) return;
+    this._trackedAvatar = avatar;
+    if (avatar.complete) { this._syncMobileCtaClearance(); return; }
+    const onSettle = () => this._syncMobileCtaClearance();
+    avatar.addEventListener('load', onSettle, { once: true });
+    avatar.addEventListener('error', onSettle, { once: true });
+  }
+
+  componentDidUpdate() {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    Tafseel.mediaPreview.sync();
+    this._syncMobileCtaClearance();
+    this._trackAvatarLoad();
+    const video = document.querySelector('.tf-profile-video-stage video');
+    if (!video || video === this._featuredVideo) return;
+    if (this._featuredVideo && this._onMediaDuration)
+      this._featuredVideo.removeEventListener('loadedmetadata', this._onMediaDuration);
+    this._featuredVideo = video;
+    this._onMediaDuration = () => {
+      const mediaDuration = formatMediaDuration(video.duration);
+      if (mediaDuration !== this.state.mediaDuration) this.setState({ mediaDuration });
+    };
+    video.addEventListener('loadedmetadata', this._onMediaDuration);
+    if (video.readyState >= 1) this._onMediaDuration();
+  }
 
   flash(msg) {
     Tafseel.flash(this, msg);
@@ -474,7 +342,8 @@ class Component extends DCLogic {
         availabilitySummary: availability && (availability.summaries || [])[0] || null,
         availabilityError: !availability,
         fav,
-        serviceId: preferredRequest ? preferredRequest.id : ''
+        serviceId: preferredRequest ? preferredRequest.id : '',
+        selectedSampleId: profile.samples && profile.samples[0] ? profile.samples[0].id : ''
       });
     } catch (error) {
       this.setState({
@@ -522,22 +391,25 @@ class Component extends DCLogic {
     ) || defaultBookService;
     const roleOk = canBookByRole(s.session);
     const canBook = !!(bookService && roleOk);
-    const showBookUnavailable = s.status === 'ready' && roleOk && services.length > 0 && !canBook;
     const canRequest = !!(selected && selected.canRequest);
 
-    const tab = key => ({
-      selected: s.tab === key,
-      onClick: () => this.setState({ tab: key }),
-      style: 'padding:12px 16px;border:0;background:none;font-size:14.5px;font-weight:600;white-space:nowrap;transition:all var(--t);border-bottom:2px solid ' +
-        (s.tab === key ? 'var(--primary);color:var(--primary);' : 'transparent;color:var(--muted);')
-    });
-
-    const teacherName = profile ? Tafseel.userName(profile) : '';
-    const subjects = ((profile && profile.subjects) || []).map(x => x.name).filter(Boolean);
-    const languages = ((profile && profile.languages) || []).map(x => x.name).filter(Boolean);
+    const teacherName = profile
+      ? (Tafseel.partyDisplayName(profile.fullName, profile.fullNameEnglish) || t('name_unavailable'))
+      : '';
+    const named = item => s.lang === 'ar' && item && item.nameAr ? item.nameAr : item && item.name || '';
+    const languageName = item => {
+      if (!item) return '';
+      if (s.lang === 'ar' && item.nameAr) return item.nameAr;
+      const name = String(item.name || '').trim();
+      const normalized = name.toLowerCase();
+      const code = item.code || item.detail || (normalized === 'arabic' ? 'ar' : normalized === 'english' ? 'en' : '');
+      return Tafseel.languageLabel({ code, name });
+    };
+    const subjects = ((profile && profile.subjects) || []).map(named).filter(Boolean);
+    const languages = [...new Set(((profile && profile.languages) || []).map(languageName).filter(Boolean))];
     const topics = [
       ...subjects,
-      ...((profile && profile.topics) || []).map(x => x.name)
+      ...((profile && profile.topics) || []).map(named)
     ].filter(Boolean);
     const metaParts = [];
     if (subjects.length) metaParts.push(subjects.join(' · '));
@@ -601,17 +473,37 @@ class Component extends DCLogic {
     const pageTitle = teacherName
       ? teacherName + ' ' + t('tp_page_title_suffix')
       : t('tp_page_title_fallback');
-    const named = item => s.lang === 'ar' && item && item.nameAr ? item.nameAr : item && item.name || '';
+    if (typeof document !== 'undefined') {
+      document.title = pageTitle;
+      document.querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]').forEach(meta => meta.setAttribute('content', pageTitle));
+    }
     const subjectById = new Map(((profile && profile.subjects) || []).map(item => [item.id, named(item)]));
     const topicById = new Map(((profile && profile.topics) || []).map(item => [item.id, named(item)]));
-    const publicSamples = ((profile && profile.samples) || []).map(sm => ({
-      ...sm,
-      trust: t(sm.trustCode === 'qualification_sample' ? 'trust_qualification_sample' : 'trust_reviewed_showcase'),
-      hasDescription: !!(sm.description || '').trim(),
-      meta: [subjectById.get(sm.subjectId), topicById.get(sm.topicId), sm.publishedAt ? formatDateOnly(sm.publishedAt) : '']
-        .filter(Boolean).join(' · '),
-      contentUrl: '/api/v1/teachers/samples/' + encodeURIComponent(sm.id) + '/content'
-    }));
+    const publicSamples = ((profile && profile.samples) || []).map(sm => {
+      const sourceCode = sm.sourceCode === 'qualification_sample' ? 'qualification_sample' : 'reviewed_showcase';
+      const isQualification = sourceCode === 'qualification_sample';
+      return {
+        ...sm,
+        trust: t(sourceCode === 'qualification_sample' ? 'trust_qualification_sample' : 'trust_reviewed_showcase'),
+        trustClass: isQualification ? 'tf-profile-trust-label tf-profile-trust-qualification' : 'tf-profile-trust-label tf-profile-trust-showcase',
+        isShowcase: !isQualification,
+        hasDescription: !!(sm.description || '').trim(),
+        descriptionText: (sm.description || '').trim() || t(isQualification ? 'showcase_qualification_description' : 'showcase_reviewed_description'),
+        subjectName: subjectById.get(sm.subjectId) || '',
+        headingMeta: [topicById.get(sm.topicId), sm.publishedAt ? formatDateOnly(sm.publishedAt) : '']
+          .filter(Boolean).join(' · '),
+        contentUrl: '/api/v1/teachers/samples/' + encodeURIComponent(sm.id) + '/content'
+      };
+    });
+    const featuredSample = publicSamples.find(sm => sm.id === s.selectedSampleId) || publicSamples[0] || null;
+    const sampleIndex = featuredSample ? publicSamples.findIndex(sm => sm.id === featuredSample.id) : -1;
+    const selectSample = index => {
+      if (!publicSamples.length) return;
+      const next = (index + publicSamples.length) % publicSamples.length;
+      this.setState({ selectedSampleId: publicSamples[next].id, mediaDuration: '' });
+    };
+    const moveSample = delta => selectSample(sampleIndex + delta);
+    const teacherMeta = metaParts.join(' · ') || (profile && profile.headline) || '';
 
     return {
       langLabel: t('language_target'),
@@ -633,7 +525,11 @@ class Component extends DCLogic {
       teacherAvatar: Tafseel.avatarUrl(s.teacherId, profile && profile.hasAvatar),
 
       teacherName,
-      teacherMeta: metaParts.join(' · ') || (profile && profile.headline) || '',
+      teacherHeadline: (profile && profile.headline) || teacherMeta,
+      teacherMeta,
+      subjectChips: subjects,
+      languageSummary: languages.join(' · '),
+      hasLanguages: languages.length > 0,
       breadcrumbSubject: subjects[0] ? subjects[0] + ' ' + t('tp_teachers_suffix') : t('nav_browse'),
       verified: !!(profile && profile.verified),
       qualifiedOnTafseel: !!(profile && Array.isArray(profile.trustBadges)
@@ -646,32 +542,45 @@ class Component extends DCLogic {
       ] : [],
 
       fav: s.fav,
-      favLabel: s.fav ? '♥ ' + t('tp_saved') : '♡ ' + t('tp_save'),
-      favStyle: 'height:40px;padding:0 16px;border-radius:var(--r-sm);font-size:14px;font-weight:600;transition:all var(--t);' + (s.fav
-        ? 'border:1px solid var(--error);background:var(--error-soft);color:var(--error);'
-        : 'border:1px solid var(--border);background:var(--surface);color:var(--text);'),
+      favLabel: s.fav ? t('tp_saved') : t('tp_save'),
+      favClass: 'tf-profile-secondary-action tf-profile-save-action' + (s.fav ? ' is-saved' : ''),
       onFav: () => this.toggleFavorite(),
       onShare: async () => {
+        const url = location.href;
+        let copied = false;
         try {
-          await navigator.clipboard.writeText(location.href);
-          this.flash(t('tp_share_copied'));
+          await navigator.clipboard.writeText(url);
+          copied = true;
         } catch (_) {
-          this.flash(t('tp_share_copied'));
+          try {
+            const el = document.createElement('textarea');
+            el.value = url;
+            el.style.position = 'fixed';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.select();
+            copied = document.execCommand('copy');
+            document.body.removeChild(el);
+          } catch (_) { copied = false; }
         }
+        if (copied) this.flash(t('tp_share_copied'));
       },
 
       chatHref: 'Tafseel-Student-Dashboard.dc.html?chatWith=' + encodeURIComponent(s.teacherId),
-      requestHref: selected
-        ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
-          '&teacherServiceId=' + encodeURIComponent(selected.id)
-        : 'Tafseel-Request.dc.html',
       bookHref: bookService
         ? 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
           '&teacherServiceId=' + encodeURIComponent(bookService.id)
         : 'Tafseel-Book-Session.dc.html',
       canRequest,
       canBook,
-      showBookUnavailable,
+      showHeroCta: !!(canRequest || canBook),
+      heroCtaHidden: !canRequest && !canBook,
+      heroCtaHref: canRequest ? (selected
+        ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(s.teacherId) + '&teacherServiceId=' + encodeURIComponent(selected.id)
+        : 'Tafseel-Request.dc.html') : bookService
+        ? 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(s.teacherId) + '&teacherServiceId=' + encodeURIComponent(bookService.id)
+        : '#',
+      heroCtaLabel: canRequest ? t('tp_request_service') : t('tp_book_live'),
       availabilityLabel: s.availabilityError
         ? t('availability_error')
         : Tafseel.availabilityText(s.availabilitySummary),
@@ -679,48 +588,55 @@ class Component extends DCLogic {
       availabilityBookLabel: t('availability_book_action'),
       showAvailabilityBook: canBook,
 
-      tabs: [
-        { label: t('tp_tab_about'), ...tab('about') },
-        { label: t('tp_tab_samples'), ...tab('samples') },
-        { label: t('tp_tab_services'), ...tab('services') },
-        { label: t('tp_tab_availability'), ...tab('availability') },
-        { label: t('tp_tab_reviews') + (ratingCount ? ' (' + ratingCount + ')' : ''), ...tab('reviews') }
-      ],
-      isAbout: s.tab === 'about',
-      isSamples: s.tab === 'samples',
-      isServices: s.tab === 'services',
-      isAvailability: s.tab === 'availability',
-      isReviews: s.tab === 'reviews',
-
       bioParagraphs,
-      bioEmpty: bioParagraphs.length === 0,
+      showBio: bioParagraphs.length > 0,
+      showTimeline: timeline.length > 0,
       timeline,
-      timelineEmpty: timeline.length === 0,
       topics,
       topicsEmpty: topics.length === 0,
 
-      qualificationSamples: publicSamples.filter(sm => sm.sourceCode === 'qualification_sample'),
-      qualificationSamplesEmpty: !publicSamples.some(sm => sm.sourceCode === 'qualification_sample'),
-      teacherShowcases: publicSamples.filter(sm => sm.sourceCode === 'reviewed_showcase'),
-      teacherShowcasesEmpty: !publicSamples.some(sm => sm.sourceCode === 'reviewed_showcase'),
+      hasFeaturedSample: !!featuredSample,
+      samplesEmpty: publicSamples.length === 0,
+      hasMultipleSamples: carouselNavigationVisible(publicSamples),
+      featuredSample,
+      durationText: s.mediaDuration,
+      hasDuration: !!s.mediaDuration,
+      samplePositionLabel: featuredSample
+        ? Tafseel.number(sampleIndex + 1) + ' / ' + Tafseel.number(publicSamples.length)
+        : '',
+      previousVideoLabel: t('tp_previous_video'),
+      nextVideoLabel: t('tp_next_video'),
+      onPreviousSample: () => moveSample(-1),
+      onNextSample: () => moveSample(1),
+      onCarouselKeyDown: event => {
+        if (event.target !== event.currentTarget || !publicSamples.length) return;
+        const delta = carouselKeyDelta(event.key, s.lang === 'ar');
+        if (delta) { event.preventDefault(); moveSample(delta); }
+        if (event.key === 'Home') { event.preventDefault(); selectSample(0); }
+        if (event.key === 'End') { event.preventDefault(); selectSample(publicSamples.length - 1); }
+      },
+      onCarouselTouchStart: event => { this._carouselTouchX = event.changedTouches[0].clientX; },
+      onCarouselTouchEnd: event => {
+        const distance = event.changedTouches[0].clientX - (this._carouselTouchX || 0);
+        const delta = carouselSwipeDelta(distance);
+        if (delta) moveSample(delta);
+      },
 
       services: services.map(sv => {
         const urgent = /urgent|emergency|طارئ/i.test((sv.title || '') + ' ' + (sv.description || ''));
         return {
           id: sv.id,
-          icon: serviceIcon(sv),
+          iconPath: serviceIconPath(sv),
           name: sv.title,
           desc: sv.description,
           price: formatMoney(sv.currency, sv.price),
           delivery: formatDelivery(sv.deliveryHours),
           revisions: formatRevisions(sv.revisions),
           badge: urgent ? t('tp_urgent') : '',
-          cardClass: 'tf-service-card' + (selected && selected.id === sv.id ? ' is-selected' : ''),
-          cardStyle: 'background:var(--surface);border:1px solid ' + (selected && selected.id === sv.id ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-lg);padding:20px;transition:all var(--t)',
+          cardClass: 'tf-profile-service-card' + (selected && selected.id === sv.id ? ' is-selected' : ''),
+          selected: !!(selected && selected.id === sv.id),
+          selectClass: 'tf-profile-service-select' + (selected && selected.id === sv.id ? ' is-selected' : ''),
           btnLabel: selected && selected.id === sv.id ? t('tp_selected') : t('tp_select'),
-          btnStyle: 'margin-top:10px;height:34px;padding:0 14px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' + (selected && selected.id === sv.id
-            ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
-            : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
           onSelect: () => this.setState({ serviceId: sv.id })
         };
       }),
@@ -740,13 +656,15 @@ class Component extends DCLogic {
       breakdown,
       reviews: reviewItems.map(rv => ({
         initials: '★',
+        avatar: Tafseel.defaultAvatar,
         name: t('tp_verified_student'),
         service: Number(rv.overallScore || 0).toFixed(1) + ' ★',
         date: formatDateOnly(rv.createdAt),
         stars: stars(rv.overallScore),
         body: rv.originalComment || ''
       })),
-      reviewsEmpty: reviewItems.length === 0
+      reviewsEmpty: reviewItems.length === 0,
+      hasReviews: reviewItems.length > 0
     };
   }
 }

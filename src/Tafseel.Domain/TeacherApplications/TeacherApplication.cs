@@ -279,10 +279,10 @@ public sealed class TeacherSubjectQualification
     public Guid Id { get; private init; }
     public string TeacherId { get; private init; } = "";
     public Guid SubjectId { get; private init; }
-    public DateTimeOffset ApprovedAt { get; private init; }
-    public Guid? ApplicationId { get; private init; }
-    public Guid? QualificationAssignmentId { get; private init; }
-    public string? ApprovedByUserId { get; private init; }
+    public DateTimeOffset ApprovedAt { get; private set; }
+    public Guid? ApplicationId { get; private set; }
+    public Guid? QualificationAssignmentId { get; private set; }
+    public string? ApprovedByUserId { get; private set; }
     public TeacherQualificationStatus Status { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
     public string? RevokedByUserId { get; private set; }
@@ -301,6 +301,22 @@ public sealed class TeacherSubjectQualification
         RevokedAt = UpdatedAt = now;
         RevokedByUserId = actorId;
         RevocationReason = reason.Trim();
+    }
+
+    public void Reactivate(
+        Guid applicationId, Guid qualificationAssignmentId, string approvedByUserId, DateTimeOffset now)
+    {
+        if (IsActive)
+            throw new DomainException("qualification_already_active", "This subject qualification is already active.");
+        ApplicationId = applicationId;
+        QualificationAssignmentId = qualificationAssignmentId;
+        ApprovedByUserId = approvedByUserId;
+        ApprovedAt = now;
+        Status = TeacherQualificationStatus.Approved;
+        RevokedAt = null;
+        RevokedByUserId = null;
+        RevocationReason = null;
+        UpdatedAt = now;
     }
 }
 

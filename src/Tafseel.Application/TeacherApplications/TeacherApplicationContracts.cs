@@ -80,6 +80,34 @@ public sealed record QualificationResourceDto(
     Guid Id, Guid AssignmentId, string Type, string DisplayName, string DisplayNameAr,
     string? Url, int DisplayOrder, bool IsRequired);
 
+public enum TeacherQualificationCardState
+{
+    Qualified,
+    ApplicationInProgress,
+    ChangesRequested,
+    Rejected,
+    Revoked,
+    AvailableToApply,
+    Unavailable
+}
+
+public sealed record TeacherQualificationCardDto(
+    Guid SubjectId,
+    string SubjectName,
+    string? SubjectNameAr,
+    TeacherQualificationCardState State,
+    Guid? ApplicationId,
+    TeacherApplicationStatus? ApplicationStatus,
+    DateTimeOffset? SubmittedAt,
+    DateTimeOffset? DecidedAt,
+    DateTimeOffset? ApprovedAt,
+    DateTimeOffset? RevokedAt,
+    bool DemoUploaded,
+    string NextAction,
+    string? NextUrl,
+    bool CanApply,
+    string? UnavailableReason);
+
 public sealed record PrivateMediaFile(Stream Content, string ContentType, string FileName);
 public sealed record RevokeQualificationInput(
     [param: Required, NotWhiteSpace, StringLength(2000)] string Reason);
@@ -115,6 +143,7 @@ public interface ITeacherApplicationService
     Task SubmitAsync(string teacherId, Guid applicationId, string expectedVersion, CancellationToken cancellationToken);
     Task WithdrawAsync(string teacherId, Guid applicationId, string expectedVersion, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<TeacherApplicationDto>> GetMineAsync(string teacherId, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<TeacherQualificationCardDto>> GetMyQualificationsAsync(string teacherId, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<TeacherApplicationDto>> GetQueueAsync(TeacherApplicationStatus? status, CancellationToken cancellationToken);
     Task<TeacherOnboardingStatusDto> GetOnboardingStatusAsync(string teacherId, CancellationToken cancellationToken);
     Task<PrivateMediaFile> OpenDemoAsync(string requesterId, Guid applicationId, bool canReview, CancellationToken cancellationToken);

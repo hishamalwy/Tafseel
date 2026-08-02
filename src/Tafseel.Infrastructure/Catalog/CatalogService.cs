@@ -94,50 +94,50 @@ internal sealed class CatalogService(
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetServicesAsync(bool includeInactive, CancellationToken ct)
     {
-        // Project mapped scalars inside LINQ (EF-translatable). AllowedDurations is derived from CSV after materialization.
         var rows = await Query(db.ServiceCatalogItems, includeInactive)
             .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name)
-            .Select(x => new
-            {
-                x.Id,
-                x.Name,
-                x.IsActive,
-                x.Description,
-                x.DescriptionAr,
-                x.Code,
-                x.Type,
-                x.IsPublic,
-                x.TeacherSelectable,
-                x.RequiresScheduling,
-                x.AllowedDurationsCsv,
-                x.MinPrice,
-                x.MaxPrice,
-                x.DisplayOrder,
-                x.NameAr
-            })
             .ToArrayAsync(ct);
-
-        return rows.Select(x => MapService(x.Id, x.Name, x.IsActive, x.Description, x.DescriptionAr, x.Code, x.Type,
-            x.IsPublic, x.TeacherSelectable, x.RequiresScheduling, ParseDurations(x.AllowedDurationsCsv),
-            x.MinPrice, x.MaxPrice, x.DisplayOrder, x.NameAr)).ToArray();
+        var usage = includeInactive
+            ? await db.TeacherServices.AsNoTracking()
+                .GroupBy(x => x.ServiceCatalogItemId)
+                .Select(x => new
+                {
+                    Id = x.Key,
+                    References = x.Count(),
+                    EnabledTeachers = x.Where(s => s.IsActive).Select(s => s.TeacherId).Distinct().Count()
+                })
+                .ToDictionaryAsync(x => x.Id, ct)
+            : [];
+        return rows.Select(x =>
+        {
+            usage.TryGetValue(x.Id, out var counts);
+            return MapService(x, counts?.References > 0, counts?.EnabledTeachers ?? 0);
+        }).ToArray();
     }
 
-    private static CatalogItemDto MapService(
-        Guid id, string name, bool isActive, string description, string descriptionAr, string code, string type,
-        bool isPublic, bool teacherSelectable, bool requiresScheduling, IReadOnlyCollection<int>? durations,
-        decimal? minPrice, decimal? maxPrice, int displayOrder, string nameAr) =>
+    private static CatalogItemDto MapService(ServiceCatalogItem x, bool hasReferences = false, int enabledTeachers = 0) =>
         new(
-            id, name, isActive, description, null, code, type, isPublic, teacherSelectable, requiresScheduling,
-            durations, minPrice, maxPrice, displayOrder,
-            NameAr: nameAr, DescriptionAr: descriptionAr, NameEn: name, DescriptionEn: description);
-
-    private static IReadOnlyCollection<int>? ParseDurations(string? csv)
-    {
-        if (string.IsNullOrWhiteSpace(csv)) return [];
-        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(int.Parse)
-            .ToArray();
-    }
+            x.Id, x.Name, x.IsActive, x.Description, null, x.Code, x.Type,
+            x.IsPublic, x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations,
+            x.MinPrice, x.MaxPrice, x.DisplayOrder,
+            NameAr: x.NameAr, DescriptionAr: x.DescriptionAr, NameEn: x.Name, DescriptionEn: x.Description)
+        {
+            CategoryCode = x.CategoryCode,
+            IconCode = x.IconCode,
+            OrderType = x.OrderType,
+            QualificationPolicy = x.QualificationPolicy,
+            CurrencyCode = x.CurrencyCode,
+            DefaultPrice = x.DefaultPrice,
+            RecommendedPrice = x.RecommendedPrice,
+            MinimumDeliveryHours = x.MinimumDeliveryHours,
+            DefaultDeliveryHours = x.DefaultDeliveryHours,
+            RecommendedDeliveryHours = x.RecommendedDeliveryHours,
+            MaximumDeliveryHours = x.MaximumDeliveryHours,
+            DefaultRevisions = x.DefaultRevisions,
+            MaximumRevisions = x.MaximumRevisions,
+            HasReferences = hasReferences,
+            EnabledTeacherCount = enabledTeachers
+        };
 
     public Task<CatalogItemDto> CreateSubjectAsync(SubjectInput input, CancellationToken ct) =>
         AddAsync(new Subject(input.Name, input.Icon, input.NameAr, input.DisplayOrder),
@@ -178,16 +178,33 @@ internal sealed class CatalogService(
         var item = new ServiceCatalogItem(
             input.NameEn,
             input.DescriptionEn,
-            ServiceCatalogItem.CodeFromEnglishName(input.NameEn),
+            string.IsNullOrWhiteSpace(input.Code)
+                ? ServiceCatalogItem.CodeFromEnglishName(input.NameEn)
+                : input.Code,
             input.NameAr,
             input.DescriptionAr,
-            displayOrder: input.DisplayOrder);
+            isPublic: input.IsPublic,
+            teacherSelectable: input.TeacherSelectable,
+            allowedDurations: input.AllowedDurations,
+            minPrice: input.MinimumPrice,
+            maxPrice: input.MaximumPrice,
+            displayOrder: input.DisplayOrder,
+            categoryCode: input.CategoryCode,
+            iconCode: input.IconCode,
+            orderType: input.OrderType,
+            qualificationPolicy: input.QualificationPolicy,
+            currencyCode: input.CurrencyCode,
+            defaultPrice: input.DefaultPrice,
+            recommendedPrice: input.RecommendedPrice,
+            minimumDeliveryHours: input.MinimumDeliveryHours,
+            defaultDeliveryHours: input.DefaultDeliveryHours,
+            recommendedDeliveryHours: input.RecommendedDeliveryHours,
+            maximumDeliveryHours: input.MaximumDeliveryHours,
+            defaultRevisions: input.DefaultRevisions,
+            maximumRevisions: input.MaximumRevisions);
         if (!input.IsActive)
             item.SetActive(false);
-        return await AddAsync(item, x => MapService(
-            x.Id, x.Name, x.IsActive, x.Description, x.DescriptionAr, x.Code, x.Type,
-            x.IsPublic, x.TeacherSelectable, x.RequiresScheduling, x.AllowedDurations,
-            x.MinPrice, x.MaxPrice, x.DisplayOrder, x.NameAr), ct);
+        return await AddAsync(item, x => MapService(x), ct);
     }
 
     public async Task UpdateAsync(string type, Guid id, NamedCatalogInput input, CancellationToken ct)
@@ -234,9 +251,20 @@ internal sealed class CatalogService(
     public async Task UpdateServiceAsync(Guid id, ServiceCatalogInput input, CancellationToken ct)
     {
         var service = await Required(db.ServiceCatalogItems, id, ct);
+        if (!string.IsNullOrWhiteSpace(input.Code)
+            && !string.Equals(service.Code, ServiceCatalogItem.NormalizeCode(input.Code), StringComparison.Ordinal))
+            throw new DomainException("service_code_immutable", "Service code cannot be changed after creation.");
+        var hasReferences = await db.TeacherServices.AnyAsync(x => x.ServiceCatalogItemId == id, ct);
         service.ConfigureLocalizedContent(
             input.NameEn, input.NameAr, input.DescriptionEn, input.DescriptionAr,
-            input.DisplayOrder, input.IsActive);
+            input.DisplayOrder);
+        service.ConfigurePolicy(
+            input.CategoryCode, input.IconCode, input.OrderType, input.QualificationPolicy, input.CurrencyCode,
+            input.MinimumPrice, input.DefaultPrice, input.RecommendedPrice, input.MaximumPrice,
+            input.MinimumDeliveryHours, input.DefaultDeliveryHours, input.RecommendedDeliveryHours, input.MaximumDeliveryHours,
+            input.DefaultRevisions, input.MaximumRevisions, input.IsPublic, input.TeacherSelectable,
+            input.AllowedDurations, input.DisplayOrder, hasReferences);
+        service.SetActive(input.IsActive);
         await SaveCatalogAsync(ct);
     }
 

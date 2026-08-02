@@ -32,6 +32,10 @@ public sealed class TeacherApplicationsController(ITeacherApplicationService app
     public Task<IReadOnlyCollection<TeacherApplicationDto>> Mine(CancellationToken ct) =>
         applications.GetMineAsync(UserId(), ct);
 
+    [Authorize(Policy = Permissions.TeachersApply), HttpGet("~/api/v1/teachers/me/qualifications")]
+    public Task<IReadOnlyCollection<TeacherQualificationCardDto>> MyQualifications(CancellationToken ct) =>
+        applications.GetMyQualificationsAsync(UserId(), ct);
+
     [Authorize(Policy = Permissions.TeachersApply), HttpGet("~/api/v1/teachers/onboarding-status")]
     public Task<TeacherOnboardingStatusDto> OnboardingStatus(CancellationToken ct) =>
         applications.GetOnboardingStatusAsync(UserId(), ct);

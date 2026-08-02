@@ -1,6 +1,63 @@
 # Tafseel Project Status
 
-Last updated: 2026-07-30.
+Last updated: 2026-08-02.
+
+## Teacher Growth & Profile Curation
+
+Two Teacher-side product gaps were closed locally:
+
+1. **Additional Subject Qualification** — Dashboard **My Qualifications / مؤهلاتي**, Apply `?mode=additional` subject filtering, qualifications matrix API, and revoked-subject reactivation on approve. Existing multi-subject application model reused.
+2. **Approved Video Profile Curation** — `IsProfileVisible` / `ProfileDisplayOrder` / `IsProfileFeatured` on `TeacherTeachingSample`, Teacher Dashboard **Profile Videos / فيديوهات البروفايل**, and public projection gated by Teacher selection AND eligibility. Migration `20260802083847_TeacherProfileVideoCuration` generated, not applied (legacy visibility preserved).
+
+Status **conditionally verified**: domain tests pass; focused integration coverage added; full browser matrix and migration apply remain Staging follow-ups. See [feature report](./features/TEACHER_GROWTH_AND_PROFILE_CURATION_REPORT.md), [ADR-012](./decisions/ADR-012-TEACHER-GROWTH-AND-PROFILE-CURATION.md), [migration](./database/TEACHER_PROFILE_CURATION_MIGRATION.md).
+
+## Consumer Marketplace Experience (Phase 3 Release 3)
+
+A full Student-journey audit (Landing → Browse → Profile → Samples → Services → Request → Payment → Order lifecycle → Reviews) was run against the rendered code. Landing and Teacher Profile were reviewed and found structurally sound — no changes required. Browse Teachers had three real, fixed issues: a "Verified only" filter that rendered as a broken stretched checkbox instead of a toggle switch, emoji glyphs (⌕/♥/♡) inconsistent with the SVG icon language already established on Teacher Profile, and ragged card heights from unclamped bio text. All three were fixed and browser-verified across English/Arabic, light/dark, and 1440/375px with zero console errors; frontend integrity, localization parity, localization usage-coverage, and the BUG-001 display-name checks all passed. The Request Wizard through Rating portion of the journey was **not** re-audited or changed in this pass. See [Phase 3 Release 3 report](./fixes/PHASE_3_RELEASE_3_CONSUMER_MARKETPLACE_EXPERIENCE.md).
+
+### Sprint 2 — Teacher Profile
+
+A dedicated 10-part audit of Teacher Profile (Student's "sales page") found the page already mature from prior polish passes, but caught two real, live-browser-proven defects: on mobile (375×812 and similar short-content cases), the Save/Share/Message row was unreachable on first paint because it sat directly under the fixed bottom CTA bar (`document.elementFromPoint()` resolved to the bar, not the button) — fixed via a scoped `pointer-events` split that keeps the real CTA link clickable while letting taps pass through the bar's non-interactive padding to whatever is genuinely underneath. Separately, the "Share" action showed a false "link copied" success toast even when `navigator.clipboard.writeText()` failed — fixed to only flash on confirmed success (with a legacy-copy fallback). Both fixes were verified across English/Arabic, RTL/LTR, light/dark, and 375–1440px with zero console errors. A significant but higher-risk finding — three superimposed generations of Teacher Profile CSS left over from earlier redesigns, confirmed via `grep` to be scoped only to this one page but too entangled (shared class names, partial cascade overrides) to safely bulk-delete — was investigated, precisely documented, and deliberately deferred to its own dedicated cleanup pass rather than risked in this sprint. See [Sprint 2 report](./fixes/PHASE_3_RELEASE_3_SPRINT_2_TEACHER_PROFILE.md).
+
+### Sprint 2.1 — Mobile CTA Visual Overlap Closure
+
+Sprint 2's `pointer-events` fix restored click-through but not the visual overlap itself; this pass closed it properly with a live-measured (not guessed) dynamic clearance that pulls the identity card up by exactly the overlap detected via real `getBoundingClientRect()`/`elementFromPoint()` measurement — **zero first-paint overlap confirmed at all 7 required viewports** (320×568 through 768×1024) across English/Arabic × light/dark, zero console errors. Along the way this found a more serious issue than the original ask: at short viewports, the "Message" link could sit exactly under the bar's real "Request this service" link, so a tap could misfire onto the wrong action — now fixed. Two implementation bugs were found and fixed during the work itself: a dev-server/browser caching trap that served stale code during verification, and a self-referential measurement oscillation where the fix's own effect on layout fooled the next measurement into undoing itself. Also added a truthful mobile no-service state (no fake fixed CTA bar, no fabricated copy, reuses the existing localized "No services available" string) verified via DOM simulation since Development has no zero-service teacher fixture. Status is **conditionally verified**: the bookable/live-session CTA path wasn't independently re-tested, and the inherent (not first-paint) mid-scroll transit case still relies on the `pointer-events` backstop rather than being geometrically eliminated. See [Sprint 2.1 report](./fixes/PHASE_3_RELEASE_3_SPRINT_2_1_MOBILE_CTA_OVERLAP.md).
+
+### Sprint 3 — Request Wizard
+
+The Guided Request wizard was audited as a marketplace purchase continuation of Teacher Profile. Critical conversion defects: Students lost teacher/price/delivery/revisions after step 1; success copy misused catalog delivery hours as a fabricated reply SLA; review pricing looked payable immediately; mobile progress labels overlapped. Fixed with a persistent commercial context rail, honest pay-after-accept messaging, corrected success next-steps + dual CTAs, service-card delivery/revisions, goal guidance, and mobile progress truncation — frontend only, ADR-008 preserved. Browser-verified EN/AR, light/dark, 375–1440, including a live submit success dialog. Status **conditionally verified** (multi-file upload matrix and Payment surface deferred). See [Sprint 3 report](./fixes/PHASE_3_RELEASE_3_SPRINT_3_REQUEST_WIZARD.md).
+
+### Sprint 4 — Payment Experience & Consumer Confidence
+
+Student Payment + Mock Checkout were audited as the conversion close of Accept → Order → Pay. Critical defects: commercial context dropped after the Request Wizard; coupon ghost UI; mock/idempotency stranding (`payment-order-*` vs existing `payment-*` keys) left Students with “Payment has already been initiated” and no resume; thin success/failure paths. Fixed with a Request-parity commercial rail, honest Staging mock labeling, aligned idempotency + gated mock resume, mobile sticky CTA, and webhook-honest next steps — frontend only; fee lines remain Order DTO totals unchanged. Browser-proven pay → mock fail → succeed, cancel return, EN/AR light/dark samples at 375–1440. Status **conditionally verified** (remaining viewport×locale screenshot pairs and live-session payment re-drive). See [Sprint 4 report](./fixes/PHASE_3_RELEASE_3_SPRINT_4_PAYMENT_EXPERIENCE.md).
+
+### Sprint 6 — Reviews, Rating & Notification Deep Links
+
+Student rating / completed-order clarity / notification deep links audited against the Governance review domain. Backend: Order DTO review state (`hasReview`, owner-safe score/comment/visibility, `reviewCanSubmit`); public `PublicTeacherReviewDto` without OrderId/StudentId; student OrderCompleted + ReviewSubmitted/ReviewModeration notifications; NewMessage link → conversation. Frontend: `Tafseel.notificationRoute`, rate modal privacy/service copy, completed filter includes cancelled, Files labeled unavailable, Reviews list from owned completed reviews. Phase9 tests extended for eligibility, restore aggregates, and DTO leakage. Status **conditionally verified** (full browser Deliver→Rate re-drive + responsive matrix remain). See [Sprint 6 report](./fixes/PHASE_3_RELEASE_3_SPRINT_6_REVIEWS_RATING_NOTIFICATIONS.md).
+
+### Sprint 5 — Post-Purchase Experience
+
+Student Order Timeline / delivery review were audited as the anxiety reducer after payment. Critical defects: `?section=orders` blanked the dashboard main pane; paid-but-unstarted chips rendered error-red; timeline was history-only with no current-step map; delivery cards lacked Latest / version clarity; waiting states had no guidance. Fixed with safe deep-link mapping, order hero + honest five-step progress (no %), stage guides, delivery newest-first labeling, and rating after-note — frontend only; lifecycle and revision rules unchanged. Browser-proven on payment-confirmed fixtures. Status **conditionally verified** (Delivered/Revision/Completed live re-drive and full responsive screenshot matrix remain). See [Sprint 5 report](./fixes/PHASE_3_RELEASE_3_SPRINT_5_POST_PURCHASE_EXPERIENCE.md).
+
+## Marketplace Service Governance
+
+Phase 3 Release 1 is **implemented locally and conditionally verified**. The existing `ServiceCatalogItem` now owns finite category/order/qualification/icon and complete commercial policy; Admin governance, centralized validation and rename-safe Request/Order/booking snapshots are present. Migration `20260801135831_MarketplaceServiceCatalogRelease1` is generated but not applied. Releases 2–4 remain deferred. See the [governance ADR](./decisions/ADR-005-MARKETPLACE-SERVICE-GOVERNANCE.md), [Release 1 report](./features/MARKETPLACE_SERVICE_CATALOG_RELEASE_1_REPORT.md) and [migration report](./database/MARKETPLACE_SERVICE_CATALOG_RELEASE_1_MIGRATION.md).
+
+## Teacher Profile Premium Polish
+
+The approved Teacher Profile architecture now uses an intentional educational fallback avatar, coherent inline-SVG actions and service facts, stronger qualification/price/CTA hierarchy, and a localized post-purchase review empty state. Release build and frontend gates pass, authenticated media playback remains healthy, and the 24-case browser matrix passed without overflow, duplicate IDs, or console errors. Status is **conditionally verified** because the real Development sample is unrelated to its mathematics title and the listing data remains too sparse to meet a Preply-level content bar; those are source-content defects that this UI-only pass did not fabricate around. See [Teacher Profile Premium Polish](./fixes/TEACHER_PROFILE_PREMIUM_POLISH_REPORT.md).
+
+## Teacher Profile Carousel Polish
+
+The approved video-first carousel now renders one trust badge, one visible title, a compact numeric position, localized SVG Previous/Next controls, direction-aware RTL/LTR keyboard behavior, and the existing one-video/no-navigation state. Release build and frontend gates pass, and the 20-case normal-browser matrix passed without overflow or console errors. Status is **conditionally verified** because Development has no legitimate one-video browser fixture and the in-app browser does not synthesize touch events; the production swipe and one/multiple-video helpers are covered by focused executable checks. See [Teacher Profile Carousel Polish](./fixes/TEACHER_PROFILE_CAROUSEL_POLISH_REPORT.md).
+
+## Teacher Profile Final Quality Recovery
+
+The actual Development teacher now renders `معلم تفصيل` in Arabic and `Tafseel Teacher` in English after an authenticated data correction and Development seed fix. Hidden legacy profile DOM was deleted, the compact zero-review state remains honest, and the responsive Arabic/English light/dark matrix passed at six widths. Status is **fixed but conditionally verified** only because Development has no legitimate populated-review browser fixture. See [Teacher Profile Final Quality Recovery](./fixes/TEACHER_PROFILE_FINAL_QUALITY_REPORT.md).
+
+## Final Staging Certification
+
+Automated final regression gates passed on 2026-08-01. The startup blocker was classified as **Port/Process Conflict** and was restored with the explicit `TafseelLocalDb` connection. The focused recovery classified the browser defect as **CSP / media-src Issue** and applied the smallest shared CSP/renderer/media-state fix; the rebuilt normal-browser rerun is still required before staging readiness. See [Final Staging Certification report](./reports/FINAL_STAGING_CERTIFICATION_REPORT.md) and [Teacher Profile Media & UX Recovery](./fixes/TEACHER_PROFILE_MEDIA_UX_RECOVERY_REPORT.md).
 
 ## Current Version
 
@@ -8,7 +65,7 @@ No release tag is present. Current audited baseline is commit `79be4cf` on `main
 
 ## Current Phase
 
-The Final Production Readiness Audit (Step 8 / 8) is complete: **READY FOR STAGING VALIDATION**, not Production. Critical blockers remain Mock-only payment/live-session providers (F-003), local file storage (F-004), ADR-011 Showcase media gates, and unproven backup/observability. Steps 5–7 trust badge / public-profile work remain as previously recorded.
+The Final Production Readiness Audit (Step 8 / 8) is complete: **READY FOR STAGING VALIDATION**, not Production. The public Teacher Profile conversion redesign is conditionally verified in a normal browser: its rendered structure now has a featured media experience, integrated conversion panel, localized naming, and responsive layouts. Critical blockers remain Mock-only payment/live-session providers (F-003), local file storage (F-004), ADR-011 Showcase media gates, and unproven backup/observability. Steps 5–7 trust badge / public-profile work remain as previously recorded.
 
 ## Current Milestone
 
@@ -32,6 +89,15 @@ Historical implementation phases 2–11 and completed production-correction pass
 
 | Finding | Status | Report |
 |---|---|---|
+| Consumer Marketplace Experience — Sprint 6 (Reviews / Notifications) | Conditionally verified — review state + deep links + Files honesty; Phase9 passed | [Sprint 6 report](./fixes/PHASE_3_RELEASE_3_SPRINT_6_REVIEWS_RATING_NOTIFICATIONS.md) |
+| Consumer Marketplace Experience — Sprint 5 (Post-Purchase) | Conditionally verified — timeline hero/progress + payment-return deep-link browser-proven | [Sprint 5 report](./fixes/PHASE_3_RELEASE_3_SPRINT_5_POST_PURCHASE_EXPERIENCE.md) |
+| Consumer Marketplace Experience — Sprint 4 (Payment Experience) | Conditionally verified — commercial context, mock resume, success/failure next-steps browser-proven | [Sprint 4 report](./fixes/PHASE_3_RELEASE_3_SPRINT_4_PAYMENT_EXPERIENCE.md) |
+| Consumer Marketplace Experience — Sprint 3 (Request Wizard) | Conditionally verified — commercial context rail + honest success path | [Sprint 3 report](./fixes/PHASE_3_RELEASE_3_SPRINT_3_REQUEST_WIZARD.md) |
+| Consumer Marketplace Experience — Sprint 2.1 (Mobile CTA overlap closure) | Conditionally verified — zero first-paint overlap at all 7 required viewports | [Sprint 2.1 report](./fixes/PHASE_3_RELEASE_3_SPRINT_2_1_MOBILE_CTA_OVERLAP.md) |
+| Consumer Marketplace Experience — Sprint 2 (Teacher Profile) | Two real defects fixed and browser-verified; CSS-cleanup deliberately deferred | [Sprint 2 report](./fixes/PHASE_3_RELEASE_3_SPRINT_2_TEACHER_PROFILE.md) |
+| Consumer Marketplace Experience (Phase 3 Release 3) | Conditionally closing — Browse→Profile→Request→Payment→Timeline→Reviews/deep-links done; live rate E2E + responsive matrix remain | [Phase 3 Release 3 report](./fixes/PHASE_3_RELEASE_3_CONSUMER_MARKETPLACE_EXPERIENCE.md) |
+| Marketplace Service Governance | Decision complete; ready for implementation | [Governance decision report](./reports/MARKETPLACE_SERVICE_GOVERNANCE_DECISION_REPORT.md) |
+| Marketplace Service Catalog Release 1 | Implemented locally; migration not applied | [Release 1 report](./features/MARKETPLACE_SERVICE_CATALOG_RELEASE_1_REPORT.md) |
 | F-001 Development-only identity initialization | Fixed locally | [F-001 report](./fixes/TAFSEEL_F001_IDENTITY_INITIALIZATION_FIX_REPORT.md) |
 | Teacher qualification application contract and UX | Fixed locally | [Teacher qualification report](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) |
 | Teacher qualification application browser validation | Conditionally Verified | [Browser validation report](./fixes/TEACHER_QUALIFICATION_BROWSER_VALIDATION_REPORT.md) |
@@ -63,6 +129,8 @@ Historical implementation phases 2–11 and completed production-correction pass
 | Order Journey Browser Certification | Blocked (superseded same day) | [Order journey browser certification report](./fixes/ORDER_JOURNEY_BROWSER_CERTIFICATION.md) |
 | Post-Payment Order Lifecycle Recovery | **Recovered and verified** | [Recovery report](./fixes/POST_PAYMENT_ORDER_LIFECYCLE_RECOVERY_REPORT.md) |
 | RoleBootstrap Fast-Path CI Fix | Fixed | [RoleBootstrap fix report](./fixes/ROLE_BOOTSTRAP_FAST_PATH_CI_FIX_REPORT.md) |
+| Teacher Profile Conversion Redesign | Conditionally verified | [Conversion redesign report](./fixes/TEACHER_PROFILE_CONVERSION_REDESIGN_REPORT.md) |
+| Teacher Profile Final Quality Recovery | **Fixed; conditionally verified** | [Final quality report](./fixes/TEACHER_PROFILE_FINAL_QUALITY_REPORT.md) |
 
 ## Open Findings
 

@@ -86,6 +86,9 @@ public sealed class DevelopmentDemoUserSeedingTests
             Assert.Equal([role], await users.GetRolesAsync(user));
             Assert.True(await users.CheckPasswordAsync(user, ValidPassword));
         }
+        var teacher = await users.FindByEmailAsync("teacher@gmail.com");
+        Assert.Equal("معلم تفصيل", teacher!.FullName);
+        Assert.Equal("Tafseel Teacher", teacher.FullNameEnglish);
     }
 
     [Fact]

@@ -1,7 +1,7 @@
 /* Tafseel shared preferences, localization, direction, and locale formatting. */
 (function () {
   'use strict';
-  if (window.Tafseel && window.Tafseel.__ready) return;
+  if (window.Tafseel && window.Tafseel.__ready && window.Tafseel.__build === 'r3s6') return;
 
   var LS_THEME = 'tafseel-theme';
   var LS_LANG = 'tafseel-lang';
@@ -33,6 +33,7 @@
 
   var Tafseel = {
     __ready: true,
+    __build: 'r3s6',
     theme: 'light',
     lang: 'en',
     _subs: [],
@@ -692,7 +693,7 @@
       return '';
     },
 
-    defaultAvatar: 'assets/brand/default-avatar.svg',
+    defaultAvatar: 'assets/brand/default-avatar.svg?v=premium-1',
 
     avatarUrl: function (userId, hasAvatar, version) {
       if (hasAvatar && userId) {
@@ -805,19 +806,45 @@
 
       var orderRows = orders.map(function (x) {
         var status = Number(x.status);
-        var presentation = self.orderPresentation(status, x.paymentStatus, 'student');
-        var group = status === 4 ? 'done' : (presentation.action ? 'action' : 'active');
+        var hasReview = !!x.hasReview;
+        var reviewCanSubmit = x.reviewCanSubmit === true
+          || (status === 4 && Number(x.paymentStatus) === 1 && !hasReview);
+        var presentation = self.orderPresentation(status, x.paymentStatus, 'student', {
+          hasReview: hasReview,
+          reviewCanSubmit: reviewCanSubmit
+        });
+        var group = (status === 4 || status === 5) ? 'done' : (presentation.action ? 'action' : 'active');
+        var isAr = self.lang === 'ar';
+        var serviceName = (isAr && x.serviceNameArabic)
+          ? x.serviceNameArabic
+          : (x.serviceNameEnglish || x.serviceNameArabic || self.t('dash_service_personalized'));
+        var teacherId = x.teacherId || '';
+        var allowance = Number(x.revisionAllowance) || 0;
+        var used = Number(x.revisionsUsed) || 0;
+        var remaining = Math.max(0, allowance - used);
+        var guideKey = 'order_guide_' + presentation.stage;
+        if (status === 4 && hasReview) guideKey = 'order_guide_completed_reviewed';
+        else if (status === 4 && Number(x.paymentStatus) === 3) guideKey = 'order_guide_completed_refunded';
         return {
           id: x.id,
           learningRequestId: x.learningRequestId,
+          teacherId: teacherId,
           title: self.orderTitle(x),
-          service: self.t('dash_service_personalized'),
+          service: serviceName,
           teacher: self.partyName(x, 'teacher'),
+          teacherAvatar: self.avatarUrl(teacherId, false),
           status: self.t(presentation.labelKey),
           stage: presentation.stage,
           action: presentation.action,
+          guideKey: guideKey,
           deadline: self.date(x.agreedDeliveryAt, { dateStyle: 'medium' }),
           amount: self.money(x.studentTotal, x.currency || 'SAR'),
+          orderRef: String(x.id || '').slice(0, 8),
+          requestRef: x.learningRequestId ? String(x.learningRequestId).slice(0, 8) : '',
+          categoryCode: x.categoryCode || '',
+          revisionAllowance: allowance,
+          revisionsUsed: used,
+          revisionsRemaining: remaining,
           group: group,
           kind: 'order',
           rawStatus: status,
@@ -826,8 +853,15 @@
           studentTotal: Number(x.studentTotal) || 0,
           currency: x.currency || 'SAR',
           deliveries: x.deliveries || [],
-          revisionAllowance: Number(x.revisionAllowance) || 0,
-          revisionsUsed: Number(x.revisionsUsed) || 0
+          hasReview: hasReview,
+          reviewOverallScore: x.reviewOverallScore != null ? Number(x.reviewOverallScore) : null,
+          reviewComment: x.reviewComment || '',
+          reviewIsVisible: x.reviewIsVisible,
+          reviewCreatedAt: x.reviewCreatedAt || null,
+          reviewCanSubmit: reviewCanSubmit,
+          profileHref: teacherId
+            ? ('Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacherId))
+            : ''
         };
       });
 
@@ -849,13 +883,160 @@
             return r.kind === 'request' || (r.kind === 'order' && r.group === 'active');
           });
         case 'done':
-          return list.filter(function (r) { return r.kind === 'order' && r.group === 'done'; });
+          return list.filter(function (r) {
+            return r.kind === 'order' && (r.group === 'done' || Number(r.rawStatus) === 4 || Number(r.rawStatus) === 5);
+          });
         case 'all':
         default:
           return list.filter(function (r) {
             return r.kind === 'request' || (r.kind === 'order' && r.group !== 'done');
           });
       }
+    },
+
+    /**
+     * Canonical notification → destination for Student (and Teacher) dashboards.
+     * Uses persisted Type + Link only. Never invents targets. Unknown → safe dashboard.
+     * Returns { href, section, filter, orderId, focus, conversationId, external }.
+     */
+    notificationRoute: function (notification, role) {
+      var type = String((notification && notification.type) || '').toLowerCase();
+      var link = String((notification && notification.link) || '');
+      var who = role === 'teacher' ? 'teacher' : 'student';
+      var orderMatch = link.match(/\/orders\/([0-9a-fA-F-]{36})/);
+      var conversationMatch = link.match(/\/conversations\/([0-9a-fA-F-]{36})/);
+      var sessionMatch = link.match(/\/live-sessions\/([0-9a-fA-F-]{36})/);
+      var orderId = orderMatch ? orderMatch[1] : '';
+      var conversationId = conversationMatch ? conversationMatch[1] : '';
+      var fallback = {
+        href: who === 'teacher'
+          ? 'Tafseel-Teacher-Dashboard.dc.html'
+          : 'Tafseel-Student-Dashboard.dc.html',
+        section: 'overview',
+        filter: '',
+        orderId: '',
+        focus: '',
+        conversationId: '',
+        external: false
+      };
+
+      if (type === 'newmessage' || conversationId) {
+        return {
+          href: who === 'teacher'
+            ? 'Tafseel-Teacher-Dashboard.dc.html?section=messages'
+            : 'Tafseel-Student-Dashboard.dc.html?section=messages'
+              + (conversationId ? ('&conversationId=' + encodeURIComponent(conversationId)) : ''),
+          section: 'messages',
+          filter: '',
+          orderId: '',
+          focus: '',
+          conversationId: conversationId,
+          external: false
+        };
+      }
+
+      if (sessionMatch || type.indexOf('session') === 0) {
+        return {
+          href: who === 'teacher'
+            ? 'Tafseel-Teacher-Dashboard.dc.html?section=sessions'
+            : 'Tafseel-Student-Dashboard.dc.html?section=sessions',
+          section: 'sessions',
+          filter: '',
+          orderId: '',
+          focus: '',
+          conversationId: '',
+          external: false
+        };
+      }
+
+      if (!orderId && !type) return fallback;
+
+      var knownStudent = {
+        paymentrequired: 1,
+        paymentconfirmed: 1,
+        workstarted: 1,
+        deliveryuploaded: 1,
+        ordercompleted: 1,
+        reviewsubmitted: 1,
+        reviewmoderation: 1,
+        refund: 1,
+        dispute: 1,
+        clarificationrequested: 1,
+        requestdeclined: 1,
+        newrequest: 1,
+        clarificationreplied: 1,
+        revisionrequested: 1,
+        review: 1
+      };
+
+      if (who === 'teacher') {
+        if (!orderId && !knownStudent[type] && type.indexOf('application') !== 0)
+          return fallback;
+        var teacherFocus = '';
+        if (type === 'revisionrequested') teacherFocus = 'deliver';
+        else if (type === 'paymentconfirmed' || type === 'paymentrequired') teacherFocus = '';
+        else if (type === 'ordercompleted' || type === 'review') teacherFocus = '';
+        return {
+          href: 'Tafseel-Teacher-Dashboard.dc.html?section=requests'
+            + (orderId ? ('&orderId=' + encodeURIComponent(orderId)) : '')
+            + (teacherFocus ? ('&focus=' + teacherFocus) : ''),
+          section: 'requests',
+          filter: '',
+          orderId: orderId,
+          focus: teacherFocus,
+          conversationId: '',
+          external: false
+        };
+      }
+
+      // Student routes — unknown types without a persisted order target fail safe.
+      if (!knownStudent[type] && !orderId) return fallback;
+
+      if (type === 'paymentrequired') {
+        return {
+          href: orderId
+            ? ('Tafseel-Payment.dc.html?orderId=' + encodeURIComponent(orderId))
+            : 'Tafseel-Student-Dashboard.dc.html?section=requests&filter=action',
+          section: 'requests',
+          filter: 'action',
+          orderId: orderId,
+          focus: 'pay',
+          conversationId: '',
+          external: !!orderId
+        };
+      }
+
+      var filter = 'orders';
+      var focus = '';
+      if (type === 'paymentconfirmed' || type === 'workstarted') {
+        filter = 'orders';
+        focus = '';
+      } else if (type === 'deliveryuploaded') {
+        filter = 'action';
+        focus = 'delivery';
+      } else if (type === 'ordercompleted' || type === 'reviewsubmitted' || type === 'reviewmoderation') {
+        filter = 'done';
+        focus = type === 'ordercompleted' ? 'rate' : 'review';
+      } else if (type === 'refund' || type === 'dispute') {
+        filter = 'done';
+        focus = '';
+      } else if (type === 'clarificationrequested' || type === 'requestdeclined') {
+        filter = 'pending';
+        focus = '';
+      }
+
+      var href = 'Tafseel-Student-Dashboard.dc.html?section=requests&filter=' + encodeURIComponent(filter);
+      if (orderId) href += '&orderId=' + encodeURIComponent(orderId);
+      if (focus) href += '&focus=' + encodeURIComponent(focus);
+      return {
+        href: href,
+        section: 'requests',
+        filter: filter,
+        orderId: orderId,
+        focus: focus,
+        conversationId: '',
+        external: false
+      };
     },
 
     notificationTitle: function (notification) {
@@ -920,21 +1101,25 @@
      * Returns { stage, labelKey, action, isTerminal } where action is one of
      * null | 'pay' | 'start' | 'deliver' | 'review' | 'rate' — the single primary
      * action available to the given role for this Order, or null when the row
-     * should show a plain (non-clickable) status chip only. 'rate' is offered
-     * optimistically to the student on every Completed order; the backend's
-     * one-review-per-order guard is the source of truth for eligibility (no
-     * separate "already reviewed" lookup is made here).
+     * should show a plain (non-clickable) status chip only.
+     * Optional opts: { hasReview, reviewCanSubmit } — when provided, Completed
+     * students only get 'rate' if reviewCanSubmit (or !hasReview).
      */
-    orderPresentation: function (rawStatus, paymentStatus, role) {
+    orderPresentation: function (rawStatus, paymentStatus, role, opts) {
       var status = Number(rawStatus);
+      var options = opts || {};
       if (status === 5) return { stage: 'cancelled', labelKey: 'order_status_cancelled', action: null, isTerminal: true };
-      if (status === 4)
+      if (status === 4) {
+        var canRate = role === 'student'
+          && (options.reviewCanSubmit === true
+            || (options.reviewCanSubmit !== false && !options.hasReview));
         return {
           stage: 'completed',
           labelKey: 'order_status_completed',
-          action: role === 'student' ? 'rate' : null,
+          action: canRate ? 'rate' : null,
           isTerminal: true
         };
+      }
       if (status === 3)
         return {
           stage: 'revision',
@@ -972,8 +1157,11 @@
       };
     },
 
-    /** Status chip colors keyed by kind + numeric status — never by localized label. */
-    statusToneStyle: function (kind, rawStatus) {
+    /**
+     * Status chip colors keyed by kind + numeric status — never by localized label.
+     * Optional paymentStatus: paid-but-unstarted AwaitingPayment must not use error red.
+     */
+    statusToneStyle: function (kind, rawStatus, paymentStatus) {
       var tones = {
         request: {
           0: ['var(--warning-soft)', 'var(--warning)'],
@@ -992,8 +1180,50 @@
         }
       };
       var pair = (tones[kind] || {})[rawStatus] || ['var(--surface-2)', 'var(--muted)'];
+      if (kind === 'order' && Number(rawStatus) === 0 && Number(paymentStatus) === 1)
+        pair = ['var(--info-soft)', 'var(--info)'];
       return 'display:inline-flex;align-items:center;height:24px;padding-inline:9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;background:'
         + pair[0] + ';color:' + pair[1];
+    },
+
+    /**
+     * Student-facing lifecycle steps for an order stage. Labels only — no percentages,
+     * bars, or invented ETAs. States: done | current | upcoming | muted.
+     */
+    orderProgressSteps: function (stage) {
+      var steps = [
+        { key: 'payment', labelKey: 'order_step_payment' },
+        { key: 'work', labelKey: 'order_step_work' },
+        { key: 'delivery', labelKey: 'order_step_delivery' },
+        { key: 'review', labelKey: 'order_step_review' },
+        { key: 'done', labelKey: 'order_step_done' }
+      ];
+      var current = {
+        awaiting_payment: 0,
+        payment_confirmed: 1,
+        in_progress: 1,
+        delivered: 3,
+        revision: 2,
+        completed: 4,
+        cancelled: -1
+      }[String(stage || '')];
+      if (current == null) current = -1;
+      var self = this;
+      return steps.map(function (step, index) {
+        var state = 'muted';
+        if (current >= 0) {
+          if (index < current) state = 'done';
+          else if (index === current) state = 'current';
+          else state = 'upcoming';
+        }
+        return {
+          key: step.key,
+          n: String(index + 1),
+          label: self.t(step.labelKey),
+          state: state,
+          current: state === 'current' ? 'step' : false
+        };
+      });
     },
 
     money: function (value, currency) {

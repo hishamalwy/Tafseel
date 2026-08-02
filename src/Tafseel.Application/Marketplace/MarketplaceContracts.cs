@@ -135,12 +135,15 @@ public sealed record UpdateTeacherProfile(
 public sealed record TeacherServiceInput(
     Guid SubjectId,
     Guid ServiceCatalogItemId,
-    [param: Required, NotWhiteSpace, StringLength(200)] string Title,
-    [param: Required, NotWhiteSpace, StringLength(2000)] string Description,
+    [param: StringLength(200)] string? Title,
+    [param: StringLength(2000)] string? Description,
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal Price,
     [param: Required, RegularExpression("^[A-Za-z]{3}$")] string Currency,
     [param: Range(1, 8760)] int DeliveryHours,
-    [param: Range(0, 20)] int Revisions);
+    [param: Range(0, 20)] int Revisions,
+    [param: StringLength(1000)] string? ApproachEn = null,
+    [param: StringLength(1000)] string? ApproachAr = null,
+    bool? IsAvailable = null);
 
 public sealed record TeacherServiceDto(
     Guid Id,
@@ -165,7 +168,72 @@ public sealed record TeacherServiceDto(
     int DisplayOrder,
     bool CanRequest,
     bool CanBook,
-    string Version);
+    string Version)
+{
+    public string NameEn { get; init; } = "";
+    public string NameAr { get; init; } = "";
+    public string DescriptionEn { get; init; } = "";
+    public string DescriptionAr { get; init; } = "";
+    public string CategoryCode { get; init; } = "";
+    public string IconCode { get; init; } = "";
+    public string OrderType { get; init; } = "";
+    public string QualificationPolicy { get; init; } = "";
+    public string ApproachEn { get; init; } = "";
+    public string ApproachAr { get; init; } = "";
+    public decimal? DefaultPrice { get; init; }
+    public decimal? RecommendedPrice { get; init; }
+    public int? MinimumDeliveryHours { get; init; }
+    public int? DefaultDeliveryHours { get; init; }
+    public int? RecommendedDeliveryHours { get; init; }
+    public int? MaximumDeliveryHours { get; init; }
+    public int DefaultRevisions { get; init; }
+    public int MaximumRevisions { get; init; }
+    public bool IsQualified { get; init; }
+    public bool IsCompliant { get; init; }
+    public bool IsSuperseded { get; init; }
+    public Guid? SupersededByTeacherServiceId { get; init; }
+    public string ConfigurationState { get; init; } = "";
+}
+
+public sealed record TeacherMarketplaceSubjectDto(
+    Guid Id,
+    string Name,
+    string? NameAr,
+    bool IsSubjectActive,
+    bool IsQualificationActive);
+
+public sealed record TeacherMarketplaceServiceDto(
+    Guid Id,
+    string Code,
+    string NameEn,
+    string NameAr,
+    string DescriptionEn,
+    string DescriptionAr,
+    string CategoryCode,
+    string IconCode,
+    string OrderType,
+    string QualificationPolicy,
+    string CurrencyCode,
+    decimal MinimumPrice,
+    decimal DefaultPrice,
+    decimal RecommendedPrice,
+    decimal MaximumPrice,
+    int? MinimumDeliveryHours,
+    int? DefaultDeliveryHours,
+    int? RecommendedDeliveryHours,
+    int? MaximumDeliveryHours,
+    int DefaultRevisions,
+    int MaximumRevisions,
+    IReadOnlyCollection<int> AllowedDurations,
+    int DisplayOrder,
+    bool IsActive,
+    bool IsPublic,
+    bool TeacherSelectable,
+    bool PolicyComplete,
+    bool CanEnable,
+    string AvailabilityState,
+    IReadOnlyCollection<TeacherMarketplaceSubjectDto> Subjects,
+    IReadOnlyCollection<TeacherServiceDto> Offerings);
 
 public sealed record LiveSessionBookingPolicyDto(
     decimal EmergencyPremiumPercent,
@@ -197,8 +265,37 @@ public sealed record TeachingSampleDto(
     string SourceCode,
     string TrustCode,
     string? Description = null,
-    int DisplayOrder = 0);
+    int DisplayOrder = 0,
+    bool IsProfileVisible = true,
+    int ProfileDisplayOrder = 0,
+    bool IsProfileFeatured = false);
 public sealed record SampleFile(Stream Content, string ContentType);
+
+public sealed record ProfileVideoDto(
+    Guid Id,
+    Guid SubjectId,
+    string? SubjectName,
+    string? SubjectNameAr,
+    Guid? TopicId,
+    string? TopicName,
+    string? TopicNameAr,
+    string Title,
+    string? Description,
+    int? DurationSeconds,
+    string SourceCode,
+    string TrustCode,
+    string ModerationStatus,
+    bool IsCurationEligible,
+    bool IsProfileVisible,
+    int ProfileDisplayOrder,
+    bool IsProfileFeatured,
+    string Version,
+    string? CurationBlockReason);
+
+public sealed record ProfileVideoVisibilityInput(bool Visible);
+public sealed record ProfileVideoFeaturedInput(bool Featured);
+public sealed record ProfileVideoOrderInput(
+    [param: Required, MinLength(1)] IReadOnlyCollection<Guid> Ids);
 
 public sealed record CreateShowcaseInput(
     Guid SubjectId,
@@ -302,6 +399,7 @@ public interface IMarketplaceService
     Task SetTopicsAsync(string teacherId, IReadOnlyCollection<Guid> topicIds, CancellationToken ct);
     Task SetLanguagesAsync(string teacherId, IReadOnlyCollection<Guid> languageIds, CancellationToken ct);
     Task SetEducationLevelsAsync(string teacherId, IReadOnlyCollection<Guid> educationLevelIds, CancellationToken ct);
+    Task<IReadOnlyCollection<TeacherMarketplaceServiceDto>> GetMarketplaceServicesAsync(string teacherId, CancellationToken ct);
     Task<TeacherServiceDto> AddServiceAsync(string teacherId, TeacherServiceInput input, CancellationToken ct);
     Task UpdateServiceAsync(string teacherId, Guid id, TeacherServiceInput input, string version, CancellationToken ct);
     Task SetServiceActiveAsync(string teacherId, Guid id, bool active, string version, CancellationToken ct);
@@ -317,6 +415,10 @@ public interface IMarketplaceService
     Task<TeacherShowcaseDto> CreateShowcaseVersionAsync(string teacherId, Guid id, string version, CancellationToken ct);
     Task ArchiveShowcaseAsync(string teacherId, Guid id, string version, CancellationToken ct);
     Task ReorderShowcasesAsync(string teacherId, ShowcaseOrderInput input, CancellationToken ct);
+    Task<IReadOnlyCollection<ProfileVideoDto>> GetProfileVideosAsync(string teacherId, CancellationToken ct);
+    Task<ProfileVideoDto> SetProfileVideoVisibilityAsync(string teacherId, Guid id, bool visible, string version, CancellationToken ct);
+    Task<ProfileVideoDto> SetProfileVideoFeaturedAsync(string teacherId, Guid id, bool featured, string version, CancellationToken ct);
+    Task ReorderProfileVideosAsync(string teacherId, ProfileVideoOrderInput input, CancellationToken ct);
     Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(ShowcaseModerationStatus? status, int page, int pageSize, CancellationToken ct);
     Task StartShowcaseReviewAsync(string reviewerId, Guid id, Guid versionId, string version, CancellationToken ct);
     Task DecideShowcaseAsync(string reviewerId, Guid id, Guid versionId, ShowcaseDecisionInput input, string version, CancellationToken ct);

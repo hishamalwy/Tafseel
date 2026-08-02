@@ -133,7 +133,7 @@ public sealed class CanonicalServiceGovernanceTests(SqlServerTafseelApiFactory f
     }
 
     [Fact]
-    public async Task Teacher_service_edit_persists_description_price_delivery_and_revisions()
+    public async Task Teacher_service_edit_persists_approach_price_delivery_and_revisions_with_catalog_identity()
     {
         var data = await SeedLiveAsync();
         var teacher = await ClientForAsync(data.TeacherEmail);
@@ -141,6 +141,7 @@ public sealed class CanonicalServiceGovernanceTests(SqlServerTafseelApiFactory f
         var service = profile.GetProperty("services").EnumerateArray()
             .First(x => x.GetProperty("id").GetGuid() == data.RecordedServiceId);
         var version = service.GetProperty("version").GetString()!;
+        var catalogTitle = service.GetProperty("title").GetString();
 
         var request = new HttpRequestMessage(HttpMethod.Put,
             $"/api/v1/teachers/me/services/{data.RecordedServiceId}")
@@ -149,8 +150,7 @@ public sealed class CanonicalServiceGovernanceTests(SqlServerTafseelApiFactory f
             {
                 subjectId = service.GetProperty("subjectId").GetGuid(),
                 serviceCatalogItemId = service.GetProperty("serviceCatalogItemId").GetGuid(),
-                title = "Updated recorded title",
-                description = "Updated recorded description body",
+                approachEn = "Updated recorded approach",
                 price = 175m,
                 currency = "SAR",
                 deliveryHours = 36,
@@ -164,8 +164,9 @@ public sealed class CanonicalServiceGovernanceTests(SqlServerTafseelApiFactory f
         var refreshed = JsonDocument.Parse(await teacher.GetStringAsync("/api/v1/teachers/me")).RootElement;
         var edited = refreshed.GetProperty("services").EnumerateArray()
             .First(x => x.GetProperty("id").GetGuid() == data.RecordedServiceId);
-        Assert.Equal("Updated recorded title", edited.GetProperty("title").GetString());
-        Assert.Equal("Updated recorded description body", edited.GetProperty("description").GetString());
+        Assert.Equal(catalogTitle, edited.GetProperty("title").GetString());
+        Assert.Equal("Updated recorded approach", edited.GetProperty("description").GetString());
+        Assert.Equal("Updated recorded approach", edited.GetProperty("approachEn").GetString());
         Assert.Equal(175m, edited.GetProperty("price").GetDecimal());
         Assert.Equal(36, edited.GetProperty("deliveryHours").GetInt32());
         Assert.Equal(3, edited.GetProperty("revisions").GetInt32());

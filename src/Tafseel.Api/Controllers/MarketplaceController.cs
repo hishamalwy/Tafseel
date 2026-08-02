@@ -79,6 +79,10 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
         return NoContent();
     }
 
+    [Authorize(Policy = Permissions.TeachersManageOwnServices), HttpGet("me/marketplace-services")]
+    public Task<IReadOnlyCollection<TeacherMarketplaceServiceDto>> MarketplaceServices(CancellationToken ct) =>
+        marketplace.GetMarketplaceServicesAsync(UserId(), ct);
+
     [Authorize(Policy = Permissions.TeachersManageOwnServices), HttpPost("me/services")]
     public async Task<IActionResult> AddService(TeacherServiceInput input, CancellationToken ct)
     {
@@ -184,6 +188,29 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     public async Task<IActionResult> ReorderShowcases(ShowcaseOrderInput input, CancellationToken ct)
     {
         await marketplace.ReorderShowcasesAsync(UserId(), input, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnServices), HttpGet("me/profile-videos")]
+    public Task<IReadOnlyCollection<ProfileVideoDto>> MyProfileVideos(CancellationToken ct) =>
+        marketplace.GetProfileVideosAsync(UserId(), ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnServices), HttpPut("me/profile-videos/{id:guid}/visibility")]
+    public Task<ProfileVideoDto> SetProfileVideoVisibility(
+        Guid id, ProfileVideoVisibilityInput input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        marketplace.SetProfileVideoVisibilityAsync(UserId(), id, input.Visible, version, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnServices), HttpPut("me/profile-videos/{id:guid}/featured")]
+    public Task<ProfileVideoDto> SetProfileVideoFeatured(
+        Guid id, ProfileVideoFeaturedInput input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        marketplace.SetProfileVideoFeaturedAsync(UserId(), id, input.Featured, version, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnServices), HttpPut("me/profile-videos/order")]
+    public async Task<IActionResult> ReorderProfileVideos(ProfileVideoOrderInput input, CancellationToken ct)
+    {
+        await marketplace.ReorderProfileVideosAsync(UserId(), input, ct);
         return NoContent();
     }
 

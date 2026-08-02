@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Tafseel.Application.Common;
+using Tafseel.Application.Catalog;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Marketplace;
 using Tafseel.Application.TeacherApplications;
+using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Marketplace;
@@ -75,7 +77,7 @@ internal sealed class MarketplaceService(
                 && db.EducationLevels.Any(item => item.Id == level.EducationLevelId && item.IsActive)));
         if (input.ServiceTypeId.HasValue)
             query = query.Where(x => db.TeacherServices.Any(service =>
-                service.TeacherId == x.Profile.TeacherId && service.IsActive
+                service.TeacherId == x.Profile.TeacherId && service.IsActive && service.SupersededByTeacherServiceId == null
                 && service.ServiceCatalogItemId == input.ServiceTypeId
                 && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId && type.IsActive)
                 && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)));
@@ -84,7 +86,8 @@ internal sealed class MarketplaceService(
                 && x.Profile.AverageRating >= input.MinimumRating);
         if (input.MaximumPrice.HasValue)
             query = query.Where(x => db.TeacherServices.Any(service =>
-                service.TeacherId == x.Profile.TeacherId && service.IsActive && service.Price <= input.MaximumPrice
+                service.TeacherId == x.Profile.TeacherId && service.IsActive && service.SupersededByTeacherServiceId == null
+                && service.Price <= input.MaximumPrice
                 && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId && type.IsActive)
                 && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)));
         if (input.LanguageIds is { Length: > 0 })
@@ -103,14 +106,14 @@ internal sealed class MarketplaceService(
                 .ThenBy(x => x.User.FullName)
                 .ThenBy(x => x.Profile.TeacherId),
             "lowest-price" => query.OrderBy(x => db.TeacherServices
-                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
+                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive && s.SupersededByTeacherServiceId == null
                     && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                     && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                 .Min(s => (decimal?)s.Price) ?? decimal.MaxValue)
                 .ThenBy(x => x.User.FullName)
                 .ThenBy(x => x.Profile.TeacherId),
             "highest-price" => query.OrderByDescending(x => db.TeacherServices
-                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
+                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive && s.SupersededByTeacherServiceId == null
                     && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                     && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                 .Min(s => (decimal?)s.Price) ?? 0)
@@ -134,10 +137,12 @@ internal sealed class MarketplaceService(
                 Rating = x.Profile.RatingCount > 0 ? (decimal?)x.Profile.AverageRating : null,
                 x.Profile.RatingCount,
                 StartingPrice = db.TeacherServices.Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
+                        && s.SupersededByTeacherServiceId == null
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .Min(s => (decimal?)s.Price),
                 Currency = db.TeacherServices.Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
+                        && s.SupersededByTeacherServiceId == null
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
@@ -253,6 +258,7 @@ internal sealed class MarketplaceService(
             join type in db.ServiceCatalogItems.AsNoTracking()
                 on service.ServiceCatalogItemId equals type.Id
             where availableIds.Contains(service.TeacherId) && service.IsActive
+                && service.SupersededByTeacherServiceId == null
                 && type.IsActive && type.IsPublic && type.TeacherSelectable
                 && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
@@ -375,6 +381,7 @@ internal sealed class MarketplaceService(
                     from service in db.TeacherServices
                     join type in db.ServiceCatalogItems on service.ServiceCatalogItemId equals type.Id
                     where service.TeacherId == teacherId && service.IsActive
+                        && service.SupersededByTeacherServiceId == null
                         && type.IsActive && type.IsPublic && type.TeacherSelectable
                         && (!type.RequiresScheduling || hasAvailability)
                         && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
@@ -421,20 +428,104 @@ internal sealed class MarketplaceService(
     public Task SetEducationLevelsAsync(string teacherId, IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
         ReplaceEducationLevelsAsync(teacherId, ids.Distinct().ToArray(), ct);
 
+    public async Task<IReadOnlyCollection<TeacherMarketplaceServiceDto>> GetMarketplaceServicesAsync(
+        string teacherId, CancellationToken ct)
+    {
+        await RequireTeacherAsync(teacherId, ct);
+        var suspended = await db.Users.AsNoTracking().Where(x => x.Id == teacherId)
+            .Select(x => x.IsSuspended).SingleAsync(ct);
+        var profilePublished = await db.TeacherProfiles.AsNoTracking()
+            .Where(x => x.TeacherId == teacherId).Select(x => x.IsPublished).SingleOrDefaultAsync(ct);
+        var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking()
+            .AnyAsync(x => x.TeacherId == teacherId, ct);
+        var qualificationRows = await (
+            from qualification in db.TeacherSubjectQualifications.AsNoTracking()
+            join subject in db.Subjects.AsNoTracking() on qualification.SubjectId equals subject.Id
+            where qualification.TeacherId == teacherId
+            orderby subject.Name, subject.Id
+            select new
+            {
+                subject.Id,
+                subject.Name,
+                subject.NameAr,
+                SubjectActive = subject.IsActive,
+                QualificationActive = qualification.Status == TeacherQualificationStatus.Approved
+                    && qualification.RevokedAt == null
+            }).ToArrayAsync(ct);
+        var subjects = qualificationRows.Select(x => new TeacherMarketplaceSubjectDto(
+            x.Id, x.Name, x.NameAr, x.SubjectActive, x.QualificationActive)).ToArray();
+        var eligibleSubjectIds = qualificationRows
+            .Where(x => x.SubjectActive && x.QualificationActive).Select(x => x.Id).ToHashSet();
+        var catalog = await db.ServiceCatalogItems.AsNoTracking()
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ThenBy(x => x.Id).ToArrayAsync(ct);
+        var offeringRows = await db.TeacherServices.AsNoTracking()
+            .Where(x => x.TeacherId == teacherId).ToArrayAsync(ct);
+
+        return catalog.Select(item =>
+        {
+            var policyComplete = IsPolicyComplete(item);
+            var canEnable = !suspended && item.IsActive && item.IsPublic && item.TeacherSelectable
+                && policyComplete && eligibleSubjectIds.Count > 0;
+            var state = suspended ? "account_suspended"
+                : !item.IsActive ? "catalog_inactive"
+                : !item.IsPublic ? "catalog_hidden"
+                : !item.TeacherSelectable ? "catalog_unavailable"
+                : !policyComplete ? "policy_incomplete"
+                : eligibleSubjectIds.Count == 0 ? "qualification_required"
+                : "available";
+            var offerings = offeringRows.Where(x => x.ServiceCatalogItemId == item.Id)
+                .OrderBy(x => x.CreatedAt).ThenBy(x => x.Id)
+                .Select(x => Map(x, item, profilePublished, eligibleSubjectIds.Contains(x.SubjectId), hasAvailability))
+                .ToArray();
+            return new TeacherMarketplaceServiceDto(
+                item.Id, item.Code, item.Name, item.NameAr, item.Description, item.DescriptionAr,
+                item.CategoryCode, item.IconCode, item.OrderType, item.QualificationPolicy,
+                item.CurrencyCode, item.MinPrice ?? 0, item.DefaultPrice, item.RecommendedPrice,
+                item.MaxPrice ?? 0, item.MinimumDeliveryHours, item.DefaultDeliveryHours,
+                item.RecommendedDeliveryHours, item.MaximumDeliveryHours, item.DefaultRevisions,
+                item.MaximumRevisions, item.AllowedDurations, item.DisplayOrder, item.IsActive,
+                item.IsPublic, item.TeacherSelectable, policyComplete, canEnable, state, subjects, offerings);
+        }).ToArray();
+    }
+
     public async Task<TeacherServiceDto> AddServiceAsync(string teacherId, TeacherServiceInput input, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockTeacherServiceAsync(teacherId, input.SubjectId, input.ServiceCatalogItemId, ct);
         await RequireActiveQualificationAsync(teacherId, input.SubjectId, ct);
-        if (!await db.ServiceCatalogItems.AnyAsync(x => x.Id == input.ServiceCatalogItemId
-                && x.IsActive && x.IsPublic && x.TeacherSelectable, ct))
+        var catalog = await db.ServiceCatalogItems.SingleOrDefaultAsync(x =>
+            x.Id == input.ServiceCatalogItemId && x.IsActive && x.IsPublic && x.TeacherSelectable, ct);
+        if (catalog is null)
             throw new DomainException("service_type_not_found", "An active public teacher-selectable service type is required.");
+        EnsureLegacyCatalogIdentity(input.Title, catalog);
+        var approachEn = input.ApproachEn ?? input.Description ?? "";
+        var approachAr = input.ApproachAr ?? "";
+        ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+            catalog, input.Price, input.Currency, input.DeliveryHours, input.Revisions);
+        var existing = await db.TeacherServices.SingleOrDefaultAsync(x =>
+            x.TeacherId == teacherId && x.SubjectId == input.SubjectId
+            && x.ServiceCatalogItemId == input.ServiceCatalogItemId
+            && x.SupersededByTeacherServiceId == null, ct);
+        if (existing is not null)
+        {
+            existing.Configure(input.Price, input.Currency, input.DeliveryHours, input.Revisions,
+                approachEn, approachAr, clock.GetUtcNow());
+            existing.SetActive(input.IsAvailable ?? true, clock.GetUtcNow());
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return Map(existing, catalog, profilePublished: false, hasActiveQualification: true, hasAvailability: false);
+        }
         var service = new TeacherService(
-            teacherId, input.SubjectId, input.ServiceCatalogItemId, input.Title, input.Description,
+            teacherId, input.SubjectId, input.ServiceCatalogItemId, catalog.Name,
+            string.IsNullOrWhiteSpace(approachEn) ? catalog.Description : approachEn,
             input.Price, input.Currency, input.DeliveryHours, input.Revisions, clock.GetUtcNow());
+        service.Configure(input.Price, input.Currency, input.DeliveryHours, input.Revisions,
+            approachEn, approachAr, clock.GetUtcNow());
+        service.SetActive(input.IsAvailable ?? true, clock.GetUtcNow());
         db.Add(service);
         await db.SaveChangesAsync(ct);
-        var type = await db.ServiceCatalogItems.AsNoTracking().SingleAsync(
-            x => x.Id == service.ServiceCatalogItemId, ct);
-        return Map(service, type, profilePublished: false, hasActiveQualification: true, hasAvailability: false);
+        await transaction.CommitAsync(ct);
+        return Map(service, catalog, profilePublished: false, hasActiveQualification: true, hasAvailability: false);
     }
 
     public async Task UpdateServiceAsync(string teacherId, Guid id, TeacherServiceInput input, string version, CancellationToken ct)
@@ -442,8 +533,26 @@ internal sealed class MarketplaceService(
         var service = await OwnedServiceAsync(teacherId, id, version, ct);
         if (service.SubjectId != input.SubjectId || service.ServiceCatalogItemId != input.ServiceCatalogItemId)
             throw new DomainException("service_scope_immutable", "Service subject and type cannot be changed.");
+        if (service.IsSuperseded)
+            throw new DomainException("teacher_service_superseded", "A superseded Teacher service cannot be configured.");
         await RequireActiveQualificationAsync(teacherId, service.SubjectId, ct);
-        service.Update(input.Title, input.Description, input.Price, input.Currency, input.DeliveryHours, input.Revisions, clock.GetUtcNow());
+        var catalog = await db.ServiceCatalogItems.AsNoTracking().SingleAsync(
+            x => x.Id == service.ServiceCatalogItemId, ct);
+        EnsureLegacyCatalogIdentity(input.Title, catalog);
+        ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+            catalog, input.Price, input.Currency, input.DeliveryHours, input.Revisions);
+        service.Configure(input.Price, input.Currency, input.DeliveryHours, input.Revisions,
+            input.ApproachEn ?? input.Description ?? service.ApproachEn,
+            input.ApproachAr ?? service.ApproachAr, clock.GetUtcNow());
+        if (input.IsAvailable.HasValue)
+        {
+            if (input.IsAvailable.Value)
+            {
+                if (!catalog.IsActive || !catalog.IsPublic || !catalog.TeacherSelectable)
+                    throw new DomainException("service_type_not_found", "An active public teacher-selectable service type is required.");
+            }
+            service.SetActive(input.IsAvailable.Value, clock.GetUtcNow());
+        }
         await db.SaveChangesAsync(ct);
     }
 
@@ -452,10 +561,15 @@ internal sealed class MarketplaceService(
         var service = await OwnedServiceAsync(teacherId, id, version, ct);
         if (active)
         {
+            if (service.IsSuperseded)
+                throw new DomainException("teacher_service_superseded", "A superseded Teacher service cannot be enabled.");
             await RequireActiveQualificationAsync(teacherId, service.SubjectId, ct);
-            if (!await db.ServiceCatalogItems.AnyAsync(x => x.Id == service.ServiceCatalogItemId
-                    && x.IsActive && x.IsPublic && x.TeacherSelectable, ct))
+            var catalog = await db.ServiceCatalogItems.AsNoTracking().SingleOrDefaultAsync(x =>
+                x.Id == service.ServiceCatalogItemId && x.IsActive && x.IsPublic && x.TeacherSelectable, ct);
+            if (catalog is null)
                 throw new DomainException("service_type_not_found", "An active public teacher-selectable service type is required.");
+            ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+                catalog, service.Price, service.Currency, service.DeliveryHours, service.Revisions);
         }
         service.SetActive(active, clock.GetUtcNow());
         await db.SaveChangesAsync(ct);
@@ -671,6 +785,124 @@ internal sealed class MarketplaceService(
             samples.Single(x => x.Id == ids[index]).SetDisplayOrder(index, now);
         audit.AddCurrent("ShowcaseReordered", "TeacherTeachingSample", teacherId, "Approved Teacher Showcases reordered.");
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyCollection<ProfileVideoDto>> GetProfileVideosAsync(
+        string teacherId, CancellationToken ct)
+    {
+        var samples = await db.TeacherTeachingSamples.AsNoTracking()
+            .Include(x => x.Versions)
+            .Where(x => x.TeacherId == teacherId)
+            .OrderByDescending(x => x.IsProfileFeatured)
+            .ThenBy(x => x.ProfileDisplayOrder)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .ToArrayAsync(ct);
+        return await MapProfileVideosAsync(samples, ct);
+    }
+
+    public async Task<ProfileVideoDto> SetProfileVideoVisibilityAsync(
+        string teacherId, Guid id, bool visible, string version, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockTeacherProfileVideosAsync(teacherId, ct);
+        var sample = await OwnedCurationSampleAsync(teacherId, id, ct);
+        ApplyVersionToSample(sample, version);
+        var now = clock.GetUtcNow();
+        if (visible)
+        {
+            await EnsureActiveSubjectQualificationForCurationAsync(teacherId, sample.SubjectId, ct);
+            var visibleCount = await db.TeacherTeachingSamples.CountAsync(x =>
+                x.TeacherId == teacherId && x.IsProfileVisible && x.Id != id, ct);
+            if (visibleCount >= _showcaseOptions.MaxPublicPerTeacher)
+                throw new DomainException(
+                    "profile_video_limit",
+                    $"At most {_showcaseOptions.MaxPublicPerTeacher} videos can be visible on the profile.");
+            if (!sample.IsProfileVisible)
+            {
+                var nextOrder = await db.TeacherTeachingSamples
+                    .Where(x => x.TeacherId == teacherId && x.IsProfileVisible)
+                    .Select(x => (int?)x.ProfileDisplayOrder).MaxAsync(ct) ?? -1;
+                sample.SetProfileDisplayOrder(nextOrder + 1, now);
+            }
+        }
+        sample.SetProfileVisibility(visible, now);
+        audit.AddCurrent(
+            visible ? "ProfileVideoShown" : "ProfileVideoHidden",
+            "TeacherTeachingSample", sample.Id.ToString(),
+            visible ? "Teacher showed an approved video on profile." : "Teacher hid an approved video from profile.");
+        await db.SaveChangesAsync(ct);
+        await NormalizeProfileVideoOrderAsync(teacherId, now, ct);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        var refreshed = await db.TeacherTeachingSamples.AsNoTracking()
+            .Include(x => x.Versions)
+            .SingleAsync(x => x.Id == id, ct);
+        return (await MapProfileVideosAsync([refreshed], ct)).Single();
+    }
+
+    public async Task<ProfileVideoDto> SetProfileVideoFeaturedAsync(
+        string teacherId, Guid id, bool featured, string version, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockTeacherProfileVideosAsync(teacherId, ct);
+        var sample = await OwnedCurationSampleAsync(teacherId, id, ct);
+        ApplyVersionToSample(sample, version);
+        var now = clock.GetUtcNow();
+        if (featured)
+        {
+            await EnsureActiveSubjectQualificationForCurationAsync(teacherId, sample.SubjectId, ct);
+            if (!sample.IsProfileVisible)
+            {
+                var visibleCount = await db.TeacherTeachingSamples.CountAsync(x =>
+                    x.TeacherId == teacherId && x.IsProfileVisible && x.Id != id, ct);
+                if (visibleCount >= _showcaseOptions.MaxPublicPerTeacher)
+                    throw new DomainException(
+                        "profile_video_limit",
+                        $"At most {_showcaseOptions.MaxPublicPerTeacher} videos can be visible on the profile.");
+                sample.SetProfileVisibility(true, now);
+            }
+            var others = await db.TeacherTeachingSamples
+                .Where(x => x.TeacherId == teacherId && x.IsProfileFeatured && x.Id != id)
+                .ToArrayAsync(ct);
+            foreach (var other in others)
+                other.ClearProfileFeatured(now);
+            if (others.Length > 0)
+                await db.SaveChangesAsync(ct);
+        }
+        sample.SetProfileFeatured(featured, now);
+        audit.AddCurrent(
+            featured ? "ProfileVideoFeatured" : "ProfileVideoUnfeatured",
+            "TeacherTeachingSample", sample.Id.ToString(),
+            featured ? "Teacher set featured profile video." : "Teacher cleared featured profile video.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        var refreshed = await db.TeacherTeachingSamples.AsNoTracking()
+            .Include(x => x.Versions)
+            .SingleAsync(x => x.Id == id, ct);
+        return (await MapProfileVideosAsync([refreshed], ct)).Single();
+    }
+
+    public async Task ReorderProfileVideosAsync(
+        string teacherId, ProfileVideoOrderInput input, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockTeacherProfileVideosAsync(teacherId, ct);
+        var ids = input.Ids?.Distinct().ToArray() ?? [];
+        if (ids.Length == 0 || ids.Length != (input.Ids?.Count ?? 0))
+            throw new DomainException("invalid_profile_video_order", "Supply each visible profile video exactly once.");
+        var visible = await db.TeacherTeachingSamples
+            .Where(x => x.TeacherId == teacherId && x.IsProfileVisible).ToArrayAsync(ct);
+        if (visible.Length != ids.Length || visible.Any(x => !ids.Contains(x.Id)))
+            throw new DomainException("invalid_profile_video_order", "Supply each visible profile video exactly once.");
+        if (visible.Any(x => !x.IsCurationEligible()))
+            throw new DomainException("profile_video_not_eligible", "Only eligible videos can be ordered.");
+        var now = clock.GetUtcNow();
+        for (var index = 0; index < ids.Length; index++)
+            visible.Single(x => x.Id == ids[index]).SetProfileDisplayOrder(index, now);
+        audit.AddCurrent("ProfileVideosReordered", "TeacherTeachingSample", teacherId, "Teacher reordered profile videos.");
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(
@@ -940,10 +1172,12 @@ internal sealed class MarketplaceService(
                 Rating = browsable.Profile.RatingCount > 0 ? (decimal?)browsable.Profile.AverageRating : null,
                 browsable.Profile.RatingCount,
                 StartingPrice = db.TeacherServices.Where(s => s.TeacherId == browsable.Profile.TeacherId && s.IsActive
+                        && s.SupersededByTeacherServiceId == null
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .Min(s => (decimal?)s.Price),
                 Currency = db.TeacherServices.Where(s => s.TeacherId == browsable.Profile.TeacherId && s.IsActive
+                        && s.SupersededByTeacherServiceId == null
                         && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
                         && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
                     .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
@@ -1049,7 +1283,8 @@ internal sealed class MarketplaceService(
             .OrderBy(x => x.level.Name).ThenBy(x => x.level.Id)
             .Select(x => new NamedItemDto(x.level.Id, x.level.Name, x.level.NameAr))
             .ToArrayAsync(ct);
-        var hasActiveQualification = subjects.Length > 0;
+        var verifiedSubjectIds = subjects.Select(x => x.Id).ToHashSet();
+        var hasActiveQualification = verifiedSubjectIds.Count > 0;
         var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking().AnyAsync(x => x.TeacherId == teacherId, ct);
         var servicesQuery =
             from ts in db.TeacherServices.AsNoTracking()
@@ -1065,7 +1300,7 @@ internal sealed class MarketplaceService(
         if (publicOnly)
         {
             samplesQuery = samplesQuery.Include(x => x.Versions);
-            servicesQuery = servicesQuery.Where(x => x.ts.IsActive
+            servicesQuery = servicesQuery.Where(x => x.ts.IsActive && x.ts.SupersededByTeacherServiceId == null
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == teacherId
                     && q.SubjectId == x.ts.SubjectId
                     && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
@@ -1076,10 +1311,16 @@ internal sealed class MarketplaceService(
         }
         var services = (await servicesQuery.ToArrayAsync(ct))
             .OrderBy(x => x.type.DisplayOrder).ThenBy(x => x.ts.CreatedAt)
-            .Select(x => Map(x.ts, x.type, profile.IsPublished, hasActiveQualification, hasAvailability))
+            .Select(x => Map(x.ts, x.type, profile.IsPublished,
+                verifiedSubjectIds.Contains(x.ts.SubjectId), hasAvailability))
             .ToArray();
         var sampleRows = await samplesQuery
-            .OrderBy(x => x.SourceType).ThenBy(x => x.DisplayOrder).ThenBy(x => x.CreatedAt).ThenBy(x => x.Id)
+            .OrderByDescending(x => x.IsProfileFeatured)
+            .ThenBy(x => x.ProfileDisplayOrder)
+            .ThenBy(x => x.SourceType)
+            .ThenBy(x => x.DisplayOrder)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
             .ToArrayAsync(ct);
         if (publicOnly)
         {
@@ -1092,7 +1333,7 @@ internal sealed class MarketplaceService(
                 if (key is not null && await files.PrivateFileExistsAsync(key, ct))
                     available.Add(sample);
             }
-            sampleRows = available.ToArray();
+            sampleRows = available.Take(_showcaseOptions.MaxPublicPerTeacher).ToArray();
         }
         var samples = sampleRows.Select(Map).ToArray();
         var rules = publicOnly
@@ -1110,7 +1351,6 @@ internal sealed class MarketplaceService(
             && !string.IsNullOrWhiteSpace(profile.Bio)
             && !string.IsNullOrWhiteSpace(profile.Country)
             && !string.IsNullOrWhiteSpace(profile.City);
-        var verifiedSubjectIds = subjects.Select(x => x.Id).ToHashSet();
         var blockers = new List<string>();
         if (!user.EmailConfirmed) blockers.Add("email_unconfirmed");
         if (user.IsSuspended) blockers.Add("account_suspended");
@@ -1157,6 +1397,13 @@ internal sealed class MarketplaceService(
         var rows = await TeacherPublicQueries.VisibleSamples(db, ShowcasesEnabled)
             .Where(x => teacherIds.Contains(x.TeacherId))
             .Include(x => x.Versions)
+            .OrderBy(x => x.TeacherId)
+            .ThenByDescending(x => x.IsProfileFeatured)
+            .ThenBy(x => x.ProfileDisplayOrder)
+            .ThenBy(x => x.SourceType)
+            .ThenBy(x => x.DisplayOrder)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
             .ToArrayAsync(ct);
         foreach (var sample in rows)
         {
@@ -1165,7 +1412,10 @@ internal sealed class MarketplaceService(
                 : sample.Versions.SingleOrDefault(x => x.Id == sample.ApprovedVersionId)?.StorageKey;
             if (key is null || !await files.PrivateFileExistsAsync(key, ct))
                 continue;
-            counts[sample.TeacherId] = counts.GetValueOrDefault(sample.TeacherId) + 1;
+            var current = counts.GetValueOrDefault(sample.TeacherId);
+            if (current >= _showcaseOptions.MaxPublicPerTeacher)
+                continue;
+            counts[sample.TeacherId] = current + 1;
         }
         return counts;
     }
@@ -1246,7 +1496,7 @@ internal sealed class MarketplaceService(
     private async Task<bool> IsPublicSampleAsync(
         TeacherTeachingSample sample, string? storageKey, CancellationToken ct)
     {
-        if (!sample.IsPublished || storageKey is null)
+        if (!sample.IsPublished || storageKey is null || !sample.IsProfileVisible)
             return false;
         if (sample.SourceType == TeachingSampleSourceType.TeacherShowcase
             && (!ShowcasesEnabled || sample.ModerationStatus != ShowcaseModerationStatus.Approved
@@ -1293,6 +1543,129 @@ internal sealed class MarketplaceService(
                 $"EXEC sp_getapplock @Resource={"teacher-showcase-subject:" + teacherId + ":" + subjectId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
             : Task.CompletedTask;
 
+    private Task LockTeacherProfileVideosAsync(string teacherId, CancellationToken ct) =>
+        db.Database.IsSqlServer()
+            ? db.Database.ExecuteSqlInterpolatedAsync(
+                $"EXEC sp_getapplock @Resource={"teacher-profile-videos:" + teacherId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
+            : Task.CompletedTask;
+
+    private async Task<TeacherTeachingSample> OwnedCurationSampleAsync(
+        string teacherId, Guid id, CancellationToken ct) =>
+        await db.TeacherTeachingSamples
+            .Include(x => x.Versions)
+            .SingleOrDefaultAsync(x => x.Id == id && x.TeacherId == teacherId, ct)
+        ?? throw new DomainException("sample_not_owned", "Teaching sample was not found.");
+
+    private async Task EnsureActiveSubjectQualificationForCurationAsync(
+        string teacherId, Guid subjectId, CancellationToken ct)
+    {
+        if (!await db.TeacherSubjectQualifications.AnyAsync(x =>
+                x.TeacherId == teacherId && x.SubjectId == subjectId
+                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct)
+            || !await db.Subjects.AnyAsync(x => x.Id == subjectId && x.IsActive, ct))
+            throw new DomainException(
+                "profile_video_not_eligible",
+                "Only videos for an active approved subject qualification can be shown.");
+    }
+
+    private async Task NormalizeProfileVideoOrderAsync(
+        string teacherId, DateTimeOffset now, CancellationToken ct)
+    {
+        var visible = await db.TeacherTeachingSamples
+            .Where(x => x.TeacherId == teacherId && x.IsProfileVisible)
+            .OrderByDescending(x => x.IsProfileFeatured)
+            .ThenBy(x => x.ProfileDisplayOrder)
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .ToArrayAsync(ct);
+        for (var index = 0; index < visible.Length; index++)
+            visible[index].SetProfileDisplayOrder(index, now);
+    }
+
+    private async Task<IReadOnlyCollection<ProfileVideoDto>> MapProfileVideosAsync(
+        IReadOnlyCollection<TeacherTeachingSample> samples, CancellationToken ct)
+    {
+        if (samples.Count == 0) return [];
+        var subjectIds = samples.Select(x => x.SubjectId).Distinct().ToArray();
+        var topicIds = samples
+            .Select(x => x.SourceType == TeachingSampleSourceType.QualificationGenerated
+                ? x.TopicId
+                : x.Versions.SingleOrDefault(v => v.Id == (x.ApprovedVersionId ?? x.CurrentVersionId))?.TopicId)
+            .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        var subjects = await db.Subjects.AsNoTracking()
+            .Where(x => subjectIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, ct);
+        var topics = topicIds.Length == 0
+            ? new Dictionary<Guid, Topic>()
+            : await db.Topics.AsNoTracking()
+                .Where(x => topicIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, ct);
+        var activeQualSubjects = (await db.TeacherSubjectQualifications.AsNoTracking()
+                .Where(x => samples.Select(s => s.TeacherId).Contains(x.TeacherId)
+                    && subjectIds.Contains(x.SubjectId)
+                    && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null)
+                .Select(x => x.SubjectId).ToArrayAsync(ct))
+            .ToHashSet();
+
+        return samples.Select(sample =>
+        {
+            subjects.TryGetValue(sample.SubjectId, out var subject);
+            Guid? topicId = sample.TopicId;
+            string title = sample.Title;
+            string? description = null;
+            int? duration = sample.DurationSeconds;
+            string sourceCode;
+            string trustCode;
+            string moderationStatus;
+            if (sample.SourceType == TeachingSampleSourceType.QualificationGenerated)
+            {
+                sourceCode = "qualification_sample";
+                trustCode = "qualification_sample";
+                moderationStatus = sample.PublishedAt is null ? "unpublished" : "approved";
+            }
+            else
+            {
+                var version = sample.Versions.SingleOrDefault(v => v.Id == (sample.ApprovedVersionId ?? sample.CurrentVersionId));
+                topicId = version?.TopicId;
+                title = version?.Title ?? sample.Title;
+                description = version?.Description;
+                duration = version?.DurationSeconds;
+                moderationStatus = (sample.ModerationStatus ?? ShowcaseModerationStatus.Draft).ToString();
+                sourceCode = sample.ModerationStatus == ShowcaseModerationStatus.Approved
+                    ? "reviewed_showcase" : "teacher_showcase";
+                trustCode = sample.ModerationStatus == ShowcaseModerationStatus.Approved
+                    ? "reviewed_showcase" : "private_showcase";
+            }
+            topics.TryGetValue(topicId ?? Guid.Empty, out var topic);
+            var eligible = sample.IsCurationEligible()
+                && activeQualSubjects.Contains(sample.SubjectId)
+                && subject?.IsActive == true
+                && (sample.SourceType != TeachingSampleSourceType.TeacherShowcase || ShowcasesEnabled);
+            var block = !eligible
+                ? sample.SourceType == TeachingSampleSourceType.TeacherShowcase
+                    && sample.ModerationStatus is ShowcaseModerationStatus.Draft
+                        or ShowcaseModerationStatus.Submitted
+                        or ShowcaseModerationStatus.UnderReview
+                        or ShowcaseModerationStatus.ChangesRequested
+                    ? "pending_or_in_review"
+                    : sample.ModerationStatus == ShowcaseModerationStatus.Rejected
+                        ? "rejected"
+                        : sample.ModerationStatus == ShowcaseModerationStatus.Archived
+                            || sample.ArchivedAt.HasValue
+                            ? "archived"
+                            : !activeQualSubjects.Contains(sample.SubjectId)
+                                ? "qualification_inactive"
+                                : "not_eligible"
+                : null;
+            return new ProfileVideoDto(
+                sample.Id, sample.SubjectId, subject?.Name, subject?.NameAr,
+                topicId, topic?.Name, topic?.NameAr, title, description, duration,
+                sourceCode, trustCode, moderationStatus, eligible,
+                sample.IsProfileVisible, sample.ProfileDisplayOrder, sample.IsProfileFeatured,
+                Convert.ToBase64String(sample.RowVersion), block);
+        }).ToArray();
+    }
+
     private void ApplyVersion(TeacherTeachingSampleVersion versionEntity, string version)
     {
         byte[] bytes;
@@ -1328,6 +1701,35 @@ internal sealed class MarketplaceService(
         return service;
     }
 
+    private static void EnsureLegacyCatalogIdentity(string? title, Domain.Catalog.ServiceCatalogItem catalog)
+    {
+        if (!string.IsNullOrWhiteSpace(title)
+            && !string.Equals(title.Trim(), catalog.Name, StringComparison.Ordinal)
+            && !string.Equals(title.Trim(), catalog.NameAr, StringComparison.Ordinal))
+            throw new DomainException(
+                "teacher_service_title_catalog_owned",
+                "Service title is owned by the marketplace catalog and cannot be changed by Teachers.");
+    }
+
+    private static bool IsPolicyComplete(Domain.Catalog.ServiceCatalogItem catalog)
+    {
+        try { catalog.EnsurePolicyComplete(); return true; }
+        catch (DomainException) { return false; }
+    }
+
+    private static bool IsOfferingCompliant(
+        TeacherService service, Domain.Catalog.ServiceCatalogItem catalog)
+    {
+        if (service.IsSuperseded) return false;
+        try
+        {
+            ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+                catalog, service.Price, service.Currency, service.DeliveryHours, service.Revisions);
+            return true;
+        }
+        catch (DomainException) { return false; }
+    }
+
     private async Task RequireActiveQualificationAsync(string teacherId, Guid subjectId, CancellationToken ct)
     {
         if (!await db.TeacherSubjectQualifications.AnyAsync(x => x.TeacherId == teacherId && x.SubjectId == subjectId
@@ -1351,6 +1753,13 @@ internal sealed class MarketplaceService(
                 $"EXEC sp_getapplock @Resource={"session-schedule:" + teacherId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
             : Task.CompletedTask;
 
+    private Task LockTeacherServiceAsync(
+        string teacherId, Guid subjectId, Guid catalogItemId, CancellationToken ct) =>
+        db.Database.IsSqlServer()
+            ? db.Database.ExecuteSqlInterpolatedAsync(
+                $"EXEC sp_getapplock @Resource={"teacher-service:" + teacherId + ":" + subjectId + ":" + catalogItemId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
+            : Task.CompletedTask;
+
     private static bool RuleContains(
         TeacherAvailabilityRule rule,
         DateTimeOffset startsAt,
@@ -1372,8 +1781,12 @@ internal sealed class MarketplaceService(
         bool hasActiveQualification,
         bool hasAvailability)
     {
-        var canRequest = x.IsActive && type.IsActive && type.IsPublic && type.TeacherSelectable && !type.RequiresScheduling;
+        var compliant = IsOfferingCompliant(x, type);
+        var canRequest = x.IsActive && !x.IsSuperseded && compliant && hasActiveQualification
+            && type.IsActive && type.IsPublic && type.TeacherSelectable && !type.RequiresScheduling;
         var canBook = x.IsActive
+            && !x.IsSuperseded
+            && compliant
             && type.IsActive
             && type.IsPublic
             && type.TeacherSelectable
@@ -1382,14 +1795,22 @@ internal sealed class MarketplaceService(
             && profilePublished
             && hasActiveQualification
             && hasAvailability;
-        return new(
+        var state = x.IsSuperseded ? "superseded"
+            : !hasActiveQualification ? "qualification_required"
+            : !type.IsActive ? "catalog_inactive"
+            : !type.IsPublic ? "catalog_hidden"
+            : !type.TeacherSelectable ? "catalog_unavailable"
+            : !compliant ? "policy_correction_required"
+            : !x.IsActive ? "disabled"
+            : "configured";
+        return new TeacherServiceDto(
             x.Id,
             x.SubjectId,
             x.ServiceCatalogItemId,
             type.Code,
             type.Type,
-            x.Title,
-            x.Description,
+            type.Name,
+            string.IsNullOrWhiteSpace(x.ApproachEn) ? x.ApproachAr : x.ApproachEn,
             x.Price,
             x.Currency,
             x.DeliveryHours,
@@ -1405,14 +1826,40 @@ internal sealed class MarketplaceService(
             type.DisplayOrder,
             canRequest,
             canBook,
-            Convert.ToBase64String(x.RowVersion));
+            Convert.ToBase64String(x.RowVersion))
+        {
+            NameEn = type.Name,
+            NameAr = type.NameAr,
+            DescriptionEn = type.Description,
+            DescriptionAr = type.DescriptionAr,
+            CategoryCode = type.CategoryCode,
+            IconCode = type.IconCode,
+            OrderType = type.OrderType,
+            QualificationPolicy = type.QualificationPolicy,
+            ApproachEn = x.ApproachEn,
+            ApproachAr = x.ApproachAr,
+            DefaultPrice = type.DefaultPrice,
+            RecommendedPrice = type.RecommendedPrice,
+            MinimumDeliveryHours = type.MinimumDeliveryHours,
+            DefaultDeliveryHours = type.DefaultDeliveryHours,
+            RecommendedDeliveryHours = type.RecommendedDeliveryHours,
+            MaximumDeliveryHours = type.MaximumDeliveryHours,
+            DefaultRevisions = type.DefaultRevisions,
+            MaximumRevisions = type.MaximumRevisions,
+            IsQualified = hasActiveQualification,
+            IsCompliant = compliant,
+            IsSuperseded = x.IsSuperseded,
+            SupersededByTeacherServiceId = x.SupersededByTeacherServiceId,
+            ConfigurationState = state
+        };
     }
     private static TeachingSampleDto Map(TeacherTeachingSample x)
     {
         if (x.SourceType == TeachingSampleSourceType.QualificationGenerated)
             return new(
                 x.Id, x.SubjectId, x.TopicId, x.Title, x.DurationSeconds, x.PublishedAt,
-                "qualification_sample", "qualification_sample");
+                "qualification_sample", "qualification_sample", null, x.DisplayOrder,
+                x.IsProfileVisible, x.ProfileDisplayOrder, x.IsProfileFeatured);
         var versionId = x.ApprovedVersionId ?? x.CurrentVersionId;
         var version = x.Versions.SingleOrDefault(item => item.Id == versionId)
             ?? throw new DomainException("sample_version_not_found", "Teacher Showcase version was not found.");
@@ -1428,7 +1875,8 @@ internal sealed class MarketplaceService(
                 ? "reviewed_showcase" : "teacher_showcase",
             sample.ModerationStatus == ShowcaseModerationStatus.Approved
                 ? "reviewed_showcase" : "private_showcase",
-            version.Description, sample.DisplayOrder);
+            version.Description, sample.DisplayOrder,
+            sample.IsProfileVisible, sample.ProfileDisplayOrder, sample.IsProfileFeatured);
 
     private static ShowcaseVersionDto MapShowcaseVersion(TeacherTeachingSampleVersion version) =>
         new(

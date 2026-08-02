@@ -53,6 +53,13 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
             .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}")).RootElement;
         Assert.Equal(4.6m, ratedProfile.GetProperty("rating").GetDecimal());
         Assert.Equal(1, ratedProfile.GetProperty("ratingCount").GetInt32());
+        var visibleReviews = JsonDocument.Parse(await factory.CreateClient()
+            .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}/reviews")).RootElement;
+        Assert.Equal(1, visibleReviews.GetProperty("totalCount").GetInt32());
+        var visibleReview = visibleReviews.GetProperty("items")[0];
+        Assert.Equal(reviewId, visibleReview.GetProperty("id").GetGuid());
+        Assert.Equal("Clear and useful.", visibleReview.GetProperty("originalComment").GetString());
+        Assert.Equal(4.6m, visibleReview.GetProperty("overallScore").GetDecimal());
         Assert.Equal(HttpStatusCode.Conflict,
             (await student.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", new
             {
@@ -70,6 +77,8 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
         var publicReviews = JsonDocument.Parse(await factory.CreateClient()
             .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}/reviews")).RootElement;
         Assert.Equal(0, publicReviews.GetProperty("totalCount").GetInt32());
+        Assert.False(visibleReview.TryGetProperty("orderId", out _));
+        Assert.False(visibleReview.TryGetProperty("studentId", out _));
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         var stored = await db.TeacherReviews.Include(x => x.Moderation).SingleAsync(x => x.Id == reviewId);
@@ -83,6 +92,63 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
         Assert.Equal(0, hiddenProfile.GetProperty("ratingCount").GetInt32());
         Assert.True(await db.AuditLogEntries.AnyAsync(x =>
             x.Action == "ReviewModerated" && x.EntityId == reviewId.ToString()));
+
+        var studentOrders = JsonDocument.Parse(await student.GetStringAsync("/api/v1/orders/mine?pageSize=20")).RootElement;
+        var owned = studentOrders.GetProperty("items").EnumerateArray()
+            .Single(x => x.GetProperty("id").GetGuid() == data.OrderId);
+        Assert.True(owned.GetProperty("hasReview").GetBoolean());
+        Assert.False(owned.GetProperty("reviewCanSubmit").GetBoolean());
+        Assert.Equal(4.6m, owned.GetProperty("reviewOverallScore").GetDecimal());
+        Assert.False(owned.GetProperty("reviewIsVisible").GetBoolean());
+        Assert.Equal("Clear and useful.", owned.GetProperty("reviewComment").GetString());
+
+        (await admin.PostAsJsonAsync($"/api/v1/admin/reviews/{reviewId}/moderate",
+            new { visible = true, reason = "Restored after controlled moderation test." })).EnsureSuccessStatusCode();
+        var restoredReviews = JsonDocument.Parse(await factory.CreateClient()
+            .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}/reviews")).RootElement;
+        Assert.Equal(1, restoredReviews.GetProperty("totalCount").GetInt32());
+        var restoredProfile = JsonDocument.Parse(await factory.CreateClient()
+            .GetStringAsync($"/api/v1/teachers/{data.Teacher.Id}")).RootElement;
+        Assert.Equal(4.6m, restoredProfile.GetProperty("rating").GetDecimal());
+        Assert.Equal(1, restoredProfile.GetProperty("ratingCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Review_eligibility_rejects_non_owner_teacher_and_incomplete_orders()
+    {
+        var data = await SeedAsync();
+        var student = await ClientAsync(data.Student.Email);
+        var outsider = await ClientAsync(data.Outsider.Email);
+        var teacher = await ClientAsync(data.Teacher.Email);
+        var payload = new
+        {
+            explanationClarity = 5,
+            subjectKnowledge = 5,
+            communication = 5,
+            onTimeDelivery = 5,
+            valueForMoney = 5,
+            comment = "Should not apply yet.",
+            recommends = true
+        };
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await student.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", payload)).StatusCode);
+        await PayAndDeliverAsync(data, student);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await student.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", payload)).StatusCode);
+        var complete = await SendAsync(student, HttpMethod.Post,
+            $"/api/v1/orders/{data.OrderId}/complete", null, await OrderVersionAsync(data.OrderId));
+        complete.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await outsider.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", payload)).StatusCode);
+        // Teacher lacks ReviewsCreate policy → Forbidden (not ownership 404).
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await teacher.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", payload)).StatusCode);
+        (await student.PostAsJsonAsync($"/api/v1/orders/{data.OrderId}/review", payload)).EnsureSuccessStatusCode();
+        var orders = JsonDocument.Parse(await student.GetStringAsync("/api/v1/orders/mine?pageSize=20")).RootElement;
+        var owned = orders.GetProperty("items").EnumerateArray()
+            .Single(x => x.GetProperty("id").GetGuid() == data.OrderId);
+        Assert.True(owned.GetProperty("hasReview").GetBoolean());
+        Assert.False(owned.GetProperty("reviewCanSubmit").GetBoolean());
     }
 
     [Fact]

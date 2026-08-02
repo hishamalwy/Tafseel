@@ -276,7 +276,7 @@ public sealed class AuthController(
 public sealed record RegisterRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MinLength(10), MaxLength(128)] string Password,
-    [Required, MaxLength(200)] string FullName,
+    [Required, MaxLength(200), RegularExpression(@"^(?!\s*\d+\s*$).*$", ErrorMessage = "Full name cannot contain only numbers.")] string FullName,
     [Required] string Role,
     string Lang = "ar");
 
@@ -285,8 +285,8 @@ public sealed record LoginRequest(
     [Required, MaxLength(128)] string Password);
 
 public sealed record UpdateProfileRequest(
-    [Required, MaxLength(200)] string FullName,
-    [MaxLength(200)] string? FullNameEnglish = null);
+    [Required, MaxLength(200), RegularExpression(@"^(?!\s*\d+\s*$).*$", ErrorMessage = "Full name cannot contain only numbers.")] string FullName,
+    [MaxLength(200), RegularExpression(@"^(?!\s*\d+\s*$).*$", ErrorMessage = "English name cannot contain only numbers.")] string? FullNameEnglish = null);
 
 public sealed record ChangePasswordRequest(
     [Required, MaxLength(128)] string CurrentPassword,

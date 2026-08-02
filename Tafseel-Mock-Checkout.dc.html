@@ -9,7 +9,7 @@
 <x-dc>
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mock checkout — Tafseel</title>
+<title data-i18n="mock_pay_page_title">Mock checkout — Tafseel</title>
 <script src="js/boot-prefs.js"></script>
 <link rel="stylesheet" href="css/tafseel.css" />
 <link rel="icon" href="assets/brand/favicon.ico" />
@@ -24,81 +24,113 @@
       <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
       <span translate="no" class="tf-mursala" style="font-weight:900;font-size:17px;letter-spacing:0">تفصيــل</span>
     </a>
-    <span style="color:var(--muted);font-size:14px">/ Mock provider</span>
+    <span style="color:var(--muted);font-size:14px">/ {{ breadcrumb }}</span>
     <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
     </div>
   </div>
 </header>
 
-<main class="tf-shell" style="padding-block:32px 80px;max-width:560px;margin-inline:auto">
+<main class="tf-shell tf-pay-main" style="padding-block:32px 80px;max-width:720px;margin-inline:auto">
   <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
-    <div style="margin-top:48px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px">
-      <p style="font-size:14.5px;color:var(--muted)" data-i18n="mock_pay_loading">Loading mock checkout…</p>
-    </div>
+    <div class="tf-pay-state" role="status">{{ loadingLabel }}</div>
   </sc-if>
 
   <sc-if value="{{ isUnavailable }}" hint-placeholder-val="{{ false }}">
-    <div style="margin-top:48px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:36px">
-      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px" data-i18n="mock_pay_unavailable_title">Mock checkout unavailable</h1>
-      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px" data-i18n="mock_pay_unavailable_body">The mock payment simulator is disabled or this payment was not found.</p>
-      <a href="Tafseel-Student-Dashboard.dc.html" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px" data-i18n="pay_go_dashboard">Go to Student Dashboard</a>
+    <div class="tf-pay-state" role="alert">
+      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px">{{ unavailableTitle }}</h1>
+      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px">{{ unavailableBody }}</p>
+      <a href="Tafseel-Student-Dashboard.dc.html" class="tf-pay-primary-link">{{ goDashboardLabel }}</a>
     </div>
   </sc-if>
 
   <sc-if value="{{ showPanel }}" hint-placeholder-val="{{ false }}">
-    <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;display:flex;flex-direction:column;gap:18px">
-      <div>
-        <p style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px" data-i18n="mock_pay_badge">Development simulator</p>
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px" data-i18n="mock_pay_title">Mock payment provider</h1>
-        <p style="font-size:14px;color:var(--muted);line-height:1.55;margin:0" data-i18n="mock_pay_blurb">Choose a simulated provider outcome. Tafseel confirms the order only after the signed mock webhook is verified — this page never marks payment success locally.</p>
-      </div>
-
-      <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:14px;background:var(--bg);display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
-          <span style="color:var(--muted)" data-i18n="mock_pay_reference">Provider reference</span>
-          <strong style="font-family:var(--font-mono);font-size:12.5px;word-break:break-all">{{ providerReference }}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
-          <span style="color:var(--muted)" data-i18n="mock_pay_amount">Amount</span>
-          <strong>{{ amountLabel }}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
-          <span style="color:var(--muted)" data-i18n="mock_pay_status">Status</span>
-          <strong>{{ statusLabel }}</strong>
-        </div>
-      </div>
-
-      <sc-if value="{{ showActions }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <button type="button" onClick="{{ onSucceed }}" disabled="{{ submitting }}" style="height:46px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:14.5px;cursor:{{ actionCursor }};opacity:{{ actionOpacity }}" data-i18n="mock_pay_succeed">Simulate successful payment</button>
-          <button type="button" onClick="{{ onFail }}" disabled="{{ submitting }}" style="height:46px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-weight:700;font-size:14.5px;cursor:{{ actionCursor }};opacity:{{ actionOpacity }}" data-i18n="mock_pay_fail">Simulate failed payment</button>
-        </div>
+    <div class="tf-pay-layout tf-pay-layout-mock">
+      <sc-if value="{{ showOrderContext }}" hint-placeholder-val="{{ false }}">
+        <aside class="tf-req-context" aria-label="{{ contextAria }}">
+          <p class="tf-req-context-eyebrow">{{ contextEyebrow }}</p>
+          <p class="tf-req-context-teacher">{{ teacherName }}</p>
+          <p class="tf-req-context-meta">{{ serviceName }}</p>
+          <ul class="tf-req-context-facts">
+            <li><span>{{ amountFactLabel }}</span><strong>{{ amountLabel }}</strong></li>
+            <li><span>{{ deliveryLabel }}</span><strong>{{ deliveryValue }}</strong></li>
+            <li><span>{{ revisionsLabel }}</span><strong>{{ revisionsValue }}</strong></li>
+            <li><span>{{ orderRefLabel }}</span><strong class="tf-pay-mono">{{ orderRef }}</strong></li>
+          </ul>
+          <div class="tf-req-context-protection">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
+            <span>{{ protectedPayment }}</span>
+          </div>
+        </aside>
       </sc-if>
 
-      <sc-if value="{{ showConfirmed }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:14px;border-radius:var(--r-md);background:color-mix(in oklab, var(--primary) 12%, var(--surface));border:1px solid var(--border)">
-          <p style="font-size:14px;font-weight:700;margin-bottom:6px" data-i18n="mock_pay_confirmed_title">Payment confirmed</p>
-          <p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:0" data-i18n="mock_pay_confirmed_body">The canonical webhook path verified this payment. Continue to your dashboard to start work and delivery.</p>
+      <section class="tf-pay-card" style="display:flex;flex-direction:column;gap:18px">
+        <div>
+          <p class="tf-req-context-eyebrow" style="margin-bottom:6px">{{ badge }}</p>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ title }}</h1>
+          <p style="font-size:14px;color:var(--muted);line-height:1.55;margin:0">{{ blurb }}</p>
         </div>
-        <a href="{{ returnHref }}" style="height:46px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px" data-i18n="mock_pay_return">Return to dashboard</a>
-        <sc-if value="{{ autoReturnActive }}" hint-placeholder-val="{{ false }}">
-          <div role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--muted)">
-            <span>{{ autoReturnLabel }}</span>
-            <button type="button" onClick="{{ onCancelAutoReturn }}" style="border:0;background:none;padding:0;font-size:12.5px;font-weight:600;color:var(--primary);cursor:pointer">{{ cancelAutoReturnLabel }}</button>
+
+        <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:14px;background:var(--bg);display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
+            <span style="color:var(--muted)">{{ referenceLabel }}</span>
+            <strong class="tf-pay-mono" style="font-size:12.5px;word-break:break-all">{{ providerReference }}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
+            <span style="color:var(--muted)">{{ amountFactLabel }}</span>
+            <strong>{{ amountLabel }}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
+            <span style="color:var(--muted)">{{ statusFactLabel }}</span>
+            <strong>{{ statusLabel }}</strong>
+          </div>
+        </div>
+
+        <sc-if value="{{ showActions }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button type="button" class="tf-pay-cta" onClick="{{ onSucceed }}" disabled="{{ submitting }}" style="cursor:{{ actionCursor }};opacity:{{ actionOpacity }}">{{ succeedLabel }}</button>
+            <button type="button" class="tf-pay-secondary-btn" onClick="{{ onFail }}" disabled="{{ submitting }}" style="cursor:{{ actionCursor }};opacity:{{ actionOpacity }}">{{ failLabel }}</button>
+            <a href="{{ cancelHref }}" class="tf-pay-text-link">{{ cancelLabel }}</a>
           </div>
         </sc-if>
-      </sc-if>
 
-      <sc-if value="{{ showFailed }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:14px;border-radius:var(--r-md);background:var(--bg);border:1px solid var(--border)">
-          <p style="font-size:14px;font-weight:700;margin-bottom:6px" data-i18n="mock_pay_failed_title">Provider reported failure</p>
-          <p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:0" data-i18n="mock_pay_failed_body">A failed attempt was recorded. You can simulate success again while the payment remains pending.</p>
-        </div>
-        <button type="button" onClick="{{ onSucceed }}" disabled="{{ submitting }}" style="height:46px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:14.5px;cursor:{{ actionCursor }};opacity:{{ actionOpacity }}" data-i18n="mock_pay_retry_success">Simulate successful payment</button>
-      </sc-if>
-    </section>
+        <sc-if value="{{ showConfirmed }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px;border-radius:var(--r-md);background:var(--success-soft);border:1px solid var(--border)">
+            <p style="font-size:14px;font-weight:700;margin-bottom:6px">{{ confirmedTitle }}</p>
+            <p style="font-size:13.5px;color:var(--text-2);line-height:1.5;margin:0">{{ confirmedBody }}</p>
+          </div>
+          <ol class="tf-req-success-steps" aria-label="{{ nextTitle }}">
+            <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="4">
+              <li><span aria-hidden="true">{{ n.n }}</span><span>{{ n.text }}</span></li>
+            </sc-for>
+          </ol>
+          <div class="tf-req-success-actions">
+            <a href="{{ returnHref }}" class="tf-pay-primary-link">{{ returnLabel }}</a>
+            <sc-if value="{{ showOrderTimelineLink }}" hint-placeholder-val="{{ false }}">
+              <a href="{{ orderDashboardHref }}" class="tf-pay-secondary-link">{{ trackOrderLabel }}</a>
+            </sc-if>
+          </div>
+          <sc-if value="{{ autoReturnActive }}" hint-placeholder-val="{{ false }}">
+            <div role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--muted)">
+              <span>{{ autoReturnLabel }}</span>
+              <button type="button" onClick="{{ onCancelAutoReturn }}" style="border:0;background:none;padding:0;font-size:12.5px;font-weight:600;color:var(--primary);cursor:pointer;min-height:40px">{{ cancelAutoReturnLabel }}</button>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ showFailed }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px;border-radius:var(--r-md);background:var(--bg);border:1px solid var(--border)">
+            <p style="font-size:14px;font-weight:700;margin-bottom:6px">{{ failedTitle }}</p>
+            <p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:0">{{ failedBody }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button type="button" class="tf-pay-cta" onClick="{{ onSucceed }}" disabled="{{ submitting }}" style="cursor:{{ actionCursor }};opacity:{{ actionOpacity }}">{{ retryLabel }}</button>
+            <a href="{{ cancelHref }}" class="tf-pay-secondary-link">{{ backToCheckoutLabel }}</a>
+          </div>
+        </sc-if>
+      </section>
+    </div>
   </sc-if>
 
   <div class="{{ toastClass }}">{{ toast }}</div>
@@ -110,12 +142,30 @@ function money(cur, n) {
   return cur + ' ' + text;
 }
 
+function shortId(value) {
+  const s = String(value || '');
+  return s.length > 8 ? s.slice(0, 8) : s;
+}
+
+function formatRevisions(n) {
+  const count = Number(n) || 0;
+  if (count <= 0) return Tafseel.t('tp_no_revisions');
+  return count + ' ' + Tafseel.t('tp_free_revisions');
+}
+
+function serviceDisplayName(item) {
+  if (!item) return '—';
+  const isAr = Tafseel.lang === 'ar';
+  if (isAr && item.serviceNameArabic) return item.serviceNameArabic;
+  return item.serviceNameEnglish || item.serviceNameArabic || Tafseel.t('pay_order_title');
+}
+
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme,
     loading: true, unavailable: false, submitting: false,
-    providerReference: '', session: null, lastOutcome: null,
-    returnPath: '/app/Tafseel-Student-Dashboard.dc.html',
+    providerReference: '', session: null, order: null, lastOutcome: null,
+    returnPath: '/app/Tafseel-Student-Dashboard.dc.html?section=orders',
     toast: '', toastLeaving: false, autoReturnSeconds: 0
   };
 
@@ -125,8 +175,6 @@ class Component extends DCLogic {
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); this.cancelAutoReturn(); }
 
-  /** Accessible, cancellable auto-return (WCAG 2.2.1): starts only after the backend has
-   * confirmed payment via the signed webhook, never as a substitute for that confirmation. */
   startAutoReturn(path) {
     this.cancelAutoReturn();
     this.setState({ autoReturnSeconds: 8 });
@@ -149,6 +197,16 @@ class Component extends DCLogic {
 
   flash(msg) { Tafseel.flash(this, msg, 3200); }
 
+  async loadOrderContext(orderId) {
+    if (!orderId) return null;
+    try {
+      const page = await Tafseel.api.get('/orders/mine?pageSize=100');
+      return (page.items || []).find(x => String(x.id).toLowerCase() === String(orderId).toLowerCase()) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async bootstrap() {
     try {
       const session = await Tafseel.api.requireRoles(['Student']);
@@ -168,10 +226,12 @@ class Component extends DCLogic {
       }
 
       const data = await Tafseel.api.get('/payments/mock/simulator?ref=' + encodeURIComponent(ref));
+      const order = await this.loadOrderContext(data.orderId);
       this.setState({
         loading: false, unavailable: false,
         providerReference: data.providerReference || ref,
         session: data,
+        order: order,
         lastOutcome: Number(data.status) === 1 ? 'confirmed' : null
       });
     } catch (error) {
@@ -213,21 +273,31 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
     const session = s.session;
+    const order = s.order;
     const status = session ? session.status : null;
     const confirmed = s.lastOutcome === 'confirmed' || Number(status) === 1;
     const failed = s.lastOutcome === 'failed' && !confirmed;
     const pending = !!session && !confirmed;
     const returnHref = (s.returnPath && s.returnPath.startsWith('/'))
       ? s.returnPath
-      : '/app/Tafseel-Student-Dashboard.dc.html';
+      : '/app/Tafseel-Student-Dashboard.dc.html?section=orders';
+    const orderId = (session && session.orderId) || (order && order.id) || '';
+    const cancelHref = orderId
+      ? 'Tafseel-Payment.dc.html?orderId=' + encodeURIComponent(orderId)
+      : 'Tafseel-Student-Dashboard.dc.html?section=orders';
 
     return {
-      langLabel: Tafseel.t('language_target'),
       langSwitchLabel: Tafseel.t('admin_switch_language'),
+      themeToggleLabel: Tafseel.t('req_toggle_theme'),
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
+      breadcrumb: Tafseel.t('mock_pay_breadcrumb'),
+      loadingLabel: Tafseel.t('mock_pay_loading'),
+      unavailableTitle: Tafseel.t('mock_pay_unavailable_title'),
+      unavailableBody: Tafseel.t('mock_pay_unavailable_body'),
+      goDashboardLabel: Tafseel.t('pay_go_dashboard'),
 
       isLoading: s.loading,
       isUnavailable: !s.loading && s.unavailable,
@@ -236,6 +306,27 @@ class Component extends DCLogic {
       showConfirmed: confirmed,
       showFailed: failed,
 
+      showOrderContext: !!order,
+      contextAria: Tafseel.t('pay_context_aria'),
+      contextEyebrow: Tafseel.t('pay_context_eyebrow'),
+      teacherName: order ? Tafseel.partyName(order, 'teacher') : '',
+      serviceName: order ? serviceDisplayName(order) : '',
+      deliveryLabel: Tafseel.t('pay_context_delivery'),
+      deliveryValue: order && order.agreedDeliveryAt
+        ? Tafseel.date(order.agreedDeliveryAt, { dateStyle: 'medium' })
+        : '—',
+      revisionsLabel: Tafseel.t('pay_context_revisions'),
+      revisionsValue: order ? formatRevisions(order.revisionAllowance) : '—',
+      orderRefLabel: Tafseel.t('pay_order_id_label'),
+      orderRef: shortId(orderId),
+      protectedPayment: Tafseel.t('req_protected_payment'),
+
+      badge: Tafseel.t('mock_pay_badge'),
+      title: Tafseel.t('mock_pay_title'),
+      blurb: Tafseel.t('mock_pay_blurb'),
+      referenceLabel: Tafseel.t('mock_pay_reference'),
+      amountFactLabel: Tafseel.t('mock_pay_amount'),
+      statusFactLabel: Tafseel.t('mock_pay_status'),
       providerReference: s.providerReference,
       amountLabel: session ? money(session.currency || 'SAR', session.amount) : '',
       statusLabel: confirmed
@@ -244,6 +335,27 @@ class Component extends DCLogic {
           ? Tafseel.t('mock_pay_status_failed_attempt')
           : Tafseel.t('mock_pay_status_pending'),
       returnHref,
+      cancelHref,
+      cancelLabel: Tafseel.t('mock_pay_cancel'),
+      succeedLabel: Tafseel.t('mock_pay_succeed'),
+      failLabel: Tafseel.t('mock_pay_fail'),
+      confirmedTitle: Tafseel.t('mock_pay_confirmed_title'),
+      confirmedBody: Tafseel.t('mock_pay_confirmed_body'),
+      returnLabel: Tafseel.t('mock_pay_return'),
+      nextTitle: Tafseel.t('mock_pay_next_title'),
+      nextSteps: [
+        { n: '1', text: Tafseel.t('mock_pay_next_1') },
+        { n: '2', text: Tafseel.t('mock_pay_next_2') },
+        { n: '3', text: Tafseel.t('mock_pay_next_3') },
+        { n: '4', text: Tafseel.t('mock_pay_next_4') }
+      ],
+      showOrderTimelineLink: !!orderId,
+      orderDashboardHref: '/app/Tafseel-Student-Dashboard.dc.html?section=orders',
+      trackOrderLabel: Tafseel.t('mock_pay_track_order'),
+      failedTitle: Tafseel.t('mock_pay_failed_title'),
+      failedBody: Tafseel.t('mock_pay_failed_body'),
+      retryLabel: Tafseel.t('mock_pay_retry_success'),
+      backToCheckoutLabel: Tafseel.t('mock_pay_back_checkout'),
 
       submitting: s.submitting,
       actionOpacity: s.submitting ? '0.65' : '1',

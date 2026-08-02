@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tafseel.Application.Common;
+using Tafseel.Application.Catalog;
 using Tafseel.Application.Finance;
 using Tafseel.Application.Orders;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.Orders;
 using Tafseel.Domain.Governance;
+using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Messaging;
 
@@ -26,25 +28,31 @@ internal sealed class OrderService(
         string studentId, CreateLearningRequest input, CancellationToken ct)
     {
         // Align with public CanRequest: active, public, teacher-selectable, non-scheduling services only.
-        var service = await db.TeacherServices.AsNoTracking().SingleOrDefaultAsync(x =>
-                x.Id == input.TeacherServiceId && x.IsActive
-                && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                && db.ServiceCatalogItems.Any(type =>
-                    type.Id == x.ServiceCatalogItemId
-                    && type.IsActive
-                    && type.IsPublic
-                    && type.TeacherSelectable
-                    && !type.RequiresScheduling)
+        var row = await (
+            from service in db.TeacherServices.AsNoTracking()
+            join catalog in db.ServiceCatalogItems.AsNoTracking()
+                on service.ServiceCatalogItemId equals catalog.Id
+            where service.Id == input.TeacherServiceId && service.IsActive
+                && service.SupersededByTeacherServiceId == null
+                && catalog.IsActive && catalog.IsPublic && catalog.TeacherSelectable
+                && !catalog.RequiresScheduling
+                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
                 && db.TeacherSubjectQualifications.Any(q =>
-                    q.TeacherId == x.TeacherId && q.SubjectId == x.SubjectId)
+                    q.TeacherId == service.TeacherId && q.SubjectId == service.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
                 && db.TeacherProfiles.Any(profile =>
-                    profile.TeacherId == x.TeacherId && profile.IsPublished), ct)
+                    profile.TeacherId == service.TeacherId && profile.IsPublished)
+            select new { service, catalog }).SingleOrDefaultAsync(ct)
             ?? throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
+        ServiceCatalogPolicyValidator.EnsureAsyncRequest(row.catalog);
+        ServiceCatalogPolicyValidator.EnsureOfferingTerms(
+            row.catalog, row.service.Price, row.service.Currency, row.service.DeliveryHours, row.service.Revisions);
         var request = new LearningRequest(
-            studentId, service.TeacherId, service.Id, input.Title, input.Description,
+            studentId, row.service.TeacherId, row.service.Id, input.Title, input.Description,
             input.PreferredDeliveryAt, input.Budget, clock.GetUtcNow());
+        request.CaptureServiceIdentity(row.catalog);
         db.Add(request);
-        await notifications.QueueAsync(service.TeacherId, "NewRequest", "New learning request",
+        await notifications.QueueAsync(row.service.TeacherId, "NewRequest", "New learning request",
             request.Title, $"/requests/{request.Id}", $"request:{request.Id}:created", true, ct);
         await db.SaveChangesAsync(ct);
         return await MapRequestAsync(request, ct);
@@ -155,20 +163,29 @@ internal sealed class OrderService(
                 return await MapOrderAsync(existing, teacherView: true, ct);
             }
             ApplyVersion(request, version);
-            var service = await db.TeacherServices.AsNoTracking().SingleOrDefaultAsync(x =>
-                    x.Id == request.TeacherServiceId && x.TeacherId == teacherId && x.IsActive
-                    && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive)
-                    && db.ServiceCatalogItems.Any(type => type.Id == x.ServiceCatalogItemId && type.IsActive)
-                    && db.TeacherSubjectQualifications.Any(q =>
-                        q.TeacherId == teacherId && q.SubjectId == x.SubjectId), ct)
+            var row = await (
+                from service in db.TeacherServices.AsNoTracking()
+                join catalog in db.ServiceCatalogItems.AsNoTracking()
+                    on service.ServiceCatalogItemId equals catalog.Id
+                where service.Id == request.TeacherServiceId && service.TeacherId == teacherId
+                    && catalog.IsActive
+                    && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q =>
+                        q.TeacherId == teacherId && q.SubjectId == service.SubjectId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                select new { service, catalog }).SingleOrDefaultAsync(ct)
                 ?? throw new DomainException("teacher_service_not_found", "Teacher service is no longer available.");
-            if (!string.Equals(service.Currency, input.Currency, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(row.service.Currency, input.Currency, StringComparison.OrdinalIgnoreCase))
                 throw new DomainException("currency_mismatch", "Accepted currency must match the teacher service.");
-            request.Accept(teacherId, idempotencyKey, clock.GetUtcNow());
+            var now = clock.GetUtcNow();
+            ServiceCatalogPolicyValidator.EnsureAcceptedTerms(
+                row.catalog, input.FinalPrice, input.Currency, now, input.AgreedDeliveryAt, input.RevisionAllowance);
+            request.Accept(teacherId, idempotencyKey, now);
             var order = new Order(
-                request.Id, request.StudentId, teacherId, service.Id, input.FinalPrice, input.Currency,
+                request.Id, request.StudentId, teacherId, row.service.Id, input.FinalPrice, input.Currency,
                 _fees.StudentFeePercent, _fees.TeacherCommissionPercent, input.AgreedDeliveryAt,
-                input.RevisionAllowance, clock.GetUtcNow());
+                input.RevisionAllowance, now);
+            order.CaptureServiceIdentity(row.catalog);
             db.Add(order);
             await notifications.QueueAsync(request.StudentId, "PaymentRequired",
                 "Request accepted — payment required", request.Title, $"/orders/{order.Id}",
@@ -347,6 +364,9 @@ internal sealed class OrderService(
         await notifications.QueueAsync(order.TeacherId, "OrderCompleted", "Order completed",
             "The Student approved the delivery.", $"/orders/{order.Id}",
             $"order:{order.Id}:completed", true, ct);
+        await notifications.QueueAsync(order.StudentId, "OrderCompleted", "Order completed",
+            "You can rate this completed service when ready.", $"/orders/{order.Id}",
+            $"order:{order.Id}:completed:student", true, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
     }
@@ -410,7 +430,10 @@ internal sealed class OrderService(
         var titles = await db.LearningRequests.AsNoTracking()
             .Where(x => requestIds.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id, x => x.Title, ct);
-        return new(items.Select(x => Map(x, teacherView, names, titles.GetValueOrDefault(x.LearningRequestId))).ToArray(),
+        var reviews = await LoadReviewStatesAsync(items.Select(x => x.Id), ct);
+        return new(items.Select(x => Map(
+                x, teacherView, names, titles.GetValueOrDefault(x.LearningRequestId),
+                reviews.GetValueOrDefault(x.Id))).ToArray(),
             page, pageSize, count);
     }
 
@@ -427,8 +450,27 @@ internal sealed class OrderService(
             .Where(x => x.Id == order.LearningRequestId)
             .Select(x => x.Title)
             .SingleOrDefaultAsync(ct);
-        return Map(order, teacherView, names, title);
+        var reviews = await LoadReviewStatesAsync([order.Id], ct);
+        return Map(order, teacherView, names, title, reviews.GetValueOrDefault(order.Id));
     }
+
+    private async Task<IReadOnlyDictionary<Guid, ReviewState>> LoadReviewStatesAsync(
+        IEnumerable<Guid> orderIds, CancellationToken ct)
+    {
+        var ids = orderIds.Distinct().ToArray();
+        if (ids.Length == 0)
+            return new Dictionary<Guid, ReviewState>();
+        var rows = await db.TeacherReviews.AsNoTracking()
+            .Where(x => ids.Contains(x.OrderId))
+            .Select(x => new { x.OrderId, x.OverallScore, x.OriginalComment, x.IsVisible, x.CreatedAt })
+            .ToArrayAsync(ct);
+        return rows.ToDictionary(
+            x => x.OrderId,
+            x => new ReviewState(true, x.OverallScore, x.OriginalComment, x.IsVisible, x.CreatedAt));
+    }
+
+    private readonly record struct ReviewState(
+        bool HasReview, decimal OverallScore, string Comment, bool IsVisible, DateTimeOffset CreatedAt);
 
     private async Task<IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>> ResolveUserNamesAsync(
         IEnumerable<string> userIds, CancellationToken ct)
@@ -487,12 +529,23 @@ internal sealed class OrderService(
             names is null ? null : NameOf(names, x.StudentId),
             names is null ? null : NameOf(names, x.TeacherId),
             names is null ? null : EnglishNameOf(names, x.StudentId),
-            names is null ? null : EnglishNameOf(names, x.TeacherId));
+            names is null ? null : EnglishNameOf(names, x.TeacherId),
+            x.ServiceCatalogItemId, x.CatalogCode, x.CategoryCode, x.OrderType,
+            x.ServiceNameEnglish, x.ServiceNameArabic);
     private static OrderDto Map(
         Order x, bool teacherView,
         IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null,
-        string? requestTitle = null) =>
-        new(x.Id, x.LearningRequestId, x.StudentId, x.TeacherId, x.TeacherServiceId,
+        string? requestTitle = null,
+        ReviewState review = default)
+    {
+        var hasReview = review.HasReview;
+        var canSubmit = !teacherView
+            && x.Status == OrderStatus.Completed
+            && x.PaymentStatus == OrderPaymentStatus.Paid
+            && !hasReview;
+        // Owner-safe review payload on student Order lists; teachers only need HasReview.
+        var exposeOwnerReview = !teacherView && hasReview;
+        return new(x.Id, x.LearningRequestId, x.StudentId, x.TeacherId, x.TeacherServiceId,
             x.Price, x.Currency, x.StudentFeePercent, teacherView ? x.TeacherCommissionPercent : null,
             x.StudentFeeAmount, teacherView ? x.TeacherCommissionAmount : null,
             x.StudentTotal, teacherView ? x.TeacherNet : null,
@@ -503,7 +556,16 @@ internal sealed class OrderService(
             names is null ? null : NameOf(names, x.TeacherId),
             names is null ? null : EnglishNameOf(names, x.StudentId),
             names is null ? null : EnglishNameOf(names, x.TeacherId),
-            requestTitle);
+            requestTitle,
+            x.ServiceCatalogItemId, x.CatalogCode, x.CategoryCode, x.OrderType,
+            x.ServiceNameEnglish, x.ServiceNameArabic,
+            hasReview,
+            exposeOwnerReview ? review.OverallScore : null,
+            exposeOwnerReview ? review.Comment : null,
+            exposeOwnerReview ? review.IsVisible : null,
+            exposeOwnerReview ? review.CreatedAt : null,
+            canSubmit);
+    }
     private static AttachmentDto Map(LearningRequestAttachment x, string? version = null) =>
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt, version);
     private static DeliveryDto Map(OrderDelivery x) =>

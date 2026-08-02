@@ -38,7 +38,7 @@ public abstract class CatalogItem
         if (nameAr is not null) NameAr = CatalogNameNormalizer.Display(nameAr);
     }
 
-    public void SetActive(bool active) => IsActive = active;
+    public virtual void SetActive(bool active) => IsActive = active;
 }
 
 public sealed class Subject : CatalogItem
@@ -193,6 +193,69 @@ public sealed class TeachingLanguage : CatalogItem
     }
 }
 
+public static class ServiceCategoryCodes
+{
+    public const string RecordedExplanation = "recorded_explanation";
+    public const string AcademicSupport = "academic_support";
+    public const string LiveLearning = "live_learning";
+    public const string RevisionExamPreparation = "revision_exam_preparation";
+    public const string StudyMaterials = "study_materials";
+    public const string ProjectGuidance = "project_guidance";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
+    {
+        RecordedExplanation, AcademicSupport, LiveLearning,
+        RevisionExamPreparation, StudyMaterials, ProjectGuidance
+    };
+
+    public static string FromServiceCode(string code) => code switch
+    {
+        "recorded_explanation" => RecordedExplanation,
+        "assignment_guidance" => AcademicSupport,
+        "exam_revision" => RevisionExamPreparation,
+        "live_session" => LiveLearning,
+        _ => AcademicSupport
+    };
+}
+
+public static class ServiceIconCodes
+{
+    public const string Video = "video";
+    public const string AcademicSupport = "academic_support";
+    public const string Live = "live";
+    public const string Exam = "exam";
+    public const string Notes = "notes";
+    public const string Project = "project";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
+        { Video, AcademicSupport, Live, Exam, Notes, Project };
+
+    public static string FromCategory(string category) => category switch
+    {
+        ServiceCategoryCodes.RecordedExplanation => Video,
+        ServiceCategoryCodes.LiveLearning => Live,
+        ServiceCategoryCodes.RevisionExamPreparation => Exam,
+        ServiceCategoryCodes.StudyMaterials => Notes,
+        ServiceCategoryCodes.ProjectGuidance => Project,
+        _ => AcademicSupport
+    };
+}
+
+public static class ServiceOrderTypes
+{
+    public const string AsyncRequest = "async_request";
+    public const string LiveSession = "live_session";
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
+        { AsyncRequest, LiveSession };
+}
+
+public static class ServiceQualificationPolicies
+{
+    public const string SubjectQualificationRequired = "subject_qualification_required";
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
+        { SubjectQualificationRequired };
+}
+
 public sealed class ServiceCatalogItem : CatalogItem
 {
     private static readonly int[] SupportedLiveDurations = [30, 60, 90, 120];
@@ -210,14 +273,56 @@ public sealed class ServiceCatalogItem : CatalogItem
         IReadOnlyCollection<int>? allowedDurations = null,
         decimal? minPrice = null,
         decimal? maxPrice = null,
-        int displayOrder = 0) : base(nameEn, nameAr)
+        int displayOrder = 0,
+        string? categoryCode = null,
+        string? iconCode = null,
+        string? orderType = null,
+        string qualificationPolicy = ServiceQualificationPolicies.SubjectQualificationRequired,
+        string currencyCode = "SAR",
+        decimal? defaultPrice = null,
+        decimal? recommendedPrice = null,
+        int? minimumDeliveryHours = null,
+        int? defaultDeliveryHours = null,
+        int? recommendedDeliveryHours = null,
+        int? maximumDeliveryHours = null,
+        int? defaultRevisions = null,
+        int? maximumRevisions = null) : base(nameEn, nameAr)
     {
         if (string.IsNullOrWhiteSpace(nameAr))
             throw new DomainException("service_name_ar_required", "Arabic service name is required.");
         Description = RequiredLocalized(descriptionEn, "service_description_en_required");
         DescriptionAr = RequiredLocalized(descriptionAr, "service_description_ar_required");
         SetCode(code);
-        UpdateBehavior(type, isPublic, teacherSelectable, requiresScheduling, allowedDurations, minPrice, maxPrice, displayOrder);
+        var resolvedOrderType = NormalizeOptional(orderType)
+            ?? (requiresScheduling || Code == ServiceOrderTypes.LiveSession
+                ? ServiceOrderTypes.LiveSession
+                : ServiceOrderTypes.AsyncRequest);
+        var resolvedCategory = NormalizeOptional(categoryCode) ?? ServiceCategoryCodes.FromServiceCode(Code);
+        var resolvedMinimum = minPrice ?? (resolvedOrderType == ServiceOrderTypes.LiveSession ? 30m : 0.01m);
+        var resolvedMaximum = maxPrice ?? 1_000_000m;
+        var resolvedDefault = defaultPrice ?? Math.Clamp(120m, resolvedMinimum, resolvedMaximum);
+        ConfigurePolicy(
+            resolvedCategory,
+            NormalizeOptional(iconCode) ?? ServiceIconCodes.FromCategory(resolvedCategory),
+            resolvedOrderType,
+            qualificationPolicy,
+            currencyCode,
+            resolvedMinimum,
+            resolvedDefault,
+            recommendedPrice ?? resolvedDefault,
+            resolvedMaximum,
+            resolvedOrderType == ServiceOrderTypes.AsyncRequest ? minimumDeliveryHours ?? 1 : null,
+            resolvedOrderType == ServiceOrderTypes.AsyncRequest ? defaultDeliveryHours ?? 48 : null,
+            resolvedOrderType == ServiceOrderTypes.AsyncRequest ? recommendedDeliveryHours ?? 48 : null,
+            resolvedOrderType == ServiceOrderTypes.AsyncRequest ? maximumDeliveryHours ?? 8760 : null,
+            defaultRevisions ?? (resolvedOrderType == ServiceOrderTypes.LiveSession ? 0 : 2),
+            maximumRevisions ?? (resolvedOrderType == ServiceOrderTypes.LiveSession ? 0 : 20),
+            isPublic,
+            teacherSelectable,
+            allowedDurations,
+            displayOrder,
+            hasReferences: false,
+            compatibilityType: type);
         if (IsActive) EnsureCompleteLocalization();
     }
 
@@ -226,18 +331,37 @@ public sealed class ServiceCatalogItem : CatalogItem
     public string DescriptionAr { get; private set; } = "";
     public string Code { get; private set; } = "";
     public string Type { get; private set; } = "";
+    public string CategoryCode { get; private set; } = "";
+    public string IconCode { get; private set; } = "";
+    public string OrderType { get; private set; } = "";
+    public string QualificationPolicy { get; private set; } = "";
+    public string CurrencyCode { get; private set; } = "SAR";
     public bool IsPublic { get; private set; } = true;
     public bool TeacherSelectable { get; private set; } = true;
     public bool RequiresScheduling { get; private set; }
     public string AllowedDurationsCsv { get; private set; } = "";
     public decimal? MinPrice { get; private set; }
     public decimal? MaxPrice { get; private set; }
+    public decimal DefaultPrice { get; private set; }
+    public decimal RecommendedPrice { get; private set; }
+    public int? MinimumDeliveryHours { get; private set; }
+    public int? DefaultDeliveryHours { get; private set; }
+    public int? RecommendedDeliveryHours { get; private set; }
+    public int? MaximumDeliveryHours { get; private set; }
+    public int DefaultRevisions { get; private set; }
+    public int MaximumRevisions { get; private set; }
     public int DisplayOrder { get; private set; }
     public IReadOnlyCollection<int> AllowedDurations =>
         string.IsNullOrWhiteSpace(AllowedDurationsCsv)
             ? []
             : AllowedDurationsCsv.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(int.Parse).ToArray();
+
+    public override void SetActive(bool active)
+    {
+        if (active) EnsurePolicyComplete();
+        base.SetActive(active);
+    }
 
     public void ConfigureLocalizedContent(
         string nameEn,
@@ -283,6 +407,85 @@ public sealed class ServiceCatalogItem : CatalogItem
                 "Active services require English and Arabic names and descriptions.");
     }
 
+    public void EnsurePolicyComplete()
+    {
+        EnsureCompleteLocalization();
+        ValidatePolicy(
+            CategoryCode, IconCode, OrderType, QualificationPolicy, CurrencyCode,
+            MinPrice, DefaultPrice, RecommendedPrice, MaxPrice,
+            MinimumDeliveryHours, DefaultDeliveryHours, RecommendedDeliveryHours, MaximumDeliveryHours,
+            DefaultRevisions, MaximumRevisions, AllowedDurations);
+    }
+
+    public void ConfigurePolicy(
+        string categoryCode,
+        string iconCode,
+        string orderType,
+        string qualificationPolicy,
+        string currencyCode,
+        decimal minimumPrice,
+        decimal defaultPrice,
+        decimal recommendedPrice,
+        decimal maximumPrice,
+        int? minimumDeliveryHours,
+        int? defaultDeliveryHours,
+        int? recommendedDeliveryHours,
+        int? maximumDeliveryHours,
+        int defaultRevisions,
+        int maximumRevisions,
+        bool isPublic,
+        bool teacherSelectable,
+        IReadOnlyCollection<int>? allowedDurations,
+        int displayOrder,
+        bool hasReferences,
+        string? compatibilityType = null)
+    {
+        categoryCode = NormalizeRequired(categoryCode, "invalid_service_category");
+        iconCode = NormalizeRequired(iconCode, "invalid_service_icon");
+        orderType = NormalizeRequired(orderType, "invalid_service_order_type");
+        qualificationPolicy = NormalizeRequired(qualificationPolicy, "invalid_service_qualification_policy");
+        currencyCode = (currencyCode ?? "").Trim().ToUpperInvariant();
+        var durations = NormalizeDurations(allowedDurations, orderType == ServiceOrderTypes.LiveSession);
+
+        if (hasReferences && OrderType.Length > 0 && !string.Equals(OrderType, orderType, StringComparison.Ordinal))
+            throw new DomainException("service_order_type_immutable", "Service order type cannot change after the service is referenced.");
+        if (hasReferences && QualificationPolicy.Length > 0
+            && !string.Equals(QualificationPolicy, qualificationPolicy, StringComparison.Ordinal))
+            throw new DomainException("service_qualification_policy_immutable", "Service qualification policy cannot change after the service is referenced.");
+
+        ValidatePolicy(
+            categoryCode, iconCode, orderType, qualificationPolicy, currencyCode,
+            minimumPrice, defaultPrice, recommendedPrice, maximumPrice,
+            minimumDeliveryHours, defaultDeliveryHours, recommendedDeliveryHours, maximumDeliveryHours,
+            defaultRevisions, maximumRevisions, durations);
+        if (displayOrder is < 0 or > 10000)
+            throw new DomainException("invalid_service_display_order", "Service display order is invalid.");
+
+        CategoryCode = categoryCode;
+        IconCode = iconCode;
+        OrderType = orderType;
+        QualificationPolicy = qualificationPolicy;
+        CurrencyCode = currencyCode;
+        MinPrice = minimumPrice;
+        DefaultPrice = defaultPrice;
+        RecommendedPrice = recommendedPrice;
+        MaxPrice = maximumPrice;
+        MinimumDeliveryHours = minimumDeliveryHours;
+        DefaultDeliveryHours = defaultDeliveryHours;
+        RecommendedDeliveryHours = recommendedDeliveryHours;
+        MaximumDeliveryHours = maximumDeliveryHours;
+        DefaultRevisions = defaultRevisions;
+        MaximumRevisions = maximumRevisions;
+        IsPublic = isPublic;
+        TeacherSelectable = teacherSelectable;
+        RequiresScheduling = orderType == ServiceOrderTypes.LiveSession;
+        AllowedDurationsCsv = durations.Length == 0 ? "" : string.Join(',', durations);
+        DisplayOrder = displayOrder;
+        Type = string.IsNullOrWhiteSpace(compatibilityType) ? Code : compatibilityType.Trim().ToLowerInvariant();
+        if (Type.Length is 0 or > 50)
+            throw new DomainException("invalid_service_type", "Service type is invalid.");
+    }
+
     public void Update(
         string name,
         string description,
@@ -305,7 +508,19 @@ public sealed class ServiceCatalogItem : CatalogItem
         var normalized = NormalizeCode(code);
         if (!string.Equals(Code, normalized, StringComparison.Ordinal))
             throw new DomainException("service_code_immutable", "Service code cannot be changed after creation.");
-        UpdateBehavior(type, isPublic, teacherSelectable, requiresScheduling, allowedDurations, minPrice, maxPrice, displayOrder);
+        var nextOrderType = requiresScheduling ? ServiceOrderTypes.LiveSession : OrderType;
+        var minimum = minPrice ?? MinPrice ?? 0.01m;
+        var maximum = maxPrice ?? MaxPrice ?? 1_000_000m;
+        ConfigurePolicy(
+            CategoryCode, IconCode, nextOrderType, QualificationPolicy, CurrencyCode,
+            minimum, Math.Clamp(DefaultPrice, minimum, maximum), Math.Clamp(RecommendedPrice, minimum, maximum), maximum,
+            nextOrderType == ServiceOrderTypes.AsyncRequest ? MinimumDeliveryHours ?? 1 : null,
+            nextOrderType == ServiceOrderTypes.AsyncRequest ? DefaultDeliveryHours ?? 48 : null,
+            nextOrderType == ServiceOrderTypes.AsyncRequest ? RecommendedDeliveryHours ?? 48 : null,
+            nextOrderType == ServiceOrderTypes.AsyncRequest ? MaximumDeliveryHours ?? 8760 : null,
+            nextOrderType == ServiceOrderTypes.LiveSession ? 0 : DefaultRevisions,
+            nextOrderType == ServiceOrderTypes.LiveSession ? 0 : MaximumRevisions,
+            isPublic, teacherSelectable, allowedDurations, displayOrder, hasReferences: false, compatibilityType: type);
         if (IsActive) EnsureCompleteLocalization();
     }
 
@@ -352,41 +567,68 @@ public sealed class ServiceCatalogItem : CatalogItem
     public bool SupportsDuration(int minutes) =>
         !RequiresScheduling || AllowedDurations.Count == 0 || AllowedDurations.Contains(minutes);
 
-    private void UpdateBehavior(
-        string? type,
-        bool isPublic,
-        bool teacherSelectable,
-        bool requiresScheduling,
-        IReadOnlyCollection<int>? allowedDurations,
-        decimal? minPrice,
-        decimal? maxPrice,
-        int displayOrder)
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
+
+    private static string NormalizeRequired(string? value, string code) =>
+        NormalizeOptional(value) ?? throw new DomainException(code, "A required service policy code is missing.");
+
+    private static void ValidatePolicy(
+        string categoryCode,
+        string iconCode,
+        string orderType,
+        string qualificationPolicy,
+        string currencyCode,
+        decimal? minimumPrice,
+        decimal defaultPrice,
+        decimal recommendedPrice,
+        decimal? maximumPrice,
+        int? minimumDeliveryHours,
+        int? defaultDeliveryHours,
+        int? recommendedDeliveryHours,
+        int? maximumDeliveryHours,
+        int defaultRevisions,
+        int maximumRevisions,
+        IReadOnlyCollection<int> allowedDurations)
     {
-        if (Code == "live_session")
+        if (!ServiceCategoryCodes.All.Contains(categoryCode))
+            throw new DomainException("invalid_service_category", "Service category is not supported.");
+        if (!ServiceIconCodes.All.Contains(iconCode))
+            throw new DomainException("invalid_service_icon", "Service icon is not supported.");
+        if (!ServiceOrderTypes.All.Contains(orderType))
+            throw new DomainException("invalid_service_order_type", "Service order type is not supported.");
+        if (!ServiceQualificationPolicies.All.Contains(qualificationPolicy))
+            throw new DomainException("invalid_service_qualification_policy", "Service qualification policy is not supported.");
+        if (!string.Equals(currencyCode, "SAR", StringComparison.Ordinal))
+            throw new DomainException("unsupported_service_currency", "Only SAR service policy is supported.");
+        if (minimumPrice is null || maximumPrice is null || minimumPrice <= 0
+            || minimumPrice > defaultPrice || defaultPrice > maximumPrice
+            || minimumPrice > recommendedPrice || recommendedPrice > maximumPrice)
+            throw new DomainException("invalid_service_price_policy", "Service prices must satisfy minimum <= default/recommended <= maximum.");
+        if (defaultRevisions is < 0 or > 20 || maximumRevisions is < 0 or > 20
+            || defaultRevisions > maximumRevisions)
+            throw new DomainException("invalid_service_revision_policy", "Service revisions must satisfy 0 <= default <= maximum <= 20.");
+
+        if (orderType == ServiceOrderTypes.LiveSession)
         {
-            requiresScheduling = true;
-            allowedDurations ??= SupportedLiveDurations;
-            minPrice ??= 30;
+            if (minimumDeliveryHours.HasValue || defaultDeliveryHours.HasValue
+                || recommendedDeliveryHours.HasValue || maximumDeliveryHours.HasValue)
+                throw new DomainException("live_service_delivery_forbidden", "Live services cannot define async delivery policy.");
+            if (defaultRevisions != 0 || maximumRevisions != 0)
+                throw new DomainException("live_service_revisions_forbidden", "Live services must have zero revisions.");
+            if (allowedDurations.Count == 0)
+                throw new DomainException("live_service_duration_required", "Live services require at least one allowed duration.");
+            return;
         }
-        Type = string.IsNullOrWhiteSpace(type) ? Code : type.Trim().ToLowerInvariant();
-        if (Type.Length is 0 or > 50)
-            throw new DomainException("invalid_service_type", "Service type is invalid.");
-        if (displayOrder is < 0 or > 10000)
-            throw new DomainException("invalid_service_display_order", "Service display order is invalid.");
 
-        var normalizedDurations = NormalizeDurations(allowedDurations, requiresScheduling);
-        if (minPrice.HasValue && minPrice <= 0 || maxPrice.HasValue && maxPrice <= 0)
-            throw new DomainException("invalid_service_price_bounds", "Service price bounds must be positive.");
-        if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
-            throw new DomainException("invalid_service_price_bounds", "Service minimum price cannot exceed maximum price.");
-
-        IsPublic = isPublic;
-        TeacherSelectable = teacherSelectable;
-        RequiresScheduling = requiresScheduling;
-        AllowedDurationsCsv = normalizedDurations.Length == 0 ? "" : string.Join(',', normalizedDurations);
-        MinPrice = minPrice;
-        MaxPrice = maxPrice;
-        DisplayOrder = displayOrder;
+        if (allowedDurations.Count != 0)
+            throw new DomainException("async_service_durations_forbidden", "Async services cannot define live durations.");
+        if (minimumDeliveryHours is null || defaultDeliveryHours is null
+            || recommendedDeliveryHours is null || maximumDeliveryHours is null
+            || minimumDeliveryHours < 1 || maximumDeliveryHours > 8760
+            || minimumDeliveryHours > defaultDeliveryHours || defaultDeliveryHours > maximumDeliveryHours
+            || minimumDeliveryHours > recommendedDeliveryHours || recommendedDeliveryHours > maximumDeliveryHours)
+            throw new DomainException("invalid_service_delivery_policy", "Async delivery must satisfy minimum <= default/recommended <= maximum.");
     }
 
     private static int[] NormalizeDurations(IReadOnlyCollection<int>? allowedDurations, bool requiresScheduling)

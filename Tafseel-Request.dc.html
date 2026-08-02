@@ -64,12 +64,12 @@
   </sc-if>
 
   <sc-if value="{{ showForm }}" hint-placeholder-val="{{ false }}">
-    <nav aria-label="{{ progressAria }}" style="display:flex;align-items:center;gap:0;margin-bottom:36px;overflow-x:auto">
+    <nav class="tf-req-progress" aria-label="{{ progressAria }}">
       <sc-for list="{{ progressSteps }}" as="p" hint-placeholder-count="5">
-        <div style="display:flex;align-items:center;flex:1;min-width:72px">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none">
+        <div style="display:flex;align-items:center;flex:1;min-width:56px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none;max-width:100%">
             <span style="{{ p.circleStyle }}" aria-current="{{ p.ariaCurrent }}">{{ p.icon }}</span>
-            <span style="{{ p.labelStyle }}">{{ p.label }}</span>
+            <span class="tf-req-progress-label" data-state="{{ p.state }}" style="{{ p.labelStyle }}">{{ p.label }}</span>
           </div>
           <sc-if value="{{ p.hasLine }}" hint-placeholder-val="{{ true }}">
             <span style="{{ p.lineStyle }}" aria-hidden="true"></span>
@@ -78,7 +78,35 @@
       </sc-for>
     </nav>
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:clamp(18px,3vw,32px);box-shadow:var(--shadow-sm)">
+    <div class="tf-req-layout">
+      <aside class="tf-req-context" aria-label="{{ contextAria }}">
+        <p class="tf-req-context-eyebrow">{{ contextEyebrow }}</p>
+        <p class="tf-req-context-teacher">{{ teacherName }}</p>
+        <p class="tf-req-context-meta">{{ teacherMeta }}</p>
+        <p class="tf-req-context-service">{{ contextServiceName }}</p>
+        <sc-if value="{{ showQualifiedBadge }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-req-context-badge">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7.5 12 3 3 6-7" /></svg>
+            <span>{{ qualifiedBadgeLabel }}</span>
+          </div>
+        </sc-if>
+        <ul class="tf-req-context-facts">
+          <li><span>{{ contextPriceLabel }}</span><strong>{{ contextPrice }}</strong></li>
+          <li><span>{{ contextDeliveryLabel }}</span><strong>{{ contextDelivery }}</strong></li>
+          <li><span>{{ contextRevisionsLabel }}</span><strong>{{ contextRevisions }}</strong></li>
+          <li><span>{{ subjectLabel }}</span><strong>{{ subjectValue }}</strong></li>
+        </ul>
+        <div class="tf-req-context-protection">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
+          <span>{{ protectedPayment }}</span>
+        </div>
+        <div class="tf-req-context-pay">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16v10H4V7Zm0 3h16" /></svg>
+          <span>{{ payAfterAccept }}</span>
+        </div>
+      </aside>
+
+      <div class="tf-req-panel">
 
       <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
         <div>
@@ -92,6 +120,10 @@
                 <span style="font-weight:700;font-size:15px;margin-top:10px">{{ sv.name }}</span>
                 <span style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">{{ sv.desc }}</span>
                 <span style="font-size:12px;color:var(--text-2);margin-top:8px;font-weight:600">{{ sv.price }}</span>
+                <span class="tf-req-service-meta">
+                  <span>{{ sv.delivery }}</span>
+                  <span>{{ sv.revisions }}</span>
+                </span>
               </button>
             </sc-for>
           </div>
@@ -113,7 +145,8 @@
             </label>
             <label style="display:flex;flex-direction:column;gap:6px">
               <span style="font-size:13.5px;font-weight:600">{{ goalLabel }}</span>
-              <textarea value="{{ goal }}" onChange="{{ onGoal }}" rows="4" maxlength="4000" placeholder="{{ goalPh }}" style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
+              <textarea value="{{ goal }}" onChange="{{ onGoal }}" rows="4" maxlength="4000" placeholder="{{ goalPh }}" aria-describedby="req-goal-hint" style="padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;resize:vertical"></textarea>
+              <span id="req-goal-hint" class="tf-req-char-hint">{{ goalHint }} · {{ goalCount }}</span>
             </label>
             <sc-for list="{{ promptFields }}" as="pf" hint-placeholder-count="3">
               <label style="display:flex;flex-direction:column;gap:6px">
@@ -161,9 +194,11 @@
           <sc-if value="{{ hasFileReminders }}" hint-placeholder-val="{{ false }}">
             <p style="font-size:13px;color:var(--muted);margin-bottom:12px">{{ fileReminderText }}</p>
           </sc-if>
-          <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:36px 20px;text-align:center;cursor:pointer;background:var(--bg);position:relative" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}">
+          <label class="tf-req-upload" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}">
             <input type="file" multiple="{{ true }}" accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip,application/pdf,image/png,image/jpeg,application/zip" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
-            <div style="width:44px;height:44px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 12px;font-size:18px;color:var(--muted)" aria-hidden="true">⇧</div>
+            <div class="tf-req-upload-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M12 16V7m0 0 3.5 3.5M12 7 8.5 10.5M5 16.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1.5" /></svg>
+            </div>
             <div style="font-size:15px;font-weight:700;margin-bottom:4px">{{ dragDropLabel }}</div>
             <div style="font-size:13px;color:var(--muted)">{{ orBrowseLabel }}</div>
           </label>
@@ -260,17 +295,21 @@
 
           <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px">
             <h2 style="font-size:14.5px;font-weight:700;margin-bottom:12px">{{ priceSummaryLabel }}</h2>
-            <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px;gap:12px">
               <span style="color:var(--text-2)">{{ servicePriceLabel }}</span><span>{{ servicePriceValue }}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:16px;font-weight:800">
-              <span>{{ totalLabelWord }}</span><span>{{ totalLabel }}</span>
+            <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px;gap:12px">
+              <span style="color:var(--text-2)">{{ budgetPreferenceLabel }}</span><span>{{ budgetSummaryValue }}</span>
             </div>
+            <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:16px;font-weight:800;gap:12px">
+              <span>{{ listedTotalLabel }}</span><span>{{ totalLabel }}</span>
+            </div>
+            <p class="tf-req-price-note">{{ payAfterAccept }}</p>
           </div>
 
-          <div style="background:var(--success-soft);border-radius:var(--r-md);padding:14px 16px;display:flex;gap:10px;margin-bottom:20px">
-            <span style="color:var(--success)" aria-hidden="true">🛡</span>
-            <span style="font-size:13px;color:var(--text-2);line-height:1.5">{{ protectedPayment }}</span>
+          <div class="tf-req-context-protection" style="margin-bottom:20px">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
+            <span>{{ protectedPayment }}</span>
           </div>
 
           <label style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text-2)">
@@ -280,9 +319,10 @@
         </div>
       </sc-if>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:1px solid var(--border);gap:12px;flex-wrap:wrap">
+      <div class="tf-req-panel-nav">
         <button type="button" onClick="{{ onBack }}" disabled="{{ isFirst }}" style="{{ backStyle }}">{{ backLabel }}</button>
         <button type="button" onClick="{{ onNext }}" disabled="{{ nextDisabled }}" style="{{ nextStyle }}">{{ nextLabel }}</button>
+      </div>
       </div>
     </div>
   </sc-if>
@@ -290,15 +330,25 @@
 
 <sc-if value="{{ showResult }}" hint-placeholder-val="{{ false }}">
   <div style="position:fixed;inset:0;z-index:80;background:oklch(0.2 0.02 265 / .45);display:flex;align-items:center;justify-content:center;padding:20px">
-    <div role="dialog" aria-modal="true" aria-labelledby="req-result-title" style="width:min(440px,100%);background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:32px;text-align:center">
+    <div role="dialog" aria-modal="true" aria-labelledby="req-result-title" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:32px;text-align:center">
       <div style="width:56px;height:56px;border-radius:50%;background:{{ resultIconBg }};color:{{ resultIconColor }};display:grid;place-items:center;font-size:24px;margin:0 auto 18px" aria-hidden="true">{{ resultIcon }}</div>
       <h2 id="req-result-title" style="font-size:19px;font-weight:800;margin-bottom:8px">{{ resultTitle }}</h2>
-      <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:12px">{{ resultBody }}</p>
+      <p style="font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:16px">{{ resultBody }}</p>
+      <sc-if value="{{ showSuccessNext }}" hint-placeholder-val="{{ true }}">
+        <ol class="tf-req-success-steps" aria-label="{{ successNextTitle }}">
+          <sc-for list="{{ successNextSteps }}" as="n" hint-placeholder-count="4">
+            <li><span aria-hidden="true">{{ n.n }}</span><span>{{ n.text }}</span></li>
+          </sc-for>
+        </ol>
+      </sc-if>
       <sc-if value="{{ showPartialUploads }}" hint-placeholder-val="{{ false }}">
         <p style="font-size:13.5px;color:var(--text-2);margin-bottom:16px">{{ partialUploadSummary }}</p>
         <button type="button" onClick="{{ onRetryUploads }}" style="height:42px;width:100%;margin-bottom:10px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:700">{{ retryUploadsLabel }}</button>
       </sc-if>
-      <a href="{{ dashboardHref }}" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">{{ goDashboardLabel }}</a>
+      <div class="tf-req-success-actions">
+        <a href="{{ dashboardHref }}" style="height:44px;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px">{{ goDashboardLabel }}</a>
+        <a href="{{ profileReturnHref }}" style="height:42px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:600;font-size:14px;color:var(--text)">{{ backToTeacherLabel }}</a>
+      </div>
     </div>
   </div>
 </sc-if>
@@ -351,6 +401,20 @@ function formatFileSize(bytes) {
 
 function escapeText(value) {
   return String(value == null ? '' : value);
+}
+
+function formatDelivery(hours) {
+  const h = Number(hours) || 0;
+  if (h <= 0) return '—';
+  if (h <= 24) return t('tp_delivery_same_day');
+  const days = Math.max(1, Math.round(h / 24));
+  return days + ' ' + (days === 1 ? t('tp_day') : t('tp_days'));
+}
+
+function formatRevisions(n) {
+  const count = Number(n) || 0;
+  if (count <= 0) return t('tp_no_revisions');
+  return count + ' ' + t('tp_free_revisions');
 }
 
 class Component extends DCLogic {
@@ -794,6 +858,7 @@ class Component extends DCLogic {
       const state = n < s.step ? 'done' : n === s.step ? 'active' : 'upcoming';
       return {
         label: t(key),
+        state: state,
         hasLine: i < stepKeys.length - 1,
         icon: state === 'done' ? '✓' : String(n),
         ariaCurrent: state === 'active' ? 'step' : 'false',
@@ -801,7 +866,7 @@ class Component extends DCLogic {
           (state === 'upcoming' ? 'border:1px solid var(--border);background:var(--surface);color:var(--muted);'
             : state === 'active' ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
               : 'border:0;background:var(--success);color:#fff;'),
-        labelStyle: 'font-size:11.5px;font-weight:600;white-space:nowrap;color:' + (state === 'upcoming' ? 'var(--muted)' : 'var(--text-2)'),
+        labelStyle: 'color:' + (state === 'upcoming' ? 'var(--muted)' : 'var(--text-2)'),
         lineStyle: 'flex:1;height:2px;margin-inline:6px;background:' + (state === 'done' ? 'var(--success)' : 'var(--border)')
       };
     });
@@ -850,9 +915,12 @@ class Component extends DCLogic {
       ? Tafseel.date(s.deliveryDate, { dateStyle: 'medium' })
       : '—';
     const budgetSummary = s.flexibleBudget ? t('req_flexible') : this.money(s.budget, currency);
-    const replyHours = service && service.deliveryHours ? Math.max(1, Math.round(Number(service.deliveryHours))) : 24;
+    const serviceDeliveryLabel = formatDelivery(service && service.deliveryHours);
+    const serviceRevisionsLabel = formatRevisions(service && service.revisions);
     const styleLabel = G.isExplanationStyle(s.explanationStyle) ? t('req_style_' + s.explanationStyle) : '—';
     const languageSummary = this.languageLabelForId(s.preferredTeachingLanguageId) || '—';
+    const showQualifiedBadge = !!(profile && Array.isArray(profile.trustBadges)
+      && profile.trustBadges.some(b => b && b.code === 'qualified_on_tafseel'));
 
     const checklistItems = checklistState.map(item => {
       const done = item.done;
@@ -877,7 +945,7 @@ class Component extends DCLogic {
       saveExitLabel: t('req_save_exit'),
       onSaveExit: () => this.onSaveExit(),
       profileHref: s.teacherId
-        ? 'Tafseel-Teacher-Profile.dc.html?teacherId=' + encodeURIComponent(s.teacherId)
+        ? 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(s.teacherId)
         : 'Tafseel-Browse-Teachers.dc.html',
 
       showUnavailable,
@@ -903,6 +971,19 @@ class Component extends DCLogic {
       loadingLabel: t('req_loading'),
       showForm,
 
+      contextAria: t('req_context_aria'),
+      contextEyebrow: t('req_context_eyebrow'),
+      contextServiceName: escapeText(service ? service.title : '—'),
+      contextPriceLabel: t('req_context_price'),
+      contextPrice: this.money(servicePrice, currency),
+      contextDeliveryLabel: t('req_context_delivery'),
+      contextDelivery: serviceDeliveryLabel,
+      contextRevisionsLabel: t('req_context_revisions'),
+      contextRevisions: serviceRevisionsLabel,
+      showQualifiedBadge,
+      qualifiedBadgeLabel: t('trust_badge_qualified_on_tafseel'),
+      payAfterAccept: t('req_pay_after_accept'),
+
       progressAria: t('req_progress_aria'),
       progressSteps,
       isStep1: s.step === 1, isStep2: s.step === 2, isStep3: s.step === 3, isStep4: s.step === 4, isStep5: s.step === 5,
@@ -921,6 +1002,8 @@ class Component extends DCLogic {
         name: sv.title,
         desc: sv.description,
         price: this.money(sv.price, sv.currency),
+        delivery: t('req_context_delivery') + ': ' + formatDelivery(sv.deliveryHours),
+        revisions: formatRevisions(sv.revisions),
         checked: String(s.serviceId) === String(sv.id) ? 'true' : 'false',
         style: 'display:flex;flex-direction:column;align-items:flex-start;text-align:start;padding:18px;border-radius:var(--r-md);min-height:44px;' +
           (String(s.serviceId) === String(sv.id) ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
@@ -943,6 +1026,8 @@ class Component extends DCLogic {
       goalLabel: t('req_goal_label'),
       goalPh: t('req_goal_ph'),
       goal: s.goal,
+      goalHint: t('req_goal_hint'),
+      goalCount: t('req_char_count', { n: String((s.goal || '').length), max: '4000' }),
       onGoal: e => this.updateField({ goal: e.target.value }),
       requiredWord: t('req_check_required'),
       promptFields: defs.map(p => ({
@@ -1046,9 +1131,11 @@ class Component extends DCLogic {
         { k: t('req_summary_subject'), v: escapeText(subjectValue) },
         { k: t('req_summary_topic'), v: escapeText(s.topicLabel || '—') },
         { k: t('req_summary_title'), v: escapeText(s.title || '—') },
+        { k: t('req_context_delivery'), v: escapeText(serviceDeliveryLabel) },
+        { k: t('req_context_revisions'), v: escapeText(serviceRevisionsLabel) },
         { k: t('req_summary_style'), v: escapeText(styleLabel) },
         { k: t('req_summary_language'), v: escapeText(languageSummary) },
-        { k: t('req_summary_delivery'), v: deliveryLabelText },
+        { k: t('req_summary_preferred_date'), v: deliveryLabelText },
         { k: t('req_summary_budget'), v: budgetSummary },
         { k: t('req_summary_files'), v: t('req_files_count', { n: String(s.files.length) }) }
       ],
@@ -1059,8 +1146,10 @@ class Component extends DCLogic {
       priceSummaryLabel: t('req_price_summary'),
       servicePriceLabel: t('req_service_price'),
       servicePriceValue: this.money(servicePrice, currency),
-      totalLabelWord: t('req_total'),
-      totalLabel: s.flexibleBudget ? t('req_flexible') : this.money(servicePrice, currency),
+      budgetPreferenceLabel: t('req_budget_preference'),
+      budgetSummaryValue: budgetSummary,
+      listedTotalLabel: t('req_listed_price'),
+      totalLabel: this.money(servicePrice, currency),
       protectedPayment: t('req_protected_payment'),
       agreeTerms: t('req_agree_terms'),
       agreed: s.agreed,
@@ -1073,22 +1162,34 @@ class Component extends DCLogic {
       resultTitle: s.uploadFail ? t('req_partial_success_title') : t('req_success_title'),
       resultBody: s.uploadFail
         ? t('req_partial_success_body', { id: String(s.createdRequestId).slice(0, 8) })
-        : t('req_success_body', { name: teacherName, hours: String(replyHours) }),
+        : t('req_success_body', { name: teacherName }),
+      showSuccessNext: !s.uploadFail,
+      successNextTitle: t('req_success_next_title'),
+      successNextSteps: [
+        { n: '1', text: t('req_success_next_1') },
+        { n: '2', text: t('req_success_next_2') },
+        { n: '3', text: t('req_success_next_3') },
+        { n: '4', text: t('req_success_next_4') }
+      ],
       showPartialUploads: s.uploadFail > 0,
       partialUploadSummary: t('req_partial_upload_summary', { ok: String(s.uploadOk), fail: String(s.uploadFail) }),
       retryUploadsLabel: t('req_retry_uploads'),
       onRetryUploads: () => this.retryFailedUploads(),
       goDashboardLabel: t('req_go_dashboard'),
+      backToTeacherLabel: t('req_back_to_teacher'),
+      profileReturnHref: s.teacherId
+        ? 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(s.teacherId)
+        : 'Tafseel-Browse-Teachers.dc.html',
       dashboardHref: 'Tafseel-Student-Dashboard.dc.html?section=requests' +
         (s.createdRequestId ? '&requestCreated=' + encodeURIComponent(s.createdRequestId) : ''),
 
       isFirst: s.step === 1,
       backLabel: t('req_back'),
-      backStyle: 'height:40px;padding:0 18px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;min-width:44px;' + (s.step === 1 ? 'opacity:.4;cursor:not-allowed;' : 'color:var(--text);'),
+      backStyle: 'height:44px;padding:0 18px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;min-width:44px;' + (s.step === 1 ? 'opacity:.4;cursor:not-allowed;' : 'color:var(--text);'),
       onBack: () => s.step > 1 && this.setState({ step: s.step - 1 }),
       nextDisabled: !canNext(),
       nextLabel: s.step === 5 ? (s.submitting ? t('req_submitting') : t('req_submit')) : t('req_continue'),
-      nextStyle: 'height:40px;padding:0 22px;border:0;border-radius:var(--r-sm);font-weight:700;font-size:14px;background:var(--primary);color:var(--primary-ink);min-width:44px;' + (!canNext() ? 'opacity:.5;cursor:not-allowed;' : ''),
+      nextStyle: 'height:44px;padding:0 22px;border:0;border-radius:var(--r-sm);font-weight:700;font-size:14px;background:var(--primary);color:var(--primary-ink);min-width:44px;' + (!canNext() ? 'opacity:.5;cursor:not-allowed;' : ''),
       onNext: () => {
         if (!canNext()) {
           if (s.step === 1) return this.flash(t('req_select_service'));

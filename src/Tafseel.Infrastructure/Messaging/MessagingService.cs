@@ -109,7 +109,7 @@ internal sealed class MessagingService(
         var recipientIds = conversation.Participants.Where(x => x.UserId != userId).Select(x => x.UserId).ToArray();
         foreach (var recipientId in recipientIds)
             await notificationWriter.QueueAsync(recipientId, "NewMessage", "New message",
-                "You received a new private message.", "/app/Tafseel-Auth.dc.html",
+                "You received a new private message.", $"/conversations/{conversationId}",
                 $"message:{message.Id}", email: false, ct);
         await db.SaveChangesAsync(ct); // system of record before broadcast
         var dto = Map(message);

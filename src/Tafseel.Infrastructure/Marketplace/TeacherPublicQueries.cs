@@ -20,6 +20,7 @@ internal static class TeacherPublicQueries
                 && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
             && db.TeacherServices.Any(service => service.TeacherId == profile.TeacherId
                 && service.IsActive
+                && service.SupersededByTeacherServiceId == null
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
                     && q.SubjectId == service.SubjectId
                     && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
@@ -38,7 +39,8 @@ internal static class TeacherPublicQueries
     public static IQueryable<TeacherTeachingSample> VisibleSamples(
         TafseelDbContext db, bool showcasesEnabled) =>
         db.TeacherTeachingSamples.AsNoTracking().Where(x =>
-            (x.SourceType == TeachingSampleSourceType.QualificationGenerated && x.PublishedAt != null
+            x.IsProfileVisible
+            && (x.SourceType == TeachingSampleSourceType.QualificationGenerated && x.PublishedAt != null
                 || showcasesEnabled
                     && x.SourceType == TeachingSampleSourceType.TeacherShowcase
                     && x.ModerationStatus == ShowcaseModerationStatus.Approved

@@ -342,7 +342,6 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
     {
         subjectId,
         serviceCatalogItemId = teacher.ServiceTypeId,
-        title = "Updated title",
         description = "Updated service description.",
         price = 125m,
         currency = "SAR",

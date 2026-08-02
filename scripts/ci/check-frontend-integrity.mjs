@@ -637,6 +637,7 @@ for (const key of [
       t: (key, values) => values ? Object.entries(values).reduce((text, pair) => text.replace('{' + pair[0] + '}', pair[1]), key) : key,
       number: value => String(value),
       userName: teacher => teacher.fullName || teacher.name || '',
+      partyDisplayName: (primary, english) => english || primary || '',
       languageLabel: language => language.name,
       avatarUrl: () => 'default.svg',
       dashboardHrefForSession: () => '',

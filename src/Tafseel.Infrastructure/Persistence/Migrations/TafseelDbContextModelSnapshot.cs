@@ -1236,6 +1236,18 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<int>("CancellationWindowHours")
                         .HasColumnType("int");
 
+                    b.Property<string>("CatalogCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1266,6 +1278,12 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<string>("OrderType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<int>("RescheduleCount")
                         .HasColumnType("int");
 
@@ -1274,6 +1292,19 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("ServiceCatalogItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ServiceNameArabic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ServiceNameEnglish")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTimeOffset>("StartsAt")
                         .HasColumnType("datetimeoffset");
@@ -1317,6 +1348,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ServiceCatalogItemId");
 
                     b.HasIndex("TeacherServiceId");
 
@@ -1619,6 +1652,16 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ApproachAr")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ApproachEn")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -1658,6 +1701,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SubjectId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SupersededByTeacherServiceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("TeacherId")
                         .IsRequired()
                         .HasMaxLength(450)
@@ -1675,7 +1721,13 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ServiceCatalogItemId");
 
+                    b.HasIndex("SupersededByTeacherServiceId");
+
                     b.HasIndex("TeacherId", "IsActive");
+
+                    b.HasIndex("TeacherId", "SubjectId", "ServiceCatalogItemId")
+                        .IsUnique()
+                        .HasFilter("[SupersededByTeacherServiceId] IS NULL");
 
                     b.HasIndex("SubjectId", "ServiceCatalogItemId", "IsActive", "Price");
 
@@ -1684,6 +1736,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_TeacherServices_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
 
                             t.HasCheckConstraint("CK_TeacherServices_DeliveryHours", "[DeliveryHours] BETWEEN 1 AND 8760");
+
+                            t.HasCheckConstraint("CK_TeacherServices_NotSelfSuperseded", "[SupersededByTeacherServiceId] IS NULL OR [SupersededByTeacherServiceId] <> [Id]");
 
                             t.HasCheckConstraint("CK_TeacherServices_Price", "[Price] > 0");
 
@@ -1718,7 +1772,16 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<int?>("DurationSeconds")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsProfileFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsProfileVisible")
+                        .HasColumnType("bit");
+
                     b.Property<int?>("ModerationStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProfileDisplayOrder")
                         .HasColumnType("int");
 
                     b.Property<DateTimeOffset?>("PublishedAt")
@@ -1781,15 +1844,26 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SubjectId");
 
+                    b.HasIndex("TeacherId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TeacherTeachingSamples_OneFeaturedPerTeacher")
+                        .HasFilter("[IsProfileFeatured] = 1");
+
                     b.HasIndex("TopicId");
 
                     b.HasIndex("TeacherId", "PublishedAt");
+
+                    b.HasIndex("TeacherId", "IsProfileVisible", "ProfileDisplayOrder");
 
                     b.HasIndex("TeacherId", "SourceType", "ModerationStatus", "ArchivedAt");
 
                     b.ToTable("TeacherTeachingSamples", t =>
                         {
                             t.HasCheckConstraint("CK_TeacherTeachingSamples_Duration", "[DurationSeconds] IS NULL OR [DurationSeconds] BETWEEN 1 AND 3600");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSamples_FeaturedRequiresVisible", "[IsProfileFeatured] = 0 OR [IsProfileVisible] = 1");
+
+                            t.HasCheckConstraint("CK_TeacherTeachingSamples_ProfileDisplayOrder", "[ProfileDisplayOrder] >= 0");
 
                             t.HasCheckConstraint("CK_TeacherTeachingSamples_ShowcasePublication", "[SourceType] = 0 OR [PublishedAt] IS NULL OR ([ModerationStatus] = 4 AND [ApprovedVersionId] IS NOT NULL AND [ArchivedAt] IS NULL)");
 
@@ -2189,6 +2263,18 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("CatalogCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -2196,6 +2282,12 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(5000)
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OrderType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<DateTimeOffset>("PreferredDeliveryAt")
                         .HasColumnType("datetimeoffset");
@@ -2205,6 +2297,19 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("ServiceCatalogItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ServiceNameArabic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ServiceNameEnglish")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -2231,6 +2336,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ServiceCatalogItemId");
 
                     b.HasIndex("TeacherServiceId");
 
@@ -2335,6 +2442,18 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("AgreedDeliveryAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("CatalogCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -2349,6 +2468,12 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("LearningRequestId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OrderType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("int");
@@ -2368,6 +2493,19 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("ServiceCatalogItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ServiceNameArabic")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ServiceNameEnglish")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -2416,6 +2554,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("LearningRequestId")
                         .IsUnique();
+
+                    b.HasIndex("ServiceCatalogItemId");
 
                     b.HasIndex("TeacherServiceId");
 
@@ -3186,11 +3326,33 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<int?>("DefaultDeliveryHours")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DefaultPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("DefaultRevisions")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -3205,6 +3367,12 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
+                    b.Property<string>("IconCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<bool>("IsPublic")
                         .HasColumnType("bit");
 
@@ -3212,7 +3380,35 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("MaximumDeliveryHours")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaximumRevisions")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("MinPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("MinimumDeliveryHours")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OrderType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("QualificationPolicy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int?>("RecommendedDeliveryHours")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RecommendedPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -3241,9 +3437,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_ServiceCatalogItems_Code", "[Code] <> ''");
 
+                            t.HasCheckConstraint("CK_ServiceCatalogItems_DeliveryPolicy", "([OrderType] = 'live_session' AND [RequiresScheduling] = 1 AND [AllowedDurationsCsv] <> '' AND [MinimumDeliveryHours] IS NULL AND [DefaultDeliveryHours] IS NULL AND [RecommendedDeliveryHours] IS NULL AND [MaximumDeliveryHours] IS NULL AND [DefaultRevisions] = 0 AND [MaximumRevisions] = 0) OR ([OrderType] = 'async_request' AND [RequiresScheduling] = 0 AND [AllowedDurationsCsv] = '' AND [MinimumDeliveryHours] BETWEEN 1 AND 8760 AND [MaximumDeliveryHours] BETWEEN 1 AND 8760 AND [MinimumDeliveryHours] <= [DefaultDeliveryHours] AND [DefaultDeliveryHours] <= [MaximumDeliveryHours] AND [MinimumDeliveryHours] <= [RecommendedDeliveryHours] AND [RecommendedDeliveryHours] <= [MaximumDeliveryHours] AND [DefaultRevisions] BETWEEN 0 AND 20 AND [MaximumRevisions] BETWEEN 0 AND 20 AND [DefaultRevisions] <= [MaximumRevisions])");
+
                             t.HasCheckConstraint("CK_ServiceCatalogItems_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
 
+                            t.HasCheckConstraint("CK_ServiceCatalogItems_PolicyCodes", "[CategoryCode] IN ('recorded_explanation','academic_support','live_learning','revision_exam_preparation','study_materials','project_guidance') AND [IconCode] IN ('video','academic_support','live','exam','notes','project') AND [OrderType] IN ('async_request','live_session') AND [QualificationPolicy] = 'subject_qualification_required' AND [CurrencyCode] = 'SAR'");
+
                             t.HasCheckConstraint("CK_ServiceCatalogItems_PriceBounds", "([MinPrice] IS NULL OR [MinPrice] > 0) AND ([MaxPrice] IS NULL OR [MaxPrice] > 0) AND ([MinPrice] IS NULL OR [MaxPrice] IS NULL OR [MinPrice] <= [MaxPrice])");
+
+                            t.HasCheckConstraint("CK_ServiceCatalogItems_PricePolicy", "[MinPrice] > 0 AND [MinPrice] <= [DefaultPrice] AND [DefaultPrice] <= [MaxPrice] AND [MinPrice] <= [RecommendedPrice] AND [RecommendedPrice] <= [MaxPrice]");
                         });
                 });
 
@@ -3651,6 +3853,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.LiveSessions.LiveSessionBooking", b =>
                 {
+                    b.HasOne("Tafseel.Domain.Catalog.ServiceCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ServiceCatalogItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("StudentId")
@@ -3773,6 +3980,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Tafseel.Domain.Marketplace.TeacherService", null)
+                        .WithMany()
+                        .HasForeignKey("SupersededByTeacherServiceId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
@@ -3913,6 +4125,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Orders.LearningRequest", b =>
                 {
+                    b.HasOne("Tafseel.Domain.Catalog.ServiceCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ServiceCatalogItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("StudentId")
@@ -3963,6 +4180,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasForeignKey("Tafseel.Domain.Orders.Order", "LearningRequestId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Tafseel.Domain.Catalog.ServiceCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ServiceCatalogItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()

@@ -18,16 +18,63 @@
     topicsError: '',
     submitError: '',
     subjects: [],
+    selectableSubjects: [],
     topics: [],
     languages: [],
     profile: null,
     applications: [],
     lifecycle: null,
+    qualifications: [],
+    additionalMode: false,
     current: null,
     demoDuration: null,
     demoDurationInvalid: false,
     wizardStep: 'details'
   };
+
+  function queryMode() {
+    try {
+      return new URLSearchParams(window.location.search).get('mode') === 'additional';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function querySubjectId() {
+    try {
+      return new URLSearchParams(window.location.search).get('subjectId') || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function isActiveApplicationStatus(status) {
+    return status === 0 || status === 1 || status === 2 || status === 3;
+  }
+
+  function buildSelectableSubjects(allSubjects, applications, lifecycle, qualifications) {
+    var approved = {};
+    ((lifecycle && lifecycle.approvedSubjectIds) || []).forEach(function (id) { approved[id] = true; });
+    (qualifications || []).forEach(function (card) {
+      if (card.state === 0) approved[card.subjectId] = true;
+    });
+    var activeApps = {};
+    (applications || []).forEach(function (app) {
+      if (isActiveApplicationStatus(app.status)) activeApps[app.subjectId] = true;
+    });
+    return (allSubjects || []).map(function (item) {
+      var reason = '';
+      if (approved[item.id]) reason = 'apply_subject_already_qualified';
+      else if (activeApps[item.id]) reason = 'apply_subject_application_active';
+      return {
+        id: item.id,
+        name: item.name,
+        nameAr: item.nameAr,
+        disabled: !!reason,
+        reason: reason
+      };
+    });
+  }
 
   function t(key, values) {
     try { return Tafseel.t(key, values); } catch (_) { return key; }
@@ -551,8 +598,10 @@
   }
 
   function renderInitial(selectedSubjectId) {
-    subject.innerHTML = state.subjects.map(function (item) {
-      return '<option value="' + escape(item.id) + '">' + escape(catalogLabel(item)) + '</option>';
+    subject.innerHTML = (state.selectableSubjects.length ? state.selectableSubjects : state.subjects).map(function (item) {
+      var label = catalogLabel(item);
+      if (item.disabled && item.reason) label += ' — ' + t(item.reason);
+      return '<option value="' + escape(item.id) + '"' + (item.disabled ? ' disabled' : '') + '>' + escape(label) + '</option>';
     }).join('');
     subject.value = selectedSubjectId || '';
     topic.innerHTML = state.topics.map(function (item) {
@@ -859,6 +908,9 @@
   document.getElementById('review-new-application').addEventListener('click', function () {
     if (state.submitLoading) return;
     state.current = null;
+    state.additionalMode = true;
+    state.selectableSubjects = buildSelectableSubjects(
+      state.subjects, state.applications, state.lifecycle, state.qualifications);
     subject.disabled = false;
     document.getElementById('city').value = '';
     document.getElementById('years').value = '';
@@ -867,8 +919,18 @@
     state.demoDurationInvalid = false;
     demoFileInfo.hidden = true;
     syncDemoDropVisibility();
-    message('');
+    message(t('apply_another_subject_intro'), 'success');
     showWizardStep('details');
+    var first = (state.selectableSubjects.find(function (item) { return !item.disabled; }) || {}).id || '';
+    subject.innerHTML = state.selectableSubjects.map(function (item) {
+      var label = catalogLabel(item);
+      if (item.disabled && item.reason) label += ' — ' + t(item.reason);
+      return '<option value="' + escape(item.id) + '"' + (item.disabled ? ' disabled' : '') + '>' + escape(label) + '</option>';
+    }).join('');
+    if (first) {
+      subject.value = first;
+      subject.dispatchEvent(new Event('change'));
+    }
   });
 
   demoForm.addEventListener('submit', async function (event) {
@@ -957,8 +1019,10 @@
     var subjectId = subject.value;
     var topicId = topic.value;
     var languageIds = selectedLanguageIds();
-    subject.innerHTML = state.subjects.map(function (item) {
-      return '<option value="' + escape(item.id) + '">' + escape(catalogLabel(item)) + '</option>';
+    subject.innerHTML = (state.selectableSubjects.length ? state.selectableSubjects : state.subjects).map(function (item) {
+      var label = catalogLabel(item);
+      if (item.disabled && item.reason) label += ' — ' + t(item.reason);
+      return '<option value="' + escape(item.id) + '"' + (item.disabled ? ' disabled' : '') + '>' + escape(label) + '</option>';
     }).join('');
     subject.value = subjectId;
     topic.innerHTML = state.topics.map(function (item) {
@@ -992,18 +1056,31 @@
       Tafseel.api.get('/languages'),
       Tafseel.api.get('/teachers/me'),
       Tafseel.api.get('/teacher-applications/mine'),
-      Tafseel.api.get('/teachers/onboarding-status')
+      Tafseel.api.get('/teachers/onboarding-status'),
+      Tafseel.api.get('/teachers/me/qualifications')
     ]);
     var nextSubjects = loaded[0].status === 'fulfilled' ? loaded[0].value : [];
     var nextLanguages = loaded[1].status === 'fulfilled' ? loaded[1].value : [];
     var nextProfile = loaded[2].status === 'fulfilled' ? loaded[2].value : null;
     var nextApplications = loaded[3].status === 'fulfilled' ? loaded[3].value : [];
     var nextLifecycle = loaded[4].status === 'fulfilled' ? loaded[4].value : null;
-    var nextCurrent = nextApplications.find(function (item) {
-      return item.status === 0 || item.status === 3;
-    }) || nextApplications[0] || null;
-    var selectedSubjectId = nextCurrent && nextCurrent.subjectId ||
-      nextSubjects[0] && nextSubjects[0].id || '';
+    var nextQualifications = loaded[5].status === 'fulfilled' ? loaded[5].value : [];
+    var additionalMode = queryMode();
+    var preferredSubjectId = querySubjectId();
+    var selectable = buildSelectableSubjects(
+      nextSubjects, nextApplications, nextLifecycle, nextQualifications);
+    var nextCurrent = additionalMode
+      ? null
+      : (nextApplications.find(function (item) {
+          return item.status === 0 || item.status === 3;
+        }) || nextApplications[0] || null);
+    var selectedSubjectId = (nextCurrent && nextCurrent.subjectId)
+      || (preferredSubjectId && selectable.some(function (item) {
+        return item.id === preferredSubjectId && !item.disabled;
+      }) ? preferredSubjectId : '')
+      || ((selectable.find(function (item) { return !item.disabled; }) || {}).id)
+      || (nextSubjects[0] && nextSubjects[0].id)
+      || '';
     var nextTopics = [];
     var topicsError = '';
     if (selectedSubjectId) {
@@ -1016,10 +1093,13 @@
 
     Object.assign(state, {
       subjects: nextSubjects,
+      selectableSubjects: selectable,
       languages: nextLanguages,
       profile: nextProfile,
       applications: nextApplications,
       lifecycle: nextLifecycle,
+      qualifications: nextQualifications,
+      additionalMode: additionalMode,
       current: nextCurrent,
       topics: nextTopics,
       languagesError: loaded[1].status === 'rejected' || loaded[2].status === 'rejected'
@@ -1029,6 +1109,8 @@
     });
     if (loaded[0].status === 'rejected' || loaded[3].status === 'rejected')
       message(t('apply_initial_partial_error'), 'warning');
+    else if (additionalMode)
+      message(t('apply_another_subject_intro'), 'success');
     renderInitial(selectedSubjectId);
   })().catch(function (error) {
     document.getElementById('apply-skeleton').hidden = true;

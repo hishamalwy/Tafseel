@@ -56,12 +56,15 @@ internal sealed class GovernanceService(
         await notifications.QueueAsync(order.TeacherId, "Review", "New review received",
             "A Student reviewed a completed Order.", $"/teacher/reviews/{review.Id}",
             $"review:{review.Id}:teacher", true, ct);
+        await notifications.QueueAsync(studentId, "ReviewSubmitted", "Review submitted",
+            "Your rating was saved for this completed Order.", $"/orders/{order.Id}",
+            $"review:{review.Id}:student", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Map(review);
     }
 
-    public async Task<PagedResult<ReviewDto>> GetTeacherReviewsAsync(
+    public async Task<PagedResult<PublicTeacherReviewDto>> GetTeacherReviewsAsync(
         string teacherId, int page, int pageSize, CancellationToken ct)
     {
         if (!await TeacherPublicQueries.IsBrowsableAsync(db, teacherId, ct))
@@ -71,7 +74,7 @@ internal sealed class GovernanceService(
         var total = await query.CountAsync(ct);
         var items = await query.AsNoTracking().OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
-        return new(items.Select(Map).ToArray(), page, pageSize, total);
+        return new(items.Select(MapPublic).ToArray(), page, pageSize, total);
     }
 
     public async Task ModerateReviewAsync(
@@ -87,6 +90,13 @@ internal sealed class GovernanceService(
         await RefreshRatingAsync(review.TeacherId, ct);
         audit.Add(adminId, "ReviewModerated", "TeacherReview", review.Id.ToString(),
             input.Visible ? "Review restored." : "Review hidden.", $"review:{review.Id}:moderation:{review.Moderation.Count}");
+        await notifications.QueueAsync(review.StudentId, "ReviewModeration",
+            input.Visible ? "Review restored to public profile" : "Review hidden from public profile",
+            input.Visible
+                ? "Your review is visible on the teacher profile again."
+                : "Your review remains on your completed Order but is not shown publicly.",
+            $"/orders/{review.OrderId}",
+            $"review:{review.Id}:moderation:{review.Moderation.Count}:student", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -259,6 +269,10 @@ internal sealed class GovernanceService(
         new(x.Id, x.OrderId, x.TeacherId, x.ExplanationClarity,
             x.SubjectKnowledge, x.Communication, x.OnTimeDelivery, x.ValueForMoney,
             x.OverallScore, x.OriginalComment, x.Recommends, x.IsVisible, x.CreatedAt);
+    private static PublicTeacherReviewDto MapPublic(TeacherReview x) =>
+        new(x.Id, x.TeacherId, x.ExplanationClarity,
+            x.SubjectKnowledge, x.Communication, x.OnTimeDelivery, x.ValueForMoney,
+            x.OverallScore, x.OriginalComment, x.Recommends, x.CreatedAt);
     private static DisputeDto Map(Dispute x) =>
         new(x.Id, x.OrderId, x.StudentId, x.TeacherId, x.OpenedById, x.Reason, x.Status, x.CreatedAt,
             x.Messages.Select(m => new DisputeMessageDto(m.Id, m.SenderId, m.Body, m.CreatedAt)).ToArray(),

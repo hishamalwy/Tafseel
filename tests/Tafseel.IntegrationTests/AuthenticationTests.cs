@@ -40,6 +40,17 @@ public sealed class AuthenticationTests(TafseelApiFactory factory)
         Assert.Equal("الاسم الجديد", current.GetProperty("fullName").GetString());
         Assert.Equal("New Student Name", current.GetProperty("fullNameEnglish").GetString());
 
+        var reloaded = await client.GetFromJsonAsync<JsonElement>("/api/v1/auth/me");
+        Assert.Equal("الاسم الجديد", reloaded.GetProperty("fullName").GetString());
+        Assert.Equal("New Student Name", reloaded.GetProperty("fullNameEnglish").GetString());
+
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await client.PutAsJsonAsync("/api/v1/auth/profile", new
+            {
+                fullName = "١٢٣٤",
+                fullNameEnglish = "1234"
+            })).StatusCode);
+
         Assert.Equal(HttpStatusCode.BadRequest,
             (await client.PutAsJsonAsync("/api/v1/auth/password", new
             {

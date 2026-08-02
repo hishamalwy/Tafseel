@@ -14,7 +14,7 @@ namespace Tafseel.Api.Controllers;
 public sealed class GovernanceController(IGovernanceService governance) : ControllerBase
 {
     [AllowAnonymous, HttpGet("teachers/{teacherId}/reviews")]
-    public Task<PagedResult<ReviewDto>> Reviews(
+    public Task<PagedResult<PublicTeacherReviewDto>> Reviews(
         string teacherId, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
         governance.GetTeacherReviewsAsync(teacherId, page, pageSize, ct);
 

@@ -6,6 +6,21 @@ This index is append-only for immutable historical reports. New reports belong i
 
 | Report | Date | Status | Summary |
 |---|---|---|---|
+| [Teacher Growth & Profile Curation](./features/TEACHER_GROWTH_AND_PROFILE_CURATION_REPORT.md) | 2026-08-02 | Conditionally verified | Additional-subject qualifications UX + revoked reactivation; Teacher profile video curation fields/API/Dashboard; migration generated not applied. |
+| [Teacher Profile Curation Migration](./database/TEACHER_PROFILE_CURATION_MIGRATION.md) | 2026-08-02 | Generated; not applied | Additive IsProfileVisible/Order/Featured with legacy visibility preserved. |
+| [ADR-012 Teacher Growth & Profile Curation](./decisions/ADR-012-TEACHER-GROWTH-AND-PROFILE-CURATION.md) | 2026-08-02 | Accepted | Multi-subject reuse + presentation-only curation rules; max visible = MaxPublicPerTeacher. |
+| [Phase 3 Release 3 Sprint 6 — Reviews, Rating & Notification Deep Links](./fixes/PHASE_3_RELEASE_3_SPRINT_6_REVIEWS_RATING_NOTIFICATIONS.md) | 2026-08-02 | Conditionally verified | Order review state DTO, public review DTO without OrderId/StudentId, rating UX + completed clarity, canonical notificationRoute, Files unavailable honesty; Phase9 review/moderation tests extended. |
+| [Phase 3 Release 3 Sprint 5 — Post-Purchase Experience](./fixes/PHASE_3_RELEASE_3_SPRINT_5_POST_PURCHASE_EXPERIENCE.md) | 2026-08-02 | Conditionally verified | Order timeline hero + honest progress steps, payment-return deep-link fix, delivery Latest/version clarity, waiting guidance; no lifecycle or settlement changes. |
+| [Phase 3 Release 3 Sprint 4 — Payment Experience & Consumer Confidence](./fixes/PHASE_3_RELEASE_3_SPRINT_4_PAYMENT_EXPERIENCE.md) | 2026-08-02 | Conditionally verified | Payment + Mock Checkout commercial context rail, honest mock labeling, idempotent resume fix, success/failure next-steps, mobile sticky CTA; no payment math or settlement changes. |
+| [Phase 3 Release 3 Sprint 3 — Request Wizard Consumer Experience](./fixes/PHASE_3_RELEASE_3_SPRINT_3_REQUEST_WIZARD.md) | 2026-08-02 | Conditionally verified | Persistent commercial context rail, honest pay-after-accept + success next-steps, service delivery/revisions on cards, mobile progress fix; no business-rule or payment changes. |
+| [Phase 3 Release 3 Sprint 2.1 — Teacher Profile Mobile CTA Overlap Closure](./fixes/PHASE_3_RELEASE_3_SPRINT_2_1_MOBILE_CTA_OVERLAP.md) | 2026-08-02 | Conditionally verified | Closed the visual (not just click-through) overlap between the fixed mobile CTA bar and the identity card's Save/Share/Message row via live-measured dynamic clearance; found and fixed a Message/CTA-link misfire risk and a self-referential measurement oscillation bug; added a truthful mobile no-service state. Zero first-paint overlap proven at all 7 required viewports. |
+| [Phase 3 Release 3 Sprint 2 — Teacher Profile Consumer Experience](./fixes/PHASE_3_RELEASE_3_SPRINT_2_TEACHER_PROFILE.md) | 2026-08-02 | Two real defects fixed; browser-verified | 10-part Teacher Profile audit; fixed a mobile dead-button (Save/Share/Message unreachable under the fixed CTA bar on first paint) and a false "link copied" success message. Dead/duplicated CSS from prior redesign generations investigated and documented, deliberately not removed (needs a dedicated regression pass). |
+| [Phase 3 Release 3 — Consumer Marketplace Experience](./fixes/PHASE_3_RELEASE_3_CONSUMER_MARKETPLACE_EXPERIENCE.md) | 2026-08-02 | Partially complete; Browse Teachers fixes browser-verified | Full consumer-journey audit; Landing/Teacher Profile found sound; fixed Browse Teachers' fake toggle switch, emoji/SVG icon inconsistency, and ragged card heights. Request/Payment/Order/Review journey not yet re-audited. |
+| [Marketplace Service Governance Decision](./reports/MARKETPLACE_SERVICE_GOVERNANCE_DECISION_REPORT.md) | 2026-08-01 | Decision complete | Approved canonical Admin-owned catalog identity, bounded Teacher configuration, deterministic migration, transaction snapshots, compatibility, analytics, and a four-release rollout. |
+| [Marketplace Service Catalog Release 1](./features/MARKETPLACE_SERVICE_CATALOG_RELEASE_1_REPORT.md) | 2026-08-01 | Implemented locally | Catalog policy, Admin governance, centralized validation and historical snapshots; migration generated, not applied. |
+| [Teacher Profile Premium Polish](./fixes/TEACHER_PROFILE_PREMIUM_POLISH_REPORT.md) | 2026-08-01 | Conditionally verified | Replaced temporary UI tells with an intentional avatar, consistent SVG iconography, stronger conversion hierarchy, and a premium zero-review state; real listing content remains the staging blocker. |
+| [Teacher Profile Carousel Polish](./fixes/TEACHER_PROFILE_CAROUSEL_POLISH_REPORT.md) | 2026-08-01 | Conditionally verified | Removed duplicate player content, replaced prototype arrows with localized SVG controls, clarified RTL/LTR navigation, and passed the 20-case browser matrix. |
+| [Teacher Profile Final Quality Recovery](./fixes/TEACHER_PROFILE_FINAL_QUALITY_REPORT.md) | 2026-08-01 | Fixed; conditionally verified | Corrected the Development teacher's bilingual fields and seed, removed hidden legacy DOM, polished the profile, and passed the 24-case browser matrix. |
 | [Documentation Standardization](./reports/DOCUMENTATION_STANDARDIZATION_REPORT.md) | 2026-07-29 | Completed | Organized historical documentation and established the living status/index convention. |
 | [F-001 Identity Initialization](./fixes/TAFSEEL_F001_IDENTITY_INITIALIZATION_FIX_REPORT.md) | 2026-07-29 | Fixed locally | Restricted normal identity initialization to Development. |
 | [Teacher Qualification Application](./fixes/TEACHER_QUALIFICATION_APPLICATION_FIX_REPORT.md) | 2026-07-29 | Fixed locally | Stabilized the language API, initial form loading, validation and assignment material UX. |
@@ -45,6 +60,13 @@ This index is append-only for immutable historical reports. New reports belong i
 
 ## Architecture
 
+## Final Staging Certification
+
+| Report | Date | Status | Description |
+|---|---|---|---|
+| [Final Staging Certification](./reports/FINAL_STAGING_CERTIFICATION_REPORT.md) | 2026-08-01 | Browser certification blocked | Automated gates and runtime/media HTTP checks passed; normal-browser quality demo remained a black, non-playing rectangle. |
+| [Teacher Profile Media & UX Recovery](./fixes/TEACHER_PROFILE_MEDIA_UX_RECOVERY_REPORT.md) | 2026-08-01 | Focused fix applied; browser rerun pending | CSP/blob playback recovery, shared media states, and responsive Profile media cards. |
+
 - [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md)
 - [Domain Model](./architecture/DOMAIN_MODEL.md)
 - [API Guidelines](./architecture/API_GUIDELINES.md)
@@ -59,6 +81,10 @@ This index is append-only for immutable historical reports. New reports belong i
 - [Proposed domain model](./proposed-domain-model.md) — historical proposal
 - [Proposed API contracts](./proposed-api-contracts.md) — historical proposal
 - [Dynamic service architecture](./dynamic-service-architecture.md)
+- [Marketplace service governance decision](./decisions/ADR-005-MARKETPLACE-SERVICE-GOVERNANCE.md)
+- [Marketplace service governance report](./reports/MARKETPLACE_SERVICE_GOVERNANCE_DECISION_REPORT.md)
+- [Marketplace Service Catalog Release 1](./features/MARKETPLACE_SERVICE_CATALOG_RELEASE_1_REPORT.md)
+- [Marketplace Service Catalog Release 1 migration](./database/MARKETPLACE_SERVICE_CATALOG_RELEASE_1_MIGRATION.md)
 - [Frontend API contract map](./frontend-api-contract-map.md)
 - [Frontend page and role map](./final-frontend-page-and-role-map.md)
 
@@ -89,6 +115,12 @@ This index is append-only for immutable historical reports. New reports belong i
 
 | Report | Date | Finding | Status |
 |---|---|---|---|
+| [Phase 3 Release 3 Sprint 6 — Reviews, Rating & Notification Deep Links](./fixes/PHASE_3_RELEASE_3_SPRINT_6_REVIEWS_RATING_NOTIFICATIONS.md) | 2026-08-02 | Reviews/Files stubs; notification dead-ends; optimistic rate without hasReview; public ReviewDto leaked OrderId | Fixed; browser-verified (conditional — see report) |
+| [Phase 3 Release 3 Sprint 5 — Post-Purchase Experience](./fixes/PHASE_3_RELEASE_3_SPRINT_5_POST_PURCHASE_EXPERIENCE.md) | 2026-08-02 | Payment `?section=orders` blank main; thin timeline; red paid chip; weak delivery versions | Fixed; browser-verified (conditional — see report) |
+| [Phase 3 Release 3 Sprint 4 — Payment Experience & Consumer Confidence](./fixes/PHASE_3_RELEASE_3_SPRINT_4_PAYMENT_EXPERIENCE.md) | 2026-08-02 | Payment context loss; coupon ghost UI; idempotency stranding; thin mock success/failure | Fixed; browser-verified (conditional — see report) |
+| [Phase 3 Release 3 Sprint 2.1 — Mobile CTA Overlap Closure](./fixes/PHASE_3_RELEASE_3_SPRINT_2_1_MOBILE_CTA_OVERLAP.md) | 2026-08-02 | Visual (not just click-through) overlap between fixed mobile CTA bar and identity card action row; Message/CTA-link misfire risk; measurement oscillation bug | Fixed; browser-verified (conditional — see report) |
+| [Phase 3 Release 3 Sprint 2 — Teacher Profile Consumer Experience](./fixes/PHASE_3_RELEASE_3_SPRINT_2_TEACHER_PROFILE.md) | 2026-08-02 | Mobile dead-button under fixed CTA bar; false share-copy success message | Fixed; browser-verified |
+| [Phase 3 Release 3 — Consumer Marketplace Experience](./fixes/PHASE_3_RELEASE_3_CONSUMER_MARKETPLACE_EXPERIENCE.md) | 2026-08-02 | Fake toggle switch, emoji/SVG icon inconsistency, ragged card heights on Browse Teachers | Fixed; browser-verified |
 | [CI/CD Hardening](./fixes/cicd-hardening-report.md) | 2026-07-26 | Historical CI/CD findings | Historical |
 | [Phase 2–3 Security Hardening](./fixes/phase-2-3-pass-2-security-report.md) | 2026-07-26 | Security baseline | Historical |
 | [Phase 2–3 Domain Hardening](./fixes/phase-2-3-pass-3-domain-report.md) | 2026-07-26 | Domain baseline | Historical |
@@ -111,6 +143,7 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Product Bug Fix Sprint 2](./fixes/PRODUCT_BUG_FIX_SPRINT_02_REPORT.md) | 2026-07-30 | Seeded UAT / notif bodies / Pay+Start / dashboards i18n | Completed locally |
 | [BUG-001 Display Name Regression](./fixes/BUG001_DISPLAY_NAME_REGRESSION_FIX_REPORT.md) | 2026-07-30 | `مشارك {guid}` / ID-as-name fallbacks removed | Verified |
 | [Product Bug Fix Sprint 3](./fixes/PRODUCT_BUG_FIX_SPRINT_03_REPORT.md) | 2026-07-30 | Residual Admin/Quality i18n + Quality rawStatus filters | Conditionally verified |
+| [Teacher Profile Conversion Redesign](./fixes/TEACHER_PROFILE_CONVERSION_REDESIGN_REPORT.md) | 2026-08-01 | Public profile hierarchy, featured media, conversion flow, localization and responsive UX | Conditionally verified |
 
 ## Feature Reports
 
@@ -159,6 +192,7 @@ Additional historical reports:
 | [ADR-002](./decisions/ADR-002-EMBEDDED-DASHBOARD-CHAT.md) | Accepted | Embedded dashboard chat replaces standalone chat |
 | [ADR-003](./decisions/ADR-003-IMMUTABLE-QUALIFICATION-VERSIONS.md) | Accepted | Qualification submissions are immutable versions |
 | [ADR-004](./decisions/ADR-004-DEVELOPMENT-ONLY-IDENTITY-INITIALIZATION.md) | Accepted | Normal identity initialization is Development-only |
+| [ADR-005](./decisions/ADR-005-MARKETPLACE-SERVICE-GOVERNANCE.md) | Accepted / Release 1 implemented | Admin-owned canonical service catalog with bounded Teacher configuration and historical snapshots |
 | [ADR-006](./decisions/ADR-006-TEACHER-AVAILABILITY-AND-CAPACITY.md) | Proposed | Bounded, service-specific live-session availability with request capacity deferred |
 | [ADR-007](./decisions/ADR-007-TEACHER-PORTFOLIO-MODERATION.md) | Proposed | MP4-only Teacher showcase with immutable versions, Quality moderation and explicit trust labels |
 | [ADR-008](./decisions/ADR-008-STUDENT-REQUEST-ASSISTANT.md) | Proposed | Guided Learning Request wizard enhancement without AI, Draft status or a second request domain |

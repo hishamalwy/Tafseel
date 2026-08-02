@@ -18,6 +18,12 @@ public sealed record ReviewDto(
     int ExplanationClarity, int SubjectKnowledge, int Communication,
     int OnTimeDelivery, int ValueForMoney, decimal OverallScore,
     string OriginalComment, bool Recommends, bool IsVisible, DateTimeOffset CreatedAt);
+/// <summary>Public teacher reviews — no StudentId / OrderId (private marketplace identifiers).</summary>
+public sealed record PublicTeacherReviewDto(
+    Guid Id, string TeacherId,
+    int ExplanationClarity, int SubjectKnowledge, int Communication,
+    int OnTimeDelivery, int ValueForMoney, decimal OverallScore,
+    string OriginalComment, bool Recommends, DateTimeOffset CreatedAt);
 public sealed record ModerateReview(
     bool Visible,
     [param: Required, StringLength(1000), NotWhiteSpace] string Reason);
@@ -59,7 +65,7 @@ public sealed record AuditDto(
 public interface IGovernanceService
 {
     Task<ReviewDto> CreateReviewAsync(string studentId, Guid orderId, CreateReview input, CancellationToken ct);
-    Task<PagedResult<ReviewDto>> GetTeacherReviewsAsync(string teacherId, int page, int pageSize, CancellationToken ct);
+    Task<PagedResult<PublicTeacherReviewDto>> GetTeacherReviewsAsync(string teacherId, int page, int pageSize, CancellationToken ct);
     Task ModerateReviewAsync(string adminId, Guid id, ModerateReview input, CancellationToken ct);
     Task<DisputeDto> OpenDisputeAsync(string userId, OpenDispute input, CancellationToken ct);
     Task<PagedResult<DisputeDto>> GetDisputesAsync(string userId, bool admin, int page, int pageSize, CancellationToken ct);

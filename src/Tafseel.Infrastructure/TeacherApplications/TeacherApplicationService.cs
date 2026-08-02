@@ -38,7 +38,8 @@ internal sealed class TeacherApplicationService(
             && x.Status >= TeacherApplicationStatus.Draft
             && x.Status <= TeacherApplicationStatus.ChangesRequested, ct);
         var qualified = await db.TeacherSubjectQualifications.AnyAsync(
-            x => x.TeacherId == teacherId && x.SubjectId == input.SubjectId, ct);
+            x => x.TeacherId == teacherId && x.SubjectId == input.SubjectId
+                && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null, ct);
         if (duplicate || qualified)
             throw new DomainException("duplicate_teacher_application", "An active application already exists for this subject.");
 
@@ -162,6 +163,179 @@ internal sealed class TeacherApplicationService(
         return await MapAsync(applications, ct);
     }
 
+    public async Task<IReadOnlyCollection<TeacherQualificationCardDto>> GetMyQualificationsAsync(
+        string teacherId, CancellationToken ct)
+    {
+        var subjects = await db.Subjects.AsNoTracking()
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ThenBy(x => x.Id)
+            .ToArrayAsync(ct);
+        var topicsBySubject = (await db.QualificationTopics.AsNoTracking()
+                .Where(x => x.IsActive).ToArrayAsync(ct))
+            .GroupBy(x => x.SubjectId)
+            .ToDictionary(x => x.Key, x => x.ToArray());
+        var qualifications = await db.TeacherSubjectQualifications.AsNoTracking()
+            .Where(x => x.TeacherId == teacherId).ToArrayAsync(ct);
+        var qualificationBySubject = qualifications.ToDictionary(x => x.SubjectId);
+        var applications = await db.TeacherApplications.AsNoTracking()
+            .Where(x => x.TeacherId == teacherId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToArrayAsync(ct);
+        var latestAppBySubject = applications
+            .GroupBy(x => x.SubjectId)
+            .ToDictionary(x => x.Key, x => x.First());
+        var decidedAtByApp = applications.Length == 0
+            ? new Dictionary<Guid, DateTimeOffset?>()
+            : await db.Set<TeacherApplicationReview>().AsNoTracking()
+                .Where(x => applications.Select(a => a.Id).Contains(x.TeacherApplicationId))
+                .GroupBy(x => x.TeacherApplicationId)
+                .Select(g => new { ApplicationId = g.Key, DecidedAt = g.Max(x => x.CreatedAt) })
+                .ToDictionaryAsync(x => x.ApplicationId, x => (DateTimeOffset?)x.DecidedAt, ct);
+
+        var relevantSubjectIds = subjects
+            .Where(s => s.IsActive || qualificationBySubject.ContainsKey(s.Id) || latestAppBySubject.ContainsKey(s.Id))
+            .Select(s => s.Id)
+            .ToHashSet();
+
+        var cards = new List<TeacherQualificationCardDto>();
+        foreach (var subject in subjects.Where(s => relevantSubjectIds.Contains(s.Id)))
+        {
+            qualificationBySubject.TryGetValue(subject.Id, out var qualification);
+            latestAppBySubject.TryGetValue(subject.Id, out var application);
+            var hasActiveTask = topicsBySubject.ContainsKey(subject.Id);
+            var decidedAt = application is not null
+                ? decidedAtByApp.GetValueOrDefault(application.Id)
+                : null;
+
+            if (qualification?.IsActive == true)
+            {
+                cards.Add(new(
+                    subject.Id, subject.Name, subject.NameAr,
+                    TeacherQualificationCardState.Qualified,
+                    application?.Id, application?.Status, application?.SubmittedAt, decidedAt,
+                    qualification.ApprovedAt, null, application?.DemoStorageKey is not null,
+                    "Manage services for this subject",
+                    "Tafseel-Teacher-Dashboard.dc.html?section=services",
+                    false, null));
+                continue;
+            }
+
+            if (qualification is { IsActive: false })
+            {
+                cards.Add(new(
+                    subject.Id, subject.Name, subject.NameAr,
+                    TeacherQualificationCardState.Revoked,
+                    application?.Id, application?.Status, application?.SubmittedAt, decidedAt,
+                    qualification.ApprovedAt, qualification.RevokedAt,
+                    application?.DemoStorageKey is not null,
+                    hasActiveTask && subject.IsActive
+                        ? "Re-apply for this subject"
+                        : "Subject unavailable for re-application",
+                    hasActiveTask && subject.IsActive
+                        ? $"Tafseel-Teacher-Apply.dc.html?mode=additional&subjectId={subject.Id}"
+                        : null,
+                    hasActiveTask && subject.IsActive,
+                    !subject.IsActive ? "subject_inactive"
+                        : !hasActiveTask ? "no_qualification_task" : null));
+                continue;
+            }
+
+            if (application is not null
+                && application.Status is TeacherApplicationStatus.Draft
+                    or TeacherApplicationStatus.Submitted
+                    or TeacherApplicationStatus.UnderReview)
+            {
+                cards.Add(new(
+                    subject.Id, subject.Name, subject.NameAr,
+                    TeacherQualificationCardState.ApplicationInProgress,
+                    application.Id, application.Status, application.SubmittedAt, decidedAt,
+                    null, null, application.DemoStorageKey is not null,
+                    "Continue application",
+                    "Tafseel-Teacher-Apply.dc.html",
+                    false, null));
+                continue;
+            }
+
+            if (application?.Status == TeacherApplicationStatus.ChangesRequested)
+            {
+                cards.Add(new(
+                    subject.Id, subject.Name, subject.NameAr,
+                    TeacherQualificationCardState.ChangesRequested,
+                    application.Id, application.Status, application.SubmittedAt, decidedAt,
+                    null, null, application.DemoStorageKey is not null,
+                    "Update and resubmit",
+                    "Tafseel-Teacher-Apply.dc.html",
+                    false, null));
+                continue;
+            }
+
+            if (application?.Status == TeacherApplicationStatus.Rejected)
+            {
+                cards.Add(new(
+                    subject.Id, subject.Name, subject.NameAr,
+                    TeacherQualificationCardState.Rejected,
+                    application.Id, application.Status, application.SubmittedAt, decidedAt,
+                    null, null, application.DemoStorageKey is not null,
+                    hasActiveTask && subject.IsActive
+                        ? "Apply again for this subject"
+                        : "Subject unavailable",
+                    hasActiveTask && subject.IsActive
+                        ? $"Tafseel-Teacher-Apply.dc.html?mode=additional&subjectId={subject.Id}"
+                        : null,
+                    hasActiveTask && subject.IsActive,
+                    !subject.IsActive ? "subject_inactive"
+                        : !hasActiveTask ? "no_qualification_task" : null));
+                continue;
+            }
+
+            // Available / unavailable (including withdrawn terminal apps with no qual)
+            if (!subject.IsActive)
+            {
+                if (application is not null)
+                    cards.Add(new(
+                        subject.Id, subject.Name, subject.NameAr,
+                        TeacherQualificationCardState.Unavailable,
+                        application.Id, application.Status, application.SubmittedAt, decidedAt,
+                        null, null, application.DemoStorageKey is not null,
+                        "Subject inactive", null, false, "subject_inactive"));
+                continue;
+            }
+
+            if (!hasActiveTask)
+            {
+                cards.Add(new(
+                    subject.Id, subject.Name, subject.NameAr,
+                    TeacherQualificationCardState.Unavailable,
+                    application?.Id, application?.Status, application?.SubmittedAt, decidedAt,
+                    null, null, application?.DemoStorageKey is not null,
+                    "No active qualification task", null, false, "no_qualification_task"));
+                continue;
+            }
+
+            cards.Add(new(
+                subject.Id, subject.Name, subject.NameAr,
+                TeacherQualificationCardState.AvailableToApply,
+                application?.Id, application?.Status, application?.SubmittedAt, decidedAt,
+                null, null, application?.DemoStorageKey is not null,
+                "Apply to teach this subject",
+                $"Tafseel-Teacher-Apply.dc.html?mode=additional&subjectId={subject.Id}",
+                true, null));
+        }
+
+        return cards
+            .OrderBy(x => x.State switch
+            {
+                TeacherQualificationCardState.Qualified => 0,
+                TeacherQualificationCardState.ChangesRequested => 1,
+                TeacherQualificationCardState.ApplicationInProgress => 2,
+                TeacherQualificationCardState.Rejected => 3,
+                TeacherQualificationCardState.Revoked => 4,
+                TeacherQualificationCardState.AvailableToApply => 5,
+                _ => 6
+            })
+            .ThenBy(x => x.SubjectName)
+            .ToArray();
+    }
+
     public async Task<IReadOnlyCollection<TeacherApplicationDto>> GetQueueAsync(
         TeacherApplicationStatus? status,
         CancellationToken ct)
@@ -212,12 +386,23 @@ internal sealed class TeacherApplicationService(
         var now = clock.GetUtcNow();
         application.Decide(
             reviewerId, input.Decision, scores, input.Comment, input.InternalNotes, now);
-        if (input.Decision == ReviewDecision.Approve
-            && !await db.TeacherSubjectQualifications.AnyAsync(
-                x => x.TeacherId == application.TeacherId && x.SubjectId == application.SubjectId, ct))
-            db.TeacherSubjectQualifications.Add(new(
-                application.TeacherId, application.SubjectId, application.Id,
-                application.QualificationTopicId, reviewerId, now));
+        if (input.Decision == ReviewDecision.Approve)
+        {
+            var existingQualification = await db.TeacherSubjectQualifications
+                .SingleOrDefaultAsync(
+                    x => x.TeacherId == application.TeacherId && x.SubjectId == application.SubjectId, ct);
+            if (existingQualification is null)
+            {
+                db.TeacherSubjectQualifications.Add(new(
+                    application.TeacherId, application.SubjectId, application.Id,
+                    application.QualificationTopicId, reviewerId, now));
+            }
+            else if (!existingQualification.IsActive)
+            {
+                existingQualification.Reactivate(
+                    application.Id, application.QualificationTopicId, reviewerId, now);
+            }
+        }
         if (input.Decision == ReviewDecision.Approve)
         {
             var demo = await db.TeacherDemoSubmissions
