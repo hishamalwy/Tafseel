@@ -214,7 +214,7 @@ public sealed class TeacherEligibleSubjectsAndPublicationTests(SqlServerTafseelA
     {
         subjectId,
         serviceCatalogItemId = teacher.ServiceTypeId,
-        title = "Eligible subject service",
+        title = (string?)null,
         description = "Service created against an eligible subject.",
         price = 125m,
         currency = "SAR",

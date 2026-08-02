@@ -206,7 +206,8 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
         var asyncType = await db.ServiceCatalogItems.AsTracking()
             .FirstAsync(x => x.IsActive && !x.RequiresScheduling);
         var subject = new Subject("Availability " + Guid.NewGuid().ToString("N"), "code");
-        db.Add(subject);
+        var subject2 = new Subject("Availability " + Guid.NewGuid().ToString("N"), "code2");
+        db.AddRange(subject, subject2);
 
         var services = new List<TeacherService>();
         TeacherService AddTeacher(int index, ServiceCatalogItem type, bool publish = true, bool qualify = true)
@@ -229,9 +230,10 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
         var available = AddTeacher(0, liveType);
         var next = AddTeacher(1, liveType);
         var nextAlternative = new TeacherService(
-            users[1].Id, subject.Id, liveType.Id, "Alternative live service",
+            users[1].Id, subject2.Id, liveType.Id, "Alternative live service",
             "Second eligible scheduled service.", 125, "SAR", 24, 0, factory.Clock.GetUtcNow());
-        db.Add(nextAlternative);
+        db.AddRange(nextAlternative,
+            new TeacherSubjectQualification(users[1].Id, subject2.Id, factory.Clock.GetUtcNow()));
         AddTeacher(2, liveType);
         AddTeacher(3, asyncType);
         var exception = AddTeacher(4, liveType);

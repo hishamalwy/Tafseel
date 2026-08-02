@@ -425,6 +425,7 @@
           <button type="button" onClick="{{ onFocusAddShowcase }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:800;font-size:14px;white-space:nowrap">{{ addShowcaseCtaLabel }}</button>
         </div>
 
+        <sc-if value="{{ showcaseFormOpen }}" hint-placeholder-val="{{ false }}">
         <section id="add-showcase-form" style="background:var(--surface);border:2px solid var(--primary);border-radius:var(--r-lg);padding:20px;margin-bottom:22px;scroll-margin-top:88px">
           <h2 style="font-size:17px;margin:0 0 5px">{{ teacherShowcasesTitle }}</h2>
           <p style="font-size:13px;color:var(--muted);margin:0 0 16px">{{ teacherShowcasesHint }}</p>
@@ -461,12 +462,11 @@
           </label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
             <button type="button" onClick="{{ onSaveShowcaseDraft }}" disabled="{{ showcaseBusy }}" style="height:42px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:800">{{ showcaseSaveLabel }}</button>
-            <sc-if value="{{ showcaseEditing }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ onCancelShowcaseEdit }}" style="height:42px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ showcaseCancelLabel }}</button>
-            </sc-if>
+            <button type="button" onClick="{{ onCancelShowcaseEdit }}" style="height:42px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600">{{ showcaseCancelLabel }}</button>
           </div>
           <p style="font-size:12px;color:var(--muted);margin-top:10px">{{ showcaseUploadHint }}</p>
         </section>
+        </sc-if>
 
         <sc-if value="{{ showcaseLoading }}" hint-placeholder-val="{{ false }}">
           <p role="status" class="tf-empty">{{ showcaseLoadingText }}</p>
@@ -997,6 +997,7 @@ class Component extends DCLogic {
     qualificationCards: [], qualificationCardsError: '', qualificationCardsLoading: true,
     profileVideos: [], profileVideosError: '', profileVideosLoading: true, profileVideoBusy: false,
     showcases: [], showcaseLoading: true, showcaseError: '', showcaseBusy: false,
+    showcaseFormOpen: false,
     showcaseEditingId: '', showcaseTitle: '', showcaseDescription: '',
     showcaseSubjectId: '', showcaseTopicId: '', showcaseTopics: [],
     serviceModal: null, serviceBusy: false, serviceDirty: false,
@@ -1323,6 +1324,7 @@ class Component extends DCLogic {
 
   resetShowcaseForm() {
     this.setState({
+      showcaseFormOpen:false,
       showcaseEditingId:'', showcaseTitle:'', showcaseDescription:'',
       showcaseSubjectId:'', showcaseTopicId:'', showcaseTopics:[]
     });
@@ -1753,11 +1755,14 @@ class Component extends DCLogic {
       showcaseNoSubjectsText: tr('showcase_no_qualified_subject', 'You need an approved subject qualification before adding a Showcase.'),
       showcaseGoQualifications: tr('showcase_go_qualifications', 'Open My Qualifications'),
       goQualificationsFromSamples: () => this.setState({ section: 'qualifications' }),
+      showcaseFormOpen: s.showcaseFormOpen,
       onFocusAddShowcase: () => {
-        const form = document.getElementById('add-showcase-form');
-        const title = document.getElementById('showcase-title-input');
-        if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setTimeout(() => { if (title && title.focus) title.focus(); }, 250);
+        this.setState({ showcaseFormOpen: true }, () => {
+          const form = document.getElementById('add-showcase-form');
+          const title = document.getElementById('showcase-title-input');
+          if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => { if (title && title.focus) title.focus(); }, 250);
+        });
       },
       showcaseCancelLabel:Tafseel.t('common_cancel'),
       showcaseUploadHint:Tafseel.t('showcase_upload_hint'),
@@ -2006,12 +2011,15 @@ class Component extends DCLogic {
           canReorder:sample.status === 4 && approved.length > 1,
           onEdit:async () => {
             this.setState({
+              showcaseFormOpen:true,
               showcaseEditingId:sample.id,
               showcaseTitle:current.title || '',
               showcaseDescription:current.description || ''
             });
             await this.selectShowcaseSubject(sample.subjectId);
             this.setState({ showcaseTopicId:current.topicId || '' });
+            const form = document.getElementById('add-showcase-form');
+            if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
           },
           onUpload:async event => {
             const file = event.target.files && event.target.files[0];
