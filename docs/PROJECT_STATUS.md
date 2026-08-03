@@ -2,6 +2,16 @@
 
 Last updated: 2026-08-02.
 
+## Final Consumer Marketplace Certification (Phase 3 Release 3 Sprint 8)
+
+The full canonical Student lifecycle — Landing → Browse → Teacher Profile → Service selection → Request Wizard → Teacher Accept → Payment → Mock Checkout → Delivery → **Revision requested → Teacher resubmits** → Approve → Completed → **Rate teacher** → public review visible on the Teacher Profile — was driven live through real browser interaction end-to-end for the first time in this project's history (Sprint 6's own report had explicitly flagged this as an outstanding gap). Zero console errors occurred across the entire journey. This sprint made **no code changes** (certification/audit only, per its explicit brief) and used only the existing Development database — no restore, no bulk reseed; two accounts were created via the app's own real registration API, with the teacher's marketplace qualification/profile/service state seeded directly against the same Development database using the project's own domain constructors (the only non-UI step, explicitly user-approved since no `QualityReviewer` credentials were available).
+
+One real, reproducible **Medium** defect was found and precisely diagnosed (not fixed, per audit-only scope): `Tafseel-Student-Dashboard.dc.html` maintains two parallel, near-duplicate rating-modal implementations (`reviewModal` and `rateModal`); one path leaves `{{ reviewTeacherAvatar }}` unsubstituted, which the browser then requests as a literal 404'd URL, alongside three unrelated bindings failing to resolve in the same render pass. Regression across Sprints 1–7 found nothing broken; the full backend SqlServer integration suite (104/104) and all frontend/localization/regression CI checks passed. Verdict: **RELEASE 3 CONDITIONALLY CERTIFIED**. See [Final Consumer Marketplace Certification report](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md).
+
+## Landing Experience (Phase 3 Release 3 Sprint 7)
+
+An 11-part audit of the public Landing page against premium education-marketplace benchmarks (Preply, Italki, Superprof, Fiverr Learn, MasterClass) found the page already mature — real live-fetched subject/teacher/service data with honest loading/empty states, a testimonial marquee that explicitly discloses itself as illustrative rather than verified reviews, and hero copy/mockup that communicate personalized (not generic) learning within the first viewport. Two real defects were found and fixed: the hero's trust-stat row permanently showed an em dash for two of three stats ("Requests completed," "Average rating") because those formulas remain unapproved under ADR-005/F-002 — correctly never fabricated, but left rendering as visibly broken forever instead of being removed; fixed by showing only the one real, live verified-teacher count. Separately, the hero mockup and featured-teacher-card "verified" badges still used a raw `✓` text glyph instead of the SVG icon language already established on Teacher Profile and Browse Teachers; now consistent. Verified across all 6 required breakpoints (375–1440px) and English/Arabic × light/dark with zero console errors. See [Sprint 7 report](./fixes/PHASE_3_RELEASE_3_SPRINT_7_LANDING_EXPERIENCE.md).
+
 ## Teacher Growth & Profile Curation
 
 Two Teacher-side product gaps were closed locally:
@@ -89,6 +99,8 @@ Historical implementation phases 2–11 and completed production-correction pass
 
 | Finding | Status | Report |
 |---|---|---|
+| Consumer Marketplace Experience — Sprint 8 (Final Certification) | **Conditionally certified** — first full live E2E lifecycle drive (Request→Payment→Delivery→Revision→Approve→Rate→public review); one real Medium defect found, not fixed (audit-only scope) | [Sprint 8 certification report](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md) |
+| Consumer Marketplace Experience — Sprint 7 (Landing Experience) | Two real defects fixed and browser-verified; page found largely sound otherwise | [Sprint 7 report](./fixes/PHASE_3_RELEASE_3_SPRINT_7_LANDING_EXPERIENCE.md) |
 | Consumer Marketplace Experience — Sprint 6 (Reviews / Notifications) | Conditionally verified — review state + deep links + Files honesty; Phase9 passed | [Sprint 6 report](./fixes/PHASE_3_RELEASE_3_SPRINT_6_REVIEWS_RATING_NOTIFICATIONS.md) |
 | Consumer Marketplace Experience — Sprint 5 (Post-Purchase) | Conditionally verified — timeline hero/progress + payment-return deep-link browser-proven | [Sprint 5 report](./fixes/PHASE_3_RELEASE_3_SPRINT_5_POST_PURCHASE_EXPERIENCE.md) |
 | Consumer Marketplace Experience — Sprint 4 (Payment Experience) | Conditionally verified — commercial context, mock resume, success/failure next-steps browser-proven | [Sprint 4 report](./fixes/PHASE_3_RELEASE_3_SPRINT_4_PAYMENT_EXPERIENCE.md) |
@@ -147,6 +159,7 @@ Historical implementation phases 2–11 and completed production-correction pass
 | F-010 | Critical | UI Bug | **Fixed** — canonical `Tafseel.orderPresentation()` helper now derives stage/action from `Order.Status` **and** `Order.PaymentStatus` together on both dashboards. See [recovery report](./fixes/POST_PAYMENT_ORDER_LIFECYCLE_RECOVERY_REPORT.md). |
 | F-011 | High | UI Bug | **Fixed** — `componentDidUpdate` was comparing against a `prevState` argument the DC runtime never provides (only `prevProps`); now tracks step via an instance field. Live-verified zero console errors across the Request/Dashboard/Payment/Checkout pages. |
 | F-012 | Medium | Localization Bug | **Fixed** — key added; a new `check-localization-usage.mjs` CI check now catches referenced-but-undefined keys generally (paired-key parity alone could not). |
+| F-013 | Medium | UI Bug | Open — duplicate `reviewModal`/`rateModal` rating-dialog implementations in `Tafseel-Student-Dashboard.dc.html`; one path renders an unsubstituted `{{ reviewTeacherAvatar }}` template placeholder as a literal 404'd request, with three unrelated bindings failing to resolve in the same render pass. Found live during Sprint 8 certification; not fixed (audit-only sprint). Recommended fix: consolidate to one canonical rating-modal implementation. See [Sprint 8 report](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md). |
 
 Details are in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md).
 
@@ -223,7 +236,32 @@ Unresolved decisions include:
 
 The evidence-based questions are recorded in the [Phase 0–1 audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md).
 
+## Release 3 Scorecard (Sprint 8 Final Certification)
+
+| Dimension | Score |
+|---|---:|
+| Product | 8.5 / 10 |
+| UX | 8 / 10 |
+| Trust | 9 / 10 |
+| Accessibility | 7 / 10 |
+| Performance | 7.5 / 10 |
+| Localization | 8.5 / 10 |
+| Marketplace Consistency | 8 / 10 |
+| Production Readiness (Release 3 scope) | 7.5 / 10 |
+| **Overall Release 3 Score** | **8.0 / 10** |
+| Roadmap Completion (Release 3/4) | **~95%** |
+
+Full rationale per dimension is in the [Sprint 8 certification report](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md). "Production Readiness" here is scoped strictly to the Release 3 consumer-UX layer, not the platform's overall Production cutover (F-003/F-004 remain the actual gate, unchanged by this sprint).
+
 ## Test Coverage Summary
+
+Latest Final Consumer Marketplace Certification (Sprint 8 — full canonical lifecycle including Revision + Rating, live browser, first time ever driven end-to-end):
+
+- No code changed this sprint (audit-only). Full validation suite re-run fresh: `check-frontend-integrity.mjs`, `check-localization.mjs` (2,960 paired keys), `check-localization-usage.mjs`, `check-bug001-display-names.mjs`, `check-teacher-profile-mobile-cta.mjs` all passed; `node --check` on both JS entry points passed; `git diff --check` clean (no changes); `dotnet build -c Release` succeeded (0 errors, 2 pre-existing known-good nullable warnings); Domain (89) + Application (5) + Architecture (1) suites passed; full SqlServer integration suite **104/104 passed**.
+- Live browser proof, using two accounts created via the real registration API plus explicitly user-approved direct domain-constructor seeding of the teacher's marketplace state (not login credentials — see report Methodology): Request Wizard → Teacher Accept → Payment → Mock Checkout (webhook-confirmed) → Start Work → Upload Delivery (`.txt` correctly rejected, `.pdf` accepted) → **Request Revision** → **Teacher resubmits** → Student Approves → Order Completed → **Student rates Teacher (5-criteria)** → review now visible on the public Teacher Profile ("5.0 ★★★★★ Based on 1 reviews"). Zero console errors throughout.
+- One real Medium defect found and diagnosed, not fixed: duplicate `reviewModal`/`rateModal` rating-dialog implementations causing an unresolved `{{ reviewTeacherAvatar }}` template placeholder (404) plus three unrelated bindings failing in the same render pass (tracked as F-013).
+- Regression-verified against Sprints 1–7 findings — nothing broken.
+- See [Sprint 8 certification report](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md) for full detail, evidence, and severity-classified findings.
 
 Latest Post-Payment Order Lifecycle Recovery (full canonical lifecycle, live browser):
 

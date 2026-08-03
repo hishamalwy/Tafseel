@@ -118,14 +118,16 @@
         <span class="tf-hero-note" style="font-size:13px;color:var(--muted)">{{ heroNote }}</span>
       </div>
 
-      <div class="tf-stat-grid" style="border-top:1px solid var(--border);padding-top:24px;max-width:580px">
-        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
-          <div>
-            <div data-count-up="{{ s.countUp }}" data-count-format="{{ s.format }}" style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{ s.value }}</div>
-            <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ s.label }}</div>
-          </div>
-        </sc-for>
-      </div>
+      <sc-if value="{{ hasStats }}" hint-placeholder-val="{{ true }}">
+        <div class="tf-stat-grid" style="border-top:1px solid var(--border);padding-top:24px;max-width:580px">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="1">
+            <div>
+              <div data-count-up="{{ s.countUp }}" data-count-format="{{ s.format }}" style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{ s.value }}</div>
+              <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
     </div>
 
     <div class="tf-landing-hero-visual" style="position:relative;z-index:1" data-reveal="right">
@@ -143,7 +145,7 @@
               <div style="flex:1">
                 <div style="display:flex;align-items:center;gap:6px">
                   <span style="font-weight:700;font-size:15px">{{ heroCardTeacher }}</span>
-                  <span title="{{ heroCardVerified }}" style="width:16px;height:16px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:10px;display:grid;place-items:center">✓</span>
+                  <span title="{{ heroCardVerified }}" style="width:16px;height:16px;border-radius:50%;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="m7.5 12 3 3 6-7" /></svg></span>
                 </div>
                 <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ heroCardSubject }}</div>
               </div>
@@ -289,7 +291,7 @@
             <div style="min-width:0;flex:1">
               <div style="display:flex;align-items:center;gap:6px">
                 <span style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
-                <span title="Verified teacher" style="flex:none;width:15px;height:15px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:9px;display:grid;place-items:center">✓</span>
+                <span title="Verified teacher" style="flex:none;width:15px;height:15px;border-radius:50%;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:9px;height:9px;fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round"><path d="m7.5 12 3 3 6-7" /></svg></span>
               </div>
               <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
               <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
@@ -751,16 +753,15 @@ class Component extends DCLogic {
       accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
       teacherJoinHref,
 
-      stats: [
+      stats: this.state.teacherTotal == null ? [] : [
         {
-          value: this.state.teacherTotal == null ? '—' : Tafseel.number(this.state.teacherTotal),
-          countUp: this.state.teacherTotal == null ? '' : String(this.state.teacherTotal),
+          value: Tafseel.number(this.state.teacherTotal),
+          countUp: String(this.state.teacherTotal),
           format: 'number',
           label: ar ? 'معلم موثّق' : 'Verified teachers'
-        },
-        { value: '—', countUp: '', format: '', label: ar ? 'طلب مكتمل' : 'Requests completed' },
-        { value: '—', countUp: '', format: '', label: ar ? 'متوسط التقييم' : 'Average rating' }
+        }
       ],
+      hasStats: this.state.teacherTotal != null,
       studentManualEyebrow: ar ? 'دليل الطالب' : 'Student manual',
       studentManualTitle: ar ? 'كيف تحصل على شرح مفيد من أول مرة' : 'How to get useful help the first time',
       studentManualIntro: ar ? 'رتّب طلبك بهذه الخطوات القصيرة لتصل بسرعة إلى المعلم المناسب، وتسعير واضح، وشرح يركّز على الجزء الذي يهمك فعلًا.' : 'Use this short playbook to reach the right teacher faster, get clear pricing, and keep the explanation focused on the exact part that matters.',

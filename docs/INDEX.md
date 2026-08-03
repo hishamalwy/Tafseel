@@ -6,6 +6,8 @@ This index is append-only for immutable historical reports. New reports belong i
 
 | Report | Date | Status | Summary |
 |---|---|---|---|
+| [Phase 3 Release 3 — Final Consumer Marketplace Certification](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md) | 2026-08-02 | Conditionally certified | First-ever full live-browser drive of the canonical Student lifecycle (Landing→Browse→Profile→Request→Payment→Delivery→**Revision→Approve→Rate**→public review) on fresh, legitimately-registered UAT accounts; found and precisely documented (not fixed, per audit-only scope) a duplicate `reviewModal`/`rateModal` rating-dialog implementation causing an unresolved `{{ reviewTeacherAvatar }}` template placeholder to leak as a 404 request. Regression-clean across Sprints 1–7 and the full 104-test SqlServer suite. No code changed. |
+| [Phase 3 Release 3 Sprint 7 — Landing Experience & First Impression](./fixes/PHASE_3_RELEASE_3_SPRINT_7_LANDING_EXPERIENCE.md) | 2026-08-02 | Two real defects fixed; browser-verified | 11-part Landing Page audit against premium-marketplace benchmarks; removed a permanently-empty hero stat pair (unapproved metrics correctly never fabricated, but left as a dead "—" placeholder), replaced raw checkmark glyphs with the established SVG icon language on hero/featured-teacher badges. Page found largely sound otherwise — no fake testimonials, badges, or numbers found. |
 | [Teacher Growth & Profile Curation](./features/TEACHER_GROWTH_AND_PROFILE_CURATION_REPORT.md) | 2026-08-02 | Conditionally verified | Additional-subject qualifications UX + revoked reactivation; Teacher profile video curation fields/API/Dashboard; migration generated not applied. |
 | [Teacher Profile Curation Migration](./database/TEACHER_PROFILE_CURATION_MIGRATION.md) | 2026-08-02 | Generated; not applied | Additive IsProfileVisible/Order/Featured with legacy visibility preserved. |
 | [ADR-012 Teacher Growth & Profile Curation](./decisions/ADR-012-TEACHER-GROWTH-AND-PROFILE-CURATION.md) | 2026-08-02 | Accepted | Multi-subject reuse + presentation-only curation rules; max visible = MaxPublicPerTeacher. |
@@ -110,11 +112,13 @@ This index is append-only for immutable historical reports. New reports belong i
 | [Step 7 Public Profile Hardening](./fixes/STEP7_PUBLIC_PROFILE_HARDENING_REPORT.md) | 2026-07-30 | Completed | Favorites/Reviews eligibility, SampleCount parity, public DTO privacy, catalog filter parity |
 | [Final Production Readiness Audit](./audits/FINAL_PRODUCTION_READINESS_AUDIT.md) | 2026-07-30 | Completed | Architecture through ops evidence audit with executable validation log |
 | [Tafseel Phase 0–1 Audit](./audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md) | 2026-07-29 | Completed | Current architecture and 24-capability gap audit |
+| [Phase 3 Release 3 — Final Consumer Marketplace Certification](./reports/PHASE_3_RELEASE_3_FINAL_CONSUMER_CERTIFICATION.md) | 2026-08-02 | Conditionally certified | First full live-browser lifecycle drive (Request→Payment→Delivery→Revision→Approve→Rate→public review); regression audit of Sprints 1–7; one real Medium defect found (duplicate rating-modal implementation), not fixed (audit-only sprint) |
 
 ## Fix Reports
 
 | Report | Date | Finding | Status |
 |---|---|---|---|
+| [Phase 3 Release 3 Sprint 7 — Landing Experience & First Impression](./fixes/PHASE_3_RELEASE_3_SPRINT_7_LANDING_EXPERIENCE.md) | 2026-08-02 | Permanently-empty hero stat placeholders ("—" for unapproved metrics, never removed); raw checkmark glyphs inconsistent with established SVG icon language | Fixed; browser-verified |
 | [Phase 3 Release 3 Sprint 6 — Reviews, Rating & Notification Deep Links](./fixes/PHASE_3_RELEASE_3_SPRINT_6_REVIEWS_RATING_NOTIFICATIONS.md) | 2026-08-02 | Reviews/Files stubs; notification dead-ends; optimistic rate without hasReview; public ReviewDto leaked OrderId | Fixed; browser-verified (conditional — see report) |
 | [Phase 3 Release 3 Sprint 5 — Post-Purchase Experience](./fixes/PHASE_3_RELEASE_3_SPRINT_5_POST_PURCHASE_EXPERIENCE.md) | 2026-08-02 | Payment `?section=orders` blank main; thin timeline; red paid chip; weak delivery versions | Fixed; browser-verified (conditional — see report) |
 | [Phase 3 Release 3 Sprint 4 — Payment Experience & Consumer Confidence](./fixes/PHASE_3_RELEASE_3_SPRINT_4_PAYMENT_EXPERIENCE.md) | 2026-08-02 | Payment context loss; coupon ghost UI; idempotency stranding; thin mock success/failure | Fixed; browser-verified (conditional — see report) |
