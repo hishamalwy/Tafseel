@@ -224,8 +224,8 @@ async function main() {
     const tCount = await teacherPack.page.locator(".tf-chat-widget[data-open=true] .tf-chat-bubble", { hasText: sendToken }).count();
     record("11-realtime-s2t", tCount === 1, `count=${tCount}`);
     record("11b-realtime-t2s", sCount === 1, `count=${sCount}`);
-    realtimeTrace.push({ sender: "student", receiver: "teacher", conversationId, token: sendToken, renderCount: tCount });
-    realtimeTrace.push({ sender: "teacher", receiver: "student", conversationId, token: replyToken, renderCount: sCount });
+    realtimeTrace.push({ sender: "student", receiver: "teacher", conversationId, messageMarker: sendToken, renderCount: tCount });
+    realtimeTrace.push({ sender: "teacher", receiver: "student", conversationId, messageMarker: replyToken, renderCount: sCount });
     await wait(2000);
     record("12-dedup", sCount === 1 && tCount === 1);
     const unreadAfter = await teacherPack.page.evaluate(async id => {

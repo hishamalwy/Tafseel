@@ -138,12 +138,12 @@
   "realtimeTrace": [
     {
       "dir": "S->T",
-      "token": "PRE_RL_S_1786201094295",
+      "messageMarker": "PRE_RL_S_1786201094295",
       "renderCount": 1
     },
     {
       "dir": "T->S",
-      "token": "PRE_RL_T_1786201094428",
+      "messageMarker": "PRE_RL_T_1786201094428",
       "renderCount": 1
     }
   ],

@@ -360,8 +360,8 @@ async function main() {
     await sendChat(teacherPack.page, preT);
     const preTCount = await waitTokenCount(studentPack.page, preT);
     record("baseline-realtime", preSCount === 1 && preTCount === 1, JSON.stringify({ preSCount, preTCount }));
-    realtimeTrace.push({ dir: "S->T", token: preS, renderCount: preSCount });
-    realtimeTrace.push({ dir: "T->S", token: preT, renderCount: preTCount });
+    realtimeTrace.push({ dir: "S->T", messageMarker: preS, renderCount: preSCount });
+    realtimeTrace.push({ dir: "T->S", messageMarker: preT, renderCount: preTCount });
     scenarios.realtime = preSCount === 1 && preTCount === 1;
 
     budget.setScenario("student-remount-functional");

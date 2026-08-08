@@ -150,51 +150,55 @@ internal sealed class MarketplaceIntelligenceService(
         DateTimeOffset rangeStart, DateTimeOffset rangeEnd, MarketplaceIntelligenceFilter filter, CancellationToken ct)
     {
         var catalog = await (from service in db.TeacherServices.AsNoTracking()
-            join subject in db.Subjects.AsNoTracking() on service.SubjectId equals subject.Id
-            join item in db.ServiceCatalogItems.AsNoTracking() on service.ServiceCatalogItemId equals item.Id
-            where service.IsActive && service.SupersededByTeacherServiceId == null && subject.IsActive && item.IsActive
-                && (!filter.SubjectId.HasValue || subject.Id == filter.SubjectId)
-                && (!filter.ServiceCatalogItemId.HasValue || item.Id == filter.ServiceCatalogItemId)
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
-                    && q.SubjectId == service.SubjectId && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-            group service by new { subject.Id, subject.Name, subject.NameAr, ServiceId = item.Id, ServiceName = item.Name, ServiceNameAr = item.NameAr } into grouped
-            orderby grouped.Key.Name, grouped.Key.ServiceName
-            select new { grouped.Key, Offers = grouped.Count(), Teachers = grouped.Select(x => x.TeacherId).Distinct().Count() })
+                             join subject in db.Subjects.AsNoTracking() on service.SubjectId equals subject.Id
+                             join item in db.ServiceCatalogItems.AsNoTracking() on service.ServiceCatalogItemId equals item.Id
+                             where service.IsActive && service.SupersededByTeacherServiceId == null && subject.IsActive && item.IsActive
+                                 && (!filter.SubjectId.HasValue || subject.Id == filter.SubjectId)
+                                 && (!filter.ServiceCatalogItemId.HasValue || item.Id == filter.ServiceCatalogItemId)
+                                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
+                                     && q.SubjectId == service.SubjectId && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                             group service by new { subject.Id, subject.Name, subject.NameAr, ServiceId = item.Id, ServiceName = item.Name, ServiceNameAr = item.NameAr } into grouped
+                             orderby grouped.Key.Name, grouped.Key.ServiceName
+                             select new { grouped.Key, Offers = grouped.Count(), Teachers = grouped.Select(x => x.TeacherId).Distinct().Count() })
             .Take(200).ToArrayAsync(ct);
 
         var eventGroups = await db.MarketplaceInteractionEvents.AsNoTracking()
             .Where(x => x.OccurredAtUtc >= rangeStart && x.OccurredAtUtc < rangeEnd && x.SubjectId.HasValue && x.ServiceCatalogItemId.HasValue)
             .GroupBy(x => new { SubjectId = x.SubjectId!.Value, ServiceId = x.ServiceCatalogItemId!.Value })
-            .Select(g => new { g.Key.SubjectId, g.Key.ServiceId,
+            .Select(g => new
+            {
+                g.Key.SubjectId,
+                g.Key.ServiceId,
                 Browse = g.Count(x => x.EventName == "browse_viewed"),
                 Opens = g.Count(x => x.EventName == "teacher_opened"),
-                Zero = g.Count(x => x.EventName == "zero_result_viewed") })
+                Zero = g.Count(x => x.EventName == "zero_result_viewed")
+            })
             .OrderBy(x => x.SubjectId).ThenBy(x => x.ServiceId).Take(200).ToArrayAsync(ct);
 
         var requestGroups = await (from request in db.LearningRequests.AsNoTracking()
-            join service in db.TeacherServices.AsNoTracking() on request.TeacherServiceId equals service.Id
-            where request.CreatedAt >= rangeStart && request.CreatedAt < rangeEnd && request.ServiceCatalogItemId.HasValue
-            group request by new { service.SubjectId, ServiceId = request.ServiceCatalogItemId!.Value } into grouped
-            orderby grouped.Key.SubjectId, grouped.Key.ServiceId
-            select new { grouped.Key.SubjectId, grouped.Key.ServiceId, Requests = grouped.Count() }).Take(200).ToArrayAsync(ct);
+                                   join service in db.TeacherServices.AsNoTracking() on request.TeacherServiceId equals service.Id
+                                   where request.CreatedAt >= rangeStart && request.CreatedAt < rangeEnd && request.ServiceCatalogItemId.HasValue
+                                   group request by new { service.SubjectId, ServiceId = request.ServiceCatalogItemId!.Value } into grouped
+                                   orderby grouped.Key.SubjectId, grouped.Key.ServiceId
+                                   select new { grouped.Key.SubjectId, grouped.Key.ServiceId, Requests = grouped.Count() }).Take(200).ToArrayAsync(ct);
 
         var paidGroups = await (from payment in db.Payments.AsNoTracking()
-            join order in db.Orders.AsNoTracking() on payment.OrderId equals order.Id
-            join service in db.TeacherServices.AsNoTracking() on order.TeacherServiceId equals service.Id
-            where order.ServiceCatalogItemId.HasValue && payment.Status == PaymentStatus.Confirmed
-                && payment.ConfirmedAt >= rangeStart && payment.ConfirmedAt < rangeEnd
-            group order by new { service.SubjectId, ServiceId = order.ServiceCatalogItemId!.Value } into grouped
-            orderby grouped.Key.SubjectId, grouped.Key.ServiceId
-            select new { grouped.Key.SubjectId, grouped.Key.ServiceId, Count = grouped.Count() }).Take(200).ToArrayAsync(ct);
+                                join order in db.Orders.AsNoTracking() on payment.OrderId equals order.Id
+                                join service in db.TeacherServices.AsNoTracking() on order.TeacherServiceId equals service.Id
+                                where order.ServiceCatalogItemId.HasValue && payment.Status == PaymentStatus.Confirmed
+                                    && payment.ConfirmedAt >= rangeStart && payment.ConfirmedAt < rangeEnd
+                                group order by new { service.SubjectId, ServiceId = order.ServiceCatalogItemId!.Value } into grouped
+                                orderby grouped.Key.SubjectId, grouped.Key.ServiceId
+                                select new { grouped.Key.SubjectId, grouped.Key.ServiceId, Count = grouped.Count() }).Take(200).ToArrayAsync(ct);
 
         var completedGroups = await (from history in db.Set<OrderStatusHistory>().AsNoTracking()
-            join order in db.Orders.AsNoTracking() on history.OrderId equals order.Id
-            join service in db.TeacherServices.AsNoTracking() on order.TeacherServiceId equals service.Id
-            where order.ServiceCatalogItemId.HasValue && history.NextStatus == OrderStatus.Completed
-                && history.CreatedAt >= rangeStart && history.CreatedAt < rangeEnd
-            group history by new { service.SubjectId, ServiceId = order.ServiceCatalogItemId!.Value } into grouped
-            orderby grouped.Key.SubjectId, grouped.Key.ServiceId
-            select new { grouped.Key.SubjectId, grouped.Key.ServiceId, Count = grouped.Count() }).Take(200).ToArrayAsync(ct);
+                                     join order in db.Orders.AsNoTracking() on history.OrderId equals order.Id
+                                     join service in db.TeacherServices.AsNoTracking() on order.TeacherServiceId equals service.Id
+                                     where order.ServiceCatalogItemId.HasValue && history.NextStatus == OrderStatus.Completed
+                                         && history.CreatedAt >= rangeStart && history.CreatedAt < rangeEnd
+                                     group history by new { service.SubjectId, ServiceId = order.ServiceCatalogItemId!.Value } into grouped
+                                     orderby grouped.Key.SubjectId, grouped.Key.ServiceId
+                                     select new { grouped.Key.SubjectId, grouped.Key.ServiceId, Count = grouped.Count() }).Take(200).ToArrayAsync(ct);
 
         return catalog.Select(row =>
         {

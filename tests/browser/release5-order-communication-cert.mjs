@@ -297,7 +297,7 @@ async function main() {
       sender: "student",
       receiver: "teacher",
       conversationId,
-      token: liveToken,
+      messageMarker: liveToken,
       httpSendTimestamp: httpSendAt,
       signalRReceiveTimestamp: receiveAt,
       renderCount: teacherCount
@@ -315,7 +315,7 @@ async function main() {
       sender: "teacher",
       receiver: "student",
       conversationId,
-      token: replyToken,
+      messageMarker: replyToken,
       httpSendTimestamp: replyAt,
       signalRReceiveTimestamp: Date.now(),
       renderCount: studentReplyCount

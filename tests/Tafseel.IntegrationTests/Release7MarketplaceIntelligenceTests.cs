@@ -23,13 +23,26 @@ public sealed class Release7MarketplaceIntelligenceTests(SqlServerTafseelApiFact
     {
         var client = factory.CreateClient();
         var id = Guid.NewGuid().ToString("N");
-        var allowed = new { eventName = "browse_viewed", sourceSurface = "Browse", clientEventId = id,
-            anonymousSessionId = Guid.NewGuid().ToString("N"), resultCount = 0,
-            queryPresent = true, languageFilterPresent = true, priceFilterPresent = false };
+        var allowed = new
+        {
+            eventName = "browse_viewed",
+            sourceSurface = "Browse",
+            clientEventId = id,
+            anonymousSessionId = Guid.NewGuid().ToString("N"),
+            resultCount = 0,
+            queryPresent = true,
+            languageFilterPresent = true,
+            priceFilterPresent = false
+        };
         Assert.Equal(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/v1/marketplace-intelligence/events", allowed)).StatusCode);
         Assert.Equal(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/v1/marketplace-intelligence/events", allowed)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/v1/marketplace-intelligence/events", new {
-            eventName = "payment_confirmed", sourceSurface = "Browse", clientEventId = Guid.NewGuid().ToString("N"), anonymousSessionId = Guid.NewGuid().ToString("N") })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/v1/marketplace-intelligence/events", new
+        {
+            eventName = "payment_confirmed",
+            sourceSurface = "Browse",
+            clientEventId = Guid.NewGuid().ToString("N"),
+            anonymousSessionId = Guid.NewGuid().ToString("N")
+        })).StatusCode);
 
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();

@@ -118,10 +118,18 @@ internal sealed class GovernanceService(
         var rows = await query.Skip((page - 1) * pageSize).Take(pageSize)
             .Select(x => new
             {
-                x.Review.Id, x.Review.OrderId, x.Review.TeacherId,
-                x.Teacher.FullName, x.Teacher.FullNameEnglish, x.Teacher.AvatarStorageKey,
-                x.Service.Title, x.Review.OverallScore, x.Review.Recommends,
-                x.Review.OriginalComment, x.Review.CreatedAt, x.Review.IsVisible
+                x.Review.Id,
+                x.Review.OrderId,
+                x.Review.TeacherId,
+                x.Teacher.FullName,
+                x.Teacher.FullNameEnglish,
+                x.Teacher.AvatarStorageKey,
+                x.Service.Title,
+                x.Review.OverallScore,
+                x.Review.Recommends,
+                x.Review.OriginalComment,
+                x.Review.CreatedAt,
+                x.Review.IsVisible
             })
             .ToArrayAsync(ct);
         var ids = rows.Select(x => x.Id).ToArray();

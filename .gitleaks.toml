@@ -7,5 +7,33 @@ useDefault = true
 description = "Generated and ignored runtime/build data"
 paths = [
   '''(?i)(^|/)App_Data/''',
-  '''(?i)(^|/)(bin|obj|artifacts|TestResults)/'''
+  '''(?i)(^|/)(bin|obj|artifacts|TestResults|\.vs)/'''
+]
+
+[[allowlists]]
+description = "Historical generic-api-key false positives in 0c8f47c only: R5 realtime chat message markers (prefix + Date.now(), not credentials) and R6 auth401 identifier. Current tree is sanitized/rewritten. AND of path+fingerprint so new secrets in these files still fail."
+condition = "AND"
+paths = [
+  '''docs/features/evidence/phase4-release5-order-communication/final-acceptance/realtime-trace.json''',
+  '''docs/features/evidence/phase4-release5-order-communication/final-browser-certification/realtime-retention.json''',
+  '''docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/realtime-retention.json''',
+  '''docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert.json''',
+  '''docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-session-collision.json''',
+  '''docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-loc-ar-fail.json''',
+  '''tests/browser/release6-final-acceptance-cert.mjs'''
+]
+fingerprints = [
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-acceptance/realtime-trace.json:generic-api-key:6''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-acceptance/realtime-trace.json:generic-api-key:15''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-browser-certification/realtime-retention.json:generic-api-key:6''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-browser-certification/realtime-retention.json:generic-api-key:13''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-session-collision.json:generic-api-key:141''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-session-collision.json:generic-api-key:146''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/realtime-retention.json:generic-api-key:4''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/realtime-retention.json:generic-api-key:9''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-loc-ar-fail.json:generic-api-key:869''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-loc-ar-fail.json:generic-api-key:874''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert.json:generic-api-key:869''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert.json:generic-api-key:874''',
+  '''0c8f47caa08a785cea62cb20efc9afb522cd3bbc:tests/browser/release6-final-acceptance-cert.mjs:generic-api-key:61'''
 ]

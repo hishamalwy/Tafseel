@@ -3,7 +3,7 @@
     "sender": "student",
     "receiver": "teacher",
     "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
-    "token": "R5LIVE-S2T-1786187326676",
+    "messageMarker": "R5LIVE-S2T-1786187326676",
     "httpSendTimestamp": 1786187326676,
     "signalRReceiveTimestamp": 1786187326852,
     "renderCount": 1
@@ -12,7 +12,7 @@
     "sender": "teacher",
     "receiver": "student",
     "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
-    "token": "R5LIVE-T2S-1786187329364",
+    "messageMarker": "R5LIVE-T2S-1786187329364",
     "httpSendTimestamp": 1786187329364,
     "signalRReceiveTimestamp": 1786187329470,
     "renderCount": 1

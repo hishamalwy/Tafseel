@@ -114,7 +114,7 @@ async function main() {
     }, liveToken, { timeout: 20000 });
     const teacherCount = await teacherPage.locator(".tf-chat-widget[data-open=true] .tf-chat-bubble", { hasText: liveToken }).count();
     record("realtime-s2t", teacherCount === 1, `count=${teacherCount}`);
-    realtimeTrace.push({ sender: "student", receiver: "teacher", conversationId, token: liveToken, httpSendTimestamp: httpSendAt, signalRReceiveTimestamp: Date.now(), renderCount: teacherCount });
+    realtimeTrace.push({ sender: "student", receiver: "teacher", conversationId, messageMarker: liveToken, httpSendTimestamp: httpSendAt, signalRReceiveTimestamp: Date.now(), renderCount: teacherCount });
     await wait(2500);
     record("dedup-s2t", (await teacherPage.locator(".tf-chat-widget[data-open=true] .tf-chat-bubble", { hasText: liveToken }).count()) === 1);
 
@@ -127,7 +127,7 @@ async function main() {
     }, replyToken, { timeout: 20000 });
     const studentCount = await studentPage.locator(".tf-chat-widget[data-open=true] .tf-chat-bubble", { hasText: replyToken }).count();
     record("realtime-t2s", studentCount === 1, `count=${studentCount}`);
-    realtimeTrace.push({ sender: "teacher", receiver: "student", conversationId, token: replyToken, httpSendTimestamp: replyAt, signalRReceiveTimestamp: Date.now(), renderCount: studentCount });
+    realtimeTrace.push({ sender: "teacher", receiver: "student", conversationId, messageMarker: replyToken, httpSendTimestamp: replyAt, signalRReceiveTimestamp: Date.now(), renderCount: studentCount });
     await wait(2500);
     record("dedup-t2s", (await studentPage.locator(".tf-chat-widget[data-open=true] .tf-chat-bubble", { hasText: replyToken }).count()) === 1);
 

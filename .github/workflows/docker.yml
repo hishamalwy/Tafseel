@@ -36,8 +36,8 @@ jobs:
       IMAGE: ghcr.io/${{ github.repository_owner }}/tafseel
       TEST_CONNECTION: Server=localhost,1433;Database=TafseelContainer;User Id=sa;Password=${{ secrets.CI_SQL_PASSWORD }};Encrypt=True;TrustServerCertificate=True
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           dotnet-version: 8.0.x
           cache: true
@@ -106,7 +106,7 @@ jobs:
       - name: Container logs
         if: failure()
         run: docker logs tafseel > container.log 2>&1 || true
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: failure()
         with:
           name: container-failure-${{ github.run_id }}

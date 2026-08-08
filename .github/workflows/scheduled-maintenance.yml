@@ -13,10 +13,10 @@ jobs:
     name: maintenance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           dotnet-version: 8.0.x
           cache: true
@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "## Scheduled maintenance" >> "$GITHUB_STEP_SUMMARY"
           echo "Dependency, secret, migration-drift, optional health, and backup metadata checks ran. No dependency was changed automatically." >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: maintenance-${{ github.run_id }}

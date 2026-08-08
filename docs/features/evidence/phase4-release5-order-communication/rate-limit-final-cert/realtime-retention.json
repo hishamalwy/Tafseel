@@ -1,12 +1,12 @@
 [
   {
     "dir": "S->T",
-    "token": "PRE_RL_S_1786201449599",
+    "messageMarker": "PRE_RL_S_1786201449599",
     "renderCount": 1
   },
   {
     "dir": "T->S",
-    "token": "PRE_RL_T_1786201449725",
+    "messageMarker": "PRE_RL_T_1786201449725",
     "renderCount": 1
   }
 ]

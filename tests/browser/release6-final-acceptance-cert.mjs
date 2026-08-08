@@ -58,10 +58,12 @@ function unexpected401(list) {
 async function cleanRuntime(label, g, { allowGuest401 = false } = {}) {
   const consoleBad = actionableConsole(g.consoleErrors);
   const failed = g.failed.filter(x => !/ERR_ABORTED/.test(x));
-  const auth401 = allowGuest401 ? unexpected401(g.status401) : g.status401.filter(u => !/\/auth\/refresh/.test(u));
+  const unexpectedStatus401 = allowGuest401
+    ? unexpected401(g.status401)
+    : g.status401.filter(u => !/\/auth\/refresh/.test(u));
   record(`${label}-no-429`, g.status429.length === 0, JSON.stringify(g.status429));
   record(`${label}-no-500`, g.status500.length === 0, JSON.stringify(g.status500));
-  record(`${label}-no-unexpected-401`, auth401.length === 0, JSON.stringify(auth401));
+  record(`${label}-no-unexpected-401`, unexpectedStatus401.length === 0, JSON.stringify(unexpectedStatus401));
   record(`${label}-no-pageerror`, g.pageErrors.length === 0, JSON.stringify(g.pageErrors));
   record(`${label}-no-console`, consoleBad.length === 0, JSON.stringify(consoleBad));
   record(`${label}-no-failed`, failed.length === 0, JSON.stringify(failed));

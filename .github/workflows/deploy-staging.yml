@@ -45,7 +45,7 @@ jobs:
           [[ "$sha" =~ ^[0-9A-Fa-f]{40}$ ]] || { echo "A full Git SHA is required (got: '${sha:-empty}')."; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "DEPLOY_SHA=$sha" >> "$GITHUB_ENV"
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ steps.revision.outputs.sha }}
           fetch-depth: 0
@@ -81,7 +81,7 @@ jobs:
       Resend__ApiToken: ci-only-token
       Payments__WebhookSecret: ci-only-webhook-secret-with-at-least-32-characters
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ needs.resolve.outputs.sha }}
           fetch-depth: 0
@@ -96,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           az account show --output none
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           dotnet-version: 8.0.x
           cache: true
@@ -114,7 +114,7 @@ jobs:
           chmod +x scripts/ci/build-migration-artifacts.sh scripts/ci/run-staging-migrations.sh
           ./scripts/ci/build-migration-artifacts.sh
       - name: Upload migration artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: staging-migrations-${{ needs.resolve.outputs.sha }}
           path: artifacts/migrations
@@ -140,11 +140,11 @@ jobs:
       Resend__ApiToken: ci-only-token
       Payments__WebhookSecret: ci-only-webhook-secret-with-at-least-32-characters
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ needs.resolve.outputs.sha }}
           fetch-depth: 0
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           dotnet-version: 8.0.x
           cache: true
