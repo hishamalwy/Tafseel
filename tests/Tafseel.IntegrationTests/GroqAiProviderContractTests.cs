@@ -118,12 +118,42 @@ public sealed class GroqAiProviderContractTests
             while (!_stop.IsCancellationRequested)
             {
                 HttpListenerContext context;
-                try { context = await _listener.GetContextAsync(); }
-                catch (HttpListenerException) when (_stop.IsCancellationRequested) { return; }
+                try
+                {
+                    context = await _listener.GetContextAsync();
+                }
+                catch (ObjectDisposedException)
+                {
+                    return;
+                }
+                catch (HttpListenerException)
+                {
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
                 using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
                 LastRequestBody = await reader.ReadToEndAsync();
-                if (_delay > TimeSpan.Zero) await Task.Delay(_delay, _stop.Token).ContinueWith(_ => { });
-                if (_stop.IsCancellationRequested) return;
+                if (_delay > TimeSpan.Zero)
+                {
+                    try
+                    {
+                        await Task.Delay(_delay, _stop.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
+
+                if (_stop.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 context.Response.StatusCode = (int)_status;
                 context.Response.ContentType = "application/json";
                 var bytes = Encoding.UTF8.GetBytes(_response);
@@ -135,8 +165,34 @@ public sealed class GroqAiProviderContractTests
         public async ValueTask DisposeAsync()
         {
             _stop.Cancel();
-            _listener.Stop();
-            try { await _loop; } catch (OperationCanceledException) { }
+            try
+            {
+                if (_listener.IsListening)
+                {
+                    _listener.Stop();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (HttpListenerException)
+            {
+            }
+
+            try
+            {
+                await _loop;
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (HttpListenerException)
+            {
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
             _listener.Close();
             _stop.Dispose();
             Environment.SetEnvironmentVariable("GROQ_API_KEY", null);

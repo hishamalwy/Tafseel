@@ -165,3 +165,11 @@ Push of the recovery commit failed Gitleaks on **this document only** (`gitleaks
 Those three sentences were rewritten so they describe the false positive without a scanner-triggering assignment pattern. Product code, R5 evidence, workflows, Azure, and GitHub secrets were not changed.
 
 Because CI scans only the newest commit, the next user-reviewed commit+push of this rewrite is the primary fix. The three `c0d7047` fingerprints (and the earlier `0c8f47c` marker/identifier fingerprints) are listed in `.gitleaksignore` so a future full-history / scheduled scan does not fail on already-pushed false positives. CI gitleaks 8.24.3 does not apply multiple `[[allowlists]]` blocks (that landed in 8.25); fingerprint ignores are therefore file-specific via `.gitleaksignore`, not a whole-file path exclude. `generic-api-key` remains enabled. No real secret. No rotation.
+
+## Follow-up — Groq contract LocalChatServer dispose (Linux CI)
+
+Classification: Test Issue / Test Infrastructure Issue. Not a Groq production defect.
+
+Linux GitHub runner failed 6 `GroqAiProviderContractTests` with `ObjectDisposedException` (`listener`) in `LocalChatServer.ListenAsync` / `DisposeAsync`. Assertions can already have passed; dispose then stops the `HttpListener` and awaits the accept loop. On Linux, pending `EndGetContext` throws `ObjectDisposedException` rather than only `HttpListenerException`, so the test fails during teardown.
+
+Fix: catch `ObjectDisposedException`, `HttpListenerException`, and `OperationCanceledException` on the accept loop and in `DisposeAsync`. Assertions are unchanged (custom endpoint + strict schema; error classification without exposing vendor bodies; invalid structured response rejected). Groq SDK wiring, prompts, secrets, and R9 product behavior were not changed. Tests were not deleted, skipped, or excluded.
