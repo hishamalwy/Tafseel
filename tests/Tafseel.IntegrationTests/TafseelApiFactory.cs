@@ -17,6 +17,10 @@ namespace Tafseel.IntegrationTests;
 
 public class TafseelApiFactory : WebApplicationFactory<Program>
 {
+    // Microsoft.Data.Sqlite keeps a process-wide function dictionary. Parallel
+    // WebApplicationFactory / SqliteConnection startup corrupts it via CreateFunctionCore.
+    private static readonly object HostInitializationLock = new();
+
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly string _filesPath = Path.Combine(Path.GetTempPath(), $"tafseel-tests-{Guid.NewGuid():N}");
     public TestEmailSender EmailSender { get; } = new();
@@ -43,11 +47,18 @@ public class TafseelApiFactory : WebApplicationFactory<Program>
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        var host = base.CreateHost(builder);
-        using var scope = host.Services.CreateScope();
-        InitializeDatabase(scope.ServiceProvider);
-        host.Services.InitializeIdentityAsync().GetAwaiter().GetResult();
-        return host;
+        lock (HostInitializationLock)
+        {
+            // Build then initialize, then Start. base.CreateHost Starts immediately, which
+            // lets NotificationOutboxWorker open Sqlite concurrently with EnsureCreated /
+            // InitializeIdentity and hit the same CreateFunctionCore race.
+            var host = builder.Build();
+            using (var scope = host.Services.CreateScope())
+                InitializeDatabase(scope.ServiceProvider);
+            host.Services.InitializeIdentityAsync().GetAwaiter().GetResult();
+            host.Start();
+            return host;
+        }
     }
 
     protected virtual void ConfigureDatabase(IServiceCollection services)

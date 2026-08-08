@@ -173,3 +173,13 @@ Classification: Test Issue / Test Infrastructure Issue. Not a Groq production de
 Linux GitHub runner failed 6 `GroqAiProviderContractTests` with `ObjectDisposedException` (`listener`) in `LocalChatServer.ListenAsync` / `DisposeAsync`. Assertions can already have passed; dispose then stops the `HttpListener` and awaits the accept loop. On Linux, pending `EndGetContext` throws `ObjectDisposedException` rather than only `HttpListenerException`, so the test fails during teardown.
 
 Fix: catch `ObjectDisposedException`, `HttpListenerException`, and `OperationCanceledException` on the accept loop and in `DisposeAsync`. Assertions are unchanged (custom endpoint + strict schema; error classification without exposing vendor bodies; invalid structured response rejected). Groq SDK wiring, prompts, secrets, and R9 product behavior were not changed. Tests were not deleted, skipped, or excluded.
+
+## Follow-up — Sqlite CreateFunction race under parallel factories
+
+Classification: Test Issue / Test Infrastructure Issue. Not a Student Learning Preferences production defect.
+
+Linux provider-neutral integration failed all four `StudentLearningPreferencesTests` with `InvalidOperationException` from `Dictionary.TryInsert` inside `Microsoft.Data.Sqlite.SqliteConnection.CreateFunctionCore` during `TafseelApiFactory` host/DB initialization (`EnsureCreated` / `InitializeIdentity` / canonical-service backfill). The same process-wide function registry is written when EF Core opens a Sqlite connection. Parallel `WebApplicationFactory` startup — and `NotificationOutboxWorker` opening Sqlite after `host.Start()` while CreateHost still initializes — corrupts that dictionary.
+
+Assembly-level `CollectionBehavior(DisableTestParallelization = true)` remains. The harness fix serializes `CreateHost` behind a static lock and runs `EnsureCreated` plus `InitializeIdentity` after `Build` and before `Start`, so hosted services do not open Sqlite during function registration. Preference API semantics, validation, and authz assertions are unchanged. Tests were not deleted, skipped, or excluded.
+
+Groq `LocalChatServer` dispose-safe catches (accept loop + `DisposeAsync`, including request handling and `Close`) are retained for Linux CI. No product Groq provider change.

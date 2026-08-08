@@ -135,30 +135,45 @@ public sealed class GroqAiProviderContractTests
                     return;
                 }
 
-                using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
-                LastRequestBody = await reader.ReadToEndAsync();
-                if (_delay > TimeSpan.Zero)
+                try
                 {
-                    try
+                    using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
+                    LastRequestBody = await reader.ReadToEndAsync();
+                    if (_delay > TimeSpan.Zero)
                     {
-                        await Task.Delay(_delay, _stop.Token);
+                        try
+                        {
+                            await Task.Delay(_delay, _stop.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return;
+                        }
                     }
-                    catch (OperationCanceledException)
+
+                    if (_stop.IsCancellationRequested)
                     {
                         return;
                     }
-                }
 
-                if (_stop.IsCancellationRequested)
+                    context.Response.StatusCode = (int)_status;
+                    context.Response.ContentType = "application/json";
+                    var bytes = Encoding.UTF8.GetBytes(_response);
+                    await context.Response.OutputStream.WriteAsync(bytes);
+                    context.Response.Close();
+                }
+                catch (ObjectDisposedException)
                 {
                     return;
                 }
-
-                context.Response.StatusCode = (int)_status;
-                context.Response.ContentType = "application/json";
-                var bytes = Encoding.UTF8.GetBytes(_response);
-                await context.Response.OutputStream.WriteAsync(bytes);
-                context.Response.Close();
+                catch (HttpListenerException)
+                {
+                    return;
+                }
+                catch (IOException)
+                {
+                    return;
+                }
             }
         }
 
@@ -193,7 +208,17 @@ public sealed class GroqAiProviderContractTests
             {
             }
 
-            _listener.Close();
+            try
+            {
+                _listener.Close();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (HttpListenerException)
+            {
+            }
+
             _stop.Dispose();
             Environment.SetEnvironmentVariable("GROQ_API_KEY", null);
         }
