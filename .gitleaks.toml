@@ -11,7 +11,7 @@ paths = [
 ]
 
 [[allowlists]]
-description = "Historical generic-api-key false positives in 0c8f47c only: R5 realtime chat message markers (prefix + Date.now(), not credentials) and R6 auth401 identifier. Current tree is sanitized/rewritten. AND of path+fingerprint so new secrets in these files still fail."
+description = "Historical generic-api-key false positives in 0c8f47c only: R5 realtime chat message markers (prefix + Date.now(), not credentials) and R6 401-status identifier. Current tree is sanitized/rewritten. AND of path+fingerprint so new secrets in these files still fail."
 condition = "AND"
 paths = [
   '''docs/features/evidence/phase4-release5-order-communication/final-acceptance/realtime-trace.json''',

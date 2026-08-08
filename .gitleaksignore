@@ -1,0 +1,25 @@
+# Fingerprint-specific ignores for confirmed generic-api-key false positives.
+# CI runs gitleaks 8.24.3, which does not apply multiple [[allowlists]] (8.25+).
+# Do not ignore a whole file. Do not add entries without classifying the finding.
+#
+# 0c8f47c — R5 realtime chat message markers (prefix + Date.now(), not credentials)
+# and R6 401-status identifier (JavaScript name, not a credential).
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-acceptance/realtime-trace.json:generic-api-key:6
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-acceptance/realtime-trace.json:generic-api-key:15
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-browser-certification/realtime-retention.json:generic-api-key:6
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/final-browser-certification/realtime-retention.json:generic-api-key:13
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-session-collision.json:generic-api-key:141
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-session-collision.json:generic-api-key:146
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/realtime-retention.json:generic-api-key:4
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/realtime-retention.json:generic-api-key:9
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-loc-ar-fail.json:generic-api-key:869
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert-loc-ar-fail.json:generic-api-key:874
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert.json:generic-api-key:869
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:docs/features/evidence/phase4-release5-order-communication/rate-limit-final-cert/rate-limit-final-cert.json:generic-api-key:874
+0c8f47caa08a785cea62cb20efc9afb522cd3bbc:tests/browser/release6-final-acceptance-cert.mjs:generic-api-key:61
+#
+# c0d7047 — recovery report described the R6 identifier with an assignment-looking
+# phrase. Not a credential. Current tree is rewritten.
+c0d7047f1e8a220c46178c13ceab4667515f3424:docs/fixes/CI_SECURITY_FORMAT_AND_ARTIFACT_RECOVERY.md:generic-api-key:29
+c0d7047f1e8a220c46178c13ceab4667515f3424:docs/fixes/CI_SECURITY_FORMAT_AND_ARTIFACT_RECOVERY.md:generic-api-key:63
+c0d7047f1e8a220c46178c13ceab4667515f3424:docs/fixes/CI_SECURITY_FORMAT_AND_ARTIFACT_RECOVERY.md:generic-api-key:89

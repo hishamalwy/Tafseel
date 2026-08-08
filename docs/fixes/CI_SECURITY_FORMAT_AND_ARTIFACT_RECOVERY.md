@@ -26,7 +26,7 @@ Canonical product state preserved:
 | --- | --- |
 | Format verify WHITESPACE on three C# files | Formatting Issue — not a Product Bug |
 | R5 evidence `"token"` JSON properties | Documentation/Evidence Hygiene + False Positive (message markers, not credentials) |
-| R6 `auth401 = allowGuest401` | False Positive (identifier looks like a secret assignment) |
+| R6 browser cert used a local identifier whose name resembled an API key assignment; rewritten to unexpectedStatus401 | False Positive (JavaScript identifier, not a credential) |
 | Historical copies of those 13 findings in `0c8f47c` | Historical Secret Exposure assessed; values are not reusable credentials |
 | TestResults upload after format failure | CI Configuration Issue (root cause A: pre-test gate stopped the job before tests created `TestResults`) |
 | Node 20 / punycode / `url.parse` | Dependency/Action Warning |
@@ -60,7 +60,7 @@ Tool: gitleaks 8.30.1 with `.gitleaks.toml` (`useDefault = true`). Values masked
 | 7–8 | `.../rate-limit-final-cert/rate-limit-final-cert.json` | 869, 874 | generic-api-key | same `PRE_RL_*` | Embedded realtime trace copy | No |
 | 9–10 | `.../rate-limit-final-cert-session-collision.json` | 141, 146 | generic-api-key | same `PRE_RL_*` | Embedded realtime trace copy | No |
 | 11–12 | `.../rate-limit-final-cert-loc-ar-fail.json` | 869, 874 | generic-api-key | same `PRE_RL_*` | Embedded realtime trace copy | No |
-| 13 | `tests/browser/release6-final-acceptance-cert.mjs` | 61 | generic-api-key | `const auth401 = allowGuest401` | False positive: variable name + boolean flag | No |
+| 13 | `tests/browser/release6-final-acceptance-cert.mjs` | 61 | generic-api-key | JS identifier (not a credential); rewritten to unexpectedStatus401 | False positive: variable name resembled a secret assignment | No |
 
 Generators confirm markers are constructed as `` `R5CERT-S-${Date.now()}` `` / `` `R5LIVE-S2T-${Date.now()}` `` / `` `PRE_RL_S_${Date.now()}` `` and sent as chat body text to prove one-render realtime delivery. They are not access, refresh, API, or session credentials.
 
@@ -86,7 +86,7 @@ R5 integrity script (`scripts/ci/check-release5-order-communication.mjs`) does n
 
 ## Release 6 false positive
 
-Rewrote `const auth401 = allowGuest401 ? …` to `unexpectedStatus401` / `allowGuest401` without changing 401 filtering behavior. R6 discovery integrity and frontend gates pass.
+R6 browser cert used a local identifier whose name resembled an API key assignment; rewritten to unexpectedStatus401. The Gitleaks hit was a JavaScript identifier, not a credential. 401 filtering behavior is unchanged. R6 discovery integrity and frontend gates pass.
 
 ## Gitleaks strategy
 
@@ -157,3 +157,11 @@ Build warnings: 2× pre-existing `CS8604` in `TeacherApplicationService.cs` (nul
 ## Files changed
 
 Workflows, `.gitleaks.toml`, R5 evidence JSON (property rename), R5/R6 browser cert scripts, three format-only C# files, this report.
+
+## Follow-up — Gitleaks on this recovery report (c0d7047)
+
+Push of the recovery commit failed Gitleaks on **this document only** (`gitleaks detect --log-opts=-1`, rule `generic-api-key`, lines 29 / 63 / 89). The report had documented the R6 false-positive identifier using an assignment-looking phrase; the scanner matched that documentation. **Not a real secret. No rotation.**
+
+Those three sentences were rewritten so they describe the false positive without a scanner-triggering assignment pattern. Product code, R5 evidence, workflows, Azure, and GitHub secrets were not changed.
+
+Because CI scans only the newest commit, the next user-reviewed commit+push of this rewrite is the primary fix. The three `c0d7047` fingerprints (and the earlier `0c8f47c` marker/identifier fingerprints) are listed in `.gitleaksignore` so a future full-history / scheduled scan does not fail on already-pushed false positives. CI gitleaks 8.24.3 does not apply multiple `[[allowlists]]` blocks (that landed in 8.25); fingerprint ignores are therefore file-specific via `.gitleaksignore`, not a whole-file path exclude. `generic-api-key` remains enabled. No real secret. No rotation.
