@@ -70,8 +70,27 @@ internal sealed class MessagingService(
         var items = await query.AsNoTracking()
             .OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Include(x => x.Participants).Include(x => x.Messages).ThenInclude(x => x.Attachments)
-            .AsSplitQuery().ToArrayAsync(ct);
+            .Include(x => x.Participants).ToArrayAsync(ct);
+        var conversationIds = items.Select(x => x.Id).ToArray();
+        var latestIds = await db.Messages.AsNoTracking()
+            .Where(x => conversationIds.Contains(x.ConversationId))
+            .GroupBy(x => x.ConversationId)
+            .Select(x => x.OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id)
+                .Select(m => m.Id).First())
+            .ToArrayAsync(ct);
+        var latestMessages = await db.Messages.AsNoTracking()
+            .Where(x => latestIds.Contains(x.Id)).Include(x => x.Attachments)
+            .ToDictionaryAsync(x => x.ConversationId, ct);
+        var unreadCounts = await (
+            from message in db.Messages.AsNoTracking()
+            join participant in db.Set<ConversationParticipant>().AsNoTracking()
+                on message.ConversationId equals participant.ConversationId
+            where conversationIds.Contains(message.ConversationId)
+                && participant.UserId == userId && message.SenderId != userId
+                && (participant.LastReadAt == null || message.CreatedAt > participant.LastReadAt)
+            group message by message.ConversationId into unread
+            select new { ConversationId = unread.Key, Count = unread.Count() })
+            .ToDictionaryAsync(x => x.ConversationId, x => x.Count, ct);
         var participantIds = items.SelectMany(x => x.Participants).Select(x => x.UserId).Distinct().ToArray();
         var people = await LoadPeopleAsync(participantIds, ct);
         var roleRows = await (
@@ -82,7 +101,9 @@ internal sealed class MessagingService(
             .ToArrayAsync(ct);
         var roles = roleRows.GroupBy(x => x.UserId)
             .ToDictionary(x => x.Key, x => x.First().Name ?? string.Empty);
-        return new(items.Select(x => Map(x, userId, people, roles)).ToArray(), page, pageSize, total);
+        return new(items.Select(x => Map(
+            x, userId, people, roles, latestMessages.GetValueOrDefault(x.Id),
+            unreadCounts.GetValueOrDefault(x.Id))).ToArray(), page, pageSize, total);
     }
 
     public async Task<PagedResult<MessageDto>> GetMessagesAsync(
@@ -107,9 +128,19 @@ internal sealed class MessagingService(
             ?? throw NotOwned();
         var message = conversation.Send(userId, input.Body, clock.GetUtcNow());
         var recipientIds = conversation.Participants.Where(x => x.UserId != userId).Select(x => x.UserId).ToArray();
+        var senderName = await db.Users.AsNoTracking().Where(x => x.Id == userId)
+            .Select(x => x.FullName).SingleOrDefaultAsync(ct);
+        var context = conversation.Scope == ConversationScope.Order
+            ? await db.Orders.AsNoTracking().Where(x => x.Id == conversation.ResourceId)
+                .Select(x => new { x.ServiceNameEnglish, x.Id }).SingleOrDefaultAsync(ct)
+            : null;
+        var title = string.IsNullOrWhiteSpace(senderName) ? "New message" : $"New message from {senderName.Trim()}";
+        var notificationBody = context is null
+            ? "You received a new private message."
+            : $"{(string.IsNullOrWhiteSpace(context.ServiceNameEnglish) ? "Order" : context.ServiceNameEnglish)} · Order {context.Id.ToString("N")[..8].ToUpperInvariant()}";
         foreach (var recipientId in recipientIds)
-            await notificationWriter.QueueAsync(recipientId, "NewMessage", "New message",
-                "You received a new private message.", $"/conversations/{conversationId}",
+            await notificationWriter.QueueAsync(recipientId, "NewMessage", title,
+                notificationBody, $"/conversations/{conversationId}",
                 $"message:{message.Id}", email: false, ct);
         await db.SaveChangesAsync(ct); // system of record before broadcast
         var dto = Map(message);
@@ -158,6 +189,16 @@ internal sealed class MessagingService(
             message.AddAttachment(userId, stored.StorageKey, SafeName(fileName),
                 stored.ContentType, stored.Size, clock.GetUtcNow());
             await db.SaveChangesAsync(ct);
+            try
+            {
+                await hub.Clients.Group(MessagingHub.ConversationGroup(message.ConversationId))
+                    .SendAsync("MessageReceived", Map(message), ct);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogWarning(exception,
+                    "Attachment for message {MessageId} persisted but real-time broadcast failed", message.Id);
+            }
         }
         catch
         {
@@ -242,13 +283,14 @@ internal sealed class MessagingService(
     private static ConversationDto Map(
         Conversation x, string userId,
         IReadOnlyDictionary<string, PersonNames> people,
-        IReadOnlyDictionary<string, string> roles)
+        IReadOnlyDictionary<string, string> roles,
+        Message? latestMessage = null, int? unreadCount = null)
     {
         var readAt = x.Participants.Single(p => p.UserId == userId).LastReadAt;
-        var latest = x.Messages.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+        var latest = latestMessage ?? x.Messages.OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).FirstOrDefault();
         return new(x.Id, x.Scope, x.ResourceId, x.Participants.Select(p => p.UserId).ToArray(),
             latest is null ? null : Map(latest),
-            x.Messages.Count(m => m.SenderId != userId && (readAt is null || m.CreatedAt > readAt)),
+            unreadCount ?? x.Messages.Count(m => m.SenderId != userId && (readAt is null || m.CreatedAt > readAt)),
             x.UpdatedAt, Convert.ToBase64String(x.RowVersion),
             x.Participants.Select(p =>
             {

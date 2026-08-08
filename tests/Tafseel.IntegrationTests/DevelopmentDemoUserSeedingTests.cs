@@ -77,7 +77,9 @@ public sealed class DevelopmentDemoUserSeedingTests
         await using var scope = services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Equal(4, await db.Users.CountAsync());
+        // Phase 4 Sprint 0.2 added two additional Development-only UAT accounts
+        // (qa.reviewer.sprint02@example.com, qa.admin.sprint02@example.com) alongside these four.
+        Assert.Equal(6, await db.Users.CountAsync());
         foreach (var (email, role) in ExpectedAccounts)
         {
             var user = await users.FindByEmailAsync(email);
@@ -108,7 +110,7 @@ public sealed class DevelopmentDemoUserSeedingTests
 
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Equal(4, await db.Users.CountAsync());
+        Assert.Equal(6, await db.Users.CountAsync());
         foreach (var email in ExpectedAccounts.Keys)
             Assert.Equal(1, await db.Users.CountAsync(x => x.Email == email));
     }
@@ -151,7 +153,7 @@ public sealed class DevelopmentDemoUserSeedingTests
         await using var verification = services.CreateAsyncScope();
         var verifyUsers = verification.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var db = verification.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Equal(4, await db.Users.CountAsync());
+        Assert.Equal(6, await db.Users.CountAsync());
 
         var repairedStudent = (await verifyUsers.FindByEmailAsync("student@gmail.com"))!;
         Assert.True(await verifyUsers.IsInRoleAsync(repairedStudent, Roles.Student));
@@ -281,7 +283,7 @@ public sealed class DevelopmentDemoUserSeedingTests
             await using var scope = verifyServices.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
             var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            Assert.Equal(4, await db.Users.CountAsync());
+            Assert.Equal(6, await db.Users.CountAsync());
             foreach (var (email, role) in ExpectedAccounts)
             {
                 Assert.Equal(1, await db.Users.CountAsync(x => x.Email == email));

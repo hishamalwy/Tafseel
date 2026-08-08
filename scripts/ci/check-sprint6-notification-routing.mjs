@@ -72,9 +72,37 @@ assert(reviewSubmitted.filter === 'done' && reviewSubmitted.focus === 'review', 
 
 const msg = T.notificationRoute({ type: 'NewMessage', link: `/conversations/${conversationId}` }, 'student');
 assert(msg.section === 'messages' && msg.conversationId === conversationId, 'message → conversations');
+assert(msg.href.includes(conversationId), 'student message href includes conversationId');
+const teacherMsg = T.notificationRoute({ type: 'NewMessage', link: `/conversations/${conversationId}` }, 'teacher');
+assert(teacherMsg.section === 'messages' && teacherMsg.href.includes(conversationId), 'teacher message → exact conversation');
 
 const unknown = T.notificationRoute({ type: 'TotallyUnknown', link: '' }, 'student');
 assert(unknown.section === 'overview' && unknown.href.includes('Student-Dashboard'), 'unknown → safe dashboard');
+
+const appId = '33333333-3333-3333-3333-333333333333';
+const qualityApp = T.notificationRoute({
+  type: 'ApplicationSubmitted',
+  link: `/app/Tafseel-Quality-Dashboard.dc.html?section=applications&selectedId=${appId}`
+}, 'quality');
+assert(qualityApp.section === 'applications' && qualityApp.href.includes(appId), 'quality application → applications queue');
+
+const qualityShowcase = T.notificationRoute({
+  type: 'ShowcaseSubmitted',
+  link: `/app/Tafseel-Quality-Dashboard.dc.html?section=showcases&selectedId=${appId}`
+}, 'quality');
+assert(qualityShowcase.section === 'showcases' && qualityShowcase.href.includes('showcases'), 'quality showcase → media queue');
+
+const teacherApp = T.notificationRoute({ type: 'ApplicationDecision', link: '/app/Tafseel-Teacher-Apply.dc.html?view=status' }, 'teacher');
+assert(teacherApp.href.includes('Tafseel-Teacher-Apply'), 'teacher application decision → apply status');
+
+const teacherShowcase = T.notificationRoute({ type: 'ShowcaseApproved', link: '/app/Tafseel-Teacher-Dashboard.dc.html?section=samples' }, 'teacher');
+assert(teacherShowcase.section === 'samples', 'teacher showcase → samples');
+
+const adminReview = T.notificationRoute({
+  type: 'Review',
+  link: `/app/Tafseel-Admin-Dashboard.dc.html?section=reviews&selectedId=${appId}`
+}, 'admin');
+assert(adminReview.section === 'reviews' && adminReview.href.includes(appId), 'admin review → reviews queue');
 
 const presentationRated = T.orderPresentation(4, 1, 'student', { hasReview: true, reviewCanSubmit: false });
 assert(presentationRated.action === null, 'completed + reviewed has no rate action');

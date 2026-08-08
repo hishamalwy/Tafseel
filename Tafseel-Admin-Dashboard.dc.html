@@ -38,6 +38,13 @@
   .tf-catalog-footer button{min-height:42px;padding:0 17px;border-radius:var(--r-sm);font-weight:650;font-size:13.5px}.tf-catalog-cancel{border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}.tf-catalog-save{border:0;background:var(--primary);color:var(--primary-ink)}
   @media(max-width:900px){.tf-catalog-layout{grid-template-columns:1fr}.tf-policy-preview{position:static;margin:0 0 22px;padding:20px 0 0;border-inline-start:0;border-top:1px solid var(--border)}.tf-policy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-switches{grid-template-columns:1fr}.tf-field-grid[data-cols="3"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:600px){.tf-catalog-overlay{padding:0;align-items:stretch}.tf-catalog-dialog{width:100%;max-height:100dvh;height:100dvh;border-radius:0}.tf-catalog-header{padding:17px 16px 13px}.tf-catalog-body{padding:0 16px}.tf-catalog-layout,.tf-field-grid,.tf-field-grid[data-cols="3"],.tf-policy-grid{grid-template-columns:1fr}.tf-icon-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-catalog-footer{padding-inline:16px}.tf-catalog-footer button{flex:1}.tf-field input,.tf-field select,.tf-field textarea{font-size:16px}}
+  .tf-intel-filters{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr)) auto;gap:10px;align-items:end;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+  .tf-intel-filters label{display:grid;gap:6px;font-size:12px;font-weight:650;color:var(--text-2)}.tf-intel-filters input,.tf-intel-filters select{height:40px;min-width:0;padding-inline:10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text)}
+  .tf-intel-tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--border)}.tf-intel-tabs button{min-height:42px;padding:0 13px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-weight:650;white-space:nowrap}.tf-intel-tabs button[aria-selected="true"]{color:var(--primary);border-color:var(--primary)}
+  .tf-intel-kpis{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}.tf-intel-kpis>div{padding:16px;border-inline-end:1px solid var(--border)}.tf-intel-kpis>div:last-child{border:0}.tf-intel-kpis span{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}.tf-intel-kpis strong{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .tf-intel-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}.tf-intel-table{width:100%;min-width:820px;border-collapse:collapse}.tf-intel-table th,.tf-intel-table td{padding:11px 13px;border-bottom:1px solid var(--border);text-align:start;font-size:12.5px;white-space:nowrap}.tf-intel-table th{color:var(--muted);font-weight:700;background:var(--surface-2)}.tf-intel-table tbody tr:last-child td{border-bottom:0}.tf-intel-bar{width:120px;height:7px;background:var(--surface-2);border-radius:6px;overflow:hidden}.tf-intel-bar span{display:block;height:100%;background:var(--primary)}
+  @media(max-width:900px){.tf-intel-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-intel-filters button{grid-column:1/-1}.tf-intel-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-intel-kpis>div{border-bottom:1px solid var(--border)}}
+  @media(max-width:520px){.tf-intel-filters{grid-template-columns:1fr}.tf-intel-kpis{grid-template-columns:1fr}.tf-intel-kpis>div{border-inline-end:0}.tf-intel-filters input,.tf-intel-filters select{font-size:16px}}
 </style>
 </helmet>
 
@@ -251,7 +258,7 @@
                   <td style="padding:12px 16px"><input type="checkbox" checked="{{ u.checked }}" onChange="{{ u.onCheck }}" aria-label="Select {{ u.name }}" style="width:16px;height:16px;accent-color:var(--primary)" /></td>
                   <td style="padding:12px">
                     <div style="display:flex;align-items:center;gap:10px">
-                      <img src="{{ defaultAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
+                      <img sc-camel-src="{{ defaultAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                       <div>
                         <div style="font-size:13.5px;font-weight:600">{{ u.name }}</div>
                         <div style="font-size:12px;color:var(--muted)">{{ u.email }}</div>
@@ -350,7 +357,7 @@
                   <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                     <td style="padding:12px 20px">
                       <div style="display:flex;align-items:center;gap:10px">
-                        <img src="{{ defaultAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
+                        <img sc-camel-src="{{ defaultAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                         <div>
                           <div style="font-size:13.5px;font-weight:600">{{ u.name }}</div>
                           <div style="font-size:12px;color:var(--muted)">{{ u.email }}</div>
@@ -379,6 +386,140 @@
           </sc-if>
           </sc-if>
         </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviewsOpsPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ reviewsOpsTitle }}</h1>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px">
+          <form onSubmit="{{ onReviewsOpsSearchSubmit }}" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px;height:36px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+              <span aria-hidden="true" style="color:var(--muted);font-size:12px">⌕</span>
+              <input value="{{ reviewsOpsSearch }}" onChange="{{ onReviewsOpsSearch }}" aria-label="{{ reviewsOpsSearchPlaceholder }}" placeholder="{{ reviewsOpsSearchPlaceholder }}" style="border:0;background:transparent;outline:none;font-size:13px;width:220px" />
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ reviewsOpsVisibilityLabel }}
+              <select value="{{ reviewsOpsVisibility }}" onChange="{{ onReviewsOpsVisibility }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                <option value="All">{{ reviewsOpsVisibilityAllLabel }}</option>
+                <option value="Visible">{{ reviewsOpsVisibilityVisibleLabel }}</option>
+                <option value="Hidden">{{ reviewsOpsVisibilityHiddenLabel }}</option>
+              </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ reviewsOpsRatingLabel }}
+              <select value="{{ reviewsOpsRating }}" onChange="{{ onReviewsOpsRating }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                <option value="">{{ reviewsOpsRatingAnyLabel }}</option>
+                <option value="5">5</option><option value="4">4</option><option value="3">3</option>
+                <option value="2">2</option><option value="1">1</option>
+              </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ reviewsOpsSortLabel }}
+              <select value="{{ reviewsOpsSort }}" onChange="{{ onReviewsOpsSort }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                <option value="Newest">{{ reviewsOpsSortNewestLabel }}</option>
+                <option value="Oldest">{{ reviewsOpsSortOldestLabel }}</option>
+                <option value="HighestRating">{{ reviewsOpsSortHighestLabel }}</option>
+                <option value="LowestRating">{{ reviewsOpsSortLowestLabel }}</option>
+              </select>
+            </label>
+            <button type="button" onClick="{{ onReviewsOpsReset }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600;margin-inline-start:auto">{{ reviewsOpsResetLabel }}</button>
+          </form>
+          <sc-if value="{{ reviewsOpsLoading }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ reviewsOpsLoadingLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ reviewsOpsLoadError }}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="padding:28px 20px;font-size:14px;color:var(--error)">{{ reviewsOpsLoadError }}</div>
+          </sc-if>
+          <sc-if value="{{ reviewsOpsEmpty }}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="tf-empty-enter" style="padding:28px 20px;font-size:14px;color:var(--muted)">{{ reviewsOpsEmptyLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ reviewsOpsReady }}" hint-placeholder-val="{{ false }}">
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr style="background:var(--surface-2)">
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ reviewsOpsColTeacher }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ reviewsOpsColService }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ reviewsOpsColScore }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ reviewsOpsColDate }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ reviewsOpsColVisibility }}</th>
+                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ reviewsOpsColActions }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ reviewsOpsItems }}" as="rv" hint-placeholder-count="6">
+                  <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
+                    <td style="padding:12px 20px">
+                      <div style="font-size:13.5px;font-weight:600">{{ rv.teacherName }}</div>
+                      <div style="font-size:12px;color:var(--muted)">{{ rv.commentExcerpt }}</div>
+                    </td>
+                    <td style="padding:12px;font-size:13px;color:var(--text-2)">{{ rv.serviceName }}</td>
+                    <td style="padding:12px;font-size:13px;color:var(--text-2)">★ {{ rv.scoreLabel }}</td>
+                    <td style="padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap">{{ rv.dateLabel }}</td>
+                    <td style="padding:12px"><span style="{{ rv.visibilityStyle }}">{{ rv.visibilityLabel }}</span></td>
+                    <td style="padding:12px 20px;text-align:end">
+                      <button type="button" onClick="{{ rv.onOpen }}" style="height:30px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12px;font-weight:600" data-i18n="admin_reviews_ops_open">Open</button>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <sc-if value="{{ reviewsOpsHasPagination }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+              <nav aria-label="Pagination" style="display:flex;gap:6px">
+                <sc-for list="{{ reviewsOpsPages }}" as="p" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+                </sc-for>
+              </nav>
+            </div>
+          </sc-if>
+          </sc-if>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ reviewDetailPresent }}" hint-placeholder-val="{{ false }}">
+      <div role="presentation" onClick="{{ onCloseReviewDetail }}" onKeyDown="{{ reviewDialogKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+        <div role="dialog" data-review-dialog tabindex="-1" aria-modal="true" aria-labelledby="review-detail-title" onClick="{{ stop }}" onKeyDown="{{ reviewDialogKeyDown }}" style="width:min(560px,100%);max-height:min(86vh,760px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+            <h2 id="review-detail-title" style="font-size:18px;font-weight:800">{{ reviewDetailTitle }}</h2>
+            <button type="button" autofocus onClick="{{ onCloseReviewDetail }}" aria-label="Close" title="Close" style="width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:20px">×</button>
+          </div>
+          <sc-if value="{{ reviewDetailLoading }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding:20px 0;font-size:14px;color:var(--muted)">{{ reviewsOpsLoadingLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ reviewDetailReady }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:15px;font-weight:700">{{ reviewDetailTeacherName }}</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:12px">{{ reviewDetailModal.serviceName }}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px;margin-bottom:12px">
+              <div><span data-i18n="admin_review_criterion_clarity">Explanation clarity</span>: {{ reviewDetailModal.explanationClarity }}/5</div>
+              <div><span data-i18n="admin_review_criterion_knowledge">Subject knowledge</span>: {{ reviewDetailModal.subjectKnowledge }}/5</div>
+              <div><span data-i18n="admin_review_criterion_communication">Communication</span>: {{ reviewDetailModal.communication }}/5</div>
+              <div><span data-i18n="admin_review_criterion_ontime">On-time delivery</span>: {{ reviewDetailModal.onTimeDelivery }}/5</div>
+              <div><span data-i18n="admin_review_criterion_value">Value for money</span>: {{ reviewDetailModal.valueForMoney }}/5</div>
+              <div style="font-weight:700"><span data-i18n="admin_review_criterion_overall">Overall</span>: {{ reviewDetailModal.overallScore }}/5</div>
+            </div>
+            <p style="font-size:13.5px;line-height:1.6;padding:12px;background:var(--bg);border-radius:var(--r-sm);margin-bottom:14px">{{ reviewDetailModal.originalComment }}</p>
+            <div style="margin-bottom:14px">
+              <div style="font-size:12.5px;font-weight:700;margin-bottom:6px">{{ reviewModerationHistoryLabel }}</div>
+              <sc-if value="{{ reviewNoModerationHistory }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:12.5px;color:var(--muted)">—</div>
+              </sc-if>
+              <sc-for list="{{ reviewModerationHistory }}" as="h" hint-placeholder-count="2">
+                <div style="font-size:12.5px;color:var(--text-2);padding:6px 0;border-top:1px solid var(--border)">
+                  {{ h.dateLabel }} — {{ h.visibleLabel }} — {{ h.reason }}
+                </div>
+              </sc-for>
+            </div>
+            <label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px" data-i18n="admin_review_reason_label">Moderation reason</label>
+            <textarea value="{{ reviewModerateReason }}" onChange="{{ onReviewModerateReason }}" placeholder="{{ reviewModerateReasonPlaceholder }}" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:13px;margin-bottom:14px;resize:vertical"></textarea>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button type="button" onClick="{{ onHideReview }}" disabled="{{ reviewModerateBusy }}" style="height:38px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ hideReviewLabel }}</button>
+              <button type="button" onClick="{{ onRestoreReview }}" disabled="{{ reviewModerateBusy }}" style="height:38px;padding:0 16px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ restoreReviewLabel }}</button>
+            </div>
+          </div>
+          </sc-if>
+        </div>
       </div>
     </sc-if>
 
@@ -499,36 +640,24 @@
     </sc-if>
 
     <sc-if value="{{ isReportsPage }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Reports</h1>
-        <div data-stack="charts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Revenue growth</h2>
-            <sc-if value="{{ chartsEmpty }}" hint-placeholder-val="{{ true }}">
-              <p class="tf-empty" role="status">{{ chartUnavailableLabel }}</p>
-            </sc-if>
-            <sc-if value="{{ chartsReady }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
-                <sc-for list="{{ revenueChart }}" as="c" hint-placeholder-count="8">
-                  <div title="{{ c.title }}" style="{{ c.style }}"></div>
-                </sc-for>
-              </div>
-            </sc-if>
-          </section>
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">{{ chartOrdersLabel }}</h2>
-            <sc-if value="{{ chartsEmpty }}" hint-placeholder-val="{{ true }}">
-              <p class="tf-empty" role="status">{{ chartUnavailableLabel }}</p>
-            </sc-if>
-            <sc-if value="{{ chartsReady }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
-                <sc-for list="{{ ordersChart }}" as="c" hint-placeholder-count="8">
-                  <div title="{{ c.title }}" style="{{ c.style }}"></div>
-                </sc-for>
-              </div>
-            </sc-if>
-          </section>
-        </div>
+      <div style="display:grid;gap:18px">
+        <div><h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:5px">{{ intelligenceTitle }}</h1><p style="color:var(--muted);font-size:14px">{{ intelligenceSubtitle }}</p></div>
+        <form class="tf-intel-filters" onSubmit="{{ onIntelligenceApply }}">
+          <label>{{ intelligenceFromLabel }}<input type="date" sc-camel-value="{{ intelligenceFrom }}" onChange="{{ onIntelligenceFrom }}" /></label>
+          <label>{{ intelligenceToLabel }}<input type="date" sc-camel-value="{{ intelligenceTo }}" onChange="{{ onIntelligenceTo }}" /></label>
+          <label>{{ intelligenceSubjectLabel }}<select value="{{ intelligenceSubject }}" onChange="{{ onIntelligenceSubject }}"><option value="">{{ intelligenceAllLabel }}</option><sc-for list="{{ intelligenceSubjects }}" as="o" hint-placeholder-count="3"><option value="{{ o.id }}">{{ o.name }}</option></sc-for></select></label>
+          <label>{{ intelligenceServiceLabel }}<select value="{{ intelligenceService }}" onChange="{{ onIntelligenceService }}"><option value="">{{ intelligenceAllLabel }}</option><sc-for list="{{ intelligenceServices }}" as="o" hint-placeholder-count="3"><option value="{{ o.id }}">{{ o.name }}</option></sc-for></select></label>
+          <button type="submit" disabled="{{ intelligenceLoading }}" style="height:40px;padding:0 18px;border:0;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700">{{ intelligenceApplyLabel }}</button>
+        </form>
+        <div class="tf-intel-tabs" role="tablist" aria-label="{{ intelligenceSectionsLabel }}"><sc-for list="{{ intelligenceTabs }}" as="tab" hint-placeholder-count="6"><button type="button" role="tab" aria-selected="{{ tab.selected }}" onClick="{{ tab.onClick }}">{{ tab.label }}</button></sc-for></div>
+        <sc-if value="{{ intelligenceLoading }}" hint-placeholder-val="{{ false }}"><div class="tf-empty tf-skeleton" role="status">{{ intelligenceLoadingLabel }}</div></sc-if>
+        <sc-if value="{{ intelligenceHasError }}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding:16px;border:1px solid var(--error);border-radius:var(--r-md);color:var(--error)">{{ intelligenceError }} <button type="button" onClick="{{ retryIntelligence }}" style="margin-inline-start:12px">{{ intelligenceRetryLabel }}</button></div></sc-if>
+        <sc-if value="{{ intelligenceReady }}" hint-placeholder-val="{{ false }}">
+          <div role="note" style="padding:11px 13px;background:var(--info-soft);border-radius:var(--r-md);font-size:12.5px;color:var(--text-2)">{{ intelligenceCoverageLabel }}</div>
+          <sc-if value="{{ intelligenceOverviewVisible }}" hint-placeholder-val="{{ true }}"><div class="tf-intel-kpis"><sc-for list="{{ intelligenceKpis }}" as="k" hint-placeholder-count="5"><div><span>{{ k.label }}</span><strong>{{ k.value }}</strong><small style="display:block;color:var(--muted);margin-top:5px">{{ k.formula }}</small></div></sc-for></div></sc-if>
+          <sc-if value="{{ intelligenceFunnelVisible }}" hint-placeholder-val="{{ false }}"><div class="tf-intel-table-wrap"><table class="tf-intel-table"><thead><tr><th>{{ intelligenceStageLabel }}</th><th>{{ intelligenceCountLabel }}</th><th>{{ intelligenceConversionLabel }}</th><th>{{ intelligenceDropoffLabel }}</th><th>{{ intelligenceSourceLabel }}</th></tr></thead><tbody><sc-for list="{{ intelligenceFunnel }}" as="row" hint-placeholder-count="11"><tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.conversion }}</td><td>{{ row.dropoff }}</td><td>{{ row.source }}</td></tr></sc-for></tbody></table></div></sc-if>
+          <sc-if value="{{ intelligenceDimensionsVisible }}" hint-placeholder-val="{{ false }}"><div class="tf-intel-table-wrap"><table class="tf-intel-table"><thead><tr><th>{{ intelligenceSubjectLabel }}</th><th>{{ intelligenceServiceLabel }}</th><th>{{ intelligenceEligibleLabel }}</th><th>{{ intelligenceOffersLabel }}</th><th>{{ intelligenceBrowseLabel }}</th><th>{{ intelligenceOpensLabel }}</th><th>{{ intelligenceRequestsLabel }}</th><th>{{ intelligencePaidLabel }}</th><th>{{ intelligenceCompletedLabel }}</th><th>{{ intelligenceZeroRateLabel }}</th></tr></thead><tbody><sc-for list="{{ intelligenceRows }}" as="row" hint-placeholder-count="8"><tr><td>{{ row.subject }}</td><td>{{ row.service }}</td><td>{{ row.eligibleTeachers }}</td><td>{{ row.activeOffers }}</td><td>{{ row.browseViews }}</td><td>{{ row.teacherOpens }}</td><td>{{ row.requestSubmissions }}</td><td>{{ row.paidOrders }}</td><td>{{ row.completedOrders }}</td><td>{{ row.zeroRate }}</td></tr></sc-for></tbody></table><sc-if value="{{ intelligenceRowsEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" role="status">{{ intelligenceNoDataLabel }}</p></sc-if></div></sc-if>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -537,7 +666,7 @@
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+            <img sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
             <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
               <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -606,7 +735,7 @@
 </div>
 
 <sc-if value="{{ catalogModal }}" hint-placeholder-val="{{ false }}">
-  <div class="tf-catalog-overlay" onClick="{{ closeCatalogModal }}">
+  <div class="tf-catalog-overlay" onClick="{{ closeCatalogModal }}" onKeyDown="{{ catalogDialogKeyDown }}">
     <div role="dialog" class="tf-catalog-dialog tf-modal-enter" data-catalog-dialog aria-modal="true" aria-labelledby="catalog-dialog-title" aria-describedby="catalog-dialog-description" onClick="{{ stop }}" onChange="{{ onCatalogFormChange }}">
       <header class="tf-catalog-header">
         <h2 id="catalog-dialog-title">{{ catalogModalTitle }}</h2>
@@ -798,7 +927,7 @@
 </sc-if>
 
 <sc-if value="{{ editModal }}" hint-placeholder-val="{{ false }}">
-  <div class="tf-catalog-overlay" onClick="{{ closeEditModal }}">
+  <div class="tf-catalog-overlay" onClick="{{ closeEditModal }}" onKeyDown="{{ editDialogKeyDown }}">
     <div role="dialog" class="tf-catalog-dialog tf-modal-enter" data-catalog-dialog aria-modal="true" aria-labelledby="edit-catalog-dialog-title" aria-describedby="edit-catalog-dialog-description" onClick="{{ stop }}" onChange="{{ onEditFormChange }}">
       <header class="tf-catalog-header"><h2 id="edit-catalog-dialog-title">{{ editModalTitle }}</h2><p id="edit-catalog-dialog-description">{{ editModalDescription }}</p></header>
       <div class="tf-catalog-body">
@@ -988,6 +1117,8 @@ class Component extends DCLogic {
     editAllowedDurations: '30,60', editIsPublic: true, editTeacherSelectable: true, editImmutablePolicy: false, editBusy: false, editDirty: false,
     usersTotal: 0, liveWithdrawals: [], withdrawalBusyId: '',
     livePopularSubjects: null,
+    intelligenceReport: null, intelligenceLoading: false, intelligenceError: '', intelligenceTab: 'overview',
+    intelligenceFrom: '', intelligenceTo: '', intelligenceSubject: '', intelligenceService: '',
     usersLoading: true, usersLoadError: '', catalogErrors: {}, listLoading: false, listErrors: {}
   };
 
@@ -1161,6 +1292,20 @@ class Component extends DCLogic {
         listErrors
       });
       if (firstCatalogError || errors.length) this.flash(firstCatalogError || errors[0]);
+      const deepLink = new URLSearchParams(location.search);
+      if (deepLink.get('section') === 'reviews') {
+        if (deepLink.get('search')) this.setState({ reviewsOpsSearch: deepLink.get('search') });
+        if (deepLink.get('visibility') === 'Hidden' || deepLink.get('status') === 'Hidden')
+          this.setState({ reviewsOpsVisibility: 'Hidden' });
+        else if (deepLink.get('visibility') === 'Visible' || deepLink.get('status') === 'Visible')
+          this.setState({ reviewsOpsVisibility: 'Visible' });
+        this.navigateTo('reviews');
+        const reviewId = deepLink.get('reviewId') || deepLink.get('selectedId');
+        if (reviewId) this.openReviewDetail(reviewId);
+      } else if (deepLink.get('section') === 'intelligence' || deepLink.get('section') === 'reports') {
+        this.navigateTo('reports');
+      }
+      this.loadReviewSummary();
     }).catch(error => {
       const message = Tafseel.api.errorMessage(error);
       this.setState({ usersLoading: false, usersLoadError: message, catalogErrors: {}, listLoading: false, listErrors: {} });
@@ -1226,10 +1371,33 @@ class Component extends DCLogic {
   }
 
   /** Resolve which section a nav key opens (page/pageRole/catalogKind/listKind). */
+  async loadIntelligence() {
+    if (this.state.intelligenceLoading) return;
+    const today = new Date(), start = new Date(today);
+    start.setUTCDate(start.getUTCDate() - 30);
+    const fromValue = this.state.intelligenceFrom || start.toISOString().slice(0, 10);
+    const toValue = this.state.intelligenceTo || today.toISOString().slice(0, 10);
+    const endExclusive = new Date(toValue + 'T00:00:00Z');
+    endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
+    const reportEnd = toValue === today.toISOString().slice(0, 10) ? today : endExclusive;
+    const query = new URLSearchParams({
+      from: fromValue + 'T00:00:00Z', to: reportEnd.toISOString()
+    });
+    if (this.state.intelligenceSubject) query.set('subjectId', this.state.intelligenceSubject);
+    if (this.state.intelligenceService) query.set('serviceCatalogItemId', this.state.intelligenceService);
+    this.setState({ intelligenceLoading: true, intelligenceError: '', intelligenceFrom: fromValue, intelligenceTo: toValue });
+    try {
+      const report = await Tafseel.api.get('/admin/marketplace-intelligence?' + query.toString());
+      this.setState({ intelligenceReport: report, intelligenceLoading: false, intelligenceError: '' });
+    } catch (error) {
+      this.setState({ intelligenceLoading: false, intelligenceError: Tafseel.api.errorMessage(error) });
+    }
+  }
+
   navigateTo(key) {
     const roleMap = { users: 'all', students: 'Student', teachers: 'Teacher', reviewers: 'Reviewer' };
     const catalogKeys = ['subjects', 'topics', 'assignments', 'services', 'coupons'];
-    const listKeys = ['requests', 'sessions', 'reviews', 'disputes'];
+    const listKeys = ['requests', 'sessions', 'disputes'];
     const patch = { drawer: false, navKey: key, pagination: 1 };
     document.body.style.overflow = '';
     if (roleMap[key]) {
@@ -1249,6 +1417,98 @@ class Component extends DCLogic {
     this.setState({ ...patch, contentFade: 'out' });
     clearTimeout(this._contentTimer);
     this._contentTimer = setTimeout(() => this.setState({ contentFade: 'in' }), 40);
+    if (key === 'reviews') this.loadReviewsOps(1);
+    if (key === 'reviews') this.syncReviewsUrl();
+    if (key === 'reports') {
+      this.loadIntelligence();
+      if (typeof history !== 'undefined' && history.replaceState)
+        history.replaceState(null, '', location.pathname + '?section=intelligence');
+    }
+  }
+
+  syncReviewsUrl() {
+    if (typeof history === 'undefined' || typeof history.replaceState !== 'function') return;
+    const s = this.state;
+    if ((s.navKey || s.page) !== 'reviews') return;
+    const params = new URLSearchParams({ section: 'reviews' });
+    if (s.reviewsOpsSearch) params.set('search', s.reviewsOpsSearch);
+    if (s.reviewsOpsVisibility && s.reviewsOpsVisibility !== 'All') params.set('visibility', s.reviewsOpsVisibility);
+    if (s.reviewsOpsPage > 1) params.set('page', String(s.reviewsOpsPage));
+    const selected = s.reviewDetailModal && s.reviewDetailModal.id;
+    if (selected) params.set('selectedId', selected);
+    history.replaceState(null, '', 'Tafseel-Admin-Dashboard.dc.html?' + params.toString());
+  }
+
+  async loadReviewSummary() {
+    try {
+      const summary = await Tafseel.api.get('/admin/reviews/summary');
+      this.setState({ reviewsOpsSummary: summary });
+    } catch (_) {
+      this.setState({ reviewsOpsSummary: null });
+    }
+  }
+
+  async loadReviewsOps(page) {
+    const s = this.state;
+    const nextPage = page || s.reviewsOpsPage || 1;
+    this.setState({ reviewsOpsLoading: true, reviewsOpsError: '' });
+    try {
+      const params = new URLSearchParams({
+        page: String(nextPage), pageSize: '20',
+        visibility: s.reviewsOpsVisibility || 'All',
+        sort: s.reviewsOpsSort || 'Newest'
+      });
+      if (s.reviewsOpsRating) params.set('rating', s.reviewsOpsRating);
+      if (s.reviewsOpsSearch) params.set('search', s.reviewsOpsSearch);
+      const result = await Tafseel.api.get('/admin/reviews?' + params.toString());
+      this.setState({
+        reviewsOpsItems: result.items || [], reviewsOpsPage: nextPage,
+        reviewsOpsPageSize: result.pageSize || 20, reviewsOpsTotal: result.totalCount || 0,
+        reviewsOpsLoading: false
+      });
+      this.syncReviewsUrl();
+      this.loadReviewSummary();
+    } catch (error) {
+      this.setState({ reviewsOpsLoading: false, reviewsOpsError: Tafseel.api.errorMessage(error) });
+    }
+  }
+
+  async openReviewDetail(id) {
+    this.setState({ reviewDetailModal: { id, loading: true }, reviewModerateReason: '' });
+    try {
+      const detail = await Tafseel.api.get('/admin/reviews/' + encodeURIComponent(id));
+      this.setState({ reviewDetailModal: detail }, () => {
+        this.syncReviewsUrl();
+        setTimeout(() => document.querySelector('[data-review-dialog]')?.focus(), 0);
+      });
+    } catch (error) {
+      this.setState({ reviewDetailModal: null });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  closeReviewDetail() {
+    if (this.state.reviewModerateBusy) return;
+    this.setState({ reviewDetailModal: null, reviewModerateReason: '' });
+  }
+
+  async moderateSelectedReview(visible) {
+    const s = this.state;
+    const review = s.reviewDetailModal;
+    if (!review || !review.id) return;
+    const reason = (s.reviewModerateReason || '').trim();
+    if (!reason) { this.flash(Tafseel.t('admin_review_reason_required')); return; }
+    this.setState({ reviewModerateBusy: true });
+    try {
+      await Tafseel.api.post('/admin/reviews/' + encodeURIComponent(review.id) + '/moderate', { visible, reason });
+      const detail = await Tafseel.api.get('/admin/reviews/' + encodeURIComponent(review.id));
+      this.setState({ reviewDetailModal: detail, reviewModerateReason: '', reviewModerateBusy: false });
+      this.flash(visible ? Tafseel.t('admin_review_restored') : Tafseel.t('admin_review_hidden'));
+      this.loadReviewsOps(s.reviewsOpsPage);
+    } catch (error) {
+      this.setState({ reviewModerateBusy: false });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
   }
 
   flash(msg) {
@@ -1309,9 +1569,11 @@ class Component extends DCLogic {
     ];
     // Real counts only — no static demo badges. Zero/blank until the backing data has actually loaded.
     const openDisputeCount = LIST_DATA.disputes.filter(d => d.statusKey === 'open').length;
+    const reviewSummary = s.reviewsOpsSummary || {};
     const NAV_BADGES = {
       withdrawals: (s.liveWithdrawals || []).length,
-      disputes: openDisputeCount
+      disputes: openDisputeCount,
+      reviews: reviewSummary.hidden || 0
     };
     const activeNav = s.navKey || s.page || 'overview';
 
@@ -1334,6 +1596,20 @@ class Component extends DCLogic {
     const iconLabel = code => Tafseel.t('admin_service_icon_' + code);
     const workflowLabel = code => Tafseel.t('admin_service_workflow_' + code);
     const qualificationLabel = code => Tafseel.t('admin_service_qualification_' + code);
+    const intelText = (en, ar) => Tafseel.lang === 'ar' ? ar : en;
+    const intelligence = s.intelligenceReport || null;
+    const stageLabels = {
+      browse_viewed: intelText('Browse views', 'مرات تصفح السوق'), teacher_opened: intelText('Teacher opens', 'فتح ملفات المعلمين'),
+      service_selected: intelText('Service selections', 'اختيارات الخدمة'), request_started: intelText('Request starts', 'بدء الطلبات'),
+      request_submitted: intelText('Requests submitted', 'الطلبات المرسلة'), request_accepted: intelText('Requests accepted', 'الطلبات المقبولة'),
+      payment_started: intelText('Payments started', 'بدء الدفع'), payment_confirmed: intelText('Paid orders', 'الطلبات المدفوعة'),
+      delivery_submitted: intelText('Deliveries submitted', 'التسليمات المرسلة'), order_completed: intelText('Orders completed', 'الطلبات المكتملة'),
+      review_submitted: intelText('Reviews submitted', 'التقييمات المرسلة')
+    };
+    let intelligenceRows = intelligence ? (intelligence.dimensions || []).slice() : [];
+    if (s.intelligenceTab === 'zero') intelligenceRows = intelligenceRows.filter(x => Number(x.zeroResults) > 0);
+    if (s.intelligenceTab === 'services') intelligenceRows.sort((a, b) => String(a.serviceName).localeCompare(String(b.serviceName)));
+    else intelligenceRows.sort((a, b) => String(a.subjectName).localeCompare(String(b.subjectName)));
 
     return {
       langLabel: Tafseel.t('language_target'),
@@ -1470,6 +1746,138 @@ class Component extends DCLogic {
       isPaymentsPage: s.page === 'payments' || s.page === 'withdrawals',
       isReportsPage: s.page === 'reports',
       isSettingsPage: s.page === 'settings',
+      isReviewsOpsPage: s.page === 'reviews',
+
+      intelligenceTitle: intelText('Marketplace Intelligence', 'ذكاء السوق'),
+      intelligenceSubtitle: intelText('Trusted demand, supply, and funnel measures from first-party product truth.', 'مقاييس موثوقة للطلب والعرض ومسار التحويل من بيانات المنتج المباشرة.'),
+      intelligenceFromLabel: intelText('From', 'من'), intelligenceToLabel: intelText('To', 'إلى'),
+      intelligenceSubjectLabel: intelText('Subject', 'المادة'), intelligenceServiceLabel: intelText('Service', 'الخدمة'),
+      intelligenceAllLabel: intelText('All', 'الكل'), intelligenceApplyLabel: intelText('Apply filters', 'تطبيق المرشحات'),
+      intelligenceSectionsLabel: intelText('Intelligence sections', 'أقسام ذكاء السوق'),
+      intelligenceFrom: s.intelligenceFrom, intelligenceTo: s.intelligenceTo,
+      intelligenceSubject: s.intelligenceSubject, intelligenceService: s.intelligenceService,
+      onIntelligenceFrom: e => this.setState({ intelligenceFrom: e.target.value }),
+      onIntelligenceTo: e => this.setState({ intelligenceTo: e.target.value }),
+      onIntelligenceSubject: e => this.setState({ intelligenceSubject: e.target.value }),
+      onIntelligenceService: e => this.setState({ intelligenceService: e.target.value }),
+      onIntelligenceApply: e => { e.preventDefault(); this.loadIntelligence(); },
+      intelligenceSubjects: CATALOG_DATA.subjects.map(x => ({ id: x.id, name: Tafseel.lang === 'ar' && x.nameAr ? x.nameAr : x.name })),
+      intelligenceServices: CATALOG_DATA.services.map(x => ({ id: x.id, name: Tafseel.lang === 'ar' && x.nameAr ? x.nameAr : x.name })),
+      intelligenceTabs: [
+        ['overview', intelText('Overview', 'نظرة عامة')], ['funnel', intelText('Funnel', 'المسار')],
+        ['demand', intelText('Demand & Supply', 'الطلب والعرض')], ['subjects', intelText('Subjects', 'المواد')],
+        ['services', intelText('Services', 'الخدمات')], ['zero', intelText('Zero Results', 'النتائج الصفرية')]
+      ].map(x => ({ label: x[1], selected: s.intelligenceTab === x[0], onClick: () => this.setState({ intelligenceTab: x[0] }) })),
+      intelligenceLoading: !!s.intelligenceLoading, intelligenceLoadingLabel: intelText('Loading marketplace measures…', 'جارٍ تحميل مقاييس السوق…'),
+      intelligenceHasError: !!s.intelligenceError, intelligenceError: s.intelligenceError,
+      intelligenceRetryLabel: intelText('Retry', 'إعادة المحاولة'), retryIntelligence: () => this.loadIntelligence(),
+      intelligenceReady: !s.intelligenceLoading && !s.intelligenceError && !!intelligence,
+      intelligenceCoverageLabel: intelligence ? (intelligence.interactionCoverageComplete
+        ? intelText('Interaction coverage is complete for this range. Transactional history uses canonical records.', 'تغطية التفاعلات مكتملة لهذه الفترة. يعتمد السجل التشغيلي على السجلات الأساسية.')
+        : intelText('Interaction tracking begins 8 Aug 2026; earlier interaction values are unavailable, not zero. Transactional history remains available.', 'يبدأ تتبع التفاعلات في 8 أغسطس 2026؛ القيم الأقدم غير متاحة وليست صفراً. يظل السجل التشغيلي متاحاً.')) : '',
+      intelligenceOverviewVisible: s.intelligenceTab === 'overview', intelligenceFunnelVisible: s.intelligenceTab === 'funnel',
+      intelligenceDimensionsVisible: ['demand', 'subjects', 'services', 'zero'].includes(s.intelligenceTab),
+      intelligenceKpis: intelligence ? [
+        { label: intelText('Browse views', 'مرات التصفح'), value: intelligence.overview.browseViews == null ? intelText('N/A', 'غ/م') : Tafseel.number(intelligence.overview.browseViews), formula: intelText('Successful stable Browse states', 'حالات تصفح مستقرة ناجحة') },
+        { label: intelText('Requests submitted', 'الطلبات المرسلة'), value: Tafseel.number(intelligence.overview.requestSubmissions), formula: 'LearningRequest.CreatedAt' },
+        { label: intelText('Paid orders', 'الطلبات المدفوعة'), value: Tafseel.number(intelligence.overview.paidOrders), formula: 'Payment.ConfirmedAt' },
+        { label: intelText('Completed orders', 'الطلبات المكتملة'), value: Tafseel.number(intelligence.overview.completedOrders), formula: 'OrderStatusHistory.Completed' },
+        { label: intelText('Zero-result rate', 'معدل النتائج الصفرية'), value: intelligence.overview.zeroResultRatePercent == null ? intelText('N/A', 'غ/م') : Tafseel.number(intelligence.overview.zeroResultRatePercent) + '%', formula: intelText('Zero results / Browse views', 'النتائج الصفرية ÷ مرات التصفح') }
+      ] : [],
+      intelligenceStageLabel: intelText('Stage', 'المرحلة'), intelligenceCountLabel: intelText('Count', 'العدد'),
+      intelligenceConversionLabel: intelText('From prior stage', 'من المرحلة السابقة'), intelligenceDropoffLabel: intelText('Drop-off to next', 'الانخفاض للتالية'), intelligenceSourceLabel: intelText('Truth source', 'مصدر الحقيقة'),
+      intelligenceFunnel: intelligence ? (intelligence.funnel || []).map(x => ({ label: stageLabels[x.code] || x.code, count: Tafseel.number(x.count), conversion: x.conversionPercent == null ? 'N/A' : Tafseel.number(x.conversionPercent) + '%', dropoff: x.dropOff == null ? 'N/A' : Tafseel.number(x.dropOff), source: x.source })) : [],
+      intelligenceEligibleLabel: intelText('Eligible teachers', 'المعلمون المؤهلون'), intelligenceOffersLabel: intelText('Active offers', 'العروض النشطة'),
+      intelligenceBrowseLabel: intelText('Browse', 'التصفح'), intelligenceOpensLabel: intelText('Profile opens', 'فتح الملفات'), intelligenceRequestsLabel: intelText('Requests', 'الطلبات'), intelligencePaidLabel: intelText('Paid', 'مدفوعة'), intelligenceCompletedLabel: intelText('Completed', 'مكتملة'), intelligenceZeroRateLabel: intelText('Zero-result rate', 'معدل النتائج الصفرية'),
+      intelligenceRows: intelligenceRows.map(x => ({ ...x, subject: Tafseel.lang === 'ar' ? x.subjectNameAr : x.subjectName, service: Tafseel.lang === 'ar' ? x.serviceNameAr : x.serviceName, zeroRate: x.zeroResultRatePercent == null ? 'N/A' : Tafseel.number(x.zeroResultRatePercent) + '%' })),
+      intelligenceRowsEmpty: intelligenceRows.length === 0, intelligenceNoDataLabel: intelText('No data for this period and filter.', 'لا توجد بيانات لهذه الفترة والمرشحات.'),
+
+      reviewsOpsColTeacher: Tafseel.t('admin_reviews_ops_col_teacher'),
+      reviewsOpsColService: Tafseel.t('admin_reviews_ops_col_service'),
+      reviewsOpsColScore: Tafseel.t('admin_reviews_ops_col_score'),
+      reviewsOpsColDate: Tafseel.t('admin_reviews_ops_col_date'),
+      reviewsOpsColVisibility: Tafseel.t('admin_reviews_ops_col_visibility'),
+      reviewsOpsColActions: Tafseel.t('admin_reviews_ops_col_actions'),
+      reviewsOpsTitle: Tafseel.t('admin_reviews_ops_title'),
+      reviewsOpsSearch: s.reviewsOpsSearch || '',
+      onReviewsOpsSearch: e => this.setState({ reviewsOpsSearch: e.target.value }),
+      onReviewsOpsSearchSubmit: e => { e.preventDefault(); this.loadReviewsOps(1); },
+      reviewsOpsSearchPlaceholder: Tafseel.t('admin_reviews_ops_search_placeholder'),
+      reviewsOpsVisibility: s.reviewsOpsVisibility || 'All',
+      onReviewsOpsVisibility: e => this.setState({ reviewsOpsVisibility: e.target.value }, () => this.loadReviewsOps(1)),
+      reviewsOpsRating: s.reviewsOpsRating || '',
+      onReviewsOpsRating: e => this.setState({ reviewsOpsRating: e.target.value }, () => this.loadReviewsOps(1)),
+      reviewsOpsSort: s.reviewsOpsSort || 'Newest',
+      onReviewsOpsSort: e => this.setState({ reviewsOpsSort: e.target.value }, () => this.loadReviewsOps(1)),
+      onReviewsOpsReset: () => this.setState({
+        reviewsOpsSearch: '', reviewsOpsVisibility: 'All', reviewsOpsRating: '', reviewsOpsSort: 'Newest'
+      }, () => this.loadReviewsOps(1)),
+      reviewsOpsResetLabel: Tafseel.t('admin_reviews_ops_reset'),
+      reviewsOpsVisibilityLabel: Tafseel.t('admin_reviews_ops_visibility'),
+      reviewsOpsRatingLabel: Tafseel.t('admin_reviews_ops_rating'),
+      reviewsOpsSortLabel: Tafseel.t('admin_reviews_ops_sort'),
+      reviewsOpsVisibilityAllLabel: Tafseel.t('admin_reviews_ops_visibility_all'),
+      reviewsOpsVisibilityVisibleLabel: Tafseel.t('admin_reviews_ops_visibility_visible'),
+      reviewsOpsVisibilityHiddenLabel: Tafseel.t('admin_reviews_ops_visibility_hidden'),
+      reviewsOpsRatingAnyLabel: Tafseel.t('admin_reviews_ops_rating_any'),
+      reviewsOpsSortNewestLabel: Tafseel.t('admin_reviews_ops_sort_newest'),
+      reviewsOpsSortOldestLabel: Tafseel.t('admin_reviews_ops_sort_oldest'),
+      reviewsOpsSortHighestLabel: Tafseel.t('admin_reviews_ops_sort_highest'),
+      reviewsOpsSortLowestLabel: Tafseel.t('admin_reviews_ops_sort_lowest'),
+
+      reviewsOpsLoading: !!s.reviewsOpsLoading,
+      reviewsOpsLoadingLabel: Tafseel.t('admin_list_loading'),
+      reviewsOpsLoadError: s.reviewsOpsError || '',
+      reviewsOpsEmpty: !s.reviewsOpsLoading && !s.reviewsOpsError && (s.reviewsOpsItems || []).length === 0,
+      reviewsOpsEmptyLabel: (s.reviewsOpsSearch || (s.reviewsOpsVisibility && s.reviewsOpsVisibility !== 'All') || s.reviewsOpsRating)
+        ? Tafseel.t('admin_reviews_ops_empty_filtered') : Tafseel.t('admin_reviews_ops_empty'),
+      reviewsOpsReady: !s.reviewsOpsLoading && !s.reviewsOpsError && (s.reviewsOpsItems || []).length > 0,
+      reviewsOpsItems: (s.reviewsOpsItems || []).map(x => ({
+        ...x,
+        teacherName: x.teacherDisplayNameEnglish && Tafseel.lang === 'en' ? x.teacherDisplayNameEnglish : x.teacherDisplayName,
+        scoreLabel: Number(x.overallScore).toFixed(1),
+        dateLabel: Tafseel.date(x.createdAt, { dateStyle: 'medium' }),
+        visibilityLabel: x.isVisible ? Tafseel.t('admin_reviews_ops_visibility_visible') : Tafseel.t('admin_reviews_ops_visibility_hidden'),
+        visibilityStyle: 'font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap;' +
+          (x.isVisible ? 'background:var(--success-soft, #d1fae5);color:var(--success, #059669);' : 'background:var(--surface-2);color:var(--muted);'),
+        onOpen: () => this.openReviewDetail(x.id)
+      })),
+      reviewsOpsPage: s.reviewsOpsPage || 1,
+      reviewsOpsHasPagination: (s.reviewsOpsTotal || 0) > (s.reviewsOpsPageSize || 20),
+      reviewsOpsPages: (() => {
+        const total = s.reviewsOpsTotal || 0, pageSize = s.reviewsOpsPageSize || 20;
+        const pageCount = Math.max(1, Math.ceil(total / pageSize));
+        const current = s.reviewsOpsPage || 1;
+        return Array.from({ length: pageCount }, (_, i) => i + 1).map(p => ({
+          label: String(p), onClick: () => this.loadReviewsOps(p),
+          style: 'height:30px;min-width:30px;padding:0 8px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
+            (p === current ? 'background:var(--primary);color:var(--primary-ink);border:0;' : 'background:var(--surface);color:var(--text);border:1px solid var(--border);')
+        }));
+      })(),
+
+      reviewDetailModal: s.reviewDetailModal,
+      reviewDetailPresent: !!(s.reviewDetailModal && s.reviewDetailModal.id),
+      reviewDetailLoading: !!(s.reviewDetailModal && s.reviewDetailModal.loading),
+      reviewDetailReady: !!(s.reviewDetailModal && s.reviewDetailModal.id && !s.reviewDetailModal.loading),
+      reviewDetailTeacherName: s.reviewDetailModal && (s.reviewDetailModal.teacherDisplayNameEnglish && Tafseel.lang === 'en'
+        ? s.reviewDetailModal.teacherDisplayNameEnglish : s.reviewDetailModal.teacherDisplayName),
+      reviewDetailTitle: Tafseel.t('admin_review_detail_title'),
+      onCloseReviewDetail: () => this.closeReviewDetail(),
+      reviewDialogKeyDown: e => Tafseel.modalKeyDown(e, () => this.closeReviewDetail()),
+      reviewModerateReason: s.reviewModerateReason || '',
+      onReviewModerateReason: e => this.setState({ reviewModerateReason: e.target.value }),
+      reviewModerateReasonPlaceholder: Tafseel.t('admin_review_reason_placeholder'),
+      reviewModerateBusy: !!s.reviewModerateBusy,
+      onHideReview: () => this.moderateSelectedReview(false),
+      onRestoreReview: () => this.moderateSelectedReview(true),
+      hideReviewLabel: Tafseel.t('admin_review_hide'),
+      restoreReviewLabel: Tafseel.t('admin_review_restore'),
+      reviewModerationHistory: (s.reviewDetailModal && s.reviewDetailModal.moderationHistory || []).map(h => ({
+        ...h, dateLabel: Tafseel.date(h.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
+        visibleLabel: h.visible ? Tafseel.t('admin_reviews_ops_visibility_visible') : Tafseel.t('admin_reviews_ops_visibility_hidden')
+      })),
+      reviewModerationHistoryLabel: Tafseel.t('admin_review_moderation_history'),
+      reviewNoModerationHistory: !(s.reviewDetailModal && s.reviewDetailModal.moderationHistory && s.reviewDetailModal.moderationHistory.length),
 
       usersPageTitle: {
         all: Tafseel.t('admin_nav_users'),
@@ -1778,6 +2186,7 @@ class Component extends DCLogic {
       catalogDifficulty: s.catalogDifficulty, onCatalogDifficulty: e => this.setState({ catalogDifficulty: e.target.value }),
       subjectOptions: CATALOG_DATA.subjects.map(sub => ({ id: sub.id, name: sub.name })),
       closeCatalogModal: () => this.closeCatalogEditor('catalog'),
+      catalogDialogKeyDown: e => Tafseel.modalKeyDown(e, () => this.closeCatalogEditor('catalog')),
       confirmAddCatalog: async () => {
         if (s.catalogBusy) return;
         try {
@@ -1947,6 +2356,7 @@ class Component extends DCLogic {
       editMinimumDeliveryEquivalent: deliveryEquivalent(s.editMinimumDeliveryHours, s.lang), editDefaultDeliveryEquivalent: deliveryEquivalent(s.editDefaultDeliveryHours, s.lang),
       editRecommendedDeliveryEquivalent: deliveryEquivalent(s.editRecommendedDeliveryHours, s.lang), editMaximumDeliveryEquivalent: deliveryEquivalent(s.editMaximumDeliveryHours, s.lang),
       closeEditModal: () => this.closeCatalogEditor('edit'),
+      editDialogKeyDown: e => Tafseel.modalKeyDown(e, () => this.closeCatalogEditor('edit')),
       confirmEditCatalog: async () => {
         if (s.editBusy) return;
         if (!s.editModal || !s.editName.trim()) return this.flash(Tafseel.t('admin_validation_name'));

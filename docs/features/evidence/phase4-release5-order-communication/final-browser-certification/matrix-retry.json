@@ -1,0 +1,102 @@
+[
+  {
+    "name": "teacher-inbox-768_ar-dark-dir",
+    "pass": true,
+    "detail": "{\"dir\":\"rtl\",\"lang\":\"ar\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "teacher-inbox-768_ar-dark-i18n",
+    "pass": true,
+    "detail": "{\"dir\":\"rtl\",\"lang\":\"ar\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "teacher-inbox-768_ar-dark-overflow",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "teacher-inbox-768_ar-dark-no-429",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "teacher-inbox-768_ar-dark-no-console",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "student-inbox-1440_ar-dark-dir",
+    "pass": true,
+    "detail": "{\"dir\":\"rtl\",\"lang\":\"ar\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "student-inbox-1440_ar-dark-i18n",
+    "pass": true,
+    "detail": "{\"dir\":\"rtl\",\"lang\":\"ar\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "student-inbox-1440_ar-dark-overflow",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "student-inbox-1440_ar-dark-no-429",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "student-inbox-1440_ar-dark-no-console",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "student-inbox-768_en-light-dir",
+    "pass": true,
+    "detail": "{\"dir\":\"ltr\",\"lang\":\"en\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "student-inbox-768_en-light-i18n",
+    "pass": true,
+    "detail": "{\"dir\":\"ltr\",\"lang\":\"en\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "student-inbox-768_en-light-overflow",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "student-inbox-768_en-light-no-429",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "student-inbox-768_en-light-no-console",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "teacher-inbox-768_en-light-dir",
+    "pass": true,
+    "detail": "{\"dir\":\"ltr\",\"lang\":\"en\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "teacher-inbox-768_en-light-i18n",
+    "pass": true,
+    "detail": "{\"dir\":\"ltr\",\"lang\":\"en\",\"overflow\":false,\"missing\":false,\"rawEnum\":false}"
+  },
+  {
+    "name": "teacher-inbox-768_en-light-overflow",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "teacher-inbox-768_en-light-no-429",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "name": "teacher-inbox-768_en-light-no-console",
+    "pass": true,
+    "detail": "[]"
+  }
+]

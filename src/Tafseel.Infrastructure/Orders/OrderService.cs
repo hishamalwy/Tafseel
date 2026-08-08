@@ -226,6 +226,22 @@ internal sealed class OrderService(
         string teacherId, int page, int pageSize, CancellationToken ct) =>
         OrderPageAsync(db.Orders.Where(x => x.TeacherId == teacherId), page, pageSize, teacherView: true, ct);
 
+    public async Task<OrderDto> GetOwnedOrderAsync(string userId, Guid orderId, CancellationToken ct)
+    {
+        var order = await OrderWithChildren().AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == orderId && (x.StudentId == userId || x.TeacherId == userId), ct)
+            ?? throw new DomainException("order_not_owned", "Order was not found.");
+        return await MapOrderAsync(order, teacherView: order.TeacherId == userId, ct);
+    }
+
+    public async Task<LearningRequestDto> GetOwnedRequestAsync(string userId, Guid requestId, CancellationToken ct)
+    {
+        var request = await RequestWithChildren().AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == requestId && (x.StudentId == userId || x.TeacherId == userId), ct)
+            ?? throw new DomainException("request_not_owned", "Learning request was not found.");
+        return await MapRequestAsync(request, ct);
+    }
+
     public async Task<IReadOnlyCollection<OrderTimelineEventDto>> GetTimelineAsync(
         string userId, Guid orderId, CancellationToken ct)
     {

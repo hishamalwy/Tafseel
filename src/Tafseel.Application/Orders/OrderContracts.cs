@@ -79,6 +79,8 @@ public interface IOrderService
     Task CancelRequestAsync(string studentId, Guid requestId, string version, CancellationToken ct);
     Task<PagedResult<OrderDto>> GetStudentOrdersAsync(string studentId, int page, int pageSize, CancellationToken ct);
     Task<PagedResult<OrderDto>> GetTeacherOrdersAsync(string teacherId, int page, int pageSize, CancellationToken ct);
+    Task<OrderDto> GetOwnedOrderAsync(string userId, Guid orderId, CancellationToken ct);
+    Task<LearningRequestDto> GetOwnedRequestAsync(string userId, Guid requestId, CancellationToken ct);
     Task<IReadOnlyCollection<OrderTimelineEventDto>> GetTimelineAsync(
         string userId, Guid orderId, CancellationToken ct);
     Task StartOrderAsync(string teacherId, Guid orderId, string version, CancellationToken ct);

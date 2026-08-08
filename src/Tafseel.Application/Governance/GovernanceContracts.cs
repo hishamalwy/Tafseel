@@ -28,6 +28,31 @@ public sealed record ModerateReview(
     bool Visible,
     [param: Required, StringLength(1000), NotWhiteSpace] string Reason);
 
+public enum AdminReviewVisibilityFilter { All, Visible, Hidden }
+public enum AdminReviewSort { Newest, Oldest, HighestRating, LowestRating }
+
+/// <summary>Admin operational list projection — deliberately excludes Student identity (name/
+/// email); reviews are anonymous-to-public by design and Admin does not need Student PII to
+/// moderate visibility. OrderId is retained as the operational identifier already used
+/// elsewhere in Admin tooling.</summary>
+public sealed record AdminReviewListItemDto(
+    Guid Id, Guid OrderId, string TeacherId, string TeacherDisplayName, string TeacherDisplayNameEnglish,
+    bool TeacherHasAvatar, string ServiceName, decimal OverallScore, bool Recommends,
+    string CommentExcerpt, DateTimeOffset CreatedAt, bool IsVisible,
+    DateTimeOffset? LastModeratedAt, string? LastModerationReason);
+
+public sealed record AdminReviewQueueSummaryDto(int Visible, int Hidden, int Total);
+
+public sealed record ReviewModerationRecordDto(
+    Guid Id, string ActorId, string? ActorDisplayName, bool Visible, string Reason, DateTimeOffset CreatedAt);
+
+public sealed record AdminReviewDetailDto(
+    Guid Id, Guid OrderId, string TeacherId, string TeacherDisplayName, string TeacherDisplayNameEnglish,
+    bool TeacherHasAvatar, string ServiceName,
+    int ExplanationClarity, int SubjectKnowledge, int Communication, int OnTimeDelivery, int ValueForMoney,
+    decimal OverallScore, string OriginalComment, bool Recommends, DateTimeOffset CreatedAt,
+    bool IsVisible, IReadOnlyCollection<ReviewModerationRecordDto> ModerationHistory);
+
 public sealed record OpenDispute(
     Guid OrderId,
     [param: Required, StringLength(2000), NotWhiteSpace] string Reason);
@@ -66,6 +91,11 @@ public interface IGovernanceService
 {
     Task<ReviewDto> CreateReviewAsync(string studentId, Guid orderId, CreateReview input, CancellationToken ct);
     Task<PagedResult<PublicTeacherReviewDto>> GetTeacherReviewsAsync(string teacherId, int page, int pageSize, CancellationToken ct);
+    Task<PagedResult<AdminReviewListItemDto>> GetAdminReviewsAsync(
+        int page, int pageSize, AdminReviewVisibilityFilter visibility, int? rating,
+        string? search, AdminReviewSort sort, CancellationToken ct);
+    Task<AdminReviewDetailDto> GetAdminReviewAsync(Guid id, CancellationToken ct);
+    Task<AdminReviewQueueSummaryDto> GetAdminReviewSummaryAsync(CancellationToken ct);
     Task ModerateReviewAsync(string adminId, Guid id, ModerateReview input, CancellationToken ct);
     Task<DisputeDto> OpenDisputeAsync(string userId, OpenDispute input, CancellationToken ct);
     Task<PagedResult<DisputeDto>> GetDisputesAsync(string userId, bool admin, int page, int pageSize, CancellationToken ct);

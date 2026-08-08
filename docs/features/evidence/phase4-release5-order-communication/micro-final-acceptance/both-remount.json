@@ -1,0 +1,25 @@
+[
+  {
+    "conversationId": "bd26011f-5672-4ce1-b127-76afba29b3d3",
+    "bothSCount": 1,
+    "bothTCount": 1,
+    "student": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": false
+    },
+    "teacher": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": false
+    }
+  }
+]

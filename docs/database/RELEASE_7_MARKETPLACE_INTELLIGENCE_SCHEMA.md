@@ -1,0 +1,3 @@
+# Release 7 marketplace intelligence schema
+
+One focused migration, `20260808162922_Release7MarketplaceIntelligence`, adds append-only `MarketplaceInteractionEvents`. Canonical domain cannot answer discovery-view questions. Unique `ClientEventId` provides idempotency; indexes support event/time and Subject+Service/time reporting; result count is bounded by a check constraint. Nullable canonical dimensions allow minimized events. No PII/raw query/arbitrary metadata is present. Migration up/model snapshot/pending-model validation passed; Production was not modified. Retention is a pending Business/Privacy decision.

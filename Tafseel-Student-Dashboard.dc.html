@@ -65,7 +65,7 @@
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+          <img sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
         </div>
       </div>
@@ -128,7 +128,7 @@
                     <td style="padding:14px 12px">
                       <div style="display:flex;align-items:center;gap:8px;min-width:0">
                         <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
-                          <img class="tf-img-avatar" src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
+                          <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
                         </sc-if>
                         <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
                       </div>
@@ -145,6 +145,9 @@
                       <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
                         <sc-if value="{{ r.timelineLabel }}">
                           <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.timelineLabel }}</button>
+                        </sc-if>
+                        <sc-if value="{{ r.messageLabel }}">
+                          <button type="button" onClick="{{ r.onMessage }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--primary);font-weight:600">{{ r.messageLabel }}</button>
                         </sc-if>
                         <sc-if value="{{ r.actionLabel }}">
                           <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
@@ -225,7 +228,7 @@
           <sc-for list="{{ recommended }}" as="t" hint-placeholder-count="4">
             <article style="flex:none;width:262px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
               <div style="display:flex;gap:12px;margin-bottom:12px">
-                <img class="tf-img-avatar" src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
+                <img class="tf-img-avatar" sc-camel-src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
                 <div style="min-width:0">
                   <div style="display:flex;align-items:center;gap:5px">
                     <span style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
@@ -280,7 +283,7 @@
                     <td style="padding:14px 12px">
                       <div style="display:flex;align-items:center;gap:8px;min-width:0">
                         <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
-                          <img class="tf-img-avatar" src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
+                          <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
                         </sc-if>
                         <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
                       </div>
@@ -297,6 +300,9 @@
                       <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
                         <sc-if value="{{ r.timelineLabel }}">
                           <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text);white-space:nowrap;cursor:pointer">{{ r.timelineLabel }}</button>
+                        </sc-if>
+                        <sc-if value="{{ r.messageLabel }}">
+                          <button type="button" onClick="{{ r.onMessage }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--primary);font-weight:600;white-space:nowrap">{{ r.messageLabel }}</button>
                         </sc-if>
                         <sc-if value="{{ r.actionLabel }}">
                           <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
@@ -349,7 +355,7 @@
           <sc-for list="{{ savedTeachers }}" as="t" hint-placeholder-count="4">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
               <div style="display:flex;gap:12px;margin-bottom:12px">
-                <img class="tf-img-avatar" src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
+                <img class="tf-img-avatar" sc-camel-src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
                 <div style="min-width:0">
                   <div style="font-size:14.5px;font-weight:700">{{ t.name }}</div>
                   <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
@@ -443,7 +449,7 @@
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
-            <button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}">
+            <button type="button" data-r5-notification onClick="{{ n.onClick }}" style="{{ n.style }}">
               <span style="{{ n.dotStyle }}"></span>
               <span style="flex:1;text-align:start">
                 <span style="display:block;font-size:14px;font-weight:600;margin-bottom:3px">{{ n.title }}</span>
@@ -461,8 +467,8 @@
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Messages</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <sc-for list="{{ conversations }}" as="c" hint-placeholder-count="4">
-            <button type="button" onClick="{{ openChat }}" style="display:flex;width:100%;gap:14px;align-items:center;padding:16px 20px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start">
-              <img src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover;flex:none" />
+            <button type="button" onClick="{{ c.onOpen }}" style="display:flex;width:100%;gap:14px;align-items:center;padding:16px 20px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start">
+              <img sc-camel-src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover;flex:none" />
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;gap:10px">
                   <span style="font-size:14px;font-weight:700">{{ c.name }}</span>
@@ -484,7 +490,7 @@
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+            <img sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
             <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
               <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -590,7 +596,7 @@
       </div>
       <div style="flex:1;overflow-y:auto">
         <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
-          <button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}">
+          <button type="button" data-r5-notification onClick="{{ n.onClick }}" style="{{ n.style }}">
             <span style="{{ n.dotStyle }}"></span>
             <span style="flex:1;text-align:start">
               <span style="display:block;font-size:14px;font-weight:600;margin-bottom:3px">{{ n.title }}</span>
@@ -618,7 +624,7 @@
         <sc-if value="{{ showTimelineHero }}" hint-placeholder-val="{{ false }}">
           <div class="tf-order-hero" aria-label="{{ timelineOrderLabel }}">
             <div class="tf-order-hero-teacher">
-              <img class="tf-img-avatar tf-order-hero-avatar" src="{{ timelineTeacherAvatar }}" alt="" width="44" height="44" />
+              <img class="tf-img-avatar tf-order-hero-avatar" sc-camel-src="{{ timelineTeacherAvatar }}" alt="" width="44" height="44" />
               <div style="min-width:0">
                 <div style="font-size:15px;font-weight:700">{{ timelineTeacherName }}</div>
                 <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ timelineServiceName }}</div>
@@ -716,7 +722,7 @@
 </sc-if>
 
 <sc-if value="{{ reviewModal }}" hint-placeholder-val="{{ false }}">
-  <div role="presentation" onClick="{{ closeReviewModal }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+  <div role="presentation" onClick="{{ closeReviewModal }}" onKeyDown="{{ reviewKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
     <div role="dialog" aria-modal="true" aria-labelledby="student-review-title" onClick="{{ stop }}" style="width:min(560px,100%);max-height:min(88vh,780px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg)">
       <div style="position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;gap:16px;padding:20px;border-bottom:1px solid var(--border);background:var(--surface)">
         <div style="min-width:0;flex:1">
@@ -727,7 +733,7 @@
       </div>
       <div style="padding:20px">
         <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
-          <img class="tf-img-avatar" src="{{ reviewTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
+          <img class="tf-img-avatar" sc-camel-src="{{ reviewTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
           <div style="min-width:0">
             <span style="font-size:12px;color:var(--muted)">{{ reviewTeacherLabel }}</span>
             <div style="font-size:14.5px;font-weight:700">{{ reviewTeacherName }}</div>
@@ -802,7 +808,7 @@
       </div>
       <div style="padding:20px">
         <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
-          <img class="tf-img-avatar" src="{{ rateTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
+          <img class="tf-img-avatar" sc-camel-src="{{ rateTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
           <div style="min-width:0">
             <span style="font-size:12px;color:var(--muted)">{{ rateTeacherLabel }}</span>
             <div style="font-size:14.5px;font-weight:700">{{ rateTeacherName }}</div>
@@ -1078,7 +1084,8 @@ class Component extends DCLogic {
       }
       if (route.section === 'messages') {
         this.setState({ section: 'messages' });
-        if (window.TafseelChat && window.TafseelChat.open) window.TafseelChat.open();
+        if (window.TafseelChat && window.TafseelChat.open)
+          window.TafseelChat.open(route.conversationId ? { conversationId: route.conversationId } : undefined);
         return;
       }
       if (route.orderId) {
@@ -1194,6 +1201,8 @@ class Component extends DCLogic {
       guideKey,
       timelineLabel: r.kind === 'order' ? Tafseel.t('order_timeline_view') : '',
       onTimeline: event => this.openTimeline(r, event.currentTarget),
+      messageLabel: r.kind === 'order' ? Tafseel.t('chat_messages') : '',
+      onMessage: () => window.TafseelChat && window.TafseelChat.openOrder(r.id, r.teacherId),
       statusStyle,
       showTeacherAvatar: r.kind === 'order' && !!r.teacherAvatar,
       teacherAvatar: r.teacherAvatar || (r.teacherId ? Tafseel.avatarUrl(r.teacherId, false) : Tafseel.defaultAvatar),
@@ -1621,6 +1630,7 @@ class Component extends DCLogic {
       openRevisionForm: () => this.setState({ showRevisionForm: true, reviewError: '' }),
       cancelRevisionForm: () => this.setState({ showRevisionForm: false, revisionReason: '', reviewError: '' }),
       closeReviewModal: () => this.closeReviewModal(),
+      reviewKeyDown: event => Tafseel.modalKeyDown(event, () => this.closeReviewModal()),
       approveDelivery: () => this.approveDelivery(),
       submitRevisionRequest: () => this.submitRevisionRequest(),
       sdReviewClose: Tafseel.t('sd_review_close'),
@@ -1746,7 +1756,7 @@ class Component extends DCLogic {
           preview: (c.latestMessage && c.latestMessage.body) || Tafseel.t('chat_no_conversations'),
           time: Tafseel.date(c.updatedAt),
           unread: !!(c.unreadCount),
-          onOpen: () => window.TafseelChat && window.TafseelChat.open(peerId)
+          onOpen: () => window.TafseelChat && window.TafseelChat.open({ conversationId:c.id })
         };
       }),
 

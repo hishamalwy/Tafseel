@@ -87,6 +87,12 @@
   --t:220ms ease-out;
 }
 
+/* Release 9: bounded AI request-assistant surface; global product styling remains Release 8-owned. */
+.tf-ai-request{padding:16px;margin-bottom:20px;border:1px solid color-mix(in oklab,var(--primary) 28%,var(--border));border-radius:var(--r-lg);background:color-mix(in oklab,var(--primary-soft) 38%,var(--surface))}
+.tf-ai-request textarea{width:100%;padding:11px 12px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font:inherit;resize:vertical}
+.tf-ai-request-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tf-ai-request-actions button{min-height:42px;padding:0 14px;border-radius:var(--r-sm);font-weight:700}
+
 /* Hallmark · component: teacher-profile video carousel · genre: modern-minimal · theme: Tafseel incumbent
  * states: default · hover · focus · active · playing · loading/error via native media state · single-item hidden navigation
  * contrast: pass · pre-emit critique: P5 H5 E5 S5 R5 V4
@@ -162,7 +168,7 @@ html[dir="rtl"] .tf-profile-carousel-arrow svg{transform:scaleX(-1)}
      "No services available" copy the desktop sidebar already shows, surfaced where a Student can see it
      without scrolling past the whole page first. */
   .tf-profile-mobile-no-service{display:block;margin-block-start:14px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2);color:var(--text-2);font-size:13px;line-height:1.5;text-align:center}
-  .tf-profile-identity-card{margin-block-start:max(0px, 18px - var(--tf-profile-mobile-clearance, 0px))}
+  .tf-profile-identity-card{margin-block-start:calc(18px - var(--tf-profile-mobile-clearance, 0px))}
   .tf-profile-video-hero{padding-block-end:max(6px, 16px - var(--tf-profile-mobile-clearance, 0px))}
 }
 @media (max-width:640px){
@@ -176,7 +182,7 @@ html[dir="rtl"] .tf-profile-carousel-arrow svg{transform:scaleX(-1)}
   .tf-profile-identity-card .tf-profile-avatar{width:68px;height:68px;border-radius:14px}
   .tf-profile-identity-card .tf-profile-name-row h1{font-size:25px}
   .tf-profile-identity-card .tf-profile-qualification{align-items:flex-start}
-  .tf-profile-identity-card .tf-profile-hero-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+  .tf-profile-identity-card .tf-profile-hero-actions{display:grid;grid-template-columns:repeat(3,auto);width:max-content;max-width:100%;justify-content:start}
   .tf-profile-identity-card .tf-profile-hero-actions>*{min-inline-size:0;padding-inline:7px;font-size:11.5px;white-space:nowrap}
 }
 @media (hover:hover) and (pointer:fine){

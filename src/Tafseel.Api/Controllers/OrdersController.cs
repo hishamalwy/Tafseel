@@ -32,6 +32,10 @@ public sealed class LearningRequestsController(IOrderService orders) : Controlle
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
         orders.GetTeacherRequestsAsync(UserId(), status, page, pageSize, ct);
 
+    [Authorize, HttpGet("{id:guid}")]
+    public Task<LearningRequestDto> Get(Guid id, CancellationToken ct) =>
+        orders.GetOwnedRequestAsync(UserId(), id, ct);
+
     [Authorize(Policy = Permissions.StudentsCreateRequests), EnableRateLimiting("upload")]
     [RequestSizeLimit(50 * 1024 * 1024), HttpPost("{id:guid}/attachments")]
     public async Task<IActionResult> AddAttachment(
@@ -110,6 +114,10 @@ public sealed class OrdersController(IOrderService orders) : ControllerBase
     public Task<PagedResult<OrderDto>> TeacherAssigned(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
         orders.GetTeacherOrdersAsync(UserId(), page, pageSize, ct);
+
+    [Authorize, HttpGet("{id:guid}")]
+    public Task<OrderDto> Get(Guid id, CancellationToken ct) =>
+        orders.GetOwnedOrderAsync(UserId(), id, ct);
 
     [Authorize, HttpGet("{id:guid}/timeline")]
     public Task<IReadOnlyCollection<OrderTimelineEventDto>> Timeline(

@@ -1,0 +1,364 @@
+{
+  "requiredTotal": 16,
+  "requiredPassed": 13,
+  "requiredFailed": [
+    "03-favorite-remove",
+    "12-compare-profile-back",
+    "16-375-profile-cta"
+  ],
+  "unexpected429": 0,
+  "maxRolling": 214,
+  "maxAuthRolling": 7,
+  "results": [
+    {
+      "name": "04-guest-async-protected-action",
+      "pass": true,
+      "detail": "browse has teachers"
+    },
+    {
+      "name": "guest-auth-has-return",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Auth.dc.html?return=Tafseel-Request.dc.html%3FteacherId%3Dc6f1d8af-ffb2-4cae-9dd7-73047f999c53%26teacherServiceId%3Df0b6f5da-3384-4096-a636-58fe0c1d49b3"
+    },
+    {
+      "name": "05-auth-return-guided-request",
+      "pass": true,
+      "detail": "/app/Tafseel-Request.dc.html?teacherId=c6f1d8af-ffb2-4cae-9dd7-73047f999c53&teacherServiceId=f0b6f5da-3384-4096-a636-58fe0c1d49b3"
+    },
+    {
+      "name": "guest-continuation-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-template",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "01-favorite-add",
+      "pass": true,
+      "detail": "pressed=true api=true"
+    },
+    {
+      "name": "02-favorite-persist-refresh",
+      "pass": true,
+      "detail": "pressed=true"
+    },
+    {
+      "name": "favorite-profile-coherent",
+      "pass": true,
+      "detail": "profilePressed=true"
+    },
+    {
+      "name": "03-favorite-remove",
+      "pass": false,
+      "detail": "pressed=true stillFav=true"
+    },
+    {
+      "name": "favorite-race-final-matches-api",
+      "pass": true,
+      "detail": "ui=true apiHas=true"
+    },
+    {
+      "name": "10-browse-profile-back",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Browse-Teachers.dc.html?subjectId=0f77a186-dbae-4bac-a5bf-3cac7085fe05&service=475638cd-4f11-47e8-922a-e135a436035b&sort=lowest-price"
+    },
+    {
+      "name": "compare-open",
+      "pass": true,
+      "detail": "dialog visible"
+    },
+    {
+      "name": "11-browse-compare-back",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Browse-Teachers.dc.html?subjectId=0f77a186-dbae-4bac-a5bf-3cac7085fe05&service=475638cd-4f11-47e8-922a-e135a436035b&sort=lowest-price"
+    },
+    {
+      "name": "12-compare-profile-back",
+      "pass": false,
+      "detail": "no compare profile link"
+    },
+    {
+      "name": "13-back-forward-discovery",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Browse-Teachers.dc.html?subjectId=0f77a186-dbae-4bac-a5bf-3cac7085fe05&service=475638cd-4f11-47e8-922a-e135a436035b&sort=highest-rated"
+    },
+    {
+      "name": "06-live-teacher-on-browse",
+      "pass": true,
+      "detail": "visible=1"
+    },
+    {
+      "name": "07-live-profile-exact-service",
+      "pass": true,
+      "detail": "href=Tafseel-Book-Session.dc.html?teacherId=c6f1d8af-ffb2-4cae-9dd7-73047f999c53&teacherServiceId=6206ca51-5822-4392-b2fd-2abf9ea79178 selected=Live session"
+    },
+    {
+      "name": "08-live-book-session-routing",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Book-Session.dc.html?teacherId=c6f1d8af-ffb2-4cae-9dd7-73047f999c53&teacherServiceId=6206ca51-5822-4392-b2fd-2abf9ea79178"
+    },
+    {
+      "name": "scheduler-context-slots",
+      "pass": true,
+      "detail": "ui=2 apiSlots=157"
+    },
+    {
+      "name": "09-exact-service-availability",
+      "pass": true,
+      "detail": "{\"teacherId\":\"c6f1d8af-ffb2-4cae-9dd7-73047f999c53\",\"subjectId\":\"0f77a186-dbae-4bac-a5bf-3cac7085fe05\",\"liveCatalogItemId\":\"893d1c41-c5c7-4c8e-bdb0-7989591150c1\",\"liveCatalogCode\":\"live_session\",\"teacherServiceId\":\"6206ca51-5822-4392-b2fd-2abf9ea79178\",\"summaryState\":\"available_today\",\"summaryTeacherServiceId\":\"6206ca51-5822-4392-b2fd-2abf9ea79178\",\"bookable\":true,\"slotCount\":157,\"browseExposesOffer\":true,\"published\":true}"
+    },
+    {
+      "name": "14-ar-rtl-discovery",
+      "pass": true,
+      "detail": "{\"lang\":\"ar\",\"dir\":\"rtl\",\"theme\":\"dark\",\"overflow\":false,\"h1\":1,\"leak\":false}"
+    },
+    {
+      "name": "14-ar-rtl-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "14-ar-rtl-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "14-ar-rtl-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "14-ar-rtl-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "14-ar-rtl-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "14-ar-rtl-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "14-ar-rtl-no-template",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-discovery",
+      "pass": true,
+      "detail": "{\"lang\":\"en\",\"dir\":\"ltr\",\"theme\":\"light\",\"overflow\":false,\"h1\":1,\"leak\":false}"
+    },
+    {
+      "name": "15-en-ltr-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "15-en-ltr-no-template",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "16-375-profile-cta",
+      "pass": false,
+      "detail": "{\"overflow\":false,\"overlap\":true,\"ctaVisible\":true}"
+    },
+    {
+      "name": "profile-375-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "profile-375-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "profile-375-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "profile-375-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "profile-375-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "profile-375-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "profile-375-no-template",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "a11y-semantics",
+      "pass": true,
+      "detail": "{\"h1\":1,\"favName\":\"Save Sprint 0.2 UAT Teacher\",\"favPressed\":true,\"compareName\":\"Add to comparison\",\"searchLabel\":true}"
+    },
+    {
+      "name": "external-sr-limitation",
+      "pass": true,
+      "detail": "External screen-reader manual session not performed; not considered a blocking defect."
+    },
+    {
+      "name": "invalid-url-graceful",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Browse-Teachers.dc.html"
+    },
+    {
+      "name": "r5-student-dashboard-smoke",
+      "pass": false,
+      "detail": "{\"main\":false,\"messages\":false}"
+    },
+    {
+      "name": "r5-teacher-dashboard-smoke",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Teacher-Dashboard.dc.html"
+    },
+    {
+      "name": "teacher-dash-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "teacher-dash-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "teacher-dash-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "teacher-dash-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "teacher-dash-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "teacher-dash-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "teacher-dash-no-template",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "r4-admin-smoke",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Admin-Dashboard.dc.html"
+    },
+    {
+      "name": "r4-quality-smoke",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=applications"
+    },
+    {
+      "name": "student-main-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "student-main-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "student-main-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "student-main-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "student-main-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "student-main-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "student-main-no-template",
+      "pass": true,
+      "detail": "[]"
+    }
+  ]
+}

@@ -40,4 +40,8 @@ assert.doesNotMatch(html, /<option value="Admin"|<option value="QualityReviewer"
 // Password-reset links must carry both an email and a token before the reset form is reachable.
 assert.match(script, /mode === 'reset' && email && token/, "Reset mode must require email+token from the query string");
 
+assert.match(script, /Tafseel\.safeAppReturnHref/, "Login destination must sanitize return URLs");
+assert.match(script, /roles\.includes\('Student'\)/, "Safe return must be Student-scoped");
+assert.doesNotMatch(script, /location\.href\s*=\s*.*return/, "Return URL must go through destination() sanitizer, not raw assignment");
+
 console.log("Auth UI mode isolation validation passed.");

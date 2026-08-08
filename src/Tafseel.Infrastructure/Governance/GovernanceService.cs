@@ -77,6 +77,105 @@ internal sealed class GovernanceService(
         return new(items.Select(MapPublic).ToArray(), page, pageSize, total);
     }
 
+    public async Task<PagedResult<AdminReviewListItemDto>> GetAdminReviewsAsync(
+        int page, int pageSize, AdminReviewVisibilityFilter visibility, int? rating,
+        string? search, AdminReviewSort sort, CancellationToken ct)
+    {
+        page = Math.Max(page, 1); pageSize = Math.Clamp(pageSize, 1, 100);
+        var query =
+            from r in db.TeacherReviews.AsNoTracking()
+            join u in db.Users.AsNoTracking() on r.TeacherId equals u.Id
+            join o in db.Orders.AsNoTracking() on r.OrderId equals o.Id
+            join ts in db.TeacherServices.AsNoTracking() on o.TeacherServiceId equals ts.Id
+            select new { Review = r, Teacher = u, Service = ts };
+
+        query = visibility switch
+        {
+            AdminReviewVisibilityFilter.Visible => query.Where(x => x.Review.IsVisible),
+            AdminReviewVisibilityFilter.Hidden => query.Where(x => !x.Review.IsVisible),
+            _ => query
+        };
+        if (rating is >= 1 and <= 5)
+            query = query.Where(x => (int)Math.Round(x.Review.OverallScore) == rating);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x =>
+                EF.Functions.Like(x.Teacher.FullName, $"%{term}%") ||
+                EF.Functions.Like(x.Teacher.FullNameEnglish, $"%{term}%") ||
+                EF.Functions.Like(x.Service.Title, $"%{term}%") ||
+                x.Review.OrderId.ToString().Contains(term));
+        }
+        query = sort switch
+        {
+            AdminReviewSort.Oldest => query.OrderBy(x => x.Review.CreatedAt).ThenBy(x => x.Review.Id),
+            AdminReviewSort.HighestRating => query.OrderByDescending(x => x.Review.OverallScore).ThenByDescending(x => x.Review.CreatedAt),
+            AdminReviewSort.LowestRating => query.OrderBy(x => x.Review.OverallScore).ThenByDescending(x => x.Review.CreatedAt),
+            _ => query.OrderByDescending(x => x.Review.CreatedAt).ThenBy(x => x.Review.Id)
+        };
+
+        var total = await query.CountAsync(ct);
+        var rows = await query.Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => new
+            {
+                x.Review.Id, x.Review.OrderId, x.Review.TeacherId,
+                x.Teacher.FullName, x.Teacher.FullNameEnglish, x.Teacher.AvatarStorageKey,
+                x.Service.Title, x.Review.OverallScore, x.Review.Recommends,
+                x.Review.OriginalComment, x.Review.CreatedAt, x.Review.IsVisible
+            })
+            .ToArrayAsync(ct);
+        var ids = rows.Select(x => x.Id).ToArray();
+        var lastModeration = await db.Set<ReviewModerationRecord>().AsNoTracking()
+            .Where(x => ids.Contains(x.TeacherReviewId))
+            .GroupBy(x => x.TeacherReviewId)
+            .Select(g => g.OrderByDescending(x => x.CreatedAt).First())
+            .ToDictionaryAsync(x => x.TeacherReviewId, ct);
+
+        var items = rows.Select(x =>
+        {
+            lastModeration.TryGetValue(x.Id, out var last);
+            var excerpt = x.OriginalComment.Length > 160 ? x.OriginalComment[..160] + "…" : x.OriginalComment;
+            return new AdminReviewListItemDto(
+                x.Id, x.OrderId, x.TeacherId, x.FullName, x.FullNameEnglish,
+                !string.IsNullOrWhiteSpace(x.AvatarStorageKey), x.Title, x.OverallScore, x.Recommends,
+                excerpt, x.CreatedAt, x.IsVisible, last?.CreatedAt, last?.Reason);
+        }).ToArray();
+        return new(items, page, pageSize, total);
+    }
+
+    public async Task<AdminReviewDetailDto> GetAdminReviewAsync(Guid id, CancellationToken ct)
+    {
+        var row = await (
+            from r in db.TeacherReviews.AsNoTracking()
+            join u in db.Users.AsNoTracking() on r.TeacherId equals u.Id
+            join o in db.Orders.AsNoTracking() on r.OrderId equals o.Id
+            join ts in db.TeacherServices.AsNoTracking() on o.TeacherServiceId equals ts.Id
+            where r.Id == id
+            select new { Review = r, Teacher = u, Service = ts })
+            .SingleOrDefaultAsync(ct)
+            ?? throw new DomainException("review_not_found", "Review was not found.");
+        var history = await db.Set<ReviewModerationRecord>().AsNoTracking()
+            .Where(x => x.TeacherReviewId == id).OrderBy(x => x.CreatedAt).ToArrayAsync(ct);
+        var actorIds = history.Select(h => h.ActorId).Distinct().ToArray();
+        var actorNames = await db.Users.AsNoTracking().Where(x => actorIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.FullName, ct);
+        return new(
+            row.Review.Id, row.Review.OrderId, row.Review.TeacherId, row.Teacher.FullName, row.Teacher.FullNameEnglish,
+            !string.IsNullOrWhiteSpace(row.Teacher.AvatarStorageKey), row.Service.Title,
+            row.Review.ExplanationClarity, row.Review.SubjectKnowledge, row.Review.Communication,
+            row.Review.OnTimeDelivery, row.Review.ValueForMoney, row.Review.OverallScore,
+            row.Review.OriginalComment, row.Review.Recommends, row.Review.CreatedAt, row.Review.IsVisible,
+            history.Select(h => new ReviewModerationRecordDto(
+                h.Id, h.ActorId, actorNames.GetValueOrDefault(h.ActorId), h.Visible, h.Reason, h.CreatedAt)).ToArray());
+    }
+
+    public async Task<AdminReviewQueueSummaryDto> GetAdminReviewSummaryAsync(CancellationToken ct)
+    {
+        var visible = await db.TeacherReviews.CountAsync(x => x.IsVisible, ct);
+        var hidden = await db.TeacherReviews.CountAsync(x => !x.IsVisible, ct);
+        return new(visible, hidden, visible + hidden);
+    }
+
     public async Task ModerateReviewAsync(
         string adminId, Guid id, ModerateReview input, CancellationToken ct)
     {

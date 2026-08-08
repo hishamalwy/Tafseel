@@ -166,8 +166,11 @@ public sealed class TeacherApplicationFlowTests(SqlServerTafseelApiFactory facto
 
     private static async Task<string> LatestVersion(HttpClient client, string path, Guid id)
     {
-        var applications = await client.GetFromJsonAsync<JsonElement[]>(path);
-        return applications!.Single(x => x.GetProperty("id").GetGuid() == id)
+        var payload = await client.GetFromJsonAsync<JsonElement>(path);
+        var items = payload.ValueKind == JsonValueKind.Array
+            ? payload.EnumerateArray()
+            : payload.GetProperty("items").EnumerateArray();
+        return items.Single(x => x.GetProperty("id").GetGuid() == id)
             .GetProperty("version").GetString()!;
     }
 }

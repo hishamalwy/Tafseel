@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Tafseel.Application.Authorization;
+using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.TeacherApplications;
@@ -138,6 +139,41 @@ public sealed class TeacherAdditionalSubjectQualificationTests(SqlServerTafseelA
         Assert.False(await db.TeacherSubjectQualifications.AnyAsync(x =>
             x.TeacherId == seeded.TeacherId && x.SubjectId == seeded.SubjectB
             && x.Status == TeacherQualificationStatus.Approved && x.RevokedAt == null));
+    }
+
+    [Fact]
+    public async Task Pending_second_subject_application_does_not_hijack_onboarding_status_from_dashboard()
+    {
+        // Phase 4 Sprint 0.1, Part 2: proves the exact live scenario the sprint targets —
+        // an approved Teacher with a pending different-subject application must still see
+        // onboarding-status route to the Dashboard, not back into the qualification/demo flow.
+        var seeded = await SeedApprovedTeacherWithSecondSubjectAsync();
+        using var teacher = await ClientForAsync(seeded.Email);
+
+        // Statuses below ApprovedButProfileIncomplete (ordinal < 9) mean "not yet approved for
+        // any subject" and legitimately route back into the application/demo flow; once a Teacher
+        // has an approved qualification, status must never fall back below that line, and nextUrl
+        // must always be the Dashboard (never the qualification Apply/Demo page), regardless of a
+        // pending different-subject application.
+        var before = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/onboarding-status");
+        Assert.True(before.GetProperty("status").GetInt32() >= (int)TeacherOnboardingStatus.ApprovedButProfileIncomplete);
+        Assert.Contains("Dashboard", before.GetProperty("nextUrl").GetString());
+
+        var created = await teacher.PostAsJsonAsync("/api/v1/teacher-applications", new
+        {
+            subjectId = seeded.SubjectB,
+            qualificationTopicId = seeded.TopicB,
+            city = "Riyadh",
+            experienceYears = 4,
+            degree = "BSc"
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var after = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/onboarding-status");
+        Assert.Equal(before.GetProperty("status").GetInt32(), after.GetProperty("status").GetInt32());
+        Assert.Contains("Dashboard", after.GetProperty("nextUrl").GetString());
+        Assert.False(after.GetProperty("nextUrl").GetString()!.Contains("Apply", StringComparison.OrdinalIgnoreCase));
+        Assert.False(after.GetProperty("nextUrl").GetString()!.Contains("Demo", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

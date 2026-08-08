@@ -1,0 +1,287 @@
+{
+  "total": 58,
+  "passed": 56,
+  "failed": 2,
+  "results": [
+    {
+      "name": "admin-reviews-390_ar-dark-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"المشرف – تفصيل\"}"
+    },
+    {
+      "name": "admin-reviews-390_ar-dark-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"المشرف – تفصيل\"}"
+    },
+    {
+      "name": "admin-reviews-390_ar-dark-detail",
+      "pass": true,
+      "detail": "dialogs=1"
+    },
+    {
+      "name": "admin-reviews-390_ar-dark-escape",
+      "pass": true
+    },
+    {
+      "name": "quality-apps-390_ar-dark-authed",
+      "pass": true,
+      "detail": "مراجعة الجودة – تفصيل"
+    },
+    {
+      "name": "quality-apps-390_ar-dark-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"مراجعة الجودة – تفصيل\"}"
+    },
+    {
+      "name": "quality-apps-390_ar-dark-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"مراجعة الجودة – تفصيل\"}"
+    },
+    {
+      "name": "quality-apps-390_ar-dark-open",
+      "pass": true,
+      "detail": "empty actionable queue rendered"
+    },
+    {
+      "name": "quality-additional-390_ar-dark-overflow",
+      "pass": true
+    },
+    {
+      "name": "quality-media-390_ar-dark-section",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=showcases"
+    },
+    {
+      "name": "admin-reviews-768_ar-dark-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"تسجيل الدخول — تفصيل\"}"
+    },
+    {
+      "name": "admin-reviews-768_ar-dark-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"تسجيل الدخول — تفصيل\"}"
+    },
+    {
+      "name": "admin-reviews-768_ar-dark-detail",
+      "pass": true,
+      "detail": "empty queue — no Open button; discovery surface rendered"
+    },
+    {
+      "name": "quality-apps-768_ar-dark-authed",
+      "pass": true,
+      "detail": "مراجعة الجودة – تفصيل"
+    },
+    {
+      "name": "quality-apps-768_ar-dark-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"مراجعة الجودة – تفصيل\"}"
+    },
+    {
+      "name": "quality-apps-768_ar-dark-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"مراجعة الجودة – تفصيل\"}"
+    },
+    {
+      "name": "quality-apps-768_ar-dark-open",
+      "pass": true,
+      "detail": "empty actionable queue rendered"
+    },
+    {
+      "name": "quality-additional-768_ar-dark-overflow",
+      "pass": true
+    },
+    {
+      "name": "quality-media-768_ar-dark-section",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=showcases"
+    },
+    {
+      "name": "admin-reviews-1440_ar-dark-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"المشرف – تفصيل\"}"
+    },
+    {
+      "name": "admin-reviews-1440_ar-dark-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"المشرف – تفصيل\"}"
+    },
+    {
+      "name": "admin-reviews-1440_ar-dark-detail",
+      "pass": true,
+      "detail": "dialogs=1"
+    },
+    {
+      "name": "admin-reviews-1440_ar-dark-escape",
+      "pass": true
+    },
+    {
+      "name": "quality-apps-1440_ar-dark-authed",
+      "pass": false,
+      "detail": "تسجيل الدخول — تفصيل"
+    },
+    {
+      "name": "quality-apps-1440_ar-dark-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"تسجيل الدخول — تفصيل\"}"
+    },
+    {
+      "name": "quality-apps-1440_ar-dark-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"تسجيل الدخول — تفصيل\"}"
+    },
+    {
+      "name": "quality-apps-1440_ar-dark-open",
+      "pass": true,
+      "detail": "empty actionable queue rendered"
+    },
+    {
+      "name": "quality-additional-1440_ar-dark-overflow",
+      "pass": true
+    },
+    {
+      "name": "quality-media-1440_ar-dark-section",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=media"
+    },
+    {
+      "name": "admin-reviews-390_en-light-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Admin — Tafseel\"}"
+    },
+    {
+      "name": "admin-reviews-390_en-light-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Admin — Tafseel\"}"
+    },
+    {
+      "name": "admin-reviews-390_en-light-detail",
+      "pass": true,
+      "detail": "dialogs=1"
+    },
+    {
+      "name": "admin-reviews-390_en-light-escape",
+      "pass": true
+    },
+    {
+      "name": "quality-apps-390_en-light-authed",
+      "pass": true,
+      "detail": "Quality review — Tafseel"
+    },
+    {
+      "name": "quality-apps-390_en-light-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Quality review — Tafseel\"}"
+    },
+    {
+      "name": "quality-apps-390_en-light-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Quality review — Tafseel\"}"
+    },
+    {
+      "name": "quality-apps-390_en-light-open",
+      "pass": true,
+      "detail": "empty actionable queue rendered"
+    },
+    {
+      "name": "quality-additional-390_en-light-overflow",
+      "pass": true
+    },
+    {
+      "name": "quality-media-390_en-light-section",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=showcases"
+    },
+    {
+      "name": "admin-reviews-768_en-light-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Log in — Tafseel\"}"
+    },
+    {
+      "name": "admin-reviews-768_en-light-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Log in — Tafseel\"}"
+    },
+    {
+      "name": "admin-reviews-768_en-light-detail",
+      "pass": true,
+      "detail": "empty queue — no Open button; discovery surface rendered"
+    },
+    {
+      "name": "quality-apps-768_en-light-authed",
+      "pass": true,
+      "detail": "Quality review — Tafseel"
+    },
+    {
+      "name": "quality-apps-768_en-light-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Quality review — Tafseel\"}"
+    },
+    {
+      "name": "quality-apps-768_en-light-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Quality review — Tafseel\"}"
+    },
+    {
+      "name": "quality-apps-768_en-light-open",
+      "pass": true,
+      "detail": "empty actionable queue rendered"
+    },
+    {
+      "name": "quality-additional-768_en-light-overflow",
+      "pass": true
+    },
+    {
+      "name": "quality-media-768_en-light-section",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=showcases"
+    },
+    {
+      "name": "admin-reviews-1440_en-light-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Admin — Tafseel\"}"
+    },
+    {
+      "name": "admin-reviews-1440_en-light-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Admin — Tafseel\"}"
+    },
+    {
+      "name": "admin-reviews-1440_en-light-detail",
+      "pass": true,
+      "detail": "dialogs=1"
+    },
+    {
+      "name": "admin-reviews-1440_en-light-escape",
+      "pass": true
+    },
+    {
+      "name": "quality-apps-1440_en-light-authed",
+      "pass": false,
+      "detail": "Log in — Tafseel"
+    },
+    {
+      "name": "quality-apps-1440_en-light-overflow",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Log in — Tafseel\"}"
+    },
+    {
+      "name": "quality-apps-1440_en-light-i18n",
+      "pass": true,
+      "detail": "{\"overflow\":false,\"missing\":false,\"rawEnum\":false,\"title\":\"Log in — Tafseel\"}"
+    },
+    {
+      "name": "quality-apps-1440_en-light-open",
+      "pass": true,
+      "detail": "empty actionable queue rendered"
+    },
+    {
+      "name": "quality-additional-1440_en-light-overflow",
+      "pass": true
+    },
+    {
+      "name": "quality-media-1440_en-light-section",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Quality-Dashboard.dc.html?section=media"
+    }
+  ]
+}

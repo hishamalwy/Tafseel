@@ -46,7 +46,46 @@ public sealed record TeacherApplicationDto(
     string? Degree = null,
     string AssignmentResourceManifest = "[]",
     string? SubjectNameAr = null,
-    string? AssignmentTitleAr = null);
+    string? AssignmentTitleAr = null,
+    bool IsAdditionalSubject = false,
+    IReadOnlyCollection<OperationalQualifiedSubjectDto>? ActiveQualifications = null,
+    bool HasPreviousFeedback = false);
+
+public enum TeacherApplicationQualificationKind { All, Initial, Additional }
+public enum TeacherApplicationQueueSort { OldestFirst, NewestFirst }
+public enum TeacherApplicationQueueScope { Actionable, All }
+
+public sealed record OperationalQualifiedSubjectDto(
+    Guid SubjectId,
+    string SubjectName,
+    string? SubjectNameAr,
+    DateTimeOffset ApprovedAt);
+
+public sealed record TeacherApplicationHistoryItemDto(
+    TeacherApplicationStatus? PreviousStatus,
+    TeacherApplicationStatus NextStatus,
+    DateTimeOffset CreatedAt,
+    string? ActorDisplayName,
+    string? Note);
+
+public sealed record TeacherApplicationReviewSummaryDto(
+    DateTimeOffset CreatedAt,
+    ReviewDecision Decision,
+    string? PublicFeedback,
+    string? ReviewerDisplayName,
+    string? InternalNotes);
+
+public sealed record TeacherApplicationQueueDetailDto(
+    TeacherApplicationDto Application,
+    IReadOnlyCollection<TeacherApplicationHistoryItemDto> History,
+    IReadOnlyCollection<TeacherApplicationReviewSummaryDto> Reviews);
+
+public sealed record TeacherApplicationQueueSummaryDto(
+    int Actionable,
+    int Submitted,
+    int UnderReview,
+    int ChangesRequested,
+    int AdditionalActionable);
 
 public enum TeacherOnboardingStatus
 {
@@ -144,7 +183,20 @@ public interface ITeacherApplicationService
     Task WithdrawAsync(string teacherId, Guid applicationId, string expectedVersion, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<TeacherApplicationDto>> GetMineAsync(string teacherId, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<TeacherQualificationCardDto>> GetMyQualificationsAsync(string teacherId, CancellationToken cancellationToken);
-    Task<IReadOnlyCollection<TeacherApplicationDto>> GetQueueAsync(TeacherApplicationStatus? status, CancellationToken cancellationToken);
+    Task<PagedResult<TeacherApplicationDto>> GetQueueAsync(
+        TeacherApplicationStatus? status,
+        TeacherApplicationQualificationKind kind,
+        TeacherApplicationQueueScope scope,
+        string? search,
+        Guid? subjectId,
+        DateTimeOffset? submittedFrom,
+        DateTimeOffset? submittedTo,
+        TeacherApplicationQueueSort sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+    Task<TeacherApplicationQueueSummaryDto> GetQueueSummaryAsync(CancellationToken cancellationToken);
+    Task<TeacherApplicationQueueDetailDto> GetQueueDetailAsync(Guid applicationId, CancellationToken cancellationToken);
     Task<TeacherOnboardingStatusDto> GetOnboardingStatusAsync(string teacherId, CancellationToken cancellationToken);
     Task<PrivateMediaFile> OpenDemoAsync(string requesterId, Guid applicationId, bool canReview, CancellationToken cancellationToken);
     Task StartReviewAsync(string reviewerId, Guid applicationId, ApplicationPriority priority, string expectedVersion, CancellationToken cancellationToken);

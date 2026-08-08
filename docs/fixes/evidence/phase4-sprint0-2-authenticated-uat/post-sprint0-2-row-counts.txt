@@ -1,0 +1,8 @@
+                                        
+---------------------------- -----------
+AspNetUsers                           16
+TeacherApplications                    3
+TeacherSubjectQualifications           4
+TeacherServices                        3
+Orders                                 3
+TeacherReviews                         3

@@ -123,7 +123,7 @@
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+          <img sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ teacherDisplayName }}</span>
         </div>
       </div>
@@ -162,7 +162,7 @@
             <div style="display:flex;gap:16px;flex-wrap:wrap">
               <div style="flex:1;min-width:240px">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-                  <img src="{{ accountAvatar }}" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
+                  <img sc-camel-src="{{ accountAvatar }}" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
                   <span style="font-size:14.5px;font-weight:700">{{ q.student }}</span>
                   <span style="font-size:12px;color:var(--muted)">· {{ q.subject }}</span>
                   <span style="{{ q.urgencyStyle }}">{{ q.urgency }}</span>
@@ -231,6 +231,7 @@
                     <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap">
                       <span style="{{ o.statusChipStyle }}">{{ o.statusLabel }}</span>
                       <button type="button" onClick="{{ o.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ o.timelineLabel }}</button>
+                      <button type="button" onClick="{{ o.onMessage }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--primary);font-weight:600">{{ o.messageLabel }}</button>
                       <sc-if value="{{ o.actionLabel }}" hint-placeholder-val="{{ false }}">
                         <button type="button" onClick="{{ o.onAction }}" disabled="{{ o.actionBusy }}" style="{{ o.actionStyle }}">{{ o.actionLabel }}</button>
                       </sc-if>
@@ -619,13 +620,34 @@
       </div>
     </sc-if>
 
+    <sc-if value="{{ isNotifPage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">{{ notificationsHeading }}</h1>
+          <button type="button" onClick="{{ markAll }}" style="border:0;background:none;color:var(--primary);font-size:13.5px;font-weight:600">{{ markAllLabel }}</button>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+          <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
+            <button type="button" data-r5-notification onClick="{{ n.onClick }}" style="{{ n.style }}">
+              <span style="{{ n.dotStyle }}"></span>
+              <span style="flex:1;text-align:start">
+                <span style="display:block;font-size:14px;font-weight:600;margin-bottom:3px">{{ n.title }}</span>
+                <span style="display:block;font-size:13px;color:var(--muted);line-height:1.5">{{ n.body }}</span>
+                <span style="display:block;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:6px">{{ n.time }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
     <sc-if value="{{ isMessages }}" hint-placeholder-val="{{ false }}">
       <div>
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Messages</h1>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <sc-for list="{{ conversations }}" as="c" hint-placeholder-count="4">
-            <button type="button" onClick="{{ openChat }}" style="display:flex;width:100%;gap:14px;align-items:center;padding:16px 20px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start">
-              <img src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover;flex:none" />
+            <button type="button" onClick="{{ c.onOpen }}" style="display:flex;width:100%;gap:14px;align-items:center;padding:16px 20px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start">
+              <img sc-camel-src="{{ accountAvatar }}" alt="" width="38" height="38" style="width:38px;height:38px;border-radius:50%;border:1px solid var(--border);object-fit:cover;flex:none" />
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;gap:10px">
                   <span style="font-size:14px;font-weight:700">{{ c.name }}</span>
@@ -633,6 +655,9 @@
                 </div>
                 <div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</div>
               </div>
+              <sc-if value="{{ c.unread }}" hint-placeholder-val="{{ false }}">
+                <span data-r5-unread style="min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--primary);color:var(--primary-ink);font-size:11px;font-weight:800;display:grid;place-items:center;flex:none">{{ c.unreadCount }}</span>
+              </sc-if>
             </button>
           </sc-for>
         </div>
@@ -779,7 +804,7 @@
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <h2 style="font-size:17px;margin:0">{{ settingsPhotoTitle }}</h2>
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-              <img src="{{ accountAvatar }}" alt="" width="72" height="72" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+              <img sc-camel-src="{{ accountAvatar }}" alt="" width="72" height="72" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
               <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
                 <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -831,7 +856,7 @@
 </div>
 
 <sc-if value="{{ acceptModal }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeModal }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeModal }}" onKeyDown="{{ acceptDialogKeyDown }}">
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ acceptRequestTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">{{ acceptRequestTitle }}</h2>
       <p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">{{ acceptModal.topic }}</p>
@@ -859,7 +884,7 @@
         </label>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ cancelLabel }}</button>
+        <button type="button" autofocus onClick="{{ closeModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ cancelLabel }}</button>
         <button type="button" onClick="{{ confirmAccept }}" disabled="{{ acceptBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ acceptConfirmLabel }}</button>
       </div>
     </div>
@@ -867,7 +892,7 @@
 </sc-if>
 
 <sc-if value="{{ deliveryModal }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeDeliveryModal }}">
+  <div style="position:fixed;inset:0;z-index:70;background:oklch(0.2 0.02 265 / .42);display:flex;align-items:center;justify-content:center;padding:20px;animation:tf-fade 160ms ease both" onClick="{{ closeDeliveryModal }}" onKeyDown="{{ deliveryDialogKeyDown }}">
     <div role="dialog" class="tf-modal-enter" aria-modal="true" aria-label="{{ deliveryModalTitle }}" onClick="{{ stop }}" style="width:min(460px,100%);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:24px">
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">{{ deliveryModalTitle }}</h2>
       <p style="font-size:13.5px;color:var(--muted);margin-bottom:18px">{{ deliveryModal.title }}</p>
@@ -888,7 +913,7 @@
         </sc-if>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" onClick="{{ closeDeliveryModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ deliveryCancelLabel }}</button>
+        <button type="button" autofocus onClick="{{ closeDeliveryModal }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ deliveryCancelLabel }}</button>
         <button type="button" onClick="{{ confirmDelivery }}" disabled="{{ deliveryBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ deliverySubmitLabel }}</button>
       </div>
     </div>
@@ -993,6 +1018,7 @@ class Component extends DCLogic {
     deliveryModal: null, deliveryBusy: false, deliveryError: '', deliveryFile: null, deliveryFileName: '', deliveryMessage: '',
     busyOrderId: '',
     balances: [], liveSessions: [], profile: null, liveReviews: [], liveConversations: [],
+    liveNotifs: [], read: [],
     subjectsCatalog: [], marketplaceServices: [], marketplaceServicesError: '', eligibleSubjects: [], serviceFilter: 'all',
     qualificationCards: [], qualificationCardsError: '', qualificationCardsLoading: true,
     profileVideos: [], profileVideosError: '', profileVideosLoading: true, profileVideoBusy: false,
@@ -1014,6 +1040,16 @@ class Component extends DCLogic {
     // Prevent demo fallbacks from appearing if any marketplace/requests API call fails.
     PENDING = [];
     ORDERS = [];
+    try {
+      const query = new URLSearchParams(location.search);
+      const section = (query.get('section') || '').trim();
+      if (section === 'messages' || section === 'notifications' || section === 'reviews'
+        || section === 'settings' || section === 'orders' || section === 'services'
+        || section === 'qualifications' || section === 'samples' || section === 'availability'
+        || section === 'earnings' || section === 'withdrawals' || section === 'profile'
+        || section === 'sessions')
+        this.setState({ section });
+    } catch (_) { /* ignore */ }
     Tafseel.installDashboardDrawer(this, { sidebarId: 'teacher-sidebar', toggleId: 'teacher-drawer-toggle' });
     Tafseel.api.requireRoles(['Teacher']).then(async session => {
       if (!session) return;
@@ -1044,7 +1080,8 @@ class Component extends DCLogic {
         Tafseel.api.get('/teachers/me/marketplace-services'),
         Tafseel.api.get('/teachers/me/showcases?pageSize=20'),
         Tafseel.api.get('/teachers/me/qualifications'),
-        Tafseel.api.get('/teachers/me/profile-videos')
+        Tafseel.api.get('/teachers/me/profile-videos'),
+        Tafseel.api.get('/notifications?pageSize=100')
       ]);
     }).then(results => {
       if (!results) return;
@@ -1158,7 +1195,12 @@ class Component extends DCLogic {
           topic:Tafseel.requestTitle(x),
           when:Tafseel.date(x.startsAt),
           confirmed:x.status === 1
-        })) : []
+        })) : [],
+        liveNotifs: (value(13) && value(13).items) ? value(13).items.map(x => ({
+          id: x.id, type: x.type, title: x.title, body: x.body, link: x.link,
+          time: Tafseel.date(x.createdAt), createdAt: x.createdAt
+        })) : [],
+        read: (value(13) && value(13).items) ? value(13).items.filter(x => x.readAt).map(x => x.id) : []
       });
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -1371,6 +1413,29 @@ class Component extends DCLogic {
     setTimeout(() => { if (trigger && trigger.focus) trigger.focus(); }, 0);
   }
 
+  openNotification(n) {
+    const route = typeof Tafseel.notificationRoute === 'function'
+      ? Tafseel.notificationRoute(n, 'teacher')
+      : { href: 'Tafseel-Teacher-Dashboard.dc.html', section: 'overview' };
+    const mark = !(this.state.read || []).includes(n.id)
+      ? Tafseel.api.post('/notifications/read?id=' + encodeURIComponent(n.id)).catch(() => {})
+        .then(() => this.setState({ read: (this.state.read || []).concat(n.id) }))
+      : Promise.resolve();
+    return mark.then(() => {
+      if (route.external && route.href) {
+        location.href = route.href;
+        return;
+      }
+      if (route.section === 'messages') {
+        this.setState({ section: 'messages' });
+        if (window.TafseelChat && window.TafseelChat.open)
+          window.TafseelChat.open(route.conversationId ? { conversationId: route.conversationId } : undefined);
+        return;
+      }
+      if (route.section) this.setState({ section: route.section });
+    });
+  }
+
   renderVals() {
     const s = this.state;
     const trackedCurrency = (s.balances && s.balances.length ? s.balances[0].currency : 'SAR') || 'SAR';
@@ -1384,10 +1449,11 @@ class Component extends DCLogic {
     const orderCount = ORDERS.filter(o => o.stage !== 'completed' && o.stage !== 'cancelled').length;
     const sessionCount = (s.liveSessions || []).length;
     const unreadMessages = (s.liveConversations || []).reduce((n, c) => n + (c.unreadCount || 0), 0);
+    const unreadNotifs = (s.liveNotifs || []).filter(n => !(s.read || []).includes(n.id)).length;
     const NAV = [
       ['overview','◱','td_nav_overview',0], ['new','✦','td_nav_new', newCount], ['orders','◫','td_nav_orders', orderCount], ['sessions','◉','td_nav_sessions', sessionCount],
       ['services','▤','td_nav_services',0], ['qualifications','✓','td_nav_qualifications',0], ['samples','▶','td_nav_samples',0], ['availability','◷','td_nav_availability',0],
-      ['messages','✉','td_nav_messages', unreadMessages], ['reviews','★','td_nav_reviews',0], ['earnings','$','td_nav_earnings',0], ['withdrawals','⇩','td_nav_withdrawals',0],
+      ['messages','✉','td_nav_messages', unreadMessages], ['notifications','🔔','td_nav_notifications', unreadNotifs], ['reviews','★','td_nav_reviews',0], ['earnings','$','td_nav_earnings',0], ['withdrawals','⇩','td_nav_withdrawals',0],
       ['profile','◍','td_nav_profile',0], ['settings','⚙','td_nav_settings',0]
     ];
 
@@ -1540,6 +1606,7 @@ class Component extends DCLogic {
       isSamples: s.section === 'samples',
       isAvailability: s.section === 'availability',
       isMessages: s.section === 'messages',
+      isNotifPage: s.section === 'notifications',
       isReviewsSection: s.section === 'reviews',
       isEarnings: s.section === 'earnings',
       isWithdrawals: s.section === 'withdrawals',
@@ -2098,12 +2165,34 @@ class Component extends DCLogic {
       conversations: (s.liveConversations || []).map(c => {
         const peer = (c.participants || []).find(p => p.userId !== this._session?.userId);
         const peerId = peer?.userId || (c.participantIds || []).find(id => id !== this._session?.userId) || '';
+        const unreadCount = c.unreadCount || 0;
         return {
           initials: Tafseel.participantInitials(peer || ''),
           name: Tafseel.participantLabel(peer || {}),
           preview: c.latestMessage?.body || Tafseel.t('chat_no_messages'),
           time: Tafseel.date(c.updatedAt),
-          peerId
+          peerId,
+          unread: unreadCount > 0,
+          unreadCount,
+          onOpen: () => window.TafseelChat && window.TafseelChat.open({ conversationId:c.id })
+        };
+      }),
+      notificationsHeading: Tafseel.t('td_nav_notifications'),
+      markAllLabel: Tafseel.t('td_mark_all_read'),
+      markAll: async () => {
+        try {
+          await Tafseel.api.post('/notifications/read');
+          this.setState({ read: (this.state.liveNotifs || []).map(n => n.id) });
+          this.flash(Tafseel.t('toast_notifs_marked_read'));
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
+      notifications: (s.liveNotifs || []).map(n => {
+        const isRead = (s.read || []).includes(n.id);
+        return {
+          ...n,
+          style: 'display:flex;gap:12px;width:100%;padding:16px 20px;border:0;border-bottom:1px solid var(--border);text-align:start;background:' + (isRead ? 'transparent' : 'var(--primary-soft)'),
+          dotStyle: 'flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:' + (isRead ? 'var(--border-strong)' : 'var(--primary)'),
+          onClick: () => this.openNotification(n)
         };
       }),
 
@@ -2264,6 +2353,8 @@ class Component extends DCLogic {
           actionBusy: busy,
           timelineLabel:Tafseel.t('order_timeline_view'),
           onTimeline:event => this.openTimeline(o, event.currentTarget),
+          messageLabel:Tafseel.t('chat_messages'),
+          onMessage:() => window.TafseelChat && window.TafseelChat.openOrder(o.id, o.studentId),
           actionStyle: 'height:32px;padding:0 13px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' +
             (o.action === 'start' || o.action === 'deliver' ? 'border:0;background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
           onAction: async () => {
@@ -2343,6 +2434,7 @@ class Component extends DCLogic {
       acceptModal: s.acceptModal,
       openChat: () => window.TafseelChat && window.TafseelChat.open(),
       closeModal: () => this.setState({ acceptModal: null, acceptBusy: false }),
+      acceptDialogKeyDown: e => Tafseel.modalKeyDown(e, () => this.setState({ acceptModal: null, acceptBusy: false })),
       finalPrice: s.finalPrice, onFinalPrice: e => this.setState({ finalPrice: e.target.value }),
       deliveryDate: s.deliveryDate, onDeliveryDate: e => this.setState({ deliveryDate: e.target.value }),
       revisions: s.revisions, onRevisions: e => this.setState({ revisions: e.target.value }),
@@ -2388,6 +2480,10 @@ class Component extends DCLogic {
         if (s.deliveryBusy) return;
         this.setState({ deliveryModal: null, deliveryFile: null, deliveryFileName: '', deliveryMessage: '', deliveryError: '' });
       },
+      deliveryDialogKeyDown: e => Tafseel.modalKeyDown(e, () => {
+        if (s.deliveryBusy) return;
+        this.setState({ deliveryModal: null, deliveryFile: null, deliveryFileName: '', deliveryMessage: '', deliveryError: '' });
+      }),
       confirmDelivery: async () => {
         const o = s.deliveryModal;
         if (!o || s.deliveryBusy) return;

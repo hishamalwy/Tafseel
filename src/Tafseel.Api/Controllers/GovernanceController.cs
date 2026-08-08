@@ -22,6 +22,22 @@ public sealed class GovernanceController(IGovernanceService governance) : Contro
     public Task<ReviewDto> Review(Guid orderId, CreateReview input, CancellationToken ct) =>
         governance.CreateReviewAsync(UserId(), orderId, input, ct);
 
+    [Authorize(Policy = Permissions.ReviewsModerate), HttpGet("admin/reviews")]
+    public Task<PagedResult<AdminReviewListItemDto>> AdminReviews(
+        int page = 1, int pageSize = 20,
+        AdminReviewVisibilityFilter visibility = AdminReviewVisibilityFilter.All,
+        int? rating = null, string? search = null,
+        AdminReviewSort sort = AdminReviewSort.Newest, CancellationToken ct = default) =>
+        governance.GetAdminReviewsAsync(page, pageSize, visibility, rating, search, sort, ct);
+
+    [Authorize(Policy = Permissions.ReviewsModerate), HttpGet("admin/reviews/summary")]
+    public Task<AdminReviewQueueSummaryDto> AdminReviewSummary(CancellationToken ct) =>
+        governance.GetAdminReviewSummaryAsync(ct);
+
+    [Authorize(Policy = Permissions.ReviewsModerate), HttpGet("admin/reviews/{id:guid}")]
+    public Task<AdminReviewDetailDto> AdminReview(Guid id, CancellationToken ct) =>
+        governance.GetAdminReviewAsync(id, ct);
+
     [Authorize(Policy = Permissions.ReviewsModerate), HttpPost("admin/reviews/{id:guid}/moderate")]
     public async Task<IActionResult> Moderate(Guid id, ModerateReview input, CancellationToken ct)
     {

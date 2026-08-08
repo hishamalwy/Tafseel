@@ -18,8 +18,9 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
 
     [AllowAnonymous, HttpGet("compare")]
     public Task<TeacherComparisonResultDto> Compare(
-        [FromQuery] string[] ids, CancellationToken ct) =>
-        marketplace.CompareAsync(ids, ct);
+        [FromQuery] string[] ids, [FromQuery] Guid? subjectId,
+        [FromQuery] Guid? serviceTypeId, CancellationToken ct) =>
+        marketplace.CompareAsync(ids, subjectId, serviceTypeId, ct);
 
     [AllowAnonymous, HttpGet("{teacherId}")]
     public Task<TeacherProfileDto> Profile(string teacherId, CancellationToken ct) =>
@@ -29,6 +30,7 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     public async Task<IActionResult> Sample(Guid id, CancellationToken ct)
     {
         var file = await marketplace.OpenSampleAsync(User.FindFirstValue("sub"), id, ct);
+        Response.Headers.ContentDisposition = "inline";
         return File(file.Content, file.ContentType, enableRangeProcessing: true);
     }
 
@@ -220,6 +222,7 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     {
         var canReview = User.HasClaim(Permissions.ClaimType, Permissions.TeachersReviewShowcases);
         var file = await marketplace.OpenShowcaseVersionAsync(UserId(), canReview, id, versionId, ct);
+        Response.Headers.ContentDisposition = "inline";
         return File(file.Content, file.ContentType, enableRangeProcessing: true);
     }
 
@@ -227,8 +230,19 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     public Task<Application.Common.PagedResult<ShowcaseQueueItemDto>> ShowcaseQueue(
         [FromQuery, EnumDataType(typeof(Tafseel.Domain.Marketplace.ShowcaseModerationStatus))]
         Tafseel.Domain.Marketplace.ShowcaseModerationStatus? status,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
-        marketplace.GetShowcaseQueueAsync(status, page, pageSize, ct);
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        string? search = null, Guid? subjectId = null,
+        [FromQuery, EnumDataType(typeof(ShowcaseQueueSort))] ShowcaseQueueSort sort = ShowcaseQueueSort.OldestFirst,
+        CancellationToken ct = default) =>
+        marketplace.GetShowcaseQueueAsync(status, page, pageSize, search, subjectId, sort, ct);
+
+    [Authorize(Policy = Permissions.TeachersReviewShowcases), HttpGet("showcase-moderation/summary")]
+    public Task<ShowcaseQueueSummaryDto> ShowcaseQueueSummary(CancellationToken ct) =>
+        marketplace.GetShowcaseQueueSummaryAsync(ct);
+
+    [Authorize(Policy = Permissions.TeachersReviewShowcases), HttpGet("showcase-moderation/{id:guid}")]
+    public Task<ShowcaseQueueItemDto> ShowcaseQueueItem(Guid id, CancellationToken ct) =>
+        marketplace.GetShowcaseQueueItemAsync(id, ct);
 
     [Authorize(Policy = Permissions.TeachersReviewShowcases)]
     [HttpPost("showcase-moderation/{id:guid}/versions/{versionId:guid}/start-review")]

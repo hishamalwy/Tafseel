@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Tafseel.Application.Authorization;
+using Tafseel.Application.Common;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.TeacherApplications;
 
@@ -83,10 +84,31 @@ public sealed class TeacherApplicationsController(ITeacherApplicationService app
     }
 
     [Authorize(Policy = Permissions.TeachersReviewApplications), HttpGet("queue")]
-    public Task<IReadOnlyCollection<TeacherApplicationDto>> Queue(
+    public Task<PagedResult<TeacherApplicationDto>> Queue(
         [FromQuery, EnumDataType(typeof(TeacherApplicationStatus))] TeacherApplicationStatus? status,
-        CancellationToken ct) =>
-        applications.GetQueueAsync(status, ct);
+        [FromQuery, EnumDataType(typeof(TeacherApplicationQualificationKind))]
+        TeacherApplicationQualificationKind kind = TeacherApplicationQualificationKind.All,
+        [FromQuery, EnumDataType(typeof(TeacherApplicationQueueScope))]
+        TeacherApplicationQueueScope scope = TeacherApplicationQueueScope.Actionable,
+        string? search = null,
+        Guid? subjectId = null,
+        DateTimeOffset? submittedFrom = null,
+        DateTimeOffset? submittedTo = null,
+        [FromQuery, EnumDataType(typeof(TeacherApplicationQueueSort))]
+        TeacherApplicationQueueSort sort = TeacherApplicationQueueSort.OldestFirst,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        applications.GetQueueAsync(
+            status, kind, scope, search, subjectId, submittedFrom, submittedTo, sort, page, pageSize, ct);
+
+    [Authorize(Policy = Permissions.TeachersReviewApplications), HttpGet("queue/summary")]
+    public Task<TeacherApplicationQueueSummaryDto> QueueSummary(CancellationToken ct) =>
+        applications.GetQueueSummaryAsync(ct);
+
+    [Authorize(Policy = Permissions.TeachersReviewApplications), HttpGet("{id:guid}")]
+    public Task<TeacherApplicationQueueDetailDto> QueueDetail(Guid id, CancellationToken ct) =>
+        applications.GetQueueDetailAsync(id, ct);
 
     [Authorize(Policy = Permissions.TeachersReviewApplications), HttpPost("{id:guid}/start-review")]
     public async Task<IActionResult> StartReview(

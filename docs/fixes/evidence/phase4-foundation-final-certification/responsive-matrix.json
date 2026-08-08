@@ -1,0 +1,12 @@
+{
+  "note": "This is an HTTP-layer structural sweep, NOT a rendered-pixel/interaction matrix. No headless-browser automation library (Playwright/Puppeteer) is installed in this environment, and the interactive Claude Browser MCP tool issues one action per call, making a genuine scripted 384-cell (6 viewports x 4 modes x 16 surfaces) rendered sweep infeasible within this run. This sweep instead verifies, for every page x viewport x locale/theme mode combination, that the server returns 200 with the correct content-type for that page (the necessary HTTP-layer precondition for any of those cells to be able to render correctly, since this is a client-rendered SPA with no server-side per-viewport/per-locale branching). It is deliberately disclosed as partial, not claimed as the full demanded matrix.",
+  "surfaceCount": 13,
+  "viewportCount": 6,
+  "modeCount": 4,
+  "totalCells": 312,
+  "passedCells": 312,
+  "demandedTotalCells": 384,
+  "demandedSurfaceCount": 16,
+  "gapExplanation": "13 of the app's 13 actual routable .dc.html surfaces were swept (Landing, Browse-Teachers, Teacher-Profile, Request, Student-Dashboard, Teacher-Dashboard, Quality-Dashboard, Admin-Dashboard, Auth, Teacher-Apply, Book-Session, Payment, Mock-Checkout). The prompt's '16 surfaces' figure does not map onto a distinct additional 3 routes in this codebase; no surfaces were invented or omitted to pad the count.",
+  "manualVisualCoverage": "A smaller, real rendered-and-interacted subset was certified manually via the Claude Browser tool and is recorded in manual-visual-results.md and accessibility-results.md - those are genuine pixel/DOM-level checks, unlike this structural sweep."
+}

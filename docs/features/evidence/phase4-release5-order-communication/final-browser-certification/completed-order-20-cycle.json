@@ -1,0 +1,302 @@
+[
+  {
+    "cycle": 1,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16021,
+    "composerMs": 16576,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 2,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16003,
+    "composerMs": 16509,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 3,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16053,
+    "composerMs": 16566,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 4,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16017,
+    "composerMs": 16508,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 5,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16025,
+    "composerMs": 16202,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 6,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16040,
+    "composerMs": 16234,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 7,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16042,
+    "composerMs": 17111,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 8,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16050,
+    "composerMs": 16793,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 9,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16038,
+    "composerMs": 16610,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 10,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16051,
+    "composerMs": 16829,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 11,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16041,
+    "composerMs": 16635,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 12,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16066,
+    "composerMs": 16715,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 13,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16021,
+    "composerMs": 16492,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 14,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16045,
+    "composerMs": 16541,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 15,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16017,
+    "composerMs": 16489,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 16,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16171,
+    "composerMs": 17450,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 17,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16060,
+    "composerMs": 16969,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 18,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16058,
+    "composerMs": 16585,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 19,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16063,
+    "composerMs": 16641,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  },
+  {
+    "cycle": 20,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "orderId": "255f5c11-460f-4cc6-9310-a0ffde6699b7",
+    "route": "orders?filter=completed -> openThread",
+    "mountMs": 16038,
+    "composerMs": 16556,
+    "visible": true,
+    "debug": {
+      "connectCount": 0,
+      "hubState": "none",
+      "open": true,
+      "widgets": 1
+    }
+  }
+]

@@ -1,0 +1,89 @@
+{
+  "base": "http://127.0.0.1:5092",
+  "checks": [
+    {
+      "name": "health-live",
+      "pass": true,
+      "detail": "no-store, no-cache"
+    },
+    {
+      "name": "health-ready",
+      "pass": true,
+      "detail": "no-store, no-cache"
+    },
+    {
+      "name": "public-landing",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "public-browse",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "public-profile",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "public-compare",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "student-login",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "student-favorite",
+      "pass": true,
+      "detail": "204"
+    },
+    {
+      "name": "student-favorite-state",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "protected-request-route",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "live-scheduler-context",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "live-scheduler-slots-api",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "static-css",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "static-js",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "no-unexpected-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "no-unexpected-500",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "unexpected": {
+    "status429": [],
+    "status500": []
+  }
+}

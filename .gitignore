@@ -26,6 +26,7 @@ coverage/
 .env.*
 !.env.example
 src/Tafseel.Api/appsettings.Local.json
+tests/browser/.auth/
 
 # Runtime state and private/local uploads
 **/App_Data/

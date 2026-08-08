@@ -1,0 +1,62 @@
+{
+  "requiredTotal": 2,
+  "requiredPassed": 1,
+  "requiredFailed": [
+    "05-auth-return-guided-request"
+  ],
+  "unexpected429": 0,
+  "maxRolling": 173,
+  "maxAuthRolling": 5,
+  "results": [
+    {
+      "name": "04-guest-async-protected-action",
+      "pass": true,
+      "detail": "browse has teachers"
+    },
+    {
+      "name": "guest-auth-has-return",
+      "pass": true,
+      "detail": "http://127.0.0.1:5090/app/Tafseel-Auth.dc.html?return=Tafseel-Request.dc.html%3FteacherId%3Dc6f1d8af-ffb2-4cae-9dd7-73047f999c53%26teacherServiceId%3Df0b6f5da-3384-4096-a636-58fe0c1d49b3"
+    },
+    {
+      "name": "05-auth-return-guided-request",
+      "pass": false,
+      "detail": "/app/Tafseel-Auth.dc.html?return=Tafseel-Request.dc.html%3FteacherId%3Dc6f1d8af-ffb2-4cae-9dd7-73047f999c53%26teacherServiceId%3Df0b6f5da-3384-4096-a636-58fe0c1d49b3"
+    },
+    {
+      "name": "guest-continuation-no-429",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-500",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-unexpected-401",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-pageerror",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-console",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-failed",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "guest-continuation-no-template",
+      "pass": true,
+      "detail": "[]"
+    }
+  ]
+}

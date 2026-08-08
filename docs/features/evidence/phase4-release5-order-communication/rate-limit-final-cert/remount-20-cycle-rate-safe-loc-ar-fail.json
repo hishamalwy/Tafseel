@@ -1,0 +1,582 @@
+[
+  {
+    "role": "Student",
+    "cycle": 1,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "f16410e5-6fe9-40f2-a9c0-452ee2ae029a",
+    "renderCount": 1,
+    "rolling60s": 206,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 2,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "4f78c7e4-d341-4302-9d6a-d18818d1e22c",
+    "renderCount": 1,
+    "rolling60s": 197,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 3,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "b2b1af2e-a748-4afc-9e00-d54ca0c30e8f",
+    "renderCount": 1,
+    "rolling60s": 201,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 4,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "14eff048-3592-4eb3-a306-52e7d34b5789",
+    "renderCount": 1,
+    "rolling60s": 198,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 5,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "1ff41c2d-91e5-45e0-97de-555087a7a2f9",
+    "renderCount": 1,
+    "rolling60s": 62,
+    "authRolling60s": 1,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 6,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "15556dbf-67bc-41f1-b48f-b8b6aa6cd6f3",
+    "renderCount": 1,
+    "rolling60s": 99,
+    "authRolling60s": 2,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 7,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "289cabe4-53c6-4ab9-95da-8802c0eb48e8",
+    "renderCount": 1,
+    "rolling60s": 152,
+    "authRolling60s": 3,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 8,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "048faccf-6349-49de-9fb3-3d1795ff513e",
+    "renderCount": 1,
+    "rolling60s": 205,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 9,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "2efa6782-e2ef-4e88-ac6a-c45150c8e48f",
+    "renderCount": 1,
+    "rolling60s": 53,
+    "authRolling60s": 1,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Student",
+    "cycle": 10,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "04278688-c20d-4686-8dff-2740ced2d71b",
+    "renderCount": 1,
+    "rolling60s": 106,
+    "authRolling60s": 2,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 1,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "5ec69dfb-77a2-4b8f-901a-38f70384c34c",
+    "renderCount": 1,
+    "rolling60s": 157,
+    "authRolling60s": 3,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 2,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "22308608-ccd1-4d7f-be38-c0888d7a55c0",
+    "renderCount": 1,
+    "rolling60s": 208,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 3,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "c462f1d8-7bca-4d19-8bed-4263b4a939c2",
+    "renderCount": 1,
+    "rolling60s": 206,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 4,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "58853f26-6dc0-4c39-9237-061c92235958",
+    "renderCount": 1,
+    "rolling60s": 204,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 5,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "af7ddb45-6fd8-4465-b282-8eeb6f8c7468",
+    "renderCount": 1,
+    "rolling60s": 51,
+    "authRolling60s": 1,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 6,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "6022d28c-5bee-487a-8a2b-b93856636723",
+    "renderCount": 1,
+    "rolling60s": 109,
+    "authRolling60s": 2,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 7,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "bd7be006-6b1f-4d1d-9b0c-e574320ed9bd",
+    "renderCount": 1,
+    "rolling60s": 160,
+    "authRolling60s": 3,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 8,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "336f7e9d-de0f-4d2d-8031-0c65cb0c4e8e",
+    "renderCount": 1,
+    "rolling60s": 218,
+    "authRolling60s": 4,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 9,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "c5be9d01-fec2-4332-bed1-775fc418af52",
+    "renderCount": 1,
+    "rolling60s": 51,
+    "authRolling60s": 1,
+    "status429": 0,
+    "status401": 0
+  },
+  {
+    "role": "Teacher",
+    "cycle": 10,
+    "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb",
+    "connectionBefore": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "connectionAfter": {
+      "hubState": "Connected",
+      "rawState": "Connected",
+      "connected": true,
+      "connectCount": 1,
+      "widgets": 1,
+      "hasSharedHub": true,
+      "joined": true
+    },
+    "messageId": "ae170d18-71d5-4d94-be3d-b48e113611d2",
+    "renderCount": 1,
+    "rolling60s": 102,
+    "authRolling60s": 2,
+    "status429": 0,
+    "status401": 0
+  }
+]

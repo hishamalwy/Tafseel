@@ -36,6 +36,7 @@ public static class Permissions
     public const string WithdrawalsRequest = "Withdrawals.Request";
     public const string WithdrawalsReview = "Withdrawals.Review";
     public const string ReportsView = "Reports.View";
+    public const string MarketplaceIntelligenceView = "MarketplaceIntelligence.View";
     public const string MessagesUse = "Messages.Use";
     public const string UsersView = "Users.View";
     public const string UsersManage = "Users.Manage";
@@ -52,7 +53,7 @@ public static class Permissions
         RequestsRequestRevision, RequestsComplete, SessionsBook, SessionsManageOwn, MessagesUse,
         PaymentsViewOwn, PaymentsManage, WithdrawalsRequest, WithdrawalsReview,
         SubjectsManage, TopicsManage, ReviewsCreate, ReviewsModerate,
-        DisputesCreate, DisputesResolve, ReportsView, "PlatformSettings.Manage"
+        DisputesCreate, DisputesResolve, ReportsView, MarketplaceIntelligenceView, "PlatformSettings.Manage"
     ];
 
     public static IReadOnlyCollection<string> ForRole(string role) => role switch

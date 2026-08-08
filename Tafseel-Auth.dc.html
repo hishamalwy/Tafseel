@@ -283,6 +283,9 @@
 <script type="text/x-dc" data-dc-script data-props="{}">
 async function destination(session) {
   var roles = session.roles || [];
+  var intended = Tafseel.safeAppReturnHref(new URLSearchParams(location.search).get('return'));
+  if (intended && roles.includes('Student') && !roles.includes('Admin') && !roles.includes('QualityReviewer') && !roles.includes('Teacher'))
+    return intended;
   if (roles.includes('Admin')) return 'Tafseel-Admin-Dashboard.dc.html';
   if (roles.includes('QualityReviewer')) return 'Tafseel-Quality-Dashboard.dc.html';
   if (roles.includes('Teacher')) {
@@ -293,7 +296,7 @@ async function destination(session) {
       return 'Tafseel-Teacher-Apply.dc.html';
     }
   }
-  return 'Tafseel-Student-Dashboard.dc.html';
+  return intended || 'Tafseel-Student-Dashboard.dc.html';
 }
 
 var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

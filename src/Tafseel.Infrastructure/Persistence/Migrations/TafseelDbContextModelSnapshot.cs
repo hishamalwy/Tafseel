@@ -1430,6 +1430,81 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.ToTable("FavoriteTeachers");
                 });
 
+            modelBuilder.Entity("Tafseel.Domain.Marketplace.MarketplaceInteractionEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnonymousSessionId")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("AuthenticatedUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ClientEventId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<bool>("LanguageFilterPresent")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("PriceFilterPresent")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("QueryPresent")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ResultCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ServiceCatalogItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceSurface")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TeacherId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("TeacherServiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientEventId")
+                        .IsUnique();
+
+                    b.HasIndex("OccurredAtUtc", "EventName");
+
+                    b.HasIndex("SubjectId", "ServiceCatalogItemId", "OccurredAtUtc");
+
+                    b.ToTable("MarketplaceInteractionEvents", t =>
+                        {
+                            t.HasCheckConstraint("CK_MarketplaceInteractionEvents_ResultCount", "[ResultCount] IS NULL OR [ResultCount] BETWEEN 0 AND 10000");
+                        });
+                });
+
             modelBuilder.Entity("Tafseel.Domain.Marketplace.TeacherAvailabilityException", b =>
                 {
                     b.Property<Guid>("Id")

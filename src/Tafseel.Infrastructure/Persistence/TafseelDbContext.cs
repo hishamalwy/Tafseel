@@ -39,6 +39,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<TeacherCertification> TeacherCertifications => Set<TeacherCertification>();
     public DbSet<TeacherExperience> TeacherExperiences => Set<TeacherExperience>();
     public DbSet<FavoriteTeacher> FavoriteTeachers => Set<FavoriteTeacher>();
+    public DbSet<MarketplaceInteractionEvent> MarketplaceInteractionEvents => Set<MarketplaceInteractionEvent>();
     public DbSet<LearningRequest> LearningRequests => Set<LearningRequest>();
     public DbSet<LearningRequestAttachment> LearningRequestAttachments => Set<LearningRequestAttachment>();
     public DbSet<Order> Orders => Set<Order>();
@@ -360,6 +361,21 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 table.HasCheckConstraint("CK_TeacherServices_Revisions", "[Revisions] BETWEEN 0 AND 20");
                 table.HasCheckConstraint("CK_TeacherServices_NotSelfSuperseded", "[SupersededByTeacherServiceId] IS NULL OR [SupersededByTeacherServiceId] <> [Id]");
             });
+        });
+        builder.Entity<MarketplaceInteractionEvent>(analytics =>
+        {
+            analytics.Property(x => x.Id).ValueGeneratedNever();
+            analytics.Property(x => x.EventName).HasMaxLength(40).IsUnicode(false);
+            analytics.Property(x => x.SourceSurface).HasMaxLength(40).IsUnicode(false);
+            analytics.Property(x => x.ClientEventId).HasMaxLength(100).IsUnicode(false);
+            analytics.Property(x => x.AuthenticatedUserId).HasMaxLength(450);
+            analytics.Property(x => x.AnonymousSessionId).HasMaxLength(100).IsUnicode(false);
+            analytics.Property(x => x.TeacherId).HasMaxLength(450);
+            analytics.HasIndex(x => x.ClientEventId).IsUnique();
+            analytics.HasIndex(x => new { x.OccurredAtUtc, x.EventName });
+            analytics.HasIndex(x => new { x.SubjectId, x.ServiceCatalogItemId, x.OccurredAtUtc });
+            analytics.ToTable(table => table.HasCheckConstraint(
+                "CK_MarketplaceInteractionEvents_ResultCount", "[ResultCount] IS NULL OR [ResultCount] BETWEEN 0 AND 10000"));
         });
         builder.Entity<TeacherTeachingSample>(sample =>
         {

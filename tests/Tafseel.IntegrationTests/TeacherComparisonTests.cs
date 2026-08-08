@@ -134,6 +134,27 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
         Assert.True(teacher.GetProperty("verified").GetBoolean());
     }
 
+    [Fact]
+    public async Task Compare_preserves_subject_and_service_context_without_a_winner()
+    {
+        var teachers = await SeedTeachersAsync();
+        var root = JsonDocument.Parse(await factory.CreateClient().GetStringAsync(
+            CompareUrl(teachers.FirstId, teachers.SecondId)
+            + $"&subjectId={teachers.SubjectId}&serviceTypeId={teachers.ServiceTypeId}"))
+            .RootElement;
+
+        Assert.Equal(0, root.GetProperty("unavailableCount").GetInt32());
+        Assert.DoesNotContain("winner", root.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("recommended", root.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.All(root.GetProperty("teachers").EnumerateArray(), teacher =>
+        {
+            Assert.Equal(teachers.SubjectId,
+                Assert.Single(teacher.GetProperty("subjects").EnumerateArray()).GetProperty("id").GetGuid());
+            Assert.All(teacher.GetProperty("services").EnumerateArray(), service =>
+                Assert.Equal(teachers.ServiceTypeId, service.GetProperty("serviceCatalogItemId").GetGuid()));
+        });
+    }
+
     private async Task<SeededTeachers> SeedTeachersAsync()
     {
         var first = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Teacher);
@@ -195,7 +216,7 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
         sample.Decide(second.Id, ShowcaseDecision.Approve, null, null, null, DateTimeOffset.UtcNow);
         db.Add(sample);
         await db.SaveChangesAsync();
-        return new(first.Id, second.Id, third.Id, unpublished.Id);
+        return new(first.Id, second.Id, third.Id, unpublished.Id, subject.Id, serviceType.Id);
     }
 
     private static string CompareUrl(params string[] ids) =>
@@ -213,5 +234,6 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
     }
 
     private sealed record SeededTeachers(
-        string FirstId, string SecondId, string ThirdId, string UnpublishedId);
+        string FirstId, string SecondId, string ThirdId, string UnpublishedId,
+        Guid SubjectId, Guid ServiceTypeId);
 }

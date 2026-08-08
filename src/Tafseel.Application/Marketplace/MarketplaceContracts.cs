@@ -53,7 +53,26 @@ public sealed record TeacherCardDto(
     IReadOnlyCollection<string> Languages,
     string? FullNameEnglish = null,
     bool HasAvatar = false,
-    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null);
+    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null,
+    TeacherDiscoveryOfferDto? ContextOffer = null);
+
+public sealed record TeacherDiscoveryOfferDto(
+    Guid Id,
+    Guid SubjectId,
+    string SubjectName,
+    string? SubjectNameAr,
+    Guid ServiceCatalogItemId,
+    string ServiceCode,
+    string ServiceName,
+    string? ServiceNameAr,
+    string OrderType,
+    decimal Price,
+    string Currency,
+    int DeliveryHours,
+    int Revisions,
+    bool RequiresScheduling,
+    bool CanRequest,
+    bool CanBook);
 
 public sealed record TeacherComparisonResultDto(
     int RequestedCount,
@@ -81,6 +100,9 @@ public sealed record TeacherComparisonDto(
     IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null);
 public sealed record ComparisonNamedItemDto(Guid Id, string Name, string? NameAr);
 public sealed record TeacherComparisonServiceDto(
+    Guid Id,
+    Guid SubjectId,
+    Guid ServiceCatalogItemId,
     string Title,
     string ServiceType,
     string? ServiceTypeAr,
@@ -341,6 +363,14 @@ public sealed record TeacherShowcaseDto(
     string Version,
     ShowcaseVersionDto CurrentVersion,
     IReadOnlyCollection<ShowcaseVersionDto> Versions);
+public enum ShowcaseQueueSort { OldestFirst, NewestFirst }
+
+public sealed record ShowcaseQueueSummaryDto(
+    int Actionable,
+    int Submitted,
+    int UnderReview,
+    int ChangesRequested);
+
 public sealed record ShowcaseQueueItemDto(
     Guid SampleId,
     Guid VersionId,
@@ -360,7 +390,10 @@ public sealed record ShowcaseQueueItemDto(
     DateTimeOffset SubmittedAt,
     ShowcaseModerationStatus Status,
     string? AssignedReviewerId,
-    string Version);
+    string Version,
+    DateTimeOffset? DecidedAt = null,
+    string? DecidedByDisplayName = null,
+    string? TeacherVisibleNote = null);
 
 public sealed record AvailabilityRuleInput(
     [param: EnumDataType(typeof(DayOfWeek))] DayOfWeek DayOfWeek,
@@ -389,7 +422,8 @@ public sealed record CredentialDto(
 public interface IMarketplaceService
 {
     Task<PagedResult<TeacherCardDto>> SearchAsync(TeacherSearch query, CancellationToken ct);
-    Task<TeacherComparisonResultDto> CompareAsync(string[] ids, CancellationToken ct);
+    Task<TeacherComparisonResultDto> CompareAsync(
+        string[] ids, Guid? subjectId, Guid? serviceTypeId, CancellationToken ct);
     Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct);
     Task<TeacherProfileDto> GetOwnProfileAsync(string teacherId, CancellationToken ct);
     Task<IReadOnlyCollection<NamedItemDto>> GetLanguagesAsync(string teacherId, CancellationToken ct);
@@ -419,7 +453,11 @@ public interface IMarketplaceService
     Task<ProfileVideoDto> SetProfileVideoVisibilityAsync(string teacherId, Guid id, bool visible, string version, CancellationToken ct);
     Task<ProfileVideoDto> SetProfileVideoFeaturedAsync(string teacherId, Guid id, bool featured, string version, CancellationToken ct);
     Task ReorderProfileVideosAsync(string teacherId, ProfileVideoOrderInput input, CancellationToken ct);
-    Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(ShowcaseModerationStatus? status, int page, int pageSize, CancellationToken ct);
+    Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(
+        ShowcaseModerationStatus? status, int page, int pageSize,
+        string? search, Guid? subjectId, ShowcaseQueueSort sort, CancellationToken ct);
+    Task<ShowcaseQueueSummaryDto> GetShowcaseQueueSummaryAsync(CancellationToken ct);
+    Task<ShowcaseQueueItemDto> GetShowcaseQueueItemAsync(Guid sampleId, CancellationToken ct);
     Task StartShowcaseReviewAsync(string reviewerId, Guid id, Guid versionId, string version, CancellationToken ct);
     Task DecideShowcaseAsync(string reviewerId, Guid id, Guid versionId, ShowcaseDecisionInput input, string version, CancellationToken ct);
     Task<SampleFile> OpenShowcaseVersionAsync(string requesterId, bool canReview, Guid id, Guid versionId, CancellationToken ct);

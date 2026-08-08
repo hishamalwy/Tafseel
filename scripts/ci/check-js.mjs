@@ -42,3 +42,5 @@ execFileSync(process.execPath, ["scripts/ci/check-localization.mjs"], { stdio: "
 execFileSync(process.execPath, ["scripts/ci/check-frontend-integrity.mjs"], { stdio: "inherit" });
 execFileSync(process.execPath, ["scripts/ci/check-guided-request.mjs"], { stdio: "inherit" });
 execFileSync(process.execPath, ["scripts/ci/check-sprint6-notification-routing.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-release6-discovery.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-release7-marketplace-intelligence.mjs"], { stdio: "inherit" });

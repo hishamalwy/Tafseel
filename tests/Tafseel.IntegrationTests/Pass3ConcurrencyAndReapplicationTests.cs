@@ -152,11 +152,11 @@ public sealed class Pass3ConcurrencyAndReapplicationTests(SqlServerTafseelApiFac
             "concurrency_conflict",
             (await stale.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
 
-        var queueJson = await firstClient.GetStringAsync("/api/v1/teacher-applications/queue");
+        var queueJson = await firstClient.GetStringAsync("/api/v1/teacher-applications/queue?status=4&pageSize=100");
         Assert.DoesNotContain("internalNotes", queueJson, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Private reviewer note", queueJson, StringComparison.Ordinal);
-        var queue = JsonSerializer.Deserialize<JsonElement[]>(queueJson)!;
-        var latestVersion = queue.Single(x => x.GetProperty("id").GetGuid() == application.Id)
+        var queue = JsonDocument.Parse(queueJson).RootElement.GetProperty("items");
+        var latestVersion = queue.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == application.Id)
             .GetProperty("version").GetString()!;
         firstClient.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", latestVersion);
         await AssertProblem(

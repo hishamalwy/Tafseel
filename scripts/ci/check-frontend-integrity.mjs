@@ -78,7 +78,7 @@ for (const page of pages) {
       || !/availabilityByTeacher/.test(browse)
       || !/\['availability', 'availability_field'/.test(browse))
     throw new Error("Browse and comparison must use the canonical bounded availability batch.");
-  if (!/Tafseel\.availabilityPath\(\[teacherId\]\)/.test(profile)
+  if (!/Tafseel\.availabilityPath\(\[teacherId\](?:,\s*availabilityServiceId)?\)/.test(profile)
       || /profile\.availability/.test(profile))
     throw new Error("Public Teacher Profile must use the summary and must not render raw weekly rules.");
   for (const state of [
@@ -219,7 +219,7 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       coupons: { page: 'catalog', catalogKind: 'coupons' },
       requests: { page: 'list', listKind: 'requests' },
       sessions: { page: 'list', listKind: 'sessions' },
-      reviews: { page: 'list', listKind: 'reviews' },
+      reviews: { page: 'reviews' },
       disputes: { page: 'list', listKind: 'disputes' },
       payments: { page: 'payments' },
       withdrawals: { page: 'withdrawals' },

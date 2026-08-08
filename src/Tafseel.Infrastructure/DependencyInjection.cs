@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Resend;
+using Tafseel.Application.Ai;
 using Tafseel.Application.Authentication;
 using Tafseel.Application.Authorization;
 using Tafseel.Application.Catalog;
@@ -17,6 +18,7 @@ using Tafseel.Application.Email;
 using Tafseel.Application.Finance;
 using Tafseel.Application.Governance;
 using Tafseel.Application.Marketplace;
+using Tafseel.Application.MarketplaceIntelligence;
 using Tafseel.Application.Messaging;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Orders;
@@ -24,6 +26,7 @@ using Tafseel.Application.Students;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Catalog;
 using Tafseel.Infrastructure.Catalog;
+using Tafseel.Infrastructure.Ai;
 using Tafseel.Infrastructure.Email;
 using Tafseel.Infrastructure.Finance;
 using Tafseel.Infrastructure.Governance;
@@ -205,8 +208,25 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ICatalogService, CatalogService>();
+        services.AddOptions<AiOptions>()
+            .Bind(configuration.GetSection(AiOptions.SectionName))
+            .Validate(x => string.Equals(x.Provider, "Groq", StringComparison.Ordinal),
+                "Ai:Provider must be Groq. Unknown providers are not registered.")
+            .Validate(x => Uri.TryCreate(x.Endpoint, UriKind.Absolute, out var endpoint)
+                    && (endpoint.Scheme == Uri.UriSchemeHttps
+                        || !environment.IsProduction() && endpoint.Scheme == Uri.UriSchemeHttp),
+                "Ai:Endpoint must be an absolute HTTPS URL (HTTP is allowed only outside Production).")
+            .Validate(x => !string.IsNullOrWhiteSpace(x.Model)
+                    && x.TimeoutSeconds is >= 2 and <= 60
+                    && x.MaxInputCharacters is >= 100 and <= 10_000
+                    && x.MaxOutputTokens is >= 50 and <= 4_000,
+                "AI model and request bounds are invalid.")
+            .ValidateOnStart();
+        services.AddSingleton<IAiProvider, GroqAiProvider>();
+        services.AddScoped<IAiMarketplaceAssistant, AiMarketplaceAssistant>();
         services.AddScoped<ITeacherApplicationService, TeacherApplicationService>();
         services.AddScoped<IMarketplaceService, MarketplaceService>();
+        services.AddScoped<IMarketplaceIntelligenceService, MarketplaceIntelligenceService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<ILiveSessionService, LiveSessionService>();
         services.AddScoped<IFinancialService, FinancialService>();
@@ -522,6 +542,7 @@ public static class DependencyInjection
             {
                 var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
                 await SeedDevelopmentDemoUsersAsync(environment, seedUsersOptions, users, logger);
+                await SeedDevelopmentAdditionalReviewerAsync(environment, seedUsersOptions, users, logger);
             }
 
             if (demoCatalogSeedEnabled)
@@ -594,6 +615,27 @@ public static class DependencyInjection
             if (!DemoUserAccounts.All(expected =>
                     assignments.Any(actual => actual.Email == expected.Email && actual.Name == expected.Role)))
                 return false;
+        }
+
+        if (developmentSeedEnabled)
+        {
+            (string Email, string Role)[] additionalAccounts =
+            [
+                ("qa.reviewer.sprint02@example.com", Roles.QualityReviewer),
+                ("qa.admin.sprint02@example.com", Roles.Admin)
+            ];
+            foreach (var account in additionalAccounts)
+            {
+                var assigned = await (
+                    from user in db.Users
+                    join userRole in db.UserRoles on user.Id equals userRole.UserId
+                    join role in db.Roles on userRole.RoleId equals role.Id
+                    where user.Email == account.Email && user.EmailConfirmed && role.Name == account.Role
+                    select user.Id)
+                    .AnyAsync();
+                if (!assigned)
+                    return false;
+            }
         }
 
         // Heuristic only (subject presence, not topics/qualification-topics/education-levels): if it
@@ -692,6 +734,70 @@ public static class DependencyInjection
         }
 
         logger.LogInformation("Development demo user seeding completed ({Count} accounts).", DemoUserAccounts.Length);
+    }
+
+    /// <summary>
+    /// Phase 4 Sprint 0.2: creates a small number of additional, clearly-labeled Development-only UAT
+    /// accounts for privileged roles (QualityReviewer, Admin), separate from the canonical
+    /// <see cref="DemoUserAccounts"/> list. Exists because the canonical `quality@gmail.com` /
+    /// `admin@gmail.com` accounts already have an unknown password in this environment, and this
+    /// sprint's rules forbid resetting an existing account's password merely for convenience.
+    /// Shares the exact same safety properties as <see cref="SeedDevelopmentDemoUsersAsync"/>: gated
+    /// on Development + SeedUsers:Enabled (re-checked here, not trusting the caller), idempotent,
+    /// never resets a password on an account that already exists, no Staging/Production effect.
+    /// </summary>
+    private static async Task SeedDevelopmentAdditionalReviewerAsync(
+        IHostEnvironment? environment,
+        SeedUsersOptions? seedOptions,
+        UserManager<ApplicationUser> users,
+        ILogger logger)
+    {
+        if (environment?.IsDevelopment() != true || seedOptions?.Enabled != true)
+            return;
+
+        if (string.IsNullOrWhiteSpace(seedOptions.Password))
+            return; // SeedDevelopmentDemoUsersAsync already throws a clear error for this case.
+
+        (string Email, string FullName, string Role)[] accounts =
+        [
+            ("qa.reviewer.sprint02@example.com", "Sprint 0.2 UAT Reviewer", Roles.QualityReviewer),
+            ("qa.admin.sprint02@example.com", "Sprint 0.2 UAT Admin", Roles.Admin)
+        ];
+
+        foreach (var account in accounts)
+        {
+            var user = await users.FindByEmailAsync(account.Email);
+            if (user is null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = account.Email,
+                    Email = account.Email,
+                    FullName = account.FullName,
+                    FullNameEnglish = account.FullName,
+                    EmailConfirmed = true
+                };
+                var created = await users.CreateAsync(user, seedOptions.Password);
+                if (!created.Succeeded)
+                    throw new InvalidOperationException(
+                        $"Development additional-reviewer UAT user '{account.Email}' could not be created: "
+                        + string.Join("; ", created.Errors.Select(x => x.Description)));
+                logger.LogInformation("Development additional-reviewer UAT seeding: created {Email}.", account.Email);
+            }
+            else if (!user.EmailConfirmed)
+            {
+                user.EmailConfirmed = true;
+                await users.UpdateAsync(user);
+            }
+
+            if (!await users.IsInRoleAsync(user, account.Role))
+            {
+                var assigned = await users.AddToRoleAsync(user, account.Role);
+                if (!assigned.Succeeded)
+                    throw new InvalidOperationException(
+                        $"Development additional-reviewer UAT user '{account.Email}' could not be assigned to '{account.Role}'.");
+            }
+        }
     }
 
     /// <summary>

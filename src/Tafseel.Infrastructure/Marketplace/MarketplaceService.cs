@@ -16,6 +16,7 @@ using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Messaging;
 using Tafseel.Infrastructure.Governance;
+using Tafseel.Infrastructure.Identity;
 
 namespace Tafseel.Infrastructure.Marketplace;
 
@@ -51,12 +52,37 @@ internal sealed class MarketplaceService(
             throw new DomainException("invalid_filter", "A marketplace filter is outside its allowed range.");
 
         var query = TeacherPublicQueries.BrowsableTeachers(db);
+        var offers =
+            from service in db.TeacherServices.AsNoTracking()
+            join catalog in db.ServiceCatalogItems.AsNoTracking()
+                on service.ServiceCatalogItemId equals catalog.Id
+            join subject in db.Subjects.AsNoTracking() on service.SubjectId equals subject.Id
+            where service.IsActive && service.SupersededByTeacherServiceId == null
+                && catalog.IsActive && catalog.IsPublic && catalog.TeacherSelectable
+                && subject.IsActive
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
+                    && q.SubjectId == service.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+            select new { Service = service, Catalog = catalog, Subject = subject };
+
+        if (input.SubjectId.HasValue)
+            offers = offers.Where(x => x.Service.SubjectId == input.SubjectId);
+        if (input.ServiceTypeId.HasValue)
+            offers = offers.Where(x => x.Service.ServiceCatalogItemId == input.ServiceTypeId);
 
         if (!string.IsNullOrWhiteSpace(input.Search))
         {
-            var term = input.Search.Trim();
+            var term = string.Join(' ', input.Search.Split(
+                (char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
             query = query.Where(x =>
-                x.User.FullName.Contains(term) || x.Profile.Headline.Contains(term) || x.Profile.Bio.Contains(term));
+                x.User.FullName.Contains(term)
+                || x.User.FullNameEnglish.Contains(term)
+                || db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.Profile.TeacherId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
+                    && db.Subjects.Any(subject => subject.Id == q.SubjectId && subject.IsActive
+                        && (subject.Name.Contains(term) || subject.NameAr.Contains(term))))
+                || offers.Any(offer => offer.Service.TeacherId == x.Profile.TeacherId
+                    && (offer.Catalog.Name.Contains(term) || offer.Catalog.NameAr.Contains(term))));
         }
         if (input.SubjectId.HasValue)
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
@@ -76,20 +102,13 @@ internal sealed class MarketplaceService(
                 level.TeacherId == x.Profile.TeacherId && level.EducationLevelId == input.EducationLevelId
                 && db.EducationLevels.Any(item => item.Id == level.EducationLevelId && item.IsActive)));
         if (input.ServiceTypeId.HasValue)
-            query = query.Where(x => db.TeacherServices.Any(service =>
-                service.TeacherId == x.Profile.TeacherId && service.IsActive && service.SupersededByTeacherServiceId == null
-                && service.ServiceCatalogItemId == input.ServiceTypeId
-                && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId && type.IsActive)
-                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)));
+            query = query.Where(x => offers.Any(offer => offer.Service.TeacherId == x.Profile.TeacherId));
         if (input.MinimumRating is > 0)
             query = query.Where(x => x.Profile.RatingCount > 0
                 && x.Profile.AverageRating >= input.MinimumRating);
         if (input.MaximumPrice.HasValue)
-            query = query.Where(x => db.TeacherServices.Any(service =>
-                service.TeacherId == x.Profile.TeacherId && service.IsActive && service.SupersededByTeacherServiceId == null
-                && service.Price <= input.MaximumPrice
-                && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId && type.IsActive)
-                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)));
+            query = query.Where(x => offers.Any(offer => offer.Service.TeacherId == x.Profile.TeacherId
+                && offer.Service.Price <= input.MaximumPrice));
         if (input.LanguageIds is { Length: > 0 })
             query = query.Where(x => input.LanguageIds.All(languageId =>
                 db.TeacherLanguages.Any(language =>
@@ -105,18 +124,14 @@ internal sealed class MarketplaceService(
                 .ThenByDescending(x => x.Profile.AverageRating)
                 .ThenBy(x => x.User.FullName)
                 .ThenBy(x => x.Profile.TeacherId),
-            "lowest-price" => query.OrderBy(x => db.TeacherServices
-                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive && s.SupersededByTeacherServiceId == null
-                    && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
-                    && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
-                .Min(s => (decimal?)s.Price) ?? decimal.MaxValue)
+            "lowest-price" => query.OrderBy(x => offers
+                .Where(offer => offer.Service.TeacherId == x.Profile.TeacherId)
+                .Min(offer => (decimal?)offer.Service.Price) ?? decimal.MaxValue)
                 .ThenBy(x => x.User.FullName)
                 .ThenBy(x => x.Profile.TeacherId),
-            "highest-price" => query.OrderByDescending(x => db.TeacherServices
-                .Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive && s.SupersededByTeacherServiceId == null
-                    && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
-                    && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
-                .Min(s => (decimal?)s.Price) ?? 0)
+            "highest-price" => query.OrderByDescending(x => offers
+                .Where(offer => offer.Service.TeacherId == x.Profile.TeacherId)
+                .Min(offer => (decimal?)offer.Service.Price) ?? 0)
                 .ThenBy(x => x.User.FullName)
                 .ThenBy(x => x.Profile.TeacherId),
             _ => query.OrderBy(x => x.User.FullName)
@@ -136,16 +151,17 @@ internal sealed class MarketplaceService(
                     && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive)),
                 Rating = x.Profile.RatingCount > 0 ? (decimal?)x.Profile.AverageRating : null,
                 x.Profile.RatingCount,
-                StartingPrice = db.TeacherServices.Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
-                        && s.SupersededByTeacherServiceId == null
-                        && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
-                        && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
-                    .Min(s => (decimal?)s.Price),
-                Currency = db.TeacherServices.Where(s => s.TeacherId == x.Profile.TeacherId && s.IsActive
-                        && s.SupersededByTeacherServiceId == null
-                        && db.Subjects.Any(subject => subject.Id == s.SubjectId && subject.IsActive)
-                        && db.ServiceCatalogItems.Any(type => type.Id == s.ServiceCatalogItemId && type.IsActive))
-                    .OrderBy(s => s.Price).Select(s => s.Currency).FirstOrDefault(),
+                ContextOffer = offers.Where(offer => offer.Service.TeacherId == x.Profile.TeacherId)
+                    .OrderBy(offer => offer.Service.Price).ThenBy(offer => offer.Service.Id)
+                    .Select(offer => new TeacherDiscoveryOfferDto(
+                        offer.Service.Id, offer.Service.SubjectId, offer.Subject.Name, offer.Subject.NameAr,
+                        offer.Service.ServiceCatalogItemId, offer.Catalog.Code, offer.Catalog.Name,
+                        offer.Catalog.NameAr, offer.Catalog.OrderType, offer.Service.Price,
+                        offer.Service.Currency, offer.Service.DeliveryHours, offer.Service.Revisions,
+                        offer.Catalog.RequiresScheduling,
+                        !offer.Catalog.RequiresScheduling,
+                        offer.Catalog.RequiresScheduling && offer.Catalog.Code == "live_session"))
+                    .FirstOrDefault(),
                 Subjects = db.TeacherSubjectQualifications.Where(q => q.TeacherId == x.Profile.TeacherId
                         && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
                         && db.Subjects.Any(s => s.Id == q.SubjectId && s.IsActive))
@@ -160,13 +176,14 @@ internal sealed class MarketplaceService(
             .ToArrayAsync(ct);
         var rows = pageRows.Select(x => new TeacherCardDto(
             x.TeacherId, x.FullName, x.Headline, x.Country, x.Verified,
-            x.Rating, x.RatingCount, null, null, x.StartingPrice, x.Currency,
+            x.Rating, x.RatingCount, null, null, x.ContextOffer?.Price, x.ContextOffer?.Currency,
             x.Subjects, x.Languages, x.FullNameEnglish, x.HasAvatar,
-            TrustBadges(x.Verified))).ToArray();
+            TrustBadges(x.Verified), x.ContextOffer)).ToArray();
         return new(rows, page, pageSize, count);
     }
 
-    public async Task<TeacherComparisonResultDto> CompareAsync(string[] ids, CancellationToken ct)
+    public async Task<TeacherComparisonResultDto> CompareAsync(
+        string[] ids, Guid? subjectId, Guid? serviceTypeId, CancellationToken ct)
     {
         if (ids is null || ids.Length < 2)
             throw new DomainException(
@@ -187,8 +204,26 @@ internal sealed class MarketplaceService(
             throw new DomainException(
                 "comparison_duplicate_teacher", "Each compared Teacher must be unique.");
 
-        var profiles = await TeacherPublicQueries.BrowsableTeachers(db)
-            .Where(x => requestedIds.Contains(x.Profile.TeacherId))
+        var profileQuery = TeacherPublicQueries.BrowsableTeachers(db)
+            .Where(x => requestedIds.Contains(x.Profile.TeacherId));
+        if (subjectId.HasValue)
+            profileQuery = profileQuery.Where(x => db.TeacherSubjectQualifications.Any(q =>
+                q.TeacherId == x.Profile.TeacherId && q.SubjectId == subjectId
+                && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null
+                && db.Subjects.Any(subject => subject.Id == q.SubjectId && subject.IsActive)));
+        if (serviceTypeId.HasValue)
+            profileQuery = profileQuery.Where(x => db.TeacherServices.Any(service =>
+                service.TeacherId == x.Profile.TeacherId
+                && service.IsActive && service.SupersededByTeacherServiceId == null
+                && service.ServiceCatalogItemId == serviceTypeId
+                && (!subjectId.HasValue || service.SubjectId == subjectId)
+                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
+                    && q.SubjectId == service.SubjectId
+                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                && db.ServiceCatalogItems.Any(catalog => catalog.Id == service.ServiceCatalogItemId
+                    && catalog.IsActive && catalog.IsPublic && catalog.TeacherSelectable)));
+        var profiles = await profileQuery
             .Select(x => new
             {
                 x.Profile.TeacherId,
@@ -211,6 +246,7 @@ internal sealed class MarketplaceService(
             where availableIds.Contains(qualification.TeacherId)
                 && qualification.Status == TeacherQualificationStatus.Approved
                 && qualification.RevokedAt == null && subject.IsActive
+                && (!subjectId.HasValue || qualification.SubjectId == subjectId)
             orderby qualification.TeacherId, subject.Name, subject.Id
             select new
             {
@@ -264,11 +300,14 @@ internal sealed class MarketplaceService(
                 && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
                     && q.SubjectId == service.SubjectId
                     && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                && (!subjectId.HasValue || service.SubjectId == subjectId)
+                && (!serviceTypeId.HasValue || service.ServiceCatalogItemId == serviceTypeId)
             orderby type.DisplayOrder, service.CreatedAt, service.Id
             select new
             {
                 service.TeacherId,
                 Item = new TeacherComparisonServiceDto(
+                    service.Id, service.SubjectId, service.ServiceCatalogItemId,
                     service.Title, type.Name, type.NameAr, service.Price, service.Currency,
                     type.RequiresScheduling)
             }).ToArrayAsync(ct);
@@ -906,11 +945,14 @@ internal sealed class MarketplaceService(
     }
 
     public async Task<PagedResult<ShowcaseQueueItemDto>> GetShowcaseQueueAsync(
-        ShowcaseModerationStatus? status, int page, int pageSize, CancellationToken ct)
+        ShowcaseModerationStatus? status, int page, int pageSize,
+        string? search, Guid? subjectId, ShowcaseQueueSort sort, CancellationToken ct)
     {
         RequireShowcasesEnabled();
-        if (status is not null and not (ShowcaseModerationStatus.Submitted or ShowcaseModerationStatus.UnderReview))
-            throw new DomainException("invalid_sample_status", "The moderation queue supports Submitted and UnderReview.");
+        if (status is not null && !IsOperationalShowcaseStatus(status.Value))
+            throw new DomainException(
+                "invalid_sample_status",
+                "The moderation queue supports Submitted, UnderReview, ChangesRequested, Approved, and Rejected.");
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 50);
         var query =
@@ -928,18 +970,104 @@ internal sealed class MarketplaceService(
                     : version.Status == ShowcaseModerationStatus.Submitted
                         || version.Status == ShowcaseModerationStatus.UnderReview)
             select new { version, sample, user, subject, topic };
+        if (subjectId is { } filterSubject && filterSubject != Guid.Empty)
+            query = query.Where(x => x.sample.SubjectId == filterSubject);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x =>
+                EF.Functions.Like(x.user.FullName, $"%{term}%")
+                || EF.Functions.Like(x.user.FullNameEnglish, $"%{term}%")
+                || EF.Functions.Like(x.subject.Name, $"%{term}%")
+                || EF.Functions.Like(x.subject.NameAr, $"%{term}%")
+                || EF.Functions.Like(x.version.Title, $"%{term}%"));
+        }
         var total = await query.CountAsync(ct);
-        var rows = await query.OrderBy(x => x.version.SubmittedAt).ThenBy(x => x.version.Id)
-            .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
-        return new(rows.Select(x => new ShowcaseQueueItemDto(
-            x.sample.Id, x.version.Id, x.version.VersionNumber, x.sample.TeacherId, x.user.FullName,
-            x.sample.SubjectId, x.subject.Name, x.subject.NameAr, x.version.TopicId,
-            x.topic == null ? null : x.topic.Name, x.topic == null ? null : x.topic.NameAr,
-            x.version.Title, x.version.Description, x.version.OriginalFileName ?? "showcase.mp4",
-            x.version.FileSize, x.version.SubmittedAt!.Value, x.version.Status,
-            x.version.AssignedReviewerId, Convert.ToBase64String(x.version.RowVersion))).ToArray(),
+        query = sort == ShowcaseQueueSort.NewestFirst
+            ? query.OrderByDescending(x => x.version.SubmittedAt).ThenByDescending(x => x.version.Id)
+            : query.OrderBy(x => x.version.SubmittedAt).ThenBy(x => x.version.Id);
+        var rows = await query.Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
+        var decidedIds = rows.Select(x => x.version.DecidedByUserId).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToArray();
+        var names = await db.Users.AsNoTracking().Where(x => decidedIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.FullName, ct);
+        return new(rows.Select(x => MapShowcaseQueueItem(x.sample, x.version, x.user.FullName, x.subject, x.topic,
+            x.version.DecidedByUserId is null ? null : names.GetValueOrDefault(x.version.DecidedByUserId))).ToArray(),
             page, pageSize, total);
     }
+
+    public async Task<ShowcaseQueueSummaryDto> GetShowcaseQueueSummaryAsync(CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        var statuses = await (
+            from version in db.TeacherTeachingSampleVersions.AsNoTracking()
+            join sample in db.TeacherTeachingSamples.AsNoTracking()
+                on version.TeacherTeachingSampleId equals sample.Id
+            where sample.SourceType == TeachingSampleSourceType.TeacherShowcase
+                && sample.CurrentVersionId == version.Id && sample.ArchivedAt == null
+                && (version.Status == ShowcaseModerationStatus.Submitted
+                    || version.Status == ShowcaseModerationStatus.UnderReview
+                    || version.Status == ShowcaseModerationStatus.ChangesRequested
+                    || version.Status == ShowcaseModerationStatus.Approved
+                    || version.Status == ShowcaseModerationStatus.Rejected)
+            select version.Status).ToArrayAsync(ct);
+        var submitted = statuses.Count(x => x == ShowcaseModerationStatus.Submitted);
+        var underReview = statuses.Count(x => x == ShowcaseModerationStatus.UnderReview);
+        var changes = statuses.Count(x => x == ShowcaseModerationStatus.ChangesRequested);
+        return new(submitted + underReview, submitted, underReview, changes);
+    }
+
+    public async Task<ShowcaseQueueItemDto> GetShowcaseQueueItemAsync(Guid sampleId, CancellationToken ct)
+    {
+        RequireShowcasesEnabled();
+        var row = await (
+            from version in db.TeacherTeachingSampleVersions.AsNoTracking()
+            join sample in db.TeacherTeachingSamples.AsNoTracking()
+                on version.TeacherTeachingSampleId equals sample.Id
+            join user in db.Users.AsNoTracking() on sample.TeacherId equals user.Id
+            join subject in db.Subjects.AsNoTracking() on sample.SubjectId equals subject.Id
+            join topicValue in db.Topics.AsNoTracking() on version.TopicId equals topicValue.Id into topicRows
+            from topic in topicRows.DefaultIfEmpty()
+            where sample.Id == sampleId
+                && sample.SourceType == TeachingSampleSourceType.TeacherShowcase
+                && sample.CurrentVersionId == version.Id
+                && sample.ArchivedAt == null
+                && (version.Status == ShowcaseModerationStatus.Submitted
+                    || version.Status == ShowcaseModerationStatus.UnderReview
+                    || version.Status == ShowcaseModerationStatus.ChangesRequested
+                    || version.Status == ShowcaseModerationStatus.Approved
+                    || version.Status == ShowcaseModerationStatus.Rejected)
+            select new { version, sample, user, subject, topic }).SingleOrDefaultAsync(ct)
+            ?? throw new DomainException("sample_not_found", "Teacher Showcase was not found.");
+        string? decidedName = null;
+        if (!string.IsNullOrWhiteSpace(row.version.DecidedByUserId))
+        {
+            decidedName = await db.Users.AsNoTracking()
+                .Where(x => x.Id == row.version.DecidedByUserId)
+                .Select(x => x.FullName).SingleOrDefaultAsync(ct);
+        }
+        return MapShowcaseQueueItem(row.sample, row.version, row.user.FullName, row.subject, row.topic, decidedName);
+    }
+
+    private static bool IsOperationalShowcaseStatus(ShowcaseModerationStatus status) =>
+        status is ShowcaseModerationStatus.Submitted or ShowcaseModerationStatus.UnderReview
+            or ShowcaseModerationStatus.ChangesRequested or ShowcaseModerationStatus.Approved
+            or ShowcaseModerationStatus.Rejected;
+
+    private static ShowcaseQueueItemDto MapShowcaseQueueItem(
+        TeacherTeachingSample sample,
+        TeacherTeachingSampleVersion version,
+        string teacherDisplayName,
+        Subject subject,
+        Topic? topic,
+        string? decidedByDisplayName) =>
+        new(
+            sample.Id, version.Id, version.VersionNumber, sample.TeacherId, teacherDisplayName,
+            sample.SubjectId, subject.Name, subject.NameAr, version.TopicId,
+            topic?.Name, topic?.NameAr,
+            version.Title, version.Description, version.OriginalFileName ?? "showcase.mp4",
+            version.FileSize, version.SubmittedAt!.Value, version.Status,
+            version.AssignedReviewerId, Convert.ToBase64String(version.RowVersion),
+            version.DecidedAt, decidedByDisplayName, version.TeacherVisibleNote);
 
     public async Task StartShowcaseReviewAsync(
         string reviewerId, Guid id, Guid versionId, string version, CancellationToken ct)
@@ -1526,7 +1654,7 @@ internal sealed class MarketplaceService(
             await notifications.QueueAsync(
                 reviewerId, "ShowcaseSubmitted", "Teacher Showcase submitted",
                 "A Teacher Showcase is ready for Quality review.",
-                "/app/Tafseel-Quality-Dashboard.dc.html?section=showcases",
+                $"/app/Tafseel-Quality-Dashboard.dc.html?section=showcases&selectedId={sample.Id}",
                 $"showcase:{sample.Id}:version:{sample.CurrentVersionId}:submitted:{reviewerId}",
                 false, ct);
     }

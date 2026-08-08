@@ -1,0 +1,70 @@
+{
+  "base": "http://127.0.0.1:5092",
+  "checks": [
+    {
+      "name": "health-live",
+      "pass": true,
+      "detail": "no-store, no-cache"
+    },
+    {
+      "name": "health-ready",
+      "pass": true,
+      "detail": "no-store, no-cache"
+    },
+    {
+      "name": "published-student-login",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "published-teacher-login",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "published-student-conversations",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "published-teacher-conversations",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "published-student-dashboard",
+      "pass": true,
+      "detail": "no-cache"
+    },
+    {
+      "name": "published-teacher-dashboard",
+      "pass": true,
+      "detail": "no-cache"
+    },
+    {
+      "name": "static-chat-widget",
+      "pass": true,
+      "detail": "200 cache=no-cache"
+    },
+    {
+      "name": "static-css",
+      "pass": true,
+      "detail": "200 no-cache"
+    },
+    {
+      "name": "published-student-thread",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "published-teacher-thread",
+      "pass": true,
+      "detail": "200"
+    },
+    {
+      "name": "published-auth-retention",
+      "pass": true,
+      "detail": "200"
+    }
+  ]
+}

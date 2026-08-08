@@ -38,7 +38,7 @@
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
       <a href="{{ accountHref }}" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
-        <img src="{{ accountAvatar }}" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+        <img sc-camel-src="{{ accountAvatar }}" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
         {{ accountLabel }}
       </a>
     </div>
@@ -66,7 +66,7 @@
   <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
   <nav class="tf-profile-breadcrumb" aria-label="Breadcrumb">
     <a href="Tafseel-Landing.dc.html" data-i18n="tp_home" style="color:var(--muted)" style-hover="color:var(--text)">Home</a><span>/</span>
-    <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--muted)" style-hover="color:var(--text)">{{ breadcrumbSubject }}</a><span>/</span>
+    <a href="{{ browseHref }}" style="color:var(--muted)" style-hover="color:var(--text)">{{ breadcrumbSubject }}</a><span>/</span>
     <span style="color:var(--text-2);font-weight:500">{{ teacherName }}</span>
   </nav>
 
@@ -78,7 +78,7 @@
           <div class="tf-profile-media-heading"><h2 id="featured-sample-title">{{ featuredSample.title }}</h2><sc-if value="{{ featuredSample.headingMeta }}" hint-placeholder-val="{{ true }}"><span class="tf-profile-media-meta">{{ featuredSample.headingMeta }}</span></sc-if></div>
           <div class="tf-profile-video-stage">
             <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><button type="button" class="tf-profile-carousel-arrow tf-profile-carousel-prev" aria-label="{{ previousVideoLabel }}" onClick="{{ onPreviousSample }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6" /></svg></button></sc-if>
-            <div class="tf-media-frame"><button type="button" class="tf-media-play" data-media-play aria-hidden="true" hidden><span aria-hidden="true">&#9654;</span></button><div class="tf-profile-video-overlay"><span class="{{ featuredSample.trustClass }}">{{ featuredSample.trust }}</span><div><sc-if value="{{ featuredSample.subjectName }}" hint-placeholder-val="{{ true }}"><span>{{ featuredSample.subjectName }}</span></sc-if><sc-if value="{{ hasDuration }}" hint-placeholder-val="{{ false }}"><span>{{ durationText }}</span></sc-if></div></div><video data-media-preview="true" data-download-allowed="true" src="{{ featuredSample.contentUrl }}" fetchpriority="high" controls preload="metadata" playsinline aria-label="{{ featuredSample.title }}"></video></div>
+            <div class="tf-media-frame"><button type="button" class="tf-media-play" data-media-play aria-hidden="true" hidden><span aria-hidden="true">&#9654;</span></button><div class="tf-profile-video-overlay"><span class="{{ featuredSample.trustClass }}">{{ featuredSample.trust }}</span><div><sc-if value="{{ featuredSample.subjectName }}" hint-placeholder-val="{{ true }}"><span>{{ featuredSample.subjectName }}</span></sc-if><sc-if value="{{ hasDuration }}" hint-placeholder-val="{{ false }}"><span>{{ durationText }}</span></sc-if></div></div><video data-media-preview="true" data-download-allowed="false" sc-camel-src="{{ featuredSample.contentUrl }}" fetchpriority="high" controls preload="metadata" playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false" aria-label="{{ featuredSample.title }}"></video></div>
             <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><button type="button" class="tf-profile-carousel-arrow tf-profile-carousel-next" aria-label="{{ nextVideoLabel }}" onClick="{{ onNextSample }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6" /></svg></button></sc-if>
           </div>
           <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-carousel-position" role="status" aria-live="polite">{{ samplePositionLabel }}</div></sc-if>
@@ -88,16 +88,16 @@
       </section>
 
       <section class="tf-profile-identity-card" aria-labelledby="profile-heading"><div class="tf-profile-hero-identity">
-        <div class="tf-profile-identity-lockup"><img class="tf-profile-avatar" src="{{ teacherAvatar }}" alt="{{ teacherName }}" width="132" height="132" /><div class="tf-profile-hero-copy"><div class="tf-profile-eyebrow" data-i18n="tp_teacher_profile_label">Teacher profile</div><div class="tf-profile-name-row"><h1 id="profile-heading">{{ teacherName }}</h1></div><p class="tf-profile-headline">{{ teacherHeadline }}</p></div></div>
+        <div class="tf-profile-identity-lockup"><img class="tf-profile-avatar" sc-camel-src="{{ teacherAvatar }}" alt="{{ teacherName }}" width="132" height="132" /><div class="tf-profile-hero-copy"><div class="tf-profile-eyebrow" data-i18n="tp_teacher_profile_label">Teacher profile</div><div class="tf-profile-name-row"><h1 id="profile-heading">{{ teacherName }}</h1></div><p class="tf-profile-headline">{{ teacherHeadline }}</p></div></div>
         <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-qualification"><span class="tf-profile-qualification-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7.5 12 3 3 6-7" /></svg></span><div><strong data-i18n="trust_badge_qualified_on_tafseel">Qualified on Tafseel</strong><p data-i18n="trust_badge_qualified_on_tafseel_detail">Has an active approved subject qualification on Tafseel.</p></div></div></sc-if>
         <div class="tf-profile-chip-row"><sc-for list="{{ subjectChips }}" as="chip" hint-placeholder-count="3"><span class="tf-profile-chip">{{ chip }}</span></sc-for><sc-if value="{{ hasLanguages }}" hint-placeholder-val="{{ true }}"><span class="tf-profile-chip tf-profile-chip-language" data-i18n-skip>{{ languageSummary }}</span></sc-if></div>
         <div class="tf-profile-stats"><sc-for list="{{ headStats }}" as="h" hint-placeholder-count="1"><div><strong>{{ h.value }}</strong><span>{{ h.label }}</span></div></sc-for></div>
         <div class="tf-profile-hero-actions"><button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" class="{{ favClass }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg><span>{{ favLabel }}</span></button><button type="button" onClick="{{ onShare }}" class="tf-profile-secondary-action"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" /></svg><span data-i18n="tp_share">Share</span></button><a href="{{ chatHref }}" class="tf-profile-secondary-action"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 18.5 3.5 21l.8-4A8 8 0 1 1 7 19.2" /></svg><span data-i18n="tp_message">Message</span></a></div>
         <sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><p class="tf-profile-mobile-no-service" role="status" data-i18n="tp_services_empty">No services available.</p></sc-if>
       </div></section>
-      <section id="profile-services" class="tf-profile-market-section tf-profile-services" aria-labelledby="services-heading"><div class="tf-profile-section-heading"><h2 id="services-heading" data-i18n="tp_tab_services">Services</h2></div><sc-if value="{{ servicesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="tp_services_empty">No services available.</p></sc-if><sc-for list="{{ services }}" as="sv" hint-placeholder-count="5"><article class="{{ sv.cardClass }}"><div class="tf-profile-service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="{{ sv.iconPath }}" /></svg></div><div class="tf-profile-service-copy"><div class="tf-profile-service-title"><h3>{{ sv.name }}</h3><sc-if value="{{ sv.badge }}" hint-placeholder-val="{{ false }}"><span class="tf-profile-service-badge">{{ sv.badge }}</span></sc-if></div><p class="tf-profile-service-description">{{ sv.desc }}</p><div class="tf-profile-service-meta"><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>{{ sv.delivery }}</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5m10.2 0A7.5 7.5 0 0 0 6.4 6.7L4 9m16 6-2.4 2.3A7.5 7.5 0 0 1 4.8 12" /></svg>{{ sv.revisions }}</span></div></div><div class="tf-profile-service-price"><strong>{{ sv.price }}</strong><button type="button" class="{{ sv.selectClass }}" aria-pressed="{{ sv.selected }}" onClick="{{ sv.onSelect }}">{{ sv.btnLabel }}</button></div></article></sc-for></section>
+      <section id="profile-services" class="tf-profile-market-section tf-profile-services" aria-labelledby="services-heading"><div class="tf-profile-section-heading"><h2 id="services-heading" data-i18n="tp_tab_services">Services</h2></div><sc-if value="{{ servicesEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="tp_services_empty">No services available.</p></sc-if><sc-for list="{{ services }}" as="sv" hint-placeholder-count="5"><article class="{{ sv.cardClass }}"><div class="tf-profile-service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path sc-camel-d="{{ sv.iconPath }}" /></svg></div><div class="tf-profile-service-copy"><div class="tf-profile-service-title"><h3>{{ sv.name }}</h3><sc-if value="{{ sv.badge }}" hint-placeholder-val="{{ false }}"><span class="tf-profile-service-badge">{{ sv.badge }}</span></sc-if></div><p class="tf-profile-service-description">{{ sv.desc }}</p><div class="tf-profile-service-meta"><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>{{ sv.delivery }}</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5m10.2 0A7.5 7.5 0 0 0 6.4 6.7L4 9m16 6-2.4 2.3A7.5 7.5 0 0 1 4.8 12" /></svg>{{ sv.revisions }}</span></div></div><div class="tf-profile-service-price"><strong>{{ sv.price }}</strong><button type="button" class="{{ sv.selectClass }}" aria-pressed="{{ sv.selected }}" onClick="{{ sv.onSelect }}">{{ sv.btnLabel }}</button></div></article></sc-for></section>
 
-      <section id="profile-reviews" class="tf-profile-market-section tf-profile-reviews" aria-labelledby="reviews-heading"><div class="tf-profile-section-heading"><h2 id="reviews-heading" data-i18n="tp_tab_reviews">Reviews</h2></div><sc-if value="{{ hasReviews }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-review-summary"><div><div class="tf-profile-rating-value">{{ ratingValue }}</div><div class="tf-profile-review-stars">{{ ratingStars }}</div><div class="tf-profile-review-summary-copy">{{ reviewsSummary }}</div></div><div class="tf-profile-review-breakdown"><sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5"><div><span class="tf-profile-review-label">{{ b.label }}</span><span class="tf-profile-review-bar"><span style="{{ b.barStyle }}"></span></span><strong>{{ b.score }}</strong></div></sc-for></div></div></sc-if><sc-if value="{{ reviewsEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-reviews-empty"><span class="tf-profile-reviews-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 18.5 4 21l1-4a8 8 0 1 1 3 2.2M9 12h6m-6-3h6" /></svg></span><div><strong data-i18n="tp_reviews_first_title">Be the first student to review this teacher.</strong><p data-i18n="tp_reviews_first_body">After completing your first lesson, you’ll be able to leave a review.</p></div></div></sc-if><div class="tf-profile-review-list"><sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3"><article class="tf-profile-review-card"><div class="tf-profile-review-head"><img src="{{ rv.avatar }}" alt="" width="40" height="40" class="tf-profile-review-avatar" /><div><strong>{{ rv.name }}</strong><span>{{ rv.service }} · {{ rv.date }}</span></div><span class="tf-profile-review-stars">{{ rv.stars }}</span></div><p>{{ rv.body }}</p></article></sc-for></div></section>
+      <section id="profile-reviews" class="tf-profile-market-section tf-profile-reviews" aria-labelledby="reviews-heading"><div class="tf-profile-section-heading"><h2 id="reviews-heading" data-i18n="tp_tab_reviews">Reviews</h2></div><sc-if value="{{ hasReviews }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-review-summary"><div><div class="tf-profile-rating-value">{{ ratingValue }}</div><div class="tf-profile-review-stars">{{ ratingStars }}</div><div class="tf-profile-review-summary-copy">{{ reviewsSummary }}</div></div><div class="tf-profile-review-breakdown"><sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5"><div><span class="tf-profile-review-label">{{ b.label }}</span><span class="tf-profile-review-bar"><span style="{{ b.barStyle }}"></span></span><strong>{{ b.score }}</strong></div></sc-for></div></div></sc-if><sc-if value="{{ reviewsEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-reviews-empty"><span class="tf-profile-reviews-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 18.5 4 21l1-4a8 8 0 1 1 3 2.2M9 12h6m-6-3h6" /></svg></span><div><strong data-i18n="tp_reviews_first_title">Be the first student to review this teacher.</strong><p data-i18n="tp_reviews_first_body">After completing your first lesson, you’ll be able to leave a review.</p></div></div></sc-if><div class="tf-profile-review-list"><sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3"><article class="tf-profile-review-card"><div class="tf-profile-review-head"><img sc-camel-src="{{ rv.avatar }}" alt="" width="40" height="40" class="tf-profile-review-avatar" /><div><strong>{{ rv.name }}</strong><span>{{ rv.service }} · {{ rv.date }}</span></div><span class="tf-profile-review-stars">{{ rv.stars }}</span></div><p>{{ rv.body }}</p></article></sc-for></div></section>
 
       <section id="profile-about" class="tf-profile-market-section tf-profile-about" aria-labelledby="about-heading"><div class="tf-profile-section-heading"><h2 id="about-heading" data-i18n="tp_about_teacher">About this teacher</h2></div><sc-if value="{{ showBio }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-bio-card"><sc-for list="{{ bioParagraphs }}" as="bp" hint-placeholder-count="2"><p class="tf-profile-bio-text">{{ bp }}</p></sc-for></div></sc-if><sc-if value="{{ showTimeline }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-timeline-card"><h3 data-i18n="tp_education_experience">Education &amp; experience</h3><div class="tf-profile-timeline"><sc-for list="{{ timeline }}" as="tl" hint-placeholder-count="4"><div class="tf-profile-timeline-item"><span class="tf-profile-timeline-icon">{{ tl.icon }}</span><div><strong>{{ tl.title }}</strong><span>{{ tl.meta }}</span></div><time>{{ tl.years }}</time></div></sc-for></div></div></sc-if><div class="tf-profile-about-rail"><div><h3 data-i18n="tp_subjects_topics">Subjects &amp; topics</h3><sc-if value="{{ topicsEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-empty" data-i18n="tp_topics_empty">No subjects or topics listed yet.</p></sc-if><div class="tf-profile-topic-list"><sc-for list="{{ topics }}" as="tp" hint-placeholder-count="8"><span>{{ tp }}</span></sc-for></div></div><div><h3 data-i18n="tp_languages">Teaching languages</h3><sc-if value="{{ hasLanguages }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-topic-list"><span data-i18n-skip>{{ languageSummary }}</span></div></sc-if></div></div></section>
 
@@ -122,6 +122,15 @@ Tafseel.defaultAvatar = 'assets/brand/default-avatar.svg?v=premium-1';
 function readTeacherId() {
   const q = new URLSearchParams(location.search);
   return String(q.get('id') || q.get('teacherId') || '').trim();
+}
+
+function readDiscoveryContext() {
+  const q = new URLSearchParams(location.search);
+  return {
+    teacherServiceId: String(q.get('teacherServiceId') || '').trim(),
+    subjectId: String(q.get('subjectId') || '').trim(),
+    serviceId: String(q.get('service') || '').trim()
+  };
 }
 
 function formatDateOnly(value) {
@@ -268,7 +277,7 @@ class Component extends DCLogic {
     root.style.setProperty('--tf-profile-mobile-clearance', '0px');
     void row.getBoundingClientRect();
     const barTop = bar.getBoundingClientRect().top;
-    const scrollTop = document.body.scrollTop;
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop || 0;
     const rowRect = row.getBoundingClientRect();
     const rowDocTop = rowRect.top + scrollTop;
     const rowDocBottom = rowRect.bottom + scrollTop;
@@ -301,6 +310,7 @@ class Component extends DCLogic {
     this._onMediaDuration = () => {
       const mediaDuration = formatMediaDuration(video.duration);
       if (mediaDuration !== this.state.mediaDuration) this.setState({ mediaDuration });
+      this._syncMobileCtaClearance();
     };
     video.addEventListener('loadedmetadata', this._onMediaDuration);
     if (video.readyState >= 1) this._onMediaDuration();
@@ -319,10 +329,9 @@ class Component extends DCLogic {
     this.setState({ status: 'loading', teacherId });
     try {
       const session = await Tafseel.api.ready();
-      const [profile, reviewsPage, availability] = await Promise.all([
+      const [profile, reviewsPage] = await Promise.all([
         Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId)),
-        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews' + Tafseel.api.query({ pageSize: 50 })),
-        Tafseel.api.get(Tafseel.availabilityPath([teacherId])).catch(() => null)
+        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews' + Tafseel.api.query({ pageSize: 50 }))
       ]);
       let fav = false;
       if (session && (session.roles || []).includes('Student')) {
@@ -332,8 +341,16 @@ class Component extends DCLogic {
         } catch (_) { fav = false; }
       }
       const services = profile.services || [];
-      const preferredBook = services.find(isBookableLiveService) || null;
-      const preferredRequest = services.find(x => x && x.canRequest) || preferredBook;
+      const discovery = readDiscoveryContext();
+      const preferredRequest = services.find(x => x && x.id === discovery.teacherServiceId)
+        || services.find(x => x && x.serviceCatalogItemId === discovery.serviceId
+          && (!discovery.subjectId || x.subjectId === discovery.subjectId))
+        || services.find(x => x && x.canRequest)
+        || services.find(isBookableLiveService)
+        || null;
+      const availabilityServiceId = preferredRequest && (preferredRequest.requiresScheduling || isBookableLiveService(preferredRequest))
+        ? preferredRequest.id : undefined;
+      const availability = await Tafseel.api.get(Tafseel.availabilityPath([teacherId], availabilityServiceId)).catch(() => null);
       this.setState({
         status: 'ready',
         session,
@@ -345,6 +362,17 @@ class Component extends DCLogic {
         serviceId: preferredRequest ? preferredRequest.id : '',
         selectedSampleId: profile.samples && profile.samples[0] ? profile.samples[0].id : ''
       });
+      const selectedContext = preferredRequest ? {
+        subjectId: preferredRequest.subjectId || discovery.subjectId || null,
+        serviceCatalogItemId: preferredRequest.serviceCatalogItemId || discovery.serviceId || null,
+        teacherServiceId: preferredRequest.id,
+        teacherId: teacherId
+      } : { subjectId: discovery.subjectId || null, serviceCatalogItemId: discovery.serviceId || null, teacherId: teacherId };
+      Tafseel.analytics.track('teacher_opened', 'TeacherProfile', selectedContext,
+        teacherId + ':' + (preferredRequest ? preferredRequest.id : 'profile'));
+      if (preferredRequest)
+        Tafseel.analytics.track('service_selected', 'TeacherProfile', selectedContext,
+          teacherId + ':' + preferredRequest.id);
     } catch (error) {
       this.setState({
         status: 'unavailable',
@@ -356,16 +384,34 @@ class Component extends DCLogic {
       if (error && error.status && error.status !== 404)
         this.flash(Tafseel.api.errorMessage(error));
     }
+    this._syncMobileCtaClearance();
+    setTimeout(() => this._measureMobileCtaClearance(), 400);
+  }
+
+  async reloadAvailability(service) {
+    const teacherId = this.state.teacherId || readTeacherId();
+    const exactId = service && (service.requiresScheduling || isBookableLiveService(service)) ? service.id : undefined;
+    try {
+      const availability = await Tafseel.api.get(Tafseel.availabilityPath([teacherId], exactId));
+      this.setState({
+        availabilitySummary: availability && (availability.summaries || [])[0] || null,
+        availabilityError: false
+      });
+    } catch (_) {
+      this.setState({ availabilitySummary: null, availabilityError: true });
+    }
   }
 
   async toggleFavorite() {
+    if (this._favBusy) return;
     const s = this.state;
     const session = s.session || Tafseel.api.me();
     if (!session || !(session.roles || []).includes('Student')) {
-      location.href = 'Tafseel-Auth.dc.html';
+      location.href = Tafseel.authHref(location.pathname + location.search);
       return;
     }
     const next = !s.fav;
+    this._favBusy = true;
     this.setState({ fav: next });
     try {
       await Tafseel.api.request('/favorite-teachers/' + encodeURIComponent(s.teacherId), {
@@ -374,8 +420,10 @@ class Component extends DCLogic {
       this.flash(next ? Tafseel.t('tp_fav_saved') : Tafseel.t('tp_fav_removed'));
     } catch (error) {
       this.setState({ fav: !next });
-      if (error.status === 401) location.href = 'Tafseel-Auth.dc.html';
+      if (error.status === 401) location.href = Tafseel.authHref(location.pathname + location.search);
       else this.flash(Tafseel.api.errorMessage(error));
+    } finally {
+      this._favBusy = false;
     }
   }
 
@@ -385,12 +433,14 @@ class Component extends DCLogic {
     const profile = s.profile;
     const services = (profile && profile.services) || [];
     const selected = services.find(x => x.id === s.serviceId) || null;
-    const defaultBookService = services.find(isBookableLiveService) || null;
-    const bookService = services.find(x =>
-      s.availabilitySummary && x.id === s.availabilitySummary.teacherServiceId
-    ) || defaultBookService;
+    const selectedBookService = isBookableLiveService(selected) ? selected : null;
+    const bookService = selectedBookService;
     const roleOk = canBookByRole(s.session);
-    const canBook = !!(bookService && roleOk);
+    const summaryBookable = !!(s.availabilitySummary
+      && bookService
+      && s.availabilitySummary.teacherServiceId === bookService.id
+      && ['available_today', 'next_available'].includes(s.availabilitySummary.state));
+    const canBook = !!(bookService && roleOk && summaryBookable);
     const canRequest = !!(selected && selected.canRequest);
 
     const teacherName = profile
@@ -468,7 +518,7 @@ class Component extends DCLogic {
 
     const session = s.session;
     const accountLabel = session ? Tafseel.userName(session) : t('tp_login');
-    const accountHref = session ? dashboardFor(session) : 'Tafseel-Auth.dc.html';
+    const accountHref = session ? dashboardFor(session) : Tafseel.authHref(location.pathname + location.search);
 
     const pageTitle = teacherName
       ? teacherName + ' ' + t('tp_page_title_suffix')
@@ -478,6 +528,14 @@ class Component extends DCLogic {
       document.querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]').forEach(meta => meta.setAttribute('content', pageTitle));
     }
     const subjectById = new Map(((profile && profile.subjects) || []).map(item => [item.id, named(item)]));
+    const discovery = readDiscoveryContext();
+    const browseQuery = new URLSearchParams(location.search);
+    browseQuery.delete('id');
+    browseQuery.delete('teacherId');
+    browseQuery.delete('teacherServiceId');
+    if (discovery.subjectId) browseQuery.set('subjectId', discovery.subjectId);
+    if (discovery.serviceId) browseQuery.set('service', discovery.serviceId);
+    const browseHref = 'Tafseel-Browse-Teachers.dc.html' + (browseQuery.toString() ? '?' + browseQuery.toString() : '');
     const topicById = new Map(((profile && profile.topics) || []).map(item => [item.id, named(item)]));
     const publicSamples = ((profile && profile.samples) || []).map(sm => {
       const sourceCode = sm.sourceCode === 'qualification_sample' ? 'qualification_sample' : 'reviewed_showcase';
@@ -531,6 +589,7 @@ class Component extends DCLogic {
       languageSummary: languages.join(' · '),
       hasLanguages: languages.length > 0,
       breadcrumbSubject: subjects[0] ? subjects[0] + ' ' + t('tp_teachers_suffix') : t('nav_browse'),
+      browseHref,
       verified: !!(profile && profile.verified),
       qualifiedOnTafseel: !!(profile && Array.isArray(profile.trustBadges)
         && profile.trustBadges.some(b => b && b.code === 'qualified_on_tafseel'))
@@ -574,7 +633,7 @@ class Component extends DCLogic {
       canRequest,
       canBook,
       showHeroCta: !!(canRequest || canBook),
-      heroCtaHidden: !canRequest && !canBook,
+      heroCtaHidden: services.length === 0,
       heroCtaHref: canRequest ? (selected
         ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(s.teacherId) + '&teacherServiceId=' + encodeURIComponent(selected.id)
         : 'Tafseel-Request.dc.html') : bookService
@@ -637,7 +696,18 @@ class Component extends DCLogic {
           selected: !!(selected && selected.id === sv.id),
           selectClass: 'tf-profile-service-select' + (selected && selected.id === sv.id ? ' is-selected' : ''),
           btnLabel: selected && selected.id === sv.id ? t('tp_selected') : t('tp_select'),
-          onSelect: () => this.setState({ serviceId: sv.id })
+          onSelect: () => {
+            const query = new URLSearchParams(location.search);
+            query.set('teacherServiceId', sv.id);
+            history.replaceState(null, '', location.pathname + '?' + query.toString());
+            this.setState({ serviceId: sv.id }, () => this.reloadAvailability(sv));
+            Tafseel.analytics.track('service_selected', 'TeacherProfile', {
+              subjectId: sv.subjectId || null,
+              serviceCatalogItemId: sv.serviceCatalogItemId || null,
+              teacherServiceId: sv.id,
+              teacherId: s.teacherId
+            }, s.teacherId + ':' + sv.id);
+          }
         };
       }),
       servicesEmpty: services.length === 0,

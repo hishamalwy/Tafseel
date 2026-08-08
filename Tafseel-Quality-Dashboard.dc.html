@@ -52,7 +52,7 @@
         <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
         <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
         <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <img src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+          <img sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
           <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
         </div>
       </div>
@@ -65,7 +65,7 @@
           <p style="color:var(--muted);font-size:14.5px">{{ appsSubtitle }}</p>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
           <sc-for list="{{ summary }}" as="st" hint-placeholder-count="4">
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
               <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">{{ st.label }}</div>
@@ -75,12 +75,40 @@
         </div>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <h2 style="font-size:16px;font-weight:700">{{ queueTitle }}</h2>
-            <div role="tablist" style="display:flex;gap:4px;flex-wrap:wrap">
-              <sc-for list="{{ statusTabs }}" as="tb" hint-placeholder-count="5">
-                <button type="button" role="tab" aria-selected="{{ tb.selected }}" onClick="{{ tb.onClick }}" style="{{ tb.style }}">{{ tb.label }}</button>
-              </sc-for>
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+              <h2 style="font-size:16px;font-weight:700">{{ queueTitle }}</h2>
+              <form onSubmit="{{ onAppSearchSubmit }}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                <label style="display:flex;align-items:center;gap:6px;height:32px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)">
+                  <span aria-hidden="true">⌕</span>
+                  <input value="{{ appSearch }}" onChange="{{ onAppSearch }}" aria-label="{{ appSearchPlaceholder }}" placeholder="{{ appSearchPlaceholder }}" style="border:0;background:transparent;outline:none;font-size:13px;width:200px" />
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ appStatusLabel }}
+                  <select value="{{ appStatus }}" onChange="{{ onAppStatus }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                    <option value="actionable">{{ appStatusActionable }}</option>
+                    <option value="1">{{ applyStatusSubmitted }}</option>
+                    <option value="2">{{ applyStatusUnderReview }}</option>
+                    <option value="3">{{ applyStatusChanges }}</option>
+                    <option value="4">{{ applyStatusApproved }}</option>
+                    <option value="5">{{ applyStatusRejected }}</option>
+                    <option value="all">{{ appStatusAll }}</option>
+                  </select>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ appKindLabel }}
+                  <select value="{{ appKind }}" onChange="{{ onAppKind }}" disabled="{{ appKindLocked }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                    <option value="All">{{ appKindAll }}</option>
+                    <option value="Initial">{{ appKindInitial }}</option>
+                    <option value="Additional">{{ appKindAdditional }}</option>
+                  </select>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ appSortLabel }}
+                  <select value="{{ appSort }}" onChange="{{ onAppSort }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                    <option value="OldestFirst">{{ appSortOldest }}</option>
+                    <option value="NewestFirst">{{ appSortNewest }}</option>
+                  </select>
+                </label>
+                <button type="button" onClick="{{ onAppReset }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ appResetLabel }}</button>
+              </form>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -90,8 +118,8 @@
                 <tr style="background:var(--surface-2)">
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colTeacher }}</th>
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colSubject }}</th>
+                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colKind }}</th>
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colSubmitted }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colPriority }}</th>
                   <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
                   <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
                 </tr>
@@ -99,16 +127,19 @@
               <tbody>
                 <sc-if value="{{ hasApplications }}" hint-placeholder-val="{{ false }}">
                   <sc-for list="{{ applications }}" as="a" hint-placeholder-count="0">
-                    <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
+                    <tr class="tf-row-slide" style="border-top:1px solid var(--border);background:{{ a.rowBg }}">
                       <td style="padding:14px 20px">
                         <div style="display:flex;align-items:center;gap:10px">
-                          <img src="{{ defaultAvatar }}" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
-                          <span style="font-size:14px;font-weight:600">{{ a.name }}</span>
+                          <img sc-camel-src="{{ defaultAvatar }}" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
+                          <div>
+                            <div style="font-size:14px;font-weight:600">{{ a.name }}</div>
+                            <div style="font-size:12px;color:var(--muted)">{{ a.contextLine }}</div>
+                          </div>
                         </div>
                       </td>
                       <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2)">{{ a.subject }}</td>
+                      <td style="padding:14px 12px"><span style="{{ a.kindStyle }}">{{ a.kindLabel }}</span></td>
                       <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ a.submitted }}</td>
-                      <td style="padding:14px 12px"><span style="{{ a.priorityStyle }}">{{ a.priority }}</span></td>
                       <td style="padding:14px 12px"><span style="{{ a.statusStyle }}">{{ a.status }}</span></td>
                       <td style="padding:14px 20px;text-align:end">
                         <button type="button" onClick="{{ a.onOpen }}" style="height:34px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ reviewLabel }}</button>
@@ -126,7 +157,16 @@
             <div class="tf-empty-enter" role="alert" style="padding:48px 24px;text-align:center;color:var(--error);font-size:14px">{{ queueError }}</div>
           </sc-if>
           <sc-if value="{{ noApplications }}" hint-placeholder-val="{{ false }}">
-            <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px" data-i18n="quality_queue_empty">No applications in this queue.</div>
+            <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">{{ queueEmptyLabel }}</div>
+          </sc-if>
+          <sc-if value="{{ appHasPagination }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+              <nav aria-label="{{ paginationLabel }}" style="display:flex;gap:6px">
+                <sc-for list="{{ appPages }}" as="p" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+                </sc-for>
+              </nav>
+            </div>
           </sc-if>
         </section>
       </sc-if>
@@ -183,7 +223,7 @@
                   <button type="button" onClick="{{ closeShowcase }}" aria-label="{{ closeShowcaseLabel }}" style="border:0;background:none;font-size:20px">×</button>
                 </div>
                 <p style="font-size:14px;color:var(--text-2);margin:14px 0">{{ currentShowcase.description }}</p>
-                <video data-media-preview="true" data-media-kind="showcase" data-download-allowed="true" src="{{ showcasePreviewUrl }}" controls preload="metadata" aria-label="{{ currentShowcase.title }}" style="width:100%;aspect-ratio:16/9;background:#111;border-radius:var(--r-md)"></video>
+                <video data-media-preview="true" data-media-kind="showcase" data-download-allowed="true" sc-camel-src="{{ showcasePreviewUrl }}" controls preload="metadata" aria-label="{{ currentShowcase.title }}" style="width:100%;aspect-ratio:16/9;background:#111;border-radius:var(--r-md)"></video>
                 <div style="font-size:12px;color:var(--muted);margin-top:8px">{{ currentShowcase.fileName }}</div>
               </div>
               <aside style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:13px">
@@ -208,6 +248,29 @@
               </aside>
             </section>
           </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNotificationsPage }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:24px;font-weight:800;margin-bottom:16px">{{ notificationsTitleList }}</h1>
+          <sc-if value="{{ notificationsLoading }}" hint-placeholder-val="{{ false }}">
+            <p role="status" class="tf-empty">{{ queueLoadingLabel }}</p>
+          </sc-if>
+          <sc-if value="{{ notificationsError }}" hint-placeholder-val="{{ false }}">
+            <p role="alert" style="color:var(--error)">{{ notificationsError }}</p>
+          </sc-if>
+          <sc-if value="{{ notificationsEmpty }}" hint-placeholder-val="{{ false }}">
+            <p role="status" class="tf-empty" data-i18n="quality_notifications_empty">No operational notifications.</p>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ notificationItems }}" as="n" hint-placeholder-count="0">
+              <button type="button" onClick="{{ n.onOpen }}" style="text-align:start;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface)">
+                <div style="font-size:14px;font-weight:700">{{ n.title }}</div>
+                <div style="font-size:13px;color:var(--muted);margin-top:4px">{{ n.body }}</div>
+              </button>
+            </sc-for>
+          </div>
         </div>
       </sc-if>
 
@@ -243,7 +306,7 @@
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-              <img src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+              <img sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
               <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
                 <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -319,8 +382,17 @@
                 <div>
                   <div style="font-size:18px;font-weight:800">{{ current.name }}</div>
                   <div style="font-size:13.5px;color:var(--muted)">{{ current.subject }} · {{ appliedLabel }}</div>
+                  <div style="font-size:12.5px;color:var(--text-2);margin-top:4px">{{ current.kindLabel }}</div>
                 </div>
               </div>
+              <sc-if value="{{ current.showQualificationContext }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-bottom:16px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
+                  <div style="font-size:12px;font-weight:700;margin-bottom:8px">{{ qualificationContextTitle }}</div>
+                  <sc-for list="{{ current.qualificationContext }}" as="qc" hint-placeholder-count="2">
+                    <div style="font-size:13px;padding:3px 0;color:var(--text-2)">{{ qc.line }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
                 <sc-for list="{{ current.facts }}" as="f" hint-placeholder-count="0">
                   <div>
@@ -353,7 +425,7 @@
                 </div>
               </sc-if>
               <sc-if value="{{ demoReady }}" hint-placeholder-val="{{ false }}">
-                <video data-media-preview="true" data-media-kind="qualification" data-download-allowed="true" src="{{ demoBlobUrl }}" controls preload="metadata" aria-label="{{ demoTopic }}"
+                <video data-media-preview="true" data-media-kind="qualification" data-download-allowed="true" sc-camel-src="{{ demoBlobUrl }}" controls preload="metadata" aria-label="{{ demoTopic }}"
                   style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
               </sc-if>
               <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
@@ -457,30 +529,29 @@ const STATUS_TONE = {
   5: ['var(--error-soft)', 'var(--error)'],
   6: ['var(--surface-2)', 'var(--muted)']
 };
+const TAB_RAW_STATUS = { submitted: 1, underReview: 2, changesRequested: 3, approved: 4, rejected: 5 };
 const PRIORITY_TONE = {
   2: ['var(--error-soft)', 'var(--error)'],
   1: ['var(--warning-soft)', 'var(--warning)'],
   0: ['var(--surface-2)', 'var(--muted)']
 };
-const TAB_RAW_STATUS = {
-  all: null,
-  pending: 1,
-  underreview: 2,
-  changesrequested: 3,
-  approved: 4,
-  rejected: 5
-};
-
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false,
-    statusTab: 'all', view: 'list', page: 'overview', navKey: 'overview', currentId: null,
+    view: 'list', page: 'applications', navKey: 'applications', currentId: null,
+    appSearch: '', appStatus: 'actionable', appKind: 'All', appSort: 'OldestFirst',
+    appPage: 1, appPageSize: 20, appTotal: 0, appFiltered: false,
     scores: {}, comment: '', internalNotes: '', needsReason: false, decisionBusy: false, toast: '', toastLeaving: false,
     queueLoading: true, queueError: '',
+    queueSummary: null, showcaseSummary: null,
     showcaseLoading: true, showcaseError: '', showcaseCurrentId: '',
+    showcaseSearch: '', showcaseStatus: '', showcaseSort: 'OldestFirst',
+    showcasePage: 1, showcaseTotal: 0, showcaseFiltered: false,
     showcaseFeedback: '', showcaseInternalNote: '', showcaseReasonCode: '',
     showcasePreviewUrl: '', showcaseBusy: false,
     demoBlobUrl: '', demoLoading: false, demoLoadError: '',
+    reviewHistory: [], reviewDetail: null,
+    notifications: [], notificationsLoading: false, notificationsError: '',
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
     hasAvatar: false, accountUserId: '', avatarVersion: 0, accountBusy: false,
     currentPassword: '', newPassword: '', confirmPassword: ''
@@ -489,6 +560,8 @@ class Component extends DCLogic {
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
     Tafseel.installDashboardDrawer(this, { sidebarId: 'quality-sidebar', toggleId: 'quality-drawer-toggle' });
+    this._onPopState = () => this.applyDeepLink(new URLSearchParams(location.search), { replace: true });
+    window.addEventListener('popstate', this._onPopState);
     Tafseel.api.requireRoles(['QualityReviewer']).then(session => {
       if (!session) return;
       this._session = session;
@@ -499,6 +572,7 @@ class Component extends DCLogic {
         hasAvatar: !!session.hasAvatar,
         accountUserId: session.userId || ''
       });
+      this.applyDeepLink(new URLSearchParams(location.search), { replace: true, initial: true });
       return this.loadQueue();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
@@ -507,6 +581,57 @@ class Component extends DCLogic {
     if (this._demoBlobUrl) URL.revokeObjectURL(this._demoBlobUrl);
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
+    if (this._onPopState) window.removeEventListener('popstate', this._onPopState);
+  }
+
+  applyDeepLink(params, opts) {
+    const sectionRaw = (params.get('section') || '').toLowerCase();
+    const section = sectionRaw === 'media' ? 'showcases'
+      : sectionRaw === 'overview' || sectionRaw === 'pending' || sectionRaw === 'review' ? 'applications'
+      : (sectionRaw || (opts && opts.initial ? 'applications' : this.state.navKey || 'applications'));
+    const selectedId = params.get('selectedId') || params.get('applicationId') || '';
+    const search = params.get('search') || '';
+    const status = params.get('status') || (section === 'additional' ? 'actionable' : (params.get('status') || this.state.appStatus || 'actionable'));
+    const page = Math.max(parseInt(params.get('page') || '1', 10) || 1, 1);
+    const patch = {
+      navKey: section === 'showcases' || section === 'reports' || section === 'settings' || section === 'notifications'
+        ? section : (section === 'additional' ? 'additional' : 'applications'),
+      page: section === 'showcases' || section === 'reports' || section === 'settings' || section === 'notifications'
+        ? section : (section === 'additional' ? 'additional' : 'applications'),
+      view: 'list',
+      appSearch: search,
+      appStatus: status || 'actionable',
+      appKind: section === 'additional' ? 'Additional' : (params.get('kind') || 'All'),
+      appPage: page
+    };
+    this.setState(patch);
+    if (opts && opts.replace) this.syncUrl({ replace: true, selectedId });
+    if (selectedId && patch.page !== 'showcases') setTimeout(() => this.openApp(selectedId), 0);
+    if (selectedId && patch.page === 'showcases') setTimeout(() => this.openShowcase(selectedId), 0);
+  }
+
+  syncUrl(opts) {
+    if (typeof history === 'undefined' || typeof history.replaceState !== 'function') return;
+    const s = this.state;
+    const params = new URLSearchParams();
+    const section = s.navKey || s.page || 'applications';
+    params.set('section', section);
+    if (section === 'applications' || section === 'additional') {
+      if (s.appSearch) params.set('search', s.appSearch);
+      if (s.appStatus && s.appStatus !== 'actionable') params.set('status', s.appStatus);
+      if (s.appPage > 1) params.set('page', String(s.appPage));
+      if (s.currentId) params.set('selectedId', s.currentId);
+    }
+    if (section === 'showcases') {
+      if (s.showcaseSearch) params.set('search', s.showcaseSearch);
+      if (s.showcaseStatus) params.set('status', s.showcaseStatus);
+      if (s.showcasePage > 1) params.set('page', String(s.showcasePage));
+      if (s.showcaseCurrentId) params.set('selectedId', s.showcaseCurrentId);
+    }
+    if (opts && opts.selectedId) params.set('selectedId', opts.selectedId);
+    const next = 'Tafseel-Quality-Dashboard.dc.html?' + params.toString();
+    if (opts && opts.replace) history.replaceState(null, '', next);
+    else history.pushState(null, '', next);
   }
   componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); Tafseel.mediaPreview.sync(); }
 
@@ -514,108 +639,162 @@ class Component extends DCLogic {
     Tafseel.flash(this, msg, 2800);
   }
 
+  mapApplication(x, subjects, topics) {
+    const statusKeys = [
+      'apply_status_draft', 'apply_status_submitted', 'apply_status_under_review',
+      'apply_status_changes', 'apply_status_approved', 'apply_status_rejected', 'apply_status_withdrawn'
+    ];
+    const statusLabel = Tafseel.t(statusKeys[x.status] || 'apply_status_unknown');
+    const rawPriority = Number.isFinite(Number(x.priority)) ? Number(x.priority) : 1;
+    const teacherLabel = x.teacherDisplayName || Tafseel.t('name_unavailable');
+    const quals = x.activeQualifications || [];
+    const otherQuals = quals.filter(q => q.subjectId !== x.subjectId);
+    let resources = [];
+    try { resources = JSON.parse(x.assignmentResourceManifest || '[]'); } catch (_) {}
+    resources = resources.map(resource => ({
+      name: resource.DisplayName || resource.displayName || resource.OriginalFileName || resource.originalFileName || Tafseel.t('quality_resource_fallback'),
+      href: (resource.Type || resource.type) === 'File'
+        ? '/api/v1/qualification-resources/' + (resource.Id || resource.id) + '/content'
+        : (resource.Url || resource.url || '#')
+    }));
+    const subjectName = (Tafseel.lang === 'ar' && x.subjectNameAr) ? x.subjectNameAr
+      : (x.subjectName || ((subjects || []).find(s => s.id === x.subjectId) || {}).name || Tafseel.t('quality_subject_fallback'));
+    return {
+      id: x.id,
+      name: teacherLabel,
+      initials: teacherLabel.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'TR',
+      subject: subjectName,
+      submitted: x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle: 'medium' }) : '—',
+      priority: Tafseel.t(['priority_low', 'priority_medium', 'priority_high'][rawPriority] || 'priority_medium'),
+      rawPriority,
+      status: statusLabel,
+      demoTopic: x.assignmentTitle || ((topics || []).find(t => t.id === x.qualificationTopicId) || {}).name || Tafseel.t('quality_demo_fallback'),
+      assignmentInstructions: x.assignmentInstructions || '',
+      resources,
+      hasResources: resources.length > 0,
+      facts: [
+        { k: Tafseel.t('apply_degree'), v: x.degree || '—' },
+        { k: Tafseel.t('compare_field_experience'), v: Tafseel.t('quality_years', { n: String(x.experienceYears || 0) }) }
+      ],
+      demoDuration: x.demoDurationSeconds ? Math.floor(x.demoDurationSeconds / 60) + ':' + String(x.demoDurationSeconds % 60).padStart(2, '0') : '—',
+      submissionVersion: x.submissionVersion || 1,
+      version: x.version,
+      rawStatus: x.status,
+      isAdditional: !!x.isAdditionalSubject,
+      hasPreviousFeedback: !!x.hasPreviousFeedback,
+      demoUploaded: !!x.demoUploaded,
+      otherQuals,
+      qualificationContext: [
+        ...otherQuals.map(q => ({
+          line: Tafseel.t('quality_subject_qualified', {
+            subject: (Tafseel.lang === 'ar' && q.subjectNameAr) ? q.subjectNameAr : q.subjectName
+          })
+        })),
+        { line: Tafseel.t('quality_subject_under_review', { subject: subjectName }) }
+      ]
+    };
+  }
+
   async loadQueue() {
+    const s = this.state;
     try {
       this.setState({ queueLoading: true, queueError: '' });
-      const [items, subjects, topics] = await Promise.all([
-        Tafseel.api.get('/teacher-applications/queue'),
+      const params = new URLSearchParams({
+        page: String(s.appPage || 1),
+        pageSize: '20',
+        sort: s.appSort || 'OldestFirst',
+        kind: s.navKey === 'additional' ? 'Additional' : (s.appKind || 'All')
+      });
+      if (s.appSearch) params.set('search', s.appSearch);
+      if (s.appStatus === 'all') params.set('scope', 'All');
+      else if (Object.values(TAB_RAW_STATUS).some(value => String(value) === String(s.appStatus)))
+        params.set('status', s.appStatus);
+      else params.set('scope', 'Actionable');
+      const [page, subjects, topics, summary] = await Promise.all([
+        Tafseel.api.get('/teacher-applications/queue?' + params.toString()),
         Tafseel.api.get('/subjects'),
-        Tafseel.api.get('/topics?qualificationOnly=true')
+        Tafseel.api.get('/topics?qualificationOnly=true'),
+        Tafseel.api.get('/teacher-applications/queue/summary').catch(() => null)
       ]);
-      let showcasePage = null;
+      const items = Array.isArray(page) ? page : (page && page.items) || [];
+      APPLICATIONS = items.map(x => this.mapApplication(x, subjects, topics));
       let showcaseError = '';
+      let showcasePage = null;
+      let showcaseSummary = null;
       try {
-        showcasePage = await Tafseel.api.get('/teachers/showcase-moderation?pageSize=20');
+        const showcaseParams = new URLSearchParams({
+          page: String(s.showcasePage || 1),
+          sort: s.showcaseSort || 'OldestFirst'
+        });
+        if (s.showcaseSearch) showcaseParams.set('search', s.showcaseSearch);
+        if (s.showcaseStatus) showcaseParams.set('status', s.showcaseStatus);
+        showcasePage = await Tafseel.api.get('/teachers/showcase-moderation?pageSize=20&' + showcaseParams.toString());
+        showcaseSummary = await Tafseel.api.get('/teachers/showcase-moderation/summary').catch(() => null);
       } catch (error) {
         showcaseError = Tafseel.api.errorMessage(error);
       }
       let preferences = null;
-      try {
-        preferences = await Tafseel.api.get('/notification-preferences');
-      } catch (_) {
-        preferences = null;
-      }
-      const statusKeys = [
-        'apply_status_draft', 'apply_status_submitted', 'apply_status_under_review',
-        'apply_status_changes', 'apply_status_approved', 'apply_status_rejected', 'apply_status_withdrawn'
-      ];
-      APPLICATIONS = (Array.isArray(items) ? items : []).map(x => {
-        const statusLabel = Tafseel.t(statusKeys[x.status] || 'apply_status_unknown');
-        const rawPriority = Number.isFinite(Number(x.priority)) ? Number(x.priority) : 1;
-        const priorityLabel = Tafseel.t(['priority_low', 'priority_medium', 'priority_high'][rawPriority] || 'priority_medium');
-        const teacherLabel = x.teacherDisplayName || Tafseel.t('name_unavailable');
-        const initials = teacherLabel.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'TR';
-        let resources = [];
-        try { resources = JSON.parse(x.assignmentResourceManifest || '[]'); } catch (_) {}
-        resources = resources.map(resource => ({
-          name: resource.DisplayName || resource.displayName || resource.OriginalFileName || resource.originalFileName || Tafseel.t('quality_resource_fallback'),
-          href: (resource.Type || resource.type) === 'File'
-            ? '/api/v1/qualification-resources/' + (resource.Id || resource.id) + '/content'
-            : (resource.Url || resource.url || '#')
-        }));
-        return {
-          id: x.id,
-          name: teacherLabel,
-          initials,
-          subject: x.subjectName || (subjects.find(s => s.id === x.subjectId) || {}).name || Tafseel.t('quality_subject_fallback'),
-          submitted: x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle: 'medium' }) : '—',
-          priority: priorityLabel,
-          rawPriority,
-          status: statusLabel,
-          demoTopic: x.assignmentTitle || (topics.find(t => t.id === x.qualificationTopicId) || {}).name || Tafseel.t('quality_demo_fallback'),
-          assignmentInstructions: x.assignmentInstructions || '',
-          resources,
-          hasResources: resources.length > 0,
-          facts: [
-            { k: Tafseel.t('apply_degree'), v: x.degree || '—' },
-            { k: Tafseel.t('compare_field_experience'), v: Tafseel.t('quality_years', { n: String(x.experienceYears || 0) }) }
-          ],
-          demoDuration: x.demoDurationSeconds ? Math.floor(x.demoDurationSeconds / 60) + ':' + String(x.demoDurationSeconds % 60).padStart(2, '0') : '—',
-          submissionVersion: x.submissionVersion || 1,
-          version: x.version,
-          rawStatus: x.status
-        };
-      });
+      try { preferences = await Tafseel.api.get('/notification-preferences'); } catch (_) { preferences = null; }
       const showcaseStatusKeys = [
         'showcase_status_draft', 'showcase_status_submitted', 'showcase_status_under_review',
         'showcase_status_changes_requested', 'showcase_status_approved', 'showcase_status_rejected', 'showcase_status_archived'
       ];
       SHOWCASES = ((showcasePage && showcasePage.items) || []).map(x => ({
-        id:x.sampleId,
-        versionId:x.versionId,
-        versionNumber:x.versionNumber,
-        name:x.teacherDisplayName || Tafseel.t('name_unavailable'),
-        subject:Tafseel.lang === 'ar' && x.subjectNameAr ? x.subjectNameAr : x.subjectName,
-        topic:Tafseel.lang === 'ar' && x.topicNameAr ? x.topicNameAr : (x.topicName || ''),
-        title:x.title,
-        description:x.description || '',
-        fileName:x.originalFileName,
-        fileSize:x.fileSize,
-        submitted:x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle:'medium' }) : '—',
-        status:Tafseel.t(showcaseStatusKeys[x.status] || 'showcase_status_submitted'),
-        rawStatus:x.status,
-        assignedReviewerId:x.assignedReviewerId,
-        version:x.version
+        id: x.sampleId,
+        versionId: x.versionId,
+        versionNumber: x.versionNumber,
+        name: x.teacherDisplayName || Tafseel.t('name_unavailable'),
+        subject: Tafseel.lang === 'ar' && x.subjectNameAr ? x.subjectNameAr : x.subjectName,
+        topic: Tafseel.lang === 'ar' && x.topicNameAr ? x.topicNameAr : (x.topicName || ''),
+        title: x.title,
+        description: x.description || '',
+        fileName: x.originalFileName,
+        fileSize: x.fileSize,
+        submitted: x.submittedAt ? Tafseel.date(x.submittedAt, { dateStyle: 'medium' }) : '—',
+        status: Tafseel.t(showcaseStatusKeys[x.status] || 'showcase_status_submitted'),
+        rawStatus: x.status,
+        assignedReviewerId: x.assignedReviewerId,
+        version: x.version,
+        decidedAt: x.decidedAt,
+        decidedByDisplayName: x.decidedByDisplayName || '',
+        teacherVisibleNote: x.teacherVisibleNote || ''
       }));
+      const filtered = !!(s.appSearch || (s.appStatus && s.appStatus !== 'actionable') || (s.appKind && s.appKind !== 'All' && s.navKey !== 'additional'));
       this.setState({
-        currentId: this.state.currentId,
         notifyNewApps: preferences ? preferences.emailEnabled : (this.state.notifyNewApps ?? true),
         inAppNotifications: preferences ? preferences.inAppEnabled : (this.state.inAppNotifications ?? true),
         prefsUnavailable: !preferences,
         queueLoading: false,
         queueError: '',
-        showcaseLoading:false,
-        showcaseError
+        appTotal: Array.isArray(page) ? items.length : (page && page.totalCount) || 0,
+        appPageSize: (page && page.pageSize) || 20,
+        appFiltered: filtered,
+        queueSummary: summary,
+        showcaseSummary,
+        showcaseTotal: (showcasePage && showcasePage.totalCount) || SHOWCASES.length,
+        showcaseLoading: false,
+        showcaseError,
+        showcaseFiltered: !!(s.showcaseSearch || s.showcaseStatus)
       });
     } catch (error) {
       APPLICATIONS = [];
       SHOWCASES = [];
       this.setState({
-        queueLoading:false,
-        queueError:Tafseel.api.errorMessage(error),
-        showcaseLoading:false,
-        showcaseError:Tafseel.api.errorMessage(error)
+        queueLoading: false,
+        queueError: Tafseel.api.errorMessage(error),
+        showcaseLoading: false,
+        showcaseError: Tafseel.api.errorMessage(error)
       });
+    }
+  }
+
+  async loadNotifications() {
+    this.setState({ notificationsLoading: true, notificationsError: '' });
+    try {
+      const page = await Tafseel.api.get('/notifications?pageSize=20');
+      this.setState({ notifications: (page && page.items) || [], notificationsLoading: false });
+    } catch (error) {
+      this.setState({ notificationsLoading: false, notificationsError: Tafseel.api.errorMessage(error) });
     }
   }
 
@@ -650,21 +829,65 @@ class Component extends DCLogic {
   async openApp(id) {
     try {
       let item = APPLICATIONS.find(x => x.id === id);
+      if (!item) {
+        try {
+          const detail = await Tafseel.api.get('/teacher-applications/' + encodeURIComponent(id));
+          item = this.mapApplication(detail.application || detail, [], []);
+          APPLICATIONS = [item, ...APPLICATIONS.filter(x => x.id !== id)];
+          this.setState({ reviewHistory: (detail.history || []).map(h => ({
+            label: Tafseel.t('quality_history_status', {
+              from: h.previousStatus == null ? '—' : Tafseel.t([
+                'apply_status_draft', 'apply_status_submitted', 'apply_status_under_review',
+                'apply_status_changes', 'apply_status_approved', 'apply_status_rejected', 'apply_status_withdrawn'
+              ][h.previousStatus] || 'apply_status_unknown'),
+              to: Tafseel.t([
+                'apply_status_draft', 'apply_status_submitted', 'apply_status_under_review',
+                'apply_status_changes', 'apply_status_approved', 'apply_status_rejected', 'apply_status_withdrawn'
+              ][h.nextStatus] || 'apply_status_unknown')
+            }),
+            time: h.createdAt ? Tafseel.date(h.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—',
+            actor: h.actorDisplayName || '',
+            note: h.note || ''
+          })), reviewDetail: detail });
+        } catch (error) {
+          this.flash(Tafseel.api.errorMessage(error));
+          return;
+        }
+      }
       if (item && item.rawStatus === 1) {
         await Tafseel.api.post('/teacher-applications/' + id + '/start-review', { priority:1 }, { 'If-Match':item.version });
         await this.loadQueue();
+        item = APPLICATIONS.find(x => x.id === id) || item;
       }
       if (this._demoBlobUrl) { URL.revokeObjectURL(this._demoBlobUrl); this._demoBlobUrl = ''; }
       this.setState({
         view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false,
         demoBlobUrl: '', demoLoading: true, demoLoadError: ''
       });
-      // <video src> cannot carry the in-memory bearer token, so the demo is fetched as an
-      // authenticated blob (same pattern as the Showcase preview below) rather than pointed
-      // straight at the API URL — a raw src there 401s silently and renders as a black rectangle.
+      this.syncUrl({ replace: true, selectedId: id });
+      try {
+        const detail = await Tafseel.api.get('/teacher-applications/' + encodeURIComponent(id));
+        const statusKeys = [
+          'apply_status_draft', 'apply_status_submitted', 'apply_status_under_review',
+          'apply_status_changes', 'apply_status_approved', 'apply_status_rejected', 'apply_status_withdrawn'
+        ];
+        this.setState({
+          reviewDetail: detail,
+          reviewHistory: (detail.history || []).map(h => ({
+            label: Tafseel.t('quality_history_status', {
+              from: h.previousStatus == null ? '—' : Tafseel.t(statusKeys[h.previousStatus] || 'apply_status_unknown'),
+              to: Tafseel.t(statusKeys[h.nextStatus] || 'apply_status_unknown')
+            }),
+            time: h.createdAt ? Tafseel.date(h.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—',
+            actor: h.actorDisplayName || '',
+            note: h.note || '',
+            dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--primary)'
+          }))
+        });
+      } catch (_) { /* list row is enough to continue reviewing */ }
       try {
         const file = await Tafseel.api.blob('/teacher-applications/' + id + '/demo/content');
-        if (this.state.currentId !== id) return; // navigated away while fetching
+        if (this.state.currentId !== id) return;
         this._demoBlobUrl = URL.createObjectURL(file.blob);
         this.setState({ demoBlobUrl: this._demoBlobUrl, demoLoading: false });
       } catch (demoError) {
@@ -678,27 +901,25 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
-    const pendingCount = APPLICATIONS.filter(a => a.rawStatus === 1).length;
-    const underReviewCount = APPLICATIONS.filter(a => a.rawStatus === 2).length;
-    const changesCount = APPLICATIONS.filter(a => a.rawStatus === 3).length;
-    const approvedCount = APPLICATIONS.filter(a => a.rawStatus === 4).length;
-    const rejectedCount = APPLICATIONS.filter(a => a.rawStatus === 5).length;
-    const showcaseCount = SHOWCASES.length;
+    const summary = s.queueSummary || {};
+    const showcaseSummary = s.showcaseSummary || {};
+    const pendingCount = summary.submitted || 0;
+    const underReviewCount = summary.underReview || 0;
+    const changesCount = summary.changesRequested || 0;
+    const actionableCount = summary.actionable || (pendingCount + underReviewCount);
+    const additionalCount = summary.additionalActionable || 0;
+    const showcaseCount = showcaseSummary.actionable || SHOWCASES.length;
     const NAV = [
-      ['overview','◱',Tafseel.t('qd_nav_overview'),0],
-      ['pending','◷',Tafseel.t('qd_nav_pending'),pendingCount],
-      ['review','◍',Tafseel.t('qd_nav_under_review'),underReviewCount],
-      ['changes','↺',Tafseel.t('qd_nav_changes'),changesCount],
-      ['approved','✓',Tafseel.t('qd_nav_approved'),approvedCount],
-      ['rejected','✕',Tafseel.t('qd_nav_rejected_apps'),rejectedCount],
+      ['applications','◷',Tafseel.t('qd_nav_applications'),actionableCount],
+      ['additional','⊕',Tafseel.t('qd_nav_additional'),additionalCount],
       ['showcases','▶',Tafseel.t('qd_nav_showcase'),showcaseCount],
+      ['notifications','✉',Tafseel.t('qd_nav_notifications'),0],
       ['reports','▤',Tafseel.t('qd_nav_reports'),0],
       ['settings','⚙',Tafseel.t('qd_nav_settings'),0]
     ];
 
-    const wantStatus = TAB_RAW_STATUS[s.statusTab];
-    const filtered = APPLICATIONS.filter(a => wantStatus == null || a.rawStatus === wantStatus);
-    const current = APPLICATIONS.find(a => a.id === s.currentId) || filtered[0] || null;
+    const filtered = APPLICATIONS;
+    const current = APPLICATIONS.find(a => a.id === s.currentId) || null;
     const currentShowcase = SHOWCASES.find(x => x.id === s.showcaseCurrentId) || null;
 
     const rubric = RUBRIC_KEYS.map(key => {
@@ -743,8 +964,16 @@ class Component extends DCLogic {
     };
 
     const navTo = (key) => {
-      const tabMap = { pending:'pending', review:'underreview', changes:'changesrequested', approved:'approved', rejected:'rejected' };
-      this.setState({ navKey: key, page: tabMap[key] ? 'list' : key, statusTab: tabMap[key] || 'all', view: 'list' });
+      const page = key === 'additional' ? 'additional' : key;
+      this.setState({
+        navKey: key, page, view: 'list', currentId: null,
+        appKind: key === 'additional' ? 'Additional' : (key === 'applications' ? 'All' : s.appKind),
+        appPage: 1
+      }, () => {
+        this.syncUrl({ replace: true });
+        if (key === 'applications' || key === 'additional' || key === 'showcases') this.loadQueue();
+        if (key === 'notifications') this.loadNotifications();
+      });
       if (typeof this.closeDrawer === 'function') this.closeDrawer();
       else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
     };
@@ -892,16 +1121,18 @@ class Component extends DCLogic {
         onClick: () => navTo(key)
       })),
 
-      isList: s.view === 'list' && !['reports','settings','showcases'].includes(s.page || 'overview'),
+      isList: s.view === 'list' && !['reports','settings','showcases','notifications'].includes(s.page || 'applications'),
       isShowcases:s.page === 'showcases',
       isReportsPage: s.page === 'reports',
       isSettingsPage: s.page === 'settings',
+      isNotificationsPage: s.page === 'notifications',
       showcaseQueueTitle:Tafseel.t('quality_showcase_queue_title'),
       showcaseQueueHint:Tafseel.t('quality_showcase_queue_hint'),
       closeShowcaseLabel:Tafseel.t('quality_showcase_close'),
       showcaseQueueLoading:!!s.showcaseLoading,
       showcaseQueueError:s.showcaseError,
       showcaseQueueEmpty:!s.showcaseLoading && !s.showcaseError && SHOWCASES.length === 0,
+      showcaseEmptyLabel: s.showcaseFiltered ? Tafseel.t('quality_queue_empty_filtered') : Tafseel.t('quality_showcase_queue_empty'),
       showcaseQueue:SHOWCASES.map(item => ({
         ...item,
         onOpen:() => this.openShowcase(item.id),
@@ -958,29 +1189,75 @@ class Component extends DCLogic {
       summary: s.queueLoading ? [
         { label: Tafseel.t('quality_summary_pending'), value: '…' },
         { label: Tafseel.t('quality_in_queue'), value: '…' },
-        { label: Tafseel.t('quality_report_approval_rate'), value: '…' },
-        { label: Tafseel.t('quality_report_avg_time'), value: '…' }
+        { label: Tafseel.t('qd_nav_changes'), value: '…' },
+        { label: Tafseel.t('qd_nav_showcase'), value: '…' }
       ] : [
         { label: Tafseel.t('quality_summary_pending'), value: String(pendingCount) },
-        { label: Tafseel.t('quality_in_queue'), value: String(APPLICATIONS.length) },
-        { label: Tafseel.t('quality_report_approval_rate'), value: Tafseel.t('analytics_unavailable') },
-        { label: Tafseel.t('quality_report_avg_time'), value: Tafseel.t('analytics_unavailable') }
+        { label: Tafseel.t('quality_in_queue'), value: String(actionableCount) },
+        { label: Tafseel.t('qd_nav_changes'), value: String(changesCount) },
+        { label: Tafseel.t('qd_nav_showcase'), value: String(showcaseCount) }
       ],
 
       queueLoading: s.queueLoading,
       queueError: s.queueError,
       queueLoadingLabel: Tafseel.t('quality_loading_applications'),
 
-      appsTitle: Tafseel.t('quality_apps_title'),
-      appsSubtitle: Tafseel.t('quality_apps_subtitle'),
+      appsTitle: s.navKey === 'additional' ? Tafseel.t('quality_additional_title') : Tafseel.t('quality_apps_title'),
+      appsSubtitle: s.navKey === 'additional' ? Tafseel.t('quality_additional_subtitle') : Tafseel.t('quality_apps_subtitle'),
       queueTitle: Tafseel.t('quality_queue_title'),
       queueCaption: Tafseel.t('quality_queue_caption'),
       colTeacher: Tafseel.t('quality_col_teacher'),
       colSubject: Tafseel.t('quality_col_subject'),
+      colKind: Tafseel.t('quality_col_kind'),
       colSubmitted: Tafseel.t('quality_col_submitted'),
       colPriority: Tafseel.t('quality_col_priority'),
       colStatus: Tafseel.t('quality_col_status'),
       colAction: Tafseel.t('quality_col_action'),
+      appSearch: s.appSearch || '',
+      onAppSearch: e => this.setState({ appSearch: e.target.value }),
+      onAppSearchSubmit: e => { e.preventDefault(); this.setState({ appPage: 1 }, () => this.loadQueue()); },
+      appSearchPlaceholder: Tafseel.t('quality_search_placeholder'),
+      appStatus: s.appStatus || 'actionable',
+      onAppStatus: e => this.setState({ appStatus: e.target.value, appPage: 1 }, () => this.loadQueue()),
+      appStatusLabel: Tafseel.t('quality_filter_status'),
+      appStatusActionable: Tafseel.t('quality_status_actionable'),
+      appStatusAll: Tafseel.t('quality_tab_all'),
+      applyStatusSubmitted: Tafseel.t('apply_status_submitted'),
+      applyStatusUnderReview: Tafseel.t('apply_status_under_review'),
+      applyStatusChanges: Tafseel.t('apply_status_changes'),
+      applyStatusApproved: Tafseel.t('apply_status_approved'),
+      applyStatusRejected: Tafseel.t('apply_status_rejected'),
+      appKind: s.navKey === 'additional' ? 'Additional' : (s.appKind || 'All'),
+      onAppKind: e => this.setState({ appKind: e.target.value, appPage: 1 }, () => this.loadQueue()),
+      appKindLocked: s.navKey === 'additional',
+      appKindLabel: Tafseel.t('quality_filter_kind'),
+      appKindAll: Tafseel.t('quality_tab_all'),
+      appKindInitial: Tafseel.t('quality_kind_initial'),
+      appKindAdditional: Tafseel.t('quality_kind_additional'),
+      appSort: s.appSort || 'OldestFirst',
+      onAppSort: e => this.setState({ appSort: e.target.value, appPage: 1 }, () => this.loadQueue()),
+      appSortLabel: Tafseel.t('quality_sort'),
+      appSortOldest: Tafseel.t('quality_sort_oldest'),
+      appSortNewest: Tafseel.t('quality_sort_newest'),
+      onAppReset: () => this.setState({
+        appSearch: '', appStatus: 'actionable', appKind: s.navKey === 'additional' ? 'Additional' : 'All',
+        appSort: 'OldestFirst', appPage: 1
+      }, () => this.loadQueue()),
+      appResetLabel: Tafseel.t('quality_reset'),
+      paginationLabel: Tafseel.t('quality_pagination'),
+      appHasPagination: (s.appTotal || 0) > (s.appPageSize || 20),
+      appPages: (() => {
+        const total = s.appTotal || 0, pageSize = s.appPageSize || 20;
+        const pages = Math.max(1, Math.ceil(total / pageSize));
+        const current = s.appPage || 1;
+        return Array.from({ length: pages }, (_, i) => ({
+          label: String(i + 1),
+          onClick: () => this.setState({ appPage: i + 1 }, () => this.loadQueue()),
+          style: 'min-width:34px;height:32px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+            (current === i + 1 ? 'background:var(--primary);color:var(--primary-ink);border-color:var(--primary);' : 'background:var(--surface);color:var(--text);')
+        }));
+      })(),
+      qualificationContextTitle: Tafseel.t('quality_qualification_context'),
       reviewLabel: Tafseel.t('quality_review'),
       headerTitle: Tafseel.t('quality_header'),
       themeToggleLabel: Tafseel.t('req_toggle_theme'),
@@ -1022,40 +1299,40 @@ class Component extends DCLogic {
         ).catch(error => this.flash(Tafseel.api.errorMessage(error)));
       },
 
-      statusTabs: [
-        { key: 'all', label: Tafseel.t('quality_tab_all') },
-        { key: 'pending', label: Tafseel.t('apply_status_submitted') },
-        { key: 'underreview', label: Tafseel.t('apply_status_under_review') },
-        { key: 'changesrequested', label: Tafseel.t('apply_status_changes') },
-        { key: 'approved', label: Tafseel.t('apply_status_approved') },
-        { key: 'rejected', label: Tafseel.t('apply_status_rejected') }
-      ].map(t => ({
-        label: t.label, selected: s.statusTab === t.key,
-        style: 'padding:7px 12px;border:0;background:none;font-size:13px;font-weight:600;border-radius:var(--r-sm);transition:all var(--t);' +
-          (s.statusTab === t.key ? 'background:var(--primary-soft);color:var(--primary);' : 'color:var(--muted);'),
-        onClick: () => this.setState({ statusTab: t.key })
-      })),
-
       noApplications: !s.queueLoading && !s.queueError && filtered.length === 0,
+      queueEmptyLabel: s.appFiltered ? Tafseel.t('quality_queue_empty_filtered') : Tafseel.t('quality_queue_empty_actionable'),
       hasApplications: filtered.length > 0,
       applications: filtered.map(a => {
         const [sbg, sfg] = STATUS_TONE[a.rawStatus] || STATUS_TONE[1];
-        const [pbg, pfg] = PRIORITY_TONE[a.rawPriority] || PRIORITY_TONE[1];
         return {
           ...a,
           initials: a.initials || '—',
           name: a.name || '—',
           subject: a.subject || '—',
           submitted: a.submitted || '—',
-          priority: a.priority || '—',
           status: a.status || '—',
-          priorityStyle: 'font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:' + pbg + ';color:' + pfg,
+          kindLabel: a.isAdditional ? Tafseel.t('quality_kind_additional') : Tafseel.t('quality_kind_initial'),
+          kindStyle: 'font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:' +
+            (a.isAdditional ? 'var(--info-soft);color:var(--info)' : 'var(--surface-2);color:var(--muted)'),
+          contextLine: a.isAdditional && a.otherQuals && a.otherQuals.length
+            ? Tafseel.t('quality_also_qualified', {
+                subjects: a.otherQuals.map(q => (Tafseel.lang === 'ar' && q.subjectNameAr) ? q.subjectNameAr : q.subjectName).join(', ')
+              })
+            : (a.hasPreviousFeedback ? Tafseel.t('quality_feedback_indicator') : (a.demoUploaded ? Tafseel.t('quality_demo_available') : '')),
+          showQualificationContext: !!(a.isAdditional && a.qualificationContext && a.qualificationContext.length),
+          rowBg: s.currentId === a.id ? 'var(--primary-soft)' : 'transparent',
           statusStyle: 'display:inline-flex;height:23px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + sbg + ';color:' + sfg,
           onOpen: () => this.openApp(a.id)
         };
       }),
 
-      current, rubric, overallScore,
+      current: current ? {
+        ...current,
+        kindLabel: current.isAdditional ? Tafseel.t('quality_kind_additional') : Tafseel.t('quality_kind_initial'),
+        showQualificationContext: !!(current.isAdditional && current.qualificationContext && current.qualificationContext.length),
+        qualificationContext: current.qualificationContext || []
+      } : null,
+      rubric, overallScore,
 
       comment: s.comment, onComment: e => this.setState({ comment: e.target.value, needsReason: false }),
       internalNotes: s.internalNotes, onInternalNotes: e => this.setState({ internalNotes: e.target.value }),
@@ -1065,14 +1342,38 @@ class Component extends DCLogic {
       onReject: () => decide(2),
       decisionBusy: !!s.decisionBusy,
 
-      hasHistory: !!(current && current.submitted),
-      history: current && current.submitted ? [
-        {
-          label: Tafseel.t('quality_history_submitted'),
-          time: current.submitted,
-          dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--primary)'
+      hasHistory: (s.reviewHistory && s.reviewHistory.length > 0) || !!(current && current.submitted),
+      history: (s.reviewHistory && s.reviewHistory.length)
+        ? s.reviewHistory
+        : (current && current.submitted ? [
+          {
+            label: Tafseel.t('quality_history_submitted'),
+            time: current.submitted,
+            actor: '',
+            note: '',
+            dotStyle: 'flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--primary)'
+          }
+        ] : []),
+      notificationsTitleList: Tafseel.t('qd_nav_notifications'),
+      notificationsLoading: !!s.notificationsLoading,
+      notificationsError: s.notificationsError || '',
+      notificationsEmpty: !s.notificationsLoading && !s.notificationsError && !(s.notifications || []).length,
+      notificationItems: (s.notifications || []).map(n => ({
+        id: n.id,
+        title: Tafseel.notificationTitle(n),
+        body: Tafseel.notificationBody ? Tafseel.notificationBody(n) : (n.body || ''),
+        unread: !n.readAt,
+        onOpen: async () => {
+          try { await Tafseel.api.post('/notifications/read?id=' + encodeURIComponent(n.id)); } catch (_) {}
+          const dest = Tafseel.notificationRoute(n, 'quality');
+          this.applyDeepLink(new URLSearchParams((dest.href.split('?')[1] || '')), { replace: false });
+          if (dest.section === 'showcases' || dest.section === 'applications' || dest.section === 'additional') {
+            await this.loadQueue();
+            if (dest.selectedId && dest.section !== 'showcases') this.openApp(dest.selectedId);
+            if (dest.selectedId && dest.section === 'showcases') this.openShowcase(dest.selectedId);
+          }
         }
-      ] : []
+      }))
     };
   }
 }

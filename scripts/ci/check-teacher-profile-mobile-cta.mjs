@@ -15,15 +15,19 @@ function assert(cond, msg) {
 const profile = readFileSync("Tafseel-Teacher-Profile.dc.html", "utf8");
 const css = readFileSync("css/tafseel.css", "utf8");
 
-// 1/6. Mobile CTA and the no-service note are rendered from complementary conditions — a
-// published teacher with services never shows the no-service note, and a teacher with none
-// never shows the fixed CTA bar (which would otherwise be a lie: a button that goes nowhere).
+// 1/6. Mobile CTA bar and the no-service note are gated on distinct predicates (Phase 4 Sprint 0,
+// Track E). Previously heroCtaHidden was "!canRequest && !canBook", which could go true even while
+// a real service was selected (just not actionable), making the "No services available" note lie
+// next to a fully populated selected-service card/CTA context — the exact contradiction Track E
+// requires fixed. heroCtaHidden now means "there are truly zero services"; it must still imply
+// !showHeroCta (no services -> nothing to request/book), but the converse no longer holds (a
+// selected-but-non-actionable service correctly shows neither the bar nor the note).
 assert(profile.includes('<sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-mobile-cta">'),
   "mobile CTA bar must be gated on showHeroCta");
 assert(profile.includes('<sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><p class="tf-profile-mobile-no-service"'),
   "no-service mobile note must be gated on heroCtaHidden");
-assert(profile.includes("heroCtaHidden: !canRequest && !canBook") && profile.includes("showHeroCta: !!(canRequest || canBook)"),
-  "showHeroCta and heroCtaHidden must remain exact logical complements");
+assert(profile.includes("heroCtaHidden: services.length === 0") && profile.includes("showHeroCta: !!(canRequest || canBook)"),
+  "heroCtaHidden must mean zero services (Track E fix); showHeroCta stays CTA-eligibility-driven");
 
 // 2. The dynamic clearance measurement must always re-baseline to 0px before measuring, or a
 // previously-applied clearance masks the true overlap and gets zeroed back out on the next pass

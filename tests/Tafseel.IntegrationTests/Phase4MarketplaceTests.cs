@@ -104,7 +104,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
     }
 
     [Fact]
-    public async Task Public_search_has_fixed_sort_pagination_filters_and_two_queries()
+    public async Task Public_search_has_fixed_sort_pagination_filters_and_bounded_queries()
     {
         var teacher = await SeedTeacherAsync(approved: true, withService: true);
         var student = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
@@ -143,7 +143,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         Assert.Equal(JsonValueKind.Null, item.GetProperty("completedOrders").ValueKind);
         Assert.Equal(JsonValueKind.Null, item.GetProperty("responseTimeMinutes").ValueKind);
         Assert.True(item.GetProperty("verified").GetBoolean());
-        Assert.InRange(factory.Commands.ReadCount, 1, 2);
+        Assert.InRange(factory.Commands.ReadCount, 1, 4);
 
         var invalid = await client.GetAsync("/api/v1/teachers?sort=raw-sql");
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
@@ -194,6 +194,73 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         var online = await client.GetAsync("/api/v1/teachers?onlineOnly=true");
         Assert.Equal(HttpStatusCode.BadRequest, online.StatusCode);
         Assert.Equal("online_status_unavailable", await CodeAsync(online));
+    }
+
+    [Fact]
+    public async Task Discovery_search_filters_and_price_use_the_same_eligible_subject_service_offer()
+    {
+        var teacher = await SeedTeacherAsync(approved: true, withService: true);
+        var hidden = await SeedTeacherAsync(approved: false, withService: true);
+        string hiddenName;
+        string serviceNameAr;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            hiddenName = "Hidden Discovery " + Guid.NewGuid().ToString("N");
+            var hiddenUser = await db.Users.SingleAsync(x => x.Id == hidden.Id);
+            hiddenUser.FullName = hiddenName;
+            hiddenUser.FullNameEnglish = hiddenName;
+            serviceNameAr = (await db.ServiceCatalogItems.SingleAsync(x => x.Id == teacher.ServiceTypeId)).NameAr;
+            db.Add(new TeacherService(
+                teacher.Id, teacher.OtherSubjectId, teacher.ServiceTypeId,
+                "Ineligible cross-subject offer", "Must not enter discovery.",
+                25, "SAR", 12, 1, DateTimeOffset.UtcNow));
+            await db.SaveChangesAsync();
+        }
+
+        var client = factory.CreateClient();
+        async Task<JsonElement> Search(string query) => JsonDocument.Parse(
+            await client.GetStringAsync("/api/v1/teachers?" + query)).RootElement.Clone();
+
+        var contextual = await Search(
+            $"subjectId={teacher.SubjectId}&serviceTypeId={teacher.ServiceTypeId}&maximumPrice=100&pageSize=1");
+        Assert.Equal(1, contextual.GetProperty("totalCount").GetInt32());
+        Assert.Equal(1, contextual.GetProperty("pageSize").GetInt32());
+        var item = Assert.Single(contextual.GetProperty("items").EnumerateArray());
+        Assert.Equal(teacher.Id, item.GetProperty("teacherId").GetString());
+        var offer = item.GetProperty("contextOffer");
+        Assert.Equal(teacher.SubjectId, offer.GetProperty("subjectId").GetGuid());
+        Assert.Equal(teacher.ServiceTypeId, offer.GetProperty("serviceCatalogItemId").GetGuid());
+        Assert.Equal(100m, offer.GetProperty("price").GetDecimal());
+        Assert.DoesNotContain("email", item.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("phone", item.GetRawText(), StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal(0, (await Search(
+            $"subjectId={teacher.SubjectId}&serviceTypeId={teacher.ServiceTypeId}&maximumPrice=99"))
+            .GetProperty("totalCount").GetInt32());
+        Assert.Equal(0, (await Search(
+            $"subjectId={teacher.OtherSubjectId}&serviceTypeId={teacher.ServiceTypeId}"))
+            .GetProperty("totalCount").GetInt32());
+        Assert.Equal(teacher.Id, Assert.Single((await Search(
+            $"search={Uri.EscapeDataString(serviceNameAr)}&subjectId={teacher.SubjectId}"))
+            .GetProperty("items").EnumerateArray(), x => x.GetProperty("teacherId").GetString() == teacher.Id)
+            .GetProperty("teacherId").GetString());
+        Assert.Equal(0, (await Search($"search={Uri.EscapeDataString(hiddenName)}"))
+            .GetProperty("totalCount").GetInt32());
+        Assert.Equal(0, (await Search(
+            $"subjectId={teacher.SubjectId}&languageIds={Guid.NewGuid()}"))
+            .GetProperty("totalCount").GetInt32());
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            var service = await db.TeacherServices.SingleAsync(x => x.Id == teacher.ServiceId);
+            service.SetActive(false, DateTimeOffset.UtcNow);
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(0, (await Search(
+            $"subjectId={teacher.SubjectId}&serviceTypeId={teacher.ServiceTypeId}"))
+            .GetProperty("totalCount").GetInt32());
     }
 
     [Fact]

@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Tafseel.Application.Authorization;
 using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Marketplace;
+using Tafseel.Domain.Messaging;
 using Tafseel.Domain.Orders;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
@@ -132,6 +133,43 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var acceptedJson = JsonDocument.Parse(await accepted.Content.ReadAsStringAsync()).RootElement;
         var orderId = acceptedJson.GetProperty("id").GetGuid();
         var version = acceptedJson.GetProperty("version").GetString()!;
+        var studentConversation = await student.PostAsJsonAsync("/api/v1/conversations", new
+        {
+            otherUserId = data.Teacher.Id,
+            scope = (int)ConversationScope.Order,
+            resourceId = orderId
+        });
+        studentConversation.EnsureSuccessStatusCode();
+        var conversationId = JsonDocument.Parse(await studentConversation.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("id").GetGuid();
+        var teacherConversation = await teacher.PostAsJsonAsync("/api/v1/conversations", new
+        {
+            otherUserId = data.Student.Id,
+            scope = (int)ConversationScope.Order,
+            resourceId = orderId
+        });
+        Assert.Equal(conversationId, JsonDocument.Parse(await teacherConversation.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("id").GetGuid());
+        Assert.Equal(HttpStatusCode.NotFound, (await otherStudent.PostAsJsonAsync("/api/v1/conversations", new
+        {
+            otherUserId = data.Teacher.Id,
+            scope = (int)ConversationScope.Order,
+            resourceId = orderId
+        })).StatusCode);
+        var orderMessage = await student.PostAsJsonAsync(
+            $"/api/v1/conversations/{conversationId}/messages", new { body = "Order context question" });
+        orderMessage.EnsureSuccessStatusCode();
+        var orderMessageId = JsonDocument.Parse(await orderMessage.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("id").GetGuid();
+        await using (var notificationScope = factory.Services.CreateAsyncScope())
+        {
+            var notification = await notificationScope.ServiceProvider.GetRequiredService<TafseelDbContext>()
+                .Notifications.SingleAsync(x => x.UserId == data.Teacher.Id
+                    && x.DeduplicationKey == $"message:{orderMessageId}");
+            Assert.Contains("Order", notification.Body, StringComparison.Ordinal);
+            Assert.DoesNotContain("Order context question", notification.Body, StringComparison.Ordinal);
+            Assert.Equal($"/conversations/{conversationId}", notification.Link);
+        }
         var studentOrder = JsonDocument.Parse(await student.GetStringAsync("/api/v1/orders/mine"))
             .RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == orderId);
         Assert.Equal(JsonValueKind.Null, studentOrder.GetProperty("teacherCommissionPercent").ValueKind);

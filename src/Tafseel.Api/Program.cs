@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -187,6 +188,23 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0
         }));
+    options.AddPolicy("ai", context =>
+    {
+        // Rate limiting runs before authentication in this established pipeline. Partition by a
+        // one-way hash of the bearer value so distinct Students do not share the IP bucket and the
+        // token itself is never retained as limiter state.
+        var authorization = context.Request.Headers.Authorization.ToString();
+        var key = string.IsNullOrWhiteSpace(authorization)
+            ? context.Connection.RemoteIpAddress?.ToString() ?? "unknown"
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(authorization)));
+        return RateLimitPartition.GetFixedWindowLimiter(
+        key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = builder.Environment.IsEnvironment("Testing") ? 100 : 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        });
+    });
 });
 
 builder.Services.AddHealthChecks()
@@ -236,6 +254,17 @@ app.Use(async (context, next) =>
         headers.CacheControl = "no-store";
         headers.Pragma = "no-cache";
     }
+    else if (context.Request.Path.StartsWithSegments("/app"))
+    {
+        // Phase 4 Sprint 0.4: none of these files carry a content hash in their URL (a handful
+        // have an incidental "?v=" query string, most do not), so per the smallest safe policy
+        // for unfingerprinted assets, everything under /app must revalidate on every request
+        // rather than being cached long-term/immutably. This applies uniformly to the .dc.html
+        // template shells and to js/css/support.js/fonts/images, closing the exact "a client with
+        // a stale cached copy stays vulnerable after a server-side fix ships" gap Sprint 0.3 found
+        // for the F-013 markup fix, and for any future fix to these same static files.
+        headers.CacheControl = "no-cache";
+    }
     await next();
 });
 
@@ -274,7 +303,7 @@ app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
     file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js" or "media-preview.js"
-        or "guided-request.js"
+        or "guided-request.js" or "boot-prefs.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
 app.MapGet("/app/js/vendor/{file}", (string file) =>

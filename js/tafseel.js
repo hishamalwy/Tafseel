@@ -23,6 +23,17 @@
     return indexes.en.get(text) || indexes.ar.get(text);
   }
 
+  // querySelectorAll only matches descendants, never the root itself. The MutationObserver
+  // in observe() calls translate() directly on newly-added nodes, so a translatable leaf
+  // element (e.g. an <input data-i18n-ph> mounted with no children) inserted after the initial
+  // translate(document) pass was silently never translated - it has no descendants for
+  // querySelectorAll to find, and it is never revisited. This finds root itself too.
+  function selfAndDescendants(root, selector) {
+    var matches = root.nodeType === Node.ELEMENT_NODE && root.matches(selector) ? [root] : [];
+    if (root.querySelectorAll) matches = matches.concat(Array.prototype.slice.call(root.querySelectorAll(selector)));
+    return matches;
+  }
+
   function replaceText(node, value) {
     var source = node.nodeValue;
     var start = source.match(/^\s*/)[0];
@@ -138,6 +149,33 @@
 
     toastClass: function (leaving) {
       return leaving ? 'tf-toast is-leaving' : 'tf-toast';
+    },
+
+    analytics: {
+      track: function (eventName, sourceSurface, dimensions, dedupeKey) {
+        dimensions = dimensions || {};
+        try {
+          var sessionKey = 'tafseel-analytics-session';
+          var sessionId = sessionStorage.getItem(sessionKey);
+          if (!sessionId) {
+            sessionId = crypto.randomUUID();
+            sessionStorage.setItem(sessionKey, sessionId);
+          }
+          if (dedupeKey) {
+            var storedKey = 'tafseel-analytics-dedupe:' + eventName + ':' + dedupeKey;
+            if (sessionStorage.getItem(storedKey)) return Promise.resolve(false);
+            sessionStorage.setItem(storedKey, '1');
+          }
+          return Tafseel.api.post('/marketplace-intelligence/events', Object.assign({}, dimensions, {
+            eventName: eventName,
+            sourceSurface: sourceSurface,
+            clientEventId: crypto.randomUUID(),
+            anonymousSessionId: sessionId
+          })).then(function () { return true; }).catch(function () { return false; });
+        } catch (_) {
+          return Promise.resolve(false);
+        }
+      }
     },
 
     /* Positions the sliding underline under the active/hovered nav link.
@@ -364,23 +402,29 @@
         if (key) replaceText(node, locales[self.lang][key]);
       }
 
-      root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(function (element) {
+      selfAndDescendants(root, '[placeholder],[title],[aria-label]').forEach(function (element) {
         ['placeholder', 'title', 'aria-label'].forEach(function (attribute) {
           if (!element.hasAttribute(attribute)) return;
-          var key = keyFor(element.getAttribute(attribute));
-          if (key) element.setAttribute(attribute, locales[self.lang][key]);
+          var current = element.getAttribute(attribute);
+          var key = keyFor(current);
+          var next = key && locales[self.lang][key];
+          // Guard against a no-op re-write: setAttribute fires a MutationObserver record even when
+          // the value is unchanged, and this attribute is itself observed (see observe() below) so
+          // an unconditional write would self-trigger forever.
+          if (next && next !== current) element.setAttribute(attribute, next);
         });
       });
 
-      root.querySelectorAll('[data-i18n]').forEach(function (element) {
+      selfAndDescendants(root, '[data-i18n]').forEach(function (element) {
         var requested = element.getAttribute('data-i18n');
         var key = locales.en[requested] !== undefined ? requested : keyFor(element.textContent);
         if (key) element.textContent = locales[self.lang][key];
       });
-      root.querySelectorAll('[data-i18n-ph]').forEach(function (element) {
+      selfAndDescendants(root, '[data-i18n-ph]').forEach(function (element) {
         var requested = element.getAttribute('data-i18n-ph');
         var key = locales.en[requested] !== undefined ? requested : keyFor(element.placeholder);
-        if (key) element.placeholder = locales[self.lang][key];
+        var next = key && locales[self.lang][key];
+        if (next && next !== element.placeholder) element.placeholder = next;
       });
 
       if (scope === document) {
@@ -398,6 +442,16 @@
         changes.forEach(function (change) {
           if (change.type === 'characterData') self.translate(change.target);
           change.addedNodes.forEach(function (node) { self.translate(node); });
+          // A later render (React reconciliation, DC-runtime commit, etc.) can rewrite
+          // placeholder/title/aria-label back to their untranslated source value well after the
+          // initial translate() pass already ran - proven live via react-dom.production.min.js
+          // resetting a translated <input placeholder> ~200ms after mount. Re-translate just that
+          // element when one of these three attributes changes; the != current-value guard in
+          // translate() above prevents this from ever looping.
+          if (change.type === 'attributes' &&
+              ['placeholder', 'title', 'aria-label'].indexOf(change.attributeName) !== -1) {
+            self.translate(change.target);
+          }
           if (change.type === 'attributes' && change.attributeName === 'src' &&
               change.target && change.target.matches && change.target.matches('img[data-tafseel-mark]')) {
             needsMarks = true;
@@ -427,7 +481,7 @@
         characterData: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['src']
+        attributeFilter: ['src', 'placeholder', 'title', 'aria-label']
       });
     },
 
@@ -895,37 +949,48 @@
     },
 
     /**
-     * Canonical notification → destination for Student (and Teacher) dashboards.
+     * Canonical notification → destination for Student, Teacher, Quality, and Admin.
      * Uses persisted Type + Link only. Never invents targets. Unknown → safe dashboard.
-     * Returns { href, section, filter, orderId, focus, conversationId, external }.
+     * Returns { href, section, filter, orderId, focus, conversationId, selectedId, external }.
      */
     notificationRoute: function (notification, role) {
       var type = String((notification && notification.type) || '').toLowerCase();
       var link = String((notification && notification.link) || '');
-      var who = role === 'teacher' ? 'teacher' : 'student';
+      var normalizedRole = String(role || '').toLowerCase();
+      var who = normalizedRole === 'teacher' ? 'teacher'
+        : (normalizedRole === 'quality' || normalizedRole === 'qualityreviewer') ? 'quality'
+        : normalizedRole === 'admin' ? 'admin'
+        : 'student';
       var orderMatch = link.match(/\/orders\/([0-9a-fA-F-]{36})/);
       var conversationMatch = link.match(/\/conversations\/([0-9a-fA-F-]{36})/);
       var sessionMatch = link.match(/\/live-sessions\/([0-9a-fA-F-]{36})/);
+      var selectedMatch = link.match(/[?&](?:selectedId|reviewId|applicationId)=([0-9a-fA-F-]{36})/i);
+      var sectionMatch = link.match(/[?&]section=([a-zA-Z0-9_-]+)/);
       var orderId = orderMatch ? orderMatch[1] : '';
       var conversationId = conversationMatch ? conversationMatch[1] : '';
+      var selectedId = selectedMatch ? selectedMatch[1] : '';
+      var linkSection = sectionMatch ? sectionMatch[1] : '';
       var fallback = {
-        href: who === 'teacher'
-          ? 'Tafseel-Teacher-Dashboard.dc.html'
+        href: who === 'teacher' ? 'Tafseel-Teacher-Dashboard.dc.html'
+          : who === 'quality' ? 'Tafseel-Quality-Dashboard.dc.html'
+          : who === 'admin' ? 'Tafseel-Admin-Dashboard.dc.html'
           : 'Tafseel-Student-Dashboard.dc.html',
         section: 'overview',
         filter: '',
         orderId: '',
         focus: '',
         conversationId: '',
+        selectedId: '',
         external: false
       };
 
       if (type === 'newmessage' || conversationId) {
+        var messagesHref = (who === 'teacher'
+          ? 'Tafseel-Teacher-Dashboard.dc.html?section=messages'
+          : 'Tafseel-Student-Dashboard.dc.html?section=messages')
+          + (conversationId ? ('&conversationId=' + encodeURIComponent(conversationId)) : '');
         return {
-          href: who === 'teacher'
-            ? 'Tafseel-Teacher-Dashboard.dc.html?section=messages'
-            : 'Tafseel-Student-Dashboard.dc.html?section=messages'
-              + (conversationId ? ('&conversationId=' + encodeURIComponent(conversationId)) : ''),
+          href: messagesHref,
           section: 'messages',
           filter: '',
           orderId: '',
@@ -969,8 +1034,68 @@
         review: 1
       };
 
+      if (who === 'quality') {
+        var qualitySection = (type.indexOf('showcase') === 0 || linkSection === 'showcases' || linkSection === 'media')
+          ? 'showcases'
+          : (linkSection === 'additional' ? 'additional' : 'applications');
+        var qualityHref = 'Tafseel-Quality-Dashboard.dc.html?section=' + qualitySection;
+        if (selectedId) qualityHref += '&selectedId=' + encodeURIComponent(selectedId);
+        return {
+          href: qualityHref,
+          section: qualitySection,
+          filter: '',
+          orderId: '',
+          focus: '',
+          conversationId: '',
+          selectedId: selectedId,
+          external: false
+        };
+      }
+
+      if (who === 'admin') {
+        var adminHref = 'Tafseel-Admin-Dashboard.dc.html?section=reviews';
+        if (selectedId) adminHref += '&reviewId=' + encodeURIComponent(selectedId);
+        if (type.indexOf('review') === 0 || linkSection === 'reviews') {
+          return {
+            href: adminHref,
+            section: 'reviews',
+            filter: '',
+            orderId: '',
+            focus: '',
+            conversationId: '',
+            selectedId: selectedId,
+            external: false
+          };
+        }
+        return fallback;
+      }
+
       if (who === 'teacher') {
-        if (!orderId && !knownStudent[type] && type.indexOf('application') !== 0)
+        if (type.indexOf('application') === 0 || type === 'qualificationrevoked') {
+          return {
+            href: 'Tafseel-Teacher-Apply.dc.html?view=status',
+            section: 'status',
+            filter: '',
+            orderId: '',
+            focus: '',
+            conversationId: '',
+            selectedId: '',
+            external: false
+          };
+        }
+        if (type.indexOf('showcase') === 0) {
+          return {
+            href: 'Tafseel-Teacher-Dashboard.dc.html?section=samples',
+            section: 'samples',
+            filter: '',
+            orderId: '',
+            focus: '',
+            conversationId: '',
+            selectedId: '',
+            external: false
+          };
+        }
+        if (!orderId && !knownStudent[type])
           return fallback;
         var teacherFocus = '';
         if (type === 'revisionrequested') teacherFocus = 'deliver';
@@ -985,6 +1110,7 @@
           orderId: orderId,
           focus: teacherFocus,
           conversationId: '',
+          selectedId: '',
           external: false
         };
       }
@@ -1244,6 +1370,36 @@
       if (roles.indexOf('Teacher') >= 0) return 'Tafseel-Teacher-Dashboard.dc.html';
       if (roles.indexOf('Student') >= 0) return 'Tafseel-Student-Dashboard.dc.html';
       return 'Tafseel-Landing.dc.html';
+    },
+
+    // Same-origin application return only. Rejects open redirects and non-app targets.
+    safeAppReturnHref: function (raw) {
+      if (raw == null) return '';
+      var value = String(raw).trim();
+      if (!value) return '';
+      try { value = decodeURIComponent(value); } catch (_) { return ''; }
+      value = value.trim();
+      if (!value) return '';
+      if (/^https?:/i.test(value) || /^\/\//.test(value) || /^\\/.test(value) || /^javascript:/i.test(value)
+          || /^data:/i.test(value) || /^vbscript:/i.test(value) || /[\u0000-\u001F\u007F]/.test(value))
+        return '';
+      var path = value.split('#')[0];
+      if (path.charAt(0) === '/') {
+        if (path.indexOf('/app/') !== 0) return '';
+        path = path.slice('/app/'.length);
+      }
+      if (path.charAt(0) === '.' || path.indexOf('..') >= 0 || path.indexOf(':') >= 0 || path.indexOf('//') >= 0)
+        return '';
+      var file = path.split('?')[0];
+      if (!/^Tafseel-[A-Za-z0-9-]+\.dc\.html$/.test(file)) return '';
+      if (/^Tafseel-Auth\.dc\.html$/i.test(file)) return '';
+      return path;
+    },
+
+    authHref: function (intended) {
+      var safe = this.safeAppReturnHref(intended || '');
+      if (!safe) return 'Tafseel-Auth.dc.html';
+      return 'Tafseel-Auth.dc.html?return=' + encodeURIComponent(safe);
     },
 
     viewerTimeZone: function () {

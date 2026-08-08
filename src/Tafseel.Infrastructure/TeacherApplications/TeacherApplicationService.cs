@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Tafseel.Application.Common;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.TeacherApplications;
@@ -141,7 +142,7 @@ internal sealed class TeacherApplicationService(
         foreach (var reviewerId in reviewerIds)
             await notifications.QueueAsync(reviewerId, "ApplicationSubmitted",
                 "New teacher application", "A teacher application is ready for review.",
-                "/app/Tafseel-Quality-Dashboard.dc.html",
+                $"/app/Tafseel-Quality-Dashboard.dc.html?section=applications&selectedId={application.Id}",
                 $"application-submitted:{application.Id}:{reviewerId}", true, ct);
         await db.SaveChangesAsync(ct);
     }
@@ -336,16 +337,133 @@ internal sealed class TeacherApplicationService(
             .ToArray();
     }
 
-    public async Task<IReadOnlyCollection<TeacherApplicationDto>> GetQueueAsync(
+    public async Task<PagedResult<TeacherApplicationDto>> GetQueueAsync(
         TeacherApplicationStatus? status,
+        TeacherApplicationQualificationKind kind,
+        TeacherApplicationQueueScope scope,
+        string? search,
+        Guid? subjectId,
+        DateTimeOffset? submittedFrom,
+        DateTimeOffset? submittedTo,
+        TeacherApplicationQueueSort sort,
+        int page,
+        int pageSize,
         CancellationToken ct)
     {
-        var query = db.TeacherApplications.AsNoTracking();
+        if (status is TeacherApplicationStatus.Draft or TeacherApplicationStatus.Withdrawn)
+            throw new DomainException(
+                "invalid_application_status",
+                "The operational queue does not include Draft or Withdrawn applications.");
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var query =
+            from application in db.TeacherApplications.AsNoTracking()
+            join user in db.Users.AsNoTracking() on application.TeacherId equals user.Id
+            join subject in db.Subjects.AsNoTracking() on application.SubjectId equals subject.Id
+            select new { application, user, subject };
         if (status.HasValue)
-            query = query.Where(x => x.Status == status);
-        var applications = await query.OrderByDescending(x => x.Priority).ThenBy(x => x.SubmittedAt)
-            .ToArrayAsync(ct);
-        return await MapAsync(applications, ct);
+            query = query.Where(x => x.application.Status == status);
+        else if (scope == TeacherApplicationQueueScope.All)
+            query = query.Where(x =>
+                x.application.Status != TeacherApplicationStatus.Draft
+                && x.application.Status != TeacherApplicationStatus.Withdrawn);
+        else
+            query = query.Where(x =>
+                x.application.Status == TeacherApplicationStatus.Submitted
+                || x.application.Status == TeacherApplicationStatus.UnderReview);
+        if (subjectId is { } filterSubject && filterSubject != Guid.Empty)
+            query = query.Where(x => x.application.SubjectId == filterSubject);
+        if (submittedFrom.HasValue)
+            query = query.Where(x => x.application.SubmittedAt >= submittedFrom);
+        if (submittedTo.HasValue)
+            query = query.Where(x => x.application.SubmittedAt <= submittedTo);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x =>
+                EF.Functions.Like(x.user.FullName, $"%{term}%")
+                || EF.Functions.Like(x.user.FullNameEnglish, $"%{term}%")
+                || EF.Functions.Like(x.subject.Name, $"%{term}%")
+                || EF.Functions.Like(x.subject.NameAr, $"%{term}%"));
+        }
+        if (kind != TeacherApplicationQualificationKind.All)
+        {
+            var otherActiveQuals = db.TeacherSubjectQualifications.AsNoTracking()
+                .Where(q => q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null);
+            if (kind == TeacherApplicationQualificationKind.Additional)
+            {
+                query = query.Where(x => otherActiveQuals.Any(q =>
+                    q.TeacherId == x.application.TeacherId && q.SubjectId != x.application.SubjectId));
+            }
+            else
+            {
+                query = query.Where(x => !otherActiveQuals.Any(q =>
+                    q.TeacherId == x.application.TeacherId && q.SubjectId != x.application.SubjectId));
+            }
+        }
+        // Oldest actionable first: Quality work is a FIFO queue. Newest-first remains available
+        // as an explicit sort. Priority stays visible on the row but is not a fabricated SLA score.
+        query = sort == TeacherApplicationQueueSort.NewestFirst
+            ? query.OrderByDescending(x => x.application.SubmittedAt).ThenByDescending(x => x.application.Id)
+            : query.OrderBy(x => x.application.SubmittedAt).ThenBy(x => x.application.Id);
+        var total = await query.CountAsync(ct);
+        var ids = await query.Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => x.application.Id).ToArrayAsync(ct);
+        var applications = await db.TeacherApplications.AsNoTracking()
+            .Where(x => ids.Contains(x.Id)).ToArrayAsync(ct);
+        var ordered = ids.Select(id => applications.Single(x => x.Id == id)).ToArray();
+        return new(await MapAsync(ordered, ct), page, pageSize, total);
+    }
+
+    public async Task<TeacherApplicationQueueSummaryDto> GetQueueSummaryAsync(CancellationToken ct)
+    {
+        var operational = db.TeacherApplications.AsNoTracking()
+            .Where(x => x.Status != TeacherApplicationStatus.Draft
+                && x.Status != TeacherApplicationStatus.Withdrawn);
+        var submitted = await operational.CountAsync(x => x.Status == TeacherApplicationStatus.Submitted, ct);
+        var underReview = await operational.CountAsync(x => x.Status == TeacherApplicationStatus.UnderReview, ct);
+        var changesRequested = await operational.CountAsync(
+            x => x.Status == TeacherApplicationStatus.ChangesRequested, ct);
+        var otherActiveQuals = db.TeacherSubjectQualifications.AsNoTracking()
+            .Where(q => q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null);
+        var additionalActionable = await operational
+            .Where(x => x.Status == TeacherApplicationStatus.Submitted
+                || x.Status == TeacherApplicationStatus.UnderReview)
+            .CountAsync(x => otherActiveQuals.Any(q =>
+                q.TeacherId == x.TeacherId && q.SubjectId != x.SubjectId), ct);
+        return new(submitted + underReview, submitted, underReview, changesRequested, additionalActionable);
+    }
+
+    public async Task<TeacherApplicationQueueDetailDto> GetQueueDetailAsync(
+        Guid applicationId, CancellationToken ct)
+    {
+        var application = await db.TeacherApplications.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == applicationId, ct)
+            ?? throw new DomainException("teacher_application_not_found", "Teacher application was not found.");
+        if (application.Status is TeacherApplicationStatus.Draft or TeacherApplicationStatus.Withdrawn)
+            throw new DomainException("teacher_application_not_found", "Teacher application was not found.");
+        var mapped = (await MapAsync([application], ct)).Single();
+        var history = await db.Set<TeacherApplicationStatusHistory>().AsNoTracking()
+            .Where(x => x.TeacherApplicationId == applicationId)
+            .OrderBy(x => x.CreatedAt).ToArrayAsync(ct);
+        var reviews = await db.Set<TeacherApplicationReview>().AsNoTracking()
+            .Where(x => x.TeacherApplicationId == applicationId)
+            .OrderBy(x => x.CreatedAt).ToArrayAsync(ct);
+        var actorIds = history.Select(x => x.ActorId)
+            .Concat(reviews.Select(x => x.ReviewerId))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct().ToArray();
+        var names = await db.Users.AsNoTracking()
+            .Where(x => actorIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.FullName, ct);
+        return new(
+            mapped,
+            history.Select(x => new TeacherApplicationHistoryItemDto(
+                x.PreviousStatus, x.NextStatus, x.CreatedAt,
+                names.GetValueOrDefault(x.ActorId), x.Note)).ToArray(),
+            reviews.Select(x => new TeacherApplicationReviewSummaryDto(
+                x.CreatedAt, x.Decision, x.Comment,
+                names.GetValueOrDefault(x.ReviewerId), x.InternalNotes)).ToArray());
     }
 
     public async Task StartReviewAsync(
@@ -654,10 +772,33 @@ internal sealed class TeacherApplicationService(
         var feedback = reviewRows.GroupBy(x => x.TeacherApplicationId)
             .ToDictionary(x => x.Key, x => x.OrderByDescending(r => r.CreatedAt)
                 .Select(r => r.Comment).FirstOrDefault());
+        var teacherIds = applications.Select(x => x.TeacherId).Distinct().ToArray();
+        var qualificationRows = await (
+            from qualification in db.TeacherSubjectQualifications.AsNoTracking()
+            join subject in db.Subjects.AsNoTracking() on qualification.SubjectId equals subject.Id
+            where teacherIds.Contains(qualification.TeacherId)
+                && qualification.Status == TeacherQualificationStatus.Approved
+                && qualification.RevokedAt == null
+            select new
+            {
+                qualification.TeacherId,
+                qualification.SubjectId,
+                subject.Name,
+                subject.NameAr,
+                qualification.ApprovedAt
+            }).ToArrayAsync(ct);
+        var qualsByTeacher = qualificationRows.GroupBy(x => x.TeacherId).ToDictionary(
+            g => g.Key,
+            g => (IReadOnlyCollection<OperationalQualifiedSubjectDto>)g
+                .Select(x => new OperationalQualifiedSubjectDto(x.SubjectId, x.Name, x.NameAr, x.ApprovedAt))
+                .ToArray());
         return applications.Select(x =>
         {
             var detail = rows[x.Id];
             latestDemos.TryGetValue(x.Id, out var latestDemo);
+            qualsByTeacher.TryGetValue(x.TeacherId, out var teacherQuals);
+            teacherQuals ??= [];
+            var publicFeedback = feedback.GetValueOrDefault(x.Id);
             return new TeacherApplicationDto(
                 x.Id, x.TeacherId, x.SubjectId, x.QualificationTopicId,
                 x.Status, x.Priority, x.AssignedReviewerId, x.SubmittedAt,
@@ -668,11 +809,14 @@ internal sealed class TeacherApplicationService(
                 string.IsNullOrWhiteSpace(latestDemo?.AssignmentInstructionsSnapshot)
                     ? detail.Instructions : latestDemo.AssignmentInstructionsSnapshot,
                 x.DemoStorageKey is not null, x.DemoDurationSeconds,
-                detail.SubmissionVersion, feedback.GetValueOrDefault(x.Id),
+                detail.SubmissionVersion, publicFeedback,
                 x.City, x.ExperienceYears, x.Degree,
                 latestDemo?.AssignmentResourceManifest ?? "[]",
                 detail.SubjectNameAr,
-                detail.AssignmentTitleAr);
+                detail.AssignmentTitleAr,
+                teacherQuals.Any(q => q.SubjectId != x.SubjectId),
+                teacherQuals,
+                !string.IsNullOrWhiteSpace(publicFeedback));
         }).ToArray();
     }
 

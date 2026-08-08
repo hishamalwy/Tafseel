@@ -7,6 +7,7 @@ using Resend;
 using Tafseel.Infrastructure;
 using Tafseel.Infrastructure.Email;
 using Tafseel.Infrastructure.Identity;
+using Tafseel.Infrastructure.Ai;
 using Tafseel.Application.Orders;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Finance;
@@ -158,6 +159,19 @@ public sealed class ConfigurationValidationTests
         using var services = Provider(key, value);
         Assert.Throws<OptionsValidationException>(
             () => services.GetRequiredService<IOptions<DisputeOptions>>().Value);
+    }
+
+    [Theory]
+    [InlineData("Ai:Provider", "Unknown")]
+    [InlineData("Ai:Endpoint", "not-a-url")]
+    [InlineData("Ai:TimeoutSeconds", "0")]
+    [InlineData("Ai:MaxInputCharacters", "99")]
+    [InlineData("Ai:MaxOutputTokens", "49")]
+    public void Invalid_ai_configuration_fails_validation(string key, string value)
+    {
+        using var services = Provider(key, value);
+        Assert.Throws<OptionsValidationException>(
+            () => services.GetRequiredService<IOptions<AiOptions>>().Value);
     }
 
     private static ServiceProvider Provider(

@@ -138,6 +138,32 @@
         <div>
           <h1 tabindex="-1" id="req-step-heading" style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px">{{ step2Title }}</h1>
           <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px">{{ step2Blurb }}</p>
+          <section class="tf-ai-request" aria-labelledby="ai-request-title">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+              <h2 id="ai-request-title" style="font-size:15px;font-weight:800;margin:0">{{ aiRequestTitle }}</h2>
+              <span style="padding:3px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:800">{{ aiBeta }}</span>
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin:0 0 10px">{{ aiRequestDisclosure }}</p>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:700">{{ aiRequestLabel }}</span>
+              <textarea value="{{ aiNotes }}" onChange="{{ onAiNotes }}" rows="3" maxlength="4000" placeholder="{{ aiRequestPlaceholder }}"></textarea>
+            </label>
+            <div class="tf-ai-request-actions">
+              <button type="button" onClick="{{ assistRequest }}" disabled="{{ aiRequestDisabled }}" style="border:0;background:var(--primary);color:var(--primary-ink)">{{ aiRequestAction }}</button>
+            </div>
+            <div role="status" aria-live="polite" style="font-size:13px;color:var(--text-2);margin-top:8px">{{ aiRequestMessage }}</div>
+            <sc-if value="{{ hasAiDraft }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface)">
+                <strong style="font-size:13.5px">{{ aiDraftTitle }}</strong>
+                <p style="white-space:pre-wrap;font-size:13px;line-height:1.55;color:var(--text-2);margin:7px 0">{{ aiDraftDescription }}</p>
+                <sc-if value="{{ hasAiMissing }}" hint-placeholder-val="{{ false }}"><p style="font-size:12.5px;color:var(--muted);margin:0">{{ aiMissingLabel }}: {{ aiMissingText }}</p></sc-if>
+                <div class="tf-ai-request-actions">
+                  <button type="button" onClick="{{ useAiDraft }}" style="border:0;background:var(--primary);color:var(--primary-ink)">{{ aiUseDraft }}</button>
+                  <button type="button" onClick="{{ discardAiDraft }}" style="border:1px solid var(--border);background:var(--surface);color:var(--text)">{{ aiDiscardDraft }}</button>
+                </div>
+              </div>
+            </sc-if>
+          </section>
           <div style="display:flex;flex-direction:column;gap:16px">
             <label style="display:flex;flex-direction:column;gap:6px">
               <span style="font-size:13.5px;font-weight:600">{{ titleLabel }}</span>
@@ -430,7 +456,8 @@ class Component extends DCLogic {
     deliveryDate: '', agreed: false, submitting: false,
     submitted: false, createdRequestId: '', createdVersion: '',
     uploadOk: 0, uploadFail: 0, failedFiles: [],
-    toast: '', draftStatus: '', liveMessage: '', restoredNotice: false
+    toast: '', draftStatus: '', liveMessage: '', restoredNotice: false,
+    aiNotes: '', aiRequestBusy: false, aiRequestMessage: '', aiDraft: null
   };
 
   componentDidMount() {
@@ -592,6 +619,14 @@ class Component extends DCLogic {
     }
 
     this.setState(base);
+    if (base.service && !draft) {
+      Tafseel.analytics.track('request_started', 'GuidedRequest', {
+        subjectId: base.service.subjectId || null,
+        serviceCatalogItemId: base.service.serviceCatalogItemId || null,
+        teacherServiceId: base.service.id,
+        teacherId: this.state.teacherId
+      }, this.state.teacherId + ':' + base.service.id);
+    }
   }
 
   async fetchTeacherContext() {
@@ -725,6 +760,36 @@ class Component extends DCLogic {
   updateField(patch) {
     this.setState(patch);
     this.scheduleDraftSave();
+  }
+
+  assistRequest() {
+    const notes = this.state.aiNotes.trim();
+    if (!notes || this.state.aiRequestBusy) return;
+    this.setState({ aiRequestBusy: true, aiRequestMessage: t('ai_request_thinking'), aiDraft: null });
+    Tafseel.api.post('/ai/request-assistant', { notes })
+      .then(result => {
+        if (!result || result.status !== 'success' || !result.draft) {
+          this.setState({ aiRequestBusy: false, aiRequestMessage: t('ai_unavailable') });
+          return;
+        }
+        this.setState({ aiRequestBusy: false, aiRequestMessage: t('ai_request_ready'), aiDraft: result.draft });
+      })
+      .catch(() => this.setState({ aiRequestBusy: false, aiRequestMessage: t('ai_unavailable') }));
+  }
+
+  useAiDraft() {
+    const draft = this.state.aiDraft;
+    if (!draft) return;
+    this.updateField({
+      title: String(draft.title || '').slice(0, 200),
+      goal: String(draft.suggestedDescription || draft.goal || '').slice(0, 4000),
+      aiDraft: null,
+      aiRequestMessage: t('ai_request_applied')
+    });
+  }
+
+  discardAiDraft() {
+    this.setState({ aiDraft: null, aiRequestMessage: t('ai_request_discarded') });
   }
 
   onSaveExit() {
@@ -987,6 +1052,28 @@ class Component extends DCLogic {
       progressAria: t('req_progress_aria'),
       progressSteps,
       isStep1: s.step === 1, isStep2: s.step === 2, isStep3: s.step === 3, isStep4: s.step === 4, isStep5: s.step === 5,
+
+      aiRequestTitle: t('ai_request_title'),
+      aiBeta: t('ai_beta'),
+      aiRequestDisclosure: t('ai_request_disclosure'),
+      aiRequestLabel: t('ai_request_label'),
+      aiRequestPlaceholder: t('ai_request_placeholder'),
+      aiNotes: s.aiNotes,
+      onAiNotes: e => this.setState({ aiNotes: e.target.value }),
+      aiRequestDisabled: s.aiRequestBusy || !s.aiNotes.trim(),
+      aiRequestAction: s.aiRequestBusy ? t('ai_request_thinking') : t('ai_request_action'),
+      assistRequest: () => this.assistRequest(),
+      aiRequestMessage: s.aiRequestMessage,
+      hasAiDraft: !!s.aiDraft,
+      aiDraftTitle: escapeText(s.aiDraft && s.aiDraft.title),
+      aiDraftDescription: escapeText(s.aiDraft && s.aiDraft.suggestedDescription),
+      hasAiMissing: !!(s.aiDraft && s.aiDraft.missingInformation && s.aiDraft.missingInformation.length),
+      aiMissingLabel: t('ai_request_missing'),
+      aiMissingText: escapeText(s.aiDraft && (s.aiDraft.missingInformation || []).join(' · ')),
+      aiUseDraft: t('ai_request_use'),
+      aiDiscardDraft: t('ai_request_discard'),
+      useAiDraft: () => this.useAiDraft(),
+      discardAiDraft: () => this.discardAiDraft(),
 
       step1Title: t('req_step1_title'),
       teacherIntro,

@@ -126,7 +126,10 @@
     requireSession: async function (redirect) {
       var session = await this.ready();
       if (!session) {
-        location.replace(redirect || 'Tafseel-Auth.dc.html');
+        var fallback = (window.Tafseel && typeof window.Tafseel.authHref === 'function')
+          ? window.Tafseel.authHref(location.pathname + location.search + location.hash)
+          : 'Tafseel-Auth.dc.html';
+        location.replace(redirect || fallback);
         return null;
       }
       return session;
@@ -137,7 +140,10 @@
       var allowed = Array.isArray(roles) ? roles : [roles];
       var ok = (session.roles || []).some(function (role) { return allowed.indexOf(role) >= 0; });
       if (!ok) {
-        location.replace(redirect || 'Tafseel-Auth.dc.html');
+        var home = (window.Tafseel && typeof window.Tafseel.dashboardHrefForSession === 'function')
+          ? window.Tafseel.dashboardHrefForSession(session)
+          : 'Tafseel-Landing.dc.html';
+        location.replace(redirect || home);
         return null;
       }
       return session;

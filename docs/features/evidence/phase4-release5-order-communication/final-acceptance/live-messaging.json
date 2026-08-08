@@ -1,0 +1,85 @@
+{
+  "results": [
+    {
+      "name": "conversation-id",
+      "pass": true,
+      "detail": "934ce59e-179a-4351-8dde-1da5aa90efeb"
+    },
+    {
+      "name": "student-cta",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "student-send",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "realtime-s2t",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "dedup-s2t",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "realtime-t2s",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "dedup-t2s",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "attachment-live",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "teacher-notif-row",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "teacher-deeplink",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "completed-cta",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "completed-open",
+      "pass": false,
+      "detail": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator('.tf-chat-widget[data-open=true] [data-r5-input]') to be visible\n"
+    },
+    {
+      "name": "composer-student-375x667",
+      "pass": true,
+      "detail": "{\"ok\":true,\"overflow\":false}"
+    },
+    {
+      "name": "composer-student-390x844",
+      "pass": true,
+      "detail": "{\"ok\":true,\"overflow\":false}"
+    },
+    {
+      "name": "composer-teacher-375x667",
+      "pass": true,
+      "detail": "{\"ok\":true,\"overflow\":false}"
+    },
+    {
+      "name": "composer-teacher-390x844",
+      "pass": true,
+      "detail": "{\"ok\":true,\"overflow\":false}"
+    }
+  ],
+  "conversationId": "934ce59e-179a-4351-8dde-1da5aa90efeb"
+}
