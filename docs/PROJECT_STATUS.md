@@ -34,6 +34,16 @@ Discovery & Conversion is VERIFIED & CLOSED** after Final Acceptance Closure
 Release 5 Sprint 2 or Release 6 Sprint 2.
 Do not treat Release 4 gaps as a reason to invent a Sprint 2 inside Operations.
 
+**RELEASE 8 — PRODUCT EXPERIENCE & RESPONSIVE HARDENING: VERIFIED & CLOSED (2026-08-09).**
+Student Dashboard attention-first redesign, Teacher Card/price/CTA polish, unified search retention
+(no standalone AI panel), and product-wide responsive/AR-EN/RTL-LTR/dark-light hardening certified.
+Accepted 384/384 visual matrix (0 unexpected 429/500, 0 pageerror, 0 actionable console, 0 template
+leaks, 0 required resource failures); 60 high-risk screenshots manually reviewed; backend 361/361
+(1+89+14+257); all frontend gates including R5/R6/R7/R9 + unified discovery; format + EF clean;
+Release build 0 errors; isolated `:5092` publish smoke then stopped. No commit/push/deploy required
+by the acceptance gate. See [feature report](./features/RELEASE_8_PRODUCT_EXPERIENCE_AND_RESPONSIVE_HARDENING.md)
+and [final acceptance](./reports/RELEASE_8_FINAL_ACCEPTANCE.md).
+
 **RELEASE 9 — AI-ASSISTED MARKETPLACE: CONDITIONALLY VERIFIED (2026-08-08).**
 The optional Student AI layer is implemented behind `IAiProvider` with Groq/OpenAI-compatible
 strict structured output, application validation, canonical Subject/Service resolution, the
@@ -41,10 +51,10 @@ existing Release 6 discovery handoff, explicit Guided Request draft review/use/d
 approved-context Product Help. Historical verification: 343/343 backend tests, all frontend gates,
 EF clean, Release build/publish and isolated publish smoke, plus 15/15 browser contract
 certification. Canonical closure remains blocked until real Groq eval (`GROQ_API_KEY` smoke +
-semantic scoring) completes; provider-bound Student text still needs Privacy/Business approval;
-no canonical Release 8 completion record exists. R5/R6/R7 remain VERIFIED & CLOSED. No Release 9
-Sprint 2 is created. See [release report](./features/PHASE_4_RELEASE_9_AI_ASSISTED_MARKETPLACE.md)
-and [unified discovery addendum](./features/evidence/phase4-release9-ai-assisted-marketplace/unified-discovery-addendum.md).
+semantic scoring) completes; provider-bound Student text still needs Privacy/Business approval.
+R5/R6/R7/R8 remain VERIFIED & CLOSED. No Release 9 Sprint 2 is created. See
+[release report](./features/PHASE_4_RELEASE_9_AI_ASSISTED_MARKETPLACE.md) and
+[unified discovery addendum](./features/evidence/phase4-release9-ai-assisted-marketplace/unified-discovery-addendum.md).
 
 **UNIFIED INTELLIGENT DISCOVERY SEARCH (2026-08-09):** Landing + Browse share one search field.
 AI is an invisible interpretation layer on the existing R9 Groq path — not a second provider,
@@ -628,6 +638,6 @@ Final Acceptance Closure (same day, later pass): exact isolated async funnel rec
 
 ## Next Recommended Pass
 
-Next canonical Phase 4 product-experience work: **Release 8 — Product Experience & Responsive Hardening** (Student Dashboard simplification, product-wide responsive hardening, Teacher Card polish, pricing/typography/CTA hierarchy, AR/EN + RTL/LTR UX). Do not infer ranking, Best Match, recommendations, or AI permission from Release 7. Concurrent Release 9 AI-Assisted Marketplace may continue; its status is not declared here.
+**Release 8 is VERIFIED & CLOSED.** Next canonical Phase 4 remaining work is Release 9 final acceptance closure (real Groq eval + privacy approval) — do not invent Release 8 Sprint 2. Do not infer ranking, Best Match, recommendations, or AI permission from Release 7/8.
 
 Production Readiness (unchanged, not this product-experience lane): implement a real payment provider for F-003 (sandbox webhooks, idempotency, Production Mock forbidden). See the [Final Production Readiness Report](./reports/FINAL_PRODUCTION_READINESS_REPORT.md) and [audit](./audits/FINAL_PRODUCTION_READINESS_AUDIT.md). Class B interaction-event retention duration remains a Privacy/Governance decision before Production.

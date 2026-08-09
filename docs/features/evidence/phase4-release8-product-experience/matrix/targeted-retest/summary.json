@@ -1,0 +1,391 @@
+{
+  "total": 48,
+  "pass": 48,
+  "fail": 0,
+  "results": [
+    {
+      "surface": "student-dashboard",
+      "viewport": 375,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 375,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 375,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 375,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 390,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 390,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 390,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 390,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 768,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 768,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 768,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 768,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1024,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1024,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1024,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1024,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1280,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1280,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1280,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1280,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1440,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1440,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1440,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "student-dashboard",
+      "viewport": 1440,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 375,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 375,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 375,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 375,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 390,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 390,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 390,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 390,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 768,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 768,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 768,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 768,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1024,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1024,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1024,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1024,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1280,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1280,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1280,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1280,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1440,
+      "lang": "ar",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1440,
+      "lang": "ar",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1440,
+      "lang": "en",
+      "theme": "dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "surface": "admin-intelligence",
+      "viewport": 1440,
+      "lang": "en",
+      "theme": "light",
+      "result": "PASS",
+      "detail": ""
+    }
+  ]
+}

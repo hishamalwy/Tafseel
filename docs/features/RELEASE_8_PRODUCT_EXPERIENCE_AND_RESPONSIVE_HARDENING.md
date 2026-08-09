@@ -1,7 +1,7 @@
 # Release 8 — Product Experience & Responsive Hardening
 
 **Date:** 2026-08-09  
-**Status:** Implementation and certification in progress (see Final Acceptance report).
+**Status:** **VERIFIED & CLOSED**
 
 ## Goal
 
@@ -50,6 +50,19 @@ Make Tafseel's product experience simple, premium, coherent, and responsive acro
 - Attention empty state answers what/why/next.
 - Learning/sessions empty states retained with useful next steps.
 - Existing modal/error retry patterns preserved.
+
+## Certification summary
+
+| Gate | Result |
+|---|---|
+| 384 visual matrix | **384/384 PASS** |
+| High-risk screenshots reviewed | 60 |
+| Targeted post-polish retest | 48/48 PASS |
+| Backend (Arch/Domain/App/Integration) | 1 + 89 + 14 + 257 |
+| Frontend CI gates (incl. R5–R9 + unified discovery) | PASS |
+| Format / EF / Release build | PASS / no pending / 0 errors |
+| Isolated publish smoke `:5092` | PASS then stopped |
+| Commit / push / deploy | Not performed (gate requirement) |
 
 ## Non-goals preserved
 

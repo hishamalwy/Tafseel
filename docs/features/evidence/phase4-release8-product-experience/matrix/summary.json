@@ -1,0 +1,13 @@
+{
+  "total": 384,
+  "pass": 384,
+  "fail": 0,
+  "skipped": 0,
+  "unexpected429": 0,
+  "unexpected500": 0,
+  "pageErrors": 0,
+  "consoleErrors": 0,
+  "resourceFailures": 0,
+  "templateLeaks": 0,
+  "generatedAt": "2026-08-09T10:14:55.924Z"
+}
