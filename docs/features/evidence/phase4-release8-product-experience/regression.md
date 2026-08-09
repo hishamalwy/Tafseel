@@ -24,3 +24,6 @@ All PASS: integrity, localization, localization-usage, template-placeholder-leak
 ## Browser matrix
 
 See `matrix/summary.json` — 384/384 PASS.
+
+Reconfirmed 2026-08-09: Architecture 1 / Domain 89 / Application 14 / Integration 257; format/EF/build PASS; frontend gates PASS; publish smoke 15/15; matrix 384/384; targeted retest 48/48.
+
