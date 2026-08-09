@@ -1,2 +1,6 @@
 .auth/
 *.storage-state.json
+*.session.env
+r8-session.env
+playwright-report/
+test-results/

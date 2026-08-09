@@ -84,6 +84,7 @@
           <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><div class="tf-profile-carousel-position" role="status" aria-live="polite">{{ samplePositionLabel }}</div></sc-if>
           <div class="tf-profile-media-caption"><p>{{ featuredSample.descriptionText }}</p><sc-if value="{{ featuredSample.isShowcase }}" hint-placeholder-val="{{ false }}"><p class="tf-profile-moderation-note" data-i18n="showcase_reviewed_description">Reviewed by Tafseel. Approval does not verify every educational claim.</p></sc-if></div>
         </sc-if>
+        <sc-if value="{{ mediaLoadError }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-empty-media"><span>&#9675;</span><strong>{{ mediaErrorTitle }}</strong><p>{{ mediaErrorBody }}</p></div></sc-if>
         <sc-if value="{{ samplesEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-empty-media"><span>&#9675;</span><strong data-i18n="showcase_no_media">No media is available.</strong><p data-i18n="tp_samples_empty">No teaching samples published yet.</p></div></sc-if>
       </section>
 
@@ -231,6 +232,7 @@ class Component extends DCLogic {
     serviceId: '',
     selectedSampleId: '',
     mediaDuration: '',
+    mediaLoadError: false,
     availabilitySummary: null,
     availabilityError: false,
     fav: false,
@@ -306,13 +308,22 @@ class Component extends DCLogic {
     if (!video || video === this._featuredVideo) return;
     if (this._featuredVideo && this._onMediaDuration)
       this._featuredVideo.removeEventListener('loadedmetadata', this._onMediaDuration);
+    if (this._featuredVideo && this._onMediaError)
+      this._featuredVideo.removeEventListener('error', this._onMediaError);
     this._featuredVideo = video;
+    if (this.state.mediaLoadError) this.setState({ mediaLoadError: false });
     this._onMediaDuration = () => {
       const mediaDuration = formatMediaDuration(video.duration);
       if (mediaDuration !== this.state.mediaDuration) this.setState({ mediaDuration });
       this._syncMobileCtaClearance();
     };
+    // The native "This video format is not supported" browser chrome must never be the
+    // product's failure state — swap to a localized, on-brand panel instead. Root cause of
+    // any given failure (corrupt/incomplete file, wrong codec) still surfaces in devtools
+    // via the underlying MediaError; this only replaces what the Student sees.
+    this._onMediaError = () => this.setState({ mediaLoadError: true });
     video.addEventListener('loadedmetadata', this._onMediaDuration);
+    video.addEventListener('error', this._onMediaError);
     if (video.readyState >= 1) this._onMediaDuration();
   }
 
@@ -558,7 +569,7 @@ class Component extends DCLogic {
     const selectSample = index => {
       if (!publicSamples.length) return;
       const next = (index + publicSamples.length) % publicSamples.length;
-      this.setState({ selectedSampleId: publicSamples[next].id, mediaDuration: '' });
+      this.setState({ selectedSampleId: publicSamples[next].id, mediaDuration: '', mediaLoadError: false });
     };
     const moveSample = delta => selectSample(sampleIndex + delta);
     const teacherMeta = metaParts.join(' · ') || (profile && profile.headline) || '';
@@ -580,7 +591,7 @@ class Component extends DCLogic {
       accountHref,
       accountLabel,
       accountAvatar: Tafseel.avatarUrl(session && session.userId, session && session.hasAvatar),
-      teacherAvatar: Tafseel.avatarUrl(s.teacherId, profile && profile.hasAvatar),
+      teacherAvatar: Tafseel.avatarUrl(s.teacherId, profile && profile.hasAvatar, null, teacherName),
 
       teacherName,
       teacherHeadline: (profile && profile.headline) || teacherMeta,
@@ -654,7 +665,10 @@ class Component extends DCLogic {
       topics,
       topicsEmpty: topics.length === 0,
 
-      hasFeaturedSample: !!featuredSample,
+      hasFeaturedSample: !!featuredSample && !s.mediaLoadError,
+      mediaLoadError: !!featuredSample && s.mediaLoadError,
+      mediaErrorTitle: t('tp_media_playback_error_title'),
+      mediaErrorBody: t('tp_media_playback_error_body'),
       samplesEmpty: publicSamples.length === 0,
       hasMultipleSamples: carouselNavigationVisible(publicSamples),
       featuredSample,

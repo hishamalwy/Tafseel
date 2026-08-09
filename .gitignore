@@ -4,9 +4,13 @@
 artifacts/
 TestResults/
 coverage/
+publish/
+[Pp]ublishProfiles/
 *.coverage
 *.coverage.*
 *.trx
+*.nupkg
+*.snupkg
 
 # IDEs and editors
 .vs/
@@ -16,10 +20,13 @@ coverage/
 *.suo
 *.swp
 *.tmp
+*.DotSettings.user
 
-# Local AI tooling and downloaded skills
+# Local AI tooling, skills caches, and agent run state
 .claude/
 .codex/
+.codex-run/
+.cursor/
 
 # Local secrets and machine-specific configuration
 .env
@@ -32,8 +39,9 @@ tests/browser/.auth/
 **/App_Data/
 uploads/
 
-# Logs
+# Logs and local process captures
 *.log
+.tmp*/
 
 # OS and generated thumbnails
 .DS_Store
@@ -46,3 +54,22 @@ node_modules/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Playwright / browser automation outputs
+playwright-report/
+blob-report/
+test-results/
+**/playwright/.cache/
+
+# One-off local audit / scratch dumps (keep out of git)
+_audit_*
+_css_diff.json
+_html_usage.json
+/audit_extract.ps1
+/i18n_usage.csv
+/locales_en_keys.txt
+/missing_i18n_keys.txt
+/landing-fold-check.png
+/self-test-results.json

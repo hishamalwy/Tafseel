@@ -749,7 +749,24 @@
 
     defaultAvatar: 'assets/brand/default-avatar.svg?v=premium-1',
 
-    avatarUrl: function (userId, hasAvatar, version) {
+    // Deterministic per-person fallback: same two-letter monogram + color every time for a given
+    // person (id or name), instead of one generic book icon repeated on every teacher card.
+    _avatarPalette: ['#5538F2', '#1F6FB4', '#2E8B74', '#7A3E9D', '#B4571F', '#9D2E5C', '#2E6B84', '#6B6B2E'],
+    initialsAvatarDataUri: function (label, seed) {
+      var parts = String(label || '').trim().split(/\s+/).filter(Boolean);
+      var initials = parts.slice(0, 2).map(function (part) { return Array.from(part)[0] || ''; }).join('').toLocaleUpperCase() || '?';
+      var key = String(seed || label || '');
+      var hash = 0;
+      for (var i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+      var color = this._avatarPalette[hash % this._avatarPalette.length];
+      var safeInitials = initials.replace(/[&<>"']/g, '');
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="' + safeInitials + '">'
+        + '<circle cx="128" cy="128" r="128" fill="' + color + '"/>'
+        + '<text x="128" y="132" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="104" font-weight="700" fill="#FFFFFF">' + safeInitials + '</text>'
+        + '</svg>';
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    },
+    avatarUrl: function (userId, hasAvatar, version, label) {
       if (hasAvatar && userId) {
         var base = (window.TAFSEEL_API_BASE || '/api/v1').replace(/\/$/, '');
         var url = base + '/users/' + encodeURIComponent(userId) + '/avatar';
@@ -757,6 +774,7 @@
           url += (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(version);
         return url;
       }
+      if (label) return this.initialsAvatarDataUri(label, userId || label);
       return this.defaultAvatar;
     },
 
@@ -1754,6 +1772,14 @@
 
     number: function (value, options) {
       return new Intl.NumberFormat(this.lang === 'ar' ? 'ar-SA' : 'en-US', options).format(value);
+    },
+    // Canonical badge/count formatter: 0 -> caller should hide via sc-if, 1-99 -> exact,
+    // 100+ -> capped "99+" so a large real count never overflows a small pill badge.
+    badgeCount: function (value) {
+      var n = Number(value) || 0;
+      if (n <= 0) return '';
+      if (n > 99) return this.lang === 'ar' ? '+99' : '99+';
+      return this.number(n);
     },
     date: function (value, options) {
       return new Intl.DateTimeFormat(this.lang === 'ar' ? 'ar-SA' : 'en-US', options || {

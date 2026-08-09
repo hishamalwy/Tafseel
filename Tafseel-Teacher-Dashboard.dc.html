@@ -103,7 +103,7 @@
           <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
           <span>{{ n.label }}</span>
           <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
-            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
+            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badgeLabel }}</span>
           </sc-if>
         </button>
       </sc-for>
@@ -656,7 +656,7 @@
                 <div style="font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</div>
               </div>
               <sc-if value="{{ c.unread }}" hint-placeholder-val="{{ false }}">
-                <span data-r5-unread style="min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--primary);color:var(--primary-ink);font-size:11px;font-weight:800;display:grid;place-items:center;flex:none">{{ c.unreadCount }}</span>
+                <span data-r5-unread style="min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--primary);color:var(--primary-ink);font-size:11px;font-weight:800;display:grid;place-items:center;flex:none">{{ c.unreadCountLabel }}</span>
               </sc-if>
             </button>
           </sc-for>
@@ -1587,7 +1587,7 @@ class Component extends DCLogic {
         : Tafseel.t('dash_sub_empty'),
 
       navItems: NAV.map(([key, icon, labelKey, badge]) => ({
-        icon, label: Tafseel.t(labelKey), badge: badge || 0,
+        icon, label: Tafseel.t(labelKey), badge: badge || 0, badgeLabel: Tafseel.badgeCount(badge),
         current: s.section === key ? 'page' : 'false',
         style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
           (s.section === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
@@ -2174,6 +2174,7 @@ class Component extends DCLogic {
           peerId,
           unread: unreadCount > 0,
           unreadCount,
+          unreadCountLabel: Tafseel.badgeCount(unreadCount),
           onOpen: () => window.TafseelChat && window.TafseelChat.open({ conversationId:c.id })
         };
       }),

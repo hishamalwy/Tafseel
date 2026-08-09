@@ -568,6 +568,9 @@ html[dir="rtl"] .tf-row-slide:hover{transform:translateX(-2px)}
   display:inline-flex;
   align-items:baseline;
   column-gap:.14em;
+  flex-wrap:nowrap;
+  white-space:nowrap;
+  max-inline-size:100%;
 }
 html[dir="rtl"] .tf-hero-headline-phrase{
   column-gap:.1em;

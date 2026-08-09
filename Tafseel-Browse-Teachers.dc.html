@@ -607,7 +607,7 @@ class Component extends DCLogic {
           languages: (t.languages || []).join(' · '), langs: t.languages || [],
           price: t.startingPrice == null ? null : Number(t.startingPrice), verified: t.verified,
           context,
-          avatar: Tafseel.avatarUrl(t.teacherId, t.hasAvatar)
+          avatar: Tafseel.avatarUrl(t.teacherId, t.hasAvatar, null, Tafseel.userName(t))
           };
           TEACHERS_BY_ID.set(teacher.id, teacher);
           return teacher;
@@ -1036,7 +1036,7 @@ class Component extends DCLogic {
       return {
         ...teacher,
         name,
-        avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar),
+        avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar, null, name),
         profileHref: (() => {
           const q = new URLSearchParams(location.search);
           q.delete('compare');
@@ -1071,9 +1071,11 @@ class Component extends DCLogic {
       : 'Tafseel-Auth.dc.html?mode=register&role=teacher';
     const pageNumbers = Array.from({ length: pageCount }, (_, index) => index + 1)
       .filter(number => number === 1 || number === pageCount || Math.abs(number - page) <= 2);
+    const pageTitle = Tafseel.t('browse_page_title');
+    if (typeof document !== 'undefined') document.title = pageTitle;
 
     return {
-      pageTitle: Tafseel.t('browse_page_title'),
+      pageTitle,
       langLabel: Tafseel.t('language_target'),
       langSwitchLabel: Tafseel.t('admin_switch_language'),
       themeIcon: s.theme === 'dark' ? '☀' : '☾',

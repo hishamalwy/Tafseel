@@ -34,7 +34,7 @@
           <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
           <span>{{ n.label }}</span>
           <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
-            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
+            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badgeLabel }}</span>
           </sc-if>
         </button>
       </sc-for>
@@ -58,7 +58,7 @@
         <button type="button" onClick="{{ toggleNotifs }}" aria-label="Notifications" style="position:relative;width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px">
           🔔
           <sc-if value="{{ unread }}" hint-placeholder-val="{{ false }}">
-            <span style="position:absolute;top:-5px;inset-inline-end:-5px;min-width:17px;height:17px;padding-inline:4px;border-radius:999px;background:var(--error);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center">{{ unread }}</span>
+            <span style="position:absolute;top:-5px;inset-inline-end:-5px;min-width:17px;height:17px;padding-inline:4px;border-radius:999px;background:var(--error);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center">{{ unreadBadgeLabel }}</span>
           </sc-if>
         </button>
         <button type="button" onClick="{{ goMessages }}" aria-label="Messages" style="width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;font-size:14px;color:var(--text)">✉</button>
@@ -989,7 +989,7 @@ class Component extends DCLogic {
         hasRating:x.rating != null && x.ratingCount > 0,
         rating:x.rating == null ? '' : Number(x.rating).toFixed(1),
         price:Tafseel.money(x.startingPrice || 0, x.currency || 'SAR'),
-        avatar: Tafseel.avatarUrl(x.teacherId, x.hasAvatar),
+        avatar: Tafseel.avatarUrl(x.teacherId, x.hasAvatar, null, Tafseel.userName(x)),
         profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(x.teacherId)
       })) : [];
       this.setState({
@@ -1208,7 +1208,7 @@ class Component extends DCLogic {
       onMessage: () => window.TafseelChat && window.TafseelChat.openOrder(r.id, r.teacherId),
       statusStyle,
       showTeacherAvatar: r.kind === 'order' && !!r.teacherAvatar,
-      teacherAvatar: r.teacherAvatar || (r.teacherId ? Tafseel.avatarUrl(r.teacherId, false) : Tafseel.defaultAvatar),
+      teacherAvatar: r.teacherAvatar || (r.teacherId ? Tafseel.avatarUrl(r.teacherId, false, null, r.teacherName) : Tafseel.defaultAvatar),
       showGuide: !!guideShort,
       guideShort: guideShort
         ? (guideShort.length > 96 ? guideShort.slice(0, 93) + '…' : guideShort)
@@ -1516,7 +1516,7 @@ class Component extends DCLogic {
       },
 
       navItems: NAV.map(([key, icon, labelKey, badge]) => ({
-        icon, label: Tafseel.t(labelKey), badge: badge || 0,
+        icon, label: Tafseel.t(labelKey), badge: badge || 0, badgeLabel: Tafseel.badgeCount(badge),
         current: s.section === key ? 'page' : 'false',
         style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
           (s.section === key
@@ -2107,6 +2107,7 @@ class Component extends DCLogic {
       recommendedEmptyLabel: Tafseel.t('dash_recommended_unavailable'),
 
       unread,
+      unreadBadgeLabel: Tafseel.badgeCount(unread),
       notifsOpen: s.notifsOpen,
       toggleNotifs: () => this.setState({ notifsOpen: !s.notifsOpen }),
       closeNotifs: () => this.setState({ notifsOpen: false }),

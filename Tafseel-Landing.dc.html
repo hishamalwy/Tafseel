@@ -535,7 +535,7 @@ class Component extends DCLogic {
         topics: teacher.subjects.slice(0, 2),
         status: teacher.verified ? 'Verified teacher' : 'Teacher',
         price: teacher.startingPrice == null ? 'Ask for price' : (teacher.currency || 'SAR') + ' ' + teacher.startingPrice,
-        avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar),
+        avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar, null, teacher.fullName),
         profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId)
       })) : null,
       liveServices: services ? (services || []).slice(0, 6).map(sv => ({
@@ -673,7 +673,7 @@ class Component extends DCLogic {
       heroRotatePrev,
       heroRotatePrevStyle,
       heroRotateCurrentStyle,
-      heroRotateMin: ar ? '6.8ch' : '10ch',
+      heroRotateMin: ar ? '6.8ch' : '8.6ch',
       rotateTick: String(this.state.rotateTick),
       heroSuffix: '',
       heroSub: ar
