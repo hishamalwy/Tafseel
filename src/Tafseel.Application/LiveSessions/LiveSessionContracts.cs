@@ -64,6 +64,13 @@ public interface ILiveSessionService
         string teacherId, Guid? teacherServiceId, DateOnly from, int days, int durationMinutes, string studentTimeZoneId, CancellationToken ct);
     Task<AvailabilitySummaryResultDto> GetAvailabilitySummariesAsync(
         IReadOnlyCollection<string> teacherIds, Guid? teacherServiceId, string? viewerTimeZoneId, CancellationToken ct);
+    Task<IReadOnlyCollection<string>> FindTeachersWithExactServiceAvailabilityAsync(
+        IReadOnlyCollection<string> teacherIds,
+        Guid? subjectId,
+        Guid? serviceCatalogItemId,
+        DateOnly localDate,
+        string viewerTimeZoneId,
+        CancellationToken ct);
     Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct);
     Task<PagedResult<LiveSessionDto>> GetMineAsync(string userId, int page, int pageSize, CancellationToken ct);
     Task RescheduleAsync(string userId, Guid id, RescheduleLiveSession input, string version, CancellationToken ct);

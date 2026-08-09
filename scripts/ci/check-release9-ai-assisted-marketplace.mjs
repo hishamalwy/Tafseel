@@ -16,6 +16,10 @@ const appsettings = read('src/Tafseel.Api/appsettings.json');
 
 assert(browse.includes('/ai/discovery') && browse.includes('/teachers?'),
   'AI discovery must hand off to the existing canonical teacher endpoint.');
+assert(browse.includes('runUnifiedSearch') && browse.includes('role="search"'),
+  'Browse must use one unified search that can call AI discovery.');
+assert(!browse.includes('id="ai-discovery-title"') && !browse.includes('tf-ai-panel'),
+  'Standalone AI Discovery panel must be removed from Browse.');
 assert(browse.includes('tf-discovery-steps') && browse.includes('tf-filter-panel'),
   'Normal Subject/Service/filter discovery must remain first-class.');
 assert(request.includes('/ai/request-assistant') && request.includes('useAiDraft') && request.includes('discardAiDraft'),

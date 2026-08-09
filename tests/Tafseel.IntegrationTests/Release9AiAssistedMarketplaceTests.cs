@@ -56,6 +56,102 @@ public sealed class Release9AiAssistedMarketplaceTests(AiTafseelApiFactory facto
     }
 
     [Fact]
+    public async Task Primary_arabic_intent_maps_math_live_and_thursday_without_clarification()
+    {
+        factory.Provider.DiscoveryStatus = AiProviderStatus.Success;
+        var catalog = await SeedMathematicsLiveAsync();
+        factory.Provider.Discovery = new(
+            "book_live_session", "رياضيات", "live_session", "live session",
+            null, null, null, false, [], "الخميس", null, "التكامل");
+        var expectedThursday = DiscoveryCalendar.ResolveUpcoming(
+            "الخميس", null, factory.Clock.GetUtcNow(), TimeZoneInfo.Utc);
+        var client = await StudentClientAsync();
+
+        var result = await (await client.PostAsJsonAsync("/api/v1/ai/discovery", new
+        {
+            input = "عندي امتحان رياضيات الخميس ومحتاج live session في التكامل",
+            viewerTimeZoneId = "UTC"
+        })).Content.ReadFromJsonAsync<AiDiscoveryResult>();
+
+        Assert.Equal(AiAssistantStatuses.Success, result!.Status);
+        Assert.False(result.NeedsClarification);
+        Assert.Empty(result.ClarificationQuestions);
+        Assert.Equal(catalog.SubjectId, result.Filters!.SubjectId);
+        Assert.Equal(catalog.LiveServiceId, result.Filters.ServiceCatalogItemId);
+        Assert.Equal(expectedThursday, result.Filters.AvailableOn);
+    }
+
+    [Fact]
+    public async Task English_and_mixed_calculus_live_thursday_intents_resolve_without_clarification()
+    {
+        factory.Provider.DiscoveryStatus = AiProviderStatus.Success;
+        var catalog = await SeedMathematicsLiveAsync();
+        var client = await StudentClientAsync();
+        var expectedThursday = DiscoveryCalendar.ResolveUpcoming(
+            "Thursday", null, factory.Clock.GetUtcNow(), TimeZoneInfo.Utc);
+
+        factory.Provider.Discovery = new(
+            "book_live_session", "calculus", "live_session", "live session",
+            null, null, null, false, [], "Thursday", null, null);
+        var english = await (await client.PostAsJsonAsync("/api/v1/ai/discovery", new
+        {
+            input = "Need a calculus live session Thursday",
+            viewerTimeZoneId = "UTC"
+        })).Content.ReadFromJsonAsync<AiDiscoveryResult>();
+        Assert.Equal(AiAssistantStatuses.Success, english!.Status);
+        Assert.False(english.NeedsClarification);
+        Assert.Equal(catalog.SubjectId, english.Filters!.SubjectId);
+        Assert.Equal(catalog.LiveServiceId, english.Filters.ServiceCatalogItemId);
+        Assert.Equal(expectedThursday, english.Filters.AvailableOn);
+
+        factory.Provider.Discovery = new(
+            "book_live_session", "calculus", "live_session", "live session",
+            null, null, null, false, [], "الخميس", null, null);
+        var mixed = await (await client.PostAsJsonAsync("/api/v1/ai/discovery", new
+        {
+            input = "محتاج live session يوم الخميس في calculus",
+            viewerTimeZoneId = "UTC"
+        })).Content.ReadFromJsonAsync<AiDiscoveryResult>();
+        Assert.Equal(AiAssistantStatuses.Success, mixed!.Status);
+        Assert.False(mixed.NeedsClarification);
+        Assert.Equal(catalog.SubjectId, mixed.Filters!.SubjectId);
+        Assert.Equal(catalog.LiveServiceId, mixed.Filters.ServiceCatalogItemId);
+        Assert.Equal(expectedThursday, mixed.Filters.AvailableOn);
+    }
+
+    [Fact]
+    public async Task Thursday_without_subject_asks_one_or_two_clarifications()
+    {
+        factory.Provider.DiscoveryStatus = AiProviderStatus.Success;
+        factory.Provider.Discovery = new(
+            "find_teacher", null, "unknown", null, null, null, null, false, [], "الخميس", null, null);
+        var client = await StudentClientAsync();
+        var result = await (await client.PostAsJsonAsync("/api/v1/ai/discovery", new
+        {
+            input = "محتاج مدرس الخميس",
+            viewerTimeZoneId = "UTC"
+        })).Content.ReadFromJsonAsync<AiDiscoveryResult>();
+        Assert.Equal(AiAssistantStatuses.NeedsClarification, result!.Status);
+        Assert.InRange(result.ClarificationQuestions.Count, 1, 2);
+    }
+
+    [Fact]
+    public async Task Calculus_resolves_to_mathematics_without_clarification()
+    {
+        factory.Provider.DiscoveryStatus = AiProviderStatus.Success;
+        var catalog = await SeedMathematicsLiveAsync();
+        factory.Provider.Discovery = new(
+            "find_teacher", "calculus", "unknown", null, null, null, null, false, []);
+        var client = await StudentClientAsync();
+        var result = await (await client.PostAsJsonAsync("/api/v1/ai/discovery",
+            new { input = "calculus" })).Content.ReadFromJsonAsync<AiDiscoveryResult>();
+        Assert.Equal(AiAssistantStatuses.Success, result!.Status);
+        Assert.False(result.NeedsClarification);
+        Assert.Equal(catalog.SubjectId, result.Filters!.SubjectId);
+        Assert.Null(result.Filters.ServiceCatalogItemId);
+    }
+
+    [Fact]
     public async Task Unknown_subject_is_not_created_and_requires_clarification()
     {
         factory.Provider.DiscoveryStatus = AiProviderStatus.Success;
@@ -185,6 +281,22 @@ public sealed class Release9AiAssistedMarketplaceTests(AiTafseelApiFactory facto
         return await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().LearningRequests.CountAsync();
     }
 
+    private async Task<MathLiveCatalog> SeedMathematicsLiveAsync()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        var existing = await db.Subjects.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Name == "Mathematics" && x.IsActive);
+        var live = await db.ServiceCatalogItems.AsNoTracking()
+            .SingleAsync(x => x.Code == "live_session");
+        if (existing is not null)
+            return new(existing.Id, live.Id);
+        var subject = new Subject("Mathematics", "math-unified", "الرياضيات");
+        db.Add(subject);
+        await db.SaveChangesAsync();
+        return new(subject.Id, live.Id);
+    }
+
     private async Task<MarketplaceFixture> SeedMarketplaceAsync()
     {
         var visible = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Teacher);
@@ -216,6 +328,8 @@ public sealed class Release9AiAssistedMarketplaceTests(AiTafseelApiFactory facto
         return new(visible.Id, hidden.Id, subject.Id, subject.Name, service.Id, service.Name,
             language.Id, language.Name, level.Id, level.Name);
     }
+
+    private sealed record MathLiveCatalog(Guid SubjectId, Guid LiveServiceId);
 
     private sealed record MarketplaceFixture(
         string VisibleTeacherId, string HiddenTeacherId,

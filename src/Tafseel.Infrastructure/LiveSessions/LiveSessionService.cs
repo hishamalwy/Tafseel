@@ -229,6 +229,91 @@ internal sealed class LiveSessionService(
             summaries);
     }
 
+    public async Task<IReadOnlyCollection<string>> FindTeachersWithExactServiceAvailabilityAsync(
+        IReadOnlyCollection<string> teacherIds,
+        Guid? subjectId,
+        Guid? serviceCatalogItemId,
+        DateOnly localDate,
+        string viewerTimeZoneId,
+        CancellationToken ct)
+    {
+        var requestedIds = teacherIds
+            .Where(id => !string.IsNullOrWhiteSpace(id) && Guid.TryParse(id, out _))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (requestedIds.Length == 0) return [];
+
+        var viewerZone = Zone(viewerTimeZoneId);
+        var now = clock.GetUtcNow();
+        var horizonStart = StartOfDayUtc(localDate, viewerZone);
+        var horizonEnd = StartOfDayUtc(localDate.AddDays(1), viewerZone);
+        if (horizonEnd <= now) return [];
+
+        var serviceRows = await (
+            from service in db.TeacherServices.AsNoTracking()
+            join type in db.ServiceCatalogItems.AsNoTracking()
+                on service.ServiceCatalogItemId equals type.Id
+            where requestedIds.Contains(service.TeacherId)
+                && service.IsActive
+                && service.SupersededByTeacherServiceId == null
+                && type.IsActive && type.IsPublic && type.TeacherSelectable
+                && type.RequiresScheduling
+                && type.Code == LiveSessionCatalogCode
+                && (!subjectId.HasValue || service.SubjectId == subjectId)
+                && (!serviceCatalogItemId.HasValue || service.ServiceCatalogItemId == serviceCatalogItemId)
+                && db.TeacherSubjectQualifications.Any(qualification =>
+                    qualification.TeacherId == service.TeacherId
+                    && qualification.SubjectId == service.SubjectId
+                    && qualification.Status == TeacherQualificationStatus.Approved
+                    && qualification.RevokedAt == null)
+            select new
+            {
+                service.TeacherId,
+                ServiceId = service.Id,
+                type.AllowedDurationsCsv
+            }).ToArrayAsync(ct);
+
+        if (serviceRows.Length == 0) return [];
+
+        var publicTeacherIds = serviceRows.Select(x => x.TeacherId)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var rules = await db.TeacherAvailabilityRules.AsNoTracking()
+            .Where(x => publicTeacherIds.Contains(x.TeacherId)).ToArrayAsync(ct);
+        var exceptions = await db.TeacherAvailabilityExceptions.AsNoTracking()
+            .Where(x => publicTeacherIds.Contains(x.TeacherId)
+                && x.StartsAt < horizonEnd.AddHours(4) && x.EndsAt > horizonStart)
+            .ToArrayAsync(ct);
+        var bookings = await db.LiveSessionBookings.AsNoTracking()
+            .Where(x => publicTeacherIds.Contains(x.TeacherId)
+                && ReservingStatuses.Contains(x.Status)
+                && x.StartsAt < horizonEnd.AddHours(4) && x.EndsAt > horizonStart)
+            .ToArrayAsync(ct);
+
+        var matched = new List<string>();
+        foreach (var teacherId in publicTeacherIds)
+        {
+            var teacherRules = rules.Where(x =>
+                string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (teacherRules.Length == 0) continue;
+            var teacherExceptions = exceptions.Where(x =>
+                string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var teacherBookings = bookings.Where(x =>
+                string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var liveServices = serviceRows
+                .Where(x => string.Equals(x.TeacherId, teacherId, StringComparison.OrdinalIgnoreCase))
+                .Select(x => ParseDurations(x.AllowedDurationsCsv).DefaultIfEmpty(0).Min())
+                .Where(duration => duration > 0)
+                .Distinct()
+                .ToArray();
+            if (liveServices.Any(duration => CalculateSlots(
+                    teacherRules, teacherExceptions, teacherBookings,
+                    duration, horizonStart, horizonEnd, now).Bookable.Count > 0))
+                matched.Add(teacherId);
+        }
+
+        return matched;
+    }
+
     public async Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct)
     {
         var startsAt = ToUtc(input.LocalStart, input.StudentTimeZoneId);

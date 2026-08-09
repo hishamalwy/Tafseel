@@ -1,6 +1,6 @@
 # Tafseel Project Status
 
-Last updated: 2026-08-08.
+Last updated: 2026-08-09.
 
 ## Roadmap
 
@@ -38,12 +38,19 @@ Do not treat Release 4 gaps as a reason to invent a Sprint 2 inside Operations.
 The optional Student AI layer is implemented behind `IAiProvider` with Groq/OpenAI-compatible
 strict structured output, application validation, canonical Subject/Service resolution, the
 existing Release 6 discovery handoff, explicit Guided Request draft review/use/discard, and
-approved-context Product Help. Verification: 343/343 backend tests, all frontend gates, EF clean,
-Release build/publish and isolated publish smoke, plus 15/15 browser contract certification.
-Canonical closure is blocked because no `GROQ_API_KEY` was available for real-provider smoke or
-50/20/20 semantic scoring, provider-bound Student text needs Privacy/Business approval, Release 7
-remains conditionally verified, and no canonical Release 8 completion record exists. No Release 9
-Sprint 2 is created. See [release report](./features/PHASE_4_RELEASE_9_AI_ASSISTED_MARKETPLACE.md).
+approved-context Product Help. Historical verification: 343/343 backend tests, all frontend gates,
+EF clean, Release build/publish and isolated publish smoke, plus 15/15 browser contract
+certification. Canonical closure remains blocked until real Groq eval (`GROQ_API_KEY` smoke +
+semantic scoring) completes; provider-bound Student text still needs Privacy/Business approval;
+no canonical Release 8 completion record exists. R5/R6/R7 remain VERIFIED & CLOSED. No Release 9
+Sprint 2 is created. See [release report](./features/PHASE_4_RELEASE_9_AI_ASSISTED_MARKETPLACE.md)
+and [unified discovery addendum](./features/evidence/phase4-release9-ai-assisted-marketplace/unified-discovery-addendum.md).
+
+**UNIFIED INTELLIGENT DISCOVERY SEARCH (2026-08-09):** Landing + Browse share one search field.
+AI is an invisible interpretation layer on the existing R9 Groq path — not a second provider,
+not a ranking engine, not a numbered Release rewrite. Exact-service Thursday availability is a
+first-class deterministic `AvailableOn` teacher-search filter. See
+[UNIFIED_INTELLIGENT_DISCOVERY_SEARCH.md](./fixes/UNIFIED_INTELLIGENT_DISCOVERY_SEARCH.md).
 
 **Sprint 1 — Admin & Quality Operations Foundation: PARTIALLY COMPLETED** (superseded
 by the complete-release pass above). See

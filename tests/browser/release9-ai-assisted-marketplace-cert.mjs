@@ -43,17 +43,18 @@ try {
   await page.waitForFunction(() => !location.pathname.includes("Tafseel-Auth"));
 
   await page.goto(`${baseUrl}/app/Tafseel-Browse-Teachers.dc.html`);
-  await page.locator("#ai-discovery-title").waitFor();
-  check("authenticated-student-ai-panel", await page.locator("#ai-discovery-title").isVisible());
+  await page.locator("#f-q").waitFor();
+  check("authenticated-student-unified-search", await page.locator("#f-q").isVisible());
+  check("standalone-ai-panel-removed", await page.locator("#ai-discovery-title").count() === 0);
 
-  const discovery = page.locator('.tf-ai-panel textarea').first();
-  await discovery.fill("I need a Mathematics teacher for a live session under 150 SAR");
-  await page.locator('.tf-ai-panel form').first().locator('button[type="submit"]').click();
-  await waitForText(page, "normal Tafseel ordering is unchanged");
+  const search = page.locator("#f-q");
+  await search.fill("I need a Mathematics teacher for a live session under 150 SAR");
+  await search.press("Enter");
+  await page.waitForFunction(() => new URL(location.href).searchParams.has("subjectId"), null, { timeout: 15000 });
   check("discovery-canonical-handoff", new URL(page.url()).searchParams.has("subjectId"));
 
-  await discovery.fill("I need help");
-  await page.locator('.tf-ai-panel form').first().locator('button[type="submit"]').click();
+  await page.locator("#f-q").fill("I need help");
+  await page.locator("#f-q").press("Enter");
   await waitForText(page, "A little more detail is needed");
   check("clarification-visible", await page.locator(".tf-ai-questions li").count() > 0);
 
@@ -69,16 +70,16 @@ try {
   await waitForText(page, "policy is not available");
   check("product-help-unsupported-guard", true);
 
-  await discovery.fill("RATE_LIMIT");
-  await page.locator('.tf-ai-panel form').first().locator('button[type="submit"]').click();
-  await waitForText(page, "normal Tafseel flow is still available");
+  await page.locator("#f-q").fill("RATE_LIMIT extra words for intent");
+  await page.locator("#f-q").press("Enter");
+  await waitForText(page, "smart help is unavailable");
   check("provider-failure-fallback", true);
   await page.screenshot({ path: path.join(outDir, "browse-en-1440.png"), fullPage: true });
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.evaluate(() => localStorage.setItem("tafseel-lang", "ar"));
   await page.reload();
-  await page.locator("#ai-discovery-title").waitFor();
+  await page.locator("#f-q").waitFor();
   const geometry = await page.evaluate(() => ({
     dir: document.documentElement.dir,
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth

@@ -48,11 +48,11 @@ internal sealed class GroqAiProvider : IAiProvider
         CancellationToken ct)
     {
         if (!_options.Enabled)
-            return new(AiProviderStatus.Disabled);
+            return Log<T>(feature, AiProviderStatus.Disabled, Stopwatch.GetTimestamp());
         if (_client is null)
-            return new(AiProviderStatus.MissingCredentials);
+            return Log<T>(feature, AiProviderStatus.MissingCredentials, Stopwatch.GetTimestamp());
         if (input.Length > _options.MaxInputCharacters)
-            return new(AiProviderStatus.InvalidResponse);
+            return Log<T>(feature, AiProviderStatus.InvalidResponse, Stopwatch.GetTimestamp());
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
@@ -68,21 +68,25 @@ internal sealed class GroqAiProvider : IAiProvider
                         schemaName, schema, jsonSchemaIsStrict: true)
                 },
                 timeout.Token);
-            var text = completion.Content.Count > 0 ? completion.Content[0].Text : null;
+            var text = ExtractOutputText(completion);
             if (string.IsNullOrWhiteSpace(text))
-                return Log<T>(feature, AiProviderStatus.InvalidResponse, started);
+                return Log<T>(feature, AiProviderStatus.InvalidResponse, started,
+                    finishReason: completion.FinishReason.ToString());
 
             try
             {
                 var value = JsonSerializer.Deserialize<T>(text, JsonOptions);
                 return value is null
-                    ? Log<T>(feature, AiProviderStatus.InvalidResponse, started)
+                    ? Log<T>(feature, AiProviderStatus.InvalidResponse, started,
+                        finishReason: completion.FinishReason.ToString())
                     : Log(feature, AiProviderStatus.Success, started, value,
-                        completion.Usage?.InputTokenCount, completion.Usage?.OutputTokenCount);
+                        completion.Usage?.InputTokenCount, completion.Usage?.OutputTokenCount,
+                        completion.FinishReason.ToString());
             }
             catch (JsonException)
             {
-                return Log<T>(feature, AiProviderStatus.InvalidResponse, started);
+                return Log<T>(feature, AiProviderStatus.InvalidResponse, started,
+                    finishReason: completion.FinishReason.ToString());
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -100,25 +104,39 @@ internal sealed class GroqAiProvider : IAiProvider
                 401 => AiProviderStatus.Unauthorized,
                 403 => AiProviderStatus.Forbidden,
                 429 => AiProviderStatus.RateLimited,
-                >= 500 => AiProviderStatus.Unavailable,
+                400 => AiProviderStatus.BadRequest,
+                >= 500 => AiProviderStatus.ProviderError,
                 _ => AiProviderStatus.InvalidResponse
             };
-            return Log<T>(feature, status, started);
+            return Log<T>(feature, status, started, httpStatus: exception.Status);
         }
         catch (HttpRequestException)
         {
-            return Log<T>(feature, AiProviderStatus.Unavailable, started);
+            return Log<T>(feature, AiProviderStatus.ConnectionFailure, started);
         }
+    }
+
+    private static string? ExtractOutputText(ChatCompletion completion)
+    {
+        if (completion.Content.Count > 0 && !string.IsNullOrWhiteSpace(completion.Content[0].Text))
+            return completion.Content[0].Text;
+        foreach (var part in completion.Content)
+        {
+            if (!string.IsNullOrWhiteSpace(part.Text)) return part.Text;
+        }
+        return null;
     }
 
     private AiProviderResult<T> Log<T>(
         string feature, AiProviderStatus status, long started, T? value = default,
-        int? inputTokens = null, int? outputTokens = null)
+        int? inputTokens = null, int? outputTokens = null, string? finishReason = null,
+        int? httpStatus = null)
     {
         _logger.LogInformation(
-            "AI operation completed. Feature={Feature} Provider=Groq Model={Model} PromptVersion={PromptVersion} Status={Status} LatencyMs={LatencyMs} InputTokens={InputTokens} OutputTokens={OutputTokens}",
-            feature, _options.Model, AiPrompts.Version, status,
-            Stopwatch.GetElapsedTime(started).TotalMilliseconds, inputTokens, outputTokens);
+            "AI operation completed. Feature={Feature} Provider=Groq Model={Model} PromptVersion={PromptVersion} Status={Status} StatusCategory={StatusCategory} HttpStatus={HttpStatus} FinishReason={FinishReason} LatencyMs={LatencyMs} InputTokens={InputTokens} OutputTokens={OutputTokens}",
+            feature, _options.Model, AiPrompts.Version, status, AiProviderStatusCategories.For(status),
+            httpStatus, finishReason, Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+            inputTokens, outputTokens);
         return new(status, value, inputTokens, outputTokens);
     }
 
@@ -132,8 +150,11 @@ internal sealed class GroqAiProvider : IAiProvider
           "educationLevelText":{"type":["string","null"],"maxLength":100},
           "maximumPrice":{"type":["number","null"],"minimum":1,"maximum":1000000},
           "needsClarification":{"type":"boolean"},
-          "clarificationQuestions":{"type":"array","maxItems":2,"items":{"type":"string","maxLength":300}}
-        },"required":["intentType","subjectText","serviceIntent","serviceText","preferredLanguageText","educationLevelText","maximumPrice","needsClarification","clarificationQuestions"]}
+          "clarificationQuestions":{"type":"array","maxItems":2,"items":{"type":"string","maxLength":300}},
+          "availabilityDayText":{"type":["string","null"],"maxLength":80},
+          "availabilityDateText":{"type":["string","null"],"maxLength":40},
+          "topicContext":{"type":["string","null"],"maxLength":200}
+        },"required":["intentType","subjectText","serviceIntent","serviceText","preferredLanguageText","educationLevelText","maximumPrice","needsClarification","clarificationQuestions","availabilityDayText","availabilityDateText","topicContext"]}
         """);
 
     private static readonly BinaryData RequestSchema = BinaryData.FromString("""

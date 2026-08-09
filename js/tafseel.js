@@ -940,12 +940,133 @@
           return list.filter(function (r) {
             return r.kind === 'order' && (r.group === 'done' || Number(r.rawStatus) === 4 || Number(r.rawStatus) === 5);
           });
+        case 'learning_active':
+          return list.filter(function (r) {
+            return r.kind === 'order' && (r.group === 'action' || r.group === 'active');
+          });
+        case 'learning_requests':
+          return list.filter(function (r) { return r.kind === 'request'; });
+        case 'learning_done':
+          return list.filter(function (r) {
+            return r.kind === 'order' && (r.group === 'done' || Number(r.rawStatus) === 4 || Number(r.rawStatus) === 5);
+          });
         case 'all':
         default:
           return list.filter(function (r) {
             return r.kind === 'request' || (r.kind === 'order' && r.group !== 'done');
           });
       }
+    },
+
+    /**
+     * Student attention items from canonical work rows + sessions + unread chats.
+     * Truth-backed only. Does not invent statuses.
+     * opts: { sessions, conversations }
+     * Returns array of { id, kind, title, subtitle, meta, ctaKey, priority, row?, session?, conversation? }
+     */
+    projectStudentAttentionItems: function (workRows, opts) {
+      var self = this;
+      var rows = Array.isArray(workRows) ? workRows : [];
+      var options = opts || {};
+      var sessions = Array.isArray(options.sessions) ? options.sessions : [];
+      var conversations = Array.isArray(options.conversations) ? options.conversations : [];
+      var items = [];
+      var now = Date.now();
+
+      rows.forEach(function (row) {
+        if (!row) return;
+        if (row.kind === 'order' && row.action === 'pay') {
+          items.push({
+            id: 'attention-pay-' + row.id,
+            kind: 'awaiting_payment',
+            title: row.title || self.t('td_order'),
+            subtitle: row.teacher || '',
+            meta: row.amount || '',
+            ctaKey: 'sd_attention_cta_pay',
+            priority: 10,
+            row: row
+          });
+        } else if (row.kind === 'order' && row.action === 'review') {
+          items.push({
+            id: 'attention-review-' + row.id,
+            kind: 'delivery_ready',
+            title: row.title || self.t('td_order'),
+            subtitle: row.teacher || '',
+            meta: row.deadline || row.status || '',
+            ctaKey: 'sd_attention_cta_review',
+            priority: 20,
+            row: row
+          });
+        } else if (row.kind === 'request' && Number(row.rawStatus) === 1) {
+          items.push({
+            id: 'attention-request-' + row.id,
+            kind: 'request_action',
+            title: row.title || self.t('dash_service_learning_request'),
+            subtitle: row.teacher || '',
+            meta: row.status || '',
+            ctaKey: 'sd_attention_cta_request',
+            priority: 25,
+            row: row
+          });
+        } else if (row.kind === 'order' && row.action === 'rate') {
+          items.push({
+            id: 'attention-rate-' + row.id,
+            kind: 'rate_available',
+            title: row.title || self.t('td_order'),
+            subtitle: row.teacher || '',
+            meta: row.amount || '',
+            ctaKey: 'sd_attention_cta_rate',
+            priority: 30,
+            row: row
+          });
+        }
+      });
+
+      conversations
+        .filter(function (c) { return c && Number(c.unreadCount) > 0; })
+        .slice(0, 3)
+        .forEach(function (c) {
+          var peer = null;
+          if (Array.isArray(c.participants) && c.participants.length) {
+            peer = c.participants.find(function (p) {
+              return p && self.participantLabel(p) !== self.t('name_unavailable');
+            }) || c.participants[0];
+          }
+          var preview = (c.latestMessage && c.latestMessage.body) || '';
+          items.push({
+            id: 'attention-msg-' + c.id,
+            kind: 'teacher_message',
+            title: self.participantLabel(peer || {}),
+            subtitle: preview,
+            meta: String(c.unreadCount),
+            ctaKey: 'sd_attention_cta_message',
+            priority: 40,
+            conversation: c
+          });
+        });
+
+      sessions
+        .filter(function (s) {
+          if (!s || !s.startsAt) return false;
+          var start = new Date(s.startsAt).getTime();
+          return !isNaN(start) && start >= now;
+        })
+        .slice(0, 3)
+        .forEach(function (s) {
+          items.push({
+            id: 'attention-session-' + s.id,
+            kind: 'upcoming_session',
+            title: String(s.title || '').trim() || self.t('dash_stat_sessions'),
+            subtitle: self.partyName(s, 'teacher'),
+            meta: self.date(s.startsAt),
+            ctaKey: 'sd_attention_cta_session',
+            priority: 50,
+            session: s
+          });
+        });
+
+      items.sort(function (a, b) { return a.priority - b.priority; });
+      return items;
     },
 
     /**
@@ -1451,6 +1572,144 @@
       return summary.timeZoneFallbackUsed
         ? text + ' - ' + this.t('availability_utc_fallback')
         : text;
+    },
+
+    discovery: {
+      INTENT_KEY: 'tafseel.discovery.intent.v1',
+      INTENT_TTL_MS: 15 * 60 * 1000,
+      MATH_ALIASES: ['mathematics', 'math', 'maths', 'calculus', 'integrals', 'integral', 'integration',
+        'رياضيات', 'الرياضيات', 'تكامل', 'التكامل', 'تفاضل', 'التفاضل', 'حساب'],
+      LIVE_ALIASES: ['live', 'live session', 'online session', 'جلسة مباشرة', 'جلسه مباشره',
+        'جلسة اونلاين', 'جلسه اونلاين', 'اونلاين'],
+      DAY_ALIASES: {
+        sunday: 0, sun: 0, الاحد: 0, الأحد: 0,
+        monday: 1, mon: 1, الاثنين: 1,
+        tuesday: 2, tue: 2, الثلاثاء: 2,
+        wednesday: 3, wed: 3, الاربعاء: 3, الأربعاء: 3,
+        thursday: 4, thu: 4, thurs: 4, الخميس: 4, خميس: 4,
+        friday: 5, fri: 5, الجمعة: 5, جمعه: 5,
+        saturday: 6, sat: 6, السبت: 6
+      },
+      key: function (value) {
+        return String(value || '').normalize('NFD').replace(/\p{M}/gu, '')
+          .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().toLowerCase();
+      },
+      storeIntent: function (text) {
+        var value = String(text || '').trim();
+        if (!value || value.length < 3) return;
+        try {
+          sessionStorage.setItem(this.INTENT_KEY, JSON.stringify({
+            text: value.slice(0, 2000), createdAt: Date.now()
+          }));
+        } catch (_) {}
+      },
+      consumeIntent: function () {
+        try {
+          var raw = sessionStorage.getItem(this.INTENT_KEY);
+          sessionStorage.removeItem(this.INTENT_KEY);
+          if (!raw) return null;
+          var parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed.text !== 'string') return null;
+          if (typeof parsed.createdAt !== 'number' || Date.now() - parsed.createdAt > this.INTENT_TTL_MS)
+            return null;
+          var text = parsed.text.trim();
+          return text.length >= 3 ? { text: text } : null;
+        } catch (_) {
+          try { sessionStorage.removeItem(this.INTENT_KEY); } catch (__) {}
+          return null;
+        }
+      },
+      handoffToBrowse: function (text) {
+        this.storeIntent(text);
+        location.href = 'Tafseel-Browse-Teachers.dc.html';
+      },
+      looksLikeIntent: function (text) {
+        var value = String(text || '').trim();
+        if (!value) return false;
+        if (value.length >= 40) return true;
+        if (/\s/.test(value) && value.split(/\s+/).length >= 3) return true;
+        return /live|session|exam|thursday|monday|tuesday|wednesday|friday|saturday|sunday|محتاج|امتحان|جلسة|يوم|الخميس|اونلاين|مباشرة/i.test(value);
+      },
+      isProbablyTeacherName: function (text) {
+        var value = String(text || '').trim();
+        if (!value || /\s/.test(value) || value.length > 40) return false;
+        var key = this.key(value);
+        if (this.MATH_ALIASES.some(function (alias) { return this.key(alias) === key; }, this)) return false;
+        if (this.LIVE_ALIASES.some(function (alias) { return this.key(alias) === key; }, this)) return false;
+        if (this.DAY_ALIASES[key] != null) return false;
+        return /^[\p{L}.'’-]+$/u.test(value);
+      },
+      nextWeekdayIso: function (dayIndex, timeZoneId) {
+        var nowParts = new Intl.DateTimeFormat('en-US', {
+          timeZone: timeZoneId || 'UTC', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date());
+        var map = {};
+        nowParts.forEach(function (part) { map[part.type] = part.value; });
+        var weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+        var todayIndex = weekdayMap[map.weekday];
+        var delta = ((dayIndex - todayIndex) + 7) % 7;
+        var local = new Date(Date.UTC(Number(map.year), Number(map.month) - 1, Number(map.day) + delta));
+        return local.toISOString().slice(0, 10);
+      },
+      weekdayLabel: function (iso, arabic) {
+        if (!iso) return '';
+        var date = new Date(iso + 'T12:00:00Z');
+        return new Intl.DateTimeFormat(arabic ? 'ar-SA' : 'en-US', {
+          weekday: 'long', timeZone: 'UTC'
+        }).format(date);
+      },
+      matchCatalog: function (text, items, extraAliases) {
+        var key = this.key(text);
+        if (!key || !items || !items.length) return null;
+        var aliases = (extraAliases || []).map(this.key, this);
+        var wanted = aliases.indexOf(key) >= 0 ? aliases.concat([key]) : [key];
+        var exact = items.filter(function (item) {
+          return [item.name, item.nameEn, item.nameAr, item.code].some(function (name) {
+            return name && wanted.indexOf(this.key(name)) >= 0;
+          }, this);
+        }, this);
+        if (exact.length === 1) return exact[0];
+        if (exact.length > 1) {
+          var coded = exact.filter(function (item) { return item.code === 'live_session'; });
+          return coded.length === 1 ? coded[0] : null;
+        }
+        return null;
+      },
+      interpretLocal: function (text, catalogs, timeZoneId) {
+        var value = String(text || '').trim();
+        var result = { subjectId: '', serviceId: '', availableOn: '', hasAny: false, hasStrong: false };
+        if (!value) return result;
+        var subjects = (catalogs && catalogs.subjects) || [];
+        var services = (catalogs && catalogs.services) || [];
+        var tokens = value.split(/[\s,،]+/).filter(Boolean);
+        var subject = this.matchCatalog(value, subjects, this.MATH_ALIASES);
+        if (!subject) {
+          tokens.forEach(function (token) {
+            if (!subject) subject = this.matchCatalog(token, subjects, this.MATH_ALIASES);
+          }, this);
+        }
+        var liveHit = this.LIVE_ALIASES.some(function (alias) {
+          return this.key(value).indexOf(this.key(alias)) >= 0;
+        }, this);
+        var service = liveHit
+          ? (services.filter(function (item) { return item.code === 'live_session'; })[0]
+            || services.filter(function (item) { return item.orderType === 'live_session'; })[0]
+            || null)
+          : this.matchCatalog(value, services, this.LIVE_ALIASES);
+        var dayIndex = null;
+        var dayKey = this.key(value);
+        Object.keys(this.DAY_ALIASES).forEach(function (alias) {
+          if (dayKey.indexOf(this.key(alias)) >= 0) dayIndex = this.DAY_ALIASES[alias];
+        }, this);
+        if (subject) result.subjectId = subject.id;
+        if (service) result.serviceId = service.id;
+        if (dayIndex != null) result.availableOn = this.nextWeekdayIso(dayIndex, timeZoneId);
+        result.hasAny = !!(result.subjectId || result.serviceId || result.availableOn);
+        result.hasStrong = !!(result.subjectId && result.serviceId)
+          || !!(result.subjectId && result.availableOn)
+          || !!(result.serviceId && result.availableOn);
+        return result;
+      }
     },
 
     orderTimelineEvent: function (event) {

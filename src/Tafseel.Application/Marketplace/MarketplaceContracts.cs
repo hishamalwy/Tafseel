@@ -35,7 +35,9 @@ public sealed record TeacherSearch(
     bool OnlineOnly = false,
     string Sort = "name",
     int Page = 1,
-    int PageSize = 12);
+    int PageSize = 12,
+    DateOnly? AvailableOn = null,
+    [param: StringLength(100)] string? ViewerTimeZoneId = null);
 
 public sealed record TeacherCardDto(
     string TeacherId,

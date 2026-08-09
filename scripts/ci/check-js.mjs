@@ -44,3 +44,8 @@ execFileSync(process.execPath, ["scripts/ci/check-guided-request.mjs"], { stdio:
 execFileSync(process.execPath, ["scripts/ci/check-sprint6-notification-routing.mjs"], { stdio: "inherit" });
 execFileSync(process.execPath, ["scripts/ci/check-release6-discovery.mjs"], { stdio: "inherit" });
 execFileSync(process.execPath, ["scripts/ci/check-release7-marketplace-intelligence.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-release9-ai-assisted-marketplace.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-unified-discovery-search.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-template-placeholder-leak.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-localization-usage.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/ci/check-auth-return.mjs"], { stdio: "inherit" });

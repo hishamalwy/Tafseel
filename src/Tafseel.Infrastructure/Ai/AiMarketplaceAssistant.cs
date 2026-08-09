@@ -11,7 +11,8 @@ namespace Tafseel.Infrastructure.Ai;
 internal sealed class AiMarketplaceAssistant(
     IAiProvider provider,
     ICatalogService catalog,
-    IOptions<AiOptions> options) : IAiMarketplaceAssistant
+    IOptions<AiOptions> options,
+    TimeProvider clock) : IAiMarketplaceAssistant
 {
     private readonly AiOptions _options = options.Value;
     private static readonly HashSet<string> IntentTypes =
@@ -38,40 +39,82 @@ internal sealed class AiMarketplaceAssistant(
         var languages = await catalog.GetLanguagesAsync(false, ct);
         var levels = await catalog.GetEducationLevelsAsync(false, ct);
 
-        var questions = candidate.ClarificationQuestions
-            .Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Take(2).ToList();
-        var subject = Resolve(candidate.SubjectText, subjects);
-        var service = ResolveService(candidate, services);
-        var language = Resolve(candidate.PreferredLanguageText, languages);
-        var level = Resolve(candidate.EducationLevelText, levels);
+        var questions = new List<string>();
+        var subject = DiscoveryCatalogResolver.ResolveSubject(
+            candidate.SubjectText, candidate.TopicContext, subjects);
+        var service = DiscoveryCatalogResolver.ResolveService(
+            candidate.ServiceIntent, candidate.ServiceText, services);
+        var language = DiscoveryCatalogResolver.ResolveNames(candidate.PreferredLanguageText, languages);
+        var level = DiscoveryCatalogResolver.ResolveNames(candidate.EducationLevelText, levels);
+        var zone = ResolveZone(input.ViewerTimeZoneId);
+        var availableOn = DiscoveryCalendar.ResolveUpcoming(
+            candidate.AvailabilityDayText, candidate.AvailabilityDateText, clock.GetUtcNow(), zone);
+        var arabic = DiscoveryText.HasArabic(text);
 
-        AddResolutionQuestion(candidate.SubjectText, subject, "Subject", questions);
-        AddResolutionQuestion(candidate.ServiceText ?? ServiceLabel(candidate.ServiceIntent), service, "service", questions);
-        AddResolutionQuestion(candidate.PreferredLanguageText, language, "teaching language", questions);
-        AddResolutionQuestion(candidate.EducationLevelText, level, "education level", questions);
-        if (string.IsNullOrWhiteSpace(candidate.SubjectText) && candidate.IntentType != "understand_service")
-            AddQuestion(questions, "Which subject do you need help with?");
+        if (subject.IsAmbiguous)
+            AddQuestion(questions, arabic
+                ? $"أي مادة تقصد: {string.Join("، ", subject.Items.Take(3).Select(x => x.NameAr ?? x.Name))}؟"
+                : $"Please choose the exact subject: {string.Join(", ", subject.Items.Take(3).Select(x => x.Name))}.");
+        if (service.IsAmbiguous)
+            AddQuestion(questions, arabic
+                ? "هل تريد جلسة مباشرة أم شرحًا غير متزامن؟"
+                : "Do you need a live session or an asynchronous request?");
+        if (!string.IsNullOrWhiteSpace(candidate.PreferredLanguageText) && language.IsEmpty)
+            AddQuestion(questions, arabic ? "ما لغة التدريس المطلوبة؟" : "Which teaching language did you mean?");
+        if (!string.IsNullOrWhiteSpace(candidate.EducationLevelText) && level.IsEmpty)
+            AddQuestion(questions, arabic ? "ما المرحلة الدراسية المطلوبة؟" : "Which education level did you mean?");
+
+        var dayRequested = !string.IsNullOrWhiteSpace(candidate.AvailabilityDayText)
+            || !string.IsNullOrWhiteSpace(candidate.AvailabilityDateText);
+        if (dayRequested && availableOn is null)
+            AddQuestion(questions, arabic ? "أي يوم تقصد للتوفر؟" : "Which day should we use for availability?");
+
+        var subjectNeeded = candidate.IntentType is not "understand_service"
+            && subject.IsEmpty
+            && (string.IsNullOrWhiteSpace(candidate.SubjectText)
+                && string.IsNullOrWhiteSpace(candidate.TopicContext)
+                || !string.IsNullOrWhiteSpace(candidate.SubjectText));
+        if (subjectNeeded)
+            AddQuestion(questions, arabic ? "ما المادة التي تحتاج مساعدة فيها؟" : "Which subject do you need help with?");
+
+        var serviceUnclear = dayRequested && service.IsEmpty && candidate.ServiceIntent == "unknown"
+            && string.IsNullOrWhiteSpace(candidate.ServiceText);
+        if (serviceUnclear)
+            AddQuestion(questions, arabic
+                ? "هل تحتاج جلسة مباشرة أم خدمة غير متزامنة؟"
+                : "Do you need a live session or an asynchronous service?");
 
         var filters = new AiResolvedDiscoveryFilters(
             subject.Single?.Id, subject.Single?.Name, subject.Single?.NameAr,
             service.Single?.Id, service.Single?.NameEn ?? service.Single?.Name,
             service.Single?.NameAr, candidate.MaximumPrice,
             language.Single?.Id, language.Single?.Name, language.Single?.NameAr,
-            level.Single?.Id, level.Single?.Name, level.Single?.NameAr);
+            level.Single?.Id, level.Single?.Name, level.Single?.NameAr,
+            "name",
+            availableOn,
+            availableOn is { } date ? DiscoveryCalendar.WeekdayLabel(date, arabic) : null,
+            string.IsNullOrWhiteSpace(candidate.TopicContext) ? null : candidate.TopicContext.Trim(),
+            zone.Id);
 
-        var needsClarification = candidate.NeedsClarification || questions.Count > 0;
-        if (needsClarification && input.ClarificationRound < 2)
+        var importantBlocked = questions.Count > 0;
+        if (importantBlocked && input.ClarificationRound < 2)
             return new(AiAssistantStatuses.NeedsClarification,
-                "Please clarify the missing details before Tafseel applies marketplace filters.",
-                true, questions, filters);
+                arabic
+                    ? "نحتاج توضيحًا واحدًا قبل تطبيق فلاتر السوق."
+                    : "Please clarify the missing details before Tafseel applies marketplace filters.",
+                true, questions.Take(2).ToArray(), filters);
 
-        if (needsClarification)
+        if (importantBlocked)
             return new(AiAssistantStatuses.NoCanonicalMatch,
-                "Tafseel could not safely map every detail. Use the normal filters to continue.",
+                arabic
+                    ? "تعذر مطابقة كل التفاصيل بأمان. تابع بالفلاتر العادية."
+                    : "Tafseel could not safely map every detail. Use the normal filters to continue.",
                 false, [], filters);
 
         return new(AiAssistantStatuses.Success,
-            "These filters were interpreted from your request. Teacher results keep Tafseel's normal eligibility and ordering.",
+            arabic
+                ? "طُبقت الفلاتر المستخلصة من طلبك. ترتيب المعلمين يبقى ترتيب تفصيل المعتاد."
+                : "These filters were interpreted from your request. Teacher results keep Tafseel's normal eligibility and ordering.",
             false, [], filters);
     }
 
@@ -125,56 +168,20 @@ internal sealed class AiMarketplaceAssistant(
         return normalized;
     }
 
-    private static Resolution Resolve(string? text, IReadOnlyCollection<CatalogItemDto> items)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return Resolution.Empty;
-        var wanted = Key(text);
-        var exact = items.Where(x => Names(x).Any(name => Key(name) == wanted)).ToArray();
-        if (exact.Length > 0) return new(exact);
-        var contained = items.Where(x => Names(x).Any(name =>
-            Key(name).Contains(wanted, StringComparison.Ordinal)
-            || wanted.Contains(Key(name), StringComparison.Ordinal))).ToArray();
-        return new(contained);
-    }
-
-    private static Resolution ResolveService(
-        AiDiscoveryCandidate candidate, IReadOnlyCollection<CatalogItemDto> services)
-    {
-        var byText = Resolve(candidate.ServiceText, services);
-        if (!byText.IsEmpty || candidate.ServiceIntent == "unknown") return byText;
-        var orderType = candidate.ServiceIntent == "live_session"
-            ? ServiceOrderTypes.LiveSession : ServiceOrderTypes.AsyncRequest;
-        return new(services.Where(x => x.OrderType == orderType).ToArray());
-    }
-
-    private static IEnumerable<string> Names(CatalogItemDto item) =>
-        new[] { item.Name, item.NameEn, item.NameAr, item.Code }.Where(x => !string.IsNullOrWhiteSpace(x))!;
-
-    private static string Key(string value)
-    {
-        var decomposed = value.Normalize(NormalizationForm.FormD);
-        var chars = decomposed.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-            .Select(c => char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : ' ').ToArray();
-        return string.Join(' ', new string(chars).Split(
-            (char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-    }
-
-    private static void AddResolutionQuestion(
-        string? requested, Resolution resolution, string label, ICollection<string> questions)
-    {
-        if (string.IsNullOrWhiteSpace(requested)) return;
-        if (resolution.IsEmpty)
-            AddQuestion(questions, $"Which Tafseel {label} did you mean by “{requested.Trim()}”? ");
-        else if (resolution.IsAmbiguous)
-            AddQuestion(questions, $"Please choose the exact {label}: {string.Join(", ", resolution.Items.Take(3).Select(x => x.Name))}.");
-    }
-
     private static void AddQuestion(ICollection<string> questions, string question)
     {
         if (questions.Count < 2 && !questions.Contains(question)) questions.Add(question.Trim());
     }
 
-    private static string? ServiceLabel(string intent) => intent == "unknown" ? null : intent;
+    private static TimeZoneInfo ResolveZone(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return TimeZoneInfo.Utc;
+        try { return TimeZoneInfo.FindSystemTimeZoneById(id.Trim()); }
+        catch (TimeZoneNotFoundException) { return TimeZoneInfo.Utc; }
+        catch (InvalidTimeZoneException) { return TimeZoneInfo.Utc; }
+    }
+
+    private static string Key(string value) => DiscoveryText.Key(value);
 
     private static bool DeadlineIsSupported(string input, string? deadline)
     {
@@ -192,14 +199,6 @@ internal sealed class AiMarketplaceAssistant(
         AiProviderStatus.Timeout => "AI assistance timed out. Continue with Tafseel's normal flow and try again later.",
         _ => "AI assistance is temporarily unavailable. Tafseel's normal marketplace flow is still available."
     };
-
-    private sealed record Resolution(IReadOnlyCollection<CatalogItemDto> Items)
-    {
-        public static readonly Resolution Empty = new([]);
-        public bool IsEmpty => Items.Count == 0;
-        public bool IsAmbiguous => Items.Count > 1;
-        public CatalogItemDto? Single => Items.Count == 1 ? Items.First() : null;
-    }
 
     private static class ProductHelpContext
     {

@@ -76,56 +76,80 @@
     <div style="display:flex;flex-direction:column;gap:22px">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div>
-          <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:5px">{{ greetingTitle }}</h1>
+          <h1 style="font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:-.025em;margin-bottom:5px">{{ greetingTitle }}</h1>
           <p style="color:var(--muted);font-size:14.5px">{{ greetingSub }}</p>
         </div>
-        <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="dash_new_request" style="height:42px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:600;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">＋ Find a Teacher</a>
+        <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="dash_new_request" class="tf-press" style="min-height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">＋ Find a Teacher</a>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px">
-        <sc-for list="{{ stats }}" as="st" hint-placeholder-count="4">
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <span style="font-size:13px;color:var(--muted);font-weight:500">{{ st.label }}</span>
-              <span style="width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:13px">{{ st.icon }}</span>
-            </div>
-            <div style="font-size:27px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ st.value }}</div>
-            <div style="{{ st.deltaStyle }}">{{ st.delta }}</div>
+      <section class="tf-attention" aria-labelledby="sd-attention-title" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px">
+        <div class="tf-attention-head">
+          <h2 id="sd-attention-title">{{ attentionTitle }}</h2>
+          <sc-if value="{{ attentionCount }}" hint-placeholder-val="{{ false }}">
+            <span role="status" style="font-size:13px;font-weight:700;color:var(--primary)">{{ attentionCountLabel }}</span>
+          </sc-if>
+        </div>
+        <sc-if value="{{ hasAttention }}" hint-placeholder-val="{{ false }}">
+          <ul class="tf-attention-list">
+            <sc-for list="{{ attentionItems }}" as="a" hint-placeholder-count="3">
+              <li class="tf-attention-card">
+                <div class="tf-attention-card-body">
+                  <div class="tf-attention-card-kind">{{ a.kindLabel }}</div>
+                  <p class="tf-attention-card-title">{{ a.title }}</p>
+                  <p class="tf-attention-card-subtitle">{{ a.subtitle }}</p>
+                </div>
+                <sc-if value="{{ a.meta }}" hint-placeholder-val="{{ false }}">
+                  <span class="tf-attention-card-meta">{{ a.meta }}</span>
+                </sc-if>
+                <button type="button" class="tf-attention-card-cta" onClick="{{ a.onAction }}">{{ a.ctaLabel }}</button>
+              </li>
+            </sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{ noAttention }}" hint-placeholder-val="{{ true }}">
+          <div class="tf-empty" style="padding:28px 8px;text-align:center">
+            <div class="tf-empty-title">{{ attentionEmptyTitle }}</div>
+            <p class="tf-empty-body">{{ attentionEmptyBody }}</p>
           </div>
-        </sc-for>
-      </div>
+        </sc-if>
+      </section>
 
-      <div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start" data-stack="main">
-        <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
-          <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <h2 style="font-size:16px;font-weight:700">{{ workSectionTitle }}</h2>
-            <div style="display:flex;gap:4px;flex-wrap:wrap" role="tablist" aria-label="{{ workSectionTitle }}">
-              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
-                <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.active }}" style="{{ f.style }}">{{ f.label }}</button>
-              </sc-for>
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table>
-              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ workSectionTitle }}</caption>
+      <section class="tf-learning-tabs" aria-labelledby="sd-learning-title" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px">
+        <div class="tf-attention-head" style="margin-bottom:4px">
+          <h2 id="sd-learning-title">{{ learningTitle }}</h2>
+          <button type="button" onClick="{{ goRequests }}" style="border:0;background:none;padding:0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--primary)">{{ viewAllLearningLabel }}</button>
+        </div>
+        <div role="tablist" aria-label="{{ learningTitle }}">
+          <sc-for list="{{ learningTabs }}" as="tab" hint-placeholder-count="4">
+            <button type="button" role="tab" aria-selected="{{ tab.selected }}" onClick="{{ tab.onClick }}">{{ tab.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ learningShowWork }}" hint-placeholder-val="{{ true }}">
+          <div class="tf-work-table" style="overflow-x:auto;margin-top:4px">
+            <table class="tf-table" style="min-width:640px;border:0">
+              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ learningTitle }}</caption>
               <thead>
-                <tr style="background:var(--surface-2)">
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colWork }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colTeacher }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colDeadline }}</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAmount }}</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
+                <tr>
+                  <th scope="col">{{ colWork }}</th>
+                  <th scope="col">{{ colTeacher }}</th>
+                  <th scope="col">{{ colStatus }}</th>
+                  <th scope="col">{{ colDeadline }}</th>
+                  <th scope="col" style="text-align:end">{{ colAmount }}</th>
+                  <th scope="col" style="text-align:end">{{ colAction }}</th>
                 </tr>
               </thead>
               <tbody>
-                <sc-for list="{{ requests }}" as="r" hint-placeholder-count="6">
-                  <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
-                    <td style="padding:14px 20px">
+                <sc-for list="{{ learningRows }}" as="r" hint-placeholder-count="4">
+                  <tr class="tf-row-slide">
+                    <td>
                       <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
                       <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
+                      <sc-if value="{{ r.showLifecycleHint }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:12px;color:var(--text-2);margin-top:4px">{{ r.lifecycleHint }}</div>
+                      </sc-if>
                     </td>
-                    <td style="padding:14px 12px">
+                    <td>
                       <div style="display:flex;align-items:center;gap:8px;min-width:0">
                         <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
                           <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
@@ -133,122 +157,100 @@
                         <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
                       </div>
                     </td>
-                    <td style="padding:14px 12px">
-                      <span style="{{ r.statusStyle }}">{{ r.status }}</span>
-                      <sc-if value="{{ r.showGuide }}" hint-placeholder-val="{{ false }}">
-                        <div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:220px;line-height:1.4">{{ r.guideShort }}</div>
+                    <td><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+                    <td style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
+                    <td style="text-align:end;font-size:15px;font-weight:800;white-space:nowrap">{{ r.amount }}</td>
+                    <td style="text-align:end">
+                      <sc-if value="{{ r.actionLabel }}">
+                        <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
                       </sc-if>
-                    </td>
-                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
-                    <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
-                    <td style="padding:14px 20px;text-align:end">
-                      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
-                        <sc-if value="{{ r.timelineLabel }}">
-                          <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.timelineLabel }}</button>
-                        </sc-if>
-                        <sc-if value="{{ r.messageLabel }}">
-                          <button type="button" onClick="{{ r.onMessage }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--primary);font-weight:600">{{ r.messageLabel }}</button>
-                        </sc-if>
-                        <sc-if value="{{ r.actionLabel }}">
-                          <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
-                        </sc-if>
-                      </div>
+                      <sc-if value="{{ r.showSecondary }}">
+                        <button type="button" onClick="{{ r.onTimeline }}" style="height:32px;margin-inline-start:6px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--text)">{{ r.timelineLabel }}</button>
+                      </sc-if>
                     </td>
                   </tr>
                 </sc-for>
               </tbody>
             </table>
           </div>
-          <sc-if value="{{ noRequests }}" hint-placeholder-val="{{ false }}">
-            <div class="tf-empty-enter" style="padding:52px 24px;text-align:center">
-              <div style="font-size:15px;font-weight:700;margin-bottom:6px">{{ workEmptyTitle }}</div>
-              <p style="font-size:14px;color:var(--muted);margin-bottom:16px">{{ workEmptyBody }}</p>
-              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600" data-i18n="dash_browse_teachers">Browse teachers →</a>
+          <div class="tf-work-cards" style="margin-top:4px">
+            <sc-for list="{{ learningRows }}" as="r" hint-placeholder-count="4">
+              <article class="tf-work-card">
+                <div class="tf-work-card-head">
+                  <div>
+                    <p class="tf-work-card-title">{{ r.title }}</p>
+                    <div class="tf-work-card-teacher">
+                      <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
+                        <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--border);object-fit:cover" />
+                      </sc-if>
+                      <span>{{ r.teacher }}</span>
+                    </div>
+                  </div>
+                  <span class="tf-work-card-amount">{{ r.amount }}</span>
+                </div>
+                <div class="tf-work-card-meta">
+                  <span class="tf-work-card-status" style="{{ r.statusStyle }}">{{ r.status }}</span>
+                  <span>{{ r.service }}</span>
+                  <span>{{ r.deadline }}</span>
+                </div>
+                <sc-if value="{{ r.showLifecycleHint }}" hint-placeholder-val="{{ false }}">
+                  <p style="font-size:12.5px;color:var(--text-2);margin:0">{{ r.lifecycleHint }}</p>
+                </sc-if>
+                <sc-if value="{{ r.actionLabel }}">
+                  <button type="button" class="tf-work-card-cta" onClick="{{ r.onAction }}">{{ r.actionLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ r.showSecondary }}">
+                  <button type="button" onClick="{{ r.onTimeline }}" style="min-height:40px;width:100%;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:600">{{ r.timelineLabel }}</button>
+                </sc-if>
+              </article>
+            </sc-for>
+          </div>
+          <sc-if value="{{ noLearningRows }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-empty" style="padding:36px 12px;text-align:center">
+              <div class="tf-empty-title">{{ workEmptyTitle }}</div>
+              <p class="tf-empty-body">{{ workEmptyBody }}</p>
+              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;display:inline-block;margin-top:12px" data-i18n="dash_browse_teachers">Browse teachers →</a>
             </div>
           </sc-if>
-          <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <span style="font-size:13px;color:var(--muted)">{{ workShowingLabel }}</span>
-            <button type="button" onClick="{{ goRequests }}" style="border:0;background:none;padding:0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--primary)" data-i18n="sd_view_all_work">View all →</button>
-          </div>
-        </section>
-
-        <div style="display:flex;flex-direction:column;gap:22px">
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <h2 style="font-size:16px;font-weight:700;margin-bottom:14px">Upcoming live sessions</h2>
-            <div style="display:flex;flex-direction:column;gap:12px">
-              <sc-for list="{{ sessions }}" as="se" hint-placeholder-count="2">
-                <article style="{{ se.cardStyle }}">
-                  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                    <span style="width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
-                    <div style="min-width:0">
-                      <div style="font-size:14px;font-weight:600">{{ se.teacher }}</div>
-                      <div style="font-size:12.5px;color:var(--muted)">{{ se.topic }}</div>
-                    </div>
-                    <span style="{{ se.countdownStyle }}">{{ se.countdown }}</span>
-                  </div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-                    <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ se.when }}</span>
-                    <button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button>
-                  </div>
-                </article>
-              </sc-for>
-            </div>
-          </section>
-
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-              <h2 style="font-size:16px;font-weight:700">Learning activity</h2>
-              <span style="font-size:12.5px;color:var(--muted)">{{ activityTrendLabel }}</span>
-            </div>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Hours of explanation and live sessions delivered to you.</p>
-            <sc-if value="{{ activityChartEmpty }}" hint-placeholder-val="{{ true }}">
-              <p class="tf-empty" role="status">{{ activityChartLabel }}</p>
-            </sc-if>
-            <sc-if value="{{ activityChartReady }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:flex-end;gap:6px;height:120px">
-                <sc-for list="{{ chart }}" as="c" hint-placeholder-count="12">
-                  <div title="{{ c.title }}" style="{{ c.colStyle }}"></div>
-                </sc-for>
-              </div>
-            </sc-if>
-          </section>
-        </div>
-      </div>
-
-      <section>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <h2 style="font-size:16px;font-weight:700">Recommended for your subjects</h2>
-          <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:13.5px;font-weight:600">Browse all →</a>
-        </div>
-        <sc-if value="{{ recommendedEmpty }}" hint-placeholder-val="{{ true }}">
-          <p class="tf-empty" role="status">{{ recommendedEmptyLabel }}</p>
         </sc-if>
-        <sc-if value="{{ recommendedReady }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:6px">
-          <sc-for list="{{ recommended }}" as="t" hint-placeholder-count="4">
-            <article style="flex:none;width:262px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
-              <div style="display:flex;gap:12px;margin-bottom:12px">
-                <img class="tf-img-avatar" sc-camel-src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
-                <div style="min-width:0">
-                  <div style="display:flex;align-items:center;gap:5px">
-                    <span style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
-                    <span title="Verified" style="flex:none;width:14px;height:14px;border-radius:50%;background:var(--primary);color:var(--primary-ink);font-size:8px;display:grid;place-items:center">✓</span>
+
+        <sc-if value="{{ learningShowSessions }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+            <sc-for list="{{ sessions }}" as="se" hint-placeholder-count="2">
+              <article style="{{ se.cardStyle }}">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                  <span style="width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                  <div style="min-width:0">
+                    <div style="font-size:14px;font-weight:600">{{ se.teacher }}</div>
+                    <div style="font-size:12.5px;color:var(--muted)">{{ se.topic }}</div>
                   </div>
-                  <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
+                  <span style="{{ se.countdownStyle }}">{{ se.countdown }}</span>
                 </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ se.when }}</span>
+                  <button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button>
+                </div>
+              </article>
+            </sc-for>
+            <sc-if value="{{ noSessions }}" hint-placeholder-val="{{ false }}">
+              <div class="tf-empty" style="padding:28px 8px;text-align:center">
+                <div class="tf-empty-title">{{ sessionsEmptyTitle }}</div>
+                <p class="tf-empty-body">{{ sessionsEmptyBody }}</p>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:14px">
-                <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
-                  <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
-                </sc-if>
-                <span style="color:var(--muted)">from {{ t.price }}</span>
-              </div>
-              <a href="{{ t.profileHref }}" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
-            </article>
-          </sc-for>
-        </div>
+            </sc-if>
+          </div>
         </sc-if>
       </section>
+
+      <section aria-labelledby="sd-quick-title" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px">
+        <h2 id="sd-quick-title" style="font-size:16px;font-weight:800;margin:0 0 12px">{{ quickTitle }}</h2>
+        <div class="tf-quick-actions">
+          <a href="Tafseel-Browse-Teachers.dc.html">{{ quickFindTeacher }}</a>
+          <button type="button" onClick="{{ quickContinueRequest }}">{{ quickContinueRequestLabel }}</button>
+          <button type="button" onClick="{{ goMessages }}">{{ quickMessages }}</button>
+        </div>
+      </section>
+
     </div>
     </sc-if>
 
@@ -881,6 +883,7 @@ class Component extends DCLogic {
         return filter || 'all';
       } catch (_) { return 'all'; }
     })(),
+    learningTab: 'active',
     drawer: false, compactNav: false, notifsOpen: false,
     read: [], toast: '', toastLeaving: false, liveNotifs: [], liveSessions: [],
     liveConversations: [],
@@ -1180,7 +1183,7 @@ class Component extends DCLogic {
     return {
       actionLabel: labelKey ? Tafseel.t(labelKey) : '',
       onAction,
-      actionBtnStyle: 'height:32px;padding-inline:12px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:12.5px;cursor:pointer'
+      actionBtnStyle: 'min-height:40px;padding-inline:14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13.5px;cursor:pointer'
     };
   }
 
@@ -1368,6 +1371,30 @@ class Component extends DCLogic {
     ];
 
     const rows = Tafseel.filterStudentWorkList(REQUESTS, s.filter).slice(0, 6);
+    const attentionRaw = typeof Tafseel.projectStudentAttentionItems === 'function'
+      ? Tafseel.projectStudentAttentionItems(REQUESTS, {
+          sessions: s.liveSessions || [],
+          conversations: s.liveConversations || [],
+          userId: s.accountUserId || (this._session && this._session.userId)
+        })
+      : REQUESTS.filter(x => x.group === 'action').map(x => ({
+          id: 'attention-' + x.id, kind: 'awaiting_payment', title: x.title, subtitle: x.teacher,
+          meta: x.amount, ctaKey: 'sd_attention_cta_pay', priority: 10, row: x
+        }));
+    const kindLabelMap = {
+      awaiting_payment: 'sd_attention_kind_pay',
+      delivery_ready: 'sd_attention_kind_review',
+      rate_available: 'sd_attention_kind_rate',
+      request_action: 'sd_attention_kind_request',
+      teacher_message: 'sd_attention_kind_message',
+      upcoming_session: 'sd_attention_kind_session'
+    };
+    const learningFilterKey = s.learningTab === 'requests' ? 'learning_requests'
+      : s.learningTab === 'completed' ? 'learning_done'
+      : 'learning_active';
+    const learningSource = s.learningTab === 'sessions'
+      ? []
+      : Tafseel.filterStudentWorkList(REQUESTS, learningFilterKey).slice(0, 8);
 
     // Activity chart requires a dedicated analytics endpoint — do not invent weekly bars.
 
@@ -1401,12 +1428,92 @@ class Component extends DCLogic {
         return first ? Tafseel.t('dash_greeting_named', { name: first }) : Tafseel.t('dash_greeting');
       })(),
       greetingSub: (() => {
-        const action = REQUESTS.filter(x => x.group === 'action').length;
+        const attentionN = attentionRaw.length;
         const upcoming = (s.liveSessions || []).length;
-        if (action || upcoming)
-          return Tafseel.t('dash_sub_counts', { action: String(action), sessions: String(upcoming) });
+        if (attentionN || upcoming)
+          return Tafseel.t('dash_sub_counts', { action: String(attentionN), sessions: String(upcoming) });
         return Tafseel.t('dash_sub_empty');
       })(),
+
+      attentionTitle: Tafseel.t('sd_attention_title'),
+      attentionEmptyTitle: Tafseel.t('sd_attention_empty_title'),
+      attentionEmptyBody: Tafseel.t('sd_attention_empty_body'),
+      hasAttention: attentionRaw.length > 0,
+      noAttention: attentionRaw.length === 0,
+      attentionCount: attentionRaw.length,
+      attentionCountLabel: String(attentionRaw.length),
+      attentionItems: attentionRaw.map(item => {
+        const row = item.row;
+        const enriched = row ? this.enrichWorkRow(row) : null;
+        let onAction = () => {};
+        if (item.kind === 'teacher_message' && item.conversation) {
+          onAction = () => {
+            navTo('messages');
+            if (window.TafseelChat) {
+              if (item.conversation.orderId && typeof window.TafseelChat.openOrder === 'function')
+                window.TafseelChat.openOrder(item.conversation.orderId, item.conversation.otherUserId);
+              else if (typeof window.TafseelChat.open === 'function')
+                window.TafseelChat.open();
+            }
+          };
+        } else if (item.kind === 'upcoming_session' && item.session) {
+          onAction = () => navTo('sessions');
+        } else if (item.kind === 'request_action' && row) {
+          onAction = () => this.setState({ section: 'requests', filter: 'pending', learningTab: 'requests' });
+        } else if (enriched && enriched.onAction) {
+          onAction = enriched.onAction;
+        }
+        return {
+          id: item.id,
+          kindLabel: Tafseel.t(kindLabelMap[item.kind] || 'sd_attention_title'),
+          title: item.title,
+          subtitle: item.subtitle || '',
+          meta: item.meta || '',
+          ctaLabel: Tafseel.t(item.ctaKey || 'sd_action_manage'),
+          onAction
+        };
+      }),
+
+      learningTitle: Tafseel.t('sd_learning_title'),
+      viewAllLearningLabel: Tafseel.t('sd_view_all_work'),
+      learningTabs: [
+        { key: 'active', label: Tafseel.t('sd_learning_tab_active') },
+        { key: 'requests', label: Tafseel.t('sd_learning_tab_requests') },
+        { key: 'sessions', label: Tafseel.t('sd_learning_tab_sessions') },
+        { key: 'completed', label: Tafseel.t('sd_learning_tab_completed') }
+      ].map(tab => ({
+        label: tab.label,
+        selected: s.learningTab === tab.key ? 'true' : 'false',
+        onClick: () => this.setState({ learningTab: tab.key })
+      })),
+      learningShowWork: s.learningTab !== 'sessions',
+      learningShowSessions: s.learningTab === 'sessions',
+      learningRows: learningSource.map(r => {
+        const enriched = this.enrichWorkRow(r);
+        const showLifecycleHint = !!(r.kind === 'order' && r.learningRequestId);
+        return {
+          ...enriched,
+          showLifecycleHint,
+          lifecycleHint: showLifecycleHint
+            ? Tafseel.t('sd_lifecycle_order_continues_request')
+            : '',
+          showSecondary: !!(enriched.timelineLabel && !enriched.actionLabel)
+        };
+      }),
+      noLearningRows: learningSource.length === 0,
+      noSessions: !(s.liveSessions && s.liveSessions.length),
+      sessionsEmptyTitle: Tafseel.t('sd_sessions_empty_title'),
+      sessionsEmptyBody: Tafseel.t('sd_sessions_empty_body'),
+
+      quickTitle: Tafseel.t('sd_quick_title'),
+      quickFindTeacher: Tafseel.t('sd_quick_find_teacher'),
+      quickContinueRequestLabel: Tafseel.t('sd_quick_continue_request'),
+      quickMessages: Tafseel.t('sd_quick_messages'),
+      quickContinueRequest: () => {
+        const pending = REQUESTS.find(x => x.kind === 'request');
+        if (pending) this.setState({ section: 'requests', filter: 'pending', learningTab: 'requests' });
+        else location.href = 'Tafseel-Browse-Teachers.dc.html';
+      },
 
       navItems: NAV.map(([key, icon, labelKey, badge]) => ({
         icon, label: Tafseel.t(labelKey), badge: badge || 0,

@@ -23,7 +23,30 @@ public enum AiProviderStatus
     Timeout,
     Unavailable,
     InvalidResponse,
-    Cancelled
+    Cancelled,
+    ConnectionFailure,
+    BadRequest,
+    ProviderError
+}
+
+public static class AiProviderStatusCategories
+{
+    public static string For(AiProviderStatus status) => status switch
+    {
+        AiProviderStatus.Disabled => "disabled",
+        AiProviderStatus.MissingCredentials => "credential_missing",
+        AiProviderStatus.Unauthorized => "provider_401",
+        AiProviderStatus.Forbidden => "provider_403",
+        AiProviderStatus.RateLimited => "provider_429",
+        AiProviderStatus.BadRequest => "provider_400",
+        AiProviderStatus.Timeout => "timeout",
+        AiProviderStatus.ConnectionFailure => "connection_failure",
+        AiProviderStatus.InvalidResponse => "invalid_output",
+        AiProviderStatus.Cancelled => "cancellation",
+        AiProviderStatus.ProviderError or AiProviderStatus.Unavailable => "provider_5xx",
+        AiProviderStatus.Success => "success",
+        _ => "unavailable"
+    };
 }
 
 public sealed record AiProviderResult<T>(
@@ -45,7 +68,10 @@ public sealed record AiDiscoveryCandidate(
     string? EducationLevelText,
     decimal? MaximumPrice,
     bool NeedsClarification,
-    string[] ClarificationQuestions);
+    string[] ClarificationQuestions,
+    string? AvailabilityDayText = null,
+    string? AvailabilityDateText = null,
+    string? TopicContext = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record AiRequestDraftCandidate(
@@ -70,7 +96,8 @@ public interface IAiProvider
 
 public sealed record AiDiscoveryInput(
     [param: Required, StringLength(2000, MinimumLength = 3)] string Input,
-    [param: Range(0, 2)] int ClarificationRound = 0);
+    [param: Range(0, 2)] int ClarificationRound = 0,
+    [param: StringLength(100)] string? ViewerTimeZoneId = null);
 
 public sealed record AiRequestAssistantInput(
     [param: Required, StringLength(4000, MinimumLength = 3)] string Notes);
@@ -92,7 +119,11 @@ public sealed record AiResolvedDiscoveryFilters(
     Guid? EducationLevelId,
     string? EducationLevelName,
     string? EducationLevelNameAr,
-    string Sort = "name");
+    string Sort = "name",
+    DateOnly? AvailableOn = null,
+    string? AvailabilityDayLabel = null,
+    string? TopicContext = null,
+    string? ViewerTimeZoneId = null);
 
 public sealed record AiDiscoveryResult(
     string Status,

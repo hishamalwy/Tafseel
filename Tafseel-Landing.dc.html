@@ -108,9 +108,9 @@
       <p class="tf-hero-sub" style="font-size:18.5px;line-height:1.6;color:var(--muted);max-width:560px;margin-bottom:28px;white-space:pre-line">{{ heroSub }}</p>
 
       <form class="tf-hero-search" onSubmit="{{ onSearch }}" role="search" style="display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:8px;box-shadow:var(--shadow-md);max-width:580px;margin-bottom:20px">
-        <label for="hero-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search subjects or topics</label>
-        <input id="hero-q" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onQFocus }}" onBlur="{{ onQBlur }}" placeholder="{{ heroSearchPlaceholder }}" style="flex:1;height:44px;border:0;background:transparent;padding-inline:12px;font-size:15px;outline:none" />
-        <button type="submit" class="tf-press" style="height:44px;padding:0 22px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14.5px;cursor:pointer;box-shadow:var(--shadow-md)">{{ heroCta }}</button>
+        <label for="hero-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ heroSearchLabel }}</label>
+        <input id="hero-q" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onQFocus }}" onBlur="{{ onQBlur }}" placeholder="{{ heroSearchPlaceholder }}" style="flex:1;min-height:48px;border:0;background:transparent;padding-inline:12px;font-size:15px;outline:none" />
+        <button type="submit" class="tf-press" style="min-height:48px;padding:0 22px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14.5px;cursor:pointer;box-shadow:var(--shadow-md)">{{ heroCta }}</button>
       </form>
 
       <div class="tf-hero-actions" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:40px">
@@ -450,15 +450,15 @@
 <script type="text/x-dc" data-dc-script data-props="{}">
 
 const HERO_SEARCH_EXAMPLES_EN = [
-  'Search by subject, topic, or teacher',
-  'Need your graduation project slides explained clearly',
+  'Search by teacher name or describe what you need',
+  'Need a calculus live session Thursday',
   'Review the hardest chapters, step by step',
   'Type the subject name and we will take it from there',
   'Tough course? Tafseel makes it easier'
 ];
 const HERO_SEARCH_EXAMPLES_AR = [
-  'ابحث عن المادة أو المعلم.',
-  'شرح مشاريع التخرج والسلايدات.',
+  'ابحث باسم مدرس أو اكتب ما تحتاجه...',
+  'عندي امتحان رياضيات الخميس ومحتاج live session في التكامل',
   'مراجعة أصعب الشابترات، دقيقة بدقيقة.',
   'اكتب اسم المادة، والباقي علينا.',
   'المادة صعبة؟ مع تفصيل... كل شيء يصير أسهل.'
@@ -736,13 +736,15 @@ class Component extends DCLogic {
       onQ: e => this.setState({ q: e.target.value }),
       onQFocus: () => this.setState({ qFocused: true }),
       onQBlur: () => this.setState({ qFocused: false }),
+      heroSearchLabel: ar ? 'ابحث باسم مدرس أو اكتب ما تحتاجه' : 'Search by teacher name or describe what you need',
       onSearch: e => {
         e.preventDefault();
-        if (this.state.q.trim()) {
-          location.href = 'Tafseel-Browse-Teachers.dc.html?search=' + encodeURIComponent(this.state.q.trim());
+        const text = this.state.q.trim();
+        if (!text) {
+          this.flash(ar ? 'اكتب اسم معلم أو ما تحتاجه.' : 'Type a teacher name or what you need.');
           return;
         }
-        this.flash(this.state.q ? `Searching teachers for “${this.state.q}”…` : 'Type a subject or topic to search.');
+        Tafseel.discovery.handoffToBrowse(text);
       },
       toggleTheme: () => Tafseel.toggleTheme(),
       toggleLang: () => Tafseel.toggleLang(),

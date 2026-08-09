@@ -23,6 +23,7 @@ namespace Tafseel.Infrastructure.Marketplace;
 internal sealed class MarketplaceService(
     TafseelDbContext db,
     IFileStorageService files,
+    ILiveSessionService liveSessions,
     IOptions<LiveSessionOptions> liveSessionOptions,
     IOptions<TeacherShowcaseOptions> showcaseOptions,
     NotificationWriter notifications,
@@ -118,6 +119,20 @@ internal sealed class MarketplaceService(
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
                 q.TeacherId == x.Profile.TeacherId
                 && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null));
+        if (input.AvailableOn.HasValue)
+        {
+            if (string.IsNullOrWhiteSpace(input.ViewerTimeZoneId))
+                throw new DomainException("invalid_time_zone", "A viewer time zone is required for a date availability filter.");
+            var candidateIds = await query.Select(x => x.Profile.TeacherId).ToArrayAsync(ct);
+            if (candidateIds.Length == 0)
+                return new([], page, pageSize, 0);
+            var matchingIds = (await liveSessions.FindTeachersWithExactServiceAvailabilityAsync(
+                    candidateIds, input.SubjectId, input.ServiceTypeId, input.AvailableOn.Value,
+                    input.ViewerTimeZoneId, ct)).ToArray();
+            if (matchingIds.Length == 0)
+                return new([], page, pageSize, 0);
+            query = query.Where(x => matchingIds.Contains(x.Profile.TeacherId));
+        }
         query = sort switch
         {
             "highest-rated" => query.OrderByDescending(x => x.Profile.RatingCount > 0)

@@ -12,3 +12,7 @@ Verification is green for 343/343 backend tests, all named frontend gates, 17/17
 The conditional verdict is mandatory: no `GROQ_API_KEY` was available, so real Groq smoke and semantic scoring were not run; Privacy/Business approval for provider-bound Student text remains open; Release 7 is only conditionally verified; and no canonical Release 8 completion record exists in the reconciled worktree. Release 6 and Release 5 remain verified and closed. No commit, push, or deployment was performed.
 
 Evidence: [final summary](./evidence/phase4-release9-ai-assisted-marketplace/final-summary.md), [browser certification](./evidence/phase4-release9-ai-assisted-marketplace/browser-certification.md), [ADR-014](../decisions/ADR-014-AI-PROVIDER-AND-BOUNDARIES.md), and [retrospective](../reports/PHASE_4_RELEASE_9_AI_ASSISTED_MARKETPLACE_RETROSPECTIVE.md).
+
+## Addendum — Unified Intelligent Discovery Search (2026-08-09)
+
+Browse no longer ships a standalone AI Discovery panel. The same `/api/v1/ai/discovery` Groq path remains the sole provider-bound interpreter. R9 remains CONDITIONALLY VERIFIED until real Groq eval completes. See [addendum](./evidence/phase4-release9-ai-assisted-marketplace/unified-discovery-addendum.md) and [UNIFIED_INTELLIGENT_DISCOVERY_SEARCH.md](../fixes/UNIFIED_INTELLIGENT_DISCOVERY_SEARCH.md).

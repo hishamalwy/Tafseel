@@ -30,7 +30,7 @@ public sealed class GroqAiProviderContractTests
     [InlineData(HttpStatusCode.Unauthorized, AiProviderStatus.Unauthorized)]
     [InlineData(HttpStatusCode.Forbidden, AiProviderStatus.Forbidden)]
     [InlineData(HttpStatusCode.TooManyRequests, AiProviderStatus.RateLimited)]
-    [InlineData(HttpStatusCode.InternalServerError, AiProviderStatus.Unavailable)]
+    [InlineData(HttpStatusCode.InternalServerError, AiProviderStatus.ProviderError)]
     public async Task Provider_errors_are_classified_without_exposing_vendor_bodies(
         HttpStatusCode responseStatus, AiProviderStatus expected)
     {
@@ -81,9 +81,29 @@ public sealed class GroqAiProviderContractTests
         }), NullLogger<GroqAiProvider>.Instance);
     }
 
+    [Fact]
+    public async Task Empty_http_200_content_is_invalid_output_not_success()
+    {
+        await using var server = new LocalChatServer(HttpStatusCode.OK,
+            """{"id":"chatcmpl-test","object":"chat.completion","created":1,"model":"openai/gpt-oss-120b","choices":[{"index":0,"message":{"role":"assistant","content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":0,"total_tokens":1}}""");
+        var result = await Provider(server.Endpoint).InterpretIntentAsync("Find math help", CancellationToken.None);
+        Assert.Equal(AiProviderStatus.InvalidResponse, result.Status);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
+    public async Task Provider_400_is_classified_separately_from_5xx()
+    {
+        await using var server = new LocalChatServer(HttpStatusCode.BadRequest,
+            "{\"error\":{\"message\":\"SECRET_VENDOR_DETAIL\",\"type\":\"invalid_request\"}}");
+        var result = await Provider(server.Endpoint).InterpretIntentAsync("Find math help", CancellationToken.None);
+        Assert.Equal(AiProviderStatus.BadRequest, result.Status);
+        Assert.Equal("provider_400", AiProviderStatusCategories.For(result.Status));
+    }
+
     private const string ValidDiscoveryResponse = """
         {"id":"chatcmpl-test","object":"chat.completion","created":1,"model":"openai/gpt-oss-120b",
-        "choices":[{"index":0,"message":{"role":"assistant","content":"{\"intentType\":\"find_teacher\",\"subjectText\":\"Calculus\",\"serviceIntent\":\"live_session\",\"serviceText\":null,\"preferredLanguageText\":null,\"educationLevelText\":null,\"maximumPrice\":null,\"needsClarification\":false,\"clarificationQuestions\":[]}"},"finish_reason":"stop"}],
+        "choices":[{"index":0,"message":{"role":"assistant","content":"{\"intentType\":\"find_teacher\",\"subjectText\":\"Calculus\",\"serviceIntent\":\"live_session\",\"serviceText\":null,\"preferredLanguageText\":null,\"educationLevelText\":null,\"maximumPrice\":null,\"needsClarification\":false,\"clarificationQuestions\":[],\"availabilityDayText\":\"Thursday\",\"availabilityDateText\":null,\"topicContext\":\"integration\"}"},"finish_reason":"stop"}],
         "usage":{"prompt_tokens":11,"completion_tokens":7,"total_tokens":18}}
         """;
 
