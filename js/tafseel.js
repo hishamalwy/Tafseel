@@ -1626,9 +1626,10 @@
       looksLikeIntent: function (text) {
         var value = String(text || '').trim();
         if (!value) return false;
+        if (this.isProbablyTeacherName(value)) return false;
         if (value.length >= 40) return true;
-        if (/\s/.test(value) && value.split(/\s+/).length >= 3) return true;
-        return /live|session|exam|thursday|monday|tuesday|wednesday|friday|saturday|sunday|محتاج|امتحان|جلسة|يوم|الخميس|اونلاين|مباشرة/i.test(value);
+        if (value.split(/\s+/).length < 2) return false;
+        return /\b(?:need|help|exam|looking\s+for|before|urgent)\b|محتاج|محتاجة|احتاج|أحتاج|امتحان|اختبار|ساعدني|عايز|عاوز/i.test(value);
       },
       isProbablyTeacherName: function (text) {
         var value = String(text || '').trim();

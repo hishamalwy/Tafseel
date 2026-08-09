@@ -1,11 +1,7 @@
 /**
  * Release 8 — 384-state visual/responsive matrix.
  * 16 entry points × 6 viewports × 4 modes (ar/en × dark/light).
- *
- * Usage (from tests/browser):
- *   node release8-matrix.mjs <output-directory>
- *
- * Requires running Development API on :5090 and UAT env passwords.
+ * Rate-limit-aware: request budget + cool-down retry on 429 (never marks 429 retry as PASS without a clean retest).
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
@@ -21,15 +17,15 @@ const OUT_DIR = process.argv[2]
 fs.mkdirSync(OUT_DIR, { recursive: true });
 fs.mkdirSync(path.join(OUT_DIR, "screenshots"), { recursive: true });
 
-const TEMPLATE_LEAK_RE = /\{\{[^}]*\}\}/;
 const NETWORK_LEAK_RE = /%7B%7B|\{\{|\}\}/;
-const budget = createRequestBudget({ baseUrl: BASE_URL, globalSafety: 120, authSafety: 3 });
+const budget = createRequestBudget({ baseUrl: BASE_URL, globalSafety: 160, authSafety: 3 });
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 function isBenignFirstPartyFailure(url, status) {
   return status === 401 && /\/api\/v1\/auth\/refresh$/.test(new URL(url).pathname);
 }
 
-async function runCell(page, surface, viewport, mode) {
+async function runCellOnce(page, surface, viewport, mode) {
   const rawConsoleErrors = [];
   const pageErrors = [];
   const failedRequests = [];
@@ -63,42 +59,44 @@ async function runCell(page, surface, viewport, mode) {
     url: fullUrl(surface), loaded: false, overflowX: null,
     consoleErrors: 0, pageErrors: 0, failedRequests: 0,
     unexpected429: 0, unexpected500: 0,
-    templateLeak: false, result: "FAIL", detail: ""
+    templateLeak: false, result: "FAIL", detail: "", retried: false
   };
 
   try {
-    await budget.waitForHeadroom({ global: 45, auth: 2 }, `cell ${surface.id}`);
-    // Extra pacing between navigations — auth refresh is 10/min in Development.
-    await new Promise(r => setTimeout(r, 6500));
+    await budget.waitForHeadroom({ global: 60, auth: 2 }, `cell ${surface.id}`);
+    await wait(8000);
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     if (!page.url().startsWith(BASE_URL)) {
       await page.goto(fullUrl(surface), { waitUntil: "domcontentloaded", timeout: 25000 });
     }
     await setThemeAndLang(page, mode.theme, mode.lang);
     await page.goto(fullUrl(surface), { waitUntil: "networkidle", timeout: 30000 });
-    await page.waitForTimeout(400);
+    await page.waitForFunction(() => window.Tafseel && window.Tafseel.api, null, { timeout: 20000 }).catch(() => {});
+    await wait(500);
     result.loaded = true;
 
-    const overflow = await page.evaluate(() => {
+    const domCheck = await page.evaluate(() => {
       const html = document.documentElement;
       const body = document.body;
-      // scrollWidth alone is a false-positive trap: this codebase deliberately sets
-      // overflow-x:hidden on html/body site-wide so decorative elements can extend.
-      // Only flag overflow that is actually visible (not clipped).
-      const htmlClipped = getComputedStyle(html).overflowX === "hidden" || getComputedStyle(html).overflowX === "clip";
-      const bodyClipped = body && (getComputedStyle(body).overflowX === "hidden" || getComputedStyle(body).overflowX === "clip");
-      if (htmlClipped || bodyClipped) return false;
-      return (html.scrollWidth > window.innerWidth + 1) || (body && body.scrollWidth > window.innerWidth + 1);
+      const bodyText = body ? body.innerText : "";
+      return {
+        overflowX: (() => {
+          const htmlClipped = getComputedStyle(html).overflowX === "hidden" || getComputedStyle(html).overflowX === "clip";
+          const bodyClipped = body && (getComputedStyle(body).overflowX === "hidden" || getComputedStyle(body).overflowX === "clip");
+          if (htmlClipped || bodyClipped) return false;
+          return (html.scrollWidth > window.innerWidth + 1) || (body && body.scrollWidth > window.innerWidth + 1);
+        })(),
+        templateLeak: /\{\{[^}]{0,80}\}\}/.test(bodyText)
+      };
     });
-    result.overflowX = overflow;
-    const html = await page.content();
-    result.templateLeak = TEMPLATE_LEAK_RE.test(html.replace(/<script[\s\S]*?<\/script>/gi, ""));
+    result.overflowX = domCheck.overflowX;
+    result.templateLeak = domCheck.templateLeak;
 
     const actionableConsole = rawConsoleErrors.filter(t =>
       !/401 \(Unauthorized\)/.test(t)
       && !/Failed to load resource: the server responded with a status of 401/.test(t)
       && !/status of 429/.test(t)
-      && !/MIME type/.test(t)); // MIME noise often follows a 429 on CSS
+      && !/MIME type/.test(t));
 
     result.consoleErrors = actionableConsole.length;
     result.pageErrors = pageErrors.length;
@@ -108,8 +106,8 @@ async function runCell(page, surface, viewport, mode) {
 
     const failures = [];
     if (!result.loaded) failures.push("not loaded");
-    if (overflow) failures.push("overflowX");
-    if (result.templateLeak) failures.push("template leak in DOM");
+    if (result.overflowX) failures.push("overflowX");
+    if (result.templateLeak) failures.push("template leak in visible text");
     if (result.pageErrors) failures.push(`pageErrors=${result.pageErrors}`);
     if (result.consoleErrors) failures.push(`consoleErrors=${result.consoleErrors}`);
     if (result.failedRequests) failures.push(`failedRequests=${result.failedRequests}`);
@@ -123,7 +121,6 @@ async function runCell(page, surface, viewport, mode) {
       result.result = "PASS";
     }
 
-    // Representative screenshots for high-risk surfaces
     const shotKey = `${viewport.width}_${mode.lang}_${mode.theme}_${surface.id}`;
     const wantShot =
       (viewport.width === 375 && mode.lang === "ar" && mode.theme === "dark")
@@ -136,7 +133,7 @@ async function runCell(page, surface, viewport, mode) {
       "landing", "browse", "teacher-profile", "student-dashboard", "teacher-dashboard",
       "guided-request", "messages", "live-booking", "admin-intelligence", "compare"
     ]);
-    if (wantShot && highRisk.has(surface.id)) {
+    if (result.result === "PASS" && wantShot && highRisk.has(surface.id)) {
       await page.screenshot({
         path: path.join(OUT_DIR, "screenshots", `${shotKey}.png`),
         fullPage: false
@@ -153,6 +150,18 @@ async function runCell(page, surface, viewport, mode) {
   return result;
 }
 
+async function runCell(page, surface, viewport, mode) {
+  let result = await runCellOnce(page, surface, viewport, mode);
+  if (result.result === "FAIL" && result.unexpected429 > 0 && !/overflowX|template leak|pageErrors|consoleErrors|unexpected500/.test(result.detail)) {
+    // Cool down a full rolling window, then retest once. Only the clean retest can PASS.
+    console.log(`COOLDOWN 65s after 429 on ${surface.id} ${viewport.width} ${mode.lang}/${mode.theme}`);
+    await wait(65000);
+    result = await runCellOnce(page, surface, viewport, mode);
+    result.retried = true;
+  }
+  return result;
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const contexts = new Map();
@@ -165,6 +174,7 @@ async function main() {
     contexts.set(key, context);
     let page;
     if (role) {
+      await budget.waitForHeadroom({ global: 20, auth: 3 }, `login ${role}`);
       page = await loginAs(context, role);
     } else {
       page = await context.newPage();

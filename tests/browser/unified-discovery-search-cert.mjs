@@ -45,6 +45,12 @@ try {
     const arabic = d.interpretLocal(primary, catalogs, zone);
     const english = d.interpretLocal("Need a calculus live session Thursday", catalogs, zone);
     const mixed = d.interpretLocal("محتاج live session يوم الخميس في calculus", catalogs, zone);
+    const shortArabic = d.interpretLocal("رياضيات live الخميس", catalogs, zone);
+    const shortEnglish = d.interpretLocal("calculus Thursday", catalogs, zone);
+    const physicsLive = d.interpretLocal("physics live", {
+      ...catalogs,
+      subjects: catalogs.subjects.concat([{ id: "33333333-3333-4333-8333-333333333333", name: "Physics", nameAr: "الفيزياء" }])
+    }, zone);
     const calculus = d.interpretLocal("calculus", catalogs, zone);
     const hisham = d.interpretLocal("Hisham", catalogs, zone);
     d.storeIntent(primary);
@@ -60,8 +66,15 @@ try {
       arabic,
       english,
       mixed,
+      shortArabic,
+      shortEnglish,
+      physicsLive,
+      shortArabicIntelligent: shortArabic.hasStrong || d.looksLikeIntent("رياضيات live الخميس"),
+      shortEnglishIntelligent: shortEnglish.hasStrong || d.looksLikeIntent("calculus Thursday"),
+      physicsLiveIntelligent: physicsLive.hasStrong || d.looksLikeIntent("physics live"),
       calculus,
       hishamName: d.isProbablyTeacherName("Hisham"),
+      hishamArabicName: d.isProbablyTeacherName("هشام"),
       calculusNotName: !d.isProbablyTeacherName("calculus"),
       hishamHasAny: hisham.hasAny,
       intentfulPrimary: d.looksLikeIntent(primary),
@@ -80,9 +93,16 @@ try {
     helper.english.subjectId === mathId && helper.english.serviceId === liveId && !!helper.english.availableOn);
   check("mixed-arabic-english",
     helper.mixed.subjectId === mathId && helper.mixed.serviceId === liveId && !!helper.mixed.availableOn);
+  check("short-ar-intelligent-path",
+    helper.shortArabic.subjectId === mathId && helper.shortArabic.serviceId === liveId
+    && !!helper.shortArabic.availableOn && helper.shortArabicIntelligent);
+  check("short-en-intelligent-path",
+    helper.shortEnglish.subjectId === mathId && !!helper.shortEnglish.availableOn
+    && helper.shortEnglishIntelligent);
+  check("physics-live-intelligent-path", helper.physicsLive.serviceId === liveId && helper.physicsLiveIntelligent);
   check("calculus-no-unnecessary-clarification",
     helper.calculus.subjectId === mathId && !helper.calculus.serviceId && helper.calculusNotName);
-  check("hisham-ordinary-keyword", helper.hishamName && !helper.hishamHasAny);
+  check("teacher-name-search-deterministic", helper.hishamName && helper.hishamArabicName && !helper.hishamHasAny);
   check("sessionstorage-consume-once", helper.consumeOnce);
   check("stale-intent-not-replayed", helper.staleCleared);
   check("thursday-iso-present", /^\d{4}-\d{2}-\d{2}$/.test(helper.nextThursday));
@@ -91,7 +111,19 @@ try {
   const browse = fs.readFileSync(path.join(root, "Tafseel-Browse-Teachers.dc.html"), "utf8");
   check("landing-guest-handoff", landing.includes("Tafseel.discovery.handoffToBrowse") && landing.includes('role="search"'));
   check("landing-no-raw-nl-url", !landing.includes("?search=' + encodeURIComponent") && !landing.includes("api.groq.com"));
+  check("browse-one-discovery-input",
+    (browse.match(/<input[^>]+id="f-q"/g) || []).length === 1 && (browse.match(/role="search"/g) || []).length === 1);
   check("browse-unified-search", browse.includes('id="f-q"') && browse.includes("runUnifiedSearch") && !browse.includes('id="ai-discovery-title"'));
+  check("no-standalone-ai-panel", !browse.includes('id="ai-discovery-title"') && !browse.includes("tf-ai-discovery"));
+  check("landing-browse-shared-anatomy",
+    landing.includes("tf-smart-search__bar") && browse.includes("tf-smart-search__bar")
+    && landing.includes("tf-smart-search__submit") && browse.includes("tf-smart-search__submit"));
+  check("no-ai-on-keystroke", browse.includes("onQ: e => this.setState({ q: e.target.value })"));
+  check("no-ai-on-filter-change",
+    browse.includes("onSubject: e => this.applyFilters") && browse.includes("onService: e => this.applyFilters")
+    && browse.includes("onEducationLevel: e => this.applyFilters"));
+  check("search-loading-clears", browse.includes("searchBusy: false") && browse.includes("discovery_fallback"));
+  check("canonical-filter-chips", browse.includes("selectedSubject") && browse.includes("selectedService") && browse.includes("weekdayLabel"));
   check("browse-no-groq-browser", !browse.includes("api.groq.com"));
   check("chips-are-ordinary-filters", browse.includes("chip.removeLabel") && browse.includes("availableOn"));
 

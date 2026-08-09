@@ -58,7 +58,7 @@ try {
   await waitForText(page, "A little more detail is needed");
   check("clarification-visible", await page.locator(".tf-ai-questions li").count() > 0);
 
-  const help = page.locator(".tf-ai-help");
+  const help = page.locator(".tf-product-help");
   await help.locator("summary").click();
   await help.locator("input").fill("How do learning requests work?");
   await help.locator('button[type="submit"]').click();

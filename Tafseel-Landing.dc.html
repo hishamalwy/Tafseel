@@ -107,10 +107,23 @@
       </h1>
       <p class="tf-hero-sub" style="font-size:18.5px;line-height:1.6;color:var(--muted);max-width:560px;margin-bottom:28px;white-space:pre-line">{{ heroSub }}</p>
 
-      <form class="tf-hero-search" onSubmit="{{ onSearch }}" role="search" style="display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:8px;box-shadow:var(--shadow-md);max-width:580px;margin-bottom:20px">
-        <label for="hero-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ heroSearchLabel }}</label>
-        <input id="hero-q" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onQFocus }}" onBlur="{{ onQBlur }}" placeholder="{{ heroSearchPlaceholder }}" style="flex:1;min-height:48px;border:0;background:transparent;padding-inline:12px;font-size:15px;outline:none" />
-        <button type="submit" class="tf-press" style="min-height:48px;padding:0 22px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:600;font-size:14.5px;cursor:pointer;box-shadow:var(--shadow-md)">{{ heroCta }}</button>
+      <form class="tf-smart-search tf-smart-search--hero" onSubmit="{{ onSearch }}" role="search">
+        <div class="tf-smart-search__bar">
+          <div class="tf-smart-search__field">
+            <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+            <label for="hero-q" class="tf-sr-only">{{ heroSearchLabel }}</label>
+            <input class="tf-smart-search__input" id="hero-q" value="{{ q }}" onChange="{{ onQ }}" placeholder="{{ heroSearchPlaceholder }}" aria-describedby="hero-search-help" maxlength="2000" />
+            <span class="tf-smart-search__affordance">
+              <svg class="tf-smart-search__spark" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l1.25 4.75L18 9l-4.75 1.25L12 15l-1.25-4.75L6 9l4.75-1.25L12 3Z" /><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z" /></svg>
+              <span>{{ smartSearchLabel }}</span>
+            </span>
+          </div>
+          <button type="submit" class="tf-smart-search__submit">
+            <svg class="tf-smart-search__submit-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+            <span>{{ heroCta }}</span>
+          </button>
+        </div>
+        <div id="hero-search-help" class="tf-smart-search__helper">{{ heroSearchExample }}</div>
       </form>
 
       <div class="tf-hero-actions" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:40px">
@@ -449,21 +462,6 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 
-const HERO_SEARCH_EXAMPLES_EN = [
-  'Search by teacher name or describe what you need',
-  'Need a calculus live session Thursday',
-  'Review the hardest chapters, step by step',
-  'Type the subject name and we will take it from there',
-  'Tough course? Tafseel makes it easier'
-];
-const HERO_SEARCH_EXAMPLES_AR = [
-  'ابحث باسم مدرس أو اكتب ما تحتاجه...',
-  'عندي امتحان رياضيات الخميس ومحتاج live session في التكامل',
-  'مراجعة أصعب الشابترات، دقيقة بدقيقة.',
-  'اكتب اسم المادة، والباقي علينا.',
-  'المادة صعبة؟ مع تفصيل... كل شيء يصير أسهل.'
-];
-
 const HERO_CARD_TEACHERS = [
   {
     teacherAr: 'د. هشام علوي', teacherEn: 'Dr. Hisham Alawi',
@@ -500,7 +498,7 @@ const HERO_CARD_TEACHERS = [
 ];
 
 class Component extends DCLogic {
-  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, subjectsLoaded: false, liveTeachers: null, liveServices: null, teacherTotal: null, rotateIndex: 0, previousRotateIndex: 0, rotateTick: 0, cardIndex: 0, cardTick: 0, reduceMotion: false, heroTypedText: '', qFocused: false, session: null, sessionChecked: false };
+  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, subjectsLoaded: false, liveTeachers: null, liveServices: null, teacherTotal: null, rotateIndex: 0, previousRotateIndex: 0, rotateTick: 0, cardIndex: 0, cardTick: 0, reduceMotion: false, session: null, sessionChecked: false };
 
   componentDidMount() {
     this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
@@ -509,8 +507,6 @@ class Component extends DCLogic {
     this._setReducedMotion(this._motionQuery.matches);
     if (this._motionQuery.addEventListener) this._motionQuery.addEventListener('change', this._onMotionChange);
     else if (this._motionQuery.addListener) this._motionQuery.addListener(this._onMotionChange);
-    this._typeState = { wordIndex: 0, charIndex: 0, deleting: false };
-    this._typeTimer = setTimeout(() => this._runTypewriter(), 700);
     Tafseel.api.ready()
       .then(session => this.setState({ session, sessionChecked: true }))
       .catch(() => this.setState({ session: null, sessionChecked: true }));
@@ -584,41 +580,6 @@ class Component extends DCLogic {
     }, 4200);
   }
 
-  _runTypewriter() {
-    clearTimeout(this._typeTimer);
-    const ar = this.state.lang === 'ar';
-    const examples = ar ? HERO_SEARCH_EXAMPLES_AR : HERO_SEARCH_EXAMPLES_EN;
-    const ts = this._typeState;
-    if (this.state.q || this.state.qFocused) {
-      this._typeTimer = setTimeout(() => this._runTypewriter(), 400);
-      return;
-    }
-    const word = examples[ts.wordIndex % examples.length];
-    let delay = ts.deleting ? 24 : 40;
-    if (!ts.deleting) {
-      ts.charIndex++;
-      if (ts.charIndex >= word.length) {
-        this.setState({ heroTypedText: word });
-        this._typeTimer = setTimeout(() => {
-          ts.deleting = true;
-          this._runTypewriter();
-        }, 1600);
-        return;
-      }
-    } else {
-      ts.charIndex--;
-      if (ts.charIndex <= 0) {
-        ts.deleting = false;
-        ts.wordIndex = (ts.wordIndex + 1) % examples.length;
-        this.setState({ heroTypedText: '' });
-        this._typeTimer = setTimeout(() => this._runTypewriter(), 380);
-        return;
-      }
-    }
-    this.setState({ heroTypedText: word.slice(0, ts.charIndex) });
-    this._typeTimer = setTimeout(() => this._runTypewriter(), delay);
-  }
-
   componentWillUnmount() {
     Tafseel.offChange(this._sub);
     clearInterval(this._rotateTimer);
@@ -627,7 +588,6 @@ class Component extends DCLogic {
       if (this._motionQuery.removeEventListener) this._motionQuery.removeEventListener('change', this._onMotionChange);
       else if (this._motionQuery.removeListener) this._motionQuery.removeListener(this._onMotionChange);
     }
-    clearTimeout(this._typeTimer);
     clearTimeout(this._toastTimer);
     clearTimeout(this._toastExitTimer);
   }
@@ -640,7 +600,6 @@ class Component extends DCLogic {
 
   renderVals() {
     const ar = this.state.lang === 'ar';
-    const showTypedPlaceholder = !this.state.q && !this.state.qFocused;
     const session = this.state.session;
     const teacherJoinHref = session && (session.roles || []).includes('Teacher')
       ? 'Tafseel-Teacher-Apply.dc.html'
@@ -690,9 +649,6 @@ class Component extends DCLogic {
       toast: this.state.toast,
       toastClass: Tafseel.toastClass(this.state.toastLeaving),
       q: this.state.q,
-      heroSearchPlaceholder: this.state.heroTypedText
-        ? this.state.heroTypedText + '|'
-        : (showTypedPlaceholder ? '|' : (ar ? '' : 'Type what you need help with')),
       heroCardPhoto: ar ? 'صورة' : 'photo',
       heroCardTeacher: ar ? heroCardData.teacherAr : heroCardData.teacherEn,
       heroCardVerified: ar ? 'معلم موثّق' : 'Verified teacher',
@@ -724,7 +680,7 @@ class Component extends DCLogic {
       heroSub: ar
         ? 'حَوِّل أي ملف إلى شرح مُفصّل لك — ارفع ملفك، اختر وقتك\nوافهم الجزء الذي تحتاجه بدون تكرار أو تشتيت'
         : 'Upload your material, pick the timing, and get the exact part you need explained clearly',
-      heroCta: ar ? 'ابحث عن معلم' : 'Find a teacher',
+      heroCta: ar ? 'ابحث' : 'Search',
       heroCta2: ar ? 'انضم كمعلم ←' : 'Become a teacher →',
       heroNote: ar ? 'سجّل حسابك، واجتز اختبار الجودة، وابدأ في استقبال طلبات الشرح التي تناسب تخصصك.' : 'Create your profile, pass the quality review, and start receiving requests that fit your expertise.',
       heroPill: this.state.teacherTotal == null
@@ -734,9 +690,10 @@ class Component extends DCLogic {
           : (Tafseel.number(this.state.teacherTotal) + ' verified teachers')),
       browseAllLabel: ar ? 'تصفح الكل →' : 'Browse all →',
       onQ: e => this.setState({ q: e.target.value }),
-      onQFocus: () => this.setState({ qFocused: true }),
-      onQBlur: () => this.setState({ qFocused: false }),
-      heroSearchLabel: ar ? 'ابحث باسم مدرس أو اكتب ما تحتاجه' : 'Search by teacher name or describe what you need',
+      heroSearchLabel: ar ? 'ابحث باسم معلّم أو صف احتياجك' : 'Search a teacher or describe what you need',
+      heroSearchPlaceholder: ar ? 'ابحث باسم معلّم أو صف احتياجك…' : 'Search a teacher or describe what you need…',
+      smartSearchLabel: ar ? 'بحث ذكي' : 'Smart search',
+      heroSearchExample: ar ? 'مثال: رياضيات live الخميس' : 'e.g. calculus live session Thursday',
       onSearch: e => {
         e.preventDefault();
         const text = this.state.q.trim();

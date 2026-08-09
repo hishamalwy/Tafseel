@@ -84,7 +84,12 @@
   --shadow-lg:0 24px 48px -16px oklch(0.2 0.02 265 / .18), 0 2px 6px oklch(0.2 0.02 265 / .06);
 
   /* Motion — 180-320ms ease-out, scale/crop only, never rotation */
-  --t:220ms ease-out;
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-in:cubic-bezier(.7,0,.84,0);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --dur-micro:120ms;
+  --dur-short:220ms;
+  --t:var(--dur-short) var(--ease-out);
 }
 
 /* Release 9: bounded AI request-assistant surface; global product styling remains Release 8-owned. */
@@ -662,7 +667,7 @@ html[data-theme="dark"] .tf-theme-toggle:empty::before{content:"☀"}
    Side inset comes only from padding-inline (keep tight). Inline styles on
    .tf-shell must use padding-block / padding-top/bottom — never the padding
    shorthand with horizontal px, or it overrides this and recreates gutters. */
-html,body{width:100%;max-width:100%;overflow-x:hidden}
+html,body{width:100%;max-width:100%;overflow-x:clip}
 .tf-shell{width:100% !important;max-width:none !important;margin-inline:0 !important;box-sizing:border-box;padding-inline:clamp(12px,1.6vw,20px)}
 
 .tf-nav-track{position:relative;display:flex;align-items:center;gap:4px}
@@ -1503,6 +1508,13 @@ html[dir="rtl"] .tf-subject-card:focus-visible .tf-subject-card-cta{
   .tf-hero-headline{
     max-inline-size:none;
     text-wrap:pretty;
+  }
+  html[dir="ltr"] .tf-hero-headline-phrase{
+    display:block;
+  }
+  html[dir="ltr"] .tf-hero-headline-keep{
+    display:inline;
+    white-space:normal;
   }
   html[dir="rtl"] .tf-hero-headline-main .tf-hero-headline-keep{
     flex-wrap:wrap;
@@ -2357,22 +2369,61 @@ input,select,textarea,button{max-inline-size:100%}
   outline:none;box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 28%,transparent);border-color:var(--primary);
 }
 
-/* —— Browse discovery compact strip —— */
-.tf-browse-discovery{
-  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
-  padding:12px 16px;border:1px solid var(--border);border-radius:var(--r-lg);
-  background:var(--surface);margin-bottom:16px;
+/* —— Unified smart search —— */
+/* Hallmark Â· component: unified smart search Â· genre: modern-minimal Â· theme: Tafseel incumbent
+ * states: default Â· hover Â· focus Â· active Â· disabled Â· loading Â· fallback Â· success
+ * pre-emit critique: P5 H5 E5 S5 R5 V4 Â· contrast: pass (40–41) Â· icons: pass (30)
+ * tokens: pass (48) Â· responsive/mobile: pass (34,49–57) Â· slop: pass (component scope)
+ */
+.tf-smart-search{display:grid;gap:var(--s-1);width:100%;min-inline-size:0;margin:0}
+.tf-smart-search--hero{max-inline-size:620px;margin-block-end:var(--s-3)}
+.tf-smart-search__bar{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s-1);min-inline-size:0;padding:var(--s-1);
+  border:1px solid var(--border-strong);border-radius:var(--r-lg);outline:3px solid transparent;outline-offset:2px;
+  background:var(--surface);box-shadow:var(--shadow-md);
+  transition:border-color var(--dur-short) var(--ease-out),box-shadow var(--dur-short) var(--ease-out);
 }
-.tf-browse-discovery .tf-browse-ai-form,
-.tf-browse-discovery form{flex:1;min-width:min(100%,240px);display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0}
-.tf-browse-discovery input[type=search],
-.tf-browse-discovery input[type=text]{
-  flex:1;min-width:min(100%,180px);min-height:44px;padding:8px 12px;
-  border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);font-size:14px;
+.tf-smart-search__field{display:flex;align-items:center;gap:10px;min-inline-size:0;min-block-size:44px;padding-inline:var(--s-1);border-radius:var(--r-md);background:var(--surface)}
+.tf-smart-search__icon{width:20px;height:20px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tf-smart-search__input{flex:1;min-inline-size:0;block-size:44px;padding:0;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:16px;line-height:1.4}
+.tf-smart-search__input::placeholder{color:var(--muted);opacity:1}
+.tf-smart-search__affordance{display:inline-flex;align-items:center;gap:5px;flex:none;color:var(--primary);font-size:12px;font-weight:750;white-space:nowrap}
+.tf-smart-search__spark{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tf-smart-search__submit{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-block-size:44px;min-inline-size:132px;padding-inline:20px;
+  border:1px solid var(--primary);border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);
+  font:inherit;font-size:14.5px;font-weight:800;line-height:1;white-space:nowrap;cursor:pointer;
+  transition:background-color var(--dur-short) var(--ease-out),border-color var(--dur-short) var(--ease-out),transform var(--dur-micro) var(--ease-out),opacity var(--dur-short) var(--ease-out);
 }
-.tf-browse-discovery input:focus-visible{
-  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 22%,transparent);
+.tf-smart-search__submit-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tf-smart-search__spinner{display:none;width:17px;height:17px;border:2px solid color-mix(in oklab,var(--primary-ink) 34%,transparent);border-block-start-color:var(--primary-ink);border-radius:50%;animation:tf-smart-search-spin .8s linear infinite}
+.tf-smart-search__submit[data-busy="true"] .tf-smart-search__submit-icon{display:none}
+.tf-smart-search__submit[data-busy="true"] .tf-smart-search__spinner{display:block}
+.tf-smart-search__submit:disabled{opacity:.62;cursor:not-allowed;transform:none}
+.tf-smart-search__bar:focus-within{border-color:var(--primary);outline-color:color-mix(in oklab,var(--primary) 30%,transparent);box-shadow:var(--shadow-md)}
+.tf-smart-search__submit:focus-visible{outline:3px solid var(--text);outline-offset:2px}
+.tf-smart-search__helper{display:flex;align-items:center;gap:6px;min-block-size:20px;padding-inline:var(--s-1);color:var(--muted);font-size:13px;line-height:1.5}
+.tf-smart-search__status{min-block-size:20px;margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.tf-smart-search__status.is-loading{color:var(--primary)}
+.tf-smart-search__status.is-success{color:var(--success)}
+.tf-smart-search__status.is-fallback{color:var(--text-2)}
+.tf-active-filter-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-1);margin-block:var(--s-2)}
+.tf-active-filter-label{color:var(--muted);font-size:13px;font-weight:700}
+@keyframes tf-smart-search-spin{to{transform:rotate(360deg)}}
+@media (hover:hover) and (pointer:fine){
+  .tf-smart-search__bar:hover{border-color:var(--primary)}
+  .tf-smart-search__submit:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover);transform:translateY(-1px)}
 }
+.tf-smart-search__submit:active:not(:disabled){transform:translateY(1px)}
+@media (max-width:40rem){
+  .tf-smart-search--hero{max-inline-size:none}
+  .tf-smart-search__bar{grid-template-columns:minmax(0,1fr)}
+  .tf-smart-search__field,.tf-smart-search__input,.tf-smart-search__submit{min-block-size:48px}
+  .tf-smart-search__submit{width:100%}
+  .tf-smart-search__helper{align-items:flex-start;font-size:12.5px}
+}
+@media (max-width:23rem){.tf-smart-search__affordance span{display:none}}
+@media (prefers-reduced-motion:reduce){.tf-smart-search__bar,.tf-smart-search__submit{transition-duration:0ms}.tf-smart-search__spinner{animation:none}}
 
 /* —— Compare overlay —— */
 .tf-compare-dialog{

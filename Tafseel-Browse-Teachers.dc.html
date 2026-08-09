@@ -26,13 +26,12 @@
   .tf-compare-person{display:flex;gap:10px;align-items:center;min-width:0}
   .tf-compare-person img{width:44px;height:44px;border-radius:12px;object-fit:cover;border:1px solid var(--border);flex:none}
   .tf-compare-copy{white-space:pre-line;overflow-wrap:anywhere}
-  .tf-discovery-steps{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);margin-bottom:16px}
-  .tf-discovery-step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:center}
-  .tf-discovery-step>span{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:800;font-size:13px}
-  .tf-discovery-step label{display:block;font-size:13px;font-weight:700;margin-bottom:5px;color:var(--text)}
-  .tf-discovery-step select{width:100%;height:44px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:14.5px}
-  .tf-discovery-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,.45fr) minmax(160px,.35fr);gap:10px;margin-bottom:24px}
-  .tf-discovery-control{height:44px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text)}
+  .tf-discovery-stage{display:grid;gap:14px;margin-bottom:24px}
+  .tf-secondary-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end;padding-block-start:4px}
+  .tf-secondary-filter{display:grid;gap:6px;min-width:0}
+  .tf-secondary-filter label{font-size:12.5px;font-weight:700;color:var(--text-2)}
+  .tf-secondary-filter select{width:100%;height:44px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-md);outline:2px solid transparent;outline-offset:1px;background:var(--surface);color:var(--text);font:inherit;font-size:14px}
+  .tf-secondary-filter select:focus-visible{border-color:var(--primary);outline-color:color-mix(in oklab,var(--primary) 30%,transparent)}
   .tf-filter-panel{position:sticky;top:96px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:22px}
   .tf-card-skeletons{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px}
   .tf-card-skeletons>div{height:310px;border-radius:var(--r-lg)}
@@ -44,16 +43,15 @@
   .tf-result-card .tf-price-label{font-size:12px;font-weight:650;color:var(--muted);letter-spacing:.02em}
   .tf-context-offer{padding:10px 12px;margin-bottom:12px;border-radius:var(--r-md);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);font-size:13px;line-height:1.5}
   .tf-context-offer strong{color:var(--text);font-weight:700}
-  .tf-ai-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
-  .tf-ai-input{width:100%;min-height:48px;max-height:120px;padding:12px 14px;border:1px solid var(--border-strong);border-radius:var(--r-md);background:var(--bg);color:var(--text);font:inherit;resize:vertical}
-  .tf-ai-action{min-height:48px;padding:0 18px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:750}
-  .tf-ai-action:disabled{opacity:.55;cursor:not-allowed}
-  .tf-ai-status{margin-top:8px;font-size:13px;line-height:1.55;color:var(--text-2)}
+  .tf-product-help{margin-top:8px;padding-top:14px;border-top:1px solid var(--border)}
+  .tf-product-help summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-2)}
+  .tf-product-help-form{display:grid;gap:8px;margin-top:8px}
+  .tf-product-help-input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font:inherit}
+  .tf-product-help-action{min-height:44px;padding:0 16px;border:1px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface);color:var(--text);font-weight:750}
+  .tf-product-help-action:disabled{opacity:.55;cursor:not-allowed}
+  .tf-product-help-status{margin-top:8px;font-size:13px;line-height:1.55;color:var(--text-2)}
   .tf-ai-questions{margin:8px 0 0;padding-inline-start:20px;font-size:13px;color:var(--text-2)}
-  .tf-ai-help{margin-top:8px;padding-top:14px;border-top:1px solid var(--border)}
-  .tf-search-submit{flex:none;height:40px;min-width:44px;padding:0 14px;border:0;border-radius:var(--r-md);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:13.5px;cursor:pointer}
-  .tf-search-submit:disabled{opacity:.55;cursor:not-allowed}
-  .tf-search-submit:focus-visible,.tf-discovery-control:focus-within{outline:2px solid var(--primary);outline-offset:2px}
+  .tf-product-help-input:focus-visible,.tf-product-help-action:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
   @media(max-width:720px){
     .tf-compare-overlay{padding:0;place-items:end stretch}
     .tf-compare-dialog{width:100%;max-height:92dvh;border-radius:var(--r-lg) var(--r-lg) 0 0;padding:18px}
@@ -63,14 +61,11 @@
     .tf-compare-mobile dl{display:grid;gap:12px;margin-top:16px}
     .tf-compare-mobile dt{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:3px}
     .tf-compare-mobile dd{margin:0;color:var(--text-2);overflow-wrap:anywhere}
-    .tf-discovery-steps{grid-template-columns:1fr;padding:14px}
-    .tf-discovery-tools{grid-template-columns:1fr}
+    .tf-secondary-filters{grid-template-columns:1fr}
     .tf-filter-panel{position:static;padding:16px}
-    .tf-ai-form{grid-template-columns:1fr}
-    .tf-ai-action{width:100%}
-    .tf-search-submit{width:auto}
     [data-stack="browse"]{grid-template-columns:1fr!important}
   }
+  @media(min-width:721px) and (max-width:1024px){.tf-secondary-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
   <script src="js/locales.js"></script>
   <script src="js/tafseel.js"></script>
@@ -139,33 +134,50 @@
     </div>
   </div>
 
-  <div class="tf-discovery-steps" aria-label="{{ discoveryStepsLabel }}">
-    <div class="tf-discovery-step"><span aria-hidden="true">1</span><div><label for="f-subject">{{ subjectPrompt }}</label><select id="f-subject" value="{{ subjectId }}" onChange="{{ onSubject }}"><sc-for list="{{ subjectOptions }}" as="o" hint-placeholder-count="5"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></div></div>
-    <div class="tf-discovery-step"><span aria-hidden="true">2</span><div><label for="f-service">{{ servicePrompt }}</label><select id="f-service" value="{{ serviceId }}" onChange="{{ onService }}"><sc-for list="{{ serviceOptions }}" as="o" hint-placeholder-count="5"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></div></div>
-  </div>
+  <section class="tf-discovery-stage" aria-label="{{ discoveryStageLabel }}">
+    <form onSubmit="{{ submitSearch }}" role="search" class="tf-smart-search tf-smart-search--browse" aria-busy="{{ searchBusy }}">
+      <div class="tf-smart-search__bar">
+        <div class="tf-smart-search__field">
+          <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+          <label for="f-q" class="tf-sr-only">{{ searchLabel }}</label>
+          <input class="tf-smart-search__input" id="f-q" value="{{ q }}" onChange="{{ onQ }}" placeholder="{{ searchPlaceholder }}" maxlength="2000" aria-describedby="browse-search-help discovery-status" />
+          <span class="tf-smart-search__affordance">
+            <svg class="tf-smart-search__spark" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l1.25 4.75L18 9l-4.75 1.25L12 15l-1.25-4.75L6 9l4.75-1.25L12 3Z" /><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z" /></svg>
+            <span>{{ smartSearchLabel }}</span>
+          </span>
+        </div>
+        <button type="submit" class="tf-smart-search__submit" disabled="{{ searchBusy }}" data-busy="{{ searchBusy }}">
+          <svg class="tf-smart-search__submit-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+          <span class="tf-smart-search__spinner" aria-hidden="true"></span>
+          <span>{{ searchSubmitLabel }}</span>
+        </button>
+      </div>
+      <div id="browse-search-help" class="tf-smart-search__helper">{{ searchExample }}</div>
+      <div id="discovery-status" class="{{ discoveryStatusClass }}" role="status" aria-live="polite">{{ discoveryStatus }}</div>
+    </form>
 
-  <form onSubmit="{{ submitSearch }}" role="search" class="tf-discovery-tools">
-    <div class="tf-discovery-control" style="display:flex;align-items:center;gap:10px;padding-inline:12px">
-      <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;flex:none;fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
-      <label for="f-q" class="tf-sr-only">{{ searchLabel }}</label>
-      <input id="f-q" value="{{ q }}" onChange="{{ onQ }}" data-i18n-ph="ph_search" placeholder="Search by teacher name or describe what you need..." maxlength="2000" aria-describedby="discovery-status" style="flex:1;border:0;background:transparent;outline:none;font-size:14.5px;min-width:0" />
-      <button type="submit" class="tf-search-submit" disabled="{{ searchBusy }}">{{ searchSubmitLabel }}</button>
+    <div class="tf-secondary-filters" aria-label="{{ secondaryFiltersLabel }}">
+      <div class="tf-secondary-filter"><label for="f-subject">{{ subjectPrompt }}</label><select id="f-subject" value="{{ subjectId }}" onChange="{{ onSubject }}"><sc-for list="{{ subjectOptions }}" as="o" hint-placeholder-count="5"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></div>
+      <div class="tf-secondary-filter"><label for="f-service">{{ servicePrompt }}</label><select id="f-service" value="{{ serviceId }}" onChange="{{ onService }}"><sc-for list="{{ serviceOptions }}" as="o" hint-placeholder-count="5"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></div>
+      <div class="tf-secondary-filter"><label for="f-education">{{ educationLevelLabel }}</label><select id="f-education" value="{{ educationLevelId }}" onChange="{{ onEducationLevel }}"><sc-for list="{{ educationLevelOptions }}" as="o" hint-placeholder-count="4"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></div>
+      <div class="tf-secondary-filter"><label for="sort">{{ sortLabel }}</label><select id="sort" value="{{ sort }}" onChange="{{ onSort }}"><sc-for list="{{ sortOptions }}" as="o" hint-placeholder-count="4"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></div>
     </div>
-    <select class="tf-discovery-control" value="{{ educationLevelId }}" onChange="{{ onEducationLevel }}" aria-label="{{ educationLevelLabel }}" style="padding-inline:12px;font-size:14px">
-      <sc-for list="{{ educationLevelOptions }}" as="o" hint-placeholder-count="4">
-        <option value="{{ o.id }}">{{ o.label }}</option>
-      </sc-for>
-    </select>
-    <select class="tf-discovery-control" id="sort" value="{{ sort }}" onChange="{{ onSort }}" aria-label="{{ sortLabel }}" style="padding-inline:12px;font-size:14px;font-weight:600">
-      <sc-for list="{{ sortOptions }}" as="o" hint-placeholder-count="4">
-        <option value="{{ o.id }}">{{ o.label }}</option>
-      </sc-for>
-    </select>
-  </form>
-  <div id="discovery-status" class="tf-ai-status" role="status" aria-live="polite">{{ discoveryStatus }}</div>
-  <sc-if value="{{ hasAiQuestions }}" hint-placeholder-val="{{ false }}">
-    <ul class="tf-ai-questions" aria-label="{{ clarificationLabel }}"><sc-for list="{{ aiQuestions }}" as="q" hint-placeholder-count="2"><li>{{ q }}</li></sc-for></ul>
-  </sc-if>
+
+    <sc-if value="{{ hasActiveChips }}" hint-placeholder-val="{{ false }}">
+      <div class="tf-active-filter-row" aria-label="{{ activeFiltersLabel }}">
+        <span class="tf-active-filter-label">{{ activeFiltersLabel }}</span>
+        <sc-for list="{{ activeChips }}" as="chip" hint-placeholder-count="3">
+          <button type="button" class="tf-chip-pop" onClick="{{ chip.onClear }}" aria-label="{{ chip.removeLabel }}" style="display:inline-flex;align-items:center;gap:8px;min-height:44px;padding-inline:12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-2)" style-hover="border-color:var(--border-strong);color:var(--text)">
+            <span>{{ chip.label }}</span><span aria-hidden="true" style="color:var(--muted)">×</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasAiQuestions }}" hint-placeholder-val="{{ false }}">
+      <ul class="tf-ai-questions" aria-label="{{ clarificationLabel }}"><sc-for list="{{ aiQuestions }}" as="q" hint-placeholder-count="2"><li>{{ q }}</li></sc-for></ul>
+    </sc-if>
+  </section>
 
   <div data-stack="browse" style="display:grid;grid-template-columns:272px minmax(0,1fr);gap:24px;align-items:start">
 
@@ -215,31 +227,21 @@
         </label>
       </div>
       <sc-if value="{{ showHelp }}" hint-placeholder-val="{{ false }}">
-        <details class="tf-ai-help">
-          <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--text-2)">{{ aiHelpTitle }}</summary>
-          <form class="tf-ai-form" onSubmit="{{ submitAiHelp }}" style="margin-top:10px">
+        <details class="tf-product-help">
+          <summary>{{ aiHelpTitle }}</summary>
+          <form class="tf-product-help-form" onSubmit="{{ submitAiHelp }}">
             <label style="display:flex;flex-direction:column;gap:6px">
               <span class="tf-sr-only">{{ aiHelpLabel }}</span>
-              <input class="tf-ai-input" style="min-height:44px" value="{{ aiHelpQuestion }}" onChange="{{ onAiHelpQuestion }}" maxlength="1000" placeholder="{{ aiHelpPlaceholder }}" />
+              <input class="tf-product-help-input" value="{{ aiHelpQuestion }}" onChange="{{ onAiHelpQuestion }}" maxlength="1000" placeholder="{{ aiHelpPlaceholder }}" />
             </label>
-            <button class="tf-ai-action" style="min-height:44px" type="submit" disabled="{{ aiHelpDisabled }}">{{ aiHelpSubmit }}</button>
+            <button class="tf-product-help-action" type="submit" disabled="{{ aiHelpDisabled }}">{{ aiHelpSubmit }}</button>
           </form>
-          <div class="tf-ai-status" role="status" aria-live="polite">{{ aiHelpAnswer }}</div>
+          <div class="tf-product-help-status" role="status" aria-live="polite">{{ aiHelpAnswer }}</div>
         </details>
       </sc-if>
     </aside>
 
     <div>
-      <sc-if value="{{ hasActiveChips }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-          <sc-for list="{{ activeChips }}" as="chip" hint-placeholder-count="2">
-            <button type="button" class="tf-chip-pop" onClick="{{ chip.onClear }}" aria-label="{{ chip.removeLabel }}" style="display:inline-flex;align-items:center;gap:8px;min-height:44px;padding-inline:12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:500;color:var(--text-2)" style-hover="border-color:var(--border-strong);color:var(--text)">
-              <span>{{ chip.label }}</span><span aria-hidden="true" style="color:var(--muted)">✕</span>
-            </button>
-          </sc-for>
-        </div>
-      </sc-if>
-
       <sc-if value="{{ teachersLoading }}" hint-placeholder-val="{{ false }}">
         <div role="status" aria-live="polite"><span class="tf-sr-only">{{ loadingLabel }}</span><div class="tf-card-skeletons" aria-hidden="true"><div class="tf-skeleton"></div><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div></div>
       </sc-if>
@@ -685,11 +687,12 @@ class Component extends DCLogic {
   }
 
   applyLocalInterpretation(local, fallbackMessage) {
+    const count = [local.subjectId, local.serviceId, local.availableOn].filter(Boolean).length;
     this.applyInterpreted({
       subjectId: local.subjectId || this.state.subjectId,
       serviceId: local.serviceId || this.state.serviceId,
       availableOn: local.availableOn || this.state.availableOn
-    }, fallbackMessage || '');
+    }, fallbackMessage || Tafseel.t('discovery_applied_filters', { count: Tafseel.number(count) }));
   }
 
   runUnifiedSearch(rawText) {
@@ -701,7 +704,7 @@ class Component extends DCLogic {
     }
     const local = Tafseel.discovery.interpretLocal(text, this.catalogs(), Tafseel.viewerTimeZone().id);
     const student = !!(this.state.session && (this.state.session.roles || []).includes('Student'));
-    const intentful = Tafseel.discovery.looksLikeIntent(text);
+    const intentful = local.hasStrong || Tafseel.discovery.looksLikeIntent(text);
     if (!student || !intentful) {
       if (local.hasAny && !Tafseel.discovery.isProbablyTeacherName(text)) {
         this.applyLocalInterpretation(local);
@@ -723,14 +726,18 @@ class Component extends DCLogic {
       if (result && result.status === 'success' && result.filters) {
         const filters = result.filters;
         const maximumPrice = Number(filters.maximumPrice);
-        this.applyInterpreted({
+        const interpreted = {
           subjectId: filters.subjectId || '',
           serviceId: filters.serviceCatalogItemId || '',
           educationLevelId: filters.educationLevelId || '',
           languageIds: filters.languageId ? [filters.languageId] : [],
           availableOn: filters.availableOn || local.availableOn || '',
           maxPrice: maximumPrice >= 60 && maximumPrice < 400 ? maximumPrice : 400
-        });
+        };
+        const count = [interpreted.subjectId, interpreted.serviceId, interpreted.educationLevelId,
+          interpreted.languageIds.length, interpreted.availableOn, interpreted.maxPrice < 400].filter(Boolean).length;
+        this.applyInterpreted(interpreted,
+          Tafseel.t('discovery_applied_filters', { count: Tafseel.number(count) }));
         return;
       }
       if (result && result.needsClarification && !local.hasStrong) {
@@ -965,6 +972,13 @@ class Component extends DCLogic {
         e => this.popChip(e, () => this.applyFilters({ languageIds: s.languageIds.filter(value => value !== id) }))
       ));
     });
+    const discoveryStatusClass = 'tf-smart-search__status' + (s.searchBusy
+      ? ' is-loading'
+      : s.aiQuestions.length
+        ? ' is-fallback'
+        : s.discoveryStatus === Tafseel.t('discovery_fallback')
+          ? ' is-fallback'
+          : s.discoveryStatus ? ' is-success' : '');
 
     const compared = s.compare.map(id => TEACHERS_BY_ID.get(id)).filter(Boolean);
     const missing = Tafseel.t('compare_not_provided');
@@ -1075,6 +1089,7 @@ class Component extends DCLogic {
       teacherJoinHref,
       showHelp: !!(session && (session.roles || []).includes('Student')),
       discoveryStatus: s.discoveryStatus,
+      discoveryStatusClass,
       clarificationLabel: Tafseel.t('discovery_clarification_label'),
       searchBusy: s.searchBusy,
       searchSubmitLabel: s.searchBusy ? Tafseel.t('discovery_interpreting') : Tafseel.t('browse_search_submit'),
@@ -1091,10 +1106,15 @@ class Component extends DCLogic {
       aiHelpAnswer: s.aiHelpAnswer,
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
-      discoveryStepsLabel: Tafseel.t('browse_discovery_steps'),
+      discoveryStageLabel: Tafseel.t('browse_discovery_stage'),
+      secondaryFiltersLabel: Tafseel.t('browse_secondary_filters'),
+      activeFiltersLabel: Tafseel.t('browse_active_filters'),
       subjectPrompt: Tafseel.t('browse_subject_prompt'),
       servicePrompt: Tafseel.t('browse_service_prompt'),
       searchLabel: Tafseel.t('browse_search_label'),
+      searchPlaceholder: Tafseel.t('ph_search'),
+      smartSearchLabel: Tafseel.t('smart_search_label'),
+      searchExample: Tafseel.t('smart_search_example'),
       educationLevelLabel: Tafseel.t('browse_education_level'),
       sortLabel: Tafseel.t('browse_sort'),
       filtersLabel: Tafseel.t('filters_h'),
