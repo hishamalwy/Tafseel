@@ -120,7 +120,7 @@
   </div>
 </header>
 
-<main class="tf-shell" style="padding-block:28px 80px">
+<main class="tf-shell tf-marketplace-browse" style="padding-block:28px 80px">
   <nav aria-label="Breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:18px">
     <a href="Tafseel-Landing.dc.html" data-i18n="tp_home" style="color:var(--muted)" style-hover="color:var(--text)">Home</a>
     <span>/</span>
@@ -178,7 +178,7 @@
     </sc-if>
   </section>
 
-  <div data-stack="browse" style="display:grid;grid-template-columns:272px minmax(0,1fr);gap:24px;align-items:start">
+  <div class="tf-browse-market-layout" data-stack="browse">
 
     <aside aria-label="{{ filtersLabel }}" data-sticky="1" class="tf-filter-panel">
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -267,60 +267,60 @@
         </div>
       </sc-if>
 
-      <div class="tf-cascade" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px">
+      <div class="tf-cascade tf-marketplace-results">
         <sc-for list="{{ results }}" as="t" hint-placeholder-count="0">
-          <article class="tf-result-card" style-hover="border-color:var(--border-strong);box-shadow:var(--shadow-md)">
-            <div style="display:flex;gap:14px;margin-bottom:14px">
-              <div style="position:relative;flex:none">
-                <img class="tf-img-avatar" data-tf-avatar sc-camel-src="{{ t.avatar }}" alt="" width="64" height="64" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border)" />
+          <article class="{{ t.cardClass }}">
+            <div class="tf-result-identity" style="display:flex;gap:14px;margin-bottom:14px">
+              <div class="tf-result-avatar-wrap" style="position:relative;flex:none">
+                <img class="tf-img-avatar tf-result-avatar" data-tf-avatar sc-camel-src="{{ t.avatar }}" alt="" width="72" height="72" />
               </div>
-              <div style="flex:1;min-width:0">
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                  <a href="{{ t.profileHref }}" style="font-weight:700;font-size:16px;color:var(--text)" style-hover="color:var(--primary)">{{ t.name }}</a>
+              <div class="tf-result-identity-copy" style="flex:1;min-width:0">
+                <div class="tf-result-name-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <a href="{{ t.profileHref }}" class="tf-result-name" style="font-weight:700;font-size:16px;color:var(--text)" style-hover="color:var(--primary)">{{ t.name }}</a>
                   <sc-if value="{{ t.qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}">
-                    <span title="{{ t.level }}" style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--primary-soft);color:var(--primary)">{{ t.level }}</span>
+                    <span class="tf-result-trust" title="{{ t.level }}" style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--primary-soft);color:var(--primary)">{{ t.level }}</span>
                   </sc-if>
                 </div>
-                <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ t.subject }}</div>
+                <div class="tf-result-subject" style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ t.subject }}</div>
                 <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
-                  <div style="display:flex;align-items:center;gap:8px;margin-top:7px;font-size:13px">
+                  <div class="tf-result-rating" style="display:flex;align-items:center;gap:8px;margin-top:7px;font-size:13px">
                     <span style="color:var(--warning)">★</span>
                     <span style="font-weight:700">{{ t.rating }}</span>
                     <span style="color:var(--muted)">({{ t.reviews }})</span>
                   </div>
                 </sc-if>
               </div>
-              <button type="button" onClick="{{ t.onFav }}" aria-label="{{ t.favoriteLabel }}" aria-pressed="{{ t.fav }}" disabled="{{ t.favoriteBusy }}" style="{{ t.favStyle }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="{{ t.favFill }}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:block"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg></button>
+              <button type="button" class="tf-result-favorite" onClick="{{ t.onFav }}" aria-label="{{ t.favoriteLabel }}" aria-pressed="{{ t.fav }}" disabled="{{ t.favoriteBusy }}" style="{{ t.favStyle }}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="{{ t.favFill }}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:block"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg></button>
             </div>
 
-            <p style="font-size:14px;color:var(--text-2);line-height:1.55;margin-bottom:12px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden">{{ t.bio }}</p>
+            <p class="tf-result-bio" style="font-size:14px;color:var(--text-2);line-height:1.55;margin-bottom:12px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden">{{ t.bio }}</p>
 
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+            <div class="tf-result-skills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
               <sc-for list="{{ t.skills }}" as="sk" hint-placeholder-count="3">
                 <span style="font-size:12px;padding:4px 9px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)">{{ sk }}</span>
               </sc-for>
             </div>
 
-            <div style="display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:12px">
+            <div class="tf-result-languages" style="display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:12px">
               <span>{{ t.languagesLabel }}</span>
             </div>
 
-            <div class="tf-context-offer"><strong>{{ t.serviceName }}</strong><sc-if value="{{ t.hasCommercialTerms }}" hint-placeholder-val="{{ true }}"><span> · {{ t.commercialTerms }}</span></sc-if></div>
+            <div class="tf-context-offer"><span class="tf-service-kind">{{ t.serviceTypeLabel }}</span><strong>{{ t.serviceName }}</strong><sc-if value="{{ t.hasCommercialTerms }}" hint-placeholder-val="{{ true }}"><span>{{ t.commercialTerms }}</span></sc-if></div>
 
-            <sc-if value="{{ t.showAvailability }}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="{{ t.availabilityAria }}" style="{{ t.availabilityBoxStyle }}">{{ t.availabilityLabel }}</div></sc-if>
+            <sc-if value="{{ t.showAvailability }}" hint-placeholder-val="{{ false }}"><div class="{{ t.availabilityClass }}" role="status" aria-label="{{ t.availabilityAria }}">{{ t.availabilityLabel }}</div></sc-if>
 
-            <div style="margin-top:auto;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div class="tf-result-commercial" style="margin-top:auto;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
               <div class="tf-price-block">
                 <div class="tf-price-label">{{ t.priceContextLabel }}</div>
-                <div class="tf-price-amount">{{ t.priceLabel }}</div>
+                <div class="tf-price-line"><strong class="tf-price-xl">{{ t.priceAmount }}</strong><span class="tf-price-currency">{{ t.priceCurrency }}</span><span class="tf-price-unit">{{ t.priceUnit }}</span></div>
               </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <a href="{{ t.profileHref }}" style="min-height:44px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">{{ t.profileLabel }}</a>
-                <sc-if value="{{ t.showConvert }}" hint-placeholder-val="{{ true }}"><a href="{{ t.convertHref }}" style="min-height:44px;padding:0 16px;display:inline-flex;align-items:center;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-size:14px;font-weight:750" style-hover="background:var(--primary-hover);color:var(--primary-ink)">{{ t.convertLabel }}</a></sc-if>
+              <div class="tf-result-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+                <a href="{{ t.profileHref }}" class="tf-result-profile-action">{{ t.profileLabel }}</a>
+                <sc-if value="{{ t.showConvert }}" hint-placeholder-val="{{ true }}"><a href="{{ t.convertHref }}" class="tf-result-primary-action">{{ t.convertLabel }}</a></sc-if>
               </div>
             </div>
 
-            <label style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">
+            <label class="tf-result-compare" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">
               <input type="checkbox" checked="{{ t.compared }}" onChange="{{ t.onCompare }}" aria-label="{{ t.compareLabel }}" style="width:15px;height:15px;accent-color:var(--primary)" />
               <span>{{ t.compareLabel }}</span>
             </label>
@@ -994,6 +994,18 @@ class Component extends DCLogic {
         return String(value) + ' ' + (currency || '');
       }
     };
+    const moneyParts = (value, currency) => {
+      if (value == null) return { amount: '—', currency: '', unit: '' };
+      const code = String(currency || 'SAR').toUpperCase();
+      const numeric = Number(value);
+      let amount = String(value);
+      try {
+        amount = new Intl.NumberFormat(s.lang === 'ar' ? 'ar-SA' : 'en-US', {
+          maximumFractionDigits: Number.isInteger(numeric) ? 0 : 2
+        }).format(numeric);
+      } catch (_) {}
+      return { amount, currency: code };
+    };
     const experience = teacher => {
       const items = (teacher.experience || []).map(item =>
         [item.title, item.organization, [
@@ -1201,8 +1213,12 @@ class Component extends DCLogic {
       activeChips,
       hasActiveChips: activeChips.length > 0,
 
-      results: shown.map(t => ({
+      results: shown.map(t => {
+        const price = moneyParts(t.price, t.context && t.context.currency);
+        const isLive = !!(t.context && t.context.requiresScheduling);
+        return ({
         ...t,
+        cardClass: 'tf-result-card ' + (isLive ? 'is-live' : 'is-async'),
         subject: t.context && s.lang === 'ar' && t.context.subjectNameAr ? t.context.subjectNameAr : t.subject,
         skills: t.skills.slice(0, 2),
         languagesLabel: t.languages ? Tafseel.t('browse_languages_value', { value: t.languages }) : Tafseel.t('compare_not_provided'),
@@ -1210,6 +1226,7 @@ class Component extends DCLogic {
           ? (s.lang === 'ar' && t.context.serviceNameAr ? t.context.serviceNameAr : t.context.serviceName)
           : Tafseel.t('compare_not_provided'),
         hasCommercialTerms: !!t.context,
+        serviceTypeLabel: isLive ? Tafseel.t('browse_live_service') : Tafseel.t('browse_async_service'),
         commercialTerms: t.context && t.context.requiresScheduling
           ? Tafseel.t('browse_live_service')
           : t.context
@@ -1227,6 +1244,9 @@ class Component extends DCLogic {
         profileLabel: Tafseel.t('compare_view_profile'),
         priceContextLabel: t.context ? Tafseel.t('browse_price_for_service') : Tafseel.t('compare_field_starting_price'),
         priceLabel: money(t.price, t.context && t.context.currency),
+        priceAmount: price.amount,
+        priceCurrency: price.currency,
+        priceUnit: isLive ? Tafseel.t('tp_per_session') : Tafseel.t('tp_starting_price'),
         showAvailability: !!(t.context && t.context.requiresScheduling),
         availabilityLabel: s.availabilityLoading && !s.availabilityByTeacher[t.id]
           ? Tafseel.t('availability_loading')
@@ -1238,6 +1258,7 @@ class Component extends DCLogic {
               : Tafseel.availabilityText(s.availabilityByTeacher[t.id]),
         availabilityAria: Tafseel.t('availability_field'),
         hasAvailability: !!(s.availabilityByTeacher[t.id]) && !s.availabilityError,
+        availabilityClass: 'tf-result-availability' + ((!!(s.availabilityByTeacher[t.id]) && !s.availabilityError) ? ' is-ready' : ''),
         availabilityBoxStyle: (!!(s.availabilityByTeacher[t.id]) && !s.availabilityError)
           ? 'min-height:36px;padding:8px 12px;margin-bottom:14px;border-radius:var(--r-sm);background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.4;overflow-wrap:anywhere'
           : 'padding:0;margin-bottom:12px;color:var(--muted);font-size:12px;line-height:1.4;overflow-wrap:anywhere',
@@ -1254,7 +1275,7 @@ class Component extends DCLogic {
         favoriteBusy: s.favoriteBusy.includes(t.id),
         favoriteLabel: Tafseel.t(s.favs.includes(t.id) ? 'browse_favorite_remove_label' : 'browse_favorite_add_label', { name: t.name }),
         favFill: s.favs.includes(t.id) ? 'currentColor' : 'none',
-        favStyle: 'flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);transition:all var(--t);color:' + (s.favs.includes(t.id) ? 'var(--error)' : 'var(--muted)') + ';opacity:' + (s.favoriteBusy.includes(t.id) ? '.55' : '1'),
+        favStyle: 'color:' + (s.favs.includes(t.id) ? 'var(--error)' : 'var(--muted)') + ';opacity:' + (s.favoriteBusy.includes(t.id) ? '.55' : '1'),
         onFav: async () => {
           if (s.favoriteBusy.includes(t.id)) return;
           if (!s.session || !(s.session.roles || []).includes('Student')) {
@@ -1282,7 +1303,7 @@ class Component extends DCLogic {
           if (!s.compare.includes(t.id) && s.compare.length >= 3) return this.flash(Tafseel.t('compare_limit_reached'));
           this.toggleIn('compare', t.id);
         }
-      })),
+      })}),
 
       pages: pageNumbers.map(n => ({
         label: String(n),

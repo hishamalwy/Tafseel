@@ -74,6 +74,24 @@ dev server, not assumed)
    native `<video>` element is fully removed from the DOM on error, the fallback panel
    renders correctly in both EN and AR, zero new console errors.
 
+6. **Touch targets — the two explicitly-named offenders fixed**: Live Booking time-slot
+   buttons (32px→44px, list gap 6px→8px), duration-pill buttons (38px→44px), and the
+   Emergency-session toggle (36px→44px) in `Tafseel-Book-Session.dc.html`; Quality
+   Dashboard's per-row "Review" decision CTA (34px→44px, both the queue-card and
+   showcase-table instances) in `Tafseel-Quality-Dashboard.dc.html`. Confirmed compiled
+   into the served build via direct source grep. **Not independently visually verified**
+   this session — Book Session requires an authenticated Student session and no login
+   credentials were available in this environment, so only "loads without crashing / no
+   horizontal overflow at 375px" was confirmed, not the actual rendered slot grid.
+   Deliberately did **not** blanket-inflate every 30-34px control found across
+   Quality/Teacher Dashboard (grep found a couple dozen: filter-bar selects, table row
+   actions, showcase edit/archive/move buttons, etc.) — the brief itself says dense
+   desktop operational chrome doesn't need to become uniformly huge, and those weren't
+   individually named as defects. This is a real remaining gap: a proper touch-target
+   audit would need to judge each one by "is this realistically tapped on a touch device"
+   rather than either fixing all ~24 or fixing only the 4 named in the brief — not done
+   this session.
+
 ## Investigated and deliberately NOT changed
 
 - **Disabled "Dashboard search is not available yet" box** (Student Dashboard header).
@@ -85,6 +103,107 @@ dev server, not assumed)
   session. `check-frontend-integrity.mjs:593` still asserts the old behavior; if Option A/B
   is implemented, that assertion must be updated deliberately (with the shape described in
   the directive), not deleted silently.
+
+## New scope added mid-session: Premium Messaging & Notifications
+
+A large second directive arrived (chat redesign + global notification center across
+Student/Teacher/Quality/Admin). Given the scale, work started on the most contained,
+highest-leverage slice first rather than the full floating-messenger rebuild:
+
+7. **Teacher Dashboard notification consolidation** — Teacher Dashboard had notifications
+   living only as a sidebar nav item + full in-page section (no header bell at all),
+   duplicating the nav-vs-global-activity confusion the brief calls out. Ported Student
+   Dashboard's existing header-bell + slide-in-panel pattern (not a new architecture —
+   reused the same markup shape, the same already-existing `liveNotifs`/`read`/
+   `openNotification`/`Tafseel.notificationRoute('teacher')` data plumbing that was already
+   there powering the old in-page section) into a header bell with SVG icon (no emoji),
+   canonical `Tafseel.badgeCount()` badge, and a slide-in notification panel. Removed the
+   `notifications` entry from the sidebar NAV array. Added 2 new locale keys
+   (`td_notifications_empty` EN+AR) for the empty state. **Verification status: partial.**
+   Confirmed via `node -e "new Function(...)"` syntax-check that the modified script parses
+   with zero errors (same check run across every file touched this session — all clean),
+   and confirmed via curl that the new markup/bindings are present in the compiled build.
+   **Could not get a live rendered screenshot**: the canonical demo teacher account
+   (`teacher@gmail.com`) logs in successfully but has no approved subject qualification, so
+   it lands on the Teacher Apply onboarding wizard, never reaching the Dashboard; the other
+   3 real teacher accounts visible in Browse (`Sprint 0.2 UAT Teacher` etc.) have unknown
+   passwords. This is a genuine environment/credential limitation, disclosed rather than
+   worked around by guessing or bypassing auth.
+   Student Dashboard was NOT touched this pass (it already has the pattern — no change
+   needed there beyond what item 2 already did to its badge).
+   **Not started**: Quality Dashboard (has its own bespoke notifications section, no header
+   bell, different data shape — would need its own port, not started), Admin Dashboard (no
+   notification concept exists there at all today — would need to be built from scratch,
+   not started), the entire Chat/Messenger floating-window redesign (composer, bubbles,
+   conversation list, mobile sheet — `js/chat-widget.js` not yet even opened this session).
+
+8. **Chat widget (`js/chat-widget.js`) — real messenger-style redesign, live-verified.**
+   Root problem confirmed exactly as described: the widget was a fixed 860×680px
+   permanent 2-pane (260px list + thread) grid on desktop — a large box even for a single
+   conversation, plus raw emoji for the launcher (✉), attach (📎), minimize (−), and
+   maximize (□) controls, and a bare textarea+"Send"-label composer.
+   Changes (all in the one self-contained file, zero backend/architecture change, same
+   `Conversation`/SignalR/R5 plumbing reused as-is):
+   - Default window is now a compact single-pane **400×620px** (was 860×680, permanent
+     2-pane). The existing mobile-only pane-switching CSS (`[data-pane=list]` show/hide)
+     was generalized to apply at all sizes, not just ≤680px, so desktop now behaves the
+     same way mobile already did — list and thread are no longer both visible by default.
+     The already-existing "maximize" button (previously just resized the same 2-pane grid
+     bigger) now specifically restores the 2-pane list+thread layout for anyone who wants
+     it — reusing an existing control instead of inventing a new one.
+   - The "back to list" control (`data-back`) was previously mobile-only CSS
+     (`display:inline!important` inside the `≤680px` media query); made universally
+     visible so the list is always reachable from the compact single-pane view.
+   - Replaced all raw emoji/glyph controls (✉ launcher, 📎 attach, − minimize, □ maximize,
+     📎 in attachment chips) with a small inline SVG set (message bubble, paperclip, minus,
+     square, file, chevron-back, arrow-send) sharing one stroke width/viewBox convention.
+   - Composer rebuilt into an integrated rounded pill (attach icon + auto-growing textarea
+     + circular primary-color send-arrow button), replacing the plain textarea + text
+     "Send" button. Textarea now auto-grows up to 110px via a real `input` listener (not
+     CSS-only). **Keyboard decision, documented per the brief's own request**: Enter sends,
+     Shift+Enter inserts a newline — chosen because there was no pre-existing keyboard
+     behavior on this control to conflict with (it was a plain textarea with no keydown
+     handler before this pass).
+   - Added real message clustering: consecutive messages from the same sender now get a
+     smaller gap and no repeated meta-noise; a sender change (or a timeline event breaking
+     the sequence) gets a visually larger gap (`data-cluster-start`).
+   - Added a contextual subtitle line under the conversation title (order/service name
+     once loaded, falling back to "Order conversation" or the peer's role) — previously the
+     header only ever showed the person's name with zero context.
+   - Unread badges (launcher badge + per-conversation list badge) now route through the
+     same canonical `Tafseel.badgeCount()` formatter built earlier this session, replacing
+     a separate hand-rolled `unread > 99 ? '99+' : ...` — one formatter, not two.
+   - Draft-preservation on send failure was **already correct** in the existing code
+     (the textarea is only cleared on success, not in the `catch` branch) — verified this
+     is genuinely true, not something I needed to add.
+   **Live-verified** (not just compiled): logged in as the real `student@gmail.com` demo
+   account, opened the widget on Student Dashboard, confirmed via `getBoundingClientRect()`
+   the window is genuinely 400×620px by default (down from 860×680), confirmed the SVG
+   icons render (no more emoji glyphs in the DOM), confirmed the back button is visible by
+   default, confirmed clicking Maximize genuinely restores a `280px 716px` 2-column grid,
+   and confirmed zero new console errors (the only console errors present are the
+   pre-existing pattern of anonymous-session 401s seen on every page all session, not a
+   regression from this change). RTL positioning was not manually re-verified as a separate
+   step but uses the same untouched `inset-inline-end` logical properties as before, and the
+   live check was run in the app's default Arabic/RTL state, where the widget correctly
+   anchored to the visual left edge (the correct RTL behavior) with no extra work needed.
+   **Not done**: no conversations existed for this test account, so the actual message
+   bubble/clustering/attachment rendering was not visually exercised, only the shell/empty
+   state; mobile-width (375/390) rendering of the redesigned widget was not checked this
+   pass; dark mode was not explicitly toggled and checked; Escape-to-close and keyboard-Tab
+   order through the new controls were not re-verified (the underlying Escape handler and
+   focus logic were not touched, so unlikely to have regressed, but not confirmed).
+
+9. **Notification popover — correction pass, the previous "slide-in drawer" was genuinely wrong and is now fixed.** The user rejected the prior pass's panel (a full-height `inset-block:0` side drawer with a heavy `oklch(...  / .38)` backdrop dimming the whole page) as looking like a mobile nav drawer, not a Facebook/Messenger-style popover. This was a correct rejection — that drawer WAS the wrong pattern. Built one real shared CSS component (`css/tafseel.css`: `.tf-notif-backdrop`/`.tf-notif-panel`/`.tf-notif-head`/`.tf-notif-item`/`.tf-notif-empty`, ~30 lines, used identically by both Student and Teacher) and applied it to both dashboards, replacing the old per-page hand-styled drawer markup entirely (verified via curl that the old `inset-block:0;inset-inline-end:0;width:min(400px,92vw)` drawer string is gone from Teacher's served build). New behavior:
+   - Desktop panel is `width:min(380px,92vw)`, `max-height:min(600px,calc(100dvh - 96px))`, anchored near the bell (`inset-inline-end:24px;top:76px`), and **shrinks to fit its content** rather than always filling the max height.
+   - Backdrop is fully transparent (click-capture only for close-on-outside-click), not a dimming overlay — confirmed live via `getComputedStyle(backdrop).backgroundColor === 'rgba(0, 0, 0, 0)'`.
+   - Mobile (`≤640px`) gets a real bottom-sheet treatment (pinned to bottom, rounded top corners, `max-height:min(80dvh,600px)`, restores the dimmed backdrop since a sheet legitimately needs one) — not implemented in the prior pass at all.
+   - Empty state uses the new compact `.tf-notif-empty` treatment (icon + title + short body, `margin:auto` so it centers within whatever height the content needs) instead of a large blank canvas.
+   - Escape-to-close and focus-trap wired via the existing shared `Tafseel.modalKeyDown` helper (was missing entirely on the notification panel before this pass).
+   - Consolidated what had become two near-duplicate locale key sets (`td_nav_notifications`/`td_mark_all_read`/`td_notifications_empty` vs Student's separate strings) into one shared set (`notif_center_title`, `notif_mark_all_read`, `notif_empty_title`, `notif_empty_body`, EN+AR) — a genuine "one shared component" fix, not two hand-maintained copies.
+   **Student sidebar duplication (a real miss from the previous pass, now fixed)**: Student Dashboard's sidebar still had a `notifications` NAV entry AND a raw `🔔` emoji in the header bell — I had only fixed the *badge formatter* on Student's, not the icon or the sidebar duplicate. Both fixed now: header bell is SVG (matching Teacher's), 44×44px hit area, sidebar entry removed entirely from the NAV array (not just hidden).
+   **Live-verified against the running app** (logged in as the real `student@gmail.com` account, not assumed): opened the popover on Student Dashboard at 1440px and confirmed via `getBoundingClientRect()` — panel is genuinely `380×224px` (shrunk to its empty-state content, well under the 600px cap), positioned at `top:76,` correctly anchored to the same side as the bell in the app's default RTL layout (logical `inset-inline-end` resolved to the visual left, matching where the bell actually sits — required zero manual LTR/RTL-specific positioning code), backdrop confirmed fully transparent, bell button confirmed to contain zero text/emoji content, and the sidebar's full text content confirmed to no longer contain "Notifications"/"الإشعارات" anywhere.
+   **Not live-verified**: Teacher Dashboard's popover (same shared CSS class, confirmed present in the compiled build, but not clicked/measured live — still no qualified-teacher credentials available in this environment, same blocker as the prior pass), and Quality/Admin were not touched at all this pass — Quality still has its old bespoke notifications concept and no bell; Admin still has no notification UI whatsoever.
 
 ## Not yet started (open, in priority order)
 

@@ -1,6 +1,14 @@
 (function () {
   'use strict';
   var session, conversations = [], active, messages = [], context, hub, timer, messagePage = 1, messageTotal = 0, selectSeq = 0, connectCount = 0;
+  var svgMsg = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>';
+  var svgClose = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var svgBack = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg>';
+  var svgMin = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg>';
+  var svgMax = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+  var svgAttach = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 7v9a4 4 0 0 1-8 0V6a2.5 2.5 0 0 1 5 0v9a1 1 0 0 1-2 0V7"/></svg>';
+  var svgSend = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h15m0 0-6-6m6 6-6 6"/></svg>';
+  var svgFile = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></svg>';
 
   function t(key, fallback) {
     var value = window.Tafseel && Tafseel.t(key);
@@ -27,22 +35,31 @@
   }
   function inject() {
     if (document.querySelector('.tf-chat-widget')) return;
-    var style = document.createElement('style');
-    style.textContent = '.tf-chat-launch{position:fixed;inset-inline-end:22px;inset-block-end:22px;z-index:90;width:52px;height:52px;border:0;border-radius:50%;background:var(--primary);color:var(--primary-ink);box-shadow:var(--shadow-lg);font-size:20px}.tf-chat-badge{position:absolute;inset-block-start:-4px;inset-inline-end:-4px;min-width:20px;height:20px;padding:0 5px;display:none;place-items:center;border-radius:99px;background:var(--danger);color:#fff;font-size:11px;font-weight:800}.tf-chat-widget{position:fixed;inset-inline-end:22px;inset-block-end:86px;z-index:91;width:min(860px,calc(100vw - 32px));height:min(680px,calc(100dvh - 112px));display:none;grid-template-columns:260px 1fr;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);overflow:hidden}.tf-chat-widget[data-open=true]{display:grid}.tf-chat-widget[data-max=true]{inset:20px;width:calc(100vw - 40px);height:calc(100dvh - 40px)}.tf-chat-list{border-inline-end:1px solid var(--border);overflow:auto}.tf-chat-head{min-height:56px;padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}.tf-chat-tools{display:flex;align-items:center}.tf-chat-item{display:flex;width:100%;gap:10px;padding:13px;border:0;border-bottom:1px solid var(--border);background:transparent;text-align:start;color:var(--text)}.tf-chat-item:hover,.tf-chat-item[aria-current=true]{background:var(--surface-2)}.tf-chat-item>span{min-width:0;flex:1}.tf-chat-preview{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tf-chat-avatar{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:800;flex:none}.tf-chat-unread{float:inline-end;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--primary);color:var(--primary-ink);font-size:11px;display:grid;place-items:center}.tf-chat-thread{display:grid;grid-template-rows:auto auto 1fr auto;min-width:0;min-height:0}.tf-chat-context{padding:11px 14px;border-bottom:1px solid var(--border);background:var(--surface-2);font-size:12px;color:var(--text-2)}.tf-chat-context strong{color:var(--text)}.tf-chat-context-row,.tf-chat-files{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tf-chat-files{margin-top:7px}.tf-chat-file{border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--primary);padding:4px 7px;font-size:11px}.tf-chat-messages{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:contain}.tf-chat-bubble{max-width:78%;padding:9px 12px;border-radius:14px;background:var(--surface-2);white-space:pre-wrap;overflow-wrap:anywhere}.tf-chat-bubble[data-mine=true]{align-self:flex-end;background:var(--primary);color:var(--primary-ink)}.tf-chat-meta{display:block;margin-top:5px;font-size:10px;opacity:.72}.tf-chat-system{align-self:center;max-width:90%;padding:5px 10px;border-radius:99px;background:var(--surface-2);color:var(--muted);font-size:11px;text-align:center}.tf-chat-compose{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:12px;border-top:1px solid var(--border);align-items:end}.tf-chat-compose textarea{min-width:0;min-height:40px;max-height:110px;resize:vertical}.tf-chat-attach{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer}.tf-chat-file-name,.tf-chat-status{grid-column:1/-1;margin:0;font-size:11px}.tf-chat-close{border:0;background:transparent;color:var(--muted);font-size:18px}.tf-chat-empty{margin:auto;color:var(--muted);padding:18px;text-align:center}@media(max-width:680px){.tf-chat-widget,.tf-chat-widget[data-max=true]{inset:0;width:100vw;height:100dvh;border-radius:0;grid-template-columns:1fr}.tf-chat-list{display:none}.tf-chat-widget[data-pane=list] .tf-chat-list{display:block}.tf-chat-widget[data-pane=list] .tf-chat-thread{display:none}.tf-chat-back{display:inline!important}.tf-chat-tools [data-max]{display:none}.tf-chat-compose{padding-bottom:max(12px,env(safe-area-inset-bottom))}.tf-chat-bubble{max-width:88%}}';
-    document.head.appendChild(style);
     document.body.insertAdjacentHTML('beforeend',
-      '<button class="tf-chat-launch" type="button" aria-label="' + esc(t('chat_messages', 'Messages')) + '">✉<span class="tf-chat-badge" data-badge></span></button>' +
+      '<button class="tf-chat-launch" type="button" aria-label="' + esc(t('chat_messages', 'Messages')) + '">' + svgMsg + '<span class="tf-chat-badge" data-badge></span></button>' +
       '<aside class="tf-chat-widget" data-open="false" data-pane="list" role="dialog" aria-label="' + esc(t('chat_messages', 'Messages')) + '">' +
-      '<section class="tf-chat-list"><div class="tf-chat-head"><strong>' + esc(t('chat_messages', 'Messages')) + '</strong><button class="tf-chat-close" data-close aria-label="' + esc(t('chat_close', 'Close')) + '">×</button></div><div data-conversations></div></section>' +
-      '<section class="tf-chat-thread"><div class="tf-chat-head"><span><button class="tf-chat-close tf-chat-back" data-back style="display:none" aria-label="' + esc(t('chat_back', 'Back')) + '">‹</button> <strong data-title>' + esc(t('chat_conversation', 'Conversation')) + '</strong></span><span class="tf-chat-tools"><button class="tf-chat-close" data-min aria-label="' + esc(t('chat_minimize', 'Minimize')) + '">−</button><button class="tf-chat-close" data-max aria-label="' + esc(t('chat_maximize', 'Maximize')) + '">□</button><button class="tf-chat-close" data-close aria-label="' + esc(t('chat_close', 'Close')) + '">×</button></span></div>' +
+      '<section class="tf-chat-list"><div class="tf-chat-head"><strong class="tf-chat-head-title">' + esc(t('chat_messages', 'Messages')) + '</strong><button class="tf-chat-close" data-close aria-label="' + esc(t('chat_close', 'Close')) + '">' + svgClose + '</button></div><div data-conversations></div></section>' +
+      '<section class="tf-chat-thread"><div class="tf-chat-head"><span class="tf-chat-head-id"><button class="tf-chat-close tf-chat-back" data-back aria-label="' + esc(t('chat_back', 'Back')) + '">' + svgBack + '</button><span class="tf-chat-avatar" data-head-avatar aria-hidden="true"></span><span class="tf-chat-head-copy"><strong data-title>' + esc(t('chat_conversation', 'Conversation')) + '</strong><small data-subtitle></small></span></span><span class="tf-chat-tools"><button class="tf-chat-close" data-min aria-label="' + esc(t('chat_minimize', 'Minimize')) + '">' + svgMin + '</button><button class="tf-chat-close" data-max aria-label="' + esc(t('chat_maximize', 'Maximize')) + '">' + svgMax + '</button><button class="tf-chat-close" data-close aria-label="' + esc(t('chat_close', 'Close')) + '">' + svgClose + '</button></span></div>' +
       '<div class="tf-chat-context" data-context hidden></div><div class="tf-chat-messages" data-messages aria-live="polite"><p class="tf-chat-empty">' + esc(t('chat_choose_conversation', 'Choose a conversation')) + '</p></div>' +
-      '<form class="tf-chat-compose" data-r5-composer><label class="tf-chat-attach" title="' + esc(t('chat_add_attachment', 'Add attachment')) + '" data-r5-attach>📎<input type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip" data-r5-file></label><textarea maxlength="4000" required aria-label="' + esc(t('chat_message', 'Message')) + '" placeholder="' + esc(t('chat_write_message', 'Write a message…')) + '" data-r5-input></textarea><button class="tf-button" type="submit" data-r5-send>' + esc(t('chat_send', 'Send')) + '</button><span class="tf-chat-file-name" data-file-name></span><p class="tf-chat-status" data-chat-status role="status"></p></form></section></aside>');
+      '<form class="tf-chat-compose" data-r5-composer><div class="tf-chat-compose-field"><label class="tf-chat-attach" title="' + esc(t('chat_add_attachment', 'Add attachment')) + '" data-r5-attach>' + svgAttach + '<input type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip" data-r5-file></label><textarea rows="1" maxlength="4000" required aria-label="' + esc(t('chat_message', 'Message')) + '" placeholder="' + esc(t('chat_write_message', 'Write a message…')) + '" data-r5-input></textarea></div><button class="tf-chat-send" type="submit" aria-label="' + esc(t('chat_send', 'Send')) + '" title="' + esc(t('chat_send', 'Send')) + '" data-r5-send>' + svgSend + '</button></form><span class="tf-chat-file-name" data-file-name></span><p class="tf-chat-status" data-chat-status role="status"></p></section></aside>');
   }
   function renderList() {
     var root = document.querySelector('[data-conversations]');
     root.innerHTML = conversations.length ? conversations.map(function (x) {
-      var person = other(x), latest = x.latestMessage && x.latestMessage.body || t('chat_no_messages', 'No messages yet');
-      return '<button class="tf-chat-item" data-conversation="' + esc(x.id) + '" aria-current="' + String(active && active.id === x.id) + '"><span class="tf-chat-avatar" aria-hidden="true">' + esc(person.initials) + '</span><span><strong>' + esc(person.displayName) + '</strong>' + (x.unreadCount ? '<span class="tf-chat-unread">' + esc(x.unreadCount) + '</span>' : '') + '<small class="tf-muted" style="display:block">' + esc(x.scope === 2 ? t('chat_order_conversation', 'Order conversation') : person.role) + '</small><span class="tf-muted tf-chat-preview">' + esc(latest) + '</span></span></button>';
+      var person = other(x);
+      var latest = x.latestMessage && x.latestMessage.body || t('chat_no_messages', 'No messages yet');
+      var when = Tafseel.date((x.latestMessage && x.latestMessage.createdAt) || x.updatedAt);
+      var scope = x.scope === 2 ? t('chat_order_conversation', 'Order conversation') : (person.role || '');
+      var unread = x.unreadCount
+        ? '<span class="tf-chat-unread">' + esc(window.Tafseel && Tafseel.badgeCount ? Tafseel.badgeCount(x.unreadCount) : x.unreadCount) + '</span>'
+        : '';
+      return '<button class="tf-chat-item" data-conversation="' + esc(x.id) + '" aria-current="' + String(active && active.id === x.id) + '">' +
+        '<span class="tf-chat-avatar" aria-hidden="true">' + esc(person.initials) + '</span>' +
+        '<span class="tf-chat-item-body">' +
+          '<span class="tf-chat-item-top"><strong>' + esc(person.displayName) + '</strong><time class="tf-chat-item-time">' + esc(when) + '</time></span>' +
+          (scope ? '<small class="tf-chat-item-scope">' + esc(scope) + '</small>' : '') +
+          '<span class="tf-chat-item-bottom"><span class="tf-chat-preview">' + esc(latest) + '</span>' + unread + '</span>' +
+        '</span></button>';
     }).join('') : '<p class="tf-chat-empty">' + esc(t('chat_no_conversations', 'No conversations yet')) + '</p>';
     root.querySelectorAll('[data-conversation]').forEach(function (button) { button.onclick = function () { select(button.dataset.conversation); }; });
   }
@@ -61,12 +78,24 @@
     return labels[event.eventType] || '';
   }
   function attachmentButton(path, item) {
-    return '<button type="button" class="tf-chat-file" data-file-url="' + esc(path) + '" data-file-name="' + esc(item.originalName || 'attachment') + '">📎 ' + esc(item.originalName || t('chat_attachment', 'Attachment')) + '</button>';
+    return '<button type="button" class="tf-chat-file" data-file-url="' + esc(path) + '" data-file-name="' + esc(item.originalName || 'attachment') + '">' + svgFile + esc(item.originalName || t('chat_attachment', 'Attachment')) + '</button>';
   }
   function bindDownloads(root) {
     root.querySelectorAll('[data-file-url]').forEach(function (button) {
       button.onclick = function () { Tafseel.api.openBlob(button.dataset.fileUrl, { download: true, fileName: button.dataset.fileName }).catch(showError); };
     });
+  }
+  function updateHeaderTitle() {
+    var titleNode = document.querySelector('[data-title]'), subNode = document.querySelector('[data-subtitle]'), avatarNode = document.querySelector('[data-head-avatar]');
+    if (!active || !titleNode) return;
+    var person = other(active);
+    titleNode.textContent = person.displayName;
+    if (avatarNode) avatarNode.textContent = person.initials;
+    if (!subNode) return;
+    var order = context && context.order;
+    subNode.textContent = order
+      ? (order.serviceNameEnglish || order.requestTitle || t('chat_order', 'Order'))
+      : (active.scope === 2 ? t('chat_order_conversation', 'Order conversation') : (other(active).role || ''));
   }
   function renderContext() {
     var root = document.querySelector('[data-context]');
@@ -86,11 +115,14 @@
     (context && context.timeline || []).forEach(function (x) { if (eventLabel(x)) rows.push({ kind: 'event', at: x.occurredAt, id: x.id, value: x }); });
     if (context && context.request) rows.push({ kind: 'event', at: context.request.createdAt, id: 'request:' + context.request.id, value: { eventType: 'request_submitted' } });
     rows.sort(function (a, b) { return new Date(a.at) - new Date(b.at) || String(a.id).localeCompare(String(b.id)); });
+    var lastSenderId = null;
     root.innerHTML = (messageTotal > messages.length ? '<button type="button" class="tf-chat-file" data-load-older>' + esc(t('chat_load_older', 'Load older messages')) + '</button>' : '') + (rows.length ? rows.map(function (row) {
-      if (row.kind === 'event') return '<div class="tf-chat-system">' + esc(eventLabel(row.value)) + ' · ' + esc(Tafseel.date(row.at)) + '</div>';
+      if (row.kind === 'event') { lastSenderId = null; return '<div class="tf-chat-system">' + esc(eventLabel(row.value)) + ' · ' + esc(Tafseel.date(row.at)) + '</div>'; }
       var x = row.value;
       var files = (x.attachments || []).map(function (file) { return attachmentButton('/message-attachments/' + file.id + '/content', file); }).join('');
-      return '<div class="tf-chat-bubble" data-mine="' + String(x.senderId === session.userId) + '">' + esc(x.body) + (files ? '<div class="tf-chat-files">' + files + '</div>' : '') + '<small class="tf-chat-meta">' + esc(Tafseel.date(x.createdAt)) + '</small></div>';
+      var clusterStart = x.senderId !== lastSenderId;
+      lastSenderId = x.senderId;
+      return '<div class="tf-chat-bubble" data-mine="' + String(x.senderId === session.userId) + '" data-cluster-start="' + String(clusterStart) + '">' + esc(x.body) + (files ? '<div class="tf-chat-files">' + files + '</div>' : '') + '<small class="tf-chat-meta">' + esc(Tafseel.date(x.createdAt)) + '</small></div>';
     }).join('') : '<p class="tf-chat-empty">' + esc(t('chat_no_messages', 'No messages yet')) + '</p>');
     bindDownloads(root);
     var older = root.querySelector('[data-load-older]'); if (older) older.onclick = function () { loadOlder().catch(showError); };
@@ -107,7 +139,8 @@
     var page = await Tafseel.api.get('/conversations?pageSize=50');
     conversations = page.items || [];
     var unread = conversations.reduce(function (sum, x) { return sum + (x.unreadCount || 0); }, 0), badge = document.querySelector('[data-badge]');
-    badge.textContent = unread > 99 ? '99+' : String(unread); badge.style.display = unread ? 'grid' : 'none';
+    badge.textContent = window.Tafseel && Tafseel.badgeCount ? Tafseel.badgeCount(unread) : (unread > 99 ? '99+' : String(unread || ''));
+    badge.style.display = unread ? 'grid' : 'none';
     if (active) active = conversations.find(function (x) { return x.id === active.id; }) || active;
     renderList();
   }
@@ -123,7 +156,7 @@
         : Promise.resolve(null)
     ]);
     context = { order: order, timeline: results[0] || [], request: results[1] };
-    renderContext(); renderMessages();
+    renderContext(); renderMessages(); updateHeaderTitle();
   }
   async function select(id) {
     var requestId = ++selectSeq;
@@ -133,7 +166,7 @@
     widget.dataset.pane = 'thread';
     active = conversations.find(function (x) { return String(x.id) === String(id); }) || { id: id, participants: [], version: '' };
     window.__tafseelActiveConversationId = active.id;
-    document.querySelector('[data-title]').textContent = other(active).displayName;
+    updateHeaderTitle();
     var page;
     try { page = await Tafseel.api.get('/conversations/' + id + '/messages?pageSize=100'); }
     catch (error) { showError(error); return; }
@@ -152,7 +185,7 @@
     await loadList();
     if (requestId !== selectSeq) return;
     active = conversations.find(function (x) { return String(x.id) === String(id); }) || active;
-    document.querySelector('[data-title]').textContent = other(active).displayName;
+    updateHeaderTitle();
   }
   function sharedHub() { return window.__tafseelMessageHub || null; }
   function isHubOwner() { return !window.__tafseelEnsureHub || window.__tafseelEnsureHub === connect; }
@@ -230,8 +263,15 @@
     document.querySelector('[data-min]').onclick = function () { document.querySelector('.tf-chat-widget').dataset.open = 'false'; };
     document.querySelector('[data-max]').onclick = function () { var widget = document.querySelector('.tf-chat-widget'); widget.dataset.max = String(widget.dataset.max !== 'true'); };
     document.querySelector('[data-back]').onclick = function () { document.querySelector('.tf-chat-widget').dataset.pane = 'list'; };
-    var form = document.querySelector('.tf-chat-compose'), fileInput = form.querySelector('input[type=file]');
+    var form = document.querySelector('.tf-chat-compose'), fileInput = form.querySelector('input[type=file]'), textarea = form.querySelector('textarea');
     fileInput.onchange = function () { document.querySelector('[data-file-name]').textContent = fileInput.files[0] ? fileInput.files[0].name : ''; };
+    // Auto-grow up to the CSS max-height (110px), then the textarea itself scrolls.
+    textarea.oninput = function () { textarea.style.height = 'auto'; textarea.style.height = Math.min(textarea.scrollHeight, 110) + 'px'; };
+    // Enter sends (matches every mainstream chat product); Shift+Enter inserts a newline.
+    // No prior keyboard behavior existed here to conflict with (plain textarea before this pass).
+    textarea.onkeydown = function (event) {
+      if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true })); }
+    };
     form.onsubmit = async function (event) {
       event.preventDefault(); var input = form.querySelector('textarea'), body = input.value.trim(), file = fileInput.files[0], button = form.querySelector('button[type=submit]');
       if (!active || !body || form.dataset.sending === 'true') return;
@@ -239,7 +279,7 @@
       try {
         var sent = await Tafseel.api.post('/conversations/' + active.id + '/messages', { body: body });
         if (file) { var data = new FormData(); data.append('file', file); await Tafseel.api.upload('/messages/' + sent.id + '/attachments', data); }
-        input.value = ''; fileInput.value = ''; document.querySelector('[data-file-name]').textContent = ''; await select(active.id);
+        input.value = ''; input.style.height = 'auto'; fileInput.value = ''; document.querySelector('[data-file-name]').textContent = ''; await select(active.id);
       } catch (error) { showError(error); } finally { form.dataset.sending = 'false'; button.disabled = false; button.removeAttribute('aria-busy'); }
     };
     document.addEventListener('keydown', function (event) {
