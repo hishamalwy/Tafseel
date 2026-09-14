@@ -6,7 +6,7 @@ import { Role } from '@core/auth/models/role';
 import { TeacherOnboarding } from '@core/auth/models/teacher-onboarding';
 import { AuthFailure } from '@core/auth/models/auth-failure';
 import {
-  ACCOUNT_GATEWAY, AccountGateway, Credentials, Registration, SESSION_GATEWAY, SESSION_STORE,
+  ACCOUNT_GATEWAY, AccountGateway, Credentials, RefreshThrottled, Registration, SESSION_GATEWAY, SESSION_STORE,
   SessionGateway, SessionStore, TEACHER_LIFECYCLE_GATEWAY, TeacherLifecycleGateway
 } from './auth.ports';
 import { LogIn } from './log-in.use-case';
@@ -138,6 +138,26 @@ describe('RestoreSession', () => {
     expect(restore.isSettled).toBe(false);
     await firstValueFrom(restore.execute());
     expect(restore.isSettled).toBe(true);
+  });
+
+  it('keeps the session it holds when refresh is throttled, and fails only the retry', async () => {
+    const { store } = configure({ session: { restore: () => throwError(() => new RefreshThrottled(30)) } });
+    store.set(SESSION);
+    const restore = TestBed.inject(RestoreSession);
+
+    await expect(firstValueFrom(restore.execute())).resolves.toEqual(SESSION);
+    expect(store.current()).toEqual(SESSION);
+    await expect(firstValueFrom(restore.forRetry())).rejects.toBeInstanceOf(RefreshThrottled);
+    expect(store.current()).toEqual(SESSION);
+    expect(restore.isSettled).toBe(true);
+  });
+
+  it('clears the session when refresh says there is none', async () => {
+    const { store } = configure({ session: { restore: () => of(null) } });
+    store.set(SESSION);
+    const restore = TestBed.inject(RestoreSession);
+    await firstValueFrom(restore.execute());
+    expect(store.current()).toBeNull();
   });
 
   it('turns "no session" into an error only on the retry path', async () => {

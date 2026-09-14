@@ -1,9 +1,9 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { Session } from '@core/auth/models/session';
 import { Role } from '@core/auth/models/role';
-import { Credentials, SessionGateway } from '@core/auth/services/auth.ports';
+import { Credentials, RefreshThrottled, SessionGateway } from '@core/auth/services/auth.ports';
 import { KNOWN_ROLES, SessionDto } from '@core/http/api.dto';
 import { toAuthFailure } from '@core/http/problem-details.mapper';
 
@@ -43,11 +43,23 @@ export class HttpSessionGateway implements SessionGateway {
       .pipe(map(toSession), catchError(e => throwError(() => toAuthFailure(e))));
   }
 
-  /** A dead or missing cookie is "no session", so it resolves to null. */
+  /**
+   * A dead or missing cookie is "no session", so it resolves to null. A 429 is not: the
+   * cookie may be perfectly good, so it surfaces as RefreshThrottled for the caller to keep
+   * the session it has.
+   */
   restore(): Observable<Session | null> {
     return this.http
       .post<SessionDto>('/api/v1/auth/refresh', null, { withCredentials: true })
-      .pipe(map(dto => toSession(dto) as Session | null), catchError(() => of(null)));
+      .pipe(
+        map(dto => toSession(dto) as Session | null),
+        catchError((error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 429) {
+            const retryAfter = Number(error.headers?.get('Retry-After'));
+            return throwError(() => new RefreshThrottled(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null));
+          }
+          return of(null);
+        }));
   }
 
   revoke(): Observable<void> {

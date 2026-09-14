@@ -61,7 +61,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("refresh")]
-    [EnableRateLimiting("auth")]
+    [EnableRateLimiting(RefreshRateLimit.PolicyName)]
     public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {
         if (!TryReadRefreshToken(out var refreshToken))

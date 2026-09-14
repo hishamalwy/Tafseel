@@ -209,6 +209,14 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0
         }));
+    // Refresh has its own policy (G-19); it must never share the sign-in budget.
+    RefreshRateLimit.Add(options);
+    options.OnRejected = (rejected, _) =>
+    {
+        RefreshRateLimit.OnRejected(rejected, rejected.HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>().CreateLogger("Tafseel.Auth.RateLimit"));
+        return ValueTask.CompletedTask;
+    };
     options.AddPolicy("upload", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue("sub") ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions

@@ -36,10 +36,24 @@ export interface PasswordReset {
   readonly newPassword: string;
 }
 
+/**
+ * The refresh endpoint answered 429. That is a temporary throttle, not a verdict on the
+ * session: the refresh cookie is still valid, so nothing about the reader's sign-in may be
+ * cleared because of it (G-19).
+ */
+export class RefreshThrottled extends Error {
+  constructor(readonly retryAfterSeconds: number | null) {
+    super('refresh-throttled');
+  }
+}
+
 /** Sign in, sign out, and re-establish a session from the refresh cookie. */
 export interface SessionGateway {
   authenticate(credentials: Credentials): Observable<Session>;
-  /** Resolves to null when there is no live session — that is an answer, not an error. */
+  /**
+   * Resolves to null when there is no live session — that is an answer, not an error.
+   * Errors with RefreshThrottled when the endpoint is throttling.
+   */
   restore(): Observable<Session | null>;
   revoke(): Observable<void>;
 }
