@@ -90,6 +90,34 @@ export type NotificationAction =
   | { readonly kind: 'route'; readonly path: string; readonly query: Readonly<Record<string, string>> }
   | { readonly kind: 'legacy'; readonly href: string };
 
+/**
+ * Admin enable/disable, per tab (J13-02). The tab key is a UI name; the server has its own
+ * catalog type slugs (`education-levels`, `qualification-topics`), and every toggle is PATCH.
+ * A tab can list rows from more than one source (topics shows subjects too), so a toggle is
+ * offered only on rows that came from the tab's own list.
+ */
+export interface ActiveToggle {
+  /** The GET source whose rows this toggle applies to. */
+  readonly listSource: string;
+  /** The PATCH endpoint, relative to /api/v1. */
+  endpoint(id: string): string;
+}
+
+const catalogToggle = (type: string): ActiveToggle => ({
+  listSource: `/admin/catalog/${type}`,
+  endpoint: id => `/admin/catalog/${type}/${encodeURIComponent(id)}/active`
+});
+
+export const ADMIN_ACTIVE_TOGGLES: Readonly<Record<string, ActiveToggle>> = {
+  services: catalogToggle('services'),
+  subjects: catalogToggle('subjects'),
+  topics: catalogToggle('topics'),
+  educationLevels: catalogToggle('education-levels'),
+  assignments: catalogToggle('qualification-topics'),
+  promotions: { listSource: '/admin/promotions', endpoint: id => `/admin/promotions/${encodeURIComponent(id)}/active` },
+  coupons: { listSource: '/admin/coupons', endpoint: id => `/admin/coupons/${encodeURIComponent(id)}/active` }
+};
+
 /** Query parameters a link may carry to name the item the destination should open on. */
 export const FOCUS_PARAMS = ['orderId', 'sessionId', 'requestId', 'conversationId', 'reviewId', 'selectedId'] as const;
 
@@ -108,6 +136,13 @@ export const Dashboard = {
     if (/^\/(api|hubs|health)(\/|$)/i.test(path)) return null;
     if (/^\/app\//i.test(path)) return { kind: 'legacy', href: path.slice(1) + url.search };
     return { kind: 'route', path, query: Object.fromEntries(url.searchParams) };
+  },
+  /** The PATCH endpoint that enables or disables this row, or null when the row has none. */
+  activeToggle(tabKey: string, row: Record<string, unknown>): string | null {
+    const toggle = ADMIN_ACTIVE_TOGGLES[tabKey];
+    const source = String(row['_source'] ?? '').split('?')[0];
+    const id = String(row['id'] ?? '');
+    return toggle && id && source === toggle.listSource ? toggle.endpoint(id) : null;
   },
   focusId(query: { get(name: string): string | null }): string {
     for (const name of FOCUS_PARAMS) { const value = query.get(name); if (value) return value; }

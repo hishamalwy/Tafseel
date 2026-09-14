@@ -17,6 +17,10 @@ export class DashboardGateway {
     return firstValueFrom(this.http.post('/api/v1' + path, body, { headers: headers(version) }));
   }
 
+  patch(path: string, body: unknown, version = ''): Promise<unknown> {
+    return firstValueFrom(this.http.patch('/api/v1' + path, body, { headers: headers(version) }));
+  }
+
   put(path: string, body: unknown, version = ''): Promise<unknown> {
     return firstValueFrom(this.http.put('/api/v1' + path, body, { headers: headers(version) }));
   }

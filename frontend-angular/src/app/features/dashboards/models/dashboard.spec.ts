@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DASHBOARDS, Dashboard } from './dashboard';
+import { ADMIN_ACTIVE_TOGGLES, DASHBOARDS, Dashboard } from './dashboard';
 
 describe('Dashboard route model', () => {
   it('falls unknown sections and tabs back to the first usable destination', () => {
@@ -40,5 +40,44 @@ describe('Dashboard route model', () => {
     expect(Dashboard.focusId(query({ tab: 'orders', orderId: 'o1' }))).toBe('o1');
     expect(Dashboard.focusId(query({ sessionId: 's1' }))).toBe('s1');
     expect(Dashboard.focusId(query({ tab: 'orders' }))).toBe('');
+  });
+
+  describe('admin active toggles (J13-02)', () => {
+    const id = '3f1c6a52-4b8e-4d7a-9c3e-2a1b0c9d8e7f';
+    it.each([
+      ['services', '/admin/catalog/services', `/admin/catalog/services/${id}/active`],
+      ['subjects', '/admin/catalog/subjects', `/admin/catalog/subjects/${id}/active`],
+      ['topics', '/admin/catalog/topics', `/admin/catalog/topics/${id}/active`],
+      ['educationLevels', '/admin/catalog/education-levels', `/admin/catalog/education-levels/${id}/active`],
+      ['assignments', '/admin/catalog/qualification-topics', `/admin/catalog/qualification-topics/${id}/active`],
+      ['promotions', '/admin/promotions', `/admin/promotions/${id}/active`],
+      ['coupons', '/admin/coupons', `/admin/coupons/${id}/active`]
+    ])('%s toggles through %s', (tab, source, endpoint) => {
+      expect(Dashboard.activeToggle(tab, { id, _source: source })).toBe(endpoint);
+    });
+
+    it('covers exactly the admin tabs that list toggleable rows, from a source the tab really loads', () => {
+      const adminTabs = DASHBOARDS.Admin.areas.flatMap(area => area.tabs);
+      for (const [key, toggle] of Object.entries(ADMIN_ACTIVE_TOGGLES)) {
+        const tab = adminTabs.find(t => t.key === key);
+        expect(tab, key).toBeDefined();
+        expect(tab!.sources.map(s => s.split('?')[0]), key).toContain(toggle.listSource);
+      }
+      expect(Object.keys(ADMIN_ACTIVE_TOGGLES).sort()).toEqual(
+        ['assignments', 'coupons', 'educationLevels', 'promotions', 'services', 'subjects', 'topics']);
+    });
+
+    it('offers no toggle for a row the tab lists from another source, a row without an id, or a tab without toggles', () => {
+      expect(Dashboard.activeToggle('topics', { id, _source: '/admin/catalog/subjects' })).toBeNull();
+      expect(Dashboard.activeToggle('assignments', { id, _source: '/admin/catalog/subjects' })).toBeNull();
+      expect(Dashboard.activeToggle('services', { _source: '/admin/catalog/services' })).toBeNull();
+      expect(Dashboard.activeToggle('users', { id, _source: '/admin/users?page=1' })).toBeNull();
+    });
+
+    it('never uses a UI tab name as an API slug', () => {
+      for (const toggle of Object.values(ADMIN_ACTIVE_TOGGLES)) {
+        expect(toggle.endpoint(id)).not.toMatch(/educationLevels|assignments/);
+      }
+    });
   });
 });

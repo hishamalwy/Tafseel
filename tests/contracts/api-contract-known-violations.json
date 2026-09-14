@@ -88,62 +88,6 @@
       "route": "/api/v1/open-marketplace/requests/{p}/offers",
       "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
       "detail": "path exists only as GET"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/catalog/assignments/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/catalog/educationLevels/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/catalog/services/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/catalog/subjects/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/catalog/topics/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/coupons/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
-    },
-    {
-      "matrix": "J13-02",
-      "kind": "WRONG_VERB",
-      "method": "PUT",
-      "route": "/api/v1/admin/promotions/{p}/active",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "path exists only as PATCH"
     }
   ]
 }

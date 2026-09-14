@@ -198,13 +198,14 @@ export class DashboardPageComponent {
     } catch (error) { this.fail(error); }
   }
 
+  activeToggle(row: Record<string, unknown>): string | null {
+    return this.role === 'Admin' ? Dashboard.activeToggle(this.tab().key, row) : null;
+  }
+
   async toggleActive(row: Record<string, unknown>): Promise<void> {
-    const id = encodeURIComponent(String(row['id'] ?? ''));
-    const tab = this.tab().key;
-    const path = tab === 'promotions' || tab === 'coupons'
-      ? `/admin/${tab}/${id}/active`
-      : `/admin/catalog/${tab}/${id}/active`;
-    try { await this.gateway.put(path, { isActive: !row['isActive'] }, String(row['version'] ?? '')); await this.reload(); }
+    const endpoint = this.activeToggle(row);
+    if (!endpoint) return;
+    try { await this.gateway.patch(endpoint, { isActive: !row['isActive'] }); await this.reload(); }
     catch (error) { this.fail(error); }
   }
 

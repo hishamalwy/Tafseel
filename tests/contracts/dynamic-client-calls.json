@@ -1,35 +1,221 @@
 {
   "description": "Angular API calls whose URL is computed at runtime, so the static extractor cannot read them. Each unresolved site must be acknowledged here, and every snippet must still exist in its file.",
   "unresolvedSites": [
-    { "file": "frontend-angular/src/app/core/http/protected-file.service.ts", "snippet": "this.http.get(path, {" },
-    { "file": "frontend-angular/src/app/features/checkout/services/http-checkout.gateway.ts", "snippet": ".post<{ checkoutReference?: string; payment?: { providerReference?: string } }>(" },
-    { "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "snippet": "await this.gateway.put(path, { isActive: !row['isActive'] }" },
-    { "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "snippet": "await this.gateway.upload(path, files" },
-    { "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "snippet": ".get<CatalogItem[] | PageDto<CatalogItem>>(path)" }
+    {
+      "file": "frontend-angular/src/app/core/http/protected-file.service.ts",
+      "snippet": "this.http.get(path, {"
+    },
+    {
+      "file": "frontend-angular/src/app/features/checkout/services/http-checkout.gateway.ts",
+      "snippet": ".post<{ checkoutReference?: string; payment?: { providerReference?: string } }>("
+    },
+    {
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "snippet": "await this.gateway.patch(endpoint, { isActive: !row['isActive'] }"
+    },
+    {
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "snippet": "await this.gateway.upload(path, files"
+    },
+    {
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "snippet": ".get<CatalogItem[] | PageDto<CatalogItem>>(path)"
+    }
   ],
   "calls": [
-    { "method": "POST", "route": "/api/v1/payments/orders/{p}", "body": { "kind": "keys", "keys": [] }, "file": "frontend-angular/src/app/features/checkout/models/payable.ts", "source": "Payable.paymentPath (order)" },
-    { "method": "POST", "route": "/api/v1/payments/live-sessions/{p}", "body": { "kind": "keys", "keys": [] }, "file": "frontend-angular/src/app/features/checkout/models/payable.ts", "source": "Payable.paymentPath (live session)" },
-    { "method": "POST", "route": "/api/v1/orders/{p}/deliveries", "body": { "kind": "form" }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "uploadDelivery" },
-    { "method": "POST", "route": "/api/v1/live-sessions/{p}/attachments", "body": { "kind": "form" }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "uploadSessionFile" },
-    { "method": "GET", "route": "/api/v1/live-sessions/{p}/join", "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "rowAction join via gateway.load" },
-    { "method": "GET", "route": "/api/v1/orders/deliveries/{p}/content", "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "previewDelivery" },
-    { "method": "GET", "route": "/api/v1/live-sessions/attachments/{p}/content", "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "previewSessionFile" },
-    { "method": "GET", "route": "/api/v1/auth/privacy/export", "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "exportData" },
-    { "method": "GET", "route": "/api/v1/users/{p}/avatar", "file": "frontend-angular/src/app/core/i18n/format.service.ts", "source": "avatar URL" },
-    { "method": "GET", "route": "/api/v1/teachers/samples/{p}/content", "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "source": "sample media URL" },
-    { "method": "GET", "route": "/api/v1/qualification-resources/{p}/content", "file": "frontend-angular/src/app/features/teach/pages/teacher-apply-page.component.ts", "source": "qualification resource download" },
-    { "method": "GET", "route": "/api/v1/subjects", "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "source": "HttpCatalogGateway.all" },
-    { "method": "GET", "route": "/api/v1/topics", "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "source": "HttpCatalogGateway.all" },
-    { "method": "GET", "route": "/api/v1/services", "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "source": "HttpCatalogGateway.all" },
-    { "method": "GET", "route": "/api/v1/education-levels", "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "source": "HttpCatalogGateway.all" },
-    { "method": "GET", "route": "/api/v1/languages", "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts", "source": "HttpCatalogGateway.all" },
-    { "method": "PUT", "route": "/api/v1/admin/promotions/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (promotions tab)" },
-    { "method": "PUT", "route": "/api/v1/admin/coupons/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (coupons tab)" },
-    { "method": "PUT", "route": "/api/v1/admin/catalog/services/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (services tab)" },
-    { "method": "PUT", "route": "/api/v1/admin/catalog/subjects/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (subjects tab)" },
-    { "method": "PUT", "route": "/api/v1/admin/catalog/topics/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (topics tab)" },
-    { "method": "PUT", "route": "/api/v1/admin/catalog/educationLevels/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (educationLevels tab)" },
-    { "method": "PUT", "route": "/api/v1/admin/catalog/assignments/{p}/active", "body": { "kind": "keys", "keys": ["isActive"] }, "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts", "source": "toggleActive (assignments tab)" }
+    {
+      "method": "POST",
+      "route": "/api/v1/payments/orders/{p}",
+      "body": {
+        "kind": "keys",
+        "keys": []
+      },
+      "file": "frontend-angular/src/app/features/checkout/models/payable.ts",
+      "source": "Payable.paymentPath (order)"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/payments/live-sessions/{p}",
+      "body": {
+        "kind": "keys",
+        "keys": []
+      },
+      "file": "frontend-angular/src/app/features/checkout/models/payable.ts",
+      "source": "Payable.paymentPath (live session)"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/orders/{p}/deliveries",
+      "body": {
+        "kind": "form"
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "uploadDelivery"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/live-sessions/{p}/attachments",
+      "body": {
+        "kind": "form"
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "uploadSessionFile"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/live-sessions/{p}/join",
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "rowAction join via gateway.load"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/orders/deliveries/{p}/content",
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "previewDelivery"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/live-sessions/attachments/{p}/content",
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "previewSessionFile"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/auth/privacy/export",
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "exportData"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/{p}/avatar",
+      "file": "frontend-angular/src/app/core/i18n/format.service.ts",
+      "source": "avatar URL"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/teachers/samples/{p}/content",
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "source": "sample media URL"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/qualification-resources/{p}/content",
+      "file": "frontend-angular/src/app/features/teach/pages/teacher-apply-page.component.ts",
+      "source": "qualification resource download"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/subjects",
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "source": "HttpCatalogGateway.all"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/topics",
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "source": "HttpCatalogGateway.all"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/services",
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "source": "HttpCatalogGateway.all"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/education-levels",
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "source": "HttpCatalogGateway.all"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/languages",
+      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
+      "source": "HttpCatalogGateway.all"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/promotions/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.promotions"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/coupons/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.coupons"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/catalog/services/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.services"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/catalog/subjects/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.subjects"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/catalog/topics/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.topics"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/catalog/education-levels/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.educationLevels"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/admin/catalog/qualification-topics/{p}/active",
+      "body": {
+        "kind": "keys",
+        "keys": [
+          "isActive"
+        ]
+      },
+      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
+      "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.assignments"
+    }
   ]
 }
