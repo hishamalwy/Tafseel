@@ -1,4 +1,4 @@
-using System.Net.Mail;
+﻿using System.Net.Mail;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +14,11 @@ using Tafseel.Application.Ai;
 using Tafseel.Application.Authentication;
 using Tafseel.Application.Authorization;
 using Tafseel.Application.Catalog;
+using Tafseel.Application.Common;
 using Tafseel.Application.Email;
 using Tafseel.Application.Finance;
 using Tafseel.Application.Governance;
+using Tafseel.Application.Marketing;
 using Tafseel.Application.Marketplace;
 using Tafseel.Application.MarketplaceIntelligence;
 using Tafseel.Application.Messaging;
@@ -24,7 +26,9 @@ using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Orders;
 using Tafseel.Application.Students;
 using Tafseel.Application.TeacherApplications;
+using Tafseel.Application.TeacherBusiness;
 using Tafseel.Domain.Catalog;
+using Tafseel.Domain.Marketing;
 using Tafseel.Infrastructure.Catalog;
 using Tafseel.Infrastructure.Ai;
 using Tafseel.Infrastructure.Email;
@@ -32,6 +36,7 @@ using Tafseel.Infrastructure.Finance;
 using Tafseel.Infrastructure.Governance;
 using Tafseel.Infrastructure.Files;
 using Tafseel.Infrastructure.Identity;
+using Tafseel.Infrastructure.Marketing;
 using Tafseel.Infrastructure.Marketplace;
 using Tafseel.Infrastructure.Messaging;
 using Tafseel.Infrastructure.LiveSessions;
@@ -80,17 +85,18 @@ public static class DependencyInjection
     // Opt-in Development-only demo catalog content (ADR-013). Real production subjects/topics are
     // business content decided separately; this is placeholder content so a fresh Development
     // database has something to browse. QualificationTopic max duration mirrors the 3-minute
-    // teaching-demo copy already shown to applicants in Tafseel-Auth.dc.html.
+    // teaching-demo copy already shown to applicants on the sign-in screen.
     private static readonly (
         string Name, string NameAr, string Icon, int DisplayOrder,
-        (string Name, string Difficulty)[] Topics,
+        (string Name, string NameAr, string Difficulty)[] Topics,
         (string Name, string TitleAr, string Instructions, string InstructionsAr,
             int MinSeconds, int ExpectedSeconds, int MaxSeconds,
             string EvaluationGuidance, string EvaluationGuidanceAr)[] QualificationTopics
     )[] DemoSubjects =
     [
         ("Mathematics", "الرياضيات", "📐", 10,
-            [("Algebra", "Foundational"), ("Geometry", "Standard"), ("Calculus", "Advanced")],
+            [("Algebra", "الجبر", "Foundational"), ("Geometry", "الهندسة", "Standard"),
+                ("Calculus", "التفاضل والتكامل", "Advanced")],
             [("Solve a quadratic equation", "حل معادلة من الدرجة الثانية",
                 "Record yourself walking a student through solving a quadratic equation step by step, as if teaching it for the first time.",
                 "سجّل نفسك وأنت تشرح لطالب كيفية حل معادلة من الدرجة الثانية خطوة بخطوة، وكأنك تشرحها لأول مرة.",
@@ -98,7 +104,8 @@ public static class DependencyInjection
                 "Look for a clear step-by-step method, correct terminology, and a pace a first-time learner could follow.",
                 "ركّز على وضوح الخطوات، صحة المصطلحات، وسرعة تناسب طالب يسمع الشرح لأول مرة.")]),
         ("Physics", "الفيزياء", "🧲", 20,
-            [("Mechanics", "Standard"), ("Electricity", "Standard"), ("Optics", "Advanced")],
+            [("Mechanics", "الميكانيكا", "Standard"), ("Electricity", "الكهرباء", "Standard"),
+                ("Optics", "البصريات", "Advanced")],
             [("Explain Newton's second law", "شرح قانون نيوتن الثاني",
                 "Record yourself explaining Newton's second law of motion with a everyday example a student can relate to.",
                 "سجّل نفسك وأنت تشرح قانون نيوتن الثاني للحركة مستخدمًا مثالًا من الحياة اليومية يفهمه الطالب.",
@@ -106,7 +113,8 @@ public static class DependencyInjection
                 "Look for a correct explanation of force, mass and acceleration, and a relatable real-world example.",
                 "ركّز على شرح صحيح للقوة والكتلة والتسارع، ومثال واقعي يقرّب الفكرة للطالب.")]),
         ("Chemistry", "الكيمياء", "🧪", 30,
-            [("Organic Chemistry", "Advanced"), ("Chemical Reactions", "Standard")],
+            [("Organic Chemistry", "الكيمياء العضوية", "Advanced"),
+                ("Chemical Reactions", "التفاعلات الكيميائية", "Standard")],
             [("Balance a chemical equation", "موازنة معادلة كيميائية",
                 "Record yourself teaching a student how to balance a simple chemical equation.",
                 "سجّل نفسك وأنت تعلّم طالبًا كيفية موازنة معادلة كيميائية بسيطة.",
@@ -114,7 +122,7 @@ public static class DependencyInjection
                 "Look for correct balancing method and clear explanation of conservation of mass.",
                 "ركّز على صحة طريقة الموازنة ووضوح شرح مبدأ حفظ الكتلة.")]),
         ("Biology", "الأحياء", "🧬", 40,
-            [("Human Anatomy", "Standard"), ("Genetics", "Advanced")],
+            [("Human Anatomy", "تشريح الإنسان", "Standard"), ("Genetics", "علم الوراثة", "Advanced")],
             [("Explain the cell cycle", "شرح دورة الخلية",
                 "Record yourself explaining the stages of the cell cycle to a student new to biology.",
                 "سجّل نفسك وأنت تشرح مراحل دورة الخلية لطالب جديد على مادة الأحياء.",
@@ -122,7 +130,7 @@ public static class DependencyInjection
                 "Look for correct ordering of stages and clear, simple language.",
                 "ركّز على ترتيب صحيح للمراحل ولغة بسيطة وواضحة.")]),
         ("English Language", "اللغة الإنجليزية", "🔤", 50,
-            [("Grammar", "Foundational"), ("Essay Writing", "Standard")],
+            [("Grammar", "القواعد", "Foundational"), ("Essay Writing", "كتابة المقال", "Standard")],
             [("Teach the present perfect tense", "شرح زمن المضارع التام",
                 "Record yourself teaching the present perfect tense with example sentences.",
                 "سجّل نفسك وأنت تشرح زمن المضارع التام (Present Perfect) مع أمثلة توضيحية.",
@@ -130,7 +138,7 @@ public static class DependencyInjection
                 "Look for correct usage examples and a clear contrast with the simple past.",
                 "ركّز على أمثلة استخدام صحيحة ومقارنة واضحة مع الماضي البسيط.")]),
         ("Arabic Language", "اللغة العربية", "📖", 60,
-            [("Grammar (النحو)", "Standard"), ("Literature (الأدب)", "Advanced")],
+            [("Grammar (النحو)", "النحو", "Standard"), ("Literature (الأدب)", "الأدب", "Advanced")],
             [("Explain a grammar rule", "شرح قاعدة نحوية",
                 "Record yourself explaining a foundational Arabic grammar rule with example sentences.",
                 "سجّل نفسك وأنت تشرح قاعدة نحوية أساسية مع أمثلة توضيحية.",
@@ -138,7 +146,8 @@ public static class DependencyInjection
                 "Look for correct grammatical terminology and clear illustrative examples.",
                 "ركّز على صحة المصطلحات النحوية ووضوح الأمثلة التوضيحية.")]),
         ("Computer Science", "علوم الحاسب", "💻", 70,
-            [("Programming Basics", "Foundational"), ("Data Structures", "Advanced")],
+            [("Programming Basics", "أساسيات البرمجة", "Foundational"),
+                ("Data Structures", "هياكل البيانات", "Advanced")],
             [("Explain a for-loop", "شرح حلقة التكرار for",
                 "Record yourself explaining how a for-loop works to someone writing their first program.",
                 "سجّل نفسك وأنت تشرح كيف تعمل حلقة التكرار for لشخص يكتب أول برنامج له.",
@@ -153,6 +162,50 @@ public static class DependencyInjection
         ("Middle School", "المتوسط"),
         ("High School", "الثانوي"),
         ("University", "الجامعي")
+    ];
+
+    /// <summary>
+    /// Development-only landing promos, one per kind, so the promo band renders
+    /// every layout before an admin publishes real content.
+    /// </summary>
+    private static readonly (
+        PromotionKind Kind,
+        string EyebrowEn, string EyebrowAr,
+        string TitleEn, string TitleAr,
+        string BodyEn, string BodyAr,
+        string HighlightEn, string HighlightAr,
+        string CouponCode,
+        string CtaLabelEn, string CtaLabelAr, string CtaHref,
+        int? EndsInDays, int DisplayOrder
+    )[] DemoPromotions =
+    [
+        (PromotionKind.Discount,
+            "Limited offer", "عرض لفترة محدودة",
+            "20% off your first request", "خصم 20% على أول طلب لك",
+            "Start your journey with Tafseel and use an exclusive discount on your first request.",
+            "ابدأ رحلتك مع تفصيل واستفد من خصم حصري على أول طلب.",
+            "20%", "20%",
+            "TAFSEEL20",
+            "Claim the offer", "استفد من العرض", AppRoutes.BrowseTeachers,
+            5, 0),
+        (PromotionKind.Feature,
+            "New", "جديد",
+            "Post a request, let teachers come to you", "انشر طلبك ودع المعلمين يتنافسون",
+            "Describe what you need once and receive competing offers from qualified teachers.",
+            "صف ما تحتاجه مرة واحدة واستقبل عروضًا متنافسة من معلمين مؤهلين.",
+            "", "",
+            "",
+            "Try it now", "جرّبها الآن", AppRoutes.OpenRequests,
+            null, 1),
+        (PromotionKind.Spotlight,
+            "Spotlight", "الأكثر طلبًا",
+            "Exam season revision, ready when you are", "مراجعة موسم الاختبارات جاهزة لك",
+            "Focused revision sessions on your syllabus and past papers, with evening and weekend slots.",
+            "جلسات مراجعة مركزة على منهجك وأسئلة الاختبارات السابقة، بمواعيد مسائية ونهاية الأسبوع.",
+            "", "",
+            "",
+            "Browse teachers", "تصفح المعلمين", AppRoutes.BrowseTeachers,
+            null, 2)
     ];
 
     public static IServiceCollection AddInfrastructure(
@@ -207,6 +260,16 @@ public static class DependencyInjection
                 "Production cannot use a development signing key.")
             .ValidateOnStart();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddOptions<PrivacyOptions>()
+            .Bind(configuration.GetSection(PrivacyOptions.SectionName))
+            .Validate(x => x.ReadNotificationDays is >= 30 and <= 730
+                && x.AuthenticationRecordDays is >= 1 and <= 180
+                && x.MarketplaceAnalyticsDays is >= 30 and <= 1095
+                && x.BatchSize is >= 100 and <= 5000,
+                "Privacy retention limits are invalid.")
+            .ValidateOnStart();
+        services.AddScoped<DataRetentionService>();
+        services.AddHostedService<DataRetentionWorker>();
         services.AddScoped<ICatalogService, CatalogService>();
         services.AddOptions<AiOptions>()
             .Bind(configuration.GetSection(AiOptions.SectionName))
@@ -226,11 +289,26 @@ public static class DependencyInjection
         services.AddScoped<IAiMarketplaceAssistant, AiMarketplaceAssistant>();
         services.AddScoped<ITeacherApplicationService, TeacherApplicationService>();
         services.AddScoped<IMarketplaceService, MarketplaceService>();
+        services.AddScoped<ITeacherBusinessService, TeacherBusinessService>();
         services.AddScoped<IMarketplaceIntelligenceService, MarketplaceIntelligenceService>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IOpenMarketplaceService, OpenMarketplaceService>();
+        services.AddScoped<OpenMarketplaceReservationExpiryService>();
+        services.AddOptions<OpenMarketplaceOptions>().Bind(configuration.GetSection(OpenMarketplaceOptions.SectionName))
+            .Validate(x => x.OfferReservationMinutes is >= 15 and <= 1440, "Offer reservation must be 15-1440 minutes.")
+            .ValidateOnStart();
+        services.AddHostedService<OpenMarketplaceReservationWorker>();
+        services.AddHostedService<OrderAutoReleaseWorker>();
+        services.AddHostedService<LiveSessionSettlementWorker>();
+        // Registered as itself as well so the maturity pass can be driven deterministically
+        // (tests, and any future operational trigger) instead of only by the timer.
+        services.AddSingleton<EarningsMaturityWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<EarningsMaturityWorker>());
         services.AddScoped<ILiveSessionService, LiveSessionService>();
         services.AddScoped<IFinancialService, FinancialService>();
         services.AddScoped<ICouponService, CouponService>();
+        services.AddScoped<IPromotionService, PromotionService>();
+        services.AddScoped<IPlatformStatsService, PlatformStatsService>();
         services.AddSingleton<MockPaymentProvider>();
         services.AddScoped<IMockPaymentSimulator, MockPaymentSimulator>();
         services.AddSingleton<IPaymentProvider>(sp =>
@@ -248,6 +326,7 @@ public static class DependencyInjection
         services.AddScoped<NotificationWriter>();
         services.AddScoped<IStudentLearningPreferenceService, StudentLearningPreferenceService>();
         services.AddScoped<IGovernanceService, GovernanceService>();
+        services.AddHostedService<DisputeSlaWorker>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<AuditWriter>();
         services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubjectUserIdProvider>();
@@ -301,12 +380,21 @@ public static class DependencyInjection
                 && decimal.Round(x.TeacherCommissionPercent, 4) == x.TeacherCommissionPercent,
                 "Student fee and teacher commission percentages must be between 0 and 100 with at most four decimal places.")
             .ValidateOnStart();
+        services.AddOptions<WithdrawalOptions>()
+            .Bind(configuration.GetSection(WithdrawalOptions.SectionName))
+            .Validate(x => x.MinimumAmount > 0 && x.Currency.Length == 3
+                && x.ExpectedSettlementBusinessDays is >= 1 and <= 30
+                && x.MaturityBatchSize is >= 1 and <= 500,
+                "Withdrawal minimum, currency, settlement window, or maturity batch size are invalid.")
+            .ValidateOnStart();
         services.AddOptions<LiveSessionOptions>()
             .Bind(configuration.GetRequiredSection(LiveSessionOptions.SectionName))
             .Validate(x => x.EmergencyPremiumPercent is >= 0 and <= 1000
                 && decimal.Round(x.EmergencyPremiumPercent, 4) == x.EmergencyPremiumPercent
                 && x.CancellationWindowHours is >= 0 and <= 720
-                && x.JoinWindowMinutes is >= 0 and <= 120,
+                && x.JoinWindowMinutes is >= 0 and <= 120
+                && x.NoShowGraceMinutes is >= 5 and <= 120
+                && x.SettlementReviewHours is >= 1 and <= 168,
                 "Live session premium, cancellation, and join-window settings are invalid.")
             .Validate(x =>
                     x.Provider == "Mock"
@@ -344,8 +432,8 @@ public static class DependencyInjection
             .Validate(x =>
                     !environment.IsProduction() || x.Provider == "Mock" || false,
                 "No non-mock payment provider implementation is registered yet. Production remains fail-closed.")
-            .Validate(x => !x.AutoReleaseEnabled,
-                "Automatic escrow release is not enabled until the product policy is approved.")
+            .Validate(x => !x.AutoReleaseEnabled || x.AutoReleaseAfterHours is >= 24 and <= 720,
+                "Payments:AutoReleaseAfterHours must be between 24 and 720 when automatic release is enabled.")
             .Validate(x =>
                     x.Provider != "Mock" || x.Mock.Enabled,
                 "Payments:Provider=Mock requires Payments:Mock:Enabled=true.")
@@ -357,20 +445,30 @@ public static class DependencyInjection
                 "The mock payment simulator is forbidden in Production.")
             .Validate(x =>
                     string.IsNullOrWhiteSpace(x.Mock.DefaultReturnPath)
-                    || x.Mock.DefaultReturnPath.StartsWith("/app/", StringComparison.OrdinalIgnoreCase),
-                "Payments:Mock:DefaultReturnPath must be an /app/ relative path.")
+                    || (x.Mock.DefaultReturnPath.StartsWith('/')
+                        && !x.Mock.DefaultReturnPath.StartsWith("//", StringComparison.Ordinal)
+                        && !x.Mock.DefaultReturnPath.Contains("://", StringComparison.Ordinal)),
+                "Payments:Mock:DefaultReturnPath must be a site-relative path such as /student/overview.")
             .ValidateOnStart();
         services.AddOptions<DisputeOptions>()
             .Bind(configuration.GetRequiredSection(DisputeOptions.SectionName))
-            .Validate(x => x.WindowDays is >= 1 and <= 90,
-                "Dispute window must be between 1 and 90 days.")
+            .Validate(x => x.WindowDays is >= 1 and <= 90
+                    && x.InitialResponseHours is >= 1 and <= 168
+                    && x.ResolutionHours is >= 1 and <= 720,
+                "Dispute window and response SLAs are invalid.")
+            .ValidateOnStart();
+        services.AddOptions<OrderLifecycleOptions>()
+            .Bind(configuration.GetRequiredSection(OrderLifecycleOptions.SectionName))
+            .Validate(x => x.NonDeliveryGraceHours is >= 1 and <= 720,
+                "Orders:NonDeliveryGraceHours must be between 1 and 720.")
             .ValidateOnStart();
         services.AddOptions<TeacherShowcaseOptions>()
             .Bind(configuration.GetSection(TeacherShowcaseOptions.SectionName))
             .Validate(x => x.MaxPublicPerTeacher is >= 1 and <= 20
                 && x.MaxPublicPerSubject >= 1
                 && x.MaxPublicPerSubject <= x.MaxPublicPerTeacher
-                && x.MaxVersionsPerShowcase is >= 2 and <= 50,
+                && x.MaxVersionsPerShowcase is >= 2 and <= 50
+                && x.MaxFilesPerUpload is >= 1 and <= 20,
                 "Teacher Showcase limits are invalid.")
             .Validate(x => !environment.IsProduction() || !x.Enabled
                 || x.DurableObjectStorage
@@ -393,7 +491,7 @@ public static class DependencyInjection
                     ValidFrontendUrl(options.PasswordResetUrl, environment.IsProduction())
                     && ValidFrontendUrl(options.ConfirmationUrl, environment.IsProduction())
                     && ValidFrontendUrl(options.AppBaseUrl, environment.IsProduction()),
-                "Email frontend URLs must be absolute and use HTTPS in Production.")
+                "Email frontend URLs must be absolute; Production requires HTTPS.")
             .Validate(options =>
                     environment.IsDevelopment() || environment.IsEnvironment("Testing")
                     || MailAddress.TryCreate(options.From, out var sender)
@@ -646,6 +744,13 @@ public static class DependencyInjection
             var subjectNames = DemoSubjects.Select(x => CatalogNameNormalizer.Key(x.Name)).ToArray();
             if (await db.Subjects.CountAsync(x => subjectNames.Contains(x.NormalizedName)) != DemoSubjects.Length)
                 return false;
+
+            // Databases seeded before topics carried Arabic names would otherwise keep showing
+            // English topic names in the Arabic UI, since the fast path skips the repair pass.
+            var topicNames = DemoSubjects.SelectMany(x => x.Topics)
+                .Select(x => CatalogNameNormalizer.Key(x.Name)).ToArray();
+            if (await db.Topics.AnyAsync(x => topicNames.Contains(x.NormalizedName) && x.NameAr == ""))
+                return false;
         }
 
         return true;
@@ -827,12 +932,22 @@ public static class DependencyInjection
             foreach (var topicSeed in subjectSeed.Topics)
             {
                 var topicKey = CatalogNameNormalizer.Key(topicSeed.Name);
-                if (!await db.Topics.AnyAsync(x => x.SubjectId == subject.Id && x.NormalizedName == topicKey))
+                var topic = await db.Topics
+                    .FirstOrDefaultAsync(x => x.SubjectId == subject.Id && x.NormalizedName == topicKey);
+                if (topic is null)
                 {
-                    db.Add(new Tafseel.Domain.Catalog.Topic(subject.Id, topicSeed.Name, topicSeed.Difficulty));
+                    db.Add(new Tafseel.Domain.Catalog.Topic(
+                        subject.Id, topicSeed.Name, topicSeed.Difficulty, topicSeed.NameAr));
                     logger.LogInformation(
                         "Development demo catalog seeding: created topic {Topic} under {Subject}.",
                         topicSeed.Name, subjectSeed.Name);
+                }
+                else if (string.IsNullOrWhiteSpace(topic.NameAr))
+                {
+                    // Topics seeded before Arabic names existed would otherwise stay English in the Arabic UI.
+                    topic.Update(topic.Name, topic.Difficulty, topicSeed.NameAr);
+                    logger.LogInformation(
+                        "Development demo catalog seeding: added Arabic name for topic {Topic}.", topicSeed.Name);
                 }
             }
 
@@ -867,6 +982,29 @@ public static class DependencyInjection
             level.Rename(levelSeed.Name, levelSeed.NameAr);
             db.Add(level);
             logger.LogInformation("Development demo catalog seeding: created education level {Level}.", levelSeed.Name);
+        }
+
+        if (!await db.Promotions.AnyAsync())
+        {
+            var now = DateTimeOffset.UtcNow;
+            foreach (var promotionSeed in DemoPromotions)
+            {
+                var promotion = new Promotion(
+                    promotionSeed.Kind, promotionSeed.TitleEn, promotionSeed.TitleAr, now);
+                promotion.Configure(
+                    promotionSeed.Kind, promotionSeed.TitleEn, promotionSeed.TitleAr,
+                    promotionSeed.EyebrowEn, promotionSeed.EyebrowAr,
+                    promotionSeed.BodyEn, promotionSeed.BodyAr,
+                    promotionSeed.HighlightEn, promotionSeed.HighlightAr,
+                    promotionSeed.CouponCode,
+                    promotionSeed.CtaLabelEn, promotionSeed.CtaLabelAr, promotionSeed.CtaHref,
+                    accent: null, startsAt: null,
+                    endsAt: promotionSeed.EndsInDays is { } days ? now.AddDays(days) : null,
+                    promotionSeed.DisplayOrder, now);
+                db.Add(promotion);
+            }
+            logger.LogInformation(
+                "Development demo catalog seeding: created {Count} landing promotions.", DemoPromotions.Length);
         }
 
         await db.SaveChangesAsync();

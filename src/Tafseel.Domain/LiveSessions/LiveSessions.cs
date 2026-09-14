@@ -10,7 +10,10 @@ public enum LiveSessionStatus
     Completed,
     Cancelled,
     StudentNoShow,
-    TeacherNoShow
+    TeacherNoShow,
+    CompletionPending,
+    StudentNoShowPending,
+    TeacherNoShowPending
 }
 
 public sealed class LiveSessionBooking
@@ -23,14 +26,15 @@ public sealed class LiveSessionBooking
         string studentId, string teacherId, Guid teacherServiceId, string title, string notes,
         DateTimeOffset startsAt, DateTimeOffset endsAt, string studentTimeZoneId, string teacherTimeZoneId,
         decimal basePrice, string currency, decimal emergencyPremiumPercent, int cancellationWindowHours,
-        string joinKey, DateTimeOffset now)
+        string joinKey, DateTimeOffset now, decimal teacherCommissionPercent = 0)
     {
         if (string.IsNullOrWhiteSpace(studentId) || string.IsNullOrWhiteSpace(teacherId)
             || studentId == teacherId || endsAt <= startsAt || startsAt <= now)
             throw new DomainException("invalid_session_time", "Live session timing is invalid.");
         if (!IsSupportedDuration(endsAt - startsAt))
             throw new DomainException("invalid_session_duration", "Session duration must be 30, 60, 90, or 120 minutes.");
-        if (basePrice <= 0 || emergencyPremiumPercent is < 0 or > 1000 || cancellationWindowHours is < 0 or > 720)
+        if (basePrice <= 0 || emergencyPremiumPercent is < 0 or > 1000
+            || teacherCommissionPercent is < 0 or > 100 || cancellationWindowHours is < 0 or > 720)
             throw new DomainException("invalid_session_financials", "Live session financial terms are invalid.");
         Id = Guid.NewGuid();
         StudentId = studentId;
@@ -49,6 +53,9 @@ public sealed class LiveSessionBooking
         EmergencyPremiumPercent = emergencyPremiumPercent;
         EmergencyPremiumAmount = Money(BasePrice * emergencyPremiumPercent / 100);
         TotalPrice = BasePrice + EmergencyPremiumAmount;
+        TeacherCommissionPercent = teacherCommissionPercent;
+        TeacherCommissionAmount = Money(TotalPrice * teacherCommissionPercent / 100);
+        TeacherNet = TotalPrice - TeacherCommissionAmount;
         CancellationWindowHours = cancellationWindowHours;
         JoinKey = Required(joinKey, 100);
         Status = LiveSessionStatus.AwaitingPayment;
@@ -77,10 +84,17 @@ public sealed class LiveSessionBooking
     public decimal EmergencyPremiumPercent { get; private set; }
     public decimal EmergencyPremiumAmount { get; private set; }
     public decimal TotalPrice { get; private set; }
+    public decimal TeacherCommissionPercent { get; private set; }
+    public decimal TeacherCommissionAmount { get; private set; }
+    public decimal TeacherNet { get; private set; }
     public int CancellationWindowHours { get; private set; }
     public string JoinKey { get; private set; } = "";
     public LiveSessionStatus Status { get; private set; }
     public int RescheduleCount { get; private set; }
+    public DateTimeOffset? ProposedStartsAt { get; private set; }
+    public DateTimeOffset? ProposedEndsAt { get; private set; }
+    public string? RescheduleRequestedById { get; private set; }
+    public DateTimeOffset? RescheduleRequestedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
@@ -106,17 +120,37 @@ public sealed class LiveSessionBooking
         Transition(LiveSessionStatus.Confirmed, "PaymentConfirmed", actorId, now);
     }
 
-    public void Reschedule(string actorId, DateTimeOffset startsAt, DateTimeOffset endsAt, DateTimeOffset now)
+    public void RequestReschedule(string actorId, DateTimeOffset startsAt, DateTimeOffset endsAt, DateTimeOffset now)
     {
         RequireParticipant(actorId);
         if (Status is not (LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Confirmed)
-            || startsAt <= now || endsAt <= startsAt || !IsSupportedDuration(endsAt - startsAt))
+            || RescheduleRequestedAt.HasValue || startsAt <= now || endsAt <= startsAt
+            || !IsSupportedDuration(endsAt - startsAt))
             throw InvalidTransition();
-        StartsAt = startsAt;
-        EndsAt = endsAt;
-        RescheduleCount++;
+        ProposedStartsAt = startsAt;
+        ProposedEndsAt = endsAt;
+        RescheduleRequestedById = actorId;
+        RescheduleRequestedAt = now;
         UpdatedAt = now;
-        _history.Add(new(Id, Status, Status, "Rescheduled", actorId, now));
+        _history.Add(new(Id, Status, Status, "RescheduleRequested", actorId, now));
+    }
+
+    public void RespondToReschedule(string actorId, bool accept, DateTimeOffset now)
+    {
+        RequireParticipant(actorId);
+        if (!RescheduleRequestedAt.HasValue || actorId == RescheduleRequestedById
+            || ProposedStartsAt is null || ProposedEndsAt is null)
+            throw InvalidTransition();
+        if (accept)
+        {
+            StartsAt = ProposedStartsAt.Value;
+            EndsAt = ProposedEndsAt.Value;
+            RescheduleCount++;
+        }
+        _history.Add(new(Id, Status, Status, accept ? "Rescheduled" : "RescheduleRejected", actorId, now));
+        ProposedStartsAt = ProposedEndsAt = RescheduleRequestedAt = null;
+        RescheduleRequestedById = null;
+        UpdatedAt = now;
     }
 
     public void Cancel(string actorId, DateTimeOffset now)
@@ -127,25 +161,86 @@ public sealed class LiveSessionBooking
         Transition(LiveSessionStatus.Cancelled, "Cancelled", actorId, now);
     }
 
-    public void Complete(string teacherId, DateTimeOffset now)
+    public bool RequiresRefundOnCancellation(string actorId, DateTimeOffset now)
+    {
+        RequireParticipant(actorId);
+        return actorId == TeacherId || now <= StartsAt.AddHours(-CancellationWindowHours);
+    }
+
+    public void RequestCompletion(string teacherId, DateTimeOffset now)
     {
         RequireTeacher(teacherId);
         if (Status != LiveSessionStatus.Confirmed || now < EndsAt) throw InvalidTransition();
-        Transition(LiveSessionStatus.Completed, "Completed", teacherId, now);
+        Transition(LiveSessionStatus.CompletionPending, "CompletionRequested", teacherId, now);
     }
 
-    public void MarkStudentNoShow(string teacherId, DateTimeOffset now)
+    public void MarkStudentNoShow(string teacherId, DateTimeOffset now, int graceMinutes = 15)
     {
         RequireTeacher(teacherId);
-        if (Status != LiveSessionStatus.Confirmed || now < EndsAt) throw InvalidTransition();
-        Transition(LiveSessionStatus.StudentNoShow, "StudentNoShow", teacherId, now);
+        if (Status != LiveSessionStatus.Confirmed || now < EndsAt.AddMinutes(graceMinutes)) throw InvalidTransition();
+        Transition(LiveSessionStatus.StudentNoShowPending, "StudentNoShowRequested", teacherId, now);
     }
 
-    public void MarkTeacherNoShow(string studentId, DateTimeOffset now)
+    public void MarkTeacherNoShow(string studentId, DateTimeOffset now, int graceMinutes = 15)
     {
         RequireStudent(studentId);
+        if (Status != LiveSessionStatus.Confirmed || now < EndsAt.AddMinutes(graceMinutes)) throw InvalidTransition();
+        Transition(LiveSessionStatus.TeacherNoShowPending, "TeacherNoShowRequested", studentId, now);
+    }
+
+    public void ConfirmSettlement(string actorId, DateTimeOffset now)
+    {
+        RequireParticipant(actorId);
+        var next = Status switch
+        {
+            LiveSessionStatus.CompletionPending when actorId == StudentId => LiveSessionStatus.Completed,
+            LiveSessionStatus.StudentNoShowPending when actorId == StudentId => LiveSessionStatus.StudentNoShow,
+            LiveSessionStatus.TeacherNoShowPending when actorId == TeacherId => LiveSessionStatus.TeacherNoShow,
+            _ => throw InvalidTransition()
+        };
+        Transition(next, "SettlementConfirmed", actorId, now);
+    }
+
+    public void FinalizeSettlement(DateTimeOffset now)
+    {
+        var next = Status switch
+        {
+            LiveSessionStatus.CompletionPending => LiveSessionStatus.Completed,
+            LiveSessionStatus.StudentNoShowPending => LiveSessionStatus.StudentNoShow,
+            LiveSessionStatus.TeacherNoShowPending => LiveSessionStatus.TeacherNoShow,
+            _ => throw InvalidTransition()
+        };
+        Transition(next, "SettlementAutoFinalized", "system:settlement", now);
+    }
+
+    public void ResolveCompletedByAdmin(string adminId, DateTimeOffset now) =>
+        ResolvePassiveOutcome(LiveSessionStatus.Completed, "AdminConfirmedCompletion", adminId, now);
+
+    public void ResolveStudentNoShowByAdmin(string adminId, DateTimeOffset now) =>
+        ResolvePassiveOutcome(LiveSessionStatus.StudentNoShow, "AdminConfirmedStudentNoShow", adminId, now);
+
+    public void ResolveTeacherNoShowByAdmin(string adminId, DateTimeOffset now) =>
+        ResolvePassiveOutcome(LiveSessionStatus.TeacherNoShow, "AdminConfirmedTeacherNoShow", adminId, now);
+
+    public void ResolveByDispute(bool refundStudent, string actorId, DateTimeOffset now)
+    {
+        if (refundStudent)
+        {
+            if (Status == LiveSessionStatus.Cancelled) return;
+            Transition(LiveSessionStatus.Cancelled, "DisputeRefunded", actorId, now);
+            return;
+        }
+        if (Status is LiveSessionStatus.Completed or LiveSessionStatus.StudentNoShow) return;
+        if (Status is LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Cancelled)
+            throw InvalidTransition();
+        Transition(LiveSessionStatus.Completed, "DisputeReleased", actorId, now);
+    }
+
+    private void ResolvePassiveOutcome(
+        LiveSessionStatus outcome, string action, string adminId, DateTimeOffset now)
+    {
         if (Status != LiveSessionStatus.Confirmed || now < EndsAt) throw InvalidTransition();
-        Transition(LiveSessionStatus.TeacherNoShow, "TeacherNoShow", studentId, now);
+        Transition(outcome, action, adminId, now);
     }
 
     public void AddAttachment(string actorId, string storageKey, string originalName, string contentType, long size, DateTimeOffset now)

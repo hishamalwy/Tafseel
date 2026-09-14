@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Tafseel.Domain.Catalog;
 using Tafseel.Domain.Finance;
 using Tafseel.Domain.Governance;
+using Tafseel.Domain.Marketing;
 using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Messaging;
@@ -42,8 +43,10 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<MarketplaceInteractionEvent> MarketplaceInteractionEvents => Set<MarketplaceInteractionEvent>();
     public DbSet<LearningRequest> LearningRequests => Set<LearningRequest>();
     public DbSet<LearningRequestAttachment> LearningRequestAttachments => Set<LearningRequestAttachment>();
+    public DbSet<TeacherOffer> TeacherOffers => Set<TeacherOffer>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderDelivery> OrderDeliveries => Set<OrderDelivery>();
+    public DbSet<OrderExtensionRequest> OrderExtensionRequests => Set<OrderExtensionRequest>();
     public DbSet<LiveSessionBooking> LiveSessionBookings => Set<LiveSessionBooking>();
     public DbSet<LiveSessionAttachment> LiveSessionAttachments => Set<LiveSessionAttachment>();
     public DbSet<Payment> Payments => Set<Payment>();
@@ -51,11 +54,14 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<PaymentWebhookRecord> PaymentWebhookRecords => Set<PaymentWebhookRecord>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<CouponRedemption> CouponRedemptions => Set<CouponRedemption>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<EscrowEntry> EscrowEntries => Set<EscrowEntry>();
     public DbSet<LedgerAccount> LedgerAccounts => Set<LedgerAccount>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Refund> Refunds => Set<Refund>();
     public DbSet<WithdrawalRequest> WithdrawalRequests => Set<WithdrawalRequest>();
+    public DbSet<TeacherEarningMaturity> TeacherEarningMaturities => Set<TeacherEarningMaturity>();
+    public DbSet<TeacherPayoutProfile> TeacherPayoutProfiles => Set<TeacherPayoutProfile>();
     public DbSet<FinancialAuditRecord> FinancialAuditRecords => Set<FinancialAuditRecord>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
@@ -509,21 +515,27 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             request.Property(x => x.Title).HasMaxLength(200);
             request.Property(x => x.Description).HasMaxLength(5000);
             request.Property(x => x.Budget).HasPrecision(18, 2);
+            request.Property(x => x.BudgetMin).HasPrecision(18, 2);
+            request.Property(x => x.BudgetMax).HasPrecision(18, 2);
             request.Property(x => x.AcceptanceIdempotencyKey).HasMaxLength(100);
             request.Property(x => x.RowVersion).IsRowVersion();
             request.HasIndex(x => new { x.StudentId, x.CreatedAt });
             request.HasIndex(x => new { x.TeacherId, x.Status, x.CreatedAt });
+            request.HasIndex(x => new { x.SourcingMode, x.Status, x.SubjectId, x.CreatedAt });
             request.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             request.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             request.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.TeacherServiceId).OnDelete(DeleteBehavior.Restrict);
+            request.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
             request.HasOne<ServiceCatalogItem>().WithMany().HasForeignKey(x => x.ServiceCatalogItemId).OnDelete(DeleteBehavior.Restrict);
+            request.HasOne<TeacherOffer>().WithMany().HasForeignKey(x => x.SelectedOfferId).OnDelete(DeleteBehavior.Restrict);
             request.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
             request.HasMany(x => x.Clarifications).WithOne().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
             request.HasMany(x => x.History).WithOne().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
             request.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_LearningRequests_Status", "[Status] BETWEEN 0 AND 4");
+                table.HasCheckConstraint("CK_LearningRequests_Status", "[Status] BETWEEN 0 AND 8");
                 table.HasCheckConstraint("CK_LearningRequests_Budget", "[Budget] IS NULL OR [Budget] > 0");
+                table.HasCheckConstraint("CK_LearningRequests_BudgetRange", "([BudgetMin] IS NULL AND [BudgetMax] IS NULL) OR ([BudgetMin] >= 0 AND [BudgetMax] >= [BudgetMin])");
             });
         });
         builder.Entity<LearningRequestAttachment>(attachment =>
@@ -546,9 +558,32 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             history.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ActorId).OnDelete(DeleteBehavior.Restrict);
             history.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_LearningRequestHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 4");
-                table.HasCheckConstraint("CK_LearningRequestHistory_Next", "[NextStatus] BETWEEN 0 AND 4");
+                table.HasCheckConstraint("CK_LearningRequestHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 8");
+                table.HasCheckConstraint("CK_LearningRequestHistory_Next", "[NextStatus] BETWEEN 0 AND 8");
                 table.HasCheckConstraint("CK_LearningRequestHistory_Transition", "[PreviousStatus] IS NULL OR [PreviousStatus] <> [NextStatus]");
+            });
+        });
+        builder.Entity<TeacherOffer>(offer =>
+        {
+            offer.Property(x => x.Id).ValueGeneratedNever();
+            offer.Property(x => x.TeacherId).HasMaxLength(450);
+            offer.Property(x => x.Amount).HasPrecision(18, 2);
+            offer.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
+            offer.Property(x => x.Message).HasMaxLength(2000);
+            offer.Property(x => x.RowVersion).IsRowVersion();
+            offer.HasIndex(x => new { x.LearningRequestId, x.TeacherId }).IsUnique();
+            offer.HasIndex(x => new { x.TeacherId, x.Status, x.UpdatedAt });
+            offer.HasIndex(x => new { x.LearningRequestId, x.Status, x.ValidUntil });
+            offer.HasOne<LearningRequest>().WithMany().HasForeignKey(x => x.LearningRequestId).OnDelete(DeleteBehavior.Restrict);
+            offer.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+            offer.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.TeacherServiceId).OnDelete(DeleteBehavior.Restrict);
+            offer.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_TeacherOffers_Amount", "[Amount] > 0");
+                table.HasCheckConstraint("CK_TeacherOffers_Currency", "[Currency] = 'SAR'");
+                table.HasCheckConstraint("CK_TeacherOffers_DeliveryHours", "[DeliveryHours] BETWEEN 1 AND 8760");
+                table.HasCheckConstraint("CK_TeacherOffers_Revisions", "[IncludedRevisions] BETWEEN 0 AND 20");
+                table.HasCheckConstraint("CK_TeacherOffers_Status", "[Status] BETWEEN 0 AND 5");
             });
         });
         builder.Entity<Order>(order =>
@@ -582,6 +617,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             order.HasMany(x => x.History).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
             order.HasMany(x => x.Deliveries).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
             order.HasMany(x => x.Revisions).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+            order.HasMany(x => x.Extensions).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
             order.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_Orders_Price", "[Price] > 0");
@@ -623,6 +659,18 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             revision.HasIndex(x => new { x.OrderId, x.Sequence }).IsUnique();
             revision.ToTable(table => table.HasCheckConstraint("CK_RevisionRequests_Sequence", "[Sequence] > 0"));
         });
+        builder.Entity<OrderExtensionRequest>(extension =>
+        {
+            extension.Property(x => x.Id).ValueGeneratedNever();
+            extension.Property(x => x.RequestedById).HasMaxLength(450);
+            extension.Property(x => x.RespondedById).HasMaxLength(450);
+            extension.Property(x => x.Reason).HasMaxLength(2000);
+            extension.Property(x => x.Response).HasMaxLength(2000);
+            extension.HasIndex(x => new { x.OrderId, x.Status, x.CreatedAt });
+            extension.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RequestedById).OnDelete(DeleteBehavior.Restrict);
+            extension.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RespondedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            extension.ToTable(table => table.HasCheckConstraint("CK_OrderExtensionRequests_Status", "[Status] BETWEEN 0 AND 2"));
+        });
         builder.Entity<LiveSessionBooking>(booking =>
         {
             booking.Property(x => x.Id).ValueGeneratedNever();
@@ -639,15 +687,20 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             booking.Property(x => x.TeacherTimeZoneId).HasMaxLength(100);
             booking.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
             booking.Property(x => x.JoinKey).HasMaxLength(100);
+            booking.Property(x => x.RescheduleRequestedById).HasMaxLength(450);
             booking.Property(x => x.BasePrice).HasPrecision(18, 2);
             booking.Property(x => x.EmergencyPremiumPercent).HasPrecision(9, 4);
             booking.Property(x => x.EmergencyPremiumAmount).HasPrecision(18, 2);
             booking.Property(x => x.TotalPrice).HasPrecision(18, 2);
+            booking.Property(x => x.TeacherCommissionPercent).HasPrecision(9, 4);
+            booking.Property(x => x.TeacherCommissionAmount).HasPrecision(18, 2);
+            booking.Property(x => x.TeacherNet).HasPrecision(18, 2);
             booking.Property(x => x.RowVersion).IsRowVersion();
             booking.HasIndex(x => new { x.TeacherId, x.Status, x.StartsAt, x.EndsAt });
             booking.HasIndex(x => new { x.StudentId, x.StartsAt });
             booking.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             booking.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+            booking.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RescheduleRequestedById).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             booking.HasOne<TeacherService>().WithMany().HasForeignKey(x => x.TeacherServiceId).OnDelete(DeleteBehavior.Restrict);
             booking.HasOne<ServiceCatalogItem>().WithMany().HasForeignKey(x => x.ServiceCatalogItemId).OnDelete(DeleteBehavior.Restrict);
             booking.HasMany(x => x.History).WithOne().HasForeignKey(x => x.LiveSessionBookingId).OnDelete(DeleteBehavior.Restrict);
@@ -655,8 +708,12 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             booking.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_LiveSessionBookings_Range", "[EndsAt] > [StartsAt]");
-                table.HasCheckConstraint("CK_LiveSessionBookings_Status", "[Status] BETWEEN 0 AND 5");
+                table.HasCheckConstraint("CK_LiveSessionBookings_Status", "[Status] BETWEEN 0 AND 8");
+                table.HasCheckConstraint("CK_LiveSessionBookings_RescheduleRequest",
+                    "([RescheduleRequestedAt] IS NULL AND [RescheduleRequestedById] IS NULL AND [ProposedStartsAt] IS NULL AND [ProposedEndsAt] IS NULL) OR " +
+                    "([RescheduleRequestedAt] IS NOT NULL AND [RescheduleRequestedById] IS NOT NULL AND [ProposedStartsAt] IS NOT NULL AND [ProposedEndsAt] > [ProposedStartsAt])");
                 table.HasCheckConstraint("CK_LiveSessionBookings_Price", "[BasePrice] > 0 AND [EmergencyPremiumPercent] BETWEEN 0 AND 1000 AND [EmergencyPremiumAmount] = ROUND([BasePrice] * [EmergencyPremiumPercent] / 100, 2) AND [TotalPrice] = [BasePrice] + [EmergencyPremiumAmount]");
+                table.HasCheckConstraint("CK_LiveSessionBookings_Commission", "[TeacherCommissionPercent] BETWEEN 0 AND 100 AND [TeacherCommissionAmount] = ROUND([TotalPrice] * [TeacherCommissionPercent] / 100, 2) AND [TeacherNet] = [TotalPrice] - [TeacherCommissionAmount]");
                 table.HasCheckConstraint("CK_LiveSessionBookings_Cancellation", "[CancellationWindowHours] BETWEEN 0 AND 720");
                 table.HasCheckConstraint("CK_LiveSessionBookings_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
             });
@@ -675,8 +732,8 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             history.Property(x => x.ActorId).HasMaxLength(450);
             history.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_LiveSessionHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 5");
-                table.HasCheckConstraint("CK_LiveSessionHistory_Next", "[NextStatus] BETWEEN 0 AND 5");
+                table.HasCheckConstraint("CK_LiveSessionHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 8");
+                table.HasCheckConstraint("CK_LiveSessionHistory_Next", "[NextStatus] BETWEEN 0 AND 8");
             });
         });
 
@@ -692,11 +749,14 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             payment.Property(x => x.RowVersion).IsRowVersion();
             payment.HasIndex(x => x.OrderId).IsUnique().HasFilter("[OrderId] IS NOT NULL");
             payment.HasIndex(x => x.LiveSessionBookingId).IsUnique().HasFilter("[LiveSessionBookingId] IS NOT NULL");
+            payment.HasIndex(x => new { x.LearningRequestId, x.CreatedAt }).HasFilter("[LearningRequestId] IS NOT NULL");
             payment.HasIndex(x => new { x.Provider, x.ProviderReference }).IsUnique();
             payment.HasIndex(x => new { x.StudentId, x.InitiationIdempotencyKey }).IsUnique();
             payment.HasOne<Order>().WithOne().HasForeignKey<Payment>(x => x.OrderId).IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
             payment.HasOne<LiveSessionBooking>().WithMany().HasForeignKey(x => x.LiveSessionBookingId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            payment.HasOne<LearningRequest>().WithMany().HasForeignKey(x => x.LearningRequestId)
                 .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             payment.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             payment.ToTable(table =>
@@ -705,7 +765,9 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 table.HasCheckConstraint("CK_Payments_Status", "[Status] BETWEEN 0 AND 3");
                 table.HasCheckConstraint("CK_Payments_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
                 table.HasCheckConstraint("CK_Payments_Target",
-                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR " +
+                    "([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL AND [LearningRequestId] IS NULL) OR " +
+                    "([OrderId] IS NULL AND [LiveSessionBookingId] IS NULL AND [LearningRequestId] IS NOT NULL)");
             });
         });
         builder.Entity<PaymentAttempt>(attempt =>
@@ -738,6 +800,39 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 table.HasCheckConstraint("CK_Coupons_DiscountType", "[DiscountType] BETWEEN 0 AND 1");
                 table.HasCheckConstraint("CK_Coupons_DiscountValue", "[DiscountValue] > 0");
                 table.HasCheckConstraint("CK_Coupons_Code", "[Code] <> ''");
+            });
+        });
+        builder.Entity<Promotion>(promotion =>
+        {
+            promotion.Property(x => x.Id).ValueGeneratedNever();
+            promotion.Property(x => x.EyebrowEn).HasMaxLength(60);
+            promotion.Property(x => x.EyebrowAr).HasMaxLength(60);
+            promotion.Property(x => x.TitleEn).HasMaxLength(160);
+            promotion.Property(x => x.TitleAr).HasMaxLength(160);
+            promotion.Property(x => x.BodyEn).HasMaxLength(400);
+            promotion.Property(x => x.BodyAr).HasMaxLength(400);
+            promotion.Property(x => x.HighlightEn).HasMaxLength(24);
+            promotion.Property(x => x.HighlightAr).HasMaxLength(24);
+            promotion.Property(x => x.CouponCode).HasMaxLength(40).IsUnicode(false);
+            promotion.Property(x => x.CtaLabelEn).HasMaxLength(60);
+            promotion.Property(x => x.CtaLabelAr).HasMaxLength(60);
+            promotion.Property(x => x.CtaHref).HasMaxLength(400);
+            promotion.Property(x => x.Accent).HasMaxLength(20).IsUnicode(false);
+            // SQL Server: store-generated rowversion. SQLite EnsureCreated cannot populate
+            // IsRowVersion() columns, and demo promotions are seeded, so the insert would fail.
+            if (IsSqliteProvider())
+                promotion.Property(x => x.RowVersion).IsConcurrencyToken().IsRequired().HasMaxLength(8);
+            else
+                promotion.Property(x => x.RowVersion).IsRowVersion();
+            promotion.HasIndex(x => new { x.IsActive, x.DisplayOrder });
+            promotion.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Promotions_Kind", "[Kind] BETWEEN 0 AND 4");
+                table.HasCheckConstraint("CK_Promotions_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
+                table.HasCheckConstraint("CK_Promotions_TitleEn", "[TitleEn] <> ''");
+                table.HasCheckConstraint("CK_Promotions_TitleAr", "[TitleAr] <> ''");
+                table.HasCheckConstraint("CK_Promotions_Window",
+                    "[StartsAt] IS NULL OR [EndsAt] IS NULL OR [EndsAt] > [StartsAt]");
             });
         });
         builder.Entity<CouponRedemption>(redemption =>
@@ -816,9 +911,17 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             refund.HasIndex(x => new { x.PaymentId, x.IdempotencyKey }).IsUnique();
             refund.HasIndex(x => x.PaymentId).IsUnique();
             refund.HasOne<Payment>().WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.Restrict);
-            refund.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+            refund.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            refund.HasOne<LiveSessionBooking>().WithMany().HasForeignKey(x => x.LiveSessionBookingId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             refund.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ActorId).OnDelete(DeleteBehavior.Restrict);
-            refund.ToTable(table => table.HasCheckConstraint("CK_Refunds_Amount", "[Amount] > 0"));
+            refund.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Refunds_Amount", "[Amount] > 0");
+                table.HasCheckConstraint("CK_Refunds_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+            });
         });
         builder.Entity<WithdrawalRequest>(withdrawal =>
         {
@@ -828,6 +931,9 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             withdrawal.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
             withdrawal.Property(x => x.IdempotencyKey).HasMaxLength(100);
             withdrawal.Property(x => x.ProviderReference).HasMaxLength(200);
+            withdrawal.Property(x => x.PayoutMethod).HasMaxLength(30);
+            withdrawal.Property(x => x.DestinationLabel).HasMaxLength(100);
+            withdrawal.Property(x => x.RejectionReason).HasMaxLength(500);
             withdrawal.Property(x => x.RowVersion).IsRowVersion();
             withdrawal.HasIndex(x => new { x.TeacherId, x.IdempotencyKey }).IsUnique();
             withdrawal.HasIndex(x => new { x.Status, x.CreatedAt });
@@ -836,6 +942,52 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             {
                 table.HasCheckConstraint("CK_Withdrawals_Amount", "[Amount] > 0");
                 table.HasCheckConstraint("CK_Withdrawals_Status", "[Status] BETWEEN 0 AND 2");
+            });
+        });
+        builder.Entity<TeacherPayoutProfile>(profile =>
+        {
+            profile.HasKey(x => x.TeacherId);
+            profile.Property(x => x.TeacherId).HasMaxLength(450);
+            profile.Property(x => x.LegalName).HasMaxLength(150);
+            profile.Property(x => x.CountryCode).HasMaxLength(2).IsUnicode(false);
+            profile.Property(x => x.PayoutMethod).HasMaxLength(30);
+            profile.Property(x => x.DestinationLabel).HasMaxLength(100);
+            profile.Property(x => x.IdentityLast4).HasMaxLength(4).IsUnicode(false);
+            profile.Property(x => x.RejectionReason).HasMaxLength(500);
+            profile.Property(x => x.ReviewedBy).HasMaxLength(450);
+            profile.Property(x => x.RowVersion).IsRowVersion();
+            profile.HasIndex(x => new { x.Status, x.SubmittedAt });
+            profile.HasOne<ApplicationUser>().WithOne().HasForeignKey<TeacherPayoutProfile>(x => x.TeacherId)
+                .OnDelete(DeleteBehavior.Cascade);
+            profile.ToTable(table => table.HasCheckConstraint("CK_PayoutProfiles_Status", "[Status] BETWEEN 0 AND 2"));
+        });
+        builder.Entity<TeacherEarningMaturity>(maturity =>
+        {
+            maturity.Property(x => x.Id).ValueGeneratedNever();
+            maturity.Property(x => x.TeacherId).HasMaxLength(450);
+            maturity.Property(x => x.Amount).HasPrecision(18, 2);
+            maturity.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
+            maturity.Property(x => x.BusinessKey).HasMaxLength(200);
+            maturity.Property(x => x.RowVersion).IsRowVersion();
+            // One earning schedule per confirmed capture — mirrors "one escrow release per payment".
+            maturity.HasIndex(x => x.PaymentId).IsUnique();
+            maturity.HasIndex(x => x.BusinessKey).IsUnique();
+            // Drives the bounded maturity worker scan.
+            maturity.HasIndex(x => new { x.Status, x.MaturesAt });
+            maturity.HasIndex(x => new { x.TeacherId, x.Status });
+            maturity.HasOne<Payment>().WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.Restrict);
+            maturity.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            maturity.HasOne<LiveSessionBooking>().WithMany().HasForeignKey(x => x.LiveSessionBookingId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            maturity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+            maturity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_EarningMaturities_Amount", "[Amount] > 0");
+                table.HasCheckConstraint("CK_EarningMaturities_Status", "[Status] BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_EarningMaturities_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
             });
         });
         builder.Entity<FinancialAuditRecord>(audit =>
@@ -953,9 +1105,11 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             review.Property(x => x.TeacherId).HasMaxLength(450);
             review.Property(x => x.OverallScore).HasPrecision(3, 2);
             review.Property(x => x.OriginalComment).HasMaxLength(2000);
-            review.HasIndex(x => x.OrderId).IsUnique();
+            review.HasIndex(x => x.OrderId).IsUnique().HasFilter("[OrderId] IS NOT NULL");
+            review.HasIndex(x => x.LiveSessionBookingId).IsUnique().HasFilter("[LiveSessionBookingId] IS NOT NULL");
             review.HasIndex(x => new { x.TeacherId, x.IsVisible, x.CreatedAt });
-            review.HasOne<Order>().WithOne().HasForeignKey<TeacherReview>(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+            review.HasOne<Order>().WithOne().HasForeignKey<TeacherReview>(x => x.OrderId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            review.HasOne<LiveSessionBooking>().WithOne().HasForeignKey<TeacherReview>(x => x.LiveSessionBookingId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             review.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             review.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             review.HasMany(x => x.Moderation).WithOne().HasForeignKey(x => x.TeacherReviewId).OnDelete(DeleteBehavior.Restrict);
@@ -966,6 +1120,8 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                     "[Communication] BETWEEN 1 AND 5 AND [OnTimeDelivery] BETWEEN 1 AND 5 AND [ValueForMoney] BETWEEN 1 AND 5");
                 table.HasCheckConstraint("CK_TeacherReviews_Overall",
                     "[OverallScore] = ROUND(([ExplanationClarity]+[SubjectKnowledge]+[Communication]+[OnTimeDelivery]+[ValueForMoney])/5.0,2)");
+                table.HasCheckConstraint("CK_TeacherReviews_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
             });
         });
         builder.Entity<ReviewModerationRecord>(record =>
@@ -984,9 +1140,11 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             dispute.Property(x => x.OpenedById).HasMaxLength(450);
             dispute.Property(x => x.Reason).HasMaxLength(2000);
             dispute.Property(x => x.RowVersion).IsRowVersion();
-            dispute.HasIndex(x => x.OrderId).IsUnique();
+            dispute.HasIndex(x => x.OrderId).IsUnique().HasFilter("[OrderId] IS NOT NULL");
+            dispute.HasIndex(x => x.LiveSessionBookingId).IsUnique().HasFilter("[LiveSessionBookingId] IS NOT NULL");
             dispute.HasIndex(x => new { x.Status, x.UpdatedAt });
-            dispute.HasOne<Order>().WithOne().HasForeignKey<Dispute>(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+            dispute.HasOne<Order>().WithOne().HasForeignKey<Dispute>(x => x.OrderId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            dispute.HasOne<LiveSessionBooking>().WithOne().HasForeignKey<Dispute>(x => x.LiveSessionBookingId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             dispute.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             dispute.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             dispute.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.OpenedById).OnDelete(DeleteBehavior.Restrict);
@@ -994,7 +1152,12 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             dispute.HasMany(x => x.Evidence).WithOne().HasForeignKey(x => x.DisputeId).OnDelete(DeleteBehavior.Restrict);
             dispute.HasMany(x => x.Decisions).WithOne().HasForeignKey(x => x.DisputeId).OnDelete(DeleteBehavior.Restrict);
             dispute.HasMany(x => x.History).WithOne().HasForeignKey(x => x.DisputeId).OnDelete(DeleteBehavior.Restrict);
-            dispute.ToTable(table => table.HasCheckConstraint("CK_Disputes_Status", "[Status] BETWEEN 0 AND 2"));
+            dispute.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Disputes_Status", "[Status] BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_Disputes_Target",
+                    "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+            });
         });
         builder.Entity<DisputeMessage>(message =>
         {

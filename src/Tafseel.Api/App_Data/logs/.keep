@@ -1,0 +1,1 @@
+This directory receives short-lived IIS startup diagnostics. Do not commit generated stdout logs.

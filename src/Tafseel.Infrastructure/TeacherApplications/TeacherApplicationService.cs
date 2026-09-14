@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Tafseel.Application.Common;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
@@ -45,7 +45,7 @@ internal sealed class TeacherApplicationService(
             throw new DomainException("duplicate_teacher_application", "An active application already exists for this subject.");
 
         var application = new TeacherApplication(teacherId, input.SubjectId, input.QualificationTopicId, clock.GetUtcNow());
-        application.UpdateDraft(input.QualificationTopicId, input.City, input.ExperienceYears, input.Degree);
+        application.UpdateDraft(input.QualificationTopicId, input.City, input.ExperienceYears, input.Degree ?? "");
         db.TeacherApplications.Add(application);
         try
         {
@@ -72,7 +72,7 @@ internal sealed class TeacherApplicationService(
             .SingleOrDefaultAsync(x => x.Id == input.QualificationTopicId && x.IsActive, ct);
         if (topic is null || topic.SubjectId != application.SubjectId)
             throw new DomainException("qualification_topic_not_found", "Select an active qualification topic for this subject.");
-        application.UpdateDraft(input.QualificationTopicId, input.City, input.ExperienceYears, input.Degree);
+        application.UpdateDraft(input.QualificationTopicId, input.City, input.ExperienceYears, input.Degree ?? "");
         await db.SaveChangesAsync(ct);
     }
 
@@ -142,7 +142,7 @@ internal sealed class TeacherApplicationService(
         foreach (var reviewerId in reviewerIds)
             await notifications.QueueAsync(reviewerId, "ApplicationSubmitted",
                 "New teacher application", "A teacher application is ready for review.",
-                $"/app/Tafseel-Quality-Dashboard.dc.html?section=applications&selectedId={application.Id}",
+                AppRoutes.QualityApplication(application.Id),
                 $"application-submitted:{application.Id}:{reviewerId}", true, ct);
         await db.SaveChangesAsync(ct);
     }
@@ -215,7 +215,7 @@ internal sealed class TeacherApplicationService(
                     application?.Id, application?.Status, application?.SubmittedAt, decidedAt,
                     qualification.ApprovedAt, null, application?.DemoStorageKey is not null,
                     "Manage services for this subject",
-                    "Tafseel-Teacher-Dashboard.dc.html?section=services",
+                    AppRoutes.TeacherServices,
                     false, null));
                 continue;
             }
@@ -232,7 +232,7 @@ internal sealed class TeacherApplicationService(
                         ? "Re-apply for this subject"
                         : "Subject unavailable for re-application",
                     hasActiveTask && subject.IsActive
-                        ? $"Tafseel-Teacher-Apply.dc.html?mode=additional&subjectId={subject.Id}"
+                        ? AppRoutes.TeacherApplyForSubject(subject.Id)
                         : null,
                     hasActiveTask && subject.IsActive,
                     !subject.IsActive ? "subject_inactive"
@@ -251,7 +251,7 @@ internal sealed class TeacherApplicationService(
                     application.Id, application.Status, application.SubmittedAt, decidedAt,
                     null, null, application.DemoStorageKey is not null,
                     "Continue application",
-                    "Tafseel-Teacher-Apply.dc.html",
+                    AppRoutes.TeacherApply,
                     false, null));
                 continue;
             }
@@ -264,7 +264,7 @@ internal sealed class TeacherApplicationService(
                     application.Id, application.Status, application.SubmittedAt, decidedAt,
                     null, null, application.DemoStorageKey is not null,
                     "Update and resubmit",
-                    "Tafseel-Teacher-Apply.dc.html",
+                    AppRoutes.TeacherApply,
                     false, null));
                 continue;
             }
@@ -280,7 +280,7 @@ internal sealed class TeacherApplicationService(
                         ? "Apply again for this subject"
                         : "Subject unavailable",
                     hasActiveTask && subject.IsActive
-                        ? $"Tafseel-Teacher-Apply.dc.html?mode=additional&subjectId={subject.Id}"
+                        ? AppRoutes.TeacherApplyForSubject(subject.Id)
                         : null,
                     hasActiveTask && subject.IsActive,
                     !subject.IsActive ? "subject_inactive"
@@ -318,7 +318,7 @@ internal sealed class TeacherApplicationService(
                 application?.Id, application?.Status, application?.SubmittedAt, decidedAt,
                 null, null, application?.DemoStorageKey is not null,
                 "Apply to teach this subject",
-                $"Tafseel-Teacher-Apply.dc.html?mode=additional&subjectId={subject.Id}",
+                AppRoutes.TeacherApplyForSubject(subject.Id),
                 true, null));
         }
 
@@ -478,7 +478,7 @@ internal sealed class TeacherApplicationService(
         application.StartReview(reviewerId, priority, clock.GetUtcNow());
         await notifications.QueueAsync(application.TeacherId, "ApplicationUnderReview",
             "Application under review", "A quality reviewer has started reviewing your application.",
-            "/app/Tafseel-Teacher-Apply.dc.html?view=status",
+            AppRoutes.TeacherApply,
             $"application-review-started:{application.Id}", true, ct);
         await db.SaveChangesAsync(ct);
     }
@@ -549,7 +549,7 @@ internal sealed class TeacherApplicationService(
         }
         await notifications.QueueAsync(application.TeacherId, "ApplicationDecision",
             $"Teacher application {input.Decision}", input.Comment ?? "Your application was reviewed.",
-            "/app/Tafseel-Teacher-Apply.dc.html?view=status",
+            AppRoutes.TeacherApply,
             $"application:{application.Id}:review:{application.Reviews.Last().Id}",
             true, ct);
         audit.Add(reviewerId, "TeacherApplicationDecision", "TeacherApplication",
@@ -579,9 +579,8 @@ internal sealed class TeacherApplicationService(
             await transaction.CommitAsync(ct);
             return;
         }
-        if (db.Database.IsSqlServer())
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"EXEC sp_getapplock @Resource={"teacher-showcase-subject:" + qualification.TeacherId + ":" + qualification.SubjectId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct);
+        await db.Database.AcquireAsync(
+            "teacher-showcase-subject:" + qualification.TeacherId + ":" + qualification.SubjectId, ct);
         var now = clock.GetUtcNow();
         qualification.Revoke(reviewerId, input.Reason, now);
         var services = await db.TeacherServices
@@ -604,7 +603,7 @@ internal sealed class TeacherApplicationService(
         }
         await notifications.QueueAsync(
             qualification.TeacherId, "QualificationRevoked", "Subject qualification updated",
-            input.Reason, "/app/Tafseel-Teacher-Apply.dc.html?view=status",
+            input.Reason, AppRoutes.TeacherApply,
             $"qualification-revoked:{qualification.Id}", email: true, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
@@ -672,15 +671,15 @@ internal sealed class TeacherApplicationService(
             : TeacherOnboardingStatus.ApplicationRequired;
         var (action, url) = status switch
         {
-            TeacherOnboardingStatus.ApplicationRequired => ("Start your subject application", "Tafseel-Teacher-Apply.dc.html"),
+            TeacherOnboardingStatus.ApplicationRequired => ("Start your subject application", AppRoutes.TeacherApply),
             TeacherOnboardingStatus.DemoRequired or TeacherOnboardingStatus.ReadyToSubmit
-                or TeacherOnboardingStatus.ChangesRequested => ("Continue your application", "Tafseel-Teacher-Apply.dc.html"),
+                or TeacherOnboardingStatus.ChangesRequested => ("Continue your application", AppRoutes.TeacherApply),
             TeacherOnboardingStatus.PendingReview or TeacherOnboardingStatus.UnderReview
-                or TeacherOnboardingStatus.Rejected => ("View application status", "Tafseel-Teacher-Apply.dc.html?view=status"),
-            TeacherOnboardingStatus.ApprovedButProfileIncomplete => ("Complete profile", "Tafseel-Teacher-Dashboard.dc.html?section=profile"),
-            TeacherOnboardingStatus.ApprovedButNotPublished => ("Finish marketplace setup", "Tafseel-Teacher-Dashboard.dc.html?section=profile"),
-            TeacherOnboardingStatus.Published => ("Open teacher dashboard", "Tafseel-Teacher-Dashboard.dc.html"),
-            _ => ("Continue teacher setup", "Tafseel-Teacher-Dashboard.dc.html")
+                or TeacherOnboardingStatus.Rejected => ("View application status", AppRoutes.TeacherApply),
+            TeacherOnboardingStatus.ApprovedButProfileIncomplete => ("Complete profile", AppRoutes.TeacherProfileArea),
+            TeacherOnboardingStatus.ApprovedButNotPublished => ("Finish marketplace setup", AppRoutes.TeacherProfileArea),
+            TeacherOnboardingStatus.Published => ("Open teacher dashboard", AppRoutes.TeacherHome),
+            _ => ("Continue teacher setup", AppRoutes.TeacherHome)
         };
         var blockers = new List<string>();
         var missing = new List<string>();

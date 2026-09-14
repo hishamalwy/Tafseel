@@ -1,34 +1,35 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Tafseel.Application.Common;
 using Tafseel.Application.Finance;
 using Tafseel.Domain.Common;
 
 namespace Tafseel.Infrastructure.Finance;
 
 internal sealed class MockPaymentProvider(
-    IOptions<PaymentOptions> options,
+    IOptionsMonitor<PaymentOptions> options,
     IHostEnvironment environment) : IPaymentProvider
 {
-    private readonly PaymentOptions _options = options.Value;
-    private readonly byte[] _secret = Encoding.UTF8.GetBytes(options.Value.WebhookSecret);
+    private PaymentOptions Opts => options.CurrentValue;
+    private byte[] Secret => Encoding.UTF8.GetBytes(Opts.WebhookSecret);
     public string Name => "Mock";
 
     public bool IsSimulatorActive =>
         !environment.IsProduction()
-        && string.Equals(_options.Provider, "Mock", StringComparison.OrdinalIgnoreCase)
-        && _options.Mock.Enabled
-        && _options.Mock.SimulatorEnabled;
+        && string.Equals(Opts.Provider, "Mock", StringComparison.OrdinalIgnoreCase)
+        && Opts.Mock.Enabled
+        && Opts.Mock.SimulatorEnabled;
 
     public Task<ProviderInitiation> InitiateAsync(
         Guid paymentId, decimal amount, string currency, CancellationToken ct)
     {
         var reference = $"mock_{paymentId:N}";
         var checkout = IsSimulatorActive
-            ? QueryHelpers.AddQueryString("/app/Tafseel-Mock-Checkout.dc.html", "ref", reference)
+            ? QueryHelpers.AddQueryString(AppRoutes.CheckoutSimulator, "ref", reference)
             : reference;
         return Task.FromResult(new ProviderInitiation(reference, checkout));
     }
@@ -38,7 +39,7 @@ internal sealed class MockPaymentProvider(
         byte[] supplied;
         try { supplied = Convert.FromHexString(signature); }
         catch { throw InvalidSignature(); }
-        var expected = HMACSHA256.HashData(_secret, payload.Span);
+        var expected = HMACSHA256.HashData(Secret, payload.Span);
         if (supplied.Length != expected.Length
             || !CryptographicOperations.FixedTimeEquals(supplied, expected))
             throw InvalidSignature();
@@ -71,7 +72,7 @@ internal sealed class MockPaymentProvider(
             currency,
             succeeded
         }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
-        var signature = Convert.ToHexString(HMACSHA256.HashData(_secret, payload));
+        var signature = Convert.ToHexString(HMACSHA256.HashData(Secret, payload));
         return (payload, signature);
     }
 

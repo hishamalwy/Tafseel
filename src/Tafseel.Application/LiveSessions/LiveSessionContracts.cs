@@ -17,6 +17,7 @@ public sealed record BookLiveSession(
 public sealed record RescheduleLiveSession(
     DateTime LocalStart,
     [param: Required, NotWhiteSpace, StringLength(100)] string TimeZoneId);
+public sealed record RespondToLiveSessionReschedule(bool Accept);
 
 public sealed record LiveSessionDto(
     Guid Id, string StudentId, string TeacherId, Guid TeacherServiceId, string Title, string Notes,
@@ -27,7 +28,12 @@ public sealed record LiveSessionDto(
     string? StudentDisplayName = null, string? TeacherDisplayName = null,
     string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null,
     Guid? ServiceCatalogItemId = null, string? CatalogCode = null, string? CategoryCode = null,
-    string? OrderType = null, string? ServiceNameEnglish = null, string? ServiceNameArabic = null);
+    string? OrderType = null, string? ServiceNameEnglish = null, string? ServiceNameArabic = null,
+    decimal TeacherCommissionPercent = 0, decimal TeacherCommissionAmount = 0, decimal TeacherNet = 0,
+    bool HasReview = false, Guid? DisputeId = null,
+    DateTimeOffset? ProposedStartsAt = null, DateTimeOffset? ProposedEndsAt = null,
+    string? RescheduleRequestedById = null, DateTimeOffset? RescheduleRequestedAt = null,
+    DateTimeOffset? OutcomeReviewDeadline = null, bool PassiveReviewRequired = false);
 
 public sealed record BookableSlotDto(
     DateTimeOffset StartsAt, DateTimeOffset EndsAt, DateTime StudentLocalStart, string StudentTimeZoneId);
@@ -74,9 +80,11 @@ public interface ILiveSessionService
     Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct);
     Task<PagedResult<LiveSessionDto>> GetMineAsync(string userId, int page, int pageSize, CancellationToken ct);
     Task RescheduleAsync(string userId, Guid id, RescheduleLiveSession input, string version, CancellationToken ct);
+    Task RespondToRescheduleAsync(string userId, Guid id, bool accept, string version, CancellationToken ct);
     Task CancelAsync(string userId, Guid id, string version, CancellationToken ct);
     Task CompleteAsync(string teacherId, Guid id, string version, CancellationToken ct);
     Task MarkNoShowAsync(string userId, Guid id, bool studentNoShow, string version, CancellationToken ct);
+    Task ConfirmSettlementAsync(string userId, Guid id, string version, CancellationToken ct);
     Task<AttachmentDto> AddAttachmentAsync(string userId, Guid id, Stream stream, string fileName, string contentType, long size, string version, CancellationToken ct);
     Task<PrivateFile> OpenAttachmentAsync(string userId, Guid attachmentId, CancellationToken ct);
     Task<JoinSessionDto> JoinAsync(string userId, Guid id, CancellationToken ct);
@@ -94,4 +102,9 @@ public sealed class LiveSessionOptions
     public decimal EmergencyPremiumPercent { get; init; } = 50;
     public int CancellationWindowHours { get; init; } = 24;
     public int JoinWindowMinutes { get; init; } = 15;
+    public int NoShowGraceMinutes { get; init; } = 15;
+    public int SettlementReviewHours { get; init; } = 24;
+
+    public DateTimeOffset PassiveOutcomeDeadline(DateTimeOffset endsAt) =>
+        endsAt.AddMinutes(NoShowGraceMinutes).AddHours(SettlementReviewHours);
 }

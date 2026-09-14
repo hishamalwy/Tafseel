@@ -73,18 +73,20 @@ internal sealed class CatalogService(
             if (!includeInactive)
                 query = query.Where(x => db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
             if (subjectId.HasValue) query = query.Where(x => x.SubjectId == subjectId);
+            // Positional (no named/optional arguments): this projection is translated by EF as an
+            // expression tree. Trailing four are NameAr, DescriptionAr, NameEn, DescriptionEn.
             return await query.Select(x => new CatalogItemDto(
                 x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, x.NameAr, null, x.Name, null))
                 .ToArrayAsync(ct);
         }
     }
 
-    public async Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken ct) =>
-        await Query(db.EducationLevels, includeInactive)
-            .Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null))
-            .ToArrayAsync(ct);
+    public async Task<IReadOnlyCollection<CatalogItemDto>> GetEducationLevelsAsync(bool includeInactive, CancellationToken ct)
+    {
+        var levels = await Query(db.EducationLevels, includeInactive).ToArrayAsync(ct);
+        return levels.Select(x => new CatalogItemDto(x.Id, x.Name, x.IsActive, NameAr: x.NameAr)).ToArray();
+    }
 
     public async Task<IReadOnlyCollection<CatalogItemDto>> GetLanguagesAsync(bool includeInactive, CancellationToken ct) =>
         await Query(db.TeachingLanguages, includeInactive)
@@ -146,8 +148,8 @@ internal sealed class CatalogService(
     public async Task<CatalogItemDto> CreateTopicAsync(TopicInput input, CancellationToken ct)
     {
         await RequireActiveSubject(input.SubjectId, ct);
-        return await AddAsync(new Topic(input.SubjectId, input.Name, input.Difficulty),
-            x => new(x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId), ct);
+        return await AddAsync(new Topic(input.SubjectId, input.Name, input.Difficulty, input.NameAr),
+            x => new(x.Id, x.Name, x.IsActive, x.Difficulty, x.SubjectId, NameAr: x.NameAr, NameEn: x.Name), ct);
     }
 
     public async Task<CatalogItemDto> CreateQualificationTopicAsync(QualificationTopicInput input, CancellationToken ct)
@@ -166,8 +168,12 @@ internal sealed class CatalogService(
                 NameAr: string.IsNullOrWhiteSpace(x.TitleAr) ? x.NameAr : x.TitleAr), ct);
     }
 
-    public Task<CatalogItemDto> CreateEducationLevelAsync(NamedCatalogInput input, CancellationToken ct) =>
-        AddAsync(new EducationLevel(input.Name), x => new(x.Id, x.Name, x.IsActive), ct);
+    public Task<CatalogItemDto> CreateEducationLevelAsync(NamedCatalogInput input, CancellationToken ct)
+    {
+        var level = new EducationLevel(input.Name);
+        level.Rename(input.Name, input.NameAr);
+        return AddAsync(level, x => new(x.Id, x.Name, x.IsActive, NameAr: x.NameAr), ct);
+    }
 
     public Task<CatalogItemDto> CreateLanguageAsync(NamedCatalogInput input, CancellationToken ct) =>
         AddAsync(new TeachingLanguage(input.Name, input.Detail ?? ""),
@@ -216,7 +222,7 @@ internal sealed class CatalogService(
                     input.Name, input.Detail ?? "", input.NameAr, input.DisplayOrder);
                 break;
             case "topics":
-                (await Required(db.Topics, id, ct)).Update(input.Name, input.Detail ?? "");
+                (await Required(db.Topics, id, ct)).Update(input.Name, input.Detail ?? "", input.NameAr);
                 break;
             case "qualification-topics":
                 var qualificationTopic = await Required(db.QualificationTopics, id, ct);
@@ -233,7 +239,7 @@ internal sealed class CatalogService(
                     qualificationTopic.DisplayOrder);
                 break;
             case "education-levels":
-                (await Required(db.EducationLevels, id, ct)).Rename(input.Name);
+                (await Required(db.EducationLevels, id, ct)).Rename(input.Name, input.NameAr);
                 break;
             case "languages":
                 (await Required(db.TeachingLanguages, id, ct)).Update(input.Name, input.Detail ?? "");

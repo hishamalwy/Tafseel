@@ -44,14 +44,17 @@ internal sealed class AzureBlobFileStorageService : IFileStorageService
     }
 
     public async Task<StoredFile> StorePrivateVideoAsync(
-        Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken)
+        Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken,
+        bool videoOnly = true)
     {
-        PrivateMediaRules.EnsureDemo(fileName, contentType, size, _options.MaxDemoBytes);
-        await using var buffered = await BufferWithHeaderAsync(stream, 12, cancellationToken);
-        PrivateMediaRules.EnsureDemoHeader(buffered.Header);
-        var key = PrivateMediaRules.NewKey("teacher-demos", ".mp4");
-        await UploadAsync(key, buffered.Body, contentType, cancellationToken);
-        return new(key, size, contentType);
+        await using var buffered = await BufferWithHeaderAsync(
+            stream, PrivateMediaRules.TeacherMediaHeaderLength, cancellationToken);
+        var detected = PrivateMediaRules.EnsureTeacherMedia(
+            fileName, contentType, size, _options.MaxDemoBytes,
+            buffered.Header, buffered.HeaderLength, videoOnly);
+        var key = PrivateMediaRules.NewKey("teacher-demos", detected.Extension);
+        await UploadAsync(key, buffered.Body, detected.ContentType, cancellationToken);
+        return new(key, size, detected.ContentType);
     }
 
     public Task<Stream> OpenPrivateVideoAsync(string storageKey, CancellationToken cancellationToken)
@@ -75,12 +78,30 @@ internal sealed class AzureBlobFileStorageService : IFileStorageService
         Stream stream, string fileName, string contentType, long size, string category,
         CancellationToken cancellationToken)
     {
-        PrivateMediaRules.EnsureAttachment(fileName, contentType, size, category, _options.MaxAttachmentBytes, out var extension);
-        await using var buffered = await BufferWithHeaderAsync(stream, 8, cancellationToken);
-        PrivateMediaRules.EnsureAttachmentHeader(extension, buffered.Header, buffered.HeaderLength);
+        string extension;
+        string storedType;
+        var headerLength = string.Equals(category, "order-deliveries", StringComparison.Ordinal)
+            ? PrivateMediaRules.TeacherMediaHeaderLength
+            : 8;
+        await using var buffered = await BufferWithHeaderAsync(stream, headerLength, cancellationToken);
+        if (string.Equals(category, "order-deliveries", StringComparison.Ordinal))
+        {
+            var detected = PrivateMediaRules.EnsureDeliveryAttachment(
+                fileName, contentType, size, _options.MaxAttachmentBytes,
+                buffered.Header, buffered.HeaderLength);
+            extension = detected.Extension;
+            storedType = detected.ContentType;
+        }
+        else
+        {
+            storedType = PrivateMediaRules.EnsureAttachment(
+                fileName, contentType, size, category, _options.MaxAttachmentBytes, out extension);
+            PrivateMediaRules.EnsureAttachmentHeader(extension, buffered.Header, buffered.HeaderLength);
+        }
+
         var key = PrivateMediaRules.NewKey(category, extension);
-        await UploadAsync(key, buffered.Body, contentType, cancellationToken);
-        return new(key, size, contentType);
+        await UploadAsync(key, buffered.Body, storedType, cancellationToken);
+        return new(key, size, storedType);
     }
 
     public async Task<Stream> OpenPrivateFileAsync(string storageKey, CancellationToken cancellationToken)

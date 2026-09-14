@@ -15,26 +15,44 @@ public sealed record AcceptLearningRequest(
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal FinalPrice,
     [param: Required, RegularExpression("^[A-Za-z]{3}$")] string Currency,
     DateTimeOffset AgreedDeliveryAt,
-    [param: Range(0, 20)] int RevisionAllowance);
+    [param: Range(0, 20)] int RevisionAllowance,
+    [param: Range(1, 8760)] int? DeliveryHours = null);
 
 public sealed record MessageInput(
     [param: Required, NotWhiteSpace, StringLength(2000)] string Message);
 public sealed record ReasonInput(
     [param: Required, NotWhiteSpace, StringLength(2000)] string Reason);
+public sealed record RequestOrderExtension(
+    DateTimeOffset ProposedDeliveryAt,
+    [param: Required, NotWhiteSpace, StringLength(2000)] string Reason);
+public sealed record RespondOrderExtension(
+    bool Accept,
+    [param: StringLength(2000)] string? Response);
+public sealed record OrderExtensionDto(
+    Guid Id, string RequestedById, string? RespondedById, DateTimeOffset ProposedDeliveryAt,
+    string Reason, string Response, OrderExtensionStatus Status, DateTimeOffset CreatedAt);
 
 public sealed record AttachmentDto(
     Guid Id, string OriginalName, string ContentType, long Size, DateTimeOffset CreatedAt,
     string? Version = null);
 public sealed record ClarificationDto(Guid Id, string SenderId, string Message, DateTimeOffset CreatedAt);
 public sealed record LearningRequestDto(
-    Guid Id, string StudentId, string TeacherId, Guid TeacherServiceId, string Title, string Description,
+    Guid Id, string StudentId, string? TeacherId, Guid? TeacherServiceId, string Title, string Description,
     DateTimeOffset PreferredDeliveryAt, decimal? Budget, LearningRequestStatus Status,
     DateTimeOffset CreatedAt, IReadOnlyCollection<AttachmentDto> Attachments,
     IReadOnlyCollection<ClarificationDto> Clarifications, string Version,
     string? StudentDisplayName = null, string? TeacherDisplayName = null,
     string? StudentDisplayNameEnglish = null, string? TeacherDisplayNameEnglish = null,
     Guid? ServiceCatalogItemId = null, string? CatalogCode = null, string? CategoryCode = null,
-    string? OrderType = null, string? ServiceNameEnglish = null, string? ServiceNameArabic = null);
+    string? OrderType = null, string? ServiceNameEnglish = null, string? ServiceNameArabic = null,
+    RequestSourcingMode SourcingMode = RequestSourcingMode.Direct,
+    Guid? SelectedOfferId = null, DateTimeOffset? PaymentReservationExpiresAt = null,
+    /// <summary>Live Offers on an open-sourced request, counted with the same rule as
+    /// <c>OpenRequestDto.OfferCount</c> (withdrawn and expired Offers excluded). Null for
+    /// direct requests, which are never offered against.</summary>
+    int? OfferCount = null,
+    OrderStatus? ResultOrderStatus = null,
+    OrderPaymentStatus? ResultPaymentStatus = null);
 
 public sealed record OrderDto(
     Guid Id, Guid LearningRequestId, string StudentId, string TeacherId, Guid TeacherServiceId,
@@ -54,9 +72,19 @@ public sealed record OrderDto(
     string? ReviewComment = null,
     bool? ReviewIsVisible = null,
     DateTimeOffset? ReviewCreatedAt = null,
-    bool ReviewCanSubmit = false);
+    bool ReviewCanSubmit = false,
+    bool IsOverdue = false,
+    bool CanReportNonDelivery = false,
+    IReadOnlyCollection<OrderExtensionDto>? Extensions = null);
+
+public sealed class OrderLifecycleOptions
+{
+    public const string SectionName = "Orders";
+    public int NonDeliveryGraceHours { get; init; } = 24;
+}
 public sealed record DeliveryDto(
     Guid Id, string OriginalName, string ContentType, long Size, string Message, DateTimeOffset CreatedAt);
+public sealed record DeliveryUpload(Stream Stream, string FileName, string ContentType, long Size);
 
 public sealed record OrderTimelineMetadataDto(int? RevisionSequence = null, string? OriginalName = null);
 public sealed record OrderTimelineEventDto(
@@ -84,11 +112,15 @@ public interface IOrderService
     Task<IReadOnlyCollection<OrderTimelineEventDto>> GetTimelineAsync(
         string userId, Guid orderId, CancellationToken ct);
     Task StartOrderAsync(string teacherId, Guid orderId, string version, CancellationToken ct);
-    Task<DeliveryDto> DeliverAsync(string teacherId, Guid orderId, Stream stream, string fileName, string contentType, long size, string message, string version, CancellationToken ct);
+    Task<DeliveryDto> DeliverAsync(
+        string teacherId, Guid orderId, IReadOnlyList<DeliveryUpload> uploads, string message, string version,
+        CancellationToken ct);
     Task<PrivateFile> OpenDeliveryAsync(string userId, Guid deliveryId, CancellationToken ct);
     Task RequestRevisionAsync(string studentId, Guid orderId, string reason, string version, CancellationToken ct);
     Task CompleteAsync(string studentId, Guid orderId, string version, CancellationToken ct);
     Task CancelOrderAsync(string userId, Guid orderId, string version, CancellationToken ct);
+    Task RequestExtensionAsync(string userId, Guid orderId, RequestOrderExtension input, string version, CancellationToken ct);
+    Task RespondToExtensionAsync(string userId, Guid orderId, Guid extensionId, RespondOrderExtension input, string version, CancellationToken ct);
 }
 
 public sealed class FeeOptions

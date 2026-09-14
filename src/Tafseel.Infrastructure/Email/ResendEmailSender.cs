@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Resend;
 using Tafseel.Application.Email;
 
@@ -8,8 +8,8 @@ public sealed class EmailOptions
 {
     public const string SectionName = "Email";
     public string From { get; init; } = "Tafseel <onboarding@resend.dev>";
-    public string PasswordResetUrl { get; init; } = "http://localhost:5500/Tafseel-Auth.dc.html";
-    public string ConfirmationUrl { get; init; } = "http://localhost:5500/Tafseel-Auth.dc.html";
+    public string PasswordResetUrl { get; init; } = "http://localhost:4200/auth";
+    public string ConfirmationUrl { get; init; } = "http://localhost:4200/auth";
     public string AppBaseUrl { get; init; } = "http://localhost:5500";
 }
 

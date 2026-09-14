@@ -1,11 +1,16 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Text;
+using System.IO.Compression;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -17,11 +22,56 @@ using Tafseel.Infrastructure.Messaging;
 using Tafseel.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+// The server-owned Host JSON is the Staging baseline. Environment variables remain
+// higher priority for emergency per-setting overrides, following normal .NET precedence.
+builder.Configuration.AddJsonFile(
+    $"appsettings.{builder.Environment.EnvironmentName}.Host.json",
+    optional: true,
+    reloadOnChange: false);
+var configurationSources = builder.Configuration.Sources;
+var hostJsonSource = configurationSources[^1];
+configurationSources.RemoveAt(configurationSources.Count - 1);
+var environmentSourceIndex = -1;
+for (var i = 0; i < configurationSources.Count; i++)
+{
+    if (configurationSources[i] is Microsoft.Extensions.Configuration.EnvironmentVariables
+        .EnvironmentVariablesConfigurationSource)
+        environmentSourceIndex = i;
+}
+if (environmentSourceIndex >= 0)
+    configurationSources.Insert(environmentSourceIndex, hostJsonSource);
+else
+    configurationSources.Add(hostJsonSource);
+
+if (builder.Environment.IsProduction()
+    && builder.Configuration.GetValue<bool>("Security:AllowInsecureRefreshCookie"))
+    throw new InvalidOperationException("Production cannot allow insecure refresh cookies.");
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration).WriteTo.Console());
 
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+    options.HttpsPort = 443;
+});
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(180);
+    options.IncludeSubDomains = false;
+    options.Preload = false;
+});
 
 var applicationInsightsConnection =
     builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
@@ -144,7 +194,10 @@ builder.Services.AddRateLimiter(options =>
                 ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = builder.Environment.IsEnvironment("Testing") ? 10000 : 300,
+                // Visual QA / Playwright matrices burn through public discovery calls quickly in local Development.
+                PermitLimit = builder.Environment.IsEnvironment("Testing")
+                    ? 10000
+                    : builder.Environment.IsDevelopment() ? 5000 : 300,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
@@ -190,9 +243,7 @@ builder.Services.AddRateLimiter(options =>
         }));
     options.AddPolicy("ai", context =>
     {
-        // Rate limiting runs before authentication in this established pipeline. Partition by a
-        // one-way hash of the bearer value so distinct Students do not share the IP bucket and the
-        // token itself is never retained as limiter state.
+        // Keep unauthenticated AI traffic isolated without retaining bearer tokens as limiter state.
         var authorization = context.Request.Headers.Authorization.ToString();
         var key = string.IsNullOrWhiteSpace(authorization)
             ? context.Connection.RemoteIpAddress?.ToString() ?? "unknown"
@@ -234,7 +285,38 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+var enforceHttps = app.Environment.IsProduction()
+    || app.Configuration.GetValue<bool>("Security:EnforceHttps");
 
+// The client shell carries one inline script - the snippet that reads the saved
+// theme and stamps it on <html> before first paint, which cannot be an external
+// file without reintroducing the flash it exists to prevent. Allowing it by hash
+// keeps script-src free of 'unsafe-inline', and reading the hash from the shipped
+// file rather than hard-coding it means editing the snippet cannot silently
+// break the page: whatever ships is what is allowed.
+var inlineScriptHashes = string.Concat(
+    ClientShellScriptHashes(Path.Combine(AppContext.BaseDirectory, "webclient"))
+        .Select(hash => $" 'sha256-{hash}'"));
+
+static IEnumerable<string> ClientShellScriptHashes(string webClientRoot)
+{
+    if (!Directory.Exists(webClientRoot)) return [];
+    var hashes = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var shell in Directory.EnumerateFiles(webClientRoot, "*.html", SearchOption.AllDirectories))
+    {
+        foreach (Match match in InlineScript().Matches(File.ReadAllText(shell)))
+        {
+            // An empty body is a <script> that does nothing; hashing it would
+            // publish the hash of the empty string for no reason.
+            var body = match.Groups[1].Value;
+            if (string.IsNullOrWhiteSpace(body)) continue;
+            hashes.Add(Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(body))));
+        }
+    }
+    return hashes;
+}
+
+app.UseResponseCompression();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
@@ -244,25 +326,36 @@ app.Use(async (context, next) =>
     headers.XContentTypeOptions = "nosniff";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     headers.Append("X-Frame-Options", "DENY");
-    headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+    // Browsers ignore COOP on untrustworthy origins (http://127.0.0.1). Keep it
+    // on localhost and HTTPS so the header still protects those surfaces.
+    var host = context.Request.Host.Host;
+    if (context.Request.IsHttps
+        || string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+        headers.Append("Cross-Origin-Opener-Policy", "same-origin");
+    headers.Append("Cross-Origin-Resource-Policy", "same-origin");
+    headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), display-capture=()");
+    var transportPolicy = enforceHttps ? "; upgrade-insecure-requests" : "";
     headers.Append("Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; " +
-        "font-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' wss:; " +
-        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
+        $"default-src 'self'; script-src 'self' 'unsafe-eval'{inlineScriptHashes}; style-src 'self' 'unsafe-inline'; " +
+        // The protected-file viewer fetches a delivery as a blob and shows it
+        // from an object URL, so blob: has to be a legal source for the three
+        // media kinds it renders and for the frame the PDF viewer uses. Framing
+        // stays same-origin - frame-ancestors 'none' still denies everyone else.
+        "font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; " +
+        "frame-src 'self' blob:; connect-src 'self' wss:; " +
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" + transportPolicy);
     if (context.Request.Path.StartsWithSegments("/api"))
     {
         headers.CacheControl = "no-store";
         headers.Pragma = "no-cache";
     }
-    else if (context.Request.Path.StartsWithSegments("/app"))
+    else if (!context.Response.Headers.ContainsKey("Cache-Control"))
     {
-        // Phase 4 Sprint 0.4: none of these files carry a content hash in their URL (a handful
-        // have an incidental "?v=" query string, most do not), so per the smallest safe policy
-        // for unfingerprinted assets, everything under /app must revalidate on every request
-        // rather than being cached long-term/immutably. This applies uniformly to the .dc.html
-        // template shells and to js/css/support.js/fonts/images, closing the exact "a client with
-        // a stale cached copy stays vulnerable after a server-side fix ships" gap Sprint 0.3 found
-        // for the F-013 markup fix, and for any future fix to these same static files.
+        // Sprint 0.4 made every static file revalidate, because none of the legacy
+        // ones carried a content hash and a stale copy would survive a security fix.
+        // The Angular build hashes its asset names, so those are safe to cache
+        // immutably and are given that header where they are served; anything that
+        // reaches here without one - the HTML shells above all - still revalidates.
         headers.CacheControl = "no-cache";
     }
     await next();
@@ -274,24 +367,67 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+if (enforceHttps)
+{
     app.UseHsts();
-app.UseHttpsRedirection();
+    app.UseHttpsRedirection();
+}
 app.UseCors();
-app.UseRateLimiter();
+
+// Serves the client's own files - hashed bundles, fonts, images - straight from
+// disk. Their names change whenever their bytes do, so a year-long immutable
+// cache is safe and is the whole point of the hashing; the HTML shells are not
+// served here, they go through the fallback below and keep revalidating.
+var webClientFiles = Path.Combine(AppContext.BaseDirectory, "webclient");
+if (Directory.Exists(webClientFiles))
+{
+    // The stylesheet reaches its fonts and marks as `/assets/...`, because it is
+    // also the design-lab's stylesheet and that is served from a domain root.
+    // The built client puts a copy under every locale, so one of them answers
+    // that path: the files are images and fonts, identical in both.
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        RequestPath = "/assets",
+        FileProvider = new PhysicalFileProvider(Path.Combine(webClientFiles, "en", "assets")),
+        OnPrepareResponse = ctx =>
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=604800"
+    });
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(webClientFiles),
+        ServeUnknownFileTypes = false,
+        OnPrepareResponse = ctx =>
+        {
+            var name = ctx.File.Name;
+            var hashed = !name.EndsWith(".html", StringComparison.OrdinalIgnoreCase)
+                && HashedAsset().IsMatch(name);
+            ctx.Context.Response.Headers.CacheControl =
+                hashed ? "public, max-age=31536000, immutable" : "no-cache";
+        }
+    });
+}
+
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<MessagingHub>("/hubs/messages");
 
+// ---- legacy pages --------------------------------------------------------
+// The .dc.html pages are still the site. They are served from an allowlist so a
+// path cannot reach anything the list does not name.
 var frontendRoot = Path.Combine(AppContext.BaseDirectory, "frontend");
 var frontendPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     "Tafseel-Landing.dc.html", "Tafseel-Browse-Teachers.dc.html", "Tafseel-Teacher-Profile.dc.html",
     "Tafseel-Request.dc.html", "Tafseel-Student-Dashboard.dc.html", "Tafseel-Teacher-Dashboard.dc.html",
     "Tafseel-Quality-Dashboard.dc.html", "Tafseel-Admin-Dashboard.dc.html", "Tafseel-Auth.dc.html",
+    "Tafseel-Confirm-Email.dc.html",
     "Tafseel-Teacher-Apply.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html",
-    "Tafseel-Mock-Checkout.dc.html"
+    "Tafseel-Mock-Checkout.dc.html", "Tafseel-Open-Marketplace.dc.html",
+    "Tafseel-Disputes.dc.html", "Tafseel-Policies.dc.html",
+    "Tafseel-About.dc.html"
 };
 app.MapGet("/", () => Results.Redirect("/app/Tafseel-Landing.dc.html"));
 app.MapGet("/app/Tafseel-Chat.dc.html", () => Results.Redirect("/app/Tafseel-Student-Dashboard.dc.html?section=messages", permanent: true));
@@ -302,7 +438,7 @@ app.MapGet("/app/{file}", (string file) =>
 app.MapGet("/app/support.js", () =>
     Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
 app.MapGet("/app/js/{file}", (string file) =>
-    file is "locales.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js" or "media-preview.js"
+    file is "locales.js" or "open-marketplace-locales.js" or "open-marketplace.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js" or "media-preview.js"
         or "guided-request.js" or "boot-prefs.js"
         ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
         : Results.NotFound());
@@ -314,16 +450,22 @@ app.MapGet("/app/css/tafseel.css", () =>
     Results.File(Path.Combine(frontendRoot, "css", "tafseel.css"), "text/css; charset=utf-8"));
 app.MapGet("/app/assets/brand/{file}", (string file) =>
 {
-    var contentType = file switch
+    var name = Path.GetFileName(file);
+    if (string.IsNullOrWhiteSpace(name) || !string.Equals(name, file, StringComparison.Ordinal))
+        return Results.NotFound();
+    var contentType = Path.GetExtension(name).ToLowerInvariant() switch
     {
-        "tafseel-mark.png" or "tafseel-mark-dark.png" => "image/png",
-        "favicon.ico" => "image/x-icon",
-        "default-avatar.svg" => "image/svg+xml",
+        ".png" => "image/png",
+        ".svg" => "image/svg+xml",
+        ".ico" => "image/x-icon",
         _ => null
     };
-    return contentType is null
-        ? Results.NotFound()
-        : Results.File(Path.Combine(frontendRoot, "assets", "brand", file), contentType);
+    if (contentType is null)
+        return Results.NotFound();
+    var path = Path.Combine(frontendRoot, "assets", "brand", name);
+    return System.IO.File.Exists(path)
+        ? Results.File(path, contentType)
+        : Results.NotFound();
 });
 app.MapGet("/favicon.ico", () =>
     Results.File(Path.Combine(frontendRoot, "assets", "brand", "favicon.ico"), "image/x-icon"));
@@ -344,6 +486,88 @@ app.MapGet("/app/assets/fonts/inter/{file}", (string file) =>
         or "inter-semibold.woff2" or "inter-bold.woff2"
         ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "inter", file), "font/woff2")
         : Results.NotFound());
+app.MapGet("/app/assets/fonts/saudi-riyal/{file}", (string file) =>
+{
+    var contentType = file switch
+    {
+        "saudi-riyal.woff2" => "font/woff2",
+        "saudi-riyal.ttf" => "font/ttf",
+        _ => null
+    };
+    return contentType is null
+        ? Results.NotFound()
+        : Results.File(Path.Combine(frontendRoot, "assets", "fonts", "saudi-riyal", file), contentType);
+});
+
+// ---- web client ----------------------------------------------------------
+// The Angular client publishes as one directory per locale (webclient/ar,
+// webclient/en), each a complete app with hashed asset names and its own
+// index.csr.html shell. There is no Node on this host, so the SSR build's
+// server/ half is not deployed: the sixteen prerendered routes ship as real
+// index.html files and everything else renders in the browser.
+var webClientRoot = Path.Combine(AppContext.BaseDirectory, "webclient");
+string[] locales = ["ar", "en"];
+
+
+app.MapFallback(async context =>
+{
+    var path = context.Request.Path.Value ?? "/";
+
+    // A server path that reached the fallback matched no endpoint, and the answer
+    // to that is 404 - not a redirect into the client. Without this an unknown
+    // /api path answers a caller expecting JSON with a redirect to an HTML page.
+    if (context.Request.Path.StartsWithSegments("/api")
+        || context.Request.Path.StartsWithSegments("/hubs")
+        || context.Request.Path.StartsWithSegments("/health"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+    var locale = segments.Length > 0 ? segments[0].ToLowerInvariant() : "";
+
+    // A path that does not name a locale is one of two things: a reader opening
+    // the site root, or a stored link the server itself minted (AppRoutes writes
+    // them without a locale, so one link stays right for a reader in either
+    // language). Both are answered by negotiating and redirecting once.
+    if (!locales.Contains(locale))
+    {
+        var wanted = PreferredLocale(context.Request.Headers.AcceptLanguage);
+        context.Response.Redirect($"/{wanted}{path}{context.Request.QueryString}");
+        return;
+    }
+
+    // A prerendered route is a real file (ar/about/index.html); everything else
+    // gets that locale's client shell and renders from the URL.
+    var rest = string.Join(Path.DirectorySeparatorChar, segments.Skip(1));
+    var prerendered = Path.Combine(webClientRoot, locale, rest, "index.html");
+    var shell = Path.Combine(webClientRoot, locale, "index.csr.html");
+    var file = File.Exists(prerendered) ? prerendered : shell;
+    if (!File.Exists(file))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    context.Response.ContentType = "text/html; charset=utf-8";
+    await context.Response.SendFileAsync(file);
+});
+
+// Arabic is the default: the reader who states no preference, or states one we
+// do not publish, is far likelier to want it than English on this market.
+static string PreferredLocale(StringValues acceptLanguage)
+{
+    foreach (var entry in acceptLanguage.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var tag = entry.Split(';')[0].Trim();
+        if (tag.StartsWith("en", StringComparison.OrdinalIgnoreCase)) return "en";
+        if (tag.StartsWith("ar", StringComparison.OrdinalIgnoreCase)) return "ar";
+    }
+    return "ar";
+}
+
+
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
@@ -356,7 +580,17 @@ await IdentityInitialization.RunAsync(
 
 app.Run();
 
-public partial class Program;
+public partial class Program
+{
+    /// <summary>Angular names a built asset `main-A1B2C3D4.js`; that hash is what makes it safe to cache forever.</summary>
+
+
+    /// <summary>An inline &lt;script&gt; - one with no src attribute - and its body.</summary>
+    [GeneratedRegex(@"<script(?![^>]*src=)[^>]*>(.*?)</script>", RegexOptions.Singleline)]
+    private static partial Regex InlineScript();
+    [GeneratedRegex(@"-[A-Za-z0-9_]{8,}\.[a-z0-9]+$")]
+    private static partial Regex HashedAsset();
+}
 
 internal static class IdentityInitialization
 {

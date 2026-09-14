@@ -30,6 +30,15 @@ public sealed class PaymentsController(IFinancialService finance, IPaymentProvid
         CancellationToken ct) =>
         await finance.InitiateLiveSessionPaymentAsync(UserId(), liveSessionBookingId, key, body?.CouponCode, ct);
 
+    [Authorize(Policy = Permissions.PaymentsViewOwn), EnableRateLimiting("payment")]
+    [HttpPost("payments/open-requests/{learningRequestId:guid}")]
+    public Task<PaymentInitiationDto> InitiateOpenRequest(
+        Guid learningRequestId,
+        [FromHeader(Name = "Idempotency-Key"), Required] string key,
+        [FromBody] ApplyCouponRequest? body,
+        CancellationToken ct) =>
+        finance.InitiateOpenRequestPaymentAsync(UserId(), learningRequestId, key, body?.CouponCode, ct);
+
     [Authorize(Policy = Permissions.PaymentsViewOwn), HttpGet("payments/{id:guid}")]
     public Task<PaymentDto> Get(Guid id, CancellationToken ct) =>
         finance.GetPaymentAsync(UserId(), id, ct);
@@ -61,8 +70,9 @@ public sealed class PaymentsController(IFinancialService finance, IPaymentProvid
 
     [Authorize(Policy = Permissions.PaymentsManage), HttpPost("payments/{id:guid}/refund")]
     public Task<RefundDto> Refund(
-        Guid id, [FromHeader(Name = "Idempotency-Key"), Required] string key, CancellationToken ct) =>
-        finance.RefundAsync(UserId(), id, key, ct);
+        Guid id, AdminRefundRequest input,
+        [FromHeader(Name = "Idempotency-Key"), Required] string key, CancellationToken ct) =>
+        finance.RefundAsync(UserId(), id, input.Reason, key, ct);
 
     [Authorize(Policy = Permissions.WithdrawalsRequest), HttpPost("withdrawals")]
     public Task<WithdrawalDto> RequestWithdrawal(
@@ -73,6 +83,22 @@ public sealed class PaymentsController(IFinancialService finance, IPaymentProvid
     [Authorize(Policy = Permissions.WithdrawalsRequest), HttpGet("withdrawals/balances")]
     public Task<IReadOnlyCollection<BalanceDto>> Balances(CancellationToken ct) =>
         finance.GetBalancesAsync(UserId(), ct);
+
+    [Authorize(Policy = Permissions.WithdrawalsRequest), HttpGet("withdrawals/policy")]
+    public WithdrawalPolicyDto WithdrawalPolicy() => finance.GetWithdrawalPolicy();
+
+    [Authorize(Policy = Permissions.WithdrawalsRequest), HttpGet("withdrawals/mine")]
+    public Task<Application.Common.PagedResult<WithdrawalDto>> MyWithdrawals(
+        int page = 1, int pageSize = 50, CancellationToken ct = default) =>
+        finance.GetMyWithdrawalsAsync(UserId(), page, pageSize, ct);
+
+    [Authorize(Policy = Permissions.WithdrawalsRequest), HttpGet("withdrawals/profile")]
+    public Task<PayoutProfileDto?> MyPayoutProfile(CancellationToken ct) =>
+        finance.GetPayoutProfileAsync(UserId(), ct);
+
+    [Authorize(Policy = Permissions.WithdrawalsRequest), HttpPut("withdrawals/profile")]
+    public Task<PayoutProfileDto> SubmitPayoutProfile(SubmitPayoutProfile input, CancellationToken ct) =>
+        finance.SubmitPayoutProfileAsync(UserId(), input, ct);
 
     [Authorize(Policy = Permissions.WithdrawalsReview), HttpPost("withdrawals/{id:guid}/process")]
     public Task<WithdrawalDto> ProcessWithdrawal(
@@ -87,6 +113,27 @@ public sealed class PaymentsController(IFinancialService finance, IPaymentProvid
         [FromQuery] Tafseel.Domain.Finance.WithdrawalStatus? status,
         int page = 1, int pageSize = 50, CancellationToken ct = default) =>
         finance.GetWithdrawalsAsync(status, page, pageSize, ct);
+
+    [Authorize(Policy = Permissions.WithdrawalsReview), HttpGet("admin/payout-profiles")]
+    public Task<Application.Common.PagedResult<PayoutProfileDto>> PayoutProfiles(
+        [FromQuery] Tafseel.Domain.Finance.PayoutVerificationStatus? status,
+        int page = 1, int pageSize = 50, CancellationToken ct = default) =>
+        finance.GetPayoutProfilesAsync(status, page, pageSize, ct);
+
+    [Authorize(Policy = Permissions.WithdrawalsReview), HttpPost("admin/payout-profiles/{teacherId}/review")]
+    public Task<PayoutProfileDto> ReviewPayoutProfile(
+        string teacherId, ReviewPayoutProfile input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        finance.ReviewPayoutProfileAsync(UserId(), teacherId, input, version, ct);
+
+    /// <summary>
+    /// Read-only FR-1 audit of coupon-discounted purchases against the immutable ledger and escrow trail.
+    /// Reports anomalies; it never repairs a balance.
+    /// </summary>
+    [Authorize(Policy = Permissions.ReportsView), HttpGet("admin/finance/reconciliation/coupons")]
+    public Task<CouponReconciliationReportDto> CouponReconciliation(
+        [FromQuery] int limit, CancellationToken ct) =>
+        finance.ReconcileCouponPurchasesAsync(limit <= 0 ? 100 : limit, ct);
 
     [Authorize(Policy = Permissions.ReportsView), HttpGet("admin/finance/reconciliation")]
     public Task<ReconciliationDto> Reconciliation(CancellationToken ct) =>

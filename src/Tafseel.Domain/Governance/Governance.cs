@@ -9,19 +9,34 @@ public sealed class TeacherReview
     public TeacherReview(Guid orderId, string studentId, string teacherId,
         int clarity, int knowledge, int communication, int onTime, int value,
         string comment, bool recommends, DateTimeOffset now)
+        : this(orderId, null, studentId, teacherId, clarity, knowledge, communication,
+            onTime, value, comment, recommends, now)
+    { }
+    public static TeacherReview ForLiveSession(Guid liveSessionBookingId, string studentId, string teacherId,
+        int clarity, int knowledge, int communication, int onTime, int value,
+        string comment, bool recommends, DateTimeOffset now) =>
+        new(null, liveSessionBookingId, studentId, teacherId, clarity, knowledge, communication,
+            onTime, value, comment, recommends, now);
+    private TeacherReview(Guid? orderId, Guid? liveSessionBookingId, string studentId, string teacherId,
+        int clarity, int knowledge, int communication, int onTime, int value,
+        string comment, bool recommends, DateTimeOffset now)
     {
         var scores = new[] { clarity, knowledge, communication, onTime, value };
         if (scores.Any(x => x is < 1 or > 5) || string.IsNullOrWhiteSpace(comment) || comment.Trim().Length > 2000)
             throw new DomainException("invalid_review", "Review scores and comment are invalid.");
         if (studentId == teacherId) throw new DomainException("self_review_forbidden", "Teachers cannot review themselves.");
-        Id = Guid.NewGuid(); OrderId = orderId; StudentId = studentId; TeacherId = teacherId;
+        if (orderId.HasValue == liveSessionBookingId.HasValue)
+            throw new DomainException("invalid_review", "A review must target one completed purchase.");
+        Id = Guid.NewGuid(); OrderId = orderId; LiveSessionBookingId = liveSessionBookingId;
+        StudentId = studentId; TeacherId = teacherId;
         ExplanationClarity = clarity; SubjectKnowledge = knowledge; Communication = communication;
         OnTimeDelivery = onTime; ValueForMoney = value;
         OverallScore = decimal.Round(scores.Sum() / 5m, 2, MidpointRounding.AwayFromZero);
         OriginalComment = comment.Trim(); Recommends = recommends; IsVisible = true; CreatedAt = now;
     }
     public Guid Id { get; private set; }
-    public Guid OrderId { get; private set; }
+    public Guid? OrderId { get; private set; }
+    public Guid? LiveSessionBookingId { get; private set; }
     public string StudentId { get; private set; } = "";
     public string TeacherId { get; private set; } = "";
     public int ExplanationClarity { get; private set; }
@@ -71,16 +86,29 @@ public sealed class Dispute
     private Dispute() { }
     public Dispute(Guid orderId, string studentId, string teacherId, string openedById,
         string reason, DateTimeOffset now)
+        : this(orderId, null, studentId, teacherId, openedById, reason, now) { }
+    public static Dispute ForLiveSession(Guid liveSessionBookingId, string studentId, string teacherId,
+        string openedById, string reason, DateTimeOffset now) =>
+        new(null, liveSessionBookingId, studentId, teacherId, openedById, reason, now);
+    public static Dispute ForAdminLiveSession(Guid liveSessionBookingId, string studentId, string teacherId,
+        string adminId, string reason, DateTimeOffset now) =>
+        new(null, liveSessionBookingId, studentId, teacherId, adminId, reason, now, administrative: true);
+    private Dispute(Guid? orderId, Guid? liveSessionBookingId, string studentId, string teacherId,
+        string openedById, string reason, DateTimeOffset now, bool administrative = false)
     {
-        if (openedById != studentId && openedById != teacherId)
+        if (!administrative && openedById != studentId && openedById != teacherId)
             throw new DomainException("dispute_not_owned", "Order was not found.");
         reason = Required(reason, 2000);
-        Id = Guid.NewGuid(); OrderId = orderId; StudentId = studentId; TeacherId = teacherId;
+        if (orderId.HasValue == liveSessionBookingId.HasValue)
+            throw new DomainException("invalid_dispute", "A dispute must target one paid purchase.");
+        Id = Guid.NewGuid(); OrderId = orderId; LiveSessionBookingId = liveSessionBookingId;
+        StudentId = studentId; TeacherId = teacherId;
         OpenedById = openedById; Reason = reason; Status = DisputeStatus.Open; CreatedAt = UpdatedAt = now;
         _history.Add(new(Id, null, Status, openedById, now));
     }
     public Guid Id { get; private set; }
-    public Guid OrderId { get; private set; }
+    public Guid? OrderId { get; private set; }
+    public Guid? LiveSessionBookingId { get; private set; }
     public string StudentId { get; private set; } = "";
     public string TeacherId { get; private set; } = "";
     public string OpenedById { get; private set; } = "";
@@ -93,14 +121,23 @@ public sealed class Dispute
     public IReadOnlyCollection<DisputeEvidence> Evidence => _evidence;
     public IReadOnlyCollection<DisputeStatusHistory> History => _history;
     public IReadOnlyCollection<DisputeDecision> Decisions => _decisions;
-    public void StartReview(string adminId, DateTimeOffset now)
+    public bool StartReview(string adminId, DateTimeOffset now)
     {
+        if (Status == DisputeStatus.UnderReview) return false;
         if (Status != DisputeStatus.Open) throw InvalidTransition();
         Transition(DisputeStatus.UnderReview, adminId, now);
+        return true;
     }
     public void AddMessage(string actorId, string body, DateTimeOffset now)
     {
-        RequireParticipant(actorId); _messages.Add(new(Id, actorId, Required(body, 2000), now)); UpdatedAt = now;
+        RequireParticipant(actorId);
+        if (Status == DisputeStatus.Resolved) throw InvalidTransition();
+        AddMessageCore(actorId, body, now);
+    }
+    public void AddReviewerMessage(string adminId, string body, DateTimeOffset now)
+    {
+        if (Status != DisputeStatus.UnderReview) throw InvalidTransition();
+        AddMessageCore(adminId, body, now);
     }
     public void AddEvidence(string actorId, string storageKey, string originalName,
         string contentType, long size, DateTimeOffset now)
@@ -114,10 +151,18 @@ public sealed class Dispute
     {
         if (Status == DisputeStatus.Resolved)
         {
-            if (_decisions.Single().IdempotencyKey == idempotencyKey) return false;
+            var decision = _decisions.Single();
+            if (decision.IdempotencyKey == idempotencyKey)
+            {
+                if (decision.Resolution == resolution
+                    && string.Equals(decision.Rationale, rationale?.Trim(), StringComparison.Ordinal))
+                    return false;
+                throw new DomainException("idempotency_conflict",
+                    "The Idempotency-Key was already used with a different dispute decision.");
+            }
             throw new DomainException("dispute_resolution_conflict", "Dispute was already resolved.");
         }
-        if (Status is not (DisputeStatus.Open or DisputeStatus.UnderReview)) throw InvalidTransition();
+        if (Status != DisputeStatus.UnderReview) throw InvalidTransition();
         _decisions.Add(new(Id, adminId, resolution, Required(rationale, 2000),
             Required(idempotencyKey, 100), now));
         Transition(DisputeStatus.Resolved, adminId, now); return true;
@@ -131,6 +176,10 @@ public sealed class Dispute
     {
         var previous = Status; Status = next; UpdatedAt = now;
         _history.Add(new(Id, previous, next, actorId, now));
+    }
+    private void AddMessageCore(string actorId, string body, DateTimeOffset now)
+    {
+        _messages.Add(new(Id, actorId, Required(body, 2000), now)); UpdatedAt = now;
     }
     private static string Required(string? value, int max)
     {

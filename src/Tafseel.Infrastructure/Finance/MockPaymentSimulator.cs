@@ -14,13 +14,13 @@ namespace Tafseel.Infrastructure.Finance;
 internal sealed class MockPaymentSimulator(
     MockPaymentProvider mockProvider,
     IFinancialService finance,
-    IOptions<PaymentOptions> paymentOptions,
+    IOptionsMonitor<PaymentOptions> paymentOptions,
     TafseelDbContext db) : IMockPaymentSimulator
 {
     public bool IsActive => mockProvider.IsSimulatorActive;
 
     public PaymentCapabilitiesDto GetCapabilities() =>
-        new(paymentOptions.Value.Provider, IsActive);
+        new(paymentOptions.CurrentValue.Provider, IsActive);
 
     public async Task<MockSimulatorSessionDto> GetSessionAsync(
         string studentId, string providerReference, CancellationToken ct)
@@ -28,7 +28,7 @@ internal sealed class MockPaymentSimulator(
         EnsureActive();
         var payment = await LoadOwnedAsync(studentId, providerReference, ct);
         return new(payment.ProviderReference, payment.Id, payment.Amount, payment.Currency,
-            payment.Status, payment.OrderId, payment.LiveSessionBookingId);
+            payment.Status, payment.OrderId, payment.LiveSessionBookingId, payment.LearningRequestId);
     }
 
     public async Task<MockSimulatorCompleteResponse> CompleteAsync(
@@ -36,7 +36,7 @@ internal sealed class MockPaymentSimulator(
     {
         EnsureActive();
         var payment = await LoadOwnedAsync(studentId, input.ProviderReference, ct);
-        var returnUrl = SanitizeReturnPath(input.ReturnPath, paymentOptions.Value.Mock.DefaultReturnPath);
+        var returnUrl = SanitizeReturnPath(input.ReturnPath, paymentOptions.CurrentValue.Mock.DefaultReturnPath);
 
         if (payment.Status == PaymentStatus.Confirmed)
             return new(payment.Status, payment.Id, returnUrl);
@@ -81,7 +81,12 @@ internal sealed class MockPaymentSimulator(
         if (string.IsNullOrWhiteSpace(path))
             return defaultPath;
         var trimmed = path.Trim();
-        if (!trimmed.StartsWith("/app/", StringComparison.OrdinalIgnoreCase))
+        // Site-relative only. The old rule was "must start with /app/", which the
+        // legacy pages all did; the client no longer lives under one prefix, so
+        // the test is the thing that rule was actually protecting - a payer must
+        // never be returned to another origin. "//host" is protocol-relative and
+        // leaves the site, so a second character of '/' is rejected too.
+        if (trimmed.Length < 2 || trimmed[0] != '/' || trimmed[1] == '/')
             return defaultPath;
         if (trimmed.Contains("://", StringComparison.Ordinal)
             || trimmed.Contains('\\')

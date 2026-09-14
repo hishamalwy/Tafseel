@@ -12,6 +12,13 @@ using Tafseel.Application.Authentication;
 using Tafseel.Application.Authorization;
 using Tafseel.Application.Email;
 using Tafseel.Application.TeacherApplications;
+using Tafseel.Domain.Finance;
+using Tafseel.Domain.Governance;
+using Tafseel.Domain.LiveSessions;
+using Tafseel.Domain.Marketplace;
+using Tafseel.Domain.Messaging;
+using Tafseel.Domain.Orders;
+using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Email;
 using Tafseel.Infrastructure.Persistence;
 
@@ -33,6 +40,8 @@ internal sealed class AuthenticationService(
         RegisterCommand command,
         CancellationToken cancellationToken)
     {
+        if (!string.Equals(command.PolicyVersion, PolicyVersions.Current, StringComparison.Ordinal))
+            return new(false, AuthenticationError.PolicyNotAccepted);
         if (!Roles.PublicRegistration.Contains(command.Role, StringComparer.Ordinal))
         {
             logger.LogInformation("Registration denied with outcome {Outcome}", "invalid_role");
@@ -50,7 +59,9 @@ internal sealed class AuthenticationService(
         {
             UserName = command.Email.Trim(),
             Email = command.Email.Trim(),
-            FullName = command.FullName.Trim()
+            FullName = command.FullName.Trim(),
+            AcceptedPolicyVersion = PolicyVersions.Current,
+            PoliciesAcceptedAt = clock.GetUtcNow()
         };
         var created = await users.CreateAsync(user, command.Password);
         if (!created.Succeeded)
@@ -115,6 +126,21 @@ internal sealed class AuthenticationService(
         {
             logger.LogInformation("Login denied for user {UserId} with outcome {Outcome}", user.Id, "email_unconfirmed");
             return new(null, AuthenticationError.EmailConfirmationRequired);
+        }
+        if (user.TwoFactorEnabled)
+        {
+            if (string.IsNullOrWhiteSpace(command.Code))
+                return new(null, AuthenticationError.MfaRequired);
+            var cleanCode = command.Code.Replace(" ", "").Replace("-", "");
+            var validCode = await users.VerifyTwoFactorTokenAsync(
+                user, TokenOptions.DefaultAuthenticatorProvider, cleanCode);
+            if (!validCode)
+                validCode = (await users.RedeemTwoFactorRecoveryCodeAsync(user, cleanCode)).Succeeded;
+            if (!validCode)
+            {
+                await users.AccessFailedAsync(user);
+                return new(null, AuthenticationError.InvalidMfaCode);
+            }
         }
 
         return await IssueAsync(user, null, cancellationToken);
@@ -182,6 +208,324 @@ internal sealed class AuthenticationService(
         logger.LogInformation(
             "Refresh token revoked by logout for user {UserId}, family {TokenFamilyId}",
             stored.UserId, stored.FamilyId);
+    }
+
+    public async Task<IReadOnlyList<AccountSession>> GetSessionsAsync(
+        string userId, string? currentRefreshToken, CancellationToken cancellationToken)
+    {
+        var now = clock.GetUtcNow();
+        var currentHash = string.IsNullOrWhiteSpace(currentRefreshToken) ? null : Hash(currentRefreshToken);
+        var tokens = await db.RefreshTokens.AsNoTracking()
+            .Where(x => x.UserId == userId && x.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+        tokens = tokens.Where(x => x.ExpiresAt > now)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
+        var currentFamily = tokens.FirstOrDefault(x => x.TokenHash == currentHash)?.FamilyId;
+        return tokens.GroupBy(x => x.FamilyId)
+            .Select(family => new AccountSession(
+                family.Key,
+                family.Min(x => x.CreatedAt),
+                family.Max(x => x.ExpiresAt),
+                family.Key == currentFamily))
+            .OrderByDescending(x => x.IsCurrent)
+            .ThenByDescending(x => x.CreatedAt)
+            .ToArray();
+    }
+
+    public async Task<bool> RevokeSessionAsync(
+        string userId, string sessionId, CancellationToken cancellationToken)
+    {
+        var tokens = await db.RefreshTokens
+            .Where(x => x.UserId == userId && x.FamilyId == sessionId && x.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+        if (tokens.Count == 0)
+            return false;
+        var now = clock.GetUtcNow();
+        foreach (var token in tokens)
+            token.RevokedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Session revoked for user {UserId}, family {TokenFamilyId}", userId, sessionId);
+        return true;
+    }
+
+    public async Task<object?> ExportAccountAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return null;
+        var roles = await users.GetRolesAsync(user);
+        var conversationIds = await db.Set<ConversationParticipant>().AsNoTracking()
+            .Where(x => x.UserId == userId).Select(x => x.ConversationId)
+            .ToArrayAsync(cancellationToken);
+        var messageIds = await db.Messages.AsNoTracking()
+            .Where(x => conversationIds.Contains(x.ConversationId)).Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        var requestIds = await db.LearningRequests.AsNoTracking()
+            .Where(x => x.StudentId == userId || x.TeacherId == userId).Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        var orderIds = await db.Orders.AsNoTracking()
+            .Where(x => x.StudentId == userId || x.TeacherId == userId).Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        var sessionIds = await db.LiveSessionBookings.AsNoTracking()
+            .Where(x => x.StudentId == userId || x.TeacherId == userId).Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        var disputeIds = await db.Disputes.AsNoTracking()
+            .Where(x => x.StudentId == userId || x.TeacherId == userId).Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        var paymentIds = await db.Payments.AsNoTracking()
+            .Where(x => x.StudentId == userId).Select(x => x.Id)
+            .ToArrayAsync(cancellationToken);
+        return new
+        {
+            schemaVersion = "2026-08-13",
+            generatedAt = clock.GetUtcNow(),
+            account = new
+            {
+                user.Id,
+                user.Email,
+                user.FullName,
+                user.FullNameEnglish,
+                roles,
+                user.PhoneNumber,
+                user.EmailConfirmed,
+                user.TwoFactorEnabled,
+                user.CreatedAt,
+                user.AcceptedPolicyVersion,
+                user.PoliciesAcceptedAt
+            },
+            studentLearningPreference = await db.StudentLearningPreferences.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken),
+            teacherProfile = await db.TeacherProfiles.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.TeacherId == userId, cancellationToken),
+            teacherApplications = await db.TeacherApplications.AsNoTracking()
+                .Where(x => x.TeacherId == userId)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.SubjectId,
+                    x.QualificationTopicId,
+                    x.City,
+                    x.ExperienceYears,
+                    x.Degree,
+                    x.Status,
+                    x.Priority,
+                    x.CreatedAt,
+                    x.SubmittedAt,
+                    x.DemoDurationSeconds
+                }).ToArrayAsync(cancellationToken),
+            teacherQualifications = await db.TeacherSubjectQualifications.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            teacherServices = await db.TeacherServices.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            teacherAvailabilityRules = await db.TeacherAvailabilityRules.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            teacherAvailabilityExceptions = await db.TeacherAvailabilityExceptions.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            teacherCertifications = await db.TeacherCertifications.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            teacherExperiences = await db.TeacherExperiences.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            payoutProfile = await db.TeacherPayoutProfiles.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.TeacherId == userId, cancellationToken),
+            favoriteTeachers = await db.FavoriteTeachers.AsNoTracking()
+                .Where(x => x.StudentId == userId).ToArrayAsync(cancellationToken),
+            learningRequests = await db.LearningRequests.AsNoTracking()
+                .Where(x => x.StudentId == userId || x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            learningRequestAttachments = await db.LearningRequestAttachments.AsNoTracking()
+                .Where(x => requestIds.Contains(x.LearningRequestId)).ToArrayAsync(cancellationToken),
+            orders = await db.Orders.AsNoTracking()
+                .Where(x => x.StudentId == userId || x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            orderDeliveries = await db.OrderDeliveries.AsNoTracking()
+                .Where(x => orderIds.Contains(x.OrderId)).ToArrayAsync(cancellationToken),
+            liveSessions = await db.LiveSessionBookings.AsNoTracking()
+                .Where(x => x.StudentId == userId || x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            liveSessionAttachments = await db.LiveSessionAttachments.AsNoTracking()
+                .Where(x => sessionIds.Contains(x.LiveSessionBookingId)).ToArrayAsync(cancellationToken),
+            disputes = await db.Disputes.AsNoTracking()
+                .Where(x => x.StudentId == userId || x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            disputeEvidence = await db.DisputeEvidence.AsNoTracking()
+                .Where(x => disputeIds.Contains(x.DisputeId)).ToArrayAsync(cancellationToken),
+            conversations = await db.Conversations.AsNoTracking()
+                .Where(x => conversationIds.Contains(x.Id)).ToArrayAsync(cancellationToken),
+            messages = await db.Messages.AsNoTracking()
+                .Where(x => conversationIds.Contains(x.ConversationId)).ToArrayAsync(cancellationToken),
+            messageAttachments = await db.MessageAttachments.AsNoTracking()
+                .Where(x => messageIds.Contains(x.MessageId)).ToArrayAsync(cancellationToken),
+            reviews = await db.TeacherReviews.AsNoTracking()
+                .Where(x => x.StudentId == userId || x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            notifications = await db.Notifications.AsNoTracking()
+                .Where(x => x.UserId == userId).ToArrayAsync(cancellationToken),
+            notificationPreference = await db.UserNotificationPreferences.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken),
+            payments = await db.Payments.AsNoTracking()
+                .Where(x => x.StudentId == userId).ToArrayAsync(cancellationToken),
+            refunds = await db.Refunds.AsNoTracking()
+                .Where(x => paymentIds.Contains(x.PaymentId)).ToArrayAsync(cancellationToken),
+            withdrawals = await db.WithdrawalRequests.AsNoTracking()
+                .Where(x => x.TeacherId == userId).ToArrayAsync(cancellationToken),
+            marketplaceInteractions = await db.MarketplaceInteractionEvents.AsNoTracking()
+                .Where(x => x.AuthenticatedUserId == userId).ToArrayAsync(cancellationToken)
+        };
+    }
+
+    public async Task<AccountDeletionResult> DeleteAccountAsync(
+        string userId, string password, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null || !await users.CheckPasswordAsync(user, password))
+            return new(false, AccountDeletionError.IncorrectPassword);
+
+        var hasActiveOrder = await db.Orders.AnyAsync(x =>
+            (x.StudentId == userId || x.TeacherId == userId)
+            && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled, cancellationToken);
+        var hasActiveSession = await db.LiveSessionBookings.AnyAsync(x =>
+            (x.StudentId == userId || x.TeacherId == userId)
+            && x.Status != LiveSessionStatus.Completed && x.Status != LiveSessionStatus.Cancelled
+            && x.Status != LiveSessionStatus.StudentNoShow && x.Status != LiveSessionStatus.TeacherNoShow,
+            cancellationToken);
+        var hasOpenDispute = await db.Disputes.AnyAsync(x =>
+            (x.StudentId == userId || x.TeacherId == userId) && x.Status != DisputeStatus.Resolved,
+            cancellationToken);
+        var hasPendingWithdrawal = await db.WithdrawalRequests.AnyAsync(x =>
+            x.TeacherId == userId && x.Status == WithdrawalStatus.Pending, cancellationToken);
+        var accountIds = await db.LedgerAccounts.AsNoTracking()
+            .Where(x => x.OwnerId == userId).Select(x => x.Id).ToArrayAsync(cancellationToken);
+        var credits = accountIds.Length == 0 ? 0 : await db.LedgerEntries
+            .Where(x => accountIds.Contains(x.CreditAccountId))
+            .SumAsync(x => (decimal?)x.Amount, cancellationToken) ?? 0;
+        var debits = accountIds.Length == 0 ? 0 : await db.LedgerEntries
+            .Where(x => accountIds.Contains(x.DebitAccountId))
+            .SumAsync(x => (decimal?)x.Amount, cancellationToken) ?? 0;
+        var hasBalance = credits != debits;
+        if (hasActiveOrder || hasActiveSession || hasOpenDispute || hasPendingWithdrawal || hasBalance)
+            return new(false, AccountDeletionError.ActiveCommitments);
+
+        var now = clock.GetUtcNow();
+        var avatarKey = user.AvatarStorageKey;
+        var replacement = $"deleted-{Guid.NewGuid():N}@invalid.local";
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var notificationIds = db.Notifications.Where(x => x.UserId == userId).Select(x => x.Id);
+        await db.NotificationOutbox.Where(x => notificationIds.Contains(x.NotificationId))
+            .ExecuteDeleteAsync(cancellationToken);
+        await db.Notifications.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.UserNotificationPreferences.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.StudentLearningPreferences.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.FavoriteTeachers.Where(x => x.StudentId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.MarketplaceInteractionEvents.Where(x => x.AuthenticatedUserId == userId)
+            .ExecuteDeleteAsync(cancellationToken);
+        await db.TeacherPayoutProfiles.Where(x => x.TeacherId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.RefreshTokens.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.UserClaims.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.UserLogins.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await db.UserTokens.Where(x => x.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+
+        var teacherProfile = await db.TeacherProfiles.SingleOrDefaultAsync(
+            x => x.TeacherId == userId, cancellationToken);
+        teacherProfile?.Anonymize(now);
+        foreach (var service in await db.TeacherServices.Where(x => x.TeacherId == userId)
+                     .ToArrayAsync(cancellationToken))
+            service.SetActive(false, now);
+        foreach (var sample in await db.TeacherTeachingSamples.Where(x => x.TeacherId == userId)
+                     .ToArrayAsync(cancellationToken))
+            sample.HideForQualificationRevocation(now);
+
+        user.FullName = "Deleted account";
+        user.FullNameEnglish = "Deleted account";
+        user.Email = replacement;
+        user.UserName = replacement;
+        user.PhoneNumber = null;
+        user.PasswordHash = null;
+        user.AvatarStorageKey = null;
+        user.AvatarContentType = null;
+        user.IsSuspended = true;
+        user.EmailConfirmed = false;
+        user.TwoFactorEnabled = false;
+        user.LockoutEnabled = true;
+        user.LockoutEnd = DateTimeOffset.MaxValue;
+        user.SecurityStamp = Guid.NewGuid().ToString();
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(false, AccountDeletionError.UpdateFailed,
+                result.Errors.Select(x => x.Description).ToArray());
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(avatarKey))
+        {
+            try { await files.DeletePrivateFileAsync(avatarKey, cancellationToken); }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogWarning(exception,
+                    "Account was anonymized but avatar cleanup failed for user {UserId}", userId);
+            }
+        }
+        logger.LogInformation("Account identity anonymized for user {UserId}", userId);
+        return new(true);
+    }
+
+    public async Task<MfaSetup?> BeginMfaSetupAsync(string userId, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null || user.IsSuspended)
+            return null;
+        var key = await users.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            await users.ResetAuthenticatorKeyAsync(user);
+            key = await users.GetAuthenticatorKeyAsync(user);
+        }
+        var issuer = Uri.EscapeDataString("Tafseel");
+        var account = Uri.EscapeDataString(user.Email ?? user.Id);
+        return new(key!, $"otpauth://totp/{issuer}:{account}?secret={key}&issuer={issuer}&digits=6");
+    }
+
+    public async Task<MfaEnableResult> EnableMfaAsync(
+        string userId, string code, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return new(false);
+        var valid = await users.VerifyTwoFactorTokenAsync(
+            user, TokenOptions.DefaultAuthenticatorProvider, code.Replace(" ", "").Replace("-", ""));
+        if (!valid)
+            return new(false);
+        await users.SetTwoFactorEnabledAsync(user, true);
+        var recoveryCodes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 8);
+        await RevokeAllSessionsAsync(userId, cancellationToken);
+        return new(true, recoveryCodes?.ToArray());
+    }
+
+    public async Task<bool> DisableMfaAsync(
+        string userId, string password, string code, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null || !user.TwoFactorEnabled || !await users.CheckPasswordAsync(user, password))
+            return false;
+        var cleanCode = code.Replace(" ", "").Replace("-", "");
+        var valid = await users.VerifyTwoFactorTokenAsync(
+            user, TokenOptions.DefaultAuthenticatorProvider, cleanCode);
+        if (!valid)
+            valid = (await users.RedeemTwoFactorRecoveryCodeAsync(user, cleanCode)).Succeeded;
+        if (!valid)
+            return false;
+        await users.SetTwoFactorEnabledAsync(user, false);
+        await users.ResetAuthenticatorKeyAsync(user);
+        await RevokeAllSessionsAsync(userId, cancellationToken);
+        return true;
+    }
+
+    private async Task RevokeAllSessionsAsync(string userId, CancellationToken cancellationToken)
+    {
+        var active = await db.RefreshTokens.Where(x => x.UserId == userId && x.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+        var now = clock.GetUtcNow();
+        foreach (var token in active)
+            token.RevokedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<CurrentUser?> GetUserAsync(string userId, CancellationToken cancellationToken)
@@ -263,7 +607,8 @@ internal sealed class AuthenticationService(
     }
 
     private static CurrentUser MapCurrent(ApplicationUser user, IList<string> roles) =>
-        new(user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(), user.HasAvatar);
+        new(user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(), user.HasAvatar,
+            user.TwoFactorEnabled);
 
     public async Task<PasswordResetResult> ChangePasswordAsync(
         string userId,
@@ -547,7 +892,8 @@ internal sealed class AuthenticationService(
 
         return new(new(
             user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(),
-            accessToken, expires, rawRefreshToken, storedRefreshToken.ExpiresAt, user.HasAvatar));
+            accessToken, expires, rawRefreshToken, storedRefreshToken.ExpiresAt, user.HasAvatar,
+            user.TwoFactorEnabled));
     }
 
     private static string Hash(string token) =>

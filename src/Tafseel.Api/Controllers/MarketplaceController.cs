@@ -31,6 +31,7 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     {
         var file = await marketplace.OpenSampleAsync(User.FindFirstValue("sub"), id, ct);
         Response.Headers.ContentDisposition = "inline";
+        Response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
         return File(file.Content, file.ContentType, enableRangeProcessing: true);
     }
 
@@ -120,7 +121,7 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     {
         await using var stream = file.OpenReadStream();
         var sample = await marketplace.AddSampleAsync(
-            UserId(), subjectId, topicId, title, stream, file.FileName, file.ContentType,
+            UserId(), subjectId, topicId, title, stream, file.FileName, file.ContentType ?? "",
             file.Length, durationSeconds, ct);
         return Created($"/api/v1/teachers/samples/{sample.Id}/content", sample);
     }
@@ -162,7 +163,7 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     {
         await using var stream = file.OpenReadStream();
         return await marketplace.UploadShowcaseVideoAsync(
-            UserId(), id, stream, file.FileName, file.ContentType, file.Length, version, ct);
+            UserId(), id, stream, file.FileName, file.ContentType ?? "", file.Length, version, ct);
     }
 
     [Authorize(Policy = Permissions.TeachersManageOwnShowcases), HttpPost("me/showcases/{id:guid}/submit")]
@@ -267,6 +268,11 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpPost("me/availability/rules")]
     public async Task<IActionResult> AddRule(AvailabilityRuleInput input, CancellationToken ct) =>
         Created("", await marketplace.AddAvailabilityRuleAsync(UserId(), input, ct));
+
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpPut("me/availability/rules")]
+    public Task<IReadOnlyCollection<AvailabilityRuleDto>> ReplaceRules(
+        ReplaceAvailabilityRules input, CancellationToken ct) =>
+        marketplace.ReplaceAvailabilityRulesAsync(UserId(), input, ct);
 
     [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpDelete("me/availability/rules/{id:guid}")]
     public async Task<IActionResult> RemoveRule(Guid id, CancellationToken ct)

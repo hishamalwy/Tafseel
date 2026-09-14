@@ -40,8 +40,10 @@ public sealed class TeacherProfile
         UpdatedAt = now;
     }
 
-    public void Publish(DateTimeOffset now)
+    public void Publish(TeacherProfileReadiness readiness, DateTimeOffset now)
     {
+        if (!readiness.IsReady)
+            throw new DomainException("profile_not_ready", "The teacher is not eligible to publish.");
         if (string.IsNullOrWhiteSpace(Headline) || string.IsNullOrWhiteSpace(Bio))
             throw new DomainException("profile_incomplete", "Complete the teacher profile before publishing.");
         IsPublished = true;
@@ -50,6 +52,16 @@ public sealed class TeacherProfile
 
     public void Unpublish(DateTimeOffset now)
     {
+        IsPublished = false;
+        UpdatedAt = now;
+    }
+
+    public void Anonymize(DateTimeOffset now)
+    {
+        Headline = "";
+        Bio = "";
+        Country = "";
+        City = "";
         IsPublished = false;
         UpdatedAt = now;
     }
@@ -83,6 +95,11 @@ public sealed class TeacherProfile
             throw new DomainException("invalid_time_zone", "The requested time zone is not supported.");
         }
     }
+}
+
+public readonly record struct TeacherProfileReadiness(bool IsReady)
+{
+    public static TeacherProfileReadiness Ready => new(true);
 }
 
 public sealed class TeacherTopic
@@ -598,11 +615,11 @@ public sealed class TeacherTeachingSampleVersion
         RequireDraft();
         StorageKey = Required(storageKey, 500, "storage_key");
         OriginalFileName = Required(Path.GetFileName(originalFileName), 255, "file_name");
-        if (!string.Equals(contentType, "video/mp4", StringComparison.OrdinalIgnoreCase))
-            throw new DomainException("unsupported_media_type", "Only MP4 Showcase videos are supported.");
+        var canonical = TeacherMediaTypes.Canonical(contentType, videoOnly: false)
+            ?? throw new DomainException("unsupported_media_type", "This Showcase media type is not supported.");
         if (fileSize <= 0)
-            throw new DomainException("invalid_file_size", "The Showcase video cannot be empty.");
-        ContentType = "video/mp4";
+            throw new DomainException("invalid_file_size", "The Showcase media cannot be empty.");
+        ContentType = canonical;
         FileSize = fileSize;
         DurationSeconds = null;
     }
@@ -611,7 +628,7 @@ public sealed class TeacherTeachingSampleVersion
     {
         RequireDraft();
         if (StorageKey is null || OriginalFileName is null || ContentType is null || FileSize is null)
-            throw new DomainException("sample_media_required", "Upload an MP4 video before submitting the Showcase.");
+            throw new DomainException("sample_media_required", "Upload media before submitting the Showcase.");
         Status = ShowcaseModerationStatus.Submitted;
         SubmittedByUserId = Required(submittedByUserId, 450, "submitter");
         SubmittedAt = now;

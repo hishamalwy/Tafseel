@@ -49,6 +49,15 @@ public sealed class LiveSessionsController(ILiveSessionService sessions) : Contr
         return NoContent();
     }
 
+    [Authorize(Policy = Permissions.SessionsManageOwn), HttpPost("{id:guid}/reschedule/respond")]
+    public async Task<IActionResult> RespondToReschedule(
+        Guid id, RespondToLiveSessionReschedule input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await sessions.RespondToRescheduleAsync(UserId(), id, input.Accept, version, ct);
+        return NoContent();
+    }
+
     [Authorize(Policy = Permissions.SessionsManageOwn), HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(
         Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
@@ -74,6 +83,14 @@ public sealed class LiveSessionsController(ILiveSessionService sessions) : Contr
         return NoContent();
     }
 
+    [Authorize(Policy = Permissions.SessionsManageOwn), HttpPost("{id:guid}/settlement/confirm")]
+    public async Task<IActionResult> ConfirmSettlement(
+        Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await sessions.ConfirmSettlementAsync(UserId(), id, version, ct);
+        return NoContent();
+    }
+
     [Authorize(Policy = Permissions.SessionsManageOwn), EnableRateLimiting("upload")]
     [RequestSizeLimit(50 * 1024 * 1024), HttpPost("{id:guid}/attachments")]
     public async Task<IActionResult> AddAttachment(
@@ -90,7 +107,12 @@ public sealed class LiveSessionsController(ILiveSessionService sessions) : Contr
     public async Task<IActionResult> Attachment(Guid id, CancellationToken ct)
     {
         var file = await sessions.OpenAttachmentAsync(UserId(), id, ct);
-        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+        Response.Headers.CacheControl = "private, no-store, max-age=0";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
+        Response.Headers.ContentDisposition = "inline";
+        return File(file.Content, file.ContentType, enableRangeProcessing: true);
     }
 
     [Authorize(Policy = Permissions.SessionsManageOwn), HttpGet("{id:guid}/join")]

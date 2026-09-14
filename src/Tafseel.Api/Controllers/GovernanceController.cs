@@ -22,6 +22,10 @@ public sealed class GovernanceController(IGovernanceService governance) : Contro
     public Task<ReviewDto> Review(Guid orderId, CreateReview input, CancellationToken ct) =>
         governance.CreateReviewAsync(UserId(), orderId, input, ct);
 
+    [Authorize(Policy = Permissions.ReviewsCreate), HttpPost("live-sessions/{bookingId:guid}/review")]
+    public Task<ReviewDto> LiveSessionReview(Guid bookingId, CreateReview input, CancellationToken ct) =>
+        governance.CreateLiveSessionReviewAsync(UserId(), bookingId, input, ct);
+
     [Authorize(Policy = Permissions.ReviewsModerate), HttpGet("admin/reviews")]
     public Task<PagedResult<AdminReviewListItemDto>> AdminReviews(
         int page = 1, int pageSize = 20,
@@ -49,15 +53,27 @@ public sealed class GovernanceController(IGovernanceService governance) : Contro
     public Task<DisputeDto> Open(OpenDispute input, CancellationToken ct) =>
         governance.OpenDisputeAsync(UserId(), input, ct);
 
+    [Authorize(Policy = Permissions.DisputesCreate), HttpGet("disputes/eligible")]
+    public Task<IReadOnlyCollection<EligibleDisputeTargetDto>> Eligible(CancellationToken ct) =>
+        governance.GetEligibleDisputeTargetsAsync(UserId(), ct);
+
     [Authorize(Policy = Permissions.DisputesCreate), HttpGet("disputes/mine")]
     public Task<PagedResult<DisputeDto>> Mine(
         int page = 1, int pageSize = 20, CancellationToken ct = default) =>
-        governance.GetDisputesAsync(UserId(), admin: false, page, pageSize, ct);
+        governance.GetDisputesAsync(UserId(), admin: false, page, pageSize, null, ct);
 
     [Authorize(Policy = Permissions.DisputesResolve), HttpGet("admin/disputes")]
     public Task<PagedResult<DisputeDto>> All(
-        int page = 1, int pageSize = 20, CancellationToken ct = default) =>
-        governance.GetDisputesAsync(UserId(), admin: true, page, pageSize, ct);
+        int page = 1, int pageSize = 20, string? filter = null, CancellationToken ct = default) =>
+        governance.GetDisputesAsync(UserId(), admin: true, page, pageSize, filter, ct);
+
+    [Authorize(Policy = Permissions.DisputesCreate), HttpGet("disputes/{id:guid}")]
+    public Task<DisputeDto> GetMine(Guid id, CancellationToken ct) =>
+        governance.GetDisputeAsync(UserId(), id, admin: false, ct);
+
+    [Authorize(Policy = Permissions.DisputesResolve), HttpGet("admin/disputes/{id:guid}")]
+    public Task<DisputeDto> GetAny(Guid id, CancellationToken ct) =>
+        governance.GetDisputeAsync(UserId(), id, admin: true, ct);
 
     [Authorize(Policy = Permissions.DisputesCreate), HttpPost("disputes/{id:guid}/messages")]
     public async Task<IActionResult> Message(
@@ -92,6 +108,15 @@ public sealed class GovernanceController(IGovernanceService governance) : Contro
         Guid id, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
     {
         await governance.StartDisputeReviewAsync(UserId(), id, version, ct);
+        return NoContent();
+    }
+
+    [Authorize(Policy = Permissions.DisputesResolve), HttpPost("admin/disputes/{id:guid}/messages")]
+    public async Task<IActionResult> AdminMessage(
+        Guid id, AddDisputeMessage input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await governance.AddAdminDisputeMessageAsync(UserId(), id, input, version, ct);
         return NoContent();
     }
 

@@ -97,4 +97,49 @@
     </Content>
   </ItemGroup>
 
+  <!-- ==== web client =====================================================
+       The Angular client in frontend-angular/ is the site. It is built here
+       rather than committed, so a publish can never ship a stale bundle, and
+       it lands in webclient/, where Program.cs serves it.
+
+       Only the browser half is taken. The build also emits an SSR server for
+       Node, and this project deploys to IIS - shipping server/ would be dead
+       weight the host cannot run. -->
+  <PropertyGroup>
+    <WebClientDir>$(MSBuildThisFileDirectory)..\..\frontend-angular</WebClientDir>
+    <WebClientOut>$(WebClientDir)\dist\tafseel\browser</WebClientOut>
+    <!-- Set to false to reuse an existing dist/ when iterating on the API. -->
+    <BuildWebClient Condition="'$(BuildWebClient)' == ''">true</BuildWebClient>
+  </PropertyGroup>
+
+  <!-- Building and collecting are one target on purpose. A top-level
+       <Content Include> would be evaluated before any target runs, so it would
+       glob the previous build's files - or none at all on a clean checkout -
+       and splitting this in two invited MSBuild to schedule the collecting half
+       twice, which fails the build with duplicate Content items. -->
+  <Target Name="BuildWebClient" BeforeTargets="AssignTargetPaths">
+    <Message Importance="high" Text="Building the Angular client (npm run build)..."
+             Condition="'$(BuildWebClient)' == 'true'" />
+    <Exec Command="npm ci --no-audit --no-fund"
+          WorkingDirectory="$(WebClientDir)"
+          Condition="'$(BuildWebClient)' == 'true' And !Exists('$(WebClientDir)\node_modules')" />
+    <Exec Command="npm run build" WorkingDirectory="$(WebClientDir)"
+          Condition="'$(BuildWebClient)' == 'true'" />
+    <ItemGroup>
+      <!-- Globbed into its own item type first, so the Link expression can
+           batch over %(_WebClientFile.RecursiveDir) alone. An unqualified
+           %(RecursiveDir) here batches the ItemGroup over every Content item in
+           scope, which relinked appsettings.json and web.config under
+           webclient/ as well. -->
+      <_WebClientFile Include="$(WebClientOut)\**\*" />
+      <Content Include="@(_WebClientFile)"
+               Link="webclient\%(_WebClientFile.RecursiveDir)%(_WebClientFile.Filename)%(_WebClientFile.Extension)"
+               CopyToOutputDirectory="PreserveNewest"
+               CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+    <Error Condition="'@(_WebClientFile)' == ''"
+           Text="The Angular client produced no files in $(WebClientOut). Publishing would ship an API with no site." />
+    <Message Importance="high" Text="Web client: @(_WebClientFile->Count()) files -> webclient/" />
+  </Target>
+
 </Project>

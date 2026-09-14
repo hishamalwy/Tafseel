@@ -15,19 +15,29 @@ internal static class TeacherPublicQueries
     public static IQueryable<BrowsableTeacher> BrowsableTeachers(TafseelDbContext db) =>
         from profile in db.TeacherProfiles.AsNoTracking()
         join user in db.Users.AsNoTracking() on profile.TeacherId equals user.Id
-        where profile.IsPublished && user.EmailConfirmed && !user.IsSuspended
-            && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-            && db.TeacherServices.Any(service => service.TeacherId == profile.TeacherId
-                && service.IsActive
-                && service.SupersededByTeacherServiceId == null
-                && db.TeacherSubjectQualifications.Any(q => q.TeacherId == profile.TeacherId
-                    && q.SubjectId == service.SubjectId
-                    && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
-                && db.ServiceCatalogItems.Any(type => type.Id == service.ServiceCatalogItemId
-                    && type.IsActive && type.IsPublic && type.TeacherSelectable))
+        where EligibleServices(db, true).Any(service => service.TeacherId == profile.TeacherId)
         select new BrowsableTeacher { Profile = profile, User = user };
+
+    /// <summary>Canonical rule for services that may accept new commerce.</summary>
+    public static IQueryable<Domain.Marketplace.TeacherService> EligibleServices(
+        TafseelDbContext db, bool requirePublishedProfile = true) =>
+        from service in db.TeacherServices
+        join catalog in db.ServiceCatalogItems on service.ServiceCatalogItemId equals catalog.Id
+        join profile in db.TeacherProfiles on service.TeacherId equals profile.TeacherId
+        join user in db.Users on service.TeacherId equals user.Id
+        where (!requirePublishedProfile || profile.IsPublished)
+            && user.EmailConfirmed && !user.IsSuspended
+            && !string.IsNullOrEmpty(profile.Headline) && !string.IsNullOrEmpty(profile.Bio)
+            && !string.IsNullOrEmpty(profile.Country) && !string.IsNullOrEmpty(profile.City)
+            && service.IsActive && service.SupersededByTeacherServiceId == null
+            && catalog.IsActive && catalog.IsPublic && catalog.TeacherSelectable
+            && db.Subjects.Any(subject => subject.Id == service.SubjectId && subject.IsActive)
+            && db.TeacherSubjectQualifications.Any(q => q.TeacherId == service.TeacherId
+                && q.SubjectId == service.SubjectId
+                && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+            && (!catalog.RequiresScheduling
+                || db.TeacherAvailabilityRules.Any(rule => rule.TeacherId == service.TeacherId))
+        select service;
 
     public static Task<bool> IsBrowsableAsync(
         TafseelDbContext db, string teacherId, CancellationToken ct) =>

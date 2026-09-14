@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tafseel.Application.Common;
 using Tafseel.Application.Catalog;
+using Tafseel.Application.Finance;
 using Tafseel.Application.LiveSessions;
 using Tafseel.Application.Orders;
 using Tafseel.Application.TeacherApplications;
@@ -13,6 +14,7 @@ using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
+using Tafseel.Infrastructure.Marketplace;
 using Tafseel.Infrastructure.Messaging;
 
 namespace Tafseel.Infrastructure.LiveSessions;
@@ -22,10 +24,13 @@ internal sealed class LiveSessionService(
     IFileStorageService files,
     NotificationWriter notifications,
     ILiveSessionLinkProvider links,
+    IFinancialService finance,
     IOptions<LiveSessionOptions> options,
+    IOptions<FeeOptions> feeOptions,
     TimeProvider clock) : ILiveSessionService
 {
     private readonly LiveSessionOptions _options = options.Value;
+    private readonly FeeOptions _fees = feeOptions.Value;
     private const string LiveSessionCatalogCode = "live_session";
     private static readonly LiveSessionStatus[] ReservingStatuses =
         [LiveSessionStatus.AwaitingPayment, LiveSessionStatus.Confirmed];
@@ -338,7 +343,8 @@ internal sealed class LiveSessionService(
                 startsAt, endsAt, input.StudentTimeZoneId, teacherZone, basePrice, service.Service.Currency,
                 input.Emergency ? _options.EmergencyPremiumPercent : 0,
                 _options.CancellationWindowHours,
-                Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), clock.GetUtcNow());
+                Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), clock.GetUtcNow(),
+                _fees.TeacherCommissionPercent);
             booking.CaptureServiceIdentity(service.Type);
             db.Add(booking);
             await notifications.QueueAsync(booking.TeacherId, "SessionBooking", "New live-session booking",
@@ -375,7 +381,14 @@ internal sealed class LiveSessionService(
         var people = await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id))
             .Select(u => new { u.Id, u.FullName, u.FullNameEnglish })
             .ToDictionaryAsync(u => u.Id, u => (u.FullName, (string?)u.FullNameEnglish), ct);
-        return new(items.Select(x => Map(x, people)).ToArray(), page, pageSize, count);
+        var bookingIds = items.Select(x => x.Id).ToArray();
+        var reviewed = await db.TeacherReviews.AsNoTracking()
+            .Where(x => x.LiveSessionBookingId.HasValue && bookingIds.Contains(x.LiveSessionBookingId.Value))
+            .Select(x => x.LiveSessionBookingId!.Value).ToArrayAsync(ct);
+        var disputes = await db.Disputes.AsNoTracking()
+            .Where(x => x.LiveSessionBookingId.HasValue && bookingIds.Contains(x.LiveSessionBookingId.Value))
+            .ToDictionaryAsync(x => x.LiveSessionBookingId!.Value, x => x.Id, ct);
+        return new(items.Select(x => Map(x, people, reviewed.Contains(x.Id), disputes.GetValueOrDefault(x.Id))).ToArray(), page, pageSize, count);
     }
 
     public async Task RescheduleAsync(
@@ -390,11 +403,43 @@ internal sealed class LiveSessionService(
             var endsAt = startsAt.Add(booking.EndsAt - booking.StartsAt);
             await RequireAvailableAsync(booking.TeacherId, startsAt, endsAt, booking.Id, ct);
             await RequireNoConflictAsync(booking.TeacherId, startsAt, endsAt, booking.Id, ct);
-            booking.Reschedule(userId, startsAt, endsAt, clock.GetUtcNow());
+            booking.RequestReschedule(userId, startsAt, endsAt, clock.GetUtcNow());
             var other = userId == booking.StudentId ? booking.TeacherId : booking.StudentId;
-            await notifications.QueueAsync(other, "SessionRescheduled", "Live session rescheduled",
+            await notifications.QueueAsync(other, "SessionRescheduleRequested", "Live session reschedule requested",
                 booking.Title, $"/live-sessions/{booking.Id}",
-                $"session:{booking.Id}:rescheduled:{booking.RescheduleCount}", true, ct);
+                $"session:{booking.Id}:reschedule-requested:{booking.RescheduleRequestedAt?.UtcTicks}", true, ct);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateException) { throw Conflict(); }
+        catch (SqlException) { throw Conflict(); }
+        catch (InvalidOperationException exception) when (ContainsSqlException(exception)) { throw Conflict(); }
+    }
+
+    public async Task RespondToRescheduleAsync(
+        string userId, Guid id, bool accept, string version, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        try
+        {
+            var booking = await OwnedAsync(userId, id, version, ct);
+            if (accept)
+            {
+                await LockScheduleAsync(booking.TeacherId, ct);
+                var startsAt = booking.ProposedStartsAt
+                    ?? throw new DomainException("reschedule_not_pending", "No reschedule request is pending.");
+                var endsAt = booking.ProposedEndsAt!.Value;
+                await RequireAvailableAsync(booking.TeacherId, startsAt, endsAt, booking.Id, ct);
+                await RequireNoConflictAsync(booking.TeacherId, startsAt, endsAt, booking.Id, ct);
+            }
+            var requester = booking.RescheduleRequestedById;
+            booking.RespondToReschedule(userId, accept, clock.GetUtcNow());
+            if (requester is not null)
+                await notifications.QueueAsync(requester,
+                    accept ? "SessionRescheduled" : "SessionRescheduleRejected",
+                    accept ? "Live session rescheduled" : "Reschedule request declined",
+                    booking.Title, $"/live-sessions/{booking.Id}",
+                    $"session:{booking.Id}:reschedule-response:{booking.UpdatedAt.UtcTicks}", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }
@@ -406,7 +451,15 @@ internal sealed class LiveSessionService(
     public async Task CancelAsync(string userId, Guid id, string version, CancellationToken ct)
     {
         var booking = await OwnedAsync(userId, id, version, ct);
-        booking.Cancel(userId, clock.GetUtcNow());
+        var now = clock.GetUtcNow();
+        var wasFunded = booking.Status == LiveSessionStatus.Confirmed;
+        var refundStudent = wasFunded && booking.RequiresRefundOnCancellation(userId, now);
+        booking.Cancel(userId, now);
+        if (refundStudent)
+            await finance.RefundLiveSessionEscrowAsync(
+                booking, userId, $"session:{booking.Id}:cancel-refund", ct);
+        else if (wasFunded)
+            await finance.ReleaseLiveSessionEscrowAsync(booking, userId, ct);
         await notifications.QueueAsync(userId == booking.StudentId ? booking.TeacherId : booking.StudentId,
             "SessionCancelled", "Live session cancelled", booking.Title,
             $"/live-sessions/{booking.Id}", $"session:{booking.Id}:cancelled", true, ct);
@@ -415,26 +468,55 @@ internal sealed class LiveSessionService(
 
     public async Task CompleteAsync(string teacherId, Guid id, string version, CancellationToken ct)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockSettlementAsync(id, ct);
+        await RequireNoOpenDisputeAsync(id, ct);
         var booking = await db.LiveSessionBookings.Include(x => x.Attachments)
             .SingleOrDefaultAsync(x => x.Id == id && x.TeacherId == teacherId, ct)
             ?? throw new DomainException("session_not_owned", "Live session was not found.");
         ApplyVersion(booking, version);
-        booking.Complete(teacherId, clock.GetUtcNow());
-        await notifications.QueueAsync(booking.StudentId, "SessionCompleted", "Live session completed",
+        booking.RequestCompletion(teacherId, clock.GetUtcNow());
+        await notifications.QueueAsync(booking.StudentId, "SessionCompletionRequested", "Confirm the live session",
             booking.Title, $"/live-sessions/{booking.Id}", $"session:{booking.Id}:completed", true, ct);
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
     }
 
     public async Task MarkNoShowAsync(
         string userId, Guid id, bool studentNoShow, string version, CancellationToken ct)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockSettlementAsync(id, ct);
+        await RequireNoOpenDisputeAsync(id, ct);
         var booking = await OwnedAsync(userId, id, version, ct);
-        if (studentNoShow) booking.MarkStudentNoShow(userId, clock.GetUtcNow());
-        else booking.MarkTeacherNoShow(userId, clock.GetUtcNow());
+        if (studentNoShow) booking.MarkStudentNoShow(userId, clock.GetUtcNow(), _options.NoShowGraceMinutes);
+        else booking.MarkTeacherNoShow(userId, clock.GetUtcNow(), _options.NoShowGraceMinutes);
         var recipient = studentNoShow ? booking.StudentId : booking.TeacherId;
-        await notifications.QueueAsync(recipient, "SessionNoShow", "Live session no-show recorded",
+        await notifications.QueueAsync(recipient, "SessionNoShowReview", "Review a live session no-show claim",
             booking.Title, $"/live-sessions/{booking.Id}", $"session:{booking.Id}:no-show", true, ct);
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+    }
+
+    public async Task ConfirmSettlementAsync(
+        string userId, Guid id, string version, CancellationToken ct)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockSettlementAsync(id, ct);
+        await RequireNoOpenDisputeAsync(id, ct);
+        var booking = await OwnedAsync(userId, id, version, ct);
+        booking.ConfirmSettlement(userId, clock.GetUtcNow());
+        if (booking.Status is LiveSessionStatus.Completed or LiveSessionStatus.StudentNoShow)
+            await finance.ReleaseLiveSessionEscrowAsync(booking, userId, ct);
+        else
+            await finance.RefundLiveSessionEscrowAsync(
+                booking, userId, $"session:{booking.Id}:confirmed-teacher-no-show-refund", ct);
+        var recipient = userId == booking.StudentId ? booking.TeacherId : booking.StudentId;
+        await notifications.QueueAsync(recipient, "SessionSettlementConfirmed", "Live session settlement confirmed",
+            booking.Title, $"/live-sessions/{booking.Id}",
+            $"session:{booking.Id}:settlement-confirmed", true, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
     }
 
     public async Task<AttachmentDto> AddAttachmentAsync(
@@ -595,15 +677,8 @@ internal sealed class LiveSessionService(
         ServiceCatalogPolicyValidator.EnsureOfferingTerms(
             row.type, row.service.Price, row.service.Currency, row.service.DeliveryHours, row.service.Revisions);
 
-        var eligible = await db.TeacherProfiles.AsNoTracking().AnyAsync(profile =>
-                profile.TeacherId == row.service.TeacherId
-                && profile.IsPublished
-                && db.Subjects.Any(subject => subject.Id == row.service.SubjectId && subject.IsActive)
-                && db.TeacherSubjectQualifications.Any(q =>
-                    q.TeacherId == row.service.TeacherId
-                    && q.SubjectId == row.service.SubjectId
-                    && q.Status == TeacherQualificationStatus.Approved
-                    && q.RevokedAt == null), ct);
+        var eligible = await TeacherPublicQueries.EligibleServices(db, true)
+            .AnyAsync(service => service.Id == row.service.Id, ct);
         if (!eligible)
             throw new DomainException("teacher_not_approved", "An active approved subject qualification is required.");
 
@@ -720,19 +795,30 @@ internal sealed class LiveSessionService(
         new("session_conflict", "The selected session time conflicts with another booking.");
     // ponytail: one lock per teacher; partition by time range only if scheduling throughput proves this too coarse.
     private Task LockScheduleAsync(string teacherId, CancellationToken ct) =>
-        db.Database.IsSqlServer()
-            ? db.Database.ExecuteSqlInterpolatedAsync(
-                $"EXEC sp_getapplock @Resource={"session-schedule:" + teacherId}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct)
-            : Task.CompletedTask;
+        db.Database.AcquireAsync("session-schedule:" + teacherId, ct);
+    private async Task LockSettlementAsync(Guid id, CancellationToken ct)
+    {
+        await db.Database.AcquireAsync("dispute-session:" + id, ct);
+        await db.Database.AcquireAsync("session-settlement:" + id, ct);
+    }
+    private async Task RequireNoOpenDisputeAsync(Guid id, CancellationToken ct)
+    {
+        if (await db.Disputes.AnyAsync(x => x.LiveSessionBookingId == id
+                && x.Status != Domain.Governance.DisputeStatus.Resolved, ct))
+            throw new DomainException("session_under_dispute",
+                "This live session must be resolved through the dispute workflow.");
+    }
     private static bool ContainsSqlException(Exception exception)
     {
         for (Exception? current = exception; current is not null; current = current.InnerException)
             if (current is SqlException) return true;
         return false;
     }
-    private static LiveSessionDto Map(
+    private LiveSessionDto Map(
         LiveSessionBooking x,
-        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null) =>
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null,
+        bool hasReview = false,
+        Guid? disputeId = null) =>
         new(x.Id, x.StudentId, x.TeacherId, x.TeacherServiceId, x.Title, x.Notes,
             x.StartsAt, x.EndsAt, x.StudentTimeZoneId, x.TeacherTimeZoneId,
             x.BasePrice, x.Currency, x.EmergencyPremiumPercent, x.EmergencyPremiumAmount,
@@ -745,5 +831,13 @@ internal sealed class LiveSessionService(
             names is not null && names.TryGetValue(x.StudentId, out student) ? student.FullNameEnglish : null,
             names is not null && names.TryGetValue(x.TeacherId, out teacher) ? teacher.FullNameEnglish : null,
             x.ServiceCatalogItemId, x.CatalogCode, x.CategoryCode, x.OrderType,
-            x.ServiceNameEnglish, x.ServiceNameArabic);
+            x.ServiceNameEnglish, x.ServiceNameArabic,
+            x.TeacherCommissionPercent, x.TeacherCommissionAmount, x.TeacherNet,
+            hasReview, disputeId, x.ProposedStartsAt, x.ProposedEndsAt,
+            x.RescheduleRequestedById, x.RescheduleRequestedAt,
+            x.Status == LiveSessionStatus.Confirmed && x.EndsAt <= clock.GetUtcNow()
+                ? _options.PassiveOutcomeDeadline(x.EndsAt) : null,
+            x.Status == LiveSessionStatus.Confirmed
+                && disputeId is null
+                && clock.GetUtcNow() >= _options.PassiveOutcomeDeadline(x.EndsAt));
 }

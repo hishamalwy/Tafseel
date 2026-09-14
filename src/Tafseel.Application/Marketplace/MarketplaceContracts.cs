@@ -277,6 +277,8 @@ public sealed class TeacherShowcaseOptions
     public int MaxPublicPerTeacher { get; init; } = 6;
     public int MaxPublicPerSubject { get; init; } = 3;
     public int MaxVersionsPerShowcase { get; init; } = 20;
+    /// <summary>Max files accepted in one Teacher Showcase picker batch. Matches public root cap.</summary>
+    public int MaxFilesPerUpload { get; init; } = TeacherMediaTypes.MaxFilesPerUpload;
 }
 
 public sealed record TeachingSampleDto(
@@ -292,7 +294,8 @@ public sealed record TeachingSampleDto(
     int DisplayOrder = 0,
     bool IsProfileVisible = true,
     int ProfileDisplayOrder = 0,
-    bool IsProfileFeatured = false);
+    bool IsProfileFeatured = false,
+    string? ContentType = null);
 public sealed record SampleFile(Stream Content, string ContentType);
 
 public sealed record ProfileVideoDto(
@@ -405,6 +408,8 @@ public sealed record AvailabilityRuleInput(
     [param: Range(15, 240)] int? SlotMinutes);
 public sealed record AvailabilityRuleDto(
     Guid Id, DayOfWeek DayOfWeek, TimeOnly Start, TimeOnly End, string TimeZoneId, int? SlotMinutes);
+public sealed record ReplaceAvailabilityRules(
+    [param: Required] IReadOnlyCollection<AvailabilityRuleInput> Rules);
 
 public sealed record AvailabilityExceptionInput(
     DateTimeOffset StartsAt,
@@ -464,6 +469,8 @@ public interface IMarketplaceService
     Task DecideShowcaseAsync(string reviewerId, Guid id, Guid versionId, ShowcaseDecisionInput input, string version, CancellationToken ct);
     Task<SampleFile> OpenShowcaseVersionAsync(string requesterId, bool canReview, Guid id, Guid versionId, CancellationToken ct);
     Task<AvailabilityRuleDto> AddAvailabilityRuleAsync(string teacherId, AvailabilityRuleInput input, CancellationToken ct);
+    Task<IReadOnlyCollection<AvailabilityRuleDto>> ReplaceAvailabilityRulesAsync(
+        string teacherId, ReplaceAvailabilityRules input, CancellationToken ct);
     Task RemoveAvailabilityRuleAsync(string teacherId, Guid id, CancellationToken ct);
     Task<AvailabilityExceptionDto> AddAvailabilityExceptionAsync(string teacherId, AvailabilityExceptionInput input, CancellationToken ct);
     Task RemoveAvailabilityExceptionAsync(string teacherId, Guid id, CancellationToken ct);

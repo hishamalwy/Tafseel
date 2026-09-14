@@ -129,7 +129,8 @@ internal sealed class MarketplaceIntelligenceService(
             orderIdsInContext.Contains(x.OrderId) && x.NextStatus == OrderStatus.Completed
             && x.CreatedAt >= rangeStart && x.CreatedAt < rangeEnd, ct);
         var reviewed = await db.TeacherReviews.AsNoTracking().CountAsync(x =>
-            orderIdsInContext.Contains(x.OrderId) && x.CreatedAt >= rangeStart && x.CreatedAt < rangeEnd, ct);
+            x.OrderId.HasValue && orderIdsInContext.Contains(x.OrderId.Value)
+            && x.CreatedAt >= rangeStart && x.CreatedAt < rangeEnd, ct);
         var zeroResults = await events.CountAsync(x => x.EventName == "zero_result_viewed", ct);
 
         var counts = new[] { browse, opens, selections, starts, submitted, accepted, paymentStarted, paid, delivered, completed, reviewed };

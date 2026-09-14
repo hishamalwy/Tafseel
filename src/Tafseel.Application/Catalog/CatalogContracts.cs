@@ -124,7 +124,8 @@ public sealed record SubjectInput(
 public sealed record TopicInput(
     Guid SubjectId,
     [param: Required, NotWhiteSpace, StringLength(200)] string Name,
-    [param: Required, NotWhiteSpace, StringLength(50)] string Difficulty) : IValidatableObject
+    [param: Required, NotWhiteSpace, StringLength(50)] string Difficulty,
+    [param: StringLength(200)] string NameAr = "") : IValidatableObject
 {
     public IEnumerable<ValidationResult> Validate(ValidationContext _) =>
         SubjectId == Guid.Empty

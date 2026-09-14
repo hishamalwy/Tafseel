@@ -572,6 +572,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<Guid?>("LearningRequestId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("LiveSessionBookingId")
                         .HasColumnType("uniqueidentifier");
 
@@ -618,6 +621,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[OrderId] IS NOT NULL");
 
+                    b.HasIndex("LearningRequestId", "CreatedAt")
+                        .HasFilter("[LearningRequestId] IS NOT NULL");
+
                     b.HasIndex("Provider", "ProviderReference")
                         .IsUnique();
 
@@ -632,7 +638,7 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_Payments_Status", "[Status] BETWEEN 0 AND 3");
 
-                            t.HasCheckConstraint("CK_Payments_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+                            t.HasCheckConstraint("CK_Payments_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL AND [LearningRequestId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NULL AND [LearningRequestId] IS NOT NULL)");
                         });
                 });
 
@@ -731,7 +737,10 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("LiveSessionBookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("PaymentId")
@@ -740,6 +749,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ActorId");
+
+                    b.HasIndex("LiveSessionBookingId");
 
                     b.HasIndex("OrderId");
 
@@ -752,6 +763,152 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.ToTable("Refunds", t =>
                         {
                             t.HasCheckConstraint("CK_Refunds_Amount", "[Amount] > 0");
+
+                            t.HasCheckConstraint("CK_Refunds_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Finance.TeacherEarningMaturity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BusinessKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<Guid?>("LiveSessionBookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("MaturesAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("SettledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TeacherId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessKey")
+                        .IsUnique();
+
+                    b.HasIndex("LiveSessionBookingId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PaymentId")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "MaturesAt");
+
+                    b.HasIndex("TeacherId", "Status");
+
+                    b.ToTable("TeacherEarningMaturities", t =>
+                        {
+                            t.HasCheckConstraint("CK_EarningMaturities_Amount", "[Amount] > 0");
+
+                            t.HasCheckConstraint("CK_EarningMaturities_Status", "[Status] BETWEEN 0 AND 2");
+
+                            t.HasCheckConstraint("CK_EarningMaturities_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Finance.TeacherPayoutProfile", b =>
+                {
+                    b.Property<string>("TeacherId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(2)");
+
+                    b.Property<string>("DestinationLabel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IdentityLast4")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(4)");
+
+                    b.Property<string>("LegalName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PayoutMethod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("TeacherId");
+
+                    b.HasIndex("Status", "SubmittedAt");
+
+                    b.ToTable("TeacherPayoutProfiles", t =>
+                        {
+                            t.HasCheckConstraint("CK_PayoutProfiles_Status", "[Status] BETWEEN 0 AND 2");
                         });
                 });
 
@@ -773,14 +930,26 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(3)");
 
+                    b.Property<string>("DestinationLabel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("IdempotencyKey")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("PayoutMethod")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<string>("ProviderReference")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -869,12 +1038,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid?>("LiveSessionBookingId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("OpenedById")
                         .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Reason")
@@ -906,10 +1078,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LiveSessionBookingId")
+                        .IsUnique()
+                        .HasFilter("[LiveSessionBookingId] IS NOT NULL");
+
                     b.HasIndex("OpenedById");
 
                     b.HasIndex("OrderId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[OrderId] IS NOT NULL");
 
                     b.HasIndex("StudentId");
 
@@ -920,6 +1097,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.ToTable("Disputes", t =>
                         {
                             t.HasCheckConstraint("CK_Disputes_Status", "[Status] BETWEEN 0 AND 2");
+
+                            t.HasCheckConstraint("CK_Disputes_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
                         });
                 });
 
@@ -1127,10 +1306,13 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsVisible")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("LiveSessionBookingId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("OnTimeDelivery")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<Guid?>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("OriginalComment")
@@ -1163,8 +1345,13 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LiveSessionBookingId")
+                        .IsUnique()
+                        .HasFilter("[LiveSessionBookingId] IS NOT NULL");
+
                     b.HasIndex("OrderId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[OrderId] IS NOT NULL");
 
                     b.HasIndex("StudentId");
 
@@ -1175,6 +1362,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_TeacherReviews_Overall", "[OverallScore] = ROUND(([ExplanationClarity]+[SubjectKnowledge]+[Communication]+[OnTimeDelivery]+[ValueForMoney])/5.0,2)");
 
                             t.HasCheckConstraint("CK_TeacherReviews_Scores", "[ExplanationClarity] BETWEEN 1 AND 5 AND [SubjectKnowledge] BETWEEN 1 AND 5 AND [Communication] BETWEEN 1 AND 5 AND [OnTimeDelivery] BETWEEN 1 AND 5 AND [ValueForMoney] BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("CK_TeacherReviews_Target", "([OrderId] IS NOT NULL AND [LiveSessionBookingId] IS NULL) OR ([OrderId] IS NULL AND [LiveSessionBookingId] IS NOT NULL)");
                         });
                 });
 
@@ -1284,8 +1473,21 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<DateTimeOffset?>("ProposedEndsAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ProposedStartsAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<int>("RescheduleCount")
                         .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("RescheduleRequestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RescheduleRequestedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -1322,10 +1524,22 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("TeacherCommissionAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TeacherCommissionPercent")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
+
                     b.Property<string>("TeacherId")
                         .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("TeacherNet")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("TeacherServiceId")
                         .HasColumnType("uniqueidentifier");
@@ -1349,6 +1563,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RescheduleRequestedById");
+
                     b.HasIndex("ServiceCatalogItemId");
 
                     b.HasIndex("TeacherServiceId");
@@ -1361,13 +1577,17 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_LiveSessionBookings_Cancellation", "[CancellationWindowHours] BETWEEN 0 AND 720");
 
+                            t.HasCheckConstraint("CK_LiveSessionBookings_Commission", "[TeacherCommissionPercent] BETWEEN 0 AND 100 AND [TeacherCommissionAmount] = ROUND([TotalPrice] * [TeacherCommissionPercent] / 100, 2) AND [TeacherNet] = [TotalPrice] - [TeacherCommissionAmount]");
+
                             t.HasCheckConstraint("CK_LiveSessionBookings_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
 
                             t.HasCheckConstraint("CK_LiveSessionBookings_Price", "[BasePrice] > 0 AND [EmergencyPremiumPercent] BETWEEN 0 AND 1000 AND [EmergencyPremiumAmount] = ROUND([BasePrice] * [EmergencyPremiumPercent] / 100, 2) AND [TotalPrice] = [BasePrice] + [EmergencyPremiumAmount]");
 
                             t.HasCheckConstraint("CK_LiveSessionBookings_Range", "[EndsAt] > [StartsAt]");
 
-                            t.HasCheckConstraint("CK_LiveSessionBookings_Status", "[Status] BETWEEN 0 AND 5");
+                            t.HasCheckConstraint("CK_LiveSessionBookings_RescheduleRequest", "([RescheduleRequestedAt] IS NULL AND [RescheduleRequestedById] IS NULL AND [ProposedStartsAt] IS NULL AND [ProposedEndsAt] IS NULL) OR ([RescheduleRequestedAt] IS NOT NULL AND [RescheduleRequestedById] IS NOT NULL AND [ProposedStartsAt] IS NOT NULL AND [ProposedEndsAt] > [ProposedStartsAt])");
+
+                            t.HasCheckConstraint("CK_LiveSessionBookings_Status", "[Status] BETWEEN 0 AND 8");
                         });
                 });
 
@@ -1404,9 +1624,126 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.ToTable("LiveSessionStatusHistory", t =>
                         {
-                            t.HasCheckConstraint("CK_LiveSessionHistory_Next", "[NextStatus] BETWEEN 0 AND 5");
+                            t.HasCheckConstraint("CK_LiveSessionHistory_Next", "[NextStatus] BETWEEN 0 AND 8");
 
-                            t.HasCheckConstraint("CK_LiveSessionHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 5");
+                            t.HasCheckConstraint("CK_LiveSessionHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 8");
+                        });
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Marketing.Promotion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Accent")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("BodyAr")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<string>("BodyEn")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<string>("CouponCode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CtaHref")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<string>("CtaLabelAr")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("CtaLabelEn")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("EndsAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("EyebrowAr")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("EyebrowEn")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("HighlightAr")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<string>("HighlightEn")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("StartsAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive", "DisplayOrder");
+
+                    b.ToTable("Promotions", t =>
+                        {
+                            t.HasCheckConstraint("CK_Promotions_DisplayOrder", "[DisplayOrder] BETWEEN 0 AND 10000");
+
+                            t.HasCheckConstraint("CK_Promotions_Kind", "[Kind] BETWEEN 0 AND 4");
+
+                            t.HasCheckConstraint("CK_Promotions_TitleAr", "[TitleAr] <> ''");
+
+                            t.HasCheckConstraint("CK_Promotions_TitleEn", "[TitleEn] <> ''");
+
+                            t.HasCheckConstraint("CK_Promotions_Window", "[StartsAt] IS NULL OR [EndsAt] IS NULL OR [EndsAt] > [StartsAt]");
                         });
                 });
 
@@ -2338,6 +2675,14 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal?>("BudgetMax")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BudgetMin")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("CatalogCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2364,7 +2709,13 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<DateTimeOffset?>("PaymentReservationExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("PreferredDeliveryAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<byte[]>("RowVersion")
@@ -2372,6 +2723,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("SelectedOfferId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("ServiceCatalogItemId")
                         .HasColumnType("uniqueidentifier");
@@ -2386,6 +2740,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("SourcingMode")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -2394,12 +2751,14 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("TeacherId")
-                        .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<Guid>("TeacherServiceId")
+                    b.Property<Guid?>("TeacherServiceId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
@@ -2412,7 +2771,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SelectedOfferId");
+
                     b.HasIndex("ServiceCatalogItemId");
+
+                    b.HasIndex("SubjectId");
 
                     b.HasIndex("TeacherServiceId");
 
@@ -2420,11 +2783,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TeacherId", "Status", "CreatedAt");
 
+                    b.HasIndex("SourcingMode", "Status", "SubjectId", "CreatedAt");
+
                     b.ToTable("LearningRequests", t =>
                         {
                             t.HasCheckConstraint("CK_LearningRequests_Budget", "[Budget] IS NULL OR [Budget] > 0");
 
-                            t.HasCheckConstraint("CK_LearningRequests_Status", "[Status] BETWEEN 0 AND 4");
+                            t.HasCheckConstraint("CK_LearningRequests_BudgetRange", "([BudgetMin] IS NULL AND [BudgetMax] IS NULL) OR ([BudgetMin] >= 0 AND [BudgetMax] >= [BudgetMin])");
+
+                            t.HasCheckConstraint("CK_LearningRequests_Status", "[Status] BETWEEN 0 AND 8");
                         });
                 });
 
@@ -2501,9 +2868,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.ToTable("LearningRequestStatusHistory", t =>
                         {
-                            t.HasCheckConstraint("CK_LearningRequestHistory_Next", "[NextStatus] BETWEEN 0 AND 4");
+                            t.HasCheckConstraint("CK_LearningRequestHistory_Next", "[NextStatus] BETWEEN 0 AND 8");
 
-                            t.HasCheckConstraint("CK_LearningRequestHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 4");
+                            t.HasCheckConstraint("CK_LearningRequestHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 8");
 
                             t.HasCheckConstraint("CK_LearningRequestHistory_Transition", "[PreviousStatus] IS NULL OR [PreviousStatus] <> [NextStatus]");
                         });
@@ -2528,6 +2895,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
+
+                    b.Property<int?>("CommittedDeliveryHours")
+                        .HasColumnType("int");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -2704,6 +3074,59 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Tafseel.Domain.Orders.OrderExtensionRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ProposedDeliveryAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RequestedById")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("RespondedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Response")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("RespondedById");
+
+                    b.HasIndex("OrderId", "Status", "CreatedAt");
+
+                    b.ToTable("OrderExtensionRequests", t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderExtensionRequests_Status", "[Status] BETWEEN 0 AND 2");
+                        });
+                });
+
             modelBuilder.Entity("Tafseel.Domain.Orders.OrderStatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2799,6 +3222,95 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.ToTable("RevisionRequest", t =>
                         {
                             t.HasCheckConstraint("CK_RevisionRequests_Sequence", "[Sequence] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Orders.TeacherOffer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<int>("DeliveryHours")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IncludedRevisions")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("LearningRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("SelectedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TeacherId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("TeacherServiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ValidUntil")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("WithdrawnAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeacherServiceId");
+
+                    b.HasIndex("LearningRequestId", "TeacherId")
+                        .IsUnique();
+
+                    b.HasIndex("LearningRequestId", "Status", "ValidUntil");
+
+                    b.HasIndex("TeacherId", "Status", "UpdatedAt");
+
+                    b.ToTable("TeacherOffers", t =>
+                        {
+                            t.HasCheckConstraint("CK_TeacherOffers_Amount", "[Amount] > 0");
+
+                            t.HasCheckConstraint("CK_TeacherOffers_Currency", "[Currency] = 'SAR'");
+
+                            t.HasCheckConstraint("CK_TeacherOffers_DeliveryHours", "[DeliveryHours] BETWEEN 1 AND 8760");
+
+                            t.HasCheckConstraint("CK_TeacherOffers_Revisions", "[IncludedRevisions] BETWEEN 0 AND 20");
+
+                            t.HasCheckConstraint("CK_TeacherOffers_Status", "[Status] BETWEEN 0 AND 5");
                         });
                 });
 
@@ -3176,6 +3688,10 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("AcceptedPolicyVersion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
@@ -3239,6 +3755,9 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("PoliciesAcceptedAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -3732,6 +4251,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Finance.Payment", b =>
                 {
+                    b.HasOne("Tafseel.Domain.Orders.LearningRequest", null)
+                        .WithMany()
+                        .HasForeignKey("LearningRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
                         .WithMany()
                         .HasForeignKey("LiveSessionBookingId")
@@ -3766,16 +4290,54 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
+                        .WithMany()
+                        .HasForeignKey("LiveSessionBookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.Orders.Order", null)
                         .WithMany()
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Domain.Finance.Payment", null)
                         .WithMany()
                         .HasForeignKey("PaymentId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Finance.TeacherEarningMaturity", b =>
+                {
+                    b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
+                        .WithMany()
+                        .HasForeignKey("LiveSessionBookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Tafseel.Domain.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Tafseel.Domain.Finance.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Finance.TeacherPayoutProfile", b =>
+                {
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("Tafseel.Domain.Finance.TeacherPayoutProfile", "TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -3790,6 +4352,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Governance.Dispute", b =>
                 {
+                    b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
+                        .WithOne()
+                        .HasForeignKey("Tafseel.Domain.Governance.Dispute", "LiveSessionBookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("OpenedById")
@@ -3799,8 +4366,7 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.HasOne("Tafseel.Domain.Orders.Order", null)
                         .WithOne()
                         .HasForeignKey("Tafseel.Domain.Governance.Dispute", "OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
@@ -3892,11 +4458,15 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Governance.TeacherReview", b =>
                 {
+                    b.HasOne("Tafseel.Domain.LiveSessions.LiveSessionBooking", null)
+                        .WithOne()
+                        .HasForeignKey("Tafseel.Domain.Governance.TeacherReview", "LiveSessionBookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.Orders.Order", null)
                         .WithOne()
                         .HasForeignKey("Tafseel.Domain.Governance.TeacherReview", "OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
@@ -3928,6 +4498,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.LiveSessions.LiveSessionBooking", b =>
                 {
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RescheduleRequestedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.Catalog.ServiceCatalogItem", null)
                         .WithMany()
                         .HasForeignKey("ServiceCatalogItemId")
@@ -4200,6 +4775,11 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tafseel.Domain.Orders.LearningRequest", b =>
                 {
+                    b.HasOne("Tafseel.Domain.Orders.TeacherOffer", null)
+                        .WithMany()
+                        .HasForeignKey("SelectedOfferId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Domain.Catalog.ServiceCatalogItem", null)
                         .WithMany()
                         .HasForeignKey("ServiceCatalogItemId")
@@ -4211,17 +4791,20 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Tafseel.Domain.Catalog.Subject", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tafseel.Domain.Marketplace.TeacherService", null)
                         .WithMany()
                         .HasForeignKey("TeacherServiceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Tafseel.Domain.Orders.LearningRequestAttachment", b =>
@@ -4289,6 +4872,26 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Tafseel.Domain.Orders.OrderExtensionRequest", b =>
+                {
+                    b.HasOne("Tafseel.Domain.Orders.Order", null)
+                        .WithMany("Extensions")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RespondedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("Tafseel.Domain.Orders.OrderStatusHistory", b =>
                 {
                     b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
@@ -4324,6 +4927,27 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
                     b.HasOne("Tafseel.Domain.Orders.Order", null)
                         .WithMany("Revisions")
                         .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tafseel.Domain.Orders.TeacherOffer", b =>
+                {
+                    b.HasOne("Tafseel.Domain.Orders.LearningRequest", null)
+                        .WithMany()
+                        .HasForeignKey("LearningRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tafseel.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tafseel.Domain.Marketplace.TeacherService", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherServiceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -4523,6 +5147,8 @@ namespace Tafseel.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Tafseel.Domain.Orders.Order", b =>
                 {
                     b.Navigation("Deliveries");
+
+                    b.Navigation("Extensions");
 
                     b.Navigation("History");
 

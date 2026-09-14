@@ -15,6 +15,9 @@ using Tafseel.Application.Orders;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
 using Tafseel.Domain.Messaging;
+using Tafseel.Domain.Governance;
+using Tafseel.Domain.LiveSessions;
+using Tafseel.Domain.Orders;
 using Tafseel.Infrastructure.Email;
 using Tafseel.Infrastructure.Identity;
 using Tafseel.Infrastructure.Persistence;
@@ -38,8 +41,7 @@ internal sealed class MessagingService(
             ? string.Join(":", new[] { userId, input.OtherUserId }.Order())
             : $"{input.Scope}:{input.ResourceId}";
         if (db.Database.IsSqlServer())
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"EXEC sp_getapplock @Resource={"conversation:" + lockKey}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000", ct);
+            await db.Database.AcquireAsync("conversation:" + lockKey, ct);
         var existing = input.Scope == ConversationScope.General
             ? await db.Conversations.Include(x => x.Participants).SingleOrDefaultAsync(x =>
                 x.Scope == ConversationScope.General
@@ -126,6 +128,7 @@ internal sealed class MessagingService(
         var conversation = await db.Conversations.Include(x => x.Participants)
             .Include(x => x.Messages).SingleOrDefaultAsync(x => x.Id == conversationId, ct)
             ?? throw NotOwned();
+        await EnsureConversationWritableAsync(conversation, ct);
         var message = conversation.Send(userId, input.Body, clock.GetUtcNow());
         var recipientIds = conversation.Participants.Where(x => x.UserId != userId).Select(x => x.UserId).ToArray();
         var senderName = await db.Users.AsNoTracking().Where(x => x.Id == userId)
@@ -157,6 +160,31 @@ internal sealed class MessagingService(
             logger.LogWarning(exception, "Message {MessageId} persisted but real-time broadcast failed", message.Id);
         }
         return dto;
+    }
+
+    private async Task EnsureConversationWritableAsync(Conversation conversation, CancellationToken ct)
+    {
+        if (conversation.ResourceId is not Guid resourceId) return;
+        var cutoff = clock.GetUtcNow().AddDays(-7);
+        var archived = conversation.Scope switch
+        {
+            ConversationScope.Order => await db.Orders.AsNoTracking().AnyAsync(x => x.Id == resourceId
+                && (x.Status == OrderStatus.Completed || x.Status == OrderStatus.Cancelled)
+                && x.UpdatedAt <= cutoff, ct),
+            ConversationScope.LiveSession => await db.LiveSessionBookings.AsNoTracking().AnyAsync(x => x.Id == resourceId
+                && (x.Status == LiveSessionStatus.Completed || x.Status == LiveSessionStatus.Cancelled
+                    || x.Status == LiveSessionStatus.StudentNoShow || x.Status == LiveSessionStatus.TeacherNoShow)
+                && x.UpdatedAt <= cutoff, ct),
+            _ => false
+        };
+        if (!archived) return;
+        var reopenedByDispute = conversation.Scope == ConversationScope.Order
+            ? await db.Disputes.AsNoTracking().AnyAsync(x => x.OrderId == resourceId && x.Status != DisputeStatus.Resolved, ct)
+            : conversation.Scope == ConversationScope.LiveSession
+                && await db.Disputes.AsNoTracking().AnyAsync(x => x.LiveSessionBookingId == resourceId && x.Status != DisputeStatus.Resolved, ct);
+        if (!reopenedByDispute)
+            throw new DomainException("conversation_read_only",
+                "This conversation is read-only seven days after the service closes. Open a dispute to continue case-related communication.");
     }
 
     public async Task MarkReadAsync(string userId, Guid conversationId, string version, CancellationToken ct)
@@ -457,6 +485,7 @@ internal sealed class NotificationOutboxWorker(
         var upcoming = await db.LiveSessionBookings.AsNoTracking()
             .Where(x => x.Status == Tafseel.Domain.LiveSessions.LiveSessionStatus.Confirmed
                 && x.StartsAt > now && x.StartsAt <= reminderCutoff)
+            .OrderBy(x => x.StartsAt).ThenBy(x => x.Id)
             .Select(x => new { x.Id, x.StudentId, x.TeacherId, x.Title }).Take(100).ToArrayAsync(ct);
         foreach (var session in upcoming)
         {

@@ -60,7 +60,7 @@ public sealed class TeacherApplicationsController(ITeacherApplicationService app
     {
         await using var stream = file.OpenReadStream();
         return Ok(await applications.UploadDemoAsync(
-            UserId(), id, stream, file.FileName, file.ContentType, file.Length, durationSeconds, expectedVersion, ct));
+            UserId(), id, stream, file.FileName, file.ContentType ?? "", file.Length, durationSeconds, expectedVersion, ct));
     }
 
     [Authorize(Policy = Permissions.TeachersApply), HttpPost("{id:guid}/submit")]

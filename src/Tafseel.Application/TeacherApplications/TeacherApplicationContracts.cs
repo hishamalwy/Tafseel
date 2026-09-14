@@ -211,7 +211,8 @@ public interface IFileStorageService
         string fileName,
         string contentType,
         long size,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool videoOnly = true);
     Task<Stream> OpenPrivateVideoAsync(string storageKey, CancellationToken cancellationToken);
     Task<bool> PrivateFileExistsAsync(string storageKey, CancellationToken cancellationToken);
     Task<StoredFile> StorePrivateFileAsync(

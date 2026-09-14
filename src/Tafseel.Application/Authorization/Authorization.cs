@@ -59,7 +59,7 @@ public static class Permissions
     public static IReadOnlyCollection<string> ForRole(string role) => role switch
     {
         Roles.Admin => All,
-        Roles.QualityReviewer => [TeachersReviewApplications, TeachersReviewShowcases, ReportsView],
+        Roles.QualityReviewer => [TeachersReviewApplications, TeachersReviewShowcases],
         Roles.Teacher =>
         [
             TeachersApply, TeachersManageOwnProfile, TeachersManageOwnServices, TeachersManageOwnShowcases,

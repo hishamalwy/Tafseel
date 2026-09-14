@@ -69,14 +69,18 @@ public sealed class Subject : CatalogItem
 public sealed class Topic : CatalogItem
 {
     private Topic() { }
-    public Topic(Guid subjectId, string name, string difficulty) : base(name)
+    public Topic(Guid subjectId, string name, string difficulty, string nameAr = "") : base(name, nameAr)
     {
         SubjectId = subjectId;
         Difficulty = difficulty.Trim();
     }
     public Guid SubjectId { get; private init; }
     public string Difficulty { get; private set; } = "";
-    public void Update(string name, string difficulty) { Rename(name); Difficulty = difficulty.Trim(); }
+    public void Update(string name, string difficulty, string? nameAr = null)
+    {
+        Rename(name, nameAr);
+        Difficulty = difficulty.Trim();
+    }
 }
 
 public sealed class QualificationTopic : CatalogItem

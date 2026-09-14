@@ -10,6 +10,8 @@ public sealed class ApplicationUser : IdentityUser
     public string? AvatarContentType { get; set; }
     public bool IsSuspended { get; set; }
     public DateTimeOffset? EmailConfirmationSentAt { get; set; }
+    public string AcceptedPolicyVersion { get; set; } = "";
+    public DateTimeOffset? PoliciesAcceptedAt { get; set; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public ICollection<RefreshToken> RefreshTokens { get; } = [];
 

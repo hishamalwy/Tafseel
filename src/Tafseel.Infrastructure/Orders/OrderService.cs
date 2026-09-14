@@ -6,11 +6,13 @@ using Tafseel.Application.Finance;
 using Tafseel.Application.Orders;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Domain.Common;
+using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.Orders;
 using Tafseel.Domain.Governance;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Persistence;
 using Tafseel.Infrastructure.Messaging;
+using Tafseel.Infrastructure.Marketplace;
 
 namespace Tafseel.Infrastructure.Orders;
 
@@ -20,9 +22,11 @@ internal sealed class OrderService(
     IFinancialService finance,
     NotificationWriter notifications,
     IOptions<FeeOptions> feeOptions,
+    IOptions<OrderLifecycleOptions> lifecycleOptions,
     TimeProvider clock) : IOrderService
 {
     private readonly FeeOptions _fees = feeOptions.Value;
+    private readonly OrderLifecycleOptions _lifecycle = lifecycleOptions.Value;
 
     public async Task<LearningRequestDto> CreateRequestAsync(
         string studentId, CreateLearningRequest input, CancellationToken ct)
@@ -40,8 +44,8 @@ internal sealed class OrderService(
                 && db.TeacherSubjectQualifications.Any(q =>
                     q.TeacherId == service.TeacherId && q.SubjectId == service.SubjectId
                     && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
-                && db.TeacherProfiles.Any(profile =>
-                    profile.TeacherId == service.TeacherId && profile.IsPublished)
+                && TeacherPublicQueries.EligibleServices(db, true)
+                    .Any(eligible => eligible.Id == service.Id)
             select new { service, catalog }).SingleOrDefaultAsync(ct)
             ?? throw new DomainException("teacher_service_not_found", "Teacher service was not found.");
         ServiceCatalogPolicyValidator.EnsureAsyncRequest(row.catalog);
@@ -91,7 +95,24 @@ internal sealed class OrderService(
             join request in db.LearningRequests.AsNoTracking()
                 on attachment.LearningRequestId equals request.Id
             where attachment.Id == attachmentId
-                && (request.StudentId == userId || request.TeacherId == userId)
+                && (request.StudentId == userId || request.TeacherId == userId
+                    || (request.SourcingMode == RequestSourcingMode.OpenMarketplace
+                        && request.Status == LearningRequestStatus.OpenForOffers
+                        && request.PreferredDeliveryAt > clock.GetUtcNow()
+                        && db.Users.Any(user => user.Id == userId && !user.IsSuspended)
+                        && db.TeacherProfiles.Any(profile => profile.TeacherId == userId && profile.IsPublished)
+                        && db.Subjects.Any(subject => subject.Id == request.SubjectId && subject.IsActive)
+                        && db.TeacherSubjectQualifications.Any(q => q.TeacherId == userId
+                            && q.SubjectId == request.SubjectId
+                            && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null))
+                    || (request.Status == LearningRequestStatus.AwaitingPayment
+                        && db.TeacherOffers.Any(offer => offer.Id == request.SelectedOfferId
+                            && offer.TeacherId == userId && offer.Status == TeacherOfferStatus.Selected)
+                        && db.Users.Any(user => user.Id == userId && !user.IsSuspended)
+                        && db.TeacherProfiles.Any(profile => profile.TeacherId == userId && profile.IsPublished)
+                        && db.TeacherSubjectQualifications.Any(q => q.TeacherId == userId
+                            && q.SubjectId == request.SubjectId
+                            && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)))
             select new { attachment.StorageKey, attachment.ContentType, attachment.OriginalName })
             .SingleOrDefaultAsync(ct)
             ?? throw new DomainException("attachment_not_owned", "Attachment was not found.");
@@ -126,7 +147,7 @@ internal sealed class OrderService(
     {
         var request = await OwnedRequestAsync(studentId, requestId, student: true, version, ct);
         request.ReplyToClarification(studentId, message, clock.GetUtcNow());
-        await notifications.QueueAsync(request.TeacherId, "ClarificationReplied",
+        await notifications.QueueAsync(request.TeacherId!, "ClarificationReplied",
             "Student replied", message, $"/requests/{request.Id}",
             $"request:{request.Id}:reply:{request.UpdatedAt.UtcTicks}", true, ct);
         await db.SaveChangesAsync(ct);
@@ -178,13 +199,15 @@ internal sealed class OrderService(
             if (!string.Equals(row.service.Currency, input.Currency, StringComparison.OrdinalIgnoreCase))
                 throw new DomainException("currency_mismatch", "Accepted currency must match the teacher service.");
             var now = clock.GetUtcNow();
+            var deliveryHours = input.DeliveryHours
+                ?? Math.Max(1, (int)Math.Ceiling((input.AgreedDeliveryAt - now).TotalHours));
             ServiceCatalogPolicyValidator.EnsureAcceptedTerms(
-                row.catalog, input.FinalPrice, input.Currency, now, input.AgreedDeliveryAt, input.RevisionAllowance);
+                row.catalog, input.FinalPrice, input.Currency, now, now.AddHours(deliveryHours), input.RevisionAllowance);
             request.Accept(teacherId, idempotencyKey, now);
             var order = new Order(
                 request.Id, request.StudentId, teacherId, row.service.Id, input.FinalPrice, input.Currency,
                 _fees.StudentFeePercent, _fees.TeacherCommissionPercent, input.AgreedDeliveryAt,
-                input.RevisionAllowance, now);
+                input.RevisionAllowance, now, deliveryHours);
             order.CaptureServiceIdentity(row.catalog);
             db.Add(order);
             await notifications.QueueAsync(request.StudentId, "PaymentRequired",
@@ -214,7 +237,16 @@ internal sealed class OrderService(
         string studentId, Guid requestId, string version, CancellationToken ct)
     {
         var request = await OwnedRequestAsync(studentId, requestId, student: true, version, ct);
-        request.Cancel(studentId, clock.GetUtcNow());
+        var now = clock.GetUtcNow();
+        request.Cancel(studentId, now);
+        if (request.SourcingMode == RequestSourcingMode.OpenMarketplace)
+        {
+            var offers = await db.TeacherOffers.Where(x => x.LearningRequestId == request.Id).ToArrayAsync(ct);
+            foreach (var offer in offers) offer.Expire(now);
+            var payments = await db.Payments.Where(x => x.LearningRequestId == request.Id
+                && x.Status == Domain.Finance.PaymentStatus.Pending).ToArrayAsync(ct);
+            foreach (var payment in payments) payment.Fail(now);
+        }
         await db.SaveChangesAsync(ct);
     }
 
@@ -322,25 +354,42 @@ internal sealed class OrderService(
     }
 
     public async Task<DeliveryDto> DeliverAsync(
-        string teacherId, Guid orderId, Stream stream, string fileName, string contentType,
-        long size, string message, string version, CancellationToken ct)
+        string teacherId, Guid orderId, IReadOnlyList<DeliveryUpload> uploads, string message, string version,
+        CancellationToken ct)
     {
+        if (uploads is null || uploads.Count == 0)
+            throw new DomainException("delivery_file_required", "At least one delivery file is required.");
+        if (uploads.Count > TeacherMediaTypes.MaxFilesPerDelivery)
+            throw new DomainException("delivery_file_limit", "Too many files in one delivery.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        await db.Database.AcquireAsync($"dispute-order:{orderId}", ct);
         var order = await OwnedOrderAsync(teacherId, orderId, teacher: true, version, ct);
-        var stored = await files.StorePrivateFileAsync(
-            stream, fileName, contentType, size, "order-deliveries", ct);
+        if (await db.Disputes.AnyAsync(
+                dispute => dispute.OrderId == orderId && dispute.Status != DisputeStatus.Resolved, ct))
+            throw new DomainException("order_disputed", "The Order cannot be delivered while a dispute is open.");
+        var stored = new List<StoredFile>(uploads.Count);
         try
         {
-            order.Deliver(
-                teacherId, stored.StorageKey, SafeName(fileName), stored.ContentType, stored.Size,
-                message, clock.GetUtcNow());
+            foreach (var upload in uploads)
+            {
+                stored.Add(await files.StorePrivateFileAsync(
+                    upload.Stream, upload.FileName, upload.ContentType, upload.Size, "order-deliveries", ct));
+            }
+
+            var package = stored.Select((file, index) => new OrderDeliveryFile(
+                file.StorageKey, SafeName(uploads[index].FileName), file.ContentType, file.Size)).ToArray();
+            order.Deliver(teacherId, package, message, clock.GetUtcNow());
             await notifications.QueueAsync(order.StudentId, "DeliveryUploaded", "Delivery uploaded",
                 "Your teacher uploaded a delivery.", $"/orders/{order.Id}",
                 $"order:{order.Id}:delivery:{order.Deliveries.Last().Id}", true, ct);
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
         }
         catch
         {
-            await files.DeletePrivateFileAsync(stored.StorageKey, CancellationToken.None);
+            foreach (var file in stored)
+                await files.DeletePrivateFileAsync(file.StorageKey, CancellationToken.None);
             throw;
         }
         return Map(order.Deliveries.Last());
@@ -397,6 +446,31 @@ internal sealed class OrderService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task RequestExtensionAsync(
+        string userId, Guid orderId, RequestOrderExtension input, string version, CancellationToken ct)
+    {
+        var order = await ParticipantOrderAsync(userId, orderId, version, ct);
+        order.RequestExtension(userId, input.ProposedDeliveryAt, input.Reason, clock.GetUtcNow());
+        var other = userId == order.StudentId ? order.TeacherId : order.StudentId;
+        await notifications.QueueAsync(other, "OrderExtensionRequested", "Delivery extension requested",
+            input.Reason, $"/orders/{order.Id}", $"order:{order.Id}:extension:{order.Extensions.Last().Id}", true, ct);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task RespondToExtensionAsync(
+        string userId, Guid orderId, Guid extensionId, RespondOrderExtension input,
+        string version, CancellationToken ct)
+    {
+        var order = await ParticipantOrderAsync(userId, orderId, version, ct);
+        order.RespondToExtension(userId, extensionId, input.Accept, input.Response, clock.GetUtcNow());
+        var other = userId == order.StudentId ? order.TeacherId : order.StudentId;
+        await notifications.QueueAsync(other, "OrderExtensionDecided",
+            input.Accept ? "Delivery extension accepted" : "Delivery extension declined",
+            input.Response ?? "", $"/orders/{order.Id}",
+            $"order:{order.Id}:extension:{extensionId}:decision", true, ct);
+        await db.SaveChangesAsync(ct);
+    }
+
     private async Task<LearningRequest> OwnedRequestAsync(
         string userId, Guid id, bool student, string version, CancellationToken ct)
     {
@@ -416,6 +490,15 @@ internal sealed class OrderService(
         ApplyVersion(order, version);
         return order;
     }
+    private async Task<Order> ParticipantOrderAsync(
+        string userId, Guid id, string version, CancellationToken ct)
+    {
+        var order = await OrderWithChildren().SingleOrDefaultAsync(
+                x => x.Id == id && (x.StudentId == userId || x.TeacherId == userId), ct)
+            ?? throw new DomainException("order_not_owned", "Order was not found.");
+        ApplyVersion(order, version);
+        return order;
+    }
 
     private async Task<PagedResult<LearningRequestDto>> RequestPageAsync(
         IQueryable<LearningRequest> query, int page, int pageSize, CancellationToken ct)
@@ -427,8 +510,31 @@ internal sealed class OrderService(
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Include(x => x.Attachments).Include(x => x.Clarifications).AsSplitQuery().ToArrayAsync(ct);
         var names = await ResolveUserNamesAsync(
-            items.SelectMany(x => new[] { x.StudentId, x.TeacherId }), ct);
-        return new(items.Select(x => Map(x, names)).ToArray(), page, pageSize, count);
+            items.SelectMany(x => new[] { x.StudentId, x.TeacherId }).OfType<string>(), ct);
+        /* Offer counts for the open-sourced rows on this page only — one grouped
+           query, not one per row. Withdrawn and Expired Offers are excluded so the
+           number matches OpenRequestDto.OfferCount on the request detail surface. */
+        var openIds = items
+            .Where(x => x.SourcingMode == RequestSourcingMode.OpenMarketplace)
+            .Select(x => x.Id).ToArray();
+        var offerCounts = openIds.Length == 0
+            ? new Dictionary<Guid, int>()
+            : await db.TeacherOffers.AsNoTracking()
+                .Where(x => openIds.Contains(x.LearningRequestId)
+                    && x.Status != TeacherOfferStatus.Withdrawn
+                    && x.Status != TeacherOfferStatus.Expired)
+                .GroupBy(x => x.LearningRequestId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        var requestIdsForOutcomes = items.Select(x => x.Id).ToArray();
+        var outcomes = await db.Orders.AsNoTracking().Where(x => requestIdsForOutcomes.Contains(x.LearningRequestId))
+            .Select(x => new RequestOutcome(x.LearningRequestId, x.Status, x.PaymentStatus))
+            .ToDictionaryAsync(x => x.LearningRequestId, ct);
+        return new(items.Select(x => Map(x, names,
+                x.SourcingMode == RequestSourcingMode.OpenMarketplace
+                    ? offerCounts.GetValueOrDefault(x.Id)
+                    : null, outcomes.GetValueOrDefault(x.Id))).ToArray(),
+            page, pageSize, count);
     }
 
     private async Task<PagedResult<OrderDto>> OrderPageAsync(
@@ -439,7 +545,7 @@ internal sealed class OrderService(
         var count = await query.CountAsync(ct);
         var items = await query.AsNoTracking().OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Include(x => x.Deliveries).AsSplitQuery().ToArrayAsync(ct);
+            .Include(x => x.Deliveries).Include(x => x.Extensions).AsSplitQuery().ToArrayAsync(ct);
         var names = await ResolveUserNamesAsync(
             items.SelectMany(x => new[] { x.StudentId, x.TeacherId }), ct);
         var requestIds = items.Select(x => x.LearningRequestId).Distinct().ToArray();
@@ -447,16 +553,23 @@ internal sealed class OrderService(
             .Where(x => requestIds.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id, x => x.Title, ct);
         var reviews = await LoadReviewStatesAsync(items.Select(x => x.Id), ct);
+        var orderIds = items.Select(x => x.Id).ToArray();
+        var disputed = await db.Disputes.AsNoTracking().Where(x => x.OrderId.HasValue
+                && orderIds.Contains(x.OrderId.Value))
+            .Select(x => x.OrderId!.Value).ToArrayAsync(ct);
         return new(items.Select(x => Map(
                 x, teacherView, names, titles.GetValueOrDefault(x.LearningRequestId),
-                reviews.GetValueOrDefault(x.Id))).ToArray(),
+                reviews.GetValueOrDefault(x.Id), clock.GetUtcNow(), disputed.Contains(x.Id))).ToArray(),
             page, pageSize, count);
     }
 
     private async Task<LearningRequestDto> MapRequestAsync(LearningRequest request, CancellationToken ct)
     {
-        var names = await ResolveUserNamesAsync([request.StudentId, request.TeacherId], ct);
-        return Map(request, names);
+        var names = await ResolveUserNamesAsync(
+            new[] { request.StudentId, request.TeacherId }.OfType<string>(), ct);
+        var outcome = await db.Orders.AsNoTracking().Where(x => x.LearningRequestId == request.Id)
+            .Select(x => new RequestOutcome(x.LearningRequestId, x.Status, x.PaymentStatus)).SingleOrDefaultAsync(ct);
+        return Map(request, names, outcome: outcome);
     }
 
     private async Task<OrderDto> MapOrderAsync(Order order, bool teacherView, CancellationToken ct)
@@ -467,7 +580,8 @@ internal sealed class OrderService(
             .Select(x => x.Title)
             .SingleOrDefaultAsync(ct);
         var reviews = await LoadReviewStatesAsync([order.Id], ct);
-        return Map(order, teacherView, names, title, reviews.GetValueOrDefault(order.Id));
+        var disputed = await db.Disputes.AsNoTracking().AnyAsync(x => x.OrderId == order.Id, ct);
+        return Map(order, teacherView, names, title, reviews.GetValueOrDefault(order.Id), clock.GetUtcNow(), disputed);
     }
 
     private async Task<IReadOnlyDictionary<Guid, ReviewState>> LoadReviewStatesAsync(
@@ -477,8 +591,8 @@ internal sealed class OrderService(
         if (ids.Length == 0)
             return new Dictionary<Guid, ReviewState>();
         var rows = await db.TeacherReviews.AsNoTracking()
-            .Where(x => ids.Contains(x.OrderId))
-            .Select(x => new { x.OrderId, x.OverallScore, x.OriginalComment, x.IsVisible, x.CreatedAt })
+            .Where(x => x.OrderId.HasValue && ids.Contains(x.OrderId.Value))
+            .Select(x => new { OrderId = x.OrderId!.Value, x.OverallScore, x.OriginalComment, x.IsVisible, x.CreatedAt })
             .ToArrayAsync(ct);
         return rows.ToDictionary(
             x => x.OrderId,
@@ -504,17 +618,19 @@ internal sealed class OrderService(
     }
 
     private static string? NameOf(
-        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)> names, string userId) =>
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)> names, string? userId) =>
+        userId is not null &&
         names.TryGetValue(userId, out var value) ? value.FullName : null;
 
     private static string? EnglishNameOf(
-        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)> names, string userId) =>
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)> names, string? userId) =>
+        userId is not null &&
         names.TryGetValue(userId, out var value) ? value.FullNameEnglish : null;
 
     private IQueryable<LearningRequest> RequestWithChildren() =>
         db.LearningRequests.Include(x => x.Attachments).Include(x => x.Clarifications).AsSplitQuery();
     private IQueryable<Order> OrderWithChildren() =>
-        db.Orders.Include(x => x.Deliveries).AsSplitQuery();
+        db.Orders.Include(x => x.Deliveries).Include(x => x.Extensions).AsSplitQuery();
 
     private void ApplyVersion(LearningRequest request, string version) =>
         db.Entry(request).Property(x => x.RowVersion).OriginalValue = DecodeVersion(version);
@@ -536,7 +652,9 @@ internal sealed class OrderService(
 
     private static LearningRequestDto Map(
         LearningRequest x,
-        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null) =>
+        IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null,
+        int? offerCount = null,
+        RequestOutcome? outcome = null) =>
         new(x.Id, x.StudentId, x.TeacherId, x.TeacherServiceId, x.Title, x.Description,
             x.PreferredDeliveryAt, x.Budget, x.Status, x.CreatedAt,
             x.Attachments.Select(a => Map(a)).ToArray(), x.Clarifications.Select(c =>
@@ -547,12 +665,16 @@ internal sealed class OrderService(
             names is null ? null : EnglishNameOf(names, x.StudentId),
             names is null ? null : EnglishNameOf(names, x.TeacherId),
             x.ServiceCatalogItemId, x.CatalogCode, x.CategoryCode, x.OrderType,
-            x.ServiceNameEnglish, x.ServiceNameArabic);
-    private static OrderDto Map(
+            x.ServiceNameEnglish, x.ServiceNameArabic,
+            x.SourcingMode, x.SelectedOfferId, x.PaymentReservationExpiresAt, offerCount,
+            outcome?.Status, outcome?.PaymentStatus);
+    private OrderDto Map(
         Order x, bool teacherView,
         IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null,
         string? requestTitle = null,
-        ReviewState review = default)
+        ReviewState review = default,
+        DateTimeOffset now = default,
+        bool hasDispute = false)
     {
         var hasReview = review.HasReview;
         var canSubmit = !teacherView
@@ -580,7 +702,15 @@ internal sealed class OrderService(
             exposeOwnerReview ? review.Comment : null,
             exposeOwnerReview ? review.IsVisible : null,
             exposeOwnerReview ? review.CreatedAt : null,
-            canSubmit);
+            canSubmit,
+            x.IsOverdue(now),
+            !teacherView && !hasDispute && x.PaymentStatus == OrderPaymentStatus.Paid
+                && x.Status is OrderStatus.AwaitingPayment or OrderStatus.InProgress
+                && x.Deliveries.Count == 0
+                && now > x.AgreedDeliveryAt.AddHours(_lifecycle.NonDeliveryGraceHours),
+            x.Extensions.OrderByDescending(e => e.CreatedAt).Select(e => new OrderExtensionDto(
+                e.Id, e.RequestedById, e.RespondedById, e.ProposedDeliveryAt,
+                e.Reason, e.Response, e.Status, e.CreatedAt)).ToArray());
     }
     private static AttachmentDto Map(LearningRequestAttachment x, string? version = null) =>
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt, version);
@@ -590,4 +720,6 @@ internal sealed class OrderService(
     private sealed record TimelineRow(
         string Id, string EventType, DateTimeOffset OccurredAt, string ActorRole,
         int SourcePriority, OrderTimelineMetadataDto? Metadata);
+    private sealed record RequestOutcome(
+        Guid LearningRequestId, OrderStatus Status, OrderPaymentStatus PaymentStatus);
 }
