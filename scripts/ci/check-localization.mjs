@@ -1,16 +1,19 @@
 import { existsSync, readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
+import { findPage } from "./lib/frontend-pages.mjs";
 
 const pages = [
   "Tafseel-Landing.dc.html",
   "Tafseel-Browse-Teachers.dc.html",
   "Tafseel-Teacher-Profile.dc.html",
   "Tafseel-Request.dc.html",
+  "Tafseel-Open-Marketplace.dc.html",
   "Tafseel-Student-Dashboard.dc.html",
   "Tafseel-Teacher-Dashboard.dc.html",
   "Tafseel-Quality-Dashboard.dc.html",
   "Tafseel-Admin-Dashboard.dc.html",
   "Tafseel-Auth.dc.html",
+  "Tafseel-Confirm-Email.dc.html",
   "Tafseel-Teacher-Apply.dc.html",
   "Tafseel-Book-Session.dc.html",
   "Tafseel-Payment.dc.html"
@@ -32,7 +35,15 @@ for (const key of enKeys) {
     throw new Error(`Corrupt Arabic localization value: ${key}`);
 }
 
-const englishValues = new Set(Object.values(locales.en));
+const openMarketplaceContext = { window: {} };
+runInNewContext(readFileSync("js/open-marketplace-locales.js", "utf8"), openMarketplaceContext);
+const openMarketplaceLocales = openMarketplaceContext.window.OpenMarketplaceLocales;
+if (!openMarketplaceLocales?.en || !openMarketplaceLocales?.ar)
+  throw new Error("Open Marketplace requires both English and Arabic resources.");
+if (JSON.stringify(Object.keys(openMarketplaceLocales.en).sort())
+  !== JSON.stringify(Object.keys(openMarketplaceLocales.ar).sort()))
+  throw new Error("Open Marketplace localization keys are not in parity.");
+const englishValues = new Set([...Object.values(locales.en), ...Object.values(openMarketplaceLocales.en)]);
 const isHumanText = value => {
   if (!value || value.length > 220 || !/[A-Za-z]/.test(value)) return false;
   if (/{{|}}|var\(--|color-mix|=>|===|&&|\|\||<\/|\/>|;|="/.test(value)) return false;
@@ -45,8 +56,11 @@ const isHumanText = value => {
 const normalize = value => value.replace(/\s+/g, " ").trim();
 
 for (const page of pages) {
-  if (!existsSync(page)) throw new Error(`Missing published frontend entry point: ${page}`);
-  const source = readFileSync(page, "utf8");
+  // A migrated page lives in legacy-archive/ but is still published and still
+  // has to satisfy these checks, so resolve the name rather than assume the root.
+  const pagePath = findPage(page);
+  if (!pagePath) throw new Error(`Missing published frontend entry point: ${page}`);
+  const source = readFileSync(pagePath, "utf8");
   const localePosition = source.indexOf('src="js/locales.js"');
   const runtimePosition = source.indexOf('src="js/tafseel.js"');
   if (localePosition < 0 || runtimePosition < 0 || localePosition > runtimePosition)
@@ -55,7 +69,9 @@ for (const page of pages) {
   const markup = source
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "");
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    // Open Request uses a small, parity-checked secondary locale bundle.
+    .replace(/<([a-z][\w-]*)\b([^>]*\bdata-market-i18n="[^"]+"[^>]*)>[^<]*<\/\1>/gi, "<$1$2></$1>");
   const candidates = [
     ...[...markup.matchAll(/>([^<]+)</g)].map(match => normalize(match[1])),
     ...[...markup.matchAll(/\b(?:placeholder|title|aria-label)="([^"]+)"/g)].map(match => normalize(match[1]))
@@ -72,7 +88,7 @@ for (const page of pages) {
 const css = readFileSync("css/tafseel.css", "utf8");
 for (const required of [
   "--font-ar:'Thmanyah Sans'",
-  "--font-en:'Thmanyah Sans',Inter",
+  "--font-en:'Thmanyah Sans',system-ui",
   'html[lang="ar"]',
   'html[lang="en"]'
 ]) {
@@ -82,22 +98,20 @@ for (const font of ["light", "regular", "medium", "bold", "black"]) {
   if (!existsSync(`assets/fonts/thmanyah-sans/thmanyah-sans-${font}.woff2`))
     throw new Error(`Missing Thmanyah font weight: ${font}`);
 }
-for (const font of ["regular", "medium", "semibold", "bold"]) {
-  if (!existsSync(`assets/fonts/inter/inter-${font}.woff2`))
-    throw new Error(`Missing Inter font weight: ${font}`);
-}
+if (!existsSync("assets/fonts/saudi-riyal/saudi-riyal.woff2"))
+  throw new Error("Missing self-hosted Saudi Riyal webfont (U+20C1).");
 
 const runtimeSources = [
-  ...pages.map(page => readFileSync(page, "utf8")),
+  ...pages.map(page => readFileSync(findPage(page) ?? page, "utf8")),
   readFileSync("css/tafseel.css", "utf8"),
   readFileSync("js/tafseel.js", "utf8"),
   readFileSync("support.js", "utf8")
 ].join("\n");
-if (/fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com/i.test(runtimeSources))
+if (/fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com|jsdelivr\.net/i.test(runtimeSources))
   throw new Error("Frontend runtime must not depend on an external font or script CDN.");
 
 const attributes = {};
-const textNodes = ["Welcome to Tafseel", "Create account"].map(nodeValue => ({
+const textNodes = ["Welcome back", "Create your account", "Password"].map(nodeValue => ({
   nodeType: 3,
   nodeValue,
   parentElement: { closest: () => null }
@@ -152,10 +166,11 @@ if (attributes.lang !== "ar" || attributes.dir !== "rtl")
 if (runtime.languageLabel({ name: "Arabic", code: "ar" }) !== "العربية"
     || runtime.languageLabel({ name: "English", code: "en" }) !== "الإنجليزية")
   throw new Error("Arabic teaching-language labels must remain distinct.");
-if (!/[\u0600-\u06ff]/.test(textNodes[0].nodeValue) || !/[\u0600-\u06ff]/.test(textNodes[1].nodeValue))
+if (textNodes.some(node => !/[\u0600-\u06ff]/.test(node.nodeValue)))
   throw new Error("Arabic switching left visible or hidden auth content untranslated.");
 runtime.setLang("en");
-if (attributes.lang !== "en" || attributes.dir !== "ltr" || textNodes[0].nodeValue !== "Welcome to Tafseel")
+if (attributes.lang !== "en" || attributes.dir !== "ltr"
+    || textNodes[0].nodeValue !== "Welcome back" || textNodes[2].nodeValue !== "Password")
   throw new Error("English switching must restore lang, direction, and visible content.");
 
 console.log(`Localization validation passed for ${pages.length} frontend entry points and ${enKeys.length} paired keys.`);

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readPage } from "./lib/frontend-pages.mjs";
 
-const html = readFileSync("Tafseel-Auth.dc.html", "utf8");
+const html = readPage("Tafseel-Auth.dc.html");
 const scriptMatch = html.match(/<script type="text\/x-dc"[^>]*>([\s\S]*?)<\/script>/);
 assert.ok(scriptMatch, "Missing the Auth page's inline component script");
 const script = scriptMatch[1];
@@ -41,7 +42,19 @@ assert.doesNotMatch(html, /<option value="Admin"|<option value="QualityReviewer"
 assert.match(script, /mode === 'reset' && email && token/, "Reset mode must require email+token from the query string");
 
 assert.match(script, /Tafseel\.safeAppReturnHref/, "Login destination must sanitize return URLs");
-assert.match(script, /roles\.includes\('Student'\)/, "Safe return must be Student-scoped");
+/* The return target used to be honoured only for pure Students. Under the
+   canonical post-login rule (Student Journey Convergence, 2026-08) an explicit
+   ?return= is honoured for every role — sign-in interrupted a journey, it is not
+   the destination — while a Teacher who has not finished onboarding is still
+   routed by lifecycle first. Safety is unchanged: the target is admitted only by
+   safeAppReturnHref (same-origin application pages), and authorization stays
+   server-side. */
+assert.match(script, /if \(intended\) return intended;/,
+  "An explicit safe return target must outrank the role home");
+assert.match(script, /if \(!lifecycle\.isPublished && lifecycle\.nextUrl\) return lifecycle\.nextUrl;/,
+  "Teacher onboarding lifecycle must outrank the return target");
+assert.match(script, /return Tafseel\.roleHomeHref\(roles\)/,
+  "Login must fall back to the canonical role home");
 assert.doesNotMatch(script, /location\.href\s*=\s*.*return/, "Return URL must go through destination() sanitizer, not raw assignment");
 
 console.log("Auth UI mode isolation validation passed.");

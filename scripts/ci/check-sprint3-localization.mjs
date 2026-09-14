@@ -48,10 +48,36 @@ assert(quality.includes("decide(0)"), "Quality decisions must use numeric codes"
 assert(!/a\.status === 'Pending'/.test(quality), "Quality must not filter on English status labels");
 
 const admin = readFileSync("Tafseel-Admin-Dashboard.dc.html", "utf8");
-assert(admin.includes("admin_nav_overview"), "Admin nav not localized");
-assert(admin.includes("Tafseel.money(s.liveMetrics?.confirmedPayments"), "Admin paymentRows must use Tafseel.money");
-assert(!admin.includes("'SAR ' + Number(s.liveMetrics"), "Admin still concatenates SAR +");
-assert(admin.includes("admin_settings_locked"), "Admin settings flash not localized");
+// PASS 05: the Admin sidebar now lists seven AREAS rather than twenty destinations, so its labels
+// come from the `admin_area_*` / `admin_tab_*` vocabulary. The rule is unchanged — every nav label
+// must be a localization key, never a hardcoded string or an inline lang check.
+assert(admin.includes("Tafseel.t('admin_area_' + x.key)"), "Admin areas not localized");
+assert(admin.includes("Tafseel.t('admin_tab_' + tab.key)"), "Admin tabs not localized");
+// PASS 05: Home reads the /admin/attention projection; `homeMetrics` prefers it and falls back to
+// /admin/metrics. Money must still be formatted, never concatenated.
+assert(admin.includes("Tafseel.money(homeMetrics?.confirmedPayments")
+  || admin.includes("Tafseel.money(homeMetrics.confirmedPayments"), "Admin paymentRows must use Tafseel.money");
+assert(!admin.includes("'SAR ' + Number(homeMetrics") && !admin.includes("'SAR ' + Number(s.liveMetrics"),
+  "Admin still concatenates SAR +");
+// Admin platform settings. This originally asserted the literal `admin_settings_locked` flash,
+// which belonged to an editable commission/quality/maintenance form whose Save button never
+// persisted anything — it only flashed "these are deployment-managed". That surface was
+// deliberately replaced by an honest read-only note, so asserting the old flash key was testing
+// obsolete implementation text. The rule actually worth protecting is behavioural: Admin must
+// state that platform settings are deployment-managed, through bound (localizable) strings, and
+// must not reintroduce controls that appear to edit them but silently discard the change.
+const settingsSection = admin.slice(admin.indexOf("{{ isSettingsPage }}"));
+assert(settingsSection.includes("platformSettingsHeading"), "Admin settings must keep a platform-settings heading");
+assert(
+  ["platformSettingsManagedTitle", "platformSettingsManagedBody", "platformSettingsSnapshotHint"]
+    .every((k) => new RegExp("\\{\\{\\s*" + k + "\\s*\\}\\}").test(settingsSection)),
+  "Admin platform settings must render the deployment-managed note through bound strings, not literal markup text"
+);
+assert(admin.includes("Tafseel.t('admin_platform_settings')"), "Admin platform-settings heading not localized");
+assert(
+  !/onSavePlatformSettings|onCommissionRate|onRequireReview|onMaintenanceMode/.test(admin),
+  "Admin must not reintroduce non-persisting platform-settings controls"
+);
 assert(admin.includes("statusKey"), "Admin disputes must use statusKey");
 
 console.log("Sprint 3 localization checks passed.");

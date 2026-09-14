@@ -4,43 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-</head>
-<body>
-<x-dc>
-<helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title data-i18n="pay_title">Checkout — Tafseel</title>
 <script src="js/boot-prefs.js"></script>
-<link rel="stylesheet" href="css/tafseel.css" />
+<link rel="stylesheet" href="css/tafseel.css?v=identity-v1" />
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
 <link rel="icon" href="assets/brand/favicon.ico" />
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<meta name="description" content="Complete your Tafseel payment securely." />
+<link rel="canonical" href="Tafseel-Payment.dc.html" />
+<meta name="robots" content="noindex, nofollow" />
+<meta property="og:title" content="Tafseel" />
+<meta property="og:description" content="Complete your Tafseel payment securely." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Tafseel" />
+<meta name="twitter:description" content="Complete your Tafseel payment securely." />
+</head>
+<body class="tf-pay-world">
+<x-dc>
+<helmet><title data-i18n="pay_title">Checkout — Tafseel</title>
 </helmet>
 
-<header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
-  <div class="tf-shell" style="height:64px;display:flex;align-items:center;gap:16px">
-    <a href="Tafseel-Student-Dashboard.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
-      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
-      <span translate="no" class="tf-mursala" style="font-weight:900;font-size:17px;letter-spacing:0">تفصيــل</span>
+<header class="tf-workflow-header">
+  <div class="tf-shell tf-workflow-header__inner">
+    <a class="tf-workflow-header__brand" href="Tafseel-Student-Dashboard.dc.html" aria-label="Tafseel home">
+      <img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="18" height="24" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
     </a>
-    <span style="color:var(--muted);font-size:14px">/ {{ breadcrumb }}</span>
-    <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+    <span class="tf-workflow-header__crumb">/ {{ breadcrumb }}</span>
+    <div class="tf-workflow-header__actions">
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
     </div>
   </div>
 </header>
 
-<main class="tf-shell tf-pay-main" style="padding-block:32px 96px">
+<main class="tf-shell tf-pay-main tf-pay-page" style="padding-block:32px 96px">
   <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
     <div class="tf-pay-state" role="status">{{ loadingLabel }}</div>
   </sc-if>
 
   <sc-if value="{{ isUnavailable }}" hint-placeholder-val="{{ false }}">
     <div class="tf-pay-state" role="alert">
-      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px">{{ unavailableTitle }}</h1>
-      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px">{{ unavailableBody }}</p>
+      <h1>{{ unavailableTitle }}</h1>
+      <p class="tf-pay-lede">{{ unavailableBody }}</p>
       <a href="Tafseel-Student-Dashboard.dc.html" class="tf-pay-primary-link">{{ goDashboardLabel }}</a>
     </div>
   </sc-if>
@@ -50,7 +65,7 @@
       <aside class="tf-req-context" aria-label="{{ contextAria }}">
         <p class="tf-req-context-eyebrow">{{ contextEyebrow }}</p>
         <div class="tf-pay-teacher-row">
-          <img class="tf-pay-avatar" sc-camel-src="{{ teacherAvatar }}" alt="" width="44" height="44" />
+          <img loading="lazy" decoding="async" class="tf-pay-avatar" sc-camel-src="{{ teacherAvatar }}" alt="" width="44" height="44" />
           <div style="min-width:0">
             <p class="tf-req-context-teacher" style="margin:0">{{ teacherName }}</p>
             <p class="tf-req-context-meta" style="margin:4px 0 0">{{ teacherMeta }}</p>
@@ -65,7 +80,12 @@
         <p class="tf-req-context-service">{{ serviceName }}</p>
         <ul class="tf-req-context-facts">
           <li><span>{{ categoryLabel }}</span><strong>{{ categoryValue }}</strong></li>
-          <li><span>{{ priceLabel }}</span><strong>{{ listedPrice }}</strong></li>
+          <li><span>{{ priceLabel }}</span><strong>
+            <sc-if value="{{ listedIsSar }}" hint-placeholder-val="{{ true }}">
+              <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span>{{ listedAmountNumber }}</span>
+            </sc-if>
+            <sc-if value="{{ listedIsPlain }}" hint-placeholder-val="{{ false }}">{{ listedPrice }}</sc-if>
+          </strong></li>
           <li><span>{{ deliveryLabel }}</span><strong>{{ deliveryValue }}</strong></li>
           <li><span>{{ revisionsLabel }}</span><strong>{{ revisionsValue }}</strong></li>
           <li><span>{{ filesLabel }}</span><strong>{{ filesValue }}</strong></li>
@@ -84,64 +104,64 @@
         </div>
       </aside>
 
-      <div class="tf-pay-panels">
-        <section class="tf-pay-card">
-          <h1 style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px">{{ completeTitle }}</h1>
-          <p style="color:var(--muted);font-size:13.5px;margin-bottom:16px">{{ heldSecurely }}</p>
-          <div class="tf-pay-item">
-            <div style="min-width:0">
-              <div style="font-size:14.5px;font-weight:700">{{ itemTitle }}</div>
-              <div style="font-size:12.5px;color:var(--muted);margin-top:4px">{{ itemSubtitle }}</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="tf-pay-card">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:10px">{{ secureCheckoutTitle }}</h2>
-          <p style="font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:14px">{{ secureBlurb }}</p>
-          <sc-if value="{{ showMockMethod }}" hint-placeholder-val="{{ false }}">
-            <label class="tf-pay-method">
-              <input type="radio" checked disabled style="margin-top:3px" />
-              <span>
-                <strong style="display:block;font-size:14px">{{ mockMethodLabel }}</strong>
-                <span style="display:block;font-size:12.5px;color:var(--muted);margin-top:2px">{{ mockMethodHint }}</span>
-              </span>
-            </label>
-          </sc-if>
-          <sc-if value="{{ showProviderMethod }}" hint-placeholder-val="{{ false }}">
-            <p style="font-size:13.5px;color:var(--text-2);margin:0">{{ providerMethodNote }}</p>
-          </sc-if>
-        </section>
-
-        <section class="tf-pay-card tf-pay-summary-card">
-          <h2 style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:14px">{{ orderSummaryLabel }}</h2>
-          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-            <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="3">
-              <div style="display:flex;justify-content:space-between;gap:12px;font-size:13.5px">
-                <span style="color:var(--text-2)">{{ pl.label }}</span><span>{{ pl.value }}</span>
-              </div>
-            </sc-for>
-          </div>
-          <div style="display:flex;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px solid var(--border);font-size:17px;font-weight:800;margin-bottom:8px">
-            <span>{{ totalWord }}</span><span>{{ totalLabel }}</span>
-          </div>
-          <p class="tf-req-price-note">{{ fundsRelease }}</p>
-          <button type="button" class="tf-pay-cta" onClick="{{ onPay }}" disabled="{{ submitting }}" style="opacity:{{ payOpacity }};cursor:{{ payCursor }}">{{ payLabel }}</button>
-          <sc-if value="{{ showMockContinue }}" hint-placeholder-val="{{ false }}">
-            <a href="{{ mockContinueHref }}" class="tf-pay-secondary-link" style="margin-top:10px;display:inline-flex;justify-content:center;width:100%">{{ mockContinueLabel }}</a>
-          </sc-if>
-          <div class="tf-req-context-protection" style="margin-top:14px;margin-bottom:0">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
-            <span>{{ protectedShort }}</span>
-          </div>
-        </section>
+      <div class="tf-pay-receipt">
+        <h1>{{ completeTitle }}</h1>
+        <p class="tf-pay-lede">{{ heldSecurely }}</p>
+        <p class="tf-pay-item-title">{{ itemTitle }}</p>
+        <p class="tf-pay-item-sub">{{ itemSubtitle }}</p>
+        <ul class="tf-pay-lines">
+          <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="3">
+            <li class="tf-pay-line"><span>{{ pl.label }}</span><strong>
+              <sc-if value="{{ pl.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span>{{ pl.amountNumber }}</span>
+              </sc-if>
+              <sc-if value="{{ pl.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ pl.value }}</sc-if>
+            </strong></li>
+          </sc-for>
+        </ul>
+        <div class="tf-pay-total-row">
+          <span>{{ totalWord }}</span>
+          <strong>
+            <sc-if value="{{ totalIsSar }}" hint-placeholder-val="{{ true }}">
+              <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span>{{ totalAmountNumber }}</span>
+            </sc-if>
+            <sc-if value="{{ totalIsPlain }}" hint-placeholder-val="{{ false }}">{{ totalLabel }}</sc-if>
+          </strong>
+        </div>
+        <p class="tf-pay-note">{{ fundsRelease }}</p>
+        <p class="tf-pay-note">{{ secureBlurb }}</p>
+        <sc-if value="{{ showMockMethod }}" hint-placeholder-val="{{ false }}">
+          <label class="tf-pay-method">
+            <input type="radio" checked disabled style="margin-top:3px" />
+            <span>
+              <strong>{{ mockMethodLabel }}</strong>
+              <span>{{ mockMethodHint }}</span>
+            </span>
+          </label>
+        </sc-if>
+        <sc-if value="{{ showProviderMethod }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-pay-note">{{ providerMethodNote }}</p>
+        </sc-if>
+        <button type="button" class="tf-pay-cta" onClick="{{ onPay }}" disabled="{{ submitting }}" style="opacity:{{ payOpacity }};cursor:{{ payCursor }}">{{ payLabel }}</button>
+        <sc-if value="{{ showMockContinue }}" hint-placeholder-val="{{ false }}">
+          <a href="{{ mockContinueHref }}" class="tf-pay-secondary-link" style="margin-top:10px">{{ mockContinueLabel }}</a>
+        </sc-if>
+        <div class="tf-req-context-protection" style="margin-top:18px;margin-bottom:0">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
+          <span>{{ protectedShort }}</span>
+        </div>
       </div>
     </div>
 
     <div class="tf-pay-mobile-cta" aria-hidden="false">
       <div class="tf-pay-mobile-cta-inner">
         <div>
-          <strong>{{ totalLabel }}</strong>
+          <strong>
+            <sc-if value="{{ totalIsSar }}" hint-placeholder-val="{{ true }}">
+              <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span>{{ totalAmountNumber }}</span>
+            </sc-if>
+            <sc-if value="{{ totalIsPlain }}" hint-placeholder-val="{{ false }}">{{ totalLabel }}</sc-if>
+          </strong>
           <span>{{ protectedShort }}</span>
         </div>
         <button type="button" onClick="{{ onPay }}" disabled="{{ submitting }}" style="opacity:{{ payOpacity }};cursor:{{ payCursor }}">{{ payLabel }}</button>
@@ -152,9 +172,9 @@
   <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ false }}">
     <div class="tf-pay-state tf-pay-success">
       <div class="tf-check-draw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
-      <h1 style="font-size:19px;font-weight:800;margin-bottom:8px">{{ initiatedTitle }}</h1>
-      <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:8px">{{ checkoutRefLabel }} <strong class="tf-pay-mono" style="color:var(--text-2)">{{ checkoutReference }}</strong></p>
-      <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:16px">{{ webhookNote }}</p>
+      <h1>{{ initiatedTitle }}</h1>
+      <p class="tf-pay-note">{{ checkoutRefLabel }} <strong class="tf-pay-mono">{{ checkoutReference }}</strong></p>
+      <p class="tf-pay-note">{{ webhookNote }}</p>
       <ol class="tf-req-success-steps" aria-label="{{ nextTitle }}">
         <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="4">
           <li><span aria-hidden="true">{{ n.n }}</span><span>{{ n.text }}</span></li>
@@ -171,7 +191,7 @@
 </main>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
@@ -179,10 +199,17 @@
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function money(currency, amount) {
-  const cur = currency || 'SAR';
-  const n = Number(amount);
-  const text = Number.isFinite(n) ? n.toFixed(2).replace(/\.00$/, '') : String(amount ?? '');
-  return cur + ' ' + text;
+  return Tafseel.money(amount, currency || 'SAR');
+}
+
+function moneyLine(currency, amount) {
+  const view = Tafseel.moneyView(amount, currency || 'SAR');
+  return {
+    value: view.amount,
+    amountNumber: view.amountNumber,
+    isSarAmount: !!view.isSarAmount,
+    isPlainAmount: !!view.isPlainAmount
+  };
 }
 
 function shortId(value) {
@@ -262,7 +289,7 @@ class Component extends DCLogic {
       let mockMethod = false;
       try {
         const caps = await Tafseel.api.get('/payments/mock/capabilities');
-        mockMethod = !!(caps && (caps.mockSimulatorEnabled || String(caps.provider || '').toLowerCase() === 'mock'));
+        mockMethod = !!(caps && caps.mockSimulatorEnabled);
       } catch (_) { mockMethod = false; }
 
       const query = new URLSearchParams(location.search);
@@ -386,14 +413,15 @@ class Component extends DCLogic {
   }
 
   buildSummary(item, kind) {
-    if (!item) return { title: '', subtitle: '', lines: [], totalLabel: '' };
+    if (!item) return { title: '', subtitle: '', lines: [], totalLabel: '', totalAmountNumber: '', totalIsSar: false, totalIsPlain: true };
     if (kind === 'order') {
       const currency = item.currency || 'SAR';
+      const total = moneyLine(currency, item.studentTotal);
       const lines = [
-        { label: Tafseel.t('pay_service_price'), value: money(currency, item.price) }
+        Object.assign({ label: Tafseel.t('pay_service_price') }, moneyLine(currency, item.price))
       ];
       if (Number(item.studentFeeAmount) > 0) {
-        lines.push({ label: Tafseel.t('pay_platform_fee'), value: money(currency, item.studentFeeAmount) });
+        lines.push(Object.assign({ label: Tafseel.t('pay_platform_fee') }, moneyLine(currency, item.studentFeeAmount)));
       }
       return {
         title: item.requestTitle
@@ -401,24 +429,30 @@ class Component extends DCLogic {
           : Tafseel.t('pay_order_title'),
         subtitle: serviceDisplayName(item),
         lines,
-        totalLabel: money(currency, item.studentTotal)
+        totalLabel: total.value,
+        totalAmountNumber: total.amountNumber,
+        totalIsSar: total.isSarAmount,
+        totalIsPlain: total.isPlainAmount
       };
     }
     const currency = item.currency || 'SAR';
+    const total = moneyLine(currency, item.totalPrice);
     const lines = [
-      { label: Tafseel.t('pay_base_price'), value: money(currency, item.basePrice) }
+      Object.assign({ label: Tafseel.t('pay_base_price') }, moneyLine(currency, item.basePrice))
     ];
     if (Number(item.emergencyPremiumAmount) > 0) {
-      lines.push({
-        label: Tafseel.t('pay_emergency_premium'),
-        value: money(currency, item.emergencyPremiumAmount)
-      });
+      lines.push(Object.assign({
+        label: Tafseel.t('pay_emergency_premium')
+      }, moneyLine(currency, item.emergencyPremiumAmount)));
     }
     return {
       title: item.title || Tafseel.t('pay_live_session_title'),
       subtitle: Tafseel.t('pay_live_session_subtitle'),
       lines,
-      totalLabel: money(currency, item.totalPrice)
+      totalLabel: total.value,
+      totalAmountNumber: total.amountNumber,
+      totalIsSar: total.isSarAmount,
+      totalIsPlain: total.isPlainAmount
     };
   }
 
@@ -445,9 +479,15 @@ class Component extends DCLogic {
     const categoryValue = isOrder && item && item.categoryCode
       ? categoryLabel(item.categoryCode)
       : (isOrder ? '—' : Tafseel.t('pay_live_session_title'));
-    const listedPrice = isOrder && item
-      ? money(item.currency, item.price)
-      : summary.totalLabel;
+    const listed = isOrder && item
+      ? moneyLine(item.currency, item.price)
+      : {
+          value: summary.totalLabel,
+          amountNumber: summary.totalAmountNumber,
+          isSarAmount: !!summary.totalIsSar,
+          isPlainAmount: summary.totalIsPlain !== false
+        };
+    const listedPrice = listed.value;
     const teacherId = item && item.teacherId ? item.teacherId : '';
     const hasAvatar = !!(profile && profile.hasAvatar);
 
@@ -483,6 +523,9 @@ class Component extends DCLogic {
       categoryValue: categoryValue,
       priceLabel: Tafseel.t('pay_context_price'),
       listedPrice: listedPrice,
+      listedAmountNumber: listed.amountNumber,
+      listedIsSar: !!listed.isSarAmount,
+      listedIsPlain: !!listed.isPlainAmount,
       deliveryLabel: Tafseel.t('pay_context_delivery'),
       deliveryValue: deliveryValue,
       revisionsLabel: Tafseel.t('pay_context_revisions'),
@@ -511,6 +554,9 @@ class Component extends DCLogic {
       priceLines: summary.lines,
       totalWord: Tafseel.t('req_total'),
       totalLabel: summary.totalLabel,
+      totalAmountNumber: summary.totalAmountNumber,
+      totalIsSar: !!summary.totalIsSar,
+      totalIsPlain: summary.totalIsPlain !== false,
       fundsRelease: Tafseel.t('pay_funds_release'),
 
       submitting: s.submitting,

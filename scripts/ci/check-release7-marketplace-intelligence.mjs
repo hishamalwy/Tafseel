@@ -5,7 +5,9 @@ const shared = read('js/tafseel.js');
 const browse = read('Tafseel-Browse-Teachers.dc.html');
 const profile = read('Tafseel-Teacher-Profile.dc.html');
 const request = read('Tafseel-Request.dc.html');
-for (const token of ['Marketplace Intelligence', 'intelligenceTabs', 'intelligenceCoverageLabel', 'intelligenceFunnel', 'intelligenceRows', '/admin/marketplace-intelligence']) if (!admin.includes(token)) throw new Error(`Release 7 Admin contract missing: ${token}`);
+for (const token of ['admin_intel_title', 'intelligenceTabs', 'intelligenceCoverageLabel', 'intelligenceFunnel', 'intelligenceRows', '/admin/marketplace-intelligence']) if (!admin.includes(token)) throw new Error(`Release 7 Admin contract missing: ${token}`);
+if (!admin.includes("Tafseel.t('admin_intel_title')") && !admin.includes('Tafseel.t("admin_intel_title")'))
+  throw new Error('Release 7 Admin intelligence title must use Tafseel.t(admin_intel_title)');
 for (const token of ['browse_viewed', 'zero_result_viewed', 'compare_opened']) if (!browse.includes(token)) throw new Error(`Browse instrumentation missing: ${token}`);
 for (const token of ['teacher_opened', 'service_selected']) if (!profile.includes(token)) throw new Error(`Profile instrumentation missing: ${token}`);
 if (!request.includes("'request_started'")) throw new Error('Guided Request instrumentation missing.');

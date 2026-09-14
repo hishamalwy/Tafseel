@@ -20,8 +20,8 @@ assert(browse.includes('runUnifiedSearch') && browse.includes('role="search"'),
   'Browse must use one unified search that can call AI discovery.');
 assert(!browse.includes('id="ai-discovery-title"') && !browse.includes('tf-ai-panel'),
   'Standalone AI Discovery panel must be removed from Browse.');
-assert(browse.includes('tf-secondary-filters') && browse.includes('id="f-subject"')
-  && browse.includes('id="f-service"') && browse.includes('tf-filter-panel'),
+assert(browse.includes('tf-mkb-filters') && browse.includes('id="f-subject"')
+  && browse.includes('id="f-service"') && browse.includes('tf-mkb-sheet'),
   'Normal Subject/Service/filter discovery must remain first-class.');
 assert(request.includes('/ai/request-assistant') && request.includes('useAiDraft') && request.includes('discardAiDraft'),
   'Request assistant must expose explicit use/discard controls.');

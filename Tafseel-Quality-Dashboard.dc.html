@@ -4,75 +4,106 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script src="js/boot-prefs.js"></script>
+<link rel="stylesheet" href="css/tafseel.css?v=identity-v1" />
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
+<link rel="icon" href="assets/brand/favicon.ico" />
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+<script src="js/media-preview.js"></script>
+<meta name="description" content="Review delivered work against Tafseel's quality bar." />
+<link rel="canonical" href="Tafseel-Quality-Dashboard.dc.html" />
+<meta name="robots" content="noindex, nofollow" />
+<meta property="og:title" content="Quality review — Tafseel" />
+<meta property="og:description" content="Review delivered work against Tafseel's quality bar." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Quality review — Tafseel" />
+<meta name="twitter:description" content="Review delivered work against Tafseel's quality bar." />
 </head>
 <body>
 <x-dc>
-<helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Quality review — Tafseel</title>
-<script src="js/boot-prefs.js"></script>
-<link rel="stylesheet" href="css/tafseel.css" />
-<link rel="icon" href="assets/brand/favicon.ico" />
-  <script src="js/locales.js"></script>
-  <script src="js/tafseel.js"></script>
-<script src="js/api.js"></script>
-<script src="js/media-preview.js"></script>
+<helmet><title>Quality review — Tafseel</title>
+  
+  
 </helmet>
 
-<div data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
-  <aside id="quality-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
-    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
-      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
-      <span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span>
-      <span style="font-size:11px;color:var(--muted);border:1px solid var(--border);padding:1px 6px;border-radius:5px;margin-inline-start:auto">QA</span>
+<div class="tf-dashboard-shell" data-dash-role="quality" data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
+  <aside id="quality-sidebar" class="tf-dash-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}">
+    <a href="Tafseel-Landing.dc.html" class="tf-dash-brand" aria-label="Tafseel home">
+      <img decoding="async" class="tf-dash-brand-mark" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="20" height="27" />
+      <span translate="no" class="tf-mursala tf-wordmark tf-dash-brand-name"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+      <span class="tf-role-chip">{{ qualityRoleBadge }}</span>
     </a>
-    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
-      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="8">
-        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
-          <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
-          <span>{{ n.label }}</span>
-          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
-            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badge }}</span>
-          </sc-if>
-        </button>
+    <nav class="tf-dash-nav" aria-label="Dashboard navigation">
+      <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="3">
+        <div class="tf-dash-nav-group">
+          <div class="tf-dash-nav-group-label">{{ g.label }}</div>
+          <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="4">
+            <button type="button" class="tf-dash-nav-item" onClick="{{ n.onClick }}" aria-current="{{ n.current }}">
+              <svg class="tf-dash-nav-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path sc-camel-d="{{ n.iconPath }}"></path></svg>
+              <span>{{ n.label }}</span>
+              <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
+                <span class="tf-dash-nav-badge">{{ n.badgeLabel }}</span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
       </sc-for>
     </nav>
-    <div style="padding:16px;border-top:1px solid var(--border)">
-      <button type="button" class="tf-dashboard-logout" onClick="{{ onLogout }}"><span aria-hidden="true">↪</span>{{ logoutLabel }}</button>
-    </div>
   </aside>
 
   <div data-drawer-overlay="{{ drawerState }}" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
 
   <div style="display:flex;flex-direction:column;min-width:0">
-    <header data-dash-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
-      <button id="quality-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="quality-sidebar" style="{{ drawerToggleStyle }}">☰</button>
-      <div style="font-size:15px;font-weight:700" data-hide-sm="1">{{ headerTitle }}</div>
-      <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-        <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
-        <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <img sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
-          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
+    <header class="tf-dash-header" data-dash-header="{{ headerElevated }}">
+      <button id="quality-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="quality-sidebar" class="tf-icon-btn tf-dash-header__menu"><svg class="tf-dash-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+      <div class="tf-dash-header__title" data-hide-sm="1">{{ headerTitle }}</div>
+      <div class="tf-dash-header__actions">
+        <button type="button" class="tf-dash-header__icon" onClick="{{ toggleNotifs }}" aria-label="{{ notificationsHeading }}" aria-haspopup="dialog" aria-expanded="{{ notifsOpen }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9a6 6 0 1 1 12 0c0 3.2 1 5 2 6H4c1-1 2-2.8 2-6Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
+          <sc-if value="{{ unreadNotifs }}" hint-placeholder-val="{{ false }}">
+            <span class="tf-dash-header__badge">{{ unreadNotifsBadgeLabel }}</span>
+          </sc-if>
+        </button>
+        <button type="button" class="tf-lang-toggle tf-dash-header__locale" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+        <button type="button" class="tf-theme-toggle tf-dash-header__theme" onClick="{{ toggleTheme }}" aria-label="{{ themeToggleLabel }}"></button>
+        <div class="tf-dash-header__account">
+          <img decoding="async" class="tf-dash-header__avatar" sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" />
+          <span class="tf-dash-header__account-name" data-hide-sm="1">{{ accountName }}</span>
         </div>
+        <button type="button" class="tf-dash-header__logout" onClick="{{ onLogout }}" aria-label="{{ logoutLabel }}"><svg class="tf-dash-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" /></svg><span>{{ logoutLabel }}</span></button>
       </div>
     </header>
 
     <main style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
+      <!-- PASS 05: the kinds of work waiting are tabs inside one review workspace, not separate
+           destinations. Rendered from QUALITY_NAV, so a feature-flagged tab simply is not here. -->
+      <sc-if value="{{ hasSectionTabs }}" hint-placeholder-val="{{ true }}">
+        <nav class="tf-admin-tabs" aria-label="{{ sectionTabsLabel }}">
+          <sc-for list="{{ sectionTabs }}" as="t" hint-placeholder-count="3">
+            <button type="button" class="tf-admin-tab" aria-current="{{ t.current }}" onClick="{{ t.onClick }}">
+              <span>{{ t.label }}</span>
+              <sc-if value="{{ t.hasBadge }}" hint-placeholder-val="{{ false }}"><span class="tf-admin-tab-badge">{{ t.badgeLabel }}</span></sc-if>
+            </button>
+          </sc-for>
+        </nav>
+      </sc-if>
       <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
         <div>
           <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px">{{ appsTitle }}</h1>
-          <p style="color:var(--muted);font-size:14.5px">{{ appsSubtitle }}</p>
+          <p style="color:var(--muted);font-size:14px">{{ appsSubtitle }}</p>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
-          <sc-for list="{{ summary }}" as="st" hint-placeholder-count="4">
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
-              <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">{{ st.label }}</div>
-              <div style="font-size:23px;font-weight:800;letter-spacing:-.02em">{{ st.value }}</div>
-            </div>
-          </sc-for>
-        </div>
+        <p class="tf-dash-oneliner">{{ qualityOverviewLine }}</p>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
@@ -83,8 +114,8 @@
                   <span aria-hidden="true">⌕</span>
                   <input value="{{ appSearch }}" onChange="{{ onAppSearch }}" aria-label="{{ appSearchPlaceholder }}" placeholder="{{ appSearchPlaceholder }}" style="border:0;background:transparent;outline:none;font-size:13px;width:200px" />
                 </label>
-                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ appStatusLabel }}
-                  <select value="{{ appStatus }}" onChange="{{ onAppStatus }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">{{ appStatusLabel }}
+                  <select value="{{ appStatus }}" onChange="{{ onAppStatus }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12px;padding-inline:6px">
                     <option value="actionable">{{ appStatusActionable }}</option>
                     <option value="1">{{ applyStatusSubmitted }}</option>
                     <option value="2">{{ applyStatusUnderReview }}</option>
@@ -94,61 +125,44 @@
                     <option value="all">{{ appStatusAll }}</option>
                   </select>
                 </label>
-                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ appKindLabel }}
-                  <select value="{{ appKind }}" onChange="{{ onAppKind }}" disabled="{{ appKindLocked }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">{{ appKindLabel }}
+                  <select value="{{ appKind }}" onChange="{{ onAppKind }}" disabled="{{ appKindLocked }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12px;padding-inline:6px">
                     <option value="All">{{ appKindAll }}</option>
                     <option value="Initial">{{ appKindInitial }}</option>
                     <option value="Additional">{{ appKindAdditional }}</option>
                   </select>
                 </label>
-                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">{{ appSortLabel }}
-                  <select value="{{ appSort }}" onChange="{{ onAppSort }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;padding-inline:6px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">{{ appSortLabel }}
+                  <select value="{{ appSort }}" onChange="{{ onAppSort }}" style="height:32px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12px;padding-inline:6px">
                     <option value="OldestFirst">{{ appSortOldest }}</option>
                     <option value="NewestFirst">{{ appSortNewest }}</option>
                   </select>
                 </label>
-                <button type="button" onClick="{{ onAppReset }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ appResetLabel }}</button>
+                <button type="button" onClick="{{ onAppReset }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12px;font-weight:600">{{ appResetLabel }}</button>
               </form>
             </div>
           </div>
-          <div style="overflow-x:auto">
-            <table>
-              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ queueCaption }}</caption>
-              <thead>
-                <tr style="background:var(--surface-2)">
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colTeacher }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colSubject }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colKind }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colSubmitted }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <sc-if value="{{ hasApplications }}" hint-placeholder-val="{{ false }}">
-                  <sc-for list="{{ applications }}" as="a" hint-placeholder-count="0">
-                    <tr class="tf-row-slide" style="border-top:1px solid var(--border);background:{{ a.rowBg }}">
-                      <td style="padding:14px 20px">
-                        <div style="display:flex;align-items:center;gap:10px">
-                          <img sc-camel-src="{{ defaultAvatar }}" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border);object-fit:cover" />
-                          <div>
-                            <div style="font-size:14px;font-weight:600">{{ a.name }}</div>
-                            <div style="font-size:12px;color:var(--muted)">{{ a.contextLine }}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style="padding:14px 12px;font-size:13.5px;color:var(--text-2)">{{ a.subject }}</td>
-                      <td style="padding:14px 12px"><span style="{{ a.kindStyle }}">{{ a.kindLabel }}</span></td>
-                      <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ a.submitted }}</td>
-                      <td style="padding:14px 12px"><span style="{{ a.statusStyle }}">{{ a.status }}</span></td>
-                      <td style="padding:14px 20px;text-align:end">
-                        <button type="button" onClick="{{ a.onOpen }}" style="height:44px;padding:0 14px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:13px;font-weight:600">{{ reviewLabel }}</button>
-                      </td>
-                    </tr>
-                  </sc-for>
-                </sc-if>
-              </tbody>
-            </table>
+          <div class="tf-quality-queue" role="table" aria-label="{{ queueCaption }}">
+            <div class="tf-quality-queue-head" role="row">
+              <span role="columnheader">{{ colTeacher }}</span><span role="columnheader">{{ colSubject }}</span>
+              <span role="columnheader">{{ colKind }}</span><span role="columnheader">{{ colSubmitted }}</span>
+              <span role="columnheader">{{ colStatus }}</span><span role="columnheader">{{ colAction }}</span>
+            </div>
+            <sc-if value="{{ hasApplications }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ applications }}" as="a" hint-placeholder-count="0">
+                <div class="tf-quality-queue-row tf-row-slide" role="row" style="background:{{ a.rowBg }}">
+                  <div class="tf-quality-queue-person" role="cell">
+                    <img loading="lazy" decoding="async" sc-camel-src="{{ defaultAvatar }}" alt="" width="30" height="30" />
+                    <div><strong>{{ a.name }}</strong><small>{{ a.contextLine }}</small></div>
+                  </div>
+                  <div role="cell" data-label="{{ colSubject }}">{{ a.subject }}</div>
+                  <div role="cell" data-label="{{ colKind }}"><span style="{{ a.kindStyle }}">{{ a.kindLabel }}</span></div>
+                  <div role="cell" data-label="{{ colSubmitted }}">{{ a.submitted }}</div>
+                  <div role="cell" data-label="{{ colStatus }}"><span style="{{ a.statusStyle }}">{{ a.status }}</span></div>
+                  <div class="tf-quality-queue-action" role="cell"><button type="button" onClick="{{ a.onOpen }}">{{ reviewLabel }}</button></div>
+                </div>
+              </sc-for>
+            </sc-if>
           </div>
           <sc-if value="{{ queueLoading }}" hint-placeholder-val="{{ false }}">
             <div class="tf-empty-enter" role="status" style="padding:48px 24px;text-align:center;color:var(--muted);font-size:14px">{{ queueLoadingLabel }}</div>
@@ -186,30 +200,25 @@
           <sc-if value="{{ showcaseQueueEmpty }}" hint-placeholder-val="{{ false }}">
             <p class="tf-empty" data-i18n="quality_showcase_queue_empty">No submitted Teacher Showcases.</p>
           </sc-if>
-          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto">
-            <table>
-              <caption style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ showcaseQueueTitle }}</caption>
-              <thead><tr style="background:var(--surface-2)">
-                <th scope="col" style="text-align:start;padding:11px 16px" data-i18n="quality_showcase_teacher">Teacher</th>
-                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_subject">Subject</th>
-                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_version">Version</th>
-                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_submitted">Submitted</th>
-                <th scope="col" style="text-align:start;padding:11px 12px" data-i18n="quality_showcase_status">Status</th>
-                <th scope="col" style="text-align:end;padding:11px 16px" data-i18n="quality_showcase_action">Action</th>
-              </tr></thead>
-              <tbody>
-                <sc-for list="{{ showcaseQueue }}" as="item" hint-placeholder-count="0">
-                  <tr style="border-top:1px solid var(--border)">
-                    <td style="padding:13px 16px;font-weight:600">{{ item.name }}</td>
-                    <td style="padding:13px 12px">{{ item.subject }}</td>
-                    <td style="padding:13px 12px">{{ item.versionNumber }}</td>
-                    <td style="padding:13px 12px">{{ item.submitted }}</td>
-                    <td style="padding:13px 12px"><span style="{{ item.statusStyle }}">{{ item.status }}</span></td>
-                    <td style="padding:13px 16px;text-align:end"><button type="button" onClick="{{ item.onOpen }}" style="height:44px;padding:0 13px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600" data-i18n="quality_showcase_review">Review</button></td>
-                  </tr>
-                </sc-for>
-              </tbody>
-            </table>
+          <section class="tf-quality-queue" role="table" aria-label="{{ showcaseQueueTitle }}">
+            <div class="tf-quality-queue-head" role="row">
+              <span role="columnheader" data-i18n="quality_showcase_teacher">Teacher</span>
+              <span role="columnheader" data-i18n="quality_showcase_subject">Subject</span>
+              <span role="columnheader" data-i18n="quality_showcase_version">Version</span>
+              <span role="columnheader" data-i18n="quality_showcase_submitted">Submitted</span>
+              <span role="columnheader" data-i18n="quality_showcase_status">Status</span>
+              <span role="columnheader" data-i18n="quality_showcase_action">Action</span>
+            </div>
+            <sc-for list="{{ showcaseQueue }}" as="item" hint-placeholder-count="0">
+              <div class="tf-quality-queue-row" role="row">
+                <div role="cell"><strong>{{ item.name }}</strong></div>
+                <div role="cell" data-label="{{ showcaseSubjectLabel }}">{{ item.subject }}</div>
+                <div role="cell" data-label="{{ showcaseVersionLabel }}">{{ item.versionNumber }}</div>
+                <div role="cell" data-label="{{ showcaseSubmittedLabel }}">{{ item.submitted }}</div>
+                <div role="cell" data-label="{{ showcaseStatusLabel }}"><span style="{{ item.statusStyle }}">{{ item.status }}</span></div>
+                <div class="tf-quality-queue-action" role="cell"><button type="button" onClick="{{ item.onOpen }}" data-i18n="quality_showcase_review">Review</button></div>
+              </div>
+            </sc-for>
           </section>
 
           <sc-if value="{{ hasCurrentShowcase }}" hint-placeholder-val="{{ false }}">
@@ -223,7 +232,7 @@
                   <button type="button" onClick="{{ closeShowcase }}" aria-label="{{ closeShowcaseLabel }}" style="border:0;background:none;font-size:20px">×</button>
                 </div>
                 <p style="font-size:14px;color:var(--text-2);margin:14px 0">{{ currentShowcase.description }}</p>
-                <video data-media-preview="true" data-media-kind="showcase" data-download-allowed="true" sc-camel-src="{{ showcasePreviewUrl }}" controls preload="metadata" aria-label="{{ currentShowcase.title }}" style="width:100%;aspect-ratio:16/9;background:#111;border-radius:var(--r-md)"></video>
+                <video data-media-preview="true" data-media-kind="showcase" data-media-type="{{ showcasePreviewType }}" data-download-allowed="true" sc-camel-src="{{ showcasePreviewUrl }}" controls preload="metadata" aria-label="{{ currentShowcase.title }}" style="width:100%;aspect-ratio:16/9;background:var(--media-canvas);border-radius:var(--r-md)"></video>
                 <div style="font-size:12px;color:var(--muted);margin-top:8px">{{ currentShowcase.fileName }}</div>
               </div>
               <aside style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:flex;flex-direction:column;gap:13px">
@@ -242,7 +251,7 @@
                   <span style="font-size:13px;font-weight:600" data-i18n="quality_showcase_internal_note">Internal note</span>
                   <textarea value="{{ showcaseInternalNote }}" onChange="{{ onShowcaseInternalNote }}" maxlength="2000" rows="2" style="padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)"></textarea>
                 </label>
-                <button type="button" onClick="{{ onShowcaseApprove }}" disabled="{{ showcaseBusy }}" style="height:40px;border:0;background:var(--success);color:#fff;border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_approve">Approve Showcase</button>
+                <button type="button" onClick="{{ onShowcaseApprove }}" disabled="{{ showcaseBusy }}" style="height:40px;border:0;background:var(--success);color:var(--success-ink);border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_approve">Approve Showcase</button>
                 <button type="button" onClick="{{ onShowcaseChanges }}" disabled="{{ showcaseBusy }}" style="height:40px;border:1px solid var(--warning);background:var(--warning-soft);color:var(--warning);border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_request_changes">Request changes</button>
                 <button type="button" onClick="{{ onShowcaseReject }}" disabled="{{ showcaseBusy }}" style="height:40px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-sm);font-weight:700" data-i18n="quality_showcase_reject">Reject Showcase</button>
               </aside>
@@ -251,62 +260,15 @@
         </div>
       </sc-if>
 
-      <sc-if value="{{ isNotificationsPage }}" hint-placeholder-val="{{ false }}">
-        <div>
-          <h1 style="font-size:24px;font-weight:800;margin-bottom:16px">{{ notificationsTitleList }}</h1>
-          <sc-if value="{{ notificationsLoading }}" hint-placeholder-val="{{ false }}">
-            <p role="status" class="tf-empty">{{ queueLoadingLabel }}</p>
-          </sc-if>
-          <sc-if value="{{ notificationsError }}" hint-placeholder-val="{{ false }}">
-            <p role="alert" style="color:var(--error)">{{ notificationsError }}</p>
-          </sc-if>
-          <sc-if value="{{ notificationsEmpty }}" hint-placeholder-val="{{ false }}">
-            <p role="status" class="tf-empty" data-i18n="quality_notifications_empty">No operational notifications.</p>
-          </sc-if>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <sc-for list="{{ notificationItems }}" as="n" hint-placeholder-count="0">
-              <button type="button" onClick="{{ n.onOpen }}" style="text-align:start;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface)">
-                <div style="font-size:14px;font-weight:700">{{ n.title }}</div>
-                <div style="font-size:13px;color:var(--muted);margin-top:4px">{{ n.body }}</div>
-              </button>
-            </sc-for>
-          </div>
-        </div>
-      </sc-if>
-
-      <sc-if value="{{ isReportsPage }}" hint-placeholder-val="{{ false }}">
-        <div>
-          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ reportsTitle }}</h1>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
-            <sc-for list="{{ reportStats }}" as="r" hint-placeholder-count="4">
-              <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
-                <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ r.label }}</div>
-                <div style="font-size:21px;font-weight:800">{{ r.value }}</div>
-              </div>
-            </sc-for>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
-            <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ reportsChartTitle }}</h2>
-            <sc-if value="{{ reportChartEmpty }}" hint-placeholder-val="{{ true }}">
-              <p class="tf-empty" data-i18n="quality_report_chart_unavailable">Weekly review analytics are not available yet.</p>
-            </sc-if>
-            <sc-if value="{{ reportChartReady }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:flex-end;gap:8px;height:100px">
-                <sc-for list="{{ reportChart }}" as="c" hint-placeholder-count="8">
-                  <div title="{{ c.title }}" style="{{ c.style }}"></div>
-                </sc-for>
-              </div>
-            </sc-if>
-          </div>
-        </div>
-      </sc-if>
-
+      <!-- PASS 05: the Reports destination rendered three "analytics unavailable" tiles and an
+           empty chart. There was no backend capability behind it, so it is removed as dead UI
+           rather than kept as a destination that answers nothing. Its links resolve to the queue. -->
       <sc-if value="{{ isSettingsPage }}" hint-placeholder-val="{{ false }}">
         <div style="max-width:560px;display:flex;flex-direction:column;gap:16px">
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-              <img sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+              <img loading="lazy" decoding="async" sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
               <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
                 <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -354,7 +316,7 @@
           </div>
           <h2 style="font-size:17px;margin:8px 0 0">{{ notificationsTitle }}</h2>
           <sc-if value="{{ prefsUnavailable }}" hint-placeholder-val="{{ false }}">
-            <p role="status" style="margin:0;font-size:13.5px;color:var(--muted)" data-i18n="quality_prefs_unavailable">Notification preferences could not be loaded for this session.</p>
+            <p role="status" style="margin:0;font-size:13px;color:var(--muted)" data-i18n="quality_prefs_unavailable">Notification preferences could not be loaded for this session.</p>
           </sc-if>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
             <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text-2)">
@@ -372,17 +334,17 @@
 
       <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-          <button type="button" onClick="{{ backToList }}" style="border:0;background:none;color:var(--muted);font-size:13.5px;font-weight:600">{{ backQueueLabel }}</button>
+          <button type="button" onClick="{{ backToList }}" style="border:0;background:none;color:var(--muted);font-size:13px;font-weight:600">{{ backQueueLabel }}</button>
         </div>
         <div data-stack="review" style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;align-items:start">
           <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
               <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">
-                <span style="width:56px;height:56px;flex:none;border-radius:16px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg-alt) 6px 12px)"></span>
+                <span style="width:56px;height:56px;flex:none;border-radius:16px;border:1px solid var(--border);background:var(--surface-2)"></span>
                 <div>
                   <div style="font-size:18px;font-weight:800">{{ current.name }}</div>
-                  <div style="font-size:13.5px;color:var(--muted)">{{ current.subject }} · {{ appliedLabel }}</div>
-                  <div style="font-size:12.5px;color:var(--text-2);margin-top:4px">{{ current.kindLabel }}</div>
+                  <div style="font-size:13px;color:var(--muted)">{{ current.subject }} · {{ appliedLabel }}</div>
+                  <div style="font-size:12px;color:var(--text-2);margin-top:4px">{{ current.kindLabel }}</div>
                 </div>
               </div>
               <sc-if value="{{ current.showQualificationContext }}" hint-placeholder-val="{{ false }}">
@@ -396,7 +358,7 @@
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
                 <sc-for list="{{ current.facts }}" as="f" hint-placeholder-count="0">
                   <div>
-                    <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ f.k }}</div>
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ f.k }}</div>
                     <div style="font-size:14px;font-weight:600">{{ f.v }}</div>
                   </div>
                 </sc-for>
@@ -405,8 +367,8 @@
 
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
               <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">{{ demoTitle }}</h2>
-              <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px">{{ demoTopicLabel }}</p>
-              <p style="font-size:13.5px;color:var(--text-2);margin-bottom:14px">{{ current.assignmentInstructions }}</p>
+              <p style="font-size:13px;color:var(--muted);margin-bottom:14px">{{ demoTopicLabel }}</p>
+              <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">{{ current.assignmentInstructions }}</p>
               <sc-if value="{{ current.hasResources }}" hint-placeholder-val="{{ false }}">
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
                   <sc-for list="{{ current.resources }}" as="resource" hint-placeholder-count="0">
@@ -416,17 +378,17 @@
                 </div>
               </sc-if>
               <sc-if value="{{ demoLoading }}" hint-placeholder-val="{{ true }}">
-                <div role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;color:#fff;margin-bottom:12px;font-size:13.5px">{{ demoLoadingLabel }}</div>
+                <div role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:var(--media-canvas);color:var(--media-control-ink);margin-bottom:12px;font-size:13px">{{ demoLoadingLabel }}</div>
               </sc-if>
               <sc-if value="{{ demoLoadError }}" hint-placeholder-val="{{ false }}">
-                <div role="alert" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;color:#fff;margin-bottom:12px;padding:20px;text-align:center">
-                  <span style="font-size:13.5px">{{ demoErrorLabel }}</span>
+                <div role="alert" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:var(--media-canvas);color:var(--media-control-ink);margin-bottom:12px;padding:20px;text-align:center">
+                  <span style="font-size:13px">{{ demoErrorLabel }}</span>
                   <button type="button" onClick="{{ downloadDemo }}" style="height:36px;padding-inline:14px;border:0;border-radius:var(--r-sm);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:13px">{{ demoDownloadLabel }}</button>
                 </div>
               </sc-if>
               <sc-if value="{{ demoReady }}" hint-placeholder-val="{{ false }}">
                 <video data-media-preview="true" data-media-kind="qualification" data-download-allowed="true" sc-camel-src="{{ demoBlobUrl }}" controls preload="metadata" aria-label="{{ demoTopic }}"
-                  style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:#111;margin-bottom:12px"></video>
+                  style="display:block;width:100%;aspect-ratio:16/9;border-radius:var(--r-md);background:var(--media-canvas);margin-bottom:12px"></video>
               </sc-if>
               <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-2)">
                 <span>{{ durationLabel }}</span>
@@ -434,18 +396,42 @@
               </div>
             </section>
 
+            <!-- PASS 05 DRAFT SAFETY: an unfinished score sheet is recoverable, and the reviewer is
+                 told exactly what that means. Restoring is a choice, never silent. -->
+            <sc-if value="{{ hasDraft }}" hint-placeholder-val="{{ false }}">
+              <div role="status" class="tf-quality-draft" data-draft="offer">
+                <div>
+                  <strong>{{ draftFoundTitle }}</strong>
+                  <p>{{ draftFoundBody }}</p>
+                </div>
+                <div class="tf-quality-draft-actions">
+                  <button type="button" class="tf-button tf-button-secondary" onClick="{{ onDiscardDraft }}">{{ draftDiscardLabel }}</button>
+                  <button type="button" class="tf-button" onClick="{{ onRestoreDraft }}">{{ draftRestoreLabel }}</button>
+                </div>
+              </div>
+            </sc-if>
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-              <h2 style="font-size:16px;font-weight:700;margin-bottom:16px">{{ rubricTitle }}</h2>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+                <h2 style="font-size:16px;font-weight:700;margin:0">{{ rubricTitle }}</h2>
+                <span style="font-size:12px;font-weight:700;color:var(--muted)">{{ rubricProgressLabel }}</span>
+              </div>
+              <sc-if value="{{ showUnsaved }}" hint-placeholder-val="{{ false }}">
+                <p class="tf-quality-draft-note" role="status">{{ unsavedLabel }}</p>
+              </sc-if>
+              <p style="font-size:12px;color:var(--muted);margin:0 0 16px">{{ rubricAnchorLegend }}</p>
+              <sc-if value="{{ hasMissingScores }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-sm);font-size:12px">{{ missingScoresText }}</div>
+              </sc-if>
               <div style="display:flex;flex-direction:column;gap:16px">
                 <sc-for list="{{ rubric }}" as="r" hint-placeholder-count="9">
-                  <div>
+                  <div style="{{ r.rowStyle }}">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
                       <span style="font-size:14px;font-weight:600">{{ r.label }}</span>
-                      <span style="font-family:var(--font-mono);font-size:13px;color:var(--muted)">{{ r.score }}/5</span>
+                      <span style="font-family:var(--font-mono);font-size:13px;color:var(--muted)">{{ r.scoreDisplay }}/5</span>
                     </div>
-                    <div style="display:flex;gap:6px">
+                    <div class="tf-rubric-scale" role="group" aria-label="{{ r.label }}">
                       <sc-for list="{{ r.points }}" as="p" hint-placeholder-count="5">
-                        <button type="button" onClick="{{ p.onClick }}" aria-label="{{ p.ariaLabel }}" aria-pressed="{{ p.active }}" style="{{ p.style }}">{{ p.n }}</button>
+                        <button type="button" class="tf-rubric-point" onClick="{{ p.onClick }}" aria-label="{{ p.ariaLabel }}" aria-pressed="{{ p.active }}" data-active="{{ p.active }}">{{ p.n }}</button>
                       </sc-for>
                     </div>
                   </div>
@@ -455,6 +441,9 @@
                 <span style="font-size:14px;font-weight:700">{{ overallScoreLabel }}</span>
                 <span style="font-size:20px;font-weight:800">{{ overallScore }} / 5</span>
               </div>
+              <sc-if value="{{ overallScoreCaption }}" hint-placeholder-val="{{ false }}">
+                <p style="margin:6px 0 0;text-align:end;font-size:11px;color:var(--muted)">{{ overallScoreCaption }}</p>
+              </sc-if>
             </section>
 
             <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
@@ -474,12 +463,12 @@
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px">
               <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ decisionTitle }}</h2>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <button type="button" onClick="{{ onApprove }}" disabled="{{ decisionBusy }}" style="height:42px;border:0;background:var(--success);color:#fff;border-radius:var(--r-md);font-weight:700;font-size:14px">{{ approveLabel }}</button>
+                <button type="button" onClick="{{ onApprove }}" disabled="{{ decisionBusy }}" style="height:42px;border:0;background:var(--success);color:var(--success-ink);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ approveLabel }}</button>
                 <button type="button" onClick="{{ onRequestChanges }}" disabled="{{ decisionBusy }}" style="height:42px;border:1px solid var(--warning);background:var(--warning-soft);color:var(--warning);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ requestChangesLabel }}</button>
                 <button type="button" onClick="{{ onReject }}" disabled="{{ decisionBusy }}" style="height:42px;border:1px solid var(--error);background:var(--error-soft);color:var(--error);border-radius:var(--r-md);font-weight:700;font-size:14px">{{ rejectLabel }}</button>
               </div>
               <sc-if value="{{ needsReason }}" hint-placeholder-val="{{ false }}">
-                <p style="margin-top:10px;font-size:12.5px;color:var(--error)">{{ needsReasonLabel }}</p>
+                <p style="margin-top:10px;font-size:12px;color:var(--error)">{{ needsReasonLabel }}</p>
               </sc-if>
             </div>
 
@@ -491,8 +480,8 @@
                     <div style="display:flex;gap:12px;padding-block:10px;border-top:1px solid var(--border)">
                       <span style="{{ h.dotStyle }}"></span>
                       <div>
-                        <div style="font-size:13.5px;font-weight:600">{{ h.label }}</div>
-                        <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px">{{ h.time }}</div>
+                        <div style="font-size:13px;font-weight:600">{{ h.label }}</div>
+                        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:2px">{{ h.time }}</div>
                       </div>
                     </div>
                   </sc-for>
@@ -507,7 +496,7 @@
 </div>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:340px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:var(--tf-dashboard-toast-offset,24px);inset-inline-end:24px;z-index:80;background:var(--surface);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:340px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
@@ -535,20 +524,91 @@ const PRIORITY_TONE = {
   1: ['var(--warning-soft)', 'var(--warning)'],
   0: ['var(--surface-2)', 'var(--muted)']
 };
+/* ============================================================================================
+   PASS 05 — CANONICAL QUALITY REVIEWER NAVIGATION
+   --------------------------------------------------------------------------------------------
+   A Quality Reviewer is not a smaller Admin. The role answers exactly one question — "what do I
+   need to review next?" — so the whole job lives in ONE review workspace whose tabs are the kinds
+   of work waiting, plus the reviewer's own account.
+
+   Tab keys are the SAME strings as the pre-Pass-05 destinations, so existing bookmarks, e-mail
+   deep links and notification targets keep resolving (see resolveQualityRoute).
+
+   `flag:'showcases'` marks a tab that only exists when Teacher Showcases are enabled. The flag is
+   read once, through Tafseel.showcasesUnavailable — the same reading Admin and Teacher use — so a
+   disabled feature disappears rather than offering a queue that errors.
+   ============================================================================================ */
+const QUALITY_NAV = [
+  { key: 'review', icon: 'applications', tabs: [
+    { key: 'applications', page: 'applications' },
+    { key: 'additional', page: 'additional' },
+    { key: 'showcases', page: 'showcases', flag: 'showcases' }
+  ]},
+  { key: 'account', icon: 'settings', tabs: [
+    { key: 'settings', page: 'settings' }
+  ]}
+];
+
+/* Legacy `?section=` values that were never tab keys. */
+const QUALITY_SECTION_ALIASES = {
+  overview: 'applications', pending: 'applications', review: 'applications',
+  queue: 'applications', media: 'showcases', samples: 'showcases',
+  /* PASS 05: the Reports destination rendered three "analytics unavailable" tiles and an empty
+     chart — a navigation destination with nothing behind it. It is removed as dead UI, and its
+     link resolves to the queue rather than 404-ing a bookmark. No backend capability existed. */
+  reports: 'applications', insights: 'applications',
+  account: 'settings', notifications: 'settings'
+};
+
+const QUALITY_TAB_SECTION = QUALITY_NAV.reduce((map, section) => {
+  section.tabs.forEach(tab => { map[tab.key] = section.key; });
+  return map;
+}, {});
+
+function qualitySection(key) { return QUALITY_NAV.find(x => x.key === key) || QUALITY_NAV[0]; }
+
+/**
+ * Resolve any legacy or current (section, tab) pair onto a canonical route.
+ * `enabled` is the set of feature-gated tabs currently available; a route naming a disabled tab
+ * falls back to the area's first tab rather than rendering a destination that cannot load.
+ */
+function resolveQualityRoute(sectionRaw, tabRaw, enabled) {
+  const available = enabled || {};
+  const usable = tab => !tab.flag || available[tab.flag] !== false;
+  const lowerSection = String(sectionRaw || '').trim().toLowerCase();
+  const lowerTab = String(tabRaw || '').trim().toLowerCase();
+
+  const named = key => Object.keys(QUALITY_TAB_SECTION).find(x => x.toLowerCase() === key);
+  const legacyTab = named(lowerTab) || named(lowerSection)
+    || QUALITY_SECTION_ALIASES[lowerSection] || QUALITY_SECTION_ALIASES[lowerTab] || '';
+
+  const known = QUALITY_NAV.find(x => x.key === lowerSection);
+  const sectionKey = known ? known.key
+    : legacyTab ? QUALITY_TAB_SECTION[legacyTab]
+    : 'review';
+  const section = qualitySection(sectionKey);
+  const tabs = section.tabs.filter(usable);
+  const wanted = tabs.find(x => x.key === legacyTab) || tabs[0] || section.tabs[0];
+  return { section: section.key, tab: wanted.key, config: wanted };
+}
+
 class Component extends DCLogic {
   state = {
     lang: Tafseel.lang, theme: Tafseel.theme, drawer: false, compactNav: false,
+    // PASS 05 route state: `section` + `tab` are the address, `page` selects the surface.
+    section: 'review', tab: 'applications', showcasesEnabled: null,
     view: 'list', page: 'applications', navKey: 'applications', currentId: null,
     appSearch: '', appStatus: 'actionable', appKind: 'All', appSort: 'OldestFirst',
     appPage: 1, appPageSize: 20, appTotal: 0, appFiltered: false,
     scores: {}, comment: '', internalNotes: '', needsReason: false, decisionBusy: false, toast: '', toastLeaving: false,
+    missingScores: [], reviewDirty: false, draftAvailable: null, draftSavedAt: '',
     queueLoading: true, queueError: '',
     queueSummary: null, showcaseSummary: null,
     showcaseLoading: true, showcaseError: '', showcaseCurrentId: '',
     showcaseSearch: '', showcaseStatus: '', showcaseSort: 'OldestFirst',
     showcasePage: 1, showcaseTotal: 0, showcaseFiltered: false,
     showcaseFeedback: '', showcaseInternalNote: '', showcaseReasonCode: '',
-    showcasePreviewUrl: '', showcaseBusy: false,
+    showcasePreviewUrl: '', showcasePreviewType: 'video/mp4', showcaseBusy: false,
     demoBlobUrl: '', demoLoading: false, demoLoadError: '',
     reviewHistory: [], reviewDetail: null,
     notifications: [], notificationsLoading: false, notificationsError: '',
@@ -562,6 +622,14 @@ class Component extends DCLogic {
     Tafseel.installDashboardDrawer(this, { sidebarId: 'quality-sidebar', toggleId: 'quality-drawer-toggle' });
     this._onPopState = () => this.applyDeepLink(new URLSearchParams(location.search), { replace: true });
     window.addEventListener('popstate', this._onPopState);
+    // No server draft API for review decisions — this only warns against losing in-progress
+    // scores/comments to an accidental tab close/refresh; it never persists them anywhere.
+    this._onBeforeUnload = (e) => {
+      if (!this.state.reviewDirty) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', this._onBeforeUnload);
     Tafseel.api.requireRoles(['QualityReviewer']).then(session => {
       if (!session) return;
       this._session = session;
@@ -582,40 +650,163 @@ class Component extends DCLogic {
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
     if (this._onPopState) window.removeEventListener('popstate', this._onPopState);
+    if (this._onBeforeUnload) window.removeEventListener('beforeunload', this._onBeforeUnload);
+  }
+
+  /* ==========================================================================================
+     PASS 05 — REVIEWER DRAFT SAFETY
+     --------------------------------------------------------------------------------------------
+     THERE IS NO SERVER DRAFT API. `/teacher-applications/{id}` exposes read, start-review and
+     decision — nothing that stores an in-progress score sheet. This code therefore does the
+     strongest thing it honestly can, and says so in the UI: it keeps a LOCAL draft, per reviewer
+     and per application, and offers to restore it. It never pretends to be server persistence —
+     the unsaved indicator states plainly that the draft is on this device only, so a reviewer can
+     never believe their work is safe somewhere it is not.
+
+     Properties:
+       - keyed by reviewer AND application, so two reviewers on one machine cannot cross-read,
+         and one reviewer's drafts never bleed between applications;
+       - restoring is an explicit choice, never silent — a stale draft must not quietly overwrite
+         what the reviewer is looking at now;
+       - the draft carries no decision and no application state: it is scores, comment and notes.
+         It can never be mistaken for a submitted review;
+       - cleared on a successful decision, so finished work does not resurface.
+
+     BACKEND REQUIREMENT (not closed by this pass): a reviewer-owned server draft endpoint. Local
+     storage does not survive a different device, a cleared browser or a lost machine.
+     ========================================================================================== */
+  draftKey(applicationId) {
+    const reviewer = (this._session && this._session.userId) || '';
+    if (!reviewer || !applicationId) return '';
+    return 'tafseel.quality.review-draft.' + reviewer + '.' + applicationId;
+  }
+
+  readDraft(applicationId) {
+    const key = this.draftKey(applicationId);
+    if (!key) return null;
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return null;
+      const draft = JSON.parse(raw);
+      if (!draft || typeof draft !== 'object') return null;
+      const hasWork = Object.keys(draft.scores || {}).length > 0
+        || (draft.comment || '').trim() || (draft.internalNotes || '').trim();
+      return hasWork ? draft : null;
+    } catch (_) { return null; }
+  }
+
+  saveDraft() {
+    const s = this.state;
+    const key = this.draftKey(s.currentId);
+    if (!key || s.view !== 'review') return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify({
+        scores: s.scores || {}, comment: s.comment || '', internalNotes: s.internalNotes || '',
+        savedAt: new Date().toISOString()
+      }));
+      this.setState({ draftSavedAt: new Date().toISOString() });
+    } catch (_) {
+      // Storage can be full or blocked. The unsaved indicator stays on; nothing is claimed.
+      this.setState({ draftSavedAt: '' });
+    }
+  }
+
+  clearDraft(applicationId) {
+    const key = this.draftKey(applicationId || this.state.currentId);
+    if (!key) return;
+    try { window.localStorage.removeItem(key); } catch (_) { /* nothing to clean up */ }
+    this.setState({ draftSavedAt: '', draftAvailable: null });
+  }
+
+  restoreDraft() {
+    const draft = this.state.draftAvailable;
+    if (!draft) return;
+    this.setState({
+      scores: draft.scores || {}, comment: draft.comment || '',
+      internalNotes: draft.internalNotes || '', draftAvailable: null,
+      draftSavedAt: draft.savedAt || ''
+    });
+    this.markReviewDirty(true);
+  }
+
+  markReviewDirty(value) {
+    if (this.state.reviewDirty !== !!value) this.setState({ reviewDirty: !!value });
+    // Persist on every edit rather than on a timer: an accidental tab close has no warning window.
+    if (value) this.saveDraft();
+  }
+
+  async confirmDiscardIfDirty() {
+    if (!this.state.reviewDirty) return true;
+    const ok = await Tafseel.confirmAction({
+      title: Tafseel.t('quality_discard_confirm_title'),
+      body: Tafseel.t('quality_discard_confirm_body'),
+      confirmLabel: Tafseel.t('quality_discard_confirm_confirm'),
+      cancelLabel: Tafseel.t('common_cancel'),
+      destructive: true
+    });
+    if (ok) this.markReviewDirty(false);
+    return ok;
+  }
+
+  /**
+   * PASS 05 — the one Quality router. Everything that changes the visible surface goes through it:
+   * the sidebar, the tab strip, deep links and browser back/forward. Legacy destination keys are
+   * RESOLVED here rather than branched on, so there is a single navigation system.
+   */
+  async openRoute(sectionKey, tabKey, opts) {
+    const options = opts || {};
+    if (options.skipDirtyCheck !== true && !(await this.confirmDiscardIfDirty())) return;
+    const route = resolveQualityRoute(sectionKey, tabKey, { showcases: this.state.showcasesEnabled !== false });
+    const patch = {
+      section: route.section, tab: route.tab, navKey: route.tab,
+      page: route.config.page, view: 'list', currentId: null, appPage: 1
+    };
+    if (route.tab === 'additional') patch.appKind = 'Additional';
+    else if (route.tab === 'applications') patch.appKind = 'All';
+    this.setState(patch, () => {
+      this.syncUrl({ replace: options.replace === true });
+      if (route.section === 'review') this.loadQueue();
+    });
+    if (typeof this.closeDrawer === 'function') this.closeDrawer();
+    else this.setState({ drawer: false });
   }
 
   applyDeepLink(params, opts) {
-    const sectionRaw = (params.get('section') || '').toLowerCase();
-    const section = sectionRaw === 'media' ? 'showcases'
-      : sectionRaw === 'overview' || sectionRaw === 'pending' || sectionRaw === 'review' ? 'applications'
-      : (sectionRaw || (opts && opts.initial ? 'applications' : this.state.navKey || 'applications'));
+    const options = opts || {};
+    const route = resolveQualityRoute(params.get('section'), params.get('tab'),
+      { showcases: this.state.showcasesEnabled !== false });
     const selectedId = params.get('selectedId') || params.get('applicationId') || '';
     const search = params.get('search') || '';
-    const status = params.get('status') || (section === 'additional' ? 'actionable' : (params.get('status') || this.state.appStatus || 'actionable'));
     const page = Math.max(parseInt(params.get('page') || '1', 10) || 1, 1);
     const patch = {
-      navKey: section === 'showcases' || section === 'reports' || section === 'settings' || section === 'notifications'
-        ? section : (section === 'additional' ? 'additional' : 'applications'),
-      page: section === 'showcases' || section === 'reports' || section === 'settings' || section === 'notifications'
-        ? section : (section === 'additional' ? 'additional' : 'applications'),
+      section: route.section, tab: route.tab, navKey: route.tab, page: route.config.page,
       view: 'list',
       appSearch: search,
-      appStatus: status || 'actionable',
-      appKind: section === 'additional' ? 'Additional' : (params.get('kind') || 'All'),
+      appStatus: params.get('status') || this.state.appStatus || 'actionable',
+      appKind: route.tab === 'additional' ? 'Additional' : (params.get('kind') || 'All'),
       appPage: page
     };
+    if (route.tab === 'showcases') {
+      patch.showcaseSearch = search;
+      patch.showcaseStatus = params.get('status') || '';
+      patch.showcasePage = page;
+    }
     this.setState(patch);
-    if (opts && opts.replace) this.syncUrl({ replace: true, selectedId });
-    if (selectedId && patch.page !== 'showcases') setTimeout(() => this.openApp(selectedId), 0);
-    if (selectedId && patch.page === 'showcases') setTimeout(() => this.openShowcase(selectedId), 0);
+    // Replace, never push: resolving the address bar must not add a history entry.
+    if (options.replace) this.syncUrl({ replace: true, selectedId });
+    if (selectedId && route.tab === 'showcases') setTimeout(() => this.openShowcase(selectedId), 0);
+    else if (selectedId) setTimeout(() => this.openApp(selectedId), 0);
   }
 
   syncUrl(opts) {
     if (typeof history === 'undefined' || typeof history.replaceState !== 'function') return;
     const s = this.state;
     const params = new URLSearchParams();
-    const section = s.navKey || s.page || 'applications';
-    params.set('section', section);
+    // PASS 05 shape: ?section=<area>&tab=<destination>. Legacy `?section=<destination>` links
+    // still resolve on the way in (resolveQualityRoute); this is the canonical form on the way out.
+    const section = s.tab || 'applications';
+    params.set('section', s.section || 'review');
+    params.set('tab', section);
     if (section === 'applications' || section === 'additional') {
       if (s.appSearch) params.set('search', s.appSearch);
       if (s.appStatus && s.appStatus !== 'actionable') params.set('status', s.appStatus);
@@ -633,7 +824,16 @@ class Component extends DCLogic {
     if (opts && opts.replace) history.replaceState(null, '', next);
     else history.pushState(null, '', next);
   }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); Tafseel.mediaPreview.sync(); }
+  componentDidUpdate() {
+    Tafseel.translate(); Tafseel.updateControls(); Tafseel.mediaPreview.sync();
+    // PASS 03: the drawer's scroll lock, focus, Escape and focus return come from the one
+    // shared shell mechanic rather than a fourth hand-rolled copy.
+    Tafseel.modal.sync(!!(this.state.drawer && this.state.compactNav), {
+      key: 'quality-drawer',
+      panel: '#quality-sidebar',
+      onRequestClose: () => this.setState({ drawer: false })
+    });
+  }
 
   flash(msg) {
     Tafseel.flash(this, msg, 2800);
@@ -718,28 +918,42 @@ class Component extends DCLogic {
       ]);
       const items = Array.isArray(page) ? page : (page && page.items) || [];
       APPLICATIONS = items.map(x => this.mapApplication(x, subjects, topics));
+      /* PASS 05 — showcases load only when the reviewer is actually on that tab, and the feature
+         flag is read from the one shared helper. When Showcases are disabled the tab is removed
+         from navigation entirely (see QUALITY_NAV / featureFlags) rather than showing a queue that
+         errors, an empty state that cannot be acted on, or a call to action that goes nowhere. */
       let showcaseError = '';
       let showcasePage = null;
       let showcaseSummary = null;
-      try {
-        const showcaseParams = new URLSearchParams({
-          page: String(s.showcasePage || 1),
-          sort: s.showcaseSort || 'OldestFirst'
-        });
-        if (s.showcaseSearch) showcaseParams.set('search', s.showcaseSearch);
-        if (s.showcaseStatus) showcaseParams.set('status', s.showcaseStatus);
-        showcasePage = await Tafseel.api.get('/teachers/showcase-moderation?pageSize=20&' + showcaseParams.toString());
-        showcaseSummary = await Tafseel.api.get('/teachers/showcase-moderation/summary').catch(() => null);
-      } catch (error) {
-        showcaseError = Tafseel.api.errorMessage(error);
+      let showcasesEnabled = this.state.showcasesEnabled;
+      if (this.state.tab === 'showcases' || showcasesEnabled === null) {
+        try {
+          const showcaseParams = new URLSearchParams({
+            page: String(s.showcasePage || 1),
+            sort: s.showcaseSort === 'NewestFirst' ? '1' : '0'
+          });
+          if (s.showcaseSearch) showcaseParams.set('search', s.showcaseSearch);
+          if (s.showcaseStatus) showcaseParams.set('status', s.showcaseStatus);
+          showcaseSummary = await Tafseel.api.get('/teachers/showcase-moderation/summary');
+          showcasesEnabled = true;
+          if (this.state.tab === 'showcases') {
+            showcasePage = await Tafseel.api.get('/teachers/showcase-moderation?pageSize=20&' + showcaseParams.toString());
+          }
+        } catch (error) {
+          if (Tafseel.showcasesUnavailable(error)) showcasesEnabled = false;
+          else { showcasesEnabled = true; showcaseError = Tafseel.api.errorMessage(error); }
+        }
       }
-      let preferences = null;
-      try { preferences = await Tafseel.api.get('/notification-preferences'); } catch (_) { preferences = null; }
+      // Notification preferences belong to the account surface; they are not queue data.
+      let preferences = this.state.prefsUnavailable === undefined ? null : null;
+      if (this.state.section === 'account' || this.state.notifyNewApps === undefined) {
+        try { preferences = await Tafseel.api.get('/notification-preferences'); } catch (_) { preferences = null; }
+      }
       const showcaseStatusKeys = [
         'showcase_status_draft', 'showcase_status_submitted', 'showcase_status_under_review',
         'showcase_status_changes_requested', 'showcase_status_approved', 'showcase_status_rejected', 'showcase_status_archived'
       ];
-      SHOWCASES = ((showcasePage && showcasePage.items) || []).map(x => ({
+      if (showcasePage) SHOWCASES = (showcasePage.items || []).map(x => ({
         id: x.sampleId,
         versionId: x.versionId,
         versionNumber: x.versionNumber,
@@ -770,6 +984,7 @@ class Component extends DCLogic {
         appPageSize: (page && page.pageSize) || 20,
         appFiltered: filtered,
         queueSummary: summary,
+        showcasesEnabled,
         showcaseSummary,
         showcaseTotal: (showcasePage && showcasePage.totalCount) || SHOWCASES.length,
         showcaseLoading: false,
@@ -816,6 +1031,7 @@ class Component extends DCLogic {
       this.setState({
         showcaseCurrentId:id,
         showcasePreviewUrl:this._showcasePreviewUrl,
+        showcasePreviewType:file.contentType || file.blob.type || 'video/mp4',
         showcaseFeedback:'',
         showcaseInternalNote:'',
         showcaseReasonCode:'',
@@ -827,6 +1043,9 @@ class Component extends DCLogic {
   }
 
   async openApp(id) {
+    if (this.state.view === 'review' && this.state.currentId && this.state.currentId !== id) {
+      if (!(await this.confirmDiscardIfDirty())) return;
+    }
     try {
       let item = APPLICATIONS.find(x => x.id === id);
       if (!item) {
@@ -860,8 +1079,12 @@ class Component extends DCLogic {
         item = APPLICATIONS.find(x => x.id === id) || item;
       }
       if (this._demoBlobUrl) { URL.revokeObjectURL(this._demoBlobUrl); this._demoBlobUrl = ''; }
+      // A draft is OFFERED, never applied silently: the reviewer decides whether older work on
+      // this device should replace the clean sheet they are looking at.
       this.setState({
         view: 'review', currentId: id, scores: {}, comment: '', internalNotes: '', needsReason: false,
+        missingScores: [], reviewDirty: false, draftSavedAt: '',
+        draftAvailable: this.readDraft(id),
         demoBlobUrl: '', demoLoading: true, demoLoadError: ''
       });
       this.syncUrl({ replace: true, selectedId: id });
@@ -909,14 +1132,16 @@ class Component extends DCLogic {
     const actionableCount = summary.actionable || (pendingCount + underReviewCount);
     const additionalCount = summary.additionalActionable || 0;
     const showcaseCount = showcaseSummary.actionable || SHOWCASES.length;
-    const NAV = [
-      ['applications','◷',Tafseel.t('qd_nav_applications'),actionableCount],
-      ['additional','⊕',Tafseel.t('qd_nav_additional'),additionalCount],
-      ['showcases','▶',Tafseel.t('qd_nav_showcase'),showcaseCount],
-      ['notifications','✉',Tafseel.t('qd_nav_notifications'),0],
-      ['reports','▤',Tafseel.t('qd_nav_reports'),0],
-      ['settings','⚙',Tafseel.t('qd_nav_settings'),0]
-    ];
+    /* PASS 05 — the sidebar and the tab strip both derive from QUALITY_NAV. The reviewer sees two
+       destinations: the review workspace and their own account. The kinds of work waiting are
+       TABS inside the workspace, badged with the count actually waiting in each. */
+    const TAB_BADGES = {
+      applications: actionableCount, additional: additionalCount, showcases: showcaseCount
+    };
+    const featureFlags = { showcases: s.showcasesEnabled !== false };
+    const visibleTabs = section => section.tabs.filter(t => !t.flag || featureFlags[t.flag]);
+    const NAV_GROUPS = [{ group: '', items: QUALITY_NAV.map(x => [x.key, 'qd_area_' + x.key,
+      visibleTabs(x).reduce((n, t) => n + Number(TAB_BADGES[t.key] || 0), 0)]) }];
 
     const filtered = APPLICATIONS;
     const current = APPLICATIONS.find(a => a.id === s.currentId) || null;
@@ -924,19 +1149,27 @@ class Component extends DCLogic {
 
     const rubric = RUBRIC_KEYS.map(key => {
       const score = s.scores[key] || 0;
+      const isMissing = (s.missingScores || []).includes(key);
       return {
         label: Tafseel.t(key), score,
+        scoreDisplay: score ? String(score) : '—',
+        missing: isMissing,
+        rowStyle: isMissing ? 'outline:1px solid var(--error);border-radius:var(--r-sm);padding:6px;margin:-6px' : '',
         points: [1, 2, 3, 4, 5].map(n => ({
           n, active: score === n,
           ariaLabel: Tafseel.t('quality_score_aria', { n: String(n) }),
-          onClick: () => this.setState({ scores: { ...s.scores, [key]: n } }),
-          style: 'width:32px;height:32px;border-radius:var(--r-sm);font-size:13px;font-weight:700;transition:all var(--t);' +
+          onClick: () => { this.setState({ scores: { ...s.scores, [key]: n }, missingScores: (s.missingScores || []).filter(k => k !== key) }); this.markReviewDirty(true); },
+          style: 'width:44px;height:44px;border-radius:var(--r-sm);font-size:13px;font-weight:700;transition:background-color var(--t),border-color var(--t),color var(--t);' +
             (score === n ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);' : 'border:1px solid var(--border);background:var(--bg);color:var(--text-2);')
         }))
       };
     });
-    const scored = Object.values(s.scores);
-    const overallScore = scored.length ? (scored.reduce((a, b) => a + b, 0) / scored.length).toFixed(1) : '0.0';
+    const scoredKeys = RUBRIC_KEYS.filter(key => s.scores[key] != null);
+    const rubricComplete = scoredKeys.length === RUBRIC_KEYS.length;
+    const overallScore = rubricComplete
+      ? (scoredKeys.reduce((a, key) => a + s.scores[key], 0) / scoredKeys.length).toFixed(1)
+      : '—';
+    const missingLabels = RUBRIC_KEYS.filter(key => s.scores[key] == null).map(key => Tafseel.t(key));
 
     const decide = async (decision) => {
       if (s.decisionBusy) return;
@@ -945,17 +1178,36 @@ class Component extends DCLogic {
         this.setState({ needsReason: true });
         return;
       }
-      if (Object.keys(s.scores).length !== 9) return this.flash(Tafseel.t('quality_flash_score_rubric'));
+      const missing = RUBRIC_KEYS.filter(key => s.scores[key] == null);
+      if (missing.length) {
+        const labels = missing.map(key => Tafseel.t(key));
+        this.setState({ missingScores: missing });
+        this.flash(Tafseel.t('quality_flash_score_rubric_missing', { list: labels.join(Tafseel.lang === 'ar' ? '، ' : ', ') }));
+        return;
+      }
+      if (decision === 2) {
+        const ok = await Tafseel.confirmAction({
+          title: Tafseel.t('quality_reject_confirm_title'),
+          body: Tafseel.t('quality_reject_confirm_body', { name: current.name }),
+          confirmLabel: Tafseel.t('quality_reject_confirm_confirm'),
+          cancelLabel: Tafseel.t('common_cancel'),
+          destructive: true
+        });
+        if (!ok) return;
+      }
       const actionKey = decision === 0 ? 'quality_approve' : decision === 1 ? 'quality_request_changes' : 'quality_reject';
-      this.setState({ decisionBusy: true });
+      this.setState({ decisionBusy: true, missingScores: [] });
       try {
         await Tafseel.api.post('/teacher-applications/' + current.id + '/decision', {
           decision,
           scores:RUBRIC_KEYS.map((key, criterion) => ({ criterion, score:s.scores[key] })),
           comment:s.comment || null, internalNotes:s.internalNotes || null
         }, { 'If-Match':current.version });
+        // The decision is recorded; the local draft has served its purpose and must not resurface.
+        this.clearDraft(current.id);
         await this.loadQueue();
         this.setState({ needsReason:false, view:'list', decisionBusy:false });
+        this.markReviewDirty(false);
         this.flash(Tafseel.t('quality_flash_decision', { action: Tafseel.t(actionKey), name: current.name }));
       } catch (error) {
         this.setState({ decisionBusy: false });
@@ -963,20 +1215,10 @@ class Component extends DCLogic {
       }
     };
 
-    const navTo = (key) => {
-      const page = key === 'additional' ? 'additional' : key;
-      this.setState({
-        navKey: key, page, view: 'list', currentId: null,
-        appKind: key === 'additional' ? 'Additional' : (key === 'applications' ? 'All' : s.appKind),
-        appPage: 1
-      }, () => {
-        this.syncUrl({ replace: true });
-        if (key === 'applications' || key === 'additional' || key === 'showcases') this.loadQueue();
-        if (key === 'notifications') this.loadNotifications();
-      });
-      if (typeof this.closeDrawer === 'function') this.closeDrawer();
-      else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
-    };
+    /* Sidebar click: open an area at its first available tab. Tab click: open that tab.
+       Both go through the one router so a reviewer can never lose in-progress work silently —
+       confirmDiscardIfDirty runs first, exactly as it did for the old flat destinations. */
+    const navTo = key => this.openRoute(key, key);
 
     const decideShowcase = async decision => {
       if (!currentShowcase || s.showcaseBusy) return;
@@ -996,7 +1238,7 @@ class Component extends DCLogic {
         if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
         this._showcasePreviewUrl = '';
         this.setState({
-          showcaseCurrentId:'', showcasePreviewUrl:'', showcaseFeedback:'',
+          showcaseCurrentId:'', showcasePreviewUrl:'', showcasePreviewType:'video/mp4', showcaseFeedback:'',
           showcaseInternalNote:'', showcaseReasonCode:'', showcaseBusy:false
         });
         await this.loadQueue();
@@ -1113,21 +1355,55 @@ class Component extends DCLogic {
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
 
-      navItems: NAV.map(([key, icon, label, badge]) => ({
-        icon, label, badge: badge || 0,
-        current: s.navKey === key ? 'page' : 'false',
-        style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
-          (s.navKey === key ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;' : 'background:none;color:var(--text-2);font-weight:500;'),
-        onClick: () => navTo(key)
+      qualityRoleBadge: Tafseel.t('qd_role_badge') || Tafseel.t('td_role_badge'),
+      navGroups: NAV_GROUPS.map(g => ({
+        label: Tafseel.t(g.group),
+        items: g.items.map(([key, labelKey, badge]) => ({
+          key, label: Tafseel.t(labelKey), iconPath: Tafseel.dashNavIconPath(key),
+          badge: badge || 0, badgeLabel: Tafseel.badgeCount(badge),
+          current: s.section === key ? 'page' : 'false',
+          onClick: () => navTo(key)
+        }))
       })),
+      navItems: NAV_GROUPS.flatMap(g => g.items.map(([key, labelKey, badge]) => ({
+        key, label: Tafseel.t(labelKey), badge: badge || 0,
+        current: s.section === key ? 'page' : 'false',
+        onClick: () => navTo(key)
+      }))),
 
-      isList: s.view === 'list' && !['reports','settings','showcases','notifications'].includes(s.page || 'applications'),
+      /* PASS 05 — the review workspace's tabs, from the one QUALITY_NAV definition. A
+         feature-gated tab is absent, not disabled: a reviewer is never offered a queue that
+         cannot load. */
+      ...(() => {
+        const section = qualitySection(s.section || 'review');
+        const tabs = visibleTabs(section);
+        return {
+          hasSectionTabs: tabs.length > 1,
+          sectionTabsLabel: Tafseel.t('qd_area_tabs_label', { area: Tafseel.t('qd_area_' + section.key) }),
+          sectionTabs: tabs.map(tab => {
+            const badge = Number(TAB_BADGES[tab.key] || 0);
+            return {
+              key: tab.key,
+              label: Tafseel.t('qd_tab_' + tab.key),
+              current: s.tab === tab.key ? 'page' : 'false',
+              hasBadge: badge > 0,
+              badgeLabel: Tafseel.badgeCount(badge),
+              onClick: () => this.openRoute(section.key, tab.key)
+            };
+          })
+        };
+      })(),
+
+      isList: s.view === 'list' && !['settings','showcases','notifications'].includes(s.page || 'applications'),
       isShowcases:s.page === 'showcases',
-      isReportsPage: s.page === 'reports',
       isSettingsPage: s.page === 'settings',
       isNotificationsPage: s.page === 'notifications',
       showcaseQueueTitle:Tafseel.t('quality_showcase_queue_title'),
       showcaseQueueHint:Tafseel.t('quality_showcase_queue_hint'),
+      showcaseSubjectLabel:Tafseel.t('quality_showcase_subject'),
+      showcaseVersionLabel:Tafseel.t('quality_showcase_version'),
+      showcaseSubmittedLabel:Tafseel.t('quality_showcase_submitted'),
+      showcaseStatusLabel:Tafseel.t('quality_showcase_status'),
       closeShowcaseLabel:Tafseel.t('quality_showcase_close'),
       showcaseQueueLoading:!!s.showcaseLoading,
       showcaseQueueError:s.showcaseError,
@@ -1136,12 +1412,13 @@ class Component extends DCLogic {
       showcaseQueue:SHOWCASES.map(item => ({
         ...item,
         onOpen:() => this.openShowcase(item.id),
-        statusStyle:'display:inline-flex;padding:3px 8px;border-radius:5px;font-size:11.5px;font-weight:700;background:' +
+        statusStyle:'display:inline-flex;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:' +
           (item.rawStatus === 2 ? 'var(--info-soft);color:var(--info)' : 'var(--warning-soft);color:var(--warning)')
       })),
       hasCurrentShowcase:!!currentShowcase,
       currentShowcase,
       showcasePreviewUrl:s.showcasePreviewUrl,
+      showcasePreviewType:s.showcasePreviewType || 'video/mp4',
       showcaseReasonCode:s.showcaseReasonCode,
       showcaseFeedback:s.showcaseFeedback,
       showcaseInternalNote:s.showcaseInternalNote,
@@ -1155,21 +1432,12 @@ class Component extends DCLogic {
       closeShowcase:() => {
         if (this._showcasePreviewUrl) URL.revokeObjectURL(this._showcasePreviewUrl);
         this._showcasePreviewUrl = '';
-        this.setState({ showcaseCurrentId:'', showcasePreviewUrl:'' });
+        this.setState({ showcaseCurrentId:'', showcasePreviewUrl:'', showcasePreviewType:'video/mp4' });
       },
       showcaseReasonOptions:[
         'copyright_or_ownership','unsafe_or_inappropriate','unrelated_to_subject',
         'misleading_claim','privacy_or_personal_data','unplayable_or_low_media_quality','policy_other'
       ].map(code => ({ code, label:Tafseel.t('showcase_reason_' + code) })),
-
-      reportStats: [
-        { label: Tafseel.t('quality_report_reviewed'), value: Tafseel.t('analytics_unavailable') },
-        { label: Tafseel.t('quality_report_approval_rate'), value: Tafseel.t('analytics_unavailable') },
-        { label: Tafseel.t('quality_report_avg_time'), value: Tafseel.t('analytics_unavailable') }
-      ],
-      reportChart: [],
-      reportChartEmpty: true,
-      reportChartReady: false,
 
       notifyNewApps: s.notifyNewApps ?? true, onNotifyNewApps: e => this.setState({ notifyNewApps: e.target.checked }),
       prefsUnavailable: !!s.prefsUnavailable,
@@ -1184,7 +1452,10 @@ class Component extends DCLogic {
         } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
       },
       isReview: s.view === 'review' && !!current,
-      backToList: () => this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) }),
+      backToList: async () => {
+        if (!(await this.confirmDiscardIfDirty())) return;
+        this.setState({ view: 'list', page: s.navKey === 'reports' || s.navKey === 'settings' ? 'overview' : (s.page === 'reports' || s.page === 'settings' ? 'overview' : s.page) });
+      },
 
       summary: s.queueLoading ? [
         { label: Tafseel.t('quality_summary_pending'), value: '…' },
@@ -1197,6 +1468,13 @@ class Component extends DCLogic {
         { label: Tafseel.t('qd_nav_changes'), value: String(changesCount) },
         { label: Tafseel.t('qd_nav_showcase'), value: String(showcaseCount) }
       ],
+      qualityOverviewLine: s.queueLoading
+        ? Tafseel.t('quality_loading_applications')
+        : (s.queueError
+          ? String(s.queueError)
+          : (Tafseel.t('quality_in_queue') + ' · ' + String(actionableCount)
+            + ' · ' + Tafseel.t('qd_nav_changes') + ' · ' + String(changesCount)
+            + ' · ' + Tafseel.t('qd_nav_showcase') + ' · ' + String(showcaseCount))),
 
       queueLoading: s.queueLoading,
       queueError: s.queueError,
@@ -1263,6 +1541,17 @@ class Component extends DCLogic {
       themeToggleLabel: Tafseel.t('req_toggle_theme'),
       backQueueLabel: Tafseel.t('quality_back_queue'),
       demoTitle: Tafseel.t('quality_demo_title'),
+      /* PASS 05 draft safety view model. The copy is deliberately explicit that the draft is
+         local: overstating where the work is stored would be worse than not saving it at all. */
+      hasDraft: !!s.draftAvailable,
+      draftFoundTitle: Tafseel.t('quality_draft_found_title'),
+      draftFoundBody: Tafseel.t('quality_draft_found_body'),
+      draftRestoreLabel: Tafseel.t('quality_draft_restore'),
+      draftDiscardLabel: Tafseel.t('quality_draft_discard'),
+      onRestoreDraft: () => this.restoreDraft(),
+      onDiscardDraft: () => this.clearDraft(),
+      showUnsaved: !!s.reviewDirty,
+      unsavedLabel: Tafseel.t('quality_draft_unsaved'),
       rubricTitle: Tafseel.t('quality_rubric_title'),
       overallScoreLabel: Tafseel.t('quality_overall_score'),
       commentsTitle: Tafseel.t('quality_comments_title'),
@@ -1274,8 +1563,6 @@ class Component extends DCLogic {
       approveLabel: Tafseel.t('quality_approve'),
       requestChangesLabel: Tafseel.t('quality_request_changes'),
       rejectLabel: Tafseel.t('quality_reject'),
-      reportsTitle: Tafseel.t('quality_reports_title'),
-      reportsChartTitle: Tafseel.t('quality_reports_chart'),
       notificationsTitle: Tafseel.t('quality_notifications_title'),
       notifyNewAppsLabel: Tafseel.t('quality_notify_new_apps'),
       autoAssignLabel: Tafseel.t('quality_auto_assign_unavailable'),
@@ -1312,7 +1599,7 @@ class Component extends DCLogic {
           submitted: a.submitted || '—',
           status: a.status || '—',
           kindLabel: a.isAdditional ? Tafseel.t('quality_kind_additional') : Tafseel.t('quality_kind_initial'),
-          kindStyle: 'font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:5px;background:' +
+          kindStyle: 'font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:' +
             (a.isAdditional ? 'var(--info-soft);color:var(--info)' : 'var(--surface-2);color:var(--muted)'),
           contextLine: a.isAdditional && a.otherQuals && a.otherQuals.length
             ? Tafseel.t('quality_also_qualified', {
@@ -1321,7 +1608,7 @@ class Component extends DCLogic {
             : (a.hasPreviousFeedback ? Tafseel.t('quality_feedback_indicator') : (a.demoUploaded ? Tafseel.t('quality_demo_available') : '')),
           showQualificationContext: !!(a.isAdditional && a.qualificationContext && a.qualificationContext.length),
           rowBg: s.currentId === a.id ? 'var(--primary-soft)' : 'transparent',
-          statusStyle: 'display:inline-flex;height:23px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11.5px;font-weight:700;background:' + sbg + ';color:' + sfg,
+          statusStyle: 'display:inline-flex;height:23px;align-items:center;padding-inline:9px;border-radius:6px;font-size:11px;font-weight:700;background:' + sbg + ';color:' + sfg,
           onOpen: () => this.openApp(a.id)
         };
       }),
@@ -1333,9 +1620,17 @@ class Component extends DCLogic {
         qualificationContext: current.qualificationContext || []
       } : null,
       rubric, overallScore,
+      rubricComplete,
+      rubricProgressLabel: Tafseel.t('quality_rubric_progress', { done: String(scoredKeys.length), total: String(RUBRIC_KEYS.length) }),
+      rubricAnchorLegend: Tafseel.t('quality_rubric_anchor_legend'),
+      overallScoreCaption: rubricComplete ? '' : Tafseel.t('quality_rubric_incomplete'),
+      hasMissingScores: (s.missingScores || []).length > 0,
+      missingScoresText: (s.missingScores || []).length
+        ? Tafseel.t('quality_rubric_missing_prefix', { list: missingLabels.join(Tafseel.lang === 'ar' ? '، ' : ', ') })
+        : '',
 
-      comment: s.comment, onComment: e => this.setState({ comment: e.target.value, needsReason: false }),
-      internalNotes: s.internalNotes, onInternalNotes: e => this.setState({ internalNotes: e.target.value }),
+      comment: s.comment, onComment: e => { this.setState({ comment: e.target.value, needsReason: false }); this.markReviewDirty(true); },
+      internalNotes: s.internalNotes, onInternalNotes: e => { this.setState({ internalNotes: e.target.value }); this.markReviewDirty(true); },
       needsReason: s.needsReason,
       onApprove: () => decide(0),
       onRequestChanges: () => decide(1),

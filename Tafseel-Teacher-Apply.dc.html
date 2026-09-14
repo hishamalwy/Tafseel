@@ -5,8 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Teacher application — Tafseel</title>
   <script src="js/boot-prefs.js"></script>
-  <link rel="stylesheet" href="css/tafseel.css">
+  <link rel="stylesheet" href="css/tafseel.css?v=identity-v1">
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
   <link rel="icon" href="assets/brand/favicon.ico">
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
   <script src="js/locales.js" defer></script>
   <script src="js/tafseel.js" defer></script>
   <script src="js/api.js" defer></script>
@@ -16,9 +20,7 @@
     [data-stack="apply"] .tf-workflow{
       align-items:start;
       padding:clamp(20px,4vw,40px) clamp(14px,3vw,24px) 48px;
-      background:
-        radial-gradient(480px 280px at 6% 0%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 68%),
-        var(--bg-alt);
+      background:var(--bg-alt);
     }
     [data-stack="apply"] .tf-panel{
       width:min(100%,820px);
@@ -83,7 +85,7 @@
     .tf-apply-step-summary .tf-apply-step-jump.is-current{color:var(--text);font-weight:800}
     .tf-apply-step-summary .tf-apply-step-jump.is-locked{opacity:.5;cursor:default;font-weight:600}
     .tf-apply-step-summary .tf-apply-step-jump-sep{margin:0 6px;color:var(--muted);font-weight:600}
-    .tf-apply-progress-track{display:none;height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-bottom:18px}
+    .tf-apply-progress-track{display:none;height:4px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-bottom:18px}
     .tf-apply-progress-fill{
       display:block;height:100%;width:100%;border-radius:inherit;background:var(--primary);
       transform-origin:left center;
@@ -124,10 +126,10 @@
       display:block;font-size:14px;font-weight:700;color:var(--text);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
-    .tf-assignment-resource-copy small{display:block;color:var(--muted);margin-top:2px;font-size:12.5px}
+    .tf-assignment-resource-copy small{display:block;color:var(--muted);margin-top:2px;font-size:12px}
     .tf-assignment-resource-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap}
     .tf-assignment-resource-actions .tf-button{
-      height:36px;min-height:36px;padding:0 12px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;
+      height:36px;min-height:36px;padding:0 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;
     }
     .tf-assignment-resource-actions .tf-button svg{width:14px;height:14px;flex:none}
 
@@ -139,7 +141,7 @@
     .tf-lang-chip{
       min-height:42px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;
       border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);
-      color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer;user-select:none;
+      color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer;user-select:none;
       transition:border-color var(--t),background var(--t),color var(--t);
     }
     .tf-lang-chip input{width:16px;height:16px;accent-color:var(--primary);margin:0;flex:none}
@@ -158,34 +160,8 @@
     .tf-demo-file strong{word-break:break-word}
     .tf-demo-file-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-    .tf-file-drop{
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-      min-height:168px;padding:24px 20px;text-align:center;cursor:pointer;
-      border:1.5px dashed var(--border-strong);border-radius:var(--r-md);
-      background:var(--bg);color:var(--text-2);
-      transition:border-color var(--t),background var(--t),box-shadow var(--t);
-    }
-    .tf-file-drop:hover,
-    .tf-file-drop.is-dragover{
-      border-color:color-mix(in oklab,var(--primary) 55%,var(--border-strong));
-      background:color-mix(in oklab, var(--primary-soft) 55%, var(--bg));
-      box-shadow:none;
-    }
     .tf-file-drop:has(:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
     .tf-file-drop[hidden]{display:none !important}
-    .tf-file-drop-icon{
-      width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
-      background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);flex:none;
-    }
-    .tf-file-drop-icon svg{display:block;width:24px;height:24px}
-    .tf-file-drop-copy{display:grid;gap:4px;max-width:34ch}
-    .tf-file-drop-title{font-size:14.5px;font-weight:700;color:var(--text);line-height:1.35}
-    .tf-file-drop-hint{font-size:12.5px;color:var(--muted);line-height:1.45}
-    .tf-file-drop-cta{
-      margin-top:4px;height:36px;padding:0 14px;display:inline-flex;align-items:center;
-      border-radius:var(--r-sm);border:1px solid var(--border-strong);
-      background:var(--surface);color:var(--text);font-size:13px;font-weight:700;
-    }
 
     [data-stack="apply"] .tf-form-actions{
       display:flex;gap:10px;align-items:center;flex-wrap:wrap;
@@ -211,7 +187,7 @@
     }
     .tf-apply-guidelines ul{
       margin:0;padding-inline-start:1.15em;display:grid;gap:8px;
-      color:var(--text);font-size:13.5px;line-height:1.55;
+      color:var(--text);font-size:13px;line-height:1.55;
     }
 
     #lifecycle-status{margin:0 0 16px}
@@ -238,8 +214,8 @@
     }
     .tf-apply-app-status[data-kind="draft"]{background:var(--surface-2);color:var(--text-2)}
     .tf-apply-app-status[data-kind="pending"]{background:var(--surface);color:var(--text);border-color:var(--border-strong)}
-    .tf-apply-app-status[data-kind="success"]{background:var(--success-soft, color-mix(in oklab, #22c55e 14%, transparent));color:var(--success, #16a34a)}
-    .tf-apply-app-status[data-kind="warning"]{background:var(--warning-soft, color-mix(in oklab, #f59e0b 16%, transparent));color:var(--warning, #b45309)}
+    .tf-apply-app-status[data-kind="success"]{background:var(--success-soft);color:var(--success)}
+    .tf-apply-app-status[data-kind="warning"]{background:var(--warning-soft);color:var(--warning)}
     .tf-apply-app-status[data-kind="error"]{background:var(--error-soft);color:var(--error)}
 
     .tf-apply-panel{display:grid;gap:16px}
@@ -261,14 +237,14 @@
     .tf-apply-review .tf-muted{max-width:48ch;margin:0}
     .tf-apply-review-badge{
       height:30px;padding:0 12px;display:inline-flex;align-items:center;border-radius:var(--r-sm);
-      font-size:12.5px;font-weight:800;background:var(--surface-2);color:var(--text);
+      font-size:12px;font-weight:800;background:var(--surface-2);color:var(--text);
       border:1px solid var(--border);
     }
     .tf-apply-review-meta{
       margin:8px 0 0;padding:14px 16px;width:min(100%,420px);display:grid;gap:8px;
       border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);text-align:start;
     }
-    .tf-apply-review-meta div{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+    .tf-apply-review-meta div{display:flex;justify-content:space-between;gap:12px;font-size:13px}
     .tf-apply-review-meta dt{color:var(--muted);font-weight:600}
     .tf-apply-review-meta dd{margin:0;font-weight:700;color:var(--text)}
     #apply-status:not(:empty){margin-top:8px}
@@ -290,11 +266,23 @@
       .tf-demo-file-actions .tf-button{flex:1;min-width:0}
     }
   </style>
+<meta name="description" content="Teach on Tafseel. Apply to become a verified teacher, set your own services and pricing, and reach students across the Kingdom." />
+<link rel="canonical" href="Tafseel-Teacher-Apply.dc.html" />
+<meta property="og:title" content="Teacher application — Tafseel" />
+<meta property="og:description" content="Teach on Tafseel. Apply to become a verified teacher, set your own services and pricing, and reach students across the Kingdom." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Teacher application — Tafseel" />
+<meta name="twitter:description" content="Teach on Tafseel. Apply to become a verified teacher, set your own services and pricing, and reach students across the Kingdom." />
 </head>
 <body data-stack="apply">
   <a class="tf-skip" href="#apply-main">Skip to main content</a>
   <header class="tf-app-header">
-    <a class="tf-brand" href="Tafseel-Landing.dc.html"><img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="26" height="26" style="flex:none;object-fit:contain" /><span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span></a>
+    <a class="tf-brand" href="Tafseel-Landing.dc.html" aria-label="Tafseel home"><img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="19" height="26" /><span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span></a>
     <div class="tf-actions">
       <button class="tf-lang-toggle" data-tafseel-language type="button" aria-label="Switch language"></button>
       <button class="tf-theme-toggle" data-tafseel-theme type="button" aria-label="Toggle dark mode"></button>
@@ -328,7 +316,7 @@
         <ul>
           <li data-i18n="apply_general_guideline_1">Choose one subject and one qualification topic. Approval applies only to that subject.</li>
           <li data-i18n="apply_general_guideline_2">Use only the official task materials when recording your teaching demo.</li>
-          <li data-i18n="apply_general_guideline_3">Upload a clear MP4 demo within the required duration, then submit for quality review.</li>
+          <li data-i18n="apply_general_guideline_3">Upload a clear MP4 or WebM demo within the required duration, then submit for quality review.</li>
           <li data-i18n="apply_general_guideline_4">After submission, wait for the review status. You will see updates here.</li>
         </ul>
       </aside>
@@ -366,16 +354,16 @@
         <form id="demo-form" class="tf-form">
           <div class="tf-field">
             <span id="demo-label" class="tf-legend" data-i18n="apply_demo_file">Video file</span>
-            <label class="tf-file-drop" id="demo-drop" for="demo" aria-labelledby="demo-label">
-              <input id="demo" class="tf-sr-only" type="file" accept="video/*" required aria-describedby="demo-duration-rules">
-              <span class="tf-file-drop-icon" aria-hidden="true">
+            <label class="tf-upload-drop tf-file-drop" id="demo-drop" for="demo" aria-labelledby="demo-label">
+              <input id="demo" class="tf-sr-only" type="file" accept=".mp4,.webm,video/mp4,video/webm" required aria-describedby="demo-duration-rules">
+              <span class="tf-upload-drop-icon tf-file-drop-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
               </span>
-              <span class="tf-file-drop-copy">
-                <span class="tf-file-drop-title" data-i18n="apply_demo_pick">Drag a video here or click to choose</span>
-                <span class="tf-file-drop-hint" data-i18n="apply_allowed_format">Allowed format: MP4 video only</span>
+              <span class="tf-upload-drop-copy tf-file-drop-copy">
+                <span class="tf-upload-drop-title tf-file-drop-title" data-i18n="apply_demo_pick">Drop your teaching demo here, or browse</span>
+                <span class="tf-upload-drop-hint tf-file-drop-hint" data-i18n="apply_allowed_format">Allowed format: MP4 or WebM video</span>
               </span>
-              <span class="tf-file-drop-cta" data-i18n="apply_demo_browse">Browse files</span>
+              <span class="tf-upload-drop-cta tf-file-drop-cta" data-i18n="apply_demo_browse">Browse files</span>
             </label>
             <p class="tf-field-help" id="demo-duration-rules"></p>
             <div id="demo-file-info" class="tf-alert tf-demo-file" hidden>

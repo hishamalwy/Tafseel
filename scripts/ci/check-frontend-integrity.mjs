@@ -1,6 +1,19 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { findPage, readPage } from "./lib/frontend-pages.mjs";
 
 const pages = readdirSync(".").filter(x => x.endsWith(".dc.html"));
+const sharedCss = readFileSync("css/tafseel.css", "utf8");
+
+for (const required of [
+  "font-family:'Thmanyah Sans'",
+  "font-family:'Thmanyah Serif Display'",
+  "--font-sans:var(--font-en)",
+  "--font-display:'Thmanyah Serif Display'",
+  "body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans)"
+]) {
+  if (!sharedCss.includes(required))
+    throw new Error(`Shared typography is missing required Thmanyah declaration: ${required}`);
+}
 
 function markupOf(source) {
   return source
@@ -47,13 +60,23 @@ for (const page of pages) {
   const source = readFileSync(page, "utf8");
   const markup = markupOf(source);
 
+  if (!/href=["']css\/tafseel\.css(?:\?[^"']*)?["']/.test(source))
+    throw new Error(`${page} must load css/tafseel.css so Thmanyah typography is available platform-wide.`);
+  for (const match of source.matchAll(/font-family\s*:\s*([^;"']+)/gi)) {
+    const value = match[1].trim();
+    if (!value.startsWith("var(") && value !== "inherit" && !value.startsWith("saudi_riyal"))
+      throw new Error(`${page} bypasses the Thmanyah typography tokens with font-family: ${value}`);
+  }
+
   if (/href\s*=\s*["']#["']/.test(markup))
     throw new Error(`${page} has a dead href="#" link — wire it to a real destination or remove it.`);
   if (/javascript:void\(0\)/i.test(markup))
     throw new Error(`${page} has a javascript:void(0) placeholder link.`);
 
   for (const match of markup.matchAll(/href\s*=\s*["'](Tafseel-[\w-]+\.dc\.html)["']/g)) {
-    if (!existsSync(match[1]))
+    // A migrated page still resolves: it moved to legacy-archive/ and is still
+    // published at the same /app/ URL. Only a genuinely absent page is a failure.
+    if (!findPage(match[1]))
       throw new Error(`${page} links to missing page: ${match[1]}`);
   }
 
@@ -113,7 +136,7 @@ if (!/let\s+USERS\s*=\s*\[\s*\]/.test(adminLogic) && !/const\s+USERS\s*=\s*\[\s*
 if (/\busersTotal\s*:\s*[^\n,]*\busers\./.test(adminRender) || /\|\|\s*users\.length\b/.test(adminRender))
   throw new Error(`${adminPage} renderVals references undefined 'users' (use filtered.length / usersShown from the canonical USERS collection).`);
 
-for (const required of ["langLabel", "themeIcon", "users", "usersShown", "usersTotal", "commissionRate", "usersLoading", "usersLoadError", "usersEmpty", "usersReady", "usersLoadingLabel", "usersEmptyLabel"]) {
+for (const required of ["langLabel", "themeIcon", "users", "usersShown", "usersTotal", "platformSettingsManagedTitle", "usersLoading", "usersLoadError", "usersEmpty", "usersReady", "usersLoadingLabel", "usersEmptyLabel", "isAuditPage", "auditRows"]) {
   if (!adminKeys.has(required))
     throw new Error(`${adminPage} renderVals must return '${required}' so production bindings resolve.`);
 }
@@ -127,11 +150,23 @@ if (!/theme\s*===\s*['"]dark['"]/.test(adminRender))
 if (!/usersLoading/.test(adminLogic) || !/usersLoadError/.test(adminLogic) || !/Promise\.allSettled/.test(adminLogic))
   throw new Error(`${adminPage} must keep loading / empty / API failure states distinct (usersLoading, usersLoadError, Promise.allSettled).`);
 
-if (!/sc-camel-value\s*=\s*["']\s*\{\{\s*commissionRate\s*\}\}/.test(adminMarkup))
-  throw new Error(`${adminPage} commissionRate must bind through sc-camel-value, not HTML value="{{ commissionRate }}".`);
+for (const endpoint of ["/admin/operations/", "/admin/audit?", "/roles"]) {
+  if (!adminLogic.includes(endpoint))
+    throw new Error(`${adminPage} must bind the real Admin API endpoint '${endpoint}'.`);
+}
+
+if (/Tafseel\.api\.allPages\(\s*['"]\/admin\/users['"]/.test(adminLogic)
+    || !adminLogic.includes("pageSize:String(ADMIN_PAGE_SIZE)")
+    || !adminLogic.includes("query.set('role', role)"))
+  throw new Error(`${adminPage} must use server-side user pagination, search, and role filtering.`);
+if (!adminLogic.includes("visibleUserPages") || !/activePaging\.count\s*<=\s*7/.test(adminLogic))
+  throw new Error(`${adminPage} must keep large user page counts from creating unbounded pagination DOM.`);
+
+if (/\{\{\s*(commissionRate|requireReview|maintenanceMode)\s*\}\}/.test(adminMarkup))
+  throw new Error(`${adminPage} must not expose deployment-managed settings as fake editable controls.`);
 
 const topBindings = [...templateBindings(adminMarkup)].filter(name =>
-  ["langLabel", "themeIcon", "commissionRate", "users", "usersShown", "usersTotal", "usersLoading", "usersLoadError", "usersEmpty", "usersReady"].includes(name)
+  ["langLabel", "themeIcon", "platformSettingsManagedTitle", "users", "usersShown", "usersTotal", "usersLoading", "usersLoadError", "usersEmpty", "usersReady", "auditRows"].includes(name)
 );
 for (const name of topBindings) {
   if (!adminKeys.has(name))
@@ -198,69 +233,219 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       money: function (value) { return String(value ?? 0); },
       partyName: function () { return 'Teacher'; },
       date: function () { return ''; },
-      api: { errorMessage: (e) => String(e && e.message || e) }
+      badgeCount: function (value) { return value > 99 ? '99+' : String(value || 0); },
+      dashNavIconPath: function (key) { return 'M0 0h24v24H0z'; },
+      api: {
+        // Requests are recorded and never resolved: the assertion is about WHICH endpoints an
+        // area asks for, and leaving them pending keeps every downstream payload shape out of it.
+        requested: [],
+        get: function (url) { this.requested.push(url); return new Promise(() => {}); },
+        allPages: function (url) { this.requested.push(url); return new Promise(() => {}); },
+        errorMessage: (e) => String(e && e.message || e)
+      }
     };
     class DCLogic {}
     ${adminLogic}
     USERS = [];
     const c = new Component();
-    c.setState = function (patch) { this.state = { ...this.state, ...patch }; };
+    c.setState = function (patch, done) {
+      this.state = { ...this.state, ...patch };
+      if (typeof done === 'function') done();
+    };
     c.state = { ...c.state, usersLoading: false, usersLoadError: '', usersTotal: 0, liveWithdrawals: [], catalogErrors: {} };
+    /* PASS 05 IA — the sidebar lists seven AREAS. Every pre-Pass-05 destination survives as a TAB
+       inside one of them, addressed by the same key it always had, so bookmarks and in-app links
+       keep resolving. This smoke proves both halves: the seven areas, and that each legacy key
+       still opens the exact surface it used to. */
+    const AREAS = ['home', 'people', 'marketplace', 'operations', 'finance', 'insights', 'system'];
     const expected = {
-      overview: { page: 'overview' },
-      users: { page: 'users', pageRole: 'all' },
-      students: { page: 'users', pageRole: 'Student' },
-      teachers: { page: 'users', pageRole: 'Teacher' },
-      reviewers: { page: 'users', pageRole: 'Reviewer' },
-      subjects: { page: 'catalog', catalogKind: 'subjects' },
-      topics: { page: 'catalog', catalogKind: 'topics' },
-      assignments: { page: 'catalog', catalogKind: 'assignments' },
-      services: { page: 'catalog', catalogKind: 'services' },
-      coupons: { page: 'catalog', catalogKind: 'coupons' },
-      requests: { page: 'list', listKind: 'requests' },
-      sessions: { page: 'list', listKind: 'sessions' },
-      reviews: { page: 'reviews' },
-      disputes: { page: 'list', listKind: 'disputes' },
-      payments: { page: 'payments' },
-      withdrawals: { page: 'withdrawals' },
-      reports: { page: 'reports' },
-      settings: { page: 'settings' }
+      users: { section: 'people', page: 'users', pageRole: 'all' },
+      students: { section: 'people', page: 'users', pageRole: 'Student' },
+      teachers: { section: 'people', page: 'users', pageRole: 'Teacher' },
+      reviewers: { section: 'people', page: 'users', pageRole: 'Reviewer' },
+      subjects: { section: 'marketplace', page: 'catalog', catalogKind: 'subjects' },
+      topics: { section: 'marketplace', page: 'catalog', catalogKind: 'topics' },
+      educationLevels: { section: 'marketplace', page: 'catalog', catalogKind: 'educationLevels' },
+      assignments: { section: 'marketplace', page: 'catalog', catalogKind: 'assignments' },
+      services: { section: 'marketplace', page: 'catalog', catalogKind: 'services' },
+      promotions: { section: 'marketplace', page: 'catalog', catalogKind: 'promotions' },
+      coupons: { section: 'finance', page: 'catalog', catalogKind: 'coupons' },
+      orders: { section: 'operations', page: 'list', listKind: 'orders' },
+      requests: { section: 'operations', page: 'list', listKind: 'requests' },
+      sessions: { section: 'operations', page: 'list', listKind: 'sessions' },
+      disputes: { section: 'operations', page: 'list', listKind: 'disputes' },
+      reviews: { section: 'operations', page: 'reviews' },
+      payments: { section: 'finance', page: 'payments' },
+      withdrawals: { section: 'finance', page: 'withdrawals' },
+      payoutProfiles: { section: 'finance', page: 'payoutProfiles' },
+      reconciliation: { section: 'finance', page: 'reconciliation' },
+      reports: { section: 'insights', page: 'reports' },
+      audit: { section: 'system', page: 'audit' },
+      settings: { section: 'system', page: 'settings' }
     };
     const vals0 = c.renderVals();
-    if (!Array.isArray(vals0.navItems) || vals0.navItems.length !== Object.keys(expected).length)
-      throw new Error('navItems length must match supported Admin section keys');
+    if (!Array.isArray(vals0.navItems) || vals0.navItems.length !== AREAS.length)
+      throw new Error('Admin must expose exactly ' + AREAS.length + ' top-level areas, got ' + (vals0.navItems || []).length);
+    for (const area of AREAS) {
+      if (!vals0.navItems.some(n => n.key === area)) throw new Error('missing Admin area: ' + area);
+    }
     if (vals0.navItems.some(n => n.key === 'applications' || /application/i.test(n.label || '')))
       throw new Error('Teacher Applications must not appear in Admin navItems');
-    for (const item of vals0.navItems) {
-      const want = expected[item.key];
-      if (!want) throw new Error('unexpected nav key: ' + item.key);
-      c.navigateTo(item.key);
+
+    /* Every legacy destination key still resolves to its own surface, and lights up its area. */
+    for (const [key, want] of Object.entries(expected)) {
+      c.navigateTo(key);
       for (const [field, value] of Object.entries(want)) {
+        if (field === 'section') continue;
         if (c.state[field] !== value)
-          throw new Error(item.key + ' should set ' + field + '=' + value + ' got ' + c.state[field]);
+          throw new Error(key + ' should set ' + field + '=' + value + ' got ' + c.state[field]);
       }
-      if (c.state.navKey !== item.key) throw new Error(item.key + ' must set navKey');
-      if (c.state.drawer !== false) throw new Error(item.key + ' must close drawer');
+      if (c.state.section !== want.section)
+        throw new Error(key + ' should open area ' + want.section + ' got ' + c.state.section);
+      if (c.state.tab !== key) throw new Error(key + ' must set tab=' + key + ' got ' + c.state.tab);
+      if (c.state.navKey !== key) throw new Error(key + ' must set navKey');
+      if (c.state.drawer !== false) throw new Error(key + ' must close drawer');
       const vals = c.renderVals();
-      const active = vals.navItems.find(n => n.key === item.key);
+      const active = vals.navItems.find(n => n.key === want.section);
       if (!active || active.current !== 'page')
-        throw new Error(item.key + ' must show aria-current=page when selected');
+        throw new Error(key + ' must mark area ' + want.section + ' aria-current=page');
       if (!String(active.style || '').includes('var(--primary)'))
-        throw new Error(item.key + ' must use active nav styling when selected');
-      const others = vals.navItems.filter(n => n.key !== item.key && n.current === 'page');
+        throw new Error(key + ' must use active nav styling on its area');
+      const others = vals.navItems.filter(n => n.key !== want.section && n.current === 'page');
       if (others.length)
-        throw new Error(item.key + ' left other nav items active: ' + others.map(n => n.key).join(','));
-      if (item.key === 'overview' && vals.isOverview !== true) throw new Error('overview section flag');
-      if (item.key === 'users' && vals.isUsersPage !== true) throw new Error('users section flag');
-      if (item.key === 'students' && (vals.isUsersPage !== true || vals.usersPageTitle !== 'admin_nav_students'))
-        throw new Error('students must open users page filtered to Students');
-      if (item.key === 'subjects' && vals.isCatalogPage !== true) throw new Error('subjects catalog flag');
-      if (item.key === 'requests' && vals.isSimpleListPage !== true) throw new Error('requests list flag');
-      if (item.key === 'payments' && vals.isPaymentsPage !== true) throw new Error('payments flag');
-      if (item.key === 'withdrawals' && vals.isPaymentsPage !== true) throw new Error('withdrawals flag');
-      if (item.key === 'reports' && vals.isReportsPage !== true) throw new Error('reports flag');
-      if (item.key === 'settings' && vals.isSettingsPage !== true) throw new Error('settings flag');
+        throw new Error(key + ' left other areas active: ' + others.map(n => n.key).join(','));
+      const tab = (vals.sectionTabs || []).find(t => t.key === key);
+      if (vals.hasSectionTabs && (!tab || tab.current !== 'page'))
+        throw new Error(key + ' must be the current tab inside ' + want.section);
     }
+
+    /* Home. */
+    c.navigateTo('overview');
+    if (c.state.section !== 'home' || c.renderVals().isOverview !== true)
+      throw new Error('legacy "overview" must resolve to Home');
+    if (c.renderVals().hasSectionTabs !== false) throw new Error('Home must not render a tab strip');
+
+    /* Finance tabs promoted by this pass must be distinct surfaces, not nested blocks. */
+    c.navigateTo('payments');
+    let fin = c.renderVals();
+    if (fin.isPaymentsPage !== true || fin.isReconciliationPage === true) throw new Error('payments flag');
+    c.navigateTo('reconciliation');
+    fin = c.renderVals();
+    if (fin.isReconciliationPage !== true || fin.isPaymentsPage === true) throw new Error('reconciliation flag');
+    c.navigateTo('withdrawals');
+    fin = c.renderVals();
+    if (fin.isWithdrawalsPage !== true || fin.isPayoutProfilesPage === true) throw new Error('withdrawals flag');
+    c.navigateTo('payoutProfiles');
+    fin = c.renderVals();
+    if (fin.isPayoutProfilesPage !== true || fin.isWithdrawalsPage === true) throw new Error('payout profiles flag');
+
+    /* Legacy and alias routes resolve at the routing layer, and unknown routes fall back safely. */
+    const routeCases = [
+      [['overview', ''], 'home', ''],
+      [['dashboard', ''], 'home', ''],
+      [['intelligence', ''], 'insights', 'reports'],
+      [['reports', ''], 'insights', 'reports'],
+      [['withdrawals', ''], 'finance', 'withdrawals'],
+      [['finance', 'withdrawals'], 'finance', 'withdrawals'],
+      [['', 'withdrawals'], 'finance', 'withdrawals'],
+      [['educationLevels', ''], 'marketplace', 'educationLevels'],
+      [['EDUCATIONLEVELS', ''], 'marketplace', 'educationLevels'],
+      [['reviews', ''], 'operations', 'reviews'],
+      [['operations', 'sessions'], 'operations', 'sessions'],
+      [['finance', 'sessions'], 'finance', 'payments'],
+      [['not-a-real-section', ''], 'home', ''],
+      [['', ''], 'home', '']
+    ];
+    for (const [[sec, tab], wantSection, wantTab] of routeCases) {
+      const route = resolveAdminRoute(sec, tab);
+      if (route.section !== wantSection || route.tab !== wantTab) {
+        throw new Error('route ' + JSON.stringify([sec, tab]) + ' resolved to '
+          + route.section + '/' + route.tab + ', expected ' + wantSection + '/' + wantTab);
+      }
+    }
+
+    /* Deep links: the address bar decides the surface, and an operational filter survives it. */
+    c.applyDeepLink(new URLSearchParams('section=operations&tab=sessions&filter=admin-review'), { initial: true });
+    if (c.state.section !== 'operations' || c.state.tab !== 'sessions')
+      throw new Error('deep link must open operations/sessions');
+    if (c.state.operationFilter !== 'admin-review')
+      throw new Error('deep link must apply the admin-review session filter');
+    c.applyDeepLink(new URLSearchParams('section=operations&tab=orders&filter=not-a-filter'), { initial: true });
+    if (c.state.operationFilter !== '')
+      throw new Error('an unknown filter must degrade to the unfiltered list');
+
+    /* Attention cards must be actionable: every card opens a destination. */
+    c.state = { ...c.state, attention: {
+      teacherApplications: 2, openDisputes: 1, silentSessions: 3, overdueOrders: 4,
+      pendingWithdrawals: 5, pendingPayoutProfiles: 6, suspendedWithActiveCommerce: 7,
+      stuckPayments: 8, reconciliationBalanced: false, reconciliationAnomalies: 9,
+      platform: { totalUsers: 1, activeStudents: 1, activeTeachers: 1, totalOrders: 1,
+        confirmedPayments: 0, platformRevenue: 0, currency: 'SAR' }
+    }, attentionLoading: false, attentionError: '' };
+    const attentionVals = c.renderVals();
+    if (!attentionVals.attentionHasItems) throw new Error('attention cards must render when queues are non-empty');
+    for (const card of attentionVals.attentionItems) {
+      if (typeof card.onOpen !== 'function') throw new Error('attention card without an action: ' + card.title);
+      if (!card.count || card.count === '0') throw new Error('attention card rendered a zero count');
+    }
+    /* Area badges must sum the attention queues that live inside them. */
+    const opsBadge = attentionVals.navItems.find(n => n.key === 'operations');
+    if (!opsBadge || Number(opsBadge.badge) !== 1 + 3 + 4)
+      throw new Error('the Operations area badge must sum disputes + silent sessions + overdue orders');
+
+    /* ------------------------------------------------------------------ PASS 05: lazy areas.
+       Admin used to fetch thirteen collections at mount whatever the operator opened. Each area
+       must now fetch its OWN data, the first time it is opened, and not again on return. This is
+       asserted by recording real requests rather than by reading the source. */
+    const requestsSince = (fn) => {
+      Tafseel.api.requested.length = 0;
+      fn();
+      return Tafseel.api.requested.slice();
+    };
+    c._loaded = {};
+    c._catalogLoaded = {};
+
+    const couponsCalls = requestsSince(() => c.navigateTo('coupons'));
+    if (!couponsCalls.some(u => u.startsWith('/admin/coupons')))
+      throw new Error('opening Coupons must load coupons');
+    for (const unrelated of ['/admin/catalog/subjects', '/admin/catalog/services', '/admin/users',
+                             '/admin/withdrawals', '/admin/audit']) {
+      if (couponsCalls.some(u => u.startsWith(unrelated)))
+        throw new Error('opening Coupons eagerly loaded ' + unrelated);
+    }
+
+    const reconCalls = requestsSince(() => c.navigateTo('reconciliation'));
+    if (!reconCalls.some(u => u.startsWith('/admin/finance/reconciliation')))
+      throw new Error('opening Reconciliation must load the reconciliation report');
+    if (reconCalls.some(u => u.startsWith('/admin/withdrawals')))
+      throw new Error('Reconciliation must not load the withdrawals queue');
+
+    const auditCalls = requestsSince(() => c.navigateTo('audit'));
+    if (!auditCalls.some(u => u.startsWith('/admin/audit')))
+      throw new Error('opening the Audit log must load audit entries');
+
+    const subjectsCalls = requestsSince(() => c.navigateTo('subjects'));
+    if (!subjectsCalls.some(u => u.startsWith('/admin/catalog/subjects')))
+      throw new Error('opening Subjects must load subjects');
+
+    /* Returning to a visited tab must not re-fetch it. */
+    const revisit = requestsSince(() => c.navigateTo('coupons'));
+    if (revisit.some(u => u.startsWith('/admin/coupons')))
+      throw new Error('returning to a visited tab re-fetched its collection');
+
+    /* Large lists must page against the server, never download everything. */
+    const usersCalls = requestsSince(() => c.navigateTo('users'));
+    const usersUrl = usersCalls.find(u => u.startsWith('/admin/users'));
+    if (!usersUrl) throw new Error('opening People must load users');
+    if (!/[?&]page=[0-9]+/.test(usersUrl) || !/[?&]pageSize=[0-9]+/.test(usersUrl))
+      throw new Error('the users list must request a bounded server page');
+
+    /* A filter change must re-query the SERVER, not filter the page already in the browser. */
+    c.navigateTo('sessions');
+    const filterCalls = requestsSince(() => c.setOperationFilter('admin-review'));
+    const sessionsUrl = filterCalls.find(u => u.startsWith('/admin/operations/sessions'));
+    if (!sessionsUrl || !sessionsUrl.includes('filter=admin-review'))
+      throw new Error('changing an operational filter must re-query the server');
     c.state = { ...c.state, drawer: false };
     c.toggleDrawer();
     if (c.state.drawer !== false) throw new Error('toggleDrawer must no-op when compactNav is false');
@@ -287,8 +472,8 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       throw new Error('AR UI must show UK flag as language target');
     c.navigateTo('sessions');
     const sessionVals = c.renderVals();
-    if (sessionVals.listEmpty !== true || !String(sessionVals.listEmptyLabel || '').length)
-      throw new Error('empty live sessions must expose localized empty copy');
+    if (sessionVals.listLoading !== true || sessionVals.listEmpty !== false)
+      throw new Error('live sessions navigation must expose a truthful loading state');
   `;
   try {
     new Function(smoke)();
@@ -316,6 +501,9 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       money: function (value) { return String(value ?? 0); },
       partyName: function () { return 'Teacher'; },
       date: function () { return ''; },
+      badgeCount: function (value) { return value > 99 ? '99+' : String(value || 0); },
+      dashNavIconPath: function () { return 'M0 0h24v24H0z'; },
+      number: function (value) { return String(value ?? 0); },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -331,8 +519,7 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
     if (vals.usersReady !== false) throw new Error('empty USERS must not set usersReady');
     if (vals.langLabel !== 'العربية') throw new Error('langLabel unresolved');
     if (!vals.themeIcon) throw new Error('themeIcon unresolved');
-    if (typeof vals.commissionRate !== 'number' || Number.isNaN(vals.commissionRate))
-      throw new Error('commissionRate must be numeric');
+    if (!vals.platformSettingsManagedTitle) throw new Error('managed settings disclosure must render');
   `;
   try {
     new Function(smoke)();
@@ -360,6 +547,9 @@ if (!/admin\/coupons/.test(adminLogic) || !/admin_add_service/.test(adminLogic))
       money: function (value) { return String(value ?? 0); },
       partyName: function () { return 'Teacher'; },
       date: function () { return ''; },
+      badgeCount: function (value) { return value > 99 ? '99+' : String(value || 0); },
+      dashNavIconPath: function () { return 'M0 0h24v24H0z'; },
+      number: function (value) { return String(value ?? 0); },
       api: { errorMessage: (e) => String(e && e.message || e) }
     };
     class DCLogic {}
@@ -420,7 +610,13 @@ for (const page of [
   "Tafseel-Quality-Dashboard.dc.html"
 ]) {
   const source = readFileSync(page, "utf8");
-  if (!source.includes("tf-dashboard-logout") || !source.includes("await Tafseel.api.logout()"))
+  /* PASS 05 correction (pre-existing failure, not a regression of this pass): this asserted the
+     legacy `tf-dashboard-logout` sidebar class, which the shared-dashboard-header consolidation
+     removed and which check-dashboard-nav-unification.mjs now explicitly FORBIDS. The two gates
+     contradicted each other, so this one could never pass. The intent is unchanged — every
+     dashboard must expose a working logout — only the selector is updated to the shared header
+     control that actually renders it. */
+  if (!source.includes("tf-dash-header__logout") || !source.includes("await Tafseel.api.logout()"))
     throw new Error(`${page} must expose a working logout action.`);
 }
 
@@ -512,7 +708,7 @@ for (const page of ["Tafseel-Book-Session.dc.html", "Tafseel-Request.dc.html"]) 
 const studentDashboard = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
 if (/href\s*=\s*["']Tafseel-Request\.dc\.html["']/.test(studentDashboard))
   throw new Error("Student Dashboard must not open the Request wizard without a Teacher.");
-if (!studentDashboard.includes("Tafseel-Browse-Teachers.dc.html") || !studentDashboard.includes("dash_new_request"))
+if (!studentDashboard.includes("Tafseel-Browse-Teachers.dc.html") || !studentDashboard.includes("tf-student-route-card"))
   throw new Error("Student Dashboard new-request CTA must route to Browse Teachers.");
 if (/rating:\s*String\(x\.rating\)/.test(studentDashboard) || !/x\.rating\s*!=\s*null/.test(studentDashboard))
   throw new Error("Student saved-teacher cards must distinguish missing ratings from a real zero.");
@@ -530,6 +726,9 @@ for (const [name, dashboard] of [
     throw new Error(`${name} Dashboard Order timeline must preserve dialog and ordered-list semantics.`);
 }
 const sharedUi = readFileSync("js/tafseel.js", "utf8");
+if (!/this\._escrowPlayed\s*\|\|\s*root\.dataset\.escrowPlayed/.test(sharedUi)
+  || !/self\._escrowPlayed\s*=\s*true/.test(sharedUi))
+  throw new Error("Landing escrow completion must survive Hero-driven DOM rerenders.");
 if (!/orderTimelineEvent:\s*function/.test(sharedUi))
   throw new Error("Order timeline event localization must stay in the shared frontend helper.");
 if (!/modalKeyDown:\s*function/.test(sharedUi) || !studentDashboard.includes("Tafseel.modalKeyDown") || !teacherDashboard.includes("Tafseel.modalKeyDown"))
@@ -548,7 +747,7 @@ for (const key of [
     throw new Error(`Order timeline locale key ${key} must exist once in English and Arabic.`);
 }
 
-const auth = readFileSync("Tafseel-Auth.dc.html", "utf8");
+const auth = readPage("Tafseel-Auth.dc.html");
 if (!/role\s*===\s*['"]teacher['"]\s*\?\s*['"]teacher['"]\s*:\s*['"]student['"]/.test(auth))
   throw new Error("Auth must honor the validated Teacher registration query.");
 
@@ -636,11 +835,15 @@ for (const key of [
       lang: 'en', theme: 'light', defaultAvatar: 'default.svg',
       t: (key, values) => values ? Object.entries(values).reduce((text, pair) => text.replace('{' + pair[0] + '}', pair[1]), key) : key,
       number: value => String(value),
+      money: value => String(value ?? 0),
+      moneyParts: value => ({ amount: String(value ?? 0), code: 'SAR', isSar: true }),
+      moneyHtml: value => String(value ?? 0),
       userName: teacher => teacher.fullName || teacher.name || '',
       partyDisplayName: (primary, english) => english || primary || '',
       languageLabel: language => language.name,
       avatarUrl: () => 'default.svg',
       dashboardHrefForSession: () => '',
+      authHref: intended => intended ? 'Tafseel-Auth.dc.html?return=' + encodeURIComponent(intended) : 'Tafseel-Auth.dc.html',
       viewerTimeZone: () => ({ id: 'UTC', fallback: true }),
       availabilityPath: () => '/live-sessions/availability-summaries',
       availabilityText: summary => summary && summary.state || 'availability_error',
@@ -710,19 +913,32 @@ for (const token of [".tf-page", ".tf-grid", ".tf-table-wrap", ".tf-stat-grid", 
     throw new Error("Teacher Dashboard must not hardcode accept modal price/date demo values.");
   if (!/Promise\.allSettled/.test(teacherLogic))
     throw new Error("Teacher Dashboard must load dashboard slices with Promise.allSettled.");
-  const navMatch = teacherLogic.match(/const NAV = \[([\s\S]*?)\];/);
-  if (!navMatch) throw new Error("Teacher Dashboard NAV definition missing.");
+  const navMatch = teacherLogic.match(/const TEACHER_NAV_ITEMS = Object\.freeze\(\[([\s\S]*?)\]\);/);
+  if (!navMatch) throw new Error("Teacher Dashboard canonical navigation definition missing.");
   const navKeys = [...navMatch[1].matchAll(/\['([a-z_]+)'/g)].map(m => m[1]);
-  const requiredNav = ["overview","new","orders","sessions","services","samples","availability","messages","reviews","earnings","withdrawals","profile","settings"];
+  const requiredNav = ["home","work","opportunities","messages","services","earnings","profile","settings"];
+  if (navKeys.length !== requiredNav.length)
+    throw new Error(`Teacher Dashboard NAV must contain exactly ${requiredNav.length} destinations.`);
   for (const key of requiredNav) {
     if (!navKeys.includes(key))
       throw new Error(`Teacher Dashboard NAV missing key: ${key}`);
   }
+  if (!teacherLogic.includes("TEACHER_ROUTE_ALIASES") || !teacherLogic.includes("sectionView"))
+    throw new Error("Teacher Dashboard must consolidate legacy destinations through contextual aliases.");
+  if (!teacherDash.includes('class="tf-dash-nav"') || !teacherDash.includes("navGroups"))
+    throw new Error("Teacher Dashboard must render grouped .tf-dash-nav from navGroups.");
+  if (!studentDashboard.includes('class="tf-dash-nav"') || !studentDashboard.includes("navGroups"))
+    throw new Error("Student Dashboard must render grouped .tf-dash-nav from navGroups.");
+  const qualityDash = readFileSync("Tafseel-Quality-Dashboard.dc.html", "utf8");
+  if (!qualityDash.includes('class="tf-dash-nav"') || !qualityDash.includes("navGroups"))
+    throw new Error("Quality Dashboard must render grouped .tf-dash-nav from navGroups.");
+  if (/notifications['"]\s*,\s*['"]/.test(navMatch[1]) || navKeys.includes("notifications"))
+    throw new Error("Teacher Dashboard must not put Notifications in sidebar NAV.");
   if (!teacherDash.includes('id="active-orders"') || !teacherDash.includes('id="live-sessions"') || !teacherDash.includes('id="new-requests"'))
     throw new Error("Teacher Dashboard overview sections must define new-requests, active-orders, and live-sessions anchors.");
-  if (!/overviewAnchors/.test(teacherLogic))
-    throw new Error("Teacher Dashboard nav must map overview anchors for new/orders/sessions.");
-  for (const expected of ["isServices","isSamples","isAvailability","isMessages","isReviewsSection","isEarnings","isWithdrawals","isProfile","isSettings"]) {
+  if (!/showWorkRequests/.test(teacherLogic) || !/showWorkOrders/.test(teacherLogic) || !/showWorkSessions/.test(teacherLogic))
+    throw new Error("Teacher Dashboard Work must expose request, order, and session contextual views.");
+  for (const expected of ["isServicesCatalog","isProfileSamples","isProfileVideos","isServicesAvailability","isMessages","isProfileReviews","isEarningsSummary","isEarningsWithdrawals","isProfileDetails","isSettings"]) {
     if (!teacherLogic.includes(expected + ":"))
       throw new Error(`Teacher Dashboard missing section flag ${expected}.`);
   }
@@ -735,11 +951,18 @@ for (const token of [".tf-page", ".tf-grid", ".tf-table-wrap", ".tf-stat-grid", 
   for (const endpoint of ["/teachers/me/showcases", "/teachers/me/showcases/order"]) {
     if (!teacher.includes(endpoint)) throw new Error(`Teacher Showcase UI missing endpoint: ${endpoint}`);
   }
-  if (!teacher.includes('accept="video/mp4,.mp4"') || /\bpublish\b/i.test(markupOf(teacher).match(/showcase[\s\S]*?isAvailability/)?.[0] || ""))
-    throw new Error("Teacher Showcase UI must be MP4-only and must not expose direct publication.");
+  if (!teacher.includes('id="showcase-media-input"') || !teacher.includes('multiple="{{ true }}"')
+    || !/accept="[^"]*video\/mp4/.test(teacher) || !/accept="[^"]*image\/jpeg/.test(teacher)
+    || !/accept="[^"]*audio\/wav/.test(teacher)
+    || /\bpublish\b/i.test(markupOf(teacher).match(/showcase[\s\S]*?isAvailability/)?.[0] || ""))
+    throw new Error("Teacher Showcase UI must accept mixed teaching media with multi-file picker and must not expose direct publication.");
   for (const endpoint of ["/teachers/showcase-moderation?pageSize=20", "/start-review", "/decision"]) {
     if (!quality.includes(endpoint)) throw new Error(`Quality Showcase UI missing endpoint: ${endpoint}`);
   }
+  if (!quality.includes("sort: s.showcaseSort === 'NewestFirst' ? '1' : '0'"))
+    throw new Error("Quality Showcase queue must send numeric enum sort values accepted by the deployed API.");
+  if (/<tbody>[\s\S]*?<sc-(?:for|if)\b/i.test(quality))
+    throw new Error("Quality Dashboard must not place DC control-flow elements inside native table bodies.");
   if (!quality.includes('controls preload="metadata"') || /\bautoplay\b|\<iframe\b/i.test(quality))
     throw new Error("Quality Showcase preview must use safe controls without autoplay or iframes.");
   for (const trust of ["qualification_sample", "reviewed_showcase", "trust_qualification_sample", "trust_reviewed_showcase"]) {
@@ -749,6 +972,25 @@ for (const token of [".tf-page", ".tf-grid", ".tf-table-wrap", ".tf-stat-grid", 
     throw new Error("Public Showcase preview must use safe controls without autoplay or iframes.");
   if (!css.includes('[data-stack="showcase-review"]'))
     throw new Error("Showcase review must collapse to one column on mobile.");
+}
+
+{
+  const teacher = readFileSync("Tafseel-Teacher-Dashboard.dc.html", "utf8");
+  const student = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
+  const payment = readFileSync("Tafseel-Payment.dc.html", "utf8");
+  const booking = readFileSync("Tafseel-Book-Session.dc.html", "utf8");
+  if (!teacher.includes("get('/withdrawals/mine?page=1&pageSize=' + TEACHER_WITHDRAWAL_PAGE_SIZE)")
+    || !teacher.includes("withdrawalHistory: (s.withdrawalHistory || []).map")
+    || !teacher.includes("withdrawalsHasPagination:"))
+    throw new Error("Teacher withdrawal history must use bounded pages from the owned withdrawal endpoint.");
+  if (!teacher.includes("put('/teachers/me/availability/rules',{rules})"))
+    throw new Error("Teacher availability must save editable ranges atomically.");
+  if (payment.includes("couponCode") || payment.includes("pay_coupon_checkout_hint"))
+    throw new Error("Checkout must not show a coupon field until the payment API supports coupons.");
+  if (!student.includes("repeat_request_started") || !student.includes("repeat_session_started"))
+    throw new Error("Student Dashboard must expose measured repeat order and session actions.");
+  if (!booking.includes("book_session_details") || !booking.includes("book_browse_teachers"))
+    throw new Error("Live-session booking must use bilingual locale keys for its primary surface.");
 }
 
 console.log(`Frontend integrity validation passed for ${pages.length} entry points.`);

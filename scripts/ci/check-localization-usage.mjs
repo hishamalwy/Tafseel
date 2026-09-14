@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
+import { findPage } from "./lib/frontend-pages.mjs";
 
 // Complements check-localization.mjs (EN/AR key-pairing parity). This script instead
 // catches the opposite failure mode: a key that IS referenced by Tafseel.t(...)/this.t(...)
@@ -45,8 +46,11 @@ const COMPARISON_OPERAND = new RegExp(
 const missing = new Map(); // key -> Set(sources)
 
 for (const path of [...pages, ...scripts]) {
-  if (!existsSync(path)) continue;
-  const text = readFileSync(path, "utf8");
+  // findPage resolves a migrated page to legacy-archive/; anything else (the
+  // js/*.js entries) falls through unchanged.
+  const resolved = findPage(path) ?? path;
+  if (!existsSync(resolved)) continue;
+  const text = readFileSync(resolved, "utf8");
   for (const call of text.matchAll(CALL_SITE)) {
     const withoutComparisons = call[1].replace(COMPARISON_OPERAND, "");
     for (const literal of withoutComparisons.matchAll(KEY_LITERAL)) {

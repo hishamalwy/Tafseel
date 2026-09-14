@@ -22,26 +22,41 @@ publish/
 *.tmp
 *.DotSettings.user
 
-# Local AI tooling, skills caches, and agent run state
+# Local tooling state: editor agents, design and review tools, audit run output
 .claude/
 .codex/
 .codex-run/
 .cursor/
+.impeccable/
+.hallmark/
+.godaudits/
+/tools/
+/.gitmodules
+
+# Local design sandbox. Not built or served; it reads css/tafseel.css and assets/.
+design-lab/
 
 # Local secrets and machine-specific configuration
 .env
 .env.*
 !.env.example
 src/Tafseel.Api/appsettings.Local.json
+**/appsettings.*.Host.json
+deploy/iis-runasp/web.config
 tests/browser/.auth/
 
-# Runtime state and private/local uploads
-**/App_Data/
+# Runtime state and private/local uploads. The API project ships an empty
+# App_Data/logs directory, so only its placeholder is tracked.
+**/App_Data/*
+!src/Tafseel.Api/App_Data/logs/
+src/Tafseel.Api/App_Data/logs/*
+!src/Tafseel.Api/App_Data/logs/.keep
 uploads/
 
 # Logs and local process captures
 *.log
 .tmp*/
+/tmp/
 
 # OS and generated thumbnails
 .DS_Store
@@ -63,7 +78,7 @@ blob-report/
 test-results/
 **/playwright/.cache/
 
-# One-off local audit / scratch dumps (keep out of git)
+# One-off local patch, debug and audit scripts (keep out of git)
 _audit_*
 _css_diff.json
 _html_usage.json
@@ -73,3 +88,14 @@ _html_usage.json
 /missing_i18n_keys.txt
 /landing-fold-check.png
 /self-test-results.json
+/scripts/tmp-*.mjs
+tests/browser/_*.mjs
+
+# Angular client (frontend-angular)
+frontend-angular/dist/
+frontend-angular/.angular/
+frontend-angular/out-tsc/
+# Built from the design system by `npm run sync:design`. The hand-edited
+# sources are css/tafseel.css and assets/.
+frontend-angular/src/generated/
+frontend-angular/public/assets/

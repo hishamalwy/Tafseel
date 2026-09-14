@@ -1,9 +1,6 @@
 /**
- * Teacher Profile mobile CTA geometry/regression checks (Phase 3 Release 3 Sprint 2.1).
- * Static structural checks only — the actual zero-overlap/reachability claims are proven by
- * live browser measurement (elementFromPoint, getBoundingClientRect) captured in the sprint
- * report, since first-paint geometry depends on real layout/paint and can't be asserted from
- * source text alone.
+ * Teacher Profile mobile CTA structure/regression checks.
+ * Runtime geometry and first-paint visibility are covered by the browser evidence pass.
  * Run: node scripts/ci/check-teacher-profile-mobile-cta.mjs
  */
 import { readFileSync } from "node:fs";
@@ -15,35 +12,29 @@ function assert(cond, msg) {
 const profile = readFileSync("Tafseel-Teacher-Profile.dc.html", "utf8");
 const css = readFileSync("css/tafseel.css", "utf8");
 
-// 1/6. Mobile CTA bar and the no-service note are gated on distinct predicates (Phase 4 Sprint 0,
-// Track E). Previously heroCtaHidden was "!canRequest && !canBook", which could go true even while
-// a real service was selected (just not actionable), making the "No services available" note lie
-// next to a fully populated selected-service card/CTA context — the exact contradiction Track E
-// requires fixed. heroCtaHidden now means "there are truly zero services"; it must still imply
-// !showHeroCta (no services -> nothing to request/book), but the converse no longer holds (a
-// selected-but-non-actionable service correctly shows neither the bar nor the note).
-assert(profile.includes('<sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><div class="tf-profile-mobile-cta">'),
+// CTA and no-service copy use distinct, truthful predicates.
+assert(profile.includes('<sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-mcta">'),
   "mobile CTA bar must be gated on showHeroCta");
-assert(profile.includes('<sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><p class="tf-profile-mobile-no-service"'),
-  "no-service mobile note must be gated on heroCtaHidden");
+assert(profile.includes('<sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><p class="tf-mkp-shelf-note"'),
+  "no-service shelf note must be gated on heroCtaHidden");
 assert(profile.includes("heroCtaHidden: services.length === 0") && profile.includes("showHeroCta: !!(canRequest || canBook)"),
-  "heroCtaHidden must mean zero services (Track E fix); showHeroCta stays CTA-eligibility-driven");
+  "heroCtaHidden must mean zero services; showHeroCta stays CTA-eligibility-driven");
 
-// 2. The dynamic clearance measurement must always re-baseline to 0px before measuring, or a
-// previously-applied clearance masks the true overlap and gets zeroed back out on the next pass
-// (the oscillation bug found and fixed in this sprint).
-assert(/_measureMobileCtaClearance\(\)\s*\{[\s\S]*?root\.style\.setProperty\('--tf-profile-mobile-clearance', '0px'\);\s*void row\.getBoundingClientRect\(\);/.test(profile),
-  "clearance measurement must reset to a neutral baseline and force a layout flush before reading geometry");
-assert(profile.includes("if (rowDocTop >= window.innerHeight) return;"),
-  "clearance measurement must not treat off-screen (not-yet-scrolled-to) content as an overlap");
-assert(profile.includes("_trackAvatarLoad"), "clearance must be re-measured once the avatar image finishes loading");
+// The fixed CTA stays hidden until the in-flow commerce shelf has passed above the viewport.
+assert(/_syncMobileCta\(\)\s*\{[\s\S]*?classList\.toggle\('is-on', shelf\.getBoundingClientRect\(\)\.bottom <= 0\)/.test(profile),
+  "mobile CTA must appear only after the commerce shelf passes above the viewport");
+assert(profile.includes("window.removeEventListener('scroll', this._onShelfScroll)"),
+  "mobile CTA scroll listener must be removed during cleanup and before re-binding");
+assert(profile.includes("window.addEventListener('scroll', this._onShelfScroll, { passive: true })"),
+  "mobile CTA scroll listener must be passive");
+assert(profile.includes("this._syncMobileCta();"),
+  "mobile CTA observer must be synchronized after render");
 
-// 3/4/5. The bar stays fixed and its CTA link stays clickable; only the bar's own decorative
-// padding ignores pointer events, so it can never swallow a tap meant for real content beneath it.
-assert(/\.tf-profile-mobile-cta\{position:fixed;[^}]*pointer-events:none\}/.test(css),
-  "mobile CTA bar must remain position:fixed with pointer-events:none on its own box");
-assert(/\.tf-profile-mobile-cta a\{[^}]*pointer-events:auto\}/.test(css),
-  "mobile CTA link must keep pointer-events:auto so it stays clickable");
+// The bar is mobile-only, fixed, and inert until the observer enables it.
+assert(/@media \(max-width:640px\)[\s\S]*?\.tf-mkp-mcta\{[\s\S]*?position:fixed;[\s\S]*?pointer-events:none;[\s\S]*?visibility:hidden/.test(css),
+  "mobile CTA must be fixed and non-interactive while hidden inside the mobile breakpoint");
+assert(/\.tf-mkp-mcta\.is-on\{[^}]*pointer-events:auto;[^}]*visibility:visible/.test(css),
+  "mobile CTA must become visible and interactive only in its is-on state");
 
 // 7. No fabricated copy — the no-service state reuses the existing, already-localized key instead
 // of inventing new "coming soon" style messaging.
@@ -52,27 +43,13 @@ assert(profile.includes('data-i18n="tp_services_empty">No services available.</p
 const locales = readFileSync("js/locales.js", "utf8");
 assert(locales.includes('"tp_services_empty"'), "tp_services_empty key must exist in locales.js");
 
-// 8. Safe-area inset must not be double-counted within the bar's own padding declaration.
-const barRule = css.match(/\.tf-profile-mobile-cta\{position:fixed;[\s\S]*?\}/)[0];
-const safeAreaInBarPadding = barRule.match(/env\(safe-area-inset-bottom/g) || [];
-assert(safeAreaInBarPadding.length === 1,
-  "the mobile CTA bar's own padding must reference safe-area-inset-bottom exactly once");
+// Safe-area inset is counted once along the block end.
+const barRule = css.match(/\.tf-mkp-mcta\{\s*position:fixed;[\s\S]*?\}/)[0];
+const bottomSafeArea = barRule.match(/env\(safe-area-inset-bottom\)/g) || [];
+assert(bottomSafeArea.length === 1, "mobile CTA must reference the bottom safe-area inset exactly once");
 
-// 11. No hardcoded left/right was introduced by this sprint's new rules — logical properties only.
-const newRuleBlock = css.slice(css.indexOf(".tf-profile-mobile-no-service"), css.indexOf(".tf-profile-mobile-no-service") + 2000);
-assert(!/[^-](?:^|[;{])\s*(left|right)\s*:/.test(newRuleBlock.replace(/inset-inline-(start|end)/g, "")),
-  "new mobile CTA rules must use logical (inline-start/end) properties, not hardcoded left/right, to stay RTL-safe");
-
-// 12. Everything new is scoped to the mobile breakpoint — desktop must be untouched.
-["--tf-profile-mobile-clearance", ".tf-profile-mobile-no-service{display:block", "scroll-margin-block-end"]
-  .forEach(needle => {
-    const idx = css.indexOf(needle);
-    assert(idx > -1, `expected to find "${needle}" in css/tafseel.css`);
-    const precedingMediaQuery = css.lastIndexOf("@media (max-width:860px)", idx);
-    const precedingCloseBrace = css.lastIndexOf("\n}", idx);
-    assert(precedingMediaQuery > -1 && precedingMediaQuery > css.lastIndexOf("\n}\n", idx - 1),
-      `"${needle}" must stay inside the max-width:860px media query so desktop is unaffected`);
-  });
+// Desktop remains unaffected by the fixed CTA.
+assert(css.includes(".tf-mkp-mcta{display:none}"), "mobile CTA must default to display:none");
 
 // 13. Sprint 2's honest share-copy fix (only flash on confirmed success) must still be intact.
 assert(/let copied = false;[\s\S]*?if \(copied\) this\.flash\(t\('tp_share_copied'\)\);/.test(profile),

@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="appsettings.*.Host.json" />
+    <None Include="appsettings.*.Host.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+    <Content Include="App_Data\logs\.keep" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.21" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
@@ -18,6 +24,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.21" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -28,6 +35,17 @@
 
   <ItemGroup>
     <Content Include="..\..\Tafseel-*.dc.html">
+      <Link>frontend\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+
+    <!-- Pages that have moved to the Angular client (frontend-angular) but are
+         still linked from the pages that have not. They publish into the same
+         flat frontend/ directory as the root pages, so /app/<name>.dc.html
+         resolves exactly as before. Delete this block, and legacy-archive/,
+         once the Angular routes are live and the inbound links point at them. -->
+    <Content Include="..\..\legacy-archive\Tafseel-*.dc.html">
       <Link>frontend\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -59,6 +77,16 @@
     </Content>
     <Content Include="..\..\assets\fonts\thmanyah-serif-display\*.woff2">
       <Link>frontend\assets\fonts\thmanyah-serif-display\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\assets\fonts\saudi-riyal\*.woff2">
+      <Link>frontend\assets\fonts\saudi-riyal\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\assets\fonts\saudi-riyal\*.ttf">
+      <Link>frontend\assets\fonts\saudi-riyal\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

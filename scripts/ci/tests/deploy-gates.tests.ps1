@@ -125,6 +125,25 @@ $gateText = Get-Content -LiteralPath $gateWorkflow -Raw
 Assert-True "staging gate listens on main push" ($gateText -match 'branches:\s*\[main\]')
 Assert-True "staging gate waits via shared script" ($gateText -match 'wait-for-required-checks\.sh')
 
+$repoRoot = Split-Path -Parent (Split-Path -Parent $repoCi)
+$runAspDeploy = Join-Path $repoRoot "scripts/ops/Deploy-TafseelRunAsp.ps1"
+$recoverySnapshot = Join-Path $repoRoot "scripts/ops/New-TafseelRecoverySnapshot.ps1"
+foreach ($script in @($runAspDeploy, $recoverySnapshot)) {
+  $tokens = $null
+  $parseErrors = $null
+  [void][System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$parseErrors)
+  Assert-True "$(Split-Path -Leaf $script) parses" ($parseErrors.Count -eq 0) ($parseErrors -join '; ')
+}
+$runAspText = Get-Content -LiteralPath $runAspDeploy -Raw
+Assert-True "RunASP deploy preserves Host config" ($runAspText -match 'appsettings\.\*\.Host\.json')
+Assert-True "RunASP deploy preserves App_Data" ($runAspText -match "'/XD'.*App_Data")
+Assert-True "RunASP deploy uses app_offline" ($runAspText -match 'app_offline\.htm')
+Assert-True "RunASP deploy checks readiness" ($runAspText -match '/health/ready')
+Assert-True "RunASP deploy has rollback path" ($runAspText -match 'Rolling back')
+$recoveryText = Get-Content -LiteralPath $recoverySnapshot -Raw
+Assert-True "recovery snapshot includes Data Protection keys" ($recoveryText -match 'DataProtection keys')
+Assert-True "recovery snapshot excludes logs" ($recoveryText -match '/XD.*logs')
+
 Write-Host ""
 Write-Host "Passed: $passed  Failed: $failed"
 if ($failed -gt 0) { exit 1 }

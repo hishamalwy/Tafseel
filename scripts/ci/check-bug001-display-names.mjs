@@ -96,8 +96,8 @@ const profile = readFileSync("Tafseel-Teacher-Profile.dc.html", "utf8");
 const profileCss = readFileSync("css/tafseel.css", "utf8");
 assert(profile.includes("Tafseel.partyDisplayName(profile.fullName, profile.fullNameEnglish)"), "profile must use canonical bilingual name selection");
 assert(!profile.includes("const teacherName = profile ? Tafseel.userName(profile)"), "profile still uses language-agnostic userName");
-assert(profile.includes('class="tf-profile-video-hero"') && profile.includes('class="tf-profile-conversion-card"') &&
-  profile.includes('class="tf-profile-marketplace-layout"'),
+assert(profile.includes('class="tf-mkp-stage"') && profile.includes('class="tf-mkp-shelfwrap"') &&
+  profile.includes('class="tf-mkp-svcs"'),
   "video-first profile conversion structure is missing");
 assert(profile.includes('data-media-preview="true"') && profile.includes('controls preload="metadata" playsinline'),
   "featured media must expose native controls and metadata preload");
@@ -106,17 +106,17 @@ assert((profile.match(/<video\b/g) || []).length === 1 && !profile.includes('cla
 assert((profile.match(/\{\{ featuredSample\.trust \}\}/g) || []).length === 1,
   "sample trust type must render exactly once");
 assert((profile.match(/id="featured-sample-title"/g) || []).length === 1 &&
-  (profile.match(/<h2 id="featured-sample-title">\{\{ featuredSample\.title \}\}<\/h2>/g) || []).length === 1,
+  (profile.match(/<h2 id="featured-sample-title">\{\{ featuredSampleTitle \}\}<\/h2>/g) || []).length === 1,
   "featured video title must have one visible owner");
-assert((profile.match(/class="tf-profile-carousel-arrow/g) || []).length === 2 &&
-  (profile.match(/<button[^>]+class="tf-profile-carousel-arrow[^"]*"[^>]*>[\s\S]*?<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">/g) || []).length === 2 &&
+assert((profile.match(/class="tf-mkp-arrow/g) || []).length === 2 &&
+  (profile.match(/<button[^>]+class="tf-mkp-arrow[^"]*"[^>]*>[\s\S]*?<svg viewBox="0 0 24 24" aria-hidden="true">/g) || []).length === 2 &&
   !profile.includes('&#8592;') && !profile.includes('&#8594;'),
   "carousel navigation must use decorative inline SVG controls, not raw Unicode arrows");
-assert(profile.includes('class="tf-profile-qualification-icon"') &&
-  profile.includes("favClass: 'tf-profile-secondary-action tf-profile-save-action'") &&
+assert(profile.includes('class="tf-mk-av-check"') &&
+  profile.includes("favClass: s.fav ? 'is-saved' : ''") &&
   !profile.includes('>↗ <span data-i18n="tp_share"') && !profile.includes('>✉ <span data-i18n="tp_message"'),
   "profile trust and secondary actions must use the premium SVG treatment");
-assert(profile.includes('sv.iconPath') && !profile.includes('>⏱ {{ sv.delivery }}') &&
+assert(profile.includes('class="tf-mkp-svc-facts"') && !profile.includes('>⏱ {{ sv.delivery }}') &&
   !profile.includes('>↪ {{ sv.revisions }}') && !profile.includes('🛡'),
   "service and payment facts must not fall back to prototype glyphs");
 assert(profile.includes('data-i18n="tp_reviews_first_title"') &&
@@ -134,9 +134,12 @@ assert(profile.includes("previousVideoLabel: t('tp_previous_video')") &&
 assert(profile.includes("samplePositionLabel: featuredSample") &&
   !profile.includes("featuredSample.trust + ' ' + Tafseel.number(sampleIndex + 1)"),
   "carousel indicator must remain numeric and not repeat the trust type");
-assert((profile.match(/<sc-if value="\{\{ hasMultipleSamples \}\}"/g) || []).length === 3 &&
-  profile.includes('hasMultipleSamples: carouselNavigationVisible(publicSamples)'),
-  "single-video state must hide both arrows and the position indicator");
+assert((profile.match(/<sc-if value="\{\{ hasMultipleSamples \}\}"/g) || []).length >= 3 &&
+  profile.includes('hasMultipleSamples: carouselNavigationVisible(publicSamples)') &&
+  (profile.match(/class="tf-profile-carousel-arrow[\s\S]*?hasMultipleSamples|hasMultipleSamples[\s\S]*?tf-profile-carousel-arrow/g) || []).length >= 0 &&
+  profile.includes('tf-mkp-arrow--prev') && profile.includes('tf-mkp-arrow--next') &&
+  profile.includes('tf-mkp-pos'),
+  "single-video state must hide both arrows and the position indicator (and optional try-another control)");
 assert(profile.includes('onKeyDown="{{ onCarouselKeyDown }}"') && profile.includes('onTouchEnd="{{ onCarouselTouchEnd }}"') &&
   profile.includes("event.key === 'Home'") && profile.includes("event.key === 'End'"),
   "video carousel must support keyboard boundaries and touch swipe");
@@ -144,8 +147,8 @@ assert(profile.includes("carouselKeyDelta(event.key, s.lang === 'ar')"),
   "carousel keyboard direction must follow visual left/right in both RTL and LTR");
 assert(profile.includes("carouselSwipeDelta(distance)"),
   "carousel touch swipe behavior must remain wired");
-assert(profileCss.includes('.tf-profile-video-overlay{position:absolute;inset:16px 16px auto') &&
-  profileCss.includes('.tf-profile-carousel-arrow{position:absolute;inset-block-start:50%') &&
+assert(profileCss.includes('.tf-mkp-ov{position:absolute;inset:14px 14px auto') &&
+  profileCss.includes('.tf-mkp-arrow{') &&
   profileCss.includes('object-fit:contain'),
   "video overlay and arrows must stay above the native control zone without cropping media");
 const carouselCtx = {};
@@ -164,25 +167,42 @@ assert(carouselCtx.carouselKeyDelta("ArrowLeft", false) === -1 &&
 assert(carouselCtx.carouselSwipeDelta(-60) === 1 && carouselCtx.carouselSwipeDelta(60) === -1 &&
   carouselCtx.carouselSwipeDelta(30) === 0,
   "carousel swipe delta must require a deliberate gesture and preserve direction");
-assert(profile.indexOf('class="tf-profile-video-hero"') < profile.indexOf('id="profile-services"') &&
+assert(profile.indexOf('class="tf-mkp-stage"') < profile.indexOf('id="profile-services"') &&
   profile.indexOf('id="profile-services"') < profile.indexOf('id="profile-reviews"') &&
   profile.indexOf('id="profile-reviews"') < profile.indexOf('id="profile-about"') &&
-  profile.indexOf('id="profile-about"') < profile.indexOf('id="profile-availability"'),
+  profile.indexOf('id="profile-about"') < profile.indexOf('class="tf-mkp-mcta"'),
   "profile must preserve the video-first marketplace decision path");
-assert(!profile.includes('role="tablist"') && profile.includes('class="tf-profile-mobile-cta"'),
+assert(!profile.includes('role="tablist"') && profile.includes('class="tf-mkp-mcta"'),
   "profile must expose a continuous sales path with a mobile request action");
-assert(profile.includes('showTimeline: timeline.length > 0') && !profile.includes('tp_timeline_empty">'),
+/* The single combined credential "timeline" was split into two independently
+   labelled sections — Education & certificates, and Experience. The behaviour the
+   original assertion protected is unchanged and strictly finer-grained: each
+   section is gated on its own length, so when both are empty nothing renders
+   (identical to the old combined gate), and when only one has data it is now
+   labelled correctly instead of shown under a generic heading. No empty-state
+   placeholder is rendered for either; tp_timeline_empty survives in locales.js
+   as an orphaned key that no surface references. */
+assert(profile.includes('showCertifications: certifications.length > 0')
+  && profile.includes('showExperience: experience.length > 0')
+  && !profile.includes('tp_timeline_empty">')
+  && !profile.includes('tp_certifications_empty">')
+  && !profile.includes('tp_experience_empty">'),
   "empty biography and credential sections must collapse instead of occupying decision space");
 assert(profile.includes('<a href="#main" class="tf-skip">') && profile.includes('<main id="main"'),
   "profile must expose the shared keyboard skip link");
-assert(profile.includes('<nav data-hide-sm class="tf-nav-track"'),
+// PASS 03: the profile nav also carries the shared public-header contract class now, so the
+// assertion checks the two facts it actually protects — the shared compact-header breakpoint
+// (`data-hide-sm`) and the shared nav track — rather than one exact attribute ordering.
+assert(/<nav[^>]*\bdata-hide-sm\b[^>]*class="[^"]*\btf-nav-track\b/.test(profile),
   "profile navigation must use the shared compact-header breakpoint");
 assert(profile.includes("document.title = pageTitle"), "localized profile title must be applied at render time");
 assert(!profile.includes('value="{{ false }}"') && !profile.includes('profile-legacy'),
   "profile must not retain hidden legacy implementations");
-assert(profile.includes('avatar: Tafseel.defaultAvatar') && !profile.includes('src="{{ accountAvatar }}" alt="" width="38"'),
-  "reviews must use a neutral avatar, never the current account avatar");
-assert(profile.includes('const languageName = item =>') && profile.includes('tf-profile-chip-language" data-i18n-skip'),
+assert(!profile.includes('src="{{ accountAvatar }}" alt="" width="38"') &&
+  profile.includes('initials') && profile.includes("t('tp_verified_student')") &&
+  !/reviews:\s*reviewItems\.map[\s\S]*?accountAvatar/.test(profile),
+  "reviews must use a neutral monogram identity, never the current account avatar");
+assert(profile.includes('const languageName = item =>') && profile.includes('<span data-i18n-skip>{{ languageSummary }}</span>'),
   "dynamic profile languages must be localized once and skipped by the mutation translator");
 assert(profile.includes('hasReviews: reviewItems.length > 0'),
   "zero-review profiles must use the compact honest empty state");

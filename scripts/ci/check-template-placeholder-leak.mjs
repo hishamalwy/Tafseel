@@ -20,6 +20,7 @@
  * Run: node scripts/ci/check-template-placeholder-leak.mjs
  */
 import { readFileSync } from "node:fs";
+import { findPage } from "./lib/frontend-pages.mjs";
 
 const SURFACES = [
   "Tafseel-Student-Dashboard.dc.html",
@@ -41,7 +42,7 @@ let failures = [];
 for (const file of SURFACES) {
   let src;
   try {
-    src = readFileSync(file, "utf8");
+    src = readFileSync(findPage(file) ?? file, "utf8");
   } catch (_) {
     continue; // surface not present in this checkout
   }

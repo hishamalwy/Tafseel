@@ -19,11 +19,23 @@ for (const forbidden of [
 ]) if (page.includes(forbidden) || locales.includes(forbidden)) throw new Error(`Technical or concatenated Admin label remains: ${forbidden}`);
 
 for (const token of [
-  '@media(max-width:600px)', 'height:100dvh', 'max-height:min(92dvh,900px)',
+  '@media(max-width:600px)',
+  // PASS 03: the dialog's own overlay/panel/mobile geometry moved to the shared modal anatomy in
+  // css/tafseel.css. The catalog editor is a long form, so it opts into the full-screen variant
+  // rather than the default bottom sheet — asserting that opt-in is what protects the behaviour
+  // now that 'height:100dvh' and 'max-height:min(92dvh,900px)' are no longer page-local text.
+  'tf-modal-fullscreen', 'tf-modal-backdrop', 'tf-modal-body',
   'grid-template-columns:repeat(4,minmax(0,1fr))', 'position:sticky',
-  "if (s.catalogBusy) return", "if (s.editBusy) return", "e.key === 'Tab'",
-  'this._catalogOpener?.focus()', 'catalog-minimum-delivery', 'edit-minimum-delivery',
-  'minimumPrice: x.minPrice', 'maximumPrice: x.maxPrice', 'serviceDurationValues', 'SERVICE_DURATION_OPTIONS.includes', 'prevState && (prevState.catalogModal || prevState.editModal)', 'id="catalog-durations" tabindex="-1"',
+  "if (s.catalogBusy) return", "if (s.editBusy) return",
+  // PASS 03: the catalog dialog's focus return, scroll lock, initial focus, Escape and focus trap
+  // used to be hand-rolled here as `this._catalogOpener?.focus()`, `this._modalWasOpen` and a local
+  // `e.key === 'Tab'` handler. They are now one shared mechanic, so the safeguard asserts the
+  // dialog still OPTS INTO that contract (and still names its opener) rather than asserting the
+  // superseded implementation text. The behaviour itself is proven end to end by
+  // tests/browser/shared-components-a11y.mjs.
+  "Tafseel.modal.sync", "this._catalogOpener", "key: 'admin-catalog-dialog'",
+  'catalog-minimum-delivery', 'edit-minimum-delivery',
+  'minimumPrice: x.minPrice', 'maximumPrice: x.maxPrice', 'serviceDurationValues', 'SERVICE_DURATION_OPTIONS.includes', 'id="catalog-durations" tabindex="-1"',
   "prefers-reduced-motion: reduce"
 ]) if (!page.includes(token)) throw new Error(`Missing Release 1.1 UX safeguard: ${token}`);
 

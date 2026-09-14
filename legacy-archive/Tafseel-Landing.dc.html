@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="js/boot-prefs.js"></script>
+<link rel="stylesheet" href="css/tafseel.css?v=identity-v1" />
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
+<link rel="icon" href="assets/brand/favicon.ico" />
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+<meta name="description" content="Tafseel connects students across Saudi Arabia with verified teachers. Upload the material that stopped you, compare offers, and get the exact part explained." />
+<link rel="canonical" href="Tafseel-Landing.dc.html" />
+<meta property="og:title" content="Tafseel — Education, Tailored to You." />
+<meta property="og:description" content="Tafseel connects students across Saudi Arabia with verified teachers. Upload the material that stopped you, compare offers, and get the exact part explained." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Tafseel — Education, Tailored to You." />
+<meta name="twitter:description" content="Tafseel connects students across Saudi Arabia with verified teachers. Upload the material that stopped you, compare offers, and get the exact part explained." />
+</head>
+<body>
+<x-dc>
+<helmet><title>Tafseel — Education, Tailored to You.</title>
+  
+  
+</helmet>
+
+<a href="#main" class="tf-skip">Skip to content</a>
+
+<header class="tf-public-header">
+  <div data-public-header class="tf-shell tf-public-header__inner">
+    <a class="tf-brand-home tf-public-header__brand" href="Tafseel-Landing.dc.html" aria-label="Tafseel home">
+      <img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="22" height="30" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+    </a>
+    <nav data-hide-sm class="tf-nav-track tf-public-header__nav" aria-label="Primary">
+      <a class="tf-nav-link" href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a>
+      <a class="tf-nav-link" href="Tafseel-Open-Marketplace.dc.html" data-i18n="nav_post_request">Post a Request</a>
+      <a class="tf-nav-link" href="#how" data-i18n="nav_how">How It Works</a>
+    </nav>
+    <div class="tf-public-header-actions tf-public-header__actions">
+      <button type="button" class="tf-lang-toggle tf-control-fade" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+      <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
+        <a data-hide-sm class="tf-public-header__account" href="{{ accountHref }}" style-hover="background:var(--surface-2);color:var(--text)">
+          <img decoding="async" sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" />
+          <span>{{ accountName }}</span>
+        </a>
+      </sc-if>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a data-hide-sm class="tf-nav-login" href="Tafseel-Auth.dc.html" data-i18n="nav_login">Log in</a>
+      </sc-if>
+      <button type="button" class="tf-icon-btn" data-public-menu-toggle aria-controls="landing-public-menu" aria-expanded="false"></button>
+    </div>
+  </div>
+  <div id="landing-public-menu" data-public-menu="closed" class="tf-shell">
+    <nav aria-label="Primary">
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a>
+      <a href="Tafseel-Open-Marketplace.dc.html" data-i18n="nav_post_request">Post a Request</a>
+      <a href="#how" data-i18n="nav_how">How It Works</a>
+    </nav>
+    <div class="tf-public-menu-actions">
+      <sc-if value="{{ hasSession }}" hint-placeholder-val="{{ false }}">
+        <a href="{{ accountHref }}" class="tf-public-menu-login" style="gap:8px">
+          <img decoding="async" sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+          {{ accountName }}
+        </a>
+      </sc-if>
+      <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+        <a href="Tafseel-Auth.dc.html" data-i18n="nav_login" class="tf-public-menu-login">Log in</a>
+      </sc-if>
+    </div>
+  </div>
+</header>
+
+<!-- Icon sprite. Flow steps bind an inert `href` reference instead of a raw
+     path `d` — a template placeholder in `d` is rejected by the SVG parser
+     before hydration. -->
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="tf-i-upload" viewBox="0 0 24 24"><path d="M12 15V4m0 0L8.5 7.5M12 4l3.5 3.5M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></symbol>
+  <symbol id="tf-i-compare" viewBox="0 0 24 24"><path d="M4 19V9m5 10V5m5 14v-7m5 7V7" /></symbol>
+  <symbol id="tf-i-tune" viewBox="0 0 24 24"><path d="M4 7h9m5 0h2M4 17h5m4 0h7M15 4.5v5M9 14.5v5" /></symbol>
+  <symbol id="tf-i-play" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Zm7-3 5 3-5 3V9Z" /></symbol>
+  <symbol id="tf-i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Zm-3.5 9 2.2 2.2 4.8-5" /></symbol>
+  <symbol id="tf-i-clock" viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" /></symbol>
+  <symbol id="tf-i-bolt" viewBox="0 0 24 24"><path d="m13 3-8 10h6l-1 8 8-10h-6l1-8Z" /></symbol>
+  <symbol id="tf-i-megaphone" viewBox="0 0 24 24"><path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1Zm13-1a4 4 0 0 1 0 6" /></symbol>
+  <symbol id="tf-i-star" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.6.7-4 3.9.9 5.4-4.9-2.6-4.9 2.6.9-5.4-4-3.9 5.6-.7L12 4Z" /></symbol>
+  <symbol id="tf-i-calendar" viewBox="0 0 24 24"><path d="M4 9h16M8 4v3m8-3v3M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" /></symbol>
+  <symbol id="tf-i-teacher-check" viewBox="0 0 24 24"><path d="M10 8a3.2 3.2 0 1 0 0-.01M4.6 20a5.6 5.6 0 0 1 10.8 0M16 12.5l1.7 1.7 3.3-3.6" /></symbol>
+  <symbol id="tf-i-students" viewBox="0 0 24 24"><path d="M9 8a3 3 0 1 0 0-.01M3.5 20a5.5 5.5 0 0 1 11 0M16.5 7.2a3 3 0 0 1 0 5.6M17.5 20a5.6 5.6 0 0 0-2.2-4.4" /></symbol>
+  <symbol id="tf-i-teacher-cap" viewBox="0 0 24 24"><path d="M12 5 2.5 9.5 12 14l9.5-4.5L12 5Zm-5.5 6.6V16c0 1.4 2.5 2.8 5.5 2.8s5.5-1.4 5.5-2.8v-4.4M21.5 9.5v5" /></symbol>
+  <symbol id="tf-i-arrow" viewBox="0 0 24 24"><path d="M5 12h13m-6-6 6 6-6 6" /></symbol>
+  <symbol id="tf-i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.6 4.6L19 7.5" /></symbol>
+  <symbol id="tf-i-tag" viewBox="0 0 24 24"><path d="M3 12V5.5A1.5 1.5 0 0 1 4.5 4H11l9 9-7 7-9-9Zm4.5-4.5h.01" /></symbol>
+</svg>
+
+<main id="main" class="tf-landing-main">
+
+  <!-- First screen: the hero alone. Promos moved into the entry wizard and the
+       counters moved down the page, so the fold carries one message. Tall screens
+       fill the fold; short laptop / zoomed viewports compact via CSS. -->
+  <div class="tf-landing-fold">
+  <section data-stack="hero" class="tf-shell tf-landing-hero">
+    <div class="tf-hero-stagger tf-landing-hero-copy">
+      <h1 class="tf-hero-headline" aria-label="{{ heroHeadingLabel }}" style="font-size:clamp(34px,4.4vw,52px);letter-spacing:-.035em;font-weight:800;margin-bottom:16px">
+        <sc-if value="{{ heroLead }}" hint-placeholder-val="{{ false }}">
+          <span class="tf-hero-headline-lead">{{ heroLead }}</span>
+        </sc-if>
+        <span class="tf-hero-headline-main">
+          <span class="tf-hero-headline-phrase">
+            <span>{{ heroPrefix }}</span>
+            <span class="tf-rotate-word tf-rotate-accent" aria-hidden="true" style="--tf-rotate-min:{{ heroRotateMin }}">
+              <span class="tf-rotate-slot tf-rotate-slot-prev" data-tick="{{ rotateTick }}" style="{{ heroRotatePrevStyle }}">{{ heroRotatePrev }}</span>
+              <span class="tf-rotate-slot tf-rotate-slot-current" data-tick="{{ rotateTick }}" style="{{ heroRotateCurrentStyle }}">{{ heroRotate }}</span>
+            </span>
+            <span class="tf-sr-only" aria-live="polite">{{ heroRotate }}</span>
+          </span>
+        </span>
+      </h1>
+      <p class="tf-hero-sub" style="font-size:17px;line-height:1.6;color:var(--muted);max-width:560px;margin-bottom:24px;white-space:pre-line">{{ heroSub }}</p>
+
+      <form class="tf-smart-search tf-smart-search--hero" onSubmit="{{ onSearch }}" role="search">
+        <div class="tf-smart-search__bar">
+          <div class="tf-smart-search__field">
+            <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+            <label for="hero-q" class="tf-sr-only">{{ heroSearchLabel }}</label>
+            <input class="tf-smart-search__input" id="hero-q" value="{{ q }}" onChange="{{ onQ }}" placeholder="{{ heroSearchPlaceholder }}" maxlength="2000" />
+          </div>
+          <button type="submit" class="tf-smart-search__submit">
+            <svg class="tf-smart-search__submit-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+            <span>{{ heroCta }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Part 4: the two marketplace sourcing paths are the hero's account
+           actions. They are role-aware — a Teacher is never asked to post a
+           Student request, and staff are never offered Student conversion. -->
+      <div class="tf-hero-actions" role="group" aria-label="{{ heroActionsLabel }}">
+        <a class="tf-hero-action tf-hero-action--primary" href="{{ heroPrimaryHref }}">
+          <sc-if value="{{ heroPrimaryIsPost }}" hint-placeholder-val="{{ true }}">
+            <span aria-hidden="true" class="tf-hero-action-plus">＋</span>
+          </sc-if>
+          <span>{{ heroPrimaryLabel }}</span>
+        </a>
+        <sc-if value="{{ heroSecondaryLabel }}" hint-placeholder-val="{{ true }}">
+          <a class="tf-hero-action tf-hero-action--secondary" href="{{ heroSecondaryHref }}">{{ heroSecondaryLabel }}</a>
+        </sc-if>
+      </div>
+      <sc-if value="{{ heroNote }}" hint-placeholder-val="{{ true }}">
+        <p class="tf-hero-note">{{ heroNote }}</p>
+      </sc-if>
+      <!-- Teacher recruitment is a different audience from the Student the fold is
+           written for, so it steps out of the action row and becomes one quiet line
+           of text. Student conversion keeps the only two real controls above it. -->
+      <sc-if value="{{ heroShowTeacherJoin }}" hint-placeholder-val="{{ true }}">
+        <p class="tf-hero-teach">
+          <span class="tf-hero-teach-lead" data-i18n="hero_teach_lead">Good at explaining?</span>
+          <a class="tf-hero-teach-link" href="{{ teacherJoinHref }}">
+            <span>{{ heroCta2 }}</span>
+            <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+          </a>
+        </p>
+      </sc-if>
+
+      <!-- Platform scale, as two quiet orbs rather than a KPI row: they are read
+           on the way past the actions above them, not studied. Numbers come from
+           /platform/stats like the counters further down the page, so nothing
+           here is hardcoded. The wrapper renders unconditionally and reserves its
+           own height — the fold must not jump when the fetch lands. -->
+      <div class="tf-orbs">
+          <p class="tf-orbs-lede">{{ orbsLede }}</p>
+          <ul class="tf-orb-row">
+            <sc-for list="{{ communityStats }}" as="cs" hint-placeholder-count="2">
+              <li class="tf-orb" data-pending="{{ cs.pending }}">
+                <svg class="tf-orb-ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                  <circle class="tf-orb-track" cx="50" cy="50" r="46" />
+                  <g class="tf-orb-spin">
+                    <circle class="tf-orb-arc" cx="50" cy="50" r="46" pathLength="100" />
+                    <circle class="tf-orb-bead" cx="96" cy="50" r="1.9" />
+                  </g>
+                </svg>
+                <span class="tf-orb-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#{{ cs.icon }}" /></svg></span>
+                <span class="tf-orb-value" style="--len:{{ cs.len }}" data-count-up="{{ cs.countUp }}">{{ cs.value }}</span>
+                <span class="tf-orb-label">{{ cs.label }}</span>
+              </li>
+            </sc-for>
+          </ul>
+      </div>
+
+    </div>
+
+    <div class="tf-landing-hero-visual" data-reveal="right">
+      <!-- The Kingdom. The hero's second column, and a visual rather than a
+           control: no region navigates, filters, carries a count or opens a
+           card. Hover brings one of the thirteen administrative regions forward
+           and lets the other twelve recede, and that is the whole interaction.
+           Geometry is Natural Earth 1:10m admin-1 (public domain), quantised on
+           a shared lon/lat grid so a border between two regions is the same
+           sequence of points on both sides and can never open a sliver. -->
+      <figure class="tf-kingdom">
+        <figcaption class="tf-kingdom-head">
+          <span class="tf-kingdom-eyebrow">{{ kingdomEyebrow }}</span>
+          <h2 class="tf-kingdom-title">{{ kingdomTitle }}</h2>
+          <span class="tf-kingdom-sub">{{ kingdomSub }}</span>
+        </figcaption>
+        <div class="tf-kingdom-stage" data-kingdom role="img" aria-label="{{ kingdomAria }}">
+            <svg class="tf-kd-svg" viewBox="0 0 1000 826" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+              <defs>
+                <radialGradient id="tf-kd-orb-grad">
+                  <stop offset="0%" stop-color="var(--kd-orb)" stop-opacity=".9" />
+                  <stop offset="45%" stop-color="var(--kd-orb)" stop-opacity=".28" />
+                  <stop offset="100%" stop-color="var(--kd-orb)" stop-opacity="0" />
+                </radialGradient>
+                <clipPath id="tf-kd-clip"><use href="#tf-kd-border" /></clipPath>
+              </defs>
+
+              <!-- Neon halo: a blurred stroke-only copy of the same thirteen paths sitting
+                   under the crisp ones, so every regional border reads as a lit line
+                   rather than a hairline. One blur pass for the whole layer. -->
+              <g class="tf-kd-glow">
+              <use href="#tf-kd-najran" data-glow="najran" pointer-events="none" />
+              <use href="#tf-kd-riyadh" data-glow="riyadh" pointer-events="none" />
+              <use href="#tf-kd-eastern" data-glow="eastern" pointer-events="none" />
+              <use href="#tf-kd-madinah" data-glow="madinah" pointer-events="none" />
+              <use href="#tf-kd-qassim" data-glow="qassim" pointer-events="none" />
+              <use href="#tf-kd-hail" data-glow="hail" pointer-events="none" />
+              <use href="#tf-kd-tabuk" data-glow="tabuk" pointer-events="none" />
+              <use href="#tf-kd-northern" data-glow="northern" pointer-events="none" />
+              <use href="#tf-kd-jawf" data-glow="jawf" pointer-events="none" />
+              <use href="#tf-kd-bahah" data-glow="bahah" pointer-events="none" />
+              <use href="#tf-kd-asir" data-glow="asir" pointer-events="none" />
+              <use href="#tf-kd-jazan" data-glow="jazan" pointer-events="none" />
+              <use href="#tf-kd-makkah" data-glow="makkah" pointer-events="none" />
+              </g>
+
+              <!-- 13 administrative regions. These paths are the hover targets; every
+                   other layer is pointer-transparent so the cursor always resolves to a
+                   region and never to a border or a node. -->
+              <g class="tf-kd-regions">
+              <path id="tf-kd-najran" class="tf-kd-region" data-region="najran" style="--i:11" data-name-en="Najran" data-name-ar="نجران" d="M608.9 784.3l-12.7 7.4l-8.9 -0.5l-10.6 -14.7l-1.6 -1l-18.1 2.5l-42 -4.2l-2.1 -0.7l-7.7 -4.4l-2.6 -0.7l-25.3 0.2l-4.2 1l-6.1 -0.7l-9.1 1.5l-2.8 -0.7l-2.1 2.7l-2.1 0.2l-2.6 -1.2l-1.9 1.5l-1.2 1.7l-2.1 -0.2l0 -2l-7.7 0l-4.2 -4.4l1.2 -6.4l0 -2.7l-1.2 -5.4l1.6 -15l-1.6 -7.6l1.4 -3.2l8.7 -9.6l6.8 -5.9l3.8 -6.9l2.3 -1.2l5.4 -1.2l4.9 -3.5l1.9 -3l0.5 -5l-1.9 -9.9l0.2 -1.2l2.3 -2.7l4.2 -2.7l0.5 -2.7l0 -6.5l16.4 9.9l7 2l12.2 1l109.8 -11.9l6.1 -1.7l-14.8 120.3z" />
+              <path id="tf-kd-riyadh" class="tf-kd-region" data-region="riyadh" style="--i:6" data-name-en="Riyadh" data-name-ar="الرياض" d="M571.6 303l8 -1.3l2.1 1l7.7 7.6l2.1 2.9l16.7 7.1l1.4 1.6l0.9 3.7l1.4 72l1.9 2.8l16.7 12.1l13.6 14.2l2.1 3.3l3 8.2l0.7 6.2l-0.2 11.5l-26 208.1l-6.1 1.7l-109.8 11.9l-12.2 -1l-7 -2l-17.1 -10.4l-18.5 -16.9l-4.5 -7.7l-3.5 -4.2l-0.2 -3l1.9 -8.5l4.5 -8.3l-0.9 -4.3l-6.8 -8l-1.4 -2.5l-2.6 -3l-6.8 -6l-12.9 -19.4l-0.2 -3.3l2.1 -9.3l-0.5 -9.6l4 -7.8l-2.3 -20l1.2 -7.6l-2.6 -1.8l-6.6 -1l-8.9 1.8l-4 -2.3l-1.4 -3.3l0.2 -6.4l0.9 -3.3l-0.9 -2l-3.5 -2l-22.3 -1.8l-3 -1.8l-7 -16.1l-1.9 -8.4l-4.5 -12.5l-4.9 -3.8l-0.5 -4.4l0.9 -18.5l0.9 -6.9l-0.7 -2.8l4 -6.7l0.5 -3.9l4.7 -7.5l2.3 -1.5l2.1 0.3l10.3 4.1l10.8 0.8l6.8 -1l6.8 1.3l2.1 -0.8l2.1 -2.3l0.7 -3.4l-0.2 -1.3l-1.9 -3.1l0.7 -3.6l4.7 -6.2l5.4 -5.2l18.8 -5.2l8 -6.5l5.4 -8.1l3.8 -1.3l12.2 1.3l11 -0.8l5.4 0.3l1.6 -2.1l0.2 -4.4l-1.4 -6.5l-1.4 -2.3l-0.2 -2.9l0.7 -2.3l-0.5 -1.8l-8.9 -13.3l-4.5 -4.7l-0.7 -3.1l0.9 -9.2l-0.2 -3.7l3 -2.1l1.9 -0.3l1.4 -1.1l5.2 -7.1l4.5 -3.4l4.9 -2.9l0.5 -3.4l-3 -5.5l-7 -4.2l-0.9 -4.7l1.4 -4.5l4.7 -5.5l2.8 -1.1l3.8 3.2l3.3 -1.1l1.9 -2.9l6.6 5.3l1.4 2.4l1.9 5.8l2.1 2.6l13.4 7.6l7.5 1.6l8.4 8.7l3 1.8l1.9 0.5l8 0.3l4 1.1l14.5 10.2l4.5 1z" />
+              <path id="tf-kd-eastern" class="tf-kd-region" data-region="eastern" style="--i:4" data-name-en="Eastern Province" data-name-ar="المنطقة الشرقية" d="M709.1 263.8l5.9 1.6l-0.9 0.5l-2.1 -0.8l-2.8 1.3l-1.2 -0.5l0 -1.6l-2.3 0.3l-1.6 2.4l0 -1.3l0.7 -1.3l1.4 -1.1l2.3 0l0.7 0.5zM606.6 176l2.6 0.3l2.8 4.8l2.8 8.6l1.2 6.1l3.8 3.7l0.5 1.3l35.9 -0.3l3 2.4l0.5 4.3l-0.5 1.1l1.2 -1.1l0.5 0.8l-0.9 3.2l0.9 2.1l4.2 5.1l-1.2 2.9l2.6 5.3l-0.2 0.3l6.6 2.7l-2.3 1.1l6.8 8l-1.4 4.8l-0.7 0.3l0.5 -1.1l0.2 -3.7l-2.3 3.4l0.9 -2.9l-0.5 -1.1l-1.6 6.1l1.4 -1.6l0.2 2.9l0.9 -0.3l0.2 -0.8l0.2 2.4l1.4 -0.5l-0.2 1.9l-0.5 0l0.7 1.6l-1.6 -0.8l-0.5 0.8l1.9 0.3l1.4 -1.6l0.2 0.8l-0.7 1.6l0.2 1.1l0.9 0l-0.5 -1.6l3 -1.1l2.1 1.9l1.9 0.8l0.5 0.8l-0.9 0.5l1.6 0l-0.5 -0.8l1.6 0.8l2.3 0l1.2 -0.8l2.8 0.8l3.3 3.7l0.2 1.3l-1.2 -0.5l-0.2 -0.8l-0.9 1.1l-2.6 -0.3l-1.4 1.1l-0.2 -1.1l-2.6 1.1l4.5 2.4l1.4 -1.6l0.9 0.5l-1.9 2.4l0 2.1l2.6 -1.6l1.6 0.8l-0.5 1.1l0.7 3.2l-0.2 2.1l0.5 1.1l0.7 -0.3l0.2 1.3l0.9 -0.5l-0.2 -0.8l1.2 -0.5l1.2 0.8l-0.9 2.4l-1.2 0l1.9 1.3l1.6 -1.3l-0.5 0.8l4.5 0.5l-1.6 -2.1l1.2 -0.8l1.9 0.8l0.7 -1.1l-0.5 2.9l0.7 2.1l6.3 7.9l5.9 3.2l1.6 1.6l3.3 0l2.8 2.4l3.3 4.5l4.2 3.4l0 1.3l-3 -2.6l-3.3 -0.5l-0.9 -2.6l-0.9 3.9l0.9 1.3l0 4.2l1.6 4.7l1.6 1.3l5.4 2.6l0.9 1.8l0 9.4l-0.5 1l-0.9 0.5l-0.2 -1l-0.9 0.8l0.2 3.4l-0.9 3.4l-0.9 -1.3l-0.2 -2.3l-1.9 -1.3l-0.7 -2.9l-1.9 -0.8l-2.1 3.1l0.9 3.7l-0.2 3.7l0.7 0.3l1.2 -1.3l-0.2 -0.8l1.9 1l0.5 1l1.2 0.3l1.4 2.9l-0.9 1l1.4 5.2l4.9 7l0.2 2.6l-0.7 -2.6l-4.2 -2.9l-0.2 1l1.9 2.1l0.7 -0.5l1.9 3.6l6.6 8.1l-0.7 -2.3l1.2 -0.3l1.2 2.3l2.6 1l2.8 8.6l0.5 4.1l0.7 2.1l-0.2 2.1l0.7 3.4l0.7 0.5l0.2 -0.8l3.8 4.1l0.9 3.4l2.1 1.8l0.7 5.7l1.4 2.3l0.7 0l1.2 -1l3.3 5.7l2.3 2.6l5.2 1.3l2.6 0l2.3 -0.8l3.3 -2.6l3 0.3l1.2 0.8l-0.7 1.8l0.5 0.8l0 2.1l1.6 -0.8l1.9 -3.1l0.7 -0.3l0.2 -1.8l2.3 0.5l0.5 1.3l2.1 0.5l0 0.5l-2.6 1l-2.3 3.4l-4.2 4.4l-0.5 3.1l-0.7 0.3l0 1.8l6.3 -1l3.8 1.3l1.4 1.5l2.1 0.8l0.5 8l46 59.3l119.4 16.3l0.7 -0.3l3 -4.1l21.3 36.8l-31 99.7l-140.7 49.8l-133.7 19.1l-6.6 2.5l-38.9 20.3l-26.7 33.7l-6.1 16.5l-1.4 1.7l14.8 -120.3l26 -208.1l0.2 -11.5l-0.7 -6.2l-3 -8.2l-4 -5.7l-11.7 -11.8l-17.6 -13.2l-0.9 -1.8l-1.6 -73.5l-2.6 -4.2l-16.2 -6.5l-2.1 -2.9l-8.7 -8.4l-2.1 -0.3l-8.2 1.3l-3.3 -1l-14.5 -10.2l-4 -1.1l-8 -0.3l-2.8 -0.8l-11.5 -10.8l-6.6 -1.1l-14.5 -8.7l-1.6 -2.9l-2.6 -6.9l-7.3 -5.8l-1.6 -2.9l0.5 -4.5l2.1 -4.8l10.3 -12.7l16.4 -31.2l6.3 -8.6l4.7 -4.3l6.6 -3.5l25.8 -9.9l7.3 0.3l34.5 4.6z" />
+              <path id="tf-kd-madinah" class="tf-kd-region" data-region="madinah" style="--i:7" data-name-en="Madinah" data-name-ar="المدينة المنورة" d="M182.8 293.3l2.6 -1.1l5.9 -3.9l2.8 0.5l4.5 2.1l2.3 -0.5l0 -3.7l0.5 -0.8l2.1 1.1l1.2 3.2l2.8 1.8l5.9 2.4l5.6 4.2l4.2 1l4.7 0l19.5 -3.2l2.1 0.8l2.3 3.1l1.2 3.1l-0.7 5l-2.1 4.7l0.5 2.4l1.9 1.3l4.5 -0.3l1.4 1.8l0.2 1l-2.6 20.4l1.6 5.7l0.7 5.2l-0.5 14l2.8 4.7l2.8 1l2.3 -0.3l13.8 -4.7l10.3 -0.8l2.6 -2.1l4.5 -5.2l4.2 -1.6l8.2 -0.5l13.1 2.1l14.3 4.4l1.2 2.3l-0.7 15.8l1.4 2.6l2.1 1.6l6.8 1.8l2.3 4.1l2.3 9.6l1.4 3.1l4.9 3.9l-0.5 3.9l-0.7 1.8l-3.3 4.9l0.7 5.9l-0.9 3.9l-0.5 13.6l-9.1 -0.8l-2.6 2.1l0 2.3l1.4 5.4l-0.9 4.9l-3.5 4.1l-8.4 3.6l-8.2 4.9l-1.4 1.5l-0.5 1.3l0.2 1.3l7.7 5.1l0.5 1.3l-1.4 2.3l-6.6 2.6l-2.8 2l-6.6 6.6l-13.4 10.7l-6.3 8.6l-2.3 0.5l-8.2 -2.3l-1.4 0.3l-8 5.8l-3.3 0.5l-3.3 -0.5l-1.4 -1.5l-0.2 -2l0.9 -4.3l-2.3 -4.8l-2.3 -1.5l-4 -1.3l-0.9 -1.8l3.3 -8.1l-0.2 -5.9l-1.4 -1.5l-2.1 -0.5l-4.5 0.5l-9.8 3.3l-3.8 0.5l-1.4 -1.3l-0.9 -3.8l-2.3 -0.5l-6.8 1l-1.6 -0.3l-10.1 -10l-3 -4.1l-1.2 -0.5l-4.7 1l-7.3 0.5l-0.7 -4.6l-1.4 -2l0 -1l-0.9 0.8l-0.9 -0.3l0.5 1.3l1.2 0.3l0 0.5l-1.6 -0.3l-0.9 -1l0 -2.3l-2.1 -2.8l-1.9 -7.2l-3 -2.1l-1.2 -2.3l-2.6 -1.3l-2.3 -2.6l-3.5 -1.5l-5.6 -5.1l-0.9 0.5l-5.2 -3.9l1.2 -1l1.2 -0.3l-0.5 -0.5l-1.6 0.8l-0.5 -0.8l0.9 -1.5l-1.4 0.3l0 2.6l-2.6 0l-8.9 -7.2l-1.6 0l-0.7 1l0.2 1l-2.1 0.3l-1.9 -1.5l-0.9 0.3l-2.8 -3.6l-1.6 -1.3l-0.5 -1.8l0.7 -1l0.9 0.8l0.5 -1l-3.8 -6.2l1.4 -4.9l2.6 -1.5l6.8 -0.5l6.6 -5.7l7.7 0.3l3 -2.8l0.7 -1.8l-0.5 -16.8l1.6 -11.9l-0.5 -1.8l-2.3 -1.3l-4 -0.5l-3.5 -11.4l-2.3 -3.4l-7.5 -7.3l-1.2 -4.2l-10.6 -5.7l-0.9 0.3l-1.6 1.6l-0.9 0l-1.6 -5.7l-3.3 -7.6l1.2 -4.2l3.5 -6.8l-0.5 -2.6l-1.9 -1.3l-6.6 -2.1l-2.8 -2.6l-1.6 -4.7l1.2 -12.4l-1.6 -6.1l-3 -1.8l-4.9 0.8l-0.7 -0.5l0 -1.8l1.9 -1.3l5.4 -1.3l13.1 -6.1l4.7 1.1l5.4 3.2l4.2 0.3l9.6 -5.3l1.9 0.3l2.3 2.6l3 9l2.6 4l2.3 1.6l8.9 1.1l1.2 1.3l0 2.4l1.2 1.8l3.8 2.6l0.2 4.2l0.5 0.8l0.9 0.3z" />
+              <path id="tf-kd-qassim" class="tf-kd-region" data-region="qassim" style="--i:5" data-name-en="Qassim" data-name-ar="القصيم" d="M469.6 278.5l2.3 -1.3l3.5 -5l2.1 -1.6l7 4.2l2.3 3.4l0.7 3.9l-1.2 2.4l-6.6 3.7l-4 3.9l-3.3 5l-1.4 1.1l-2.8 0.5l-2.1 1.8l0.2 6l-0.9 7.9l0.7 2.1l5.6 6.3l8 12l0.2 1.6l-0.7 3.9l2.6 7l0 8.3l-1.4 1.3l-5.4 -0.3l-11 0.8l-12.2 -1.3l-4.5 1.8l-2.1 2.6l-3.5 6l-3.3 2.1l-3.8 3.4l-18.8 5.2l-5.4 5.2l-4.7 6.2l-0.7 3.6l1.9 3.1l0.2 2.6l-1.6 3.4l-3.3 1.8l-6.8 -1.3l-8.9 1l-8.7 -0.8l-11.3 -4.4l-2.3 0.5l-1.9 1.8l-4 6.7l-4.9 -3.9l-1.4 -3.1l-2.3 -9.6l-2.3 -4.1l-6.8 -1.8l-3 -2.8l-0.7 -2.3l0.9 -14.8l-1.2 -2.3l-10.3 -3.1l1.9 -1.8l6.3 -1.3l9.1 -4.9l7 -1l1.2 -1.6l-3 -7.8l0.9 -2.6l2.3 -1.8l7.5 2.1l1.6 -1.3l-0.9 -7.3l2.1 -6.5l1.6 -1.3l5.4 -0.5l1.6 -1.6l2.6 -5.2l5.4 -6.3l12.4 -10l5.6 -3.7l12.2 -5.8l5.4 -8.7l2.3 -2.4l21.1 -11.3l4.7 -1.3l2.1 0.5l12 10.5l3.3 1.8l4.9 0l4.2 0.8z" />
+              <path id="tf-kd-hail" class="tf-kd-region" data-region="hail" style="--i:3" data-name-en="Ha'il" data-name-ar="حائل" d="M341.1 187l6.8 -1.6l6.3 -0.3l18.3 4.5l2.1 1.6l5.6 6.9l3 2.1l5.6 1.1l9.1 -4l2.6 0.5l1.2 6.9l0.7 1.6l2.6 2.1l2.6 0.5l7.7 0l8 3.5l2.8 -1.1l6.8 -4.3l2.8 0.5l1.9 1.9l8 14.4l4 10.4l4 4.2l2.8 1.3l14.5 2.1l4.9 2.6l8.9 8.5l0.7 1.6l-3.5 1.6l-4 5l-1.4 6.6l0.9 2.6l-2.1 1.6l-4.9 6.1l-2.1 0.3l-3 -0.8l-4.9 0l-3.3 -1.8l-12 -10.5l-2.1 -0.5l-4.7 1.3l-21.1 11.3l-4 4.5l-2.6 5.3l-2.8 2.4l-10.6 4.7l-5.6 3.7l-12.4 10l-5.4 6.3l-3.3 6.3l-7.3 1.6l-2.6 5.2l0.7 9.4l-1.6 1.3l-7.5 -2.1l-2.3 1.8l-0.9 2.6l0.5 2.1l2.6 5.7l-1.2 1.6l-7 1l-10.8 5.5l-4.7 0.8l-1.9 1.8l-4 -1.3l-13.1 -2.1l-11 1.3l-2.3 1.8l-4.5 5.2l-4.2 1.8l-7.7 0l-13.8 4.7l-4.2 -0.3l-2.8 -2.6l-0.9 -2.6l0.5 -14l-0.7 -5.2l-1.6 -6.8l2.6 -19.3l-0.7 -2.1l-0.9 -0.8l-4.5 0.3l-1.9 -1.3l-0.5 -2.4l2.8 -7.1l-0.2 -3.7l-0.9 -2.1l2.3 -3.4l4.2 -11.3l2.1 -2.9l7.5 -7.1l0.5 -2.1l-1.2 -2.4l-9.4 -5.8l-1.2 -2.1l-5.6 -22l-3.3 -3.7l-5.6 -4.8l-4.2 -2.4l-4 -3.5l-19.7 -5.3l-0.7 -1.3l7.3 -7.2l17.8 -8.3l8.2 -2.4l17.4 -9.9l18.8 -7.5l12.2 3.7l24.9 -5.9l6.8 0l14.3 4z" />
+              <path id="tf-kd-tabuk" class="tf-kd-region" data-region="tabuk" style="--i:2" data-name-en="Tabuk" data-name-ar="تبوك" d="M119.7 362.2l0.7 1l0.5 2.6l-1.2 -1.6l-0.9 0.3l-0.9 -1.3l-0.7 0.5l0.7 -2.1l1.9 0.5zM111.5 362.8l4.5 2.1l-0.9 0l-0.2 0.8l0.9 0.5l1.2 -1.3l0.9 0.3l-2.8 2.9l-4.9 -4.9l-0.9 -2.1l2.3 1.8zM106.8 357.3l2.6 1.8l0.2 0.8l4.7 3.1l-0.5 0.5l-2.8 -2.3l-2.1 -0.8l-0.2 -1l-2.1 -1.6l-1.9 0.5l0.5 -1l1.6 0zM99.6 354.2l1.9 1.8l3.5 1l-0.7 1l-5.9 -2.9l-0.2 0.8l-2.3 -2.9l2.6 -3.1l-0.9 2.6l2.1 1.6zM100.5 349.5l0.9 0.3l-0.7 0.8l-2.3 -1.8l-0.2 -3.6l1.2 -1.8l-0.5 2.1l2.1 1.8l-0.5 2.3zM79.9 182.4l12.4 16.3l4.2 0.8l5.2 -2.1l11.3 -2.4l6.3 0.5l11 3.2l9.4 0l2.6 -2.4l3 -7.2l4.2 -2.9l2.8 -2.7l2.1 -0.3l1.4 1.9l-0.2 14.4l2.1 8.3l4.7 4.8l2.1 1.3l5.2 1.9l14.1 1.3l4.2 -1.6l4.5 1.9l2.1 -0.3l2.1 4l2.1 1.1l8.7 -3.7l4.2 0.5l1.9 1.3l0.7 1.3l19.7 5.3l5.4 4.5l2.8 1.3l8.9 8.5l6.1 23l3.3 2.9l6.8 4l1.2 2.4l-0.5 2.1l-1.6 2.1l-5.9 5l-3.5 5.8l-3.5 10l-1.6 1.8l-2.3 -3.1l-2.1 -0.8l-19.5 3.2l-7 -0.3l-1.9 -0.8l-5.6 -4.2l-7.5 -3.2l-1.2 -1.1l-1.2 -3.2l-2.1 -1.1l-0.7 1.6l0.2 2.9l-2.3 0.5l-6.1 -2.6l-2.8 0.5l-5.4 4.2l-2.3 0l-0.7 -5l-4.5 -3.4l-0.9 -4.2l-2.8 -1.1l-4.7 0l-4.5 -2.1l-4.5 -7.9l-1.6 -5.8l-1.9 -1.8l-1.9 -0.3l-9.6 5.3l-5.6 -0.8l-4 -2.6l-4.7 -1.1l-13.1 6.1l-6.3 1.8l-1.2 1.6l0.2 1.1l1.6 0.5l5.4 -0.3l2.3 2.9l0.9 4.5l-1.2 12.4l1.6 4.7l4 3.1l6.3 2.1l0.9 0.8l0 4.5l-3 5l-1.2 4.2l0.5 2.1l3.5 7.6l0.9 3.7l0.9 0l1.6 -1.6l2.1 0l9.4 5.7l2.6 6l7 6.3l1.4 2.3l3.8 11.7l5.4 0.8l1.2 2.6l-1.6 11.9l0.2 17.6l-2.3 3.4l-2.3 0.8l-5.4 -0.8l-2.1 1l-4.5 4.4l-4 1l-4.9 0.3l-2.6 3.1l-0.5 3.4l-7.3 -10.3l-0.5 -3.4l-1.2 0.8l-1.4 -1.3l-0.7 -1.8l3.3 0.3l1.6 -1.3l0.2 -2.6l0.9 -2.3l-1.4 -4.7l0.5 -2.8l-1.4 -4.4l-5.9 -6.5l-1.2 -3.9l-0.9 -1.3l0.7 -0.5l-0.5 -1.3l-2.6 -2.6l-0.9 -2.6l-3 -5.2l-2.1 -1l-3 -4.4l-0.9 0l0.5 1.8l-1.2 0l-4 -3.6l0 -1.6l-0.9 -0.3l-0.7 -2.6l2.1 -3.4l0 -2.9l-1.6 -2.3l-3 -1.3l-3.3 -0.5l-5.2 -10.5l-1.9 -2.9l-3.5 -8.6l-3.8 -6.6l-6.1 -6.8l-2.3 -4.7l-0.9 -3.2l-0.7 0.3l-1.9 -2.6l-3 -2.6l-3.8 -5l-1.4 -4l0.7 -1.1l-5.4 -7.1l-4 -3.4l-1.2 -2.1l-1.4 -1.3l-2.6 -5.8l-0.2 -2.9l-2.8 -3.7l-2.6 -5l-1.6 -0.8l-1.2 -4l-4.5 -5l-2.3 -1.9l-0.2 0.5l-0.5 -0.8l2.8 -1.6l-0.7 -0.8l-5.2 -1.9l-2.3 -1.6l-1.4 0.5l0.5 0.5l-1.4 -0.8l-4.7 1.9l-2.6 -0.3l0.9 -1.6l-1.9 0l0.5 0.8l-0.9 0.5l-0.5 1.1l-0.7 -0.5l1.4 -1.3l0 -0.5l-2.3 1.1l-3 -2.4l-0.5 0.8l-0.7 -0.3l-1.6 1.9l1.2 0.8l0 0.5l-1.2 0l-0.5 1.9l-0.9 -0.5l-0.7 -3.2l-1.2 0.5l2.3 -3.5l0.2 -1.1l1.4 0.5l-0.2 -1.9l0.7 -0.5l0.2 -3.2l1.9 -2.7l1.2 -4.5l3 -6.1l-0.5 -5.1l-0.7 -2.4l2.8 -8.8l0.2 -2.9l7 -0.3l10.6 1.6l5.2 -3.2l11.7 -2.4l6.1 -0.3l3.8 -0.8l3 0l10.3 2.9l3.5 2.7z" />
+              <path id="tf-kd-northern" class="tf-kd-region" data-region="northern" style="--i:0" data-name-en="Northern Borders" data-name-ar="الحدود الشمالية" d="M261.9 12.9l15.9 3l80 47.3l123.8 102.2l76.9 7l3.3 -0.5l-22.7 9.1l-6.6 3.5l-4.7 4.3l-6.3 8.6l-16.4 31.2l-10.3 12.7l-2.6 7.2l0 2.1l2.3 3.4l-1.9 2.9l-3.3 1.1l-1.9 -1.1l-3.8 -5l-8.9 -7.9l-3.8 -1.9l-15.7 -2.4l-4 -2.9l-1.6 -2.4l-4 -10.4l-8.7 -15.4l-2.3 -1.3l-1.6 0l-9.6 5.3l-3 -0.8l-4.9 -2.7l-3 -0.5l-7.3 0l-2.6 -2.1l-1.2 -3.5l-0.2 -4.5l-1.4 -1.1l-3 0.3l-7.7 3.7l-3.3 -0.3l-5.4 -2.9l-5.6 -6.9l-2.1 -1.6l-19.5 -4.5l-5.2 0.3l-8 1.6l-14.5 -4.3l-5.4 0.3l-26 5.9l-8 -2.9l7.3 -7.8l0.7 -2.1l1.4 -19.1l3 -4.6l5.2 -3.8l39.2 -24.6l6.1 -5.1l0.9 -2.2l-1.2 -2.2l-9.4 -7.6l-4.9 -9.5l-2.1 -2.4l-3 -1.6l-13.6 -1.6l-12 -9l-1.9 -0.5l-7.5 0.5l-25.6 -0.5l-7.3 -2.2l-5.6 -4.6l-33.3 -5.5l-6.1 0l-14.5 2.2l-23 1.9l-5.4 -2.5l-6.1 -10.4l-5.4 -4.1l-1.2 -1.9l-0.7 -6l5.9 -22.8l47.6 -13.8l7.5 -6.4l40.8 6.9z" />
+              <path id="tf-kd-jawf" class="tf-kd-region" data-region="jawf" style="--i:1" data-name-en="Al Jawf" data-name-ar="الجوف" d="M180.9 73.9l20.9 -1.9l14.5 -2.2l6.1 0l34.5 6l4.5 4.1l7.3 2.2l33.1 0l3.3 1.4l10.6 8.2l13.6 1.6l3 1.6l2.8 3.3l4.2 8.7l10.3 8.7l0 1.9l-2.8 3.5l-4 3l-39.2 24.6l-7.3 6.2l-1.2 3.2l-1.4 19.1l-1.2 2.1l-6.6 6.7l-3 -0.8l-18.8 7.5l-17.4 9.9l-8.2 2.4l-19.9 9.9l-5.2 5.6l-4.5 -2.1l-3 0.8l-7.3 3.2l-2.8 -1.9l-1.4 -3.2l-3.8 -0.3l-2.8 -1.3l-4.2 1.6l-14.1 -1.3l-5.2 -1.9l-6.8 -6.1l-1.6 -5.1l-0.5 -7.7l0.2 -9.9l-1.4 -1.9l-2.1 0.3l-2.8 2.7l-4.2 2.9l-4.5 9.1l-2.3 0.8l-8.2 -0.3l-13.6 -3.7l-3.8 0l-11.3 2.4l-7 2.1l-2.3 -0.8l-13.8 -17.7l-3.3 -1.9l-9.1 -2.4l-3 0l-3.8 0.8l-6.1 0.3l-11.7 2.4l-4 2.9l-1.2 0.3l-18.5 -2.1l1.9 -5.6l-0.5 -2.1l0.9 -2.1l1.6 -7.8l1.4 -1.1l-0.2 -3l0.9 0l-0.5 -1.6l0.2 -0.8l51.4 8.6l20.2 -16.4l12 -19.4l34.7 -7.6l0.9 -0.8l6.8 -16.5l1.6 -1.9l14.5 -8.2l-29.5 -34.4l-18.3 -19.8l48.1 -14.6l-5.9 22.8l0.7 6l1.2 1.9l5.4 4.1l6.1 10.4l3.3 1.9l4.2 0.5z" />
+              <path id="tf-kd-bahah" class="tf-kd-region" data-region="bahah" style="--i:9" data-name-en="Al Bahah" data-name-ar="الباحة" d="M332.2 612l6.3 -2l6.1 -0.3l6.3 -3.3l2.1 0.5l2.6 2.3l-2.1 9l0.5 1.5l1.6 2l0.2 1.3l-2.3 3.8l-6.6 4.7l-1.2 2.7l-0.2 3.5l-0.7 2.5l-4.7 10.5l-3 0.7l-6.1 0.5l-2.3 3.2l-3 8l-1.9 7.2l-4 1.7l-3.5 -0.7l-4.9 -6l-4.9 -3l-0.7 -3l0 -5.2l-0.9 -4.2l0.7 -5l-1.4 -4l-5.2 -2l-0.9 -1.7l0 -1l5.4 -5.5l9.4 -2.5l1.6 -2l4.7 -9.3l0.2 -3.3l-1.4 -6.3l1.9 -3.8l3 -1.5l3.5 1.8l0.9 1l1.9 5.3l1.9 1.5l1.2 0.3z" />
+              <path id="tf-kd-asir" class="tf-kd-region" data-region="asir" style="--i:10" data-name-en="Asir" data-name-ar="عسير" d="M472.2 664.7l0 8l-1.6 2.2l-4.2 2.7l-1.2 1.7l-0.2 2.5l1.9 8.7l-0.5 5l-2.8 4l-4 2.5l-6.6 1.7l-2.8 3.2l-2.1 4.5l-6.8 5.9l-8.7 9.6l-1.4 3.2l1.6 7.6l-1.6 16.3l1.2 4.2l0 2.7l-1.2 6.4l-3 -2.2l-6.6 -2l-4.5 2.2l-4.7 -7.1l-5.4 -2.7l-2.8 -5.2l-4.7 -3.9l-1.2 -2.5l0 -3.2l-0.7 -0.7l-2.1 -0.2l-5.2 3.7l-1.6 3l-3 9.6l-1.9 0.5l-2.3 -1.2l-5.2 -5.7l-1.4 -3.2l-3.3 -2l-7.5 0l-2.1 -1l-3 -5.2l-3.3 -1.2l-4 0.2l-0.9 -0.7l-0.5 -3.7l1.2 -5.9l-0.7 -2.5l-1.9 -0.5l-5.4 0.2l1.9 -8.9l-4 -12.1l-2.8 -1.7l-10.1 -0.7l-2.6 -3.5l-0.5 -3l0.7 -12.9l2.6 1.5l1.9 -0.5l5.4 -3.5l9.6 0l1.9 -2.5l1.6 -6.5l-2.8 -6.7l1.6 -9.7l-2.1 -3.5l-3.5 -0.2l-2.1 1l4.7 -10.5l1.4 -7.2l0.7 -1.5l7.5 -5.7l1.4 -2.8l-0.7 -2l-1.2 -1.3l-0.5 -2.8l2.1 -7.8l6.6 12.3l2.8 1.8l3 -0.5l4 -2.8l12 -10.8l10.6 -6l3 -2.8l7.5 -1.3l4.5 -1.8l4.5 0l4.5 1l1.6 -0.5l7.3 -4.5l5.2 -1.8l6.8 6l6.8 9.3l4 4.3l0.9 4.3l-4.5 8.3l-1.9 9.7l0.2 1.7l3.5 4.2l4.5 7.7l19.2 17.4z" />
+              <path id="tf-kd-jazan" class="tf-kd-region" data-region="jazan" style="--i:12" data-name-en="Jazan" data-name-ar="جازان" d="M349.6 801.2l1.9 0l1.6 1l1.6 -0.5l0.7 1.2l1.9 -0.7l-1.4 -0.2l-0.7 -1l1.9 -2.9l2.1 1.2l0.7 1.7l-0.2 0.5l1.2 0.2l0.5 1l1.6 0.7l-0.2 3.4l0.5 1.5l-0.5 1l-1.2 0l-1.2 -1.5l-2.6 -1l2.1 -1.2l-0.5 -1l-1.2 -0.7l-3.5 0.5l-1.6 1l-6.1 -3.9l-0.7 -1l-0.2 -1.7l-2.1 -1l-1.2 -3.7l3.5 1.7l1.4 2l0.2 1.7l1.6 1.7zM351.7 791.9l0 2.7l1.4 0.5l0.5 1l-1.9 0l-0.7 0.7l0.5 1l2.6 1.2l0.2 1.7l-3.8 -1.5l-4 -4.9l4.2 -2.2l0.2 -1l-0.5 -1.2l-3.5 -1l0.7 -0.7l3.8 2.2l0.2 1.5zM351.7 737.3l6.1 0.2l2.3 2l0.9 2.7l0.9 1.2l2.1 1l8.4 0.2l2.3 1.7l2.3 4.4l5.4 5.2l2.1 0.5l1.9 -2l2.1 -8.1l2.6 -3.9l4.5 -2.7l1.9 0.2l0.9 1.7l0 3.2l0.9 1.5l4.7 3.9l2.8 5.2l5.4 2.7l4.7 7.1l-5.9 4.7l-2.3 2.9l3.5 1.5l0.5 2.2l-4.5 2l-1.6 6.9l0.7 2.9l-1.2 4.2l2.1 4.9l2.3 0.7l0.2 1.7l-1.2 0.7l-0.7 1.7l0.7 2l-0.2 1l-0.7 0.2l-3 -1l-0.7 0.2l-1.6 5.9l-1.6 1.7l-2.8 1.5l-2.3 0.5l-0.2 2.9l-5.2 2.2l0 -1.7l-0.5 -0.5l0.7 -1.7l-3 -4.4l-0.2 -3.2l0.7 -2.2l-0.2 -0.7l-0.7 -0.2l0.2 -0.5l-1.2 -2l0.5 -0.2l-3.8 -4.4l-2.1 -1l-0.5 0.5l-1.6 -2.5l0.7 -2l-0.5 -4.2l-0.9 -0.5l-0.5 -1l-2.6 -0.2l-2.8 -6.1l-2.1 -0.7l1.4 2.9l-0.9 0.5l0.5 3.2l-0.5 1l-0.5 -1l0 -4.4l-2.1 -10.6l0 -4.7l-7.7 -6.4l-0.2 0.2l-2.6 -4.2l-1.4 0l-2.6 -3l-0.9 0.2l-5.2 -5.4l-0.9 0.5l-1.9 -1.2l-0.9 0l-0.5 -1.2l-4.9 -4.9l0 -2.5l-1.2 -0.7l0 -0.7l-2.6 -2.7l0.5 -1l-0.5 -0.2l2.1 -3.7l5.2 -4l0.9 -2l5.4 -0.2l1.9 0.5l0.7 2.5l-1.2 7.2l0.5 2.5l0.9 0.7z" />
+              <path id="tf-kd-makkah" class="tf-kd-region" data-region="makkah" style="--i:8" data-name-en="Makkah" data-name-ar="مكة المكرمة" d="M353.5 440.7l-0.5 4.9l0.5 4.4l4.9 3.8l4.9 13.8l1.4 7.2l7 16.1l4 2l19.2 1l4.5 1.5l1.9 2l0 2l-0.7 2.3l-0.2 6.4l1.4 3.3l4 2.3l2.3 0l7.5 -1.8l7.5 2l0.7 0.8l-1.2 9.6l2.3 18l-1.6 4l-2.3 3.8l0.2 11.6l-1.9 9.6l0.7 2l12.4 18.4l-5.2 1.8l-7.3 4.5l-3 0.5l-5.6 -1.3l-8 2.3l-5.9 1l-4.2 3.8l-9.4 5l-13.6 12l-4 2l-2.3 -0.3l-2.6 -2.5l-5.9 -11.3l-2.6 -2.3l-2.1 -0.5l-7.3 3.5l-8 0.5l-3.5 1.5l-1.6 -0.3l-1.9 -2.5l-1.4 -4.3l-3.3 -2.5l-2.3 0l-3.3 3.3l-0.5 1.8l1.4 8.3l-0.2 1.3l-5.2 10.3l-3.3 1.7l-7.3 1.7l-5.4 5.5l0.2 2l1.6 1.2l4.2 1.5l1.4 4l-0.7 5l1.2 5.5l0 6l1.6 2.2l3.8 1.7l4.9 6l3.5 0.7l4 -1.7l0.9 -1.7l0.9 -5.5l3 -8l2.3 -3.2l7.7 -0.7l3.5 -1.5l3.5 0.2l1.9 2.5l0.2 3l-1.6 7.7l0.5 2.2l2.3 4.5l-2.1 7.5l-1.4 1.5l-2.3 0.5l-7.3 -0.5l-6.3 4l-3.5 -1.5l-0.5 1.2l0.2 14.6l1.6 3l1.9 0.7l7.3 0l3.8 1.2l1.4 1.7l3.5 11.4l-0.2 2.7l-3 8.9l-5.9 4.7l-0.9 2.2l-1.9 -2.7l0.2 -0.7l-1.4 -0.7l-0.5 -1.2l-1.2 0.2l0.2 -2.7l-1.4 0l-1.9 -9.6l-0.7 -0.2l-0.2 -1.2l-1.9 -1.5l-0.7 -1.7l-1.2 -1l-1.6 0.7l-1.4 -1.2l-2.6 -5.4l1.9 -6.2l-1.9 -1.2l-1.9 -0.5l-0.5 -2l-1.2 -1.7l1.9 -6l-1.2 -1.5l-3.8 -1.5l-1.4 -3.5l0.5 -1.5l-0.7 -2l-3.5 -4l-0.7 -4.7l0.7 -0.7l-0.5 -0.5l-0.2 -2l-5.2 -2l-3.5 -3.5l1.6 0.7l0.2 -4.5l-2.6 -4.2l-0.9 -0.7l-3.3 -0.2l-0.5 0.5l0.5 1.2l-4.2 -6.2l-1.9 -1.2l0.7 -1.7l-0.7 -1.2l-3.8 -2l-2.8 -3l-3.3 -1l-4 -3.7l0.5 -0.7l-3.8 -1.2l-4.2 -4l-3.3 0.5l-0.5 0.5l-4 -2.3l1.6 2.5l-8.4 -4.5l-0.7 -1.5l-4.7 -4l-3.8 -5.8l1.2 -0.3l0.2 -0.5l-1.4 -0.5l-1.4 -1.5l-0.5 -2l-1.4 -1.8l-0.2 -1l0.7 -1l-2.1 -0.8l0.5 1l-1.6 -0.8l-0.5 -0.8l0.2 -0.8l-0.7 -0.8l0.5 -0.8l0.9 1l0.7 0l-0.7 -1.8l-1.6 -0.8l0 0.8l-3.3 -2.8l0.2 -1l0.7 0.5l-0.2 -1.3l-2.8 -0.5l-1.6 -2.8l-0.2 -2.5l-0.7 -0.3l-0.5 -1.5l-2.6 -2l-0.7 -3.3l0.5 -0.8l-4.2 -6.3l3.8 -3.3l0.5 -2.8l-0.9 -2.5l0.5 -1.3l-0.7 -1.5l-1.2 1.3l-0.9 -1.8l0.5 -0.3l-0.9 -1l0 -4.5l-0.7 -1.3l1.6 -2l-0.5 -1.5l-0.9 1.8l-0.7 -0.3l-5.4 -9.6l-0.9 -4.3l0.2 -1l1.2 -0.5l1.2 1.8l0.9 0l0.5 -3l0.9 -0.5l0.2 -4.1l-0.7 1.8l0.7 -6.1l1.6 -1.8l0.7 -2.8l0.9 -0.8l0.5 -1.5l1.2 -1l-0.7 -1.5l-0.7 0l-0.9 2.5l-1.2 0.3l0.5 -3.6l-0.2 -7.1l-4.2 -7.6l1.4 -2l-3.3 -3.3l-0.5 0.3l2.1 3.6l-0.5 0.5l-5.6 -9.4l0 -0.8l1.4 0.8l1.6 3.6l1.6 0.5l0.7 -1l-3.3 -4.8l-3.8 -1l-1.6 -2.8l1.2 -2.8l-0.2 -2.8l-0.7 -0.3l-0.2 0.8l-3.3 -4.8l-3 -8.4l0 -1l7.3 -0.5l4.7 -1l2.1 1.3l2.6 3.8l9.6 9.4l9.8 -0.8l1.4 1.3l0.9 3.8l0.9 0.5l3.8 -0.5l9.8 -3.3l6.6 0l1.4 1.5l0.5 3.6l-0.7 3.3l-2.8 7.1l0.9 1.8l6.3 2.8l2.3 4.8l-0.9 5.3l0.7 1.8l1.2 0.8l6.6 0l7.7 -5.8l2.6 -0.3l8.2 2.3l2.3 -1.8l3.3 -5.3l1.9 -2l13.4 -10.7l9.4 -8.7l6.6 -2.6l1.4 -2.3l-1.2 -2l-7 -4.3l-0.2 -1.3l0.5 -1.3l3.5 -3.1l6.1 -3.3l8.4 -3.6l2.3 -2l2.1 -4.6l-0.2 -4.4l-1.4 -4.6l1.9 -2.6l0.9 -0.5l9.1 0.8z" />
+              </g>
+
+              <!-- Cursor light, clipped to the Kingdom so it never spills onto the page. -->
+              <g class="tf-kd-cursor" clip-path="url(#tf-kd-clip)">
+                <circle class="tf-kd-orb" r="175" fill="url(#tf-kd-orb-grad)" />
+              </g>
+
+              <g class="tf-kd-net">
+              <path class="tf-kd-link" d="M573.5 401.4Q381.6 448.6 222.6 566" />
+              <path class="tf-kd-link" d="M573.5 401.4Q664.6 376.3 734.3 312.6" />
+              <path class="tf-kd-link" d="M573.5 401.4Q406.7 374.6 242.4 414" />
+              <path class="tf-kd-link" d="M573.5 401.4Q469.8 307.3 339.7 255.2" />
+              <path class="tf-kd-link" d="M573.5 401.4Q477.4 571.1 454 764.8" />
+              <path class="tf-kd-link" d="M222.6 566Q282.5 663.9 378 727.6" />
+              <path class="tf-kd-link" d="M222.6 566Q236.7 577.8 253.8 570.9" />
+              <path class="tf-kd-link" d="M242.4 414Q191.2 297.1 98.9 208.9" />
+              <path class="tf-kd-link" d="M378 727.6Q364.4 761.5 380.1 794.4" />
+              <path class="tf-kd-link" d="M339.7 255.2Q318 182.5 270.1 123.7" />
+              <path class="tf-kd-link" d="M734.3 312.6Q590.1 286.4 446.8 317.6" />
+              <path class="tf-kd-pulse" style="--p:0" pathLength="100" d="M573.5 401.4Q381.6 448.6 222.6 566" />
+              <path class="tf-kd-pulse" style="--p:1" pathLength="100" d="M573.5 401.4Q664.6 376.3 734.3 312.6" />
+              <path class="tf-kd-pulse" style="--p:2" pathLength="100" d="M573.5 401.4Q406.7 374.6 242.4 414" />
+              <path class="tf-kd-pulse" style="--p:3" pathLength="100" d="M573.5 401.4Q477.4 571.1 454 764.8" />
+              <path class="tf-kd-pulse" style="--p:4" pathLength="100" d="M222.6 566Q282.5 663.9 378 727.6" />
+              <path class="tf-kd-pulse" style="--p:5" pathLength="100" d="M242.4 414Q191.2 297.1 98.9 208.9" />
+              <path class="tf-kd-pulse" style="--p:6" pathLength="100" d="M339.7 255.2Q318 182.5 270.1 123.7" />
+              </g>
+
+              <path id="tf-kd-border" class="tf-kd-outline" pathLength="100" d="M608.9 784.3l-12.7 7.4l-8.9 -0.5l-10.6 -14.7l-1.6 -1l-18.1 2.5l-42 -4.2l-2.1 -0.7l-7.7 -4.4l-2.6 -0.7l-25.3 0.2l-4.2 1l-6.1 -0.7l-9.1 1.5l-2.8 -0.7l-2.1 2.7l-2.1 0.2l-2.6 -1.2l-1.9 1.5l-1.2 1.7l-2.1 -0.2l0 -2l-7.7 0l-5.2 -5.4l-5.4 -2.7l-4.2 -0.2l-5.2 3l-4.2 3.7l-2.3 2.9l3.5 1.5l0.5 2.2l-4.5 2l-1.6 6.9l0.7 2.9l-1.2 4.2l2.1 4.9l2.3 0.7l0.2 1.7l-1.2 0.7l-0.7 1.7l0.7 2l-0.2 1l-0.7 0.2l-3 -1l-0.7 0.2l-1.6 5.9l-1.6 1.7l-2.8 1.5l-2.3 0.5l-0.2 2.9l-5.2 2.2l0 -1.7l-0.5 -0.5l0.7 -1.7l-3 -4.4l-0.2 -3.2l0.7 -2.2l-0.2 -0.7l-0.7 -0.2l0.2 -0.5l-1.2 -2l0.5 -0.2l-3.8 -4.4l-2.1 -1l-0.5 0.5l-1.6 -2.5l0.7 -2l-0.5 -4.2l-0.9 -0.5l-0.5 -1l-2.6 -0.2l-2.8 -6.1l-2.1 -0.7l1.4 2.9l-0.9 0.5l0.5 3.2l-0.5 1l-0.5 -1l0 -4.4l-2.1 -10.6l0 -4.7l-7.7 -6.4l-0.2 0.2l-2.6 -4.2l-1.4 0l-2.6 -3l-0.9 0.2l-5.2 -5.4l-0.9 0.5l-1.9 -1.2l-0.9 0l-0.5 -1.2l-4.9 -4.9l0 -2.5l-1.2 -0.7l0 -0.7l-2.6 -2.7l0.5 -1l-2.3 -3l0.2 -0.7l-1.4 -0.7l-0.5 -1.2l-1.2 0.2l0.2 -2.7l-1.4 0l-1.9 -9.6l-0.7 -0.2l-0.2 -1.2l-1.9 -1.5l-0.7 -1.7l-1.2 -1l-1.6 0.7l-1.4 -1.2l-2.6 -5.4l1.9 -6.2l-1.9 -1.2l-1.9 -0.5l-0.5 -2l-1.2 -1.7l1.9 -6l-1.2 -1.5l-3.8 -1.5l-1.4 -3.5l0.5 -1.5l-0.7 -2l-3.5 -4l-0.7 -4.7l0.7 -0.7l-0.5 -0.5l-0.2 -2l-5.2 -2l-3.5 -3.5l1.6 0.7l0.2 -4.5l-2.6 -4.2l-0.9 -0.7l-3.3 -0.2l-0.5 0.5l0.5 1.2l-4.2 -6.2l-1.9 -1.2l0.7 -1.7l-0.7 -1.2l-3.8 -2l-2.8 -3l-3.3 -1l-4 -3.7l0.5 -0.7l-3.8 -1.2l-4.2 -4l-3.3 0.5l-0.5 0.5l-4 -2.3l1.6 2.5l-8.4 -4.5l-0.7 -1.5l-4.7 -4l-3.8 -5.8l1.2 -0.3l0.2 -0.5l-1.4 -0.5l-1.4 -1.5l-0.5 -2l-1.4 -1.8l-0.2 -1l0.7 -1l-2.1 -0.8l0.5 1l-1.6 -0.8l-0.5 -0.8l0.2 -0.8l-0.7 -0.8l0.5 -0.8l0.9 1l0.7 0l-0.7 -1.8l-1.6 -0.8l0 0.8l-3.3 -2.8l0.2 -1l0.7 0.5l-0.2 -1.3l-2.8 -0.5l-1.6 -2.8l-0.2 -2.5l-0.7 -0.3l-0.5 -1.5l-2.6 -2l-0.7 -3.3l0.5 -0.8l-4.2 -6.3l3.8 -3.3l0.5 -2.8l-0.9 -2.5l0.5 -1.3l-0.7 -1.5l-1.2 1.3l-0.9 -1.8l0.5 -0.3l-0.9 -1l0 -4.5l-0.7 -1.3l1.6 -2l-0.5 -1.5l-0.9 1.8l-0.7 -0.3l-5.4 -9.6l-0.9 -4.3l0.2 -1l1.2 -0.5l1.2 1.8l0.9 0l0.5 -3l0.9 -0.5l0.2 -4.1l-0.7 1.8l0.7 -6.1l1.6 -1.8l0.7 -2.8l0.9 -0.8l0.5 -1.5l1.2 -1l-0.7 -1.5l-0.7 0l-0.9 2.5l-1.2 0.3l0.5 -3.6l-0.2 -7.1l-4.2 -7.6l1.4 -2l-3.3 -3.3l-0.5 0.3l2.1 3.6l-0.5 0.5l-5.6 -9.4l0 -0.8l1.4 0.8l1.6 3.6l1.6 0.5l0.7 -1l-3.3 -4.8l-3.8 -1l-1.6 -2.8l1.2 -2.8l-0.2 -2.8l-0.7 -0.3l-0.2 0.8l-3.3 -4.8l-3 -8.4l-0.7 -5.6l-1.4 -2l0 -1l-0.9 0.8l-0.9 -0.3l0.5 1.3l1.2 0.3l0 0.5l-1.6 -0.3l-0.9 -1l0 -2.3l-2.1 -2.8l-1.9 -7.2l-3 -2.1l-1.2 -2.3l-2.6 -1.3l-2.3 -2.6l-3.5 -1.5l-5.6 -5.1l-0.9 0.5l-5.2 -3.9l1.2 -1l1.2 -0.3l-0.5 -0.5l-1.6 0.8l-0.5 -0.8l0.9 -1.5l-1.4 0.3l0 2.6l-2.6 0l-8.9 -7.2l-1.6 0l-0.7 1l0.2 1l-2.1 0.3l-1.9 -1.5l-0.9 0.3l-2.8 -3.6l-1.6 -1.3l-0.5 -1.8l0.7 -1l0.9 0.8l0.5 -1l-11 -16.2l-0.5 -3.4l-1.2 0.8l-1.4 -1.3l-0.7 -1.8l3.3 0.3l1.6 -1.3l0.2 -2.6l0.9 -2.3l-1.4 -4.7l0.5 -2.8l-1.4 -4.4l-5.9 -6.5l-1.2 -3.9l-0.9 -1.3l0.7 -0.5l-0.5 -1.3l-2.6 -2.6l-0.9 -2.6l-3 -5.2l-2.1 -1l-3 -4.4l-0.9 0l0.5 1.8l-1.2 0l-4 -3.6l0 -1.6l-0.9 -0.3l-0.7 -2.6l2.1 -3.4l0 -2.9l-1.6 -2.3l-3 -1.3l-3.3 -0.5l-5.2 -10.5l-1.9 -2.9l-3.5 -8.6l-3.8 -6.6l-6.1 -6.8l-2.3 -4.7l-0.9 -3.2l-0.7 0.3l-1.9 -2.6l-3 -2.6l-3.8 -5l-1.4 -4l0.7 -1.1l-5.4 -7.1l-4 -3.4l-1.2 -2.1l-1.4 -1.3l-2.6 -5.8l-0.2 -2.9l-2.8 -3.7l-2.6 -5l-1.6 -0.8l-1.2 -4l-4.5 -5l-2.3 -1.9l-0.2 0.5l-0.5 -0.8l2.8 -1.6l-0.7 -0.8l-5.2 -1.9l-2.3 -1.6l-1.4 0.5l0.5 0.5l-1.4 -0.8l-4.7 1.9l-2.6 -0.3l0.9 -1.6l-1.9 0l0.5 0.8l-0.9 0.5l-0.5 1.1l-0.7 -0.5l1.4 -1.3l0 -0.5l-2.3 1.1l-3 -2.4l-0.5 0.8l-0.7 -0.3l-1.6 1.9l1.2 0.8l0 0.5l-1.2 0l-0.5 1.9l-0.9 -0.5l-0.7 -3.2l-1.2 0.5l2.3 -3.5l0.2 -1.1l1.4 0.5l-0.2 -1.9l0.7 -0.5l0.2 -3.2l1.9 -2.7l1.2 -4.5l3 -6.1l-0.5 -5.1l-0.7 -2.4l2.8 -8.8l0 -3.2l-0.7 -0.5l1.9 -5.6l-0.5 -2.1l0.9 -2.1l1.6 -7.8l1.4 -1.1l-0.2 -3l0.9 0l-0.5 -1.6l0.2 -0.8l51.4 8.6l20.2 -16.4l12 -19.4l34.7 -7.6l0.9 -0.8l6.8 -16.5l1.6 -1.9l14.5 -8.2l-29.5 -34.4l-18.3 -19.8l95.7 -28.4l7.5 -6.4l56.8 10l80 47.3l123.8 102.2l76.9 7l8.2 -1.6l42.4 5.4l2.8 4.8l2.8 8.6l1.2 6.1l3.8 3.7l0.5 1.3l35.9 -0.3l3 2.4l0.5 4.3l-0.5 1.1l1.2 -1.1l0.5 0.8l-0.9 3.2l0.9 2.1l4.2 5.1l-1.2 2.9l2.6 5.3l-0.2 0.3l6.6 2.7l-2.3 1.1l6.8 8l-1.4 4.8l-0.7 0.3l0.5 -1.1l0.2 -3.7l-2.3 3.4l0.9 -2.9l-0.5 -1.1l-1.6 6.1l1.4 -1.6l0.2 2.9l0.9 -0.3l0.2 -0.8l0.2 2.4l1.4 -0.5l-0.2 1.9l-0.5 0l0.7 1.6l-1.6 -0.8l-0.5 0.8l1.9 0.3l1.4 -1.6l0.2 0.8l-0.7 1.6l0.2 1.1l0.9 0l-0.5 -1.6l3 -1.1l2.1 1.9l1.9 0.8l0.5 0.8l-0.9 0.5l1.6 0l-0.5 -0.8l1.6 0.8l2.3 0l1.2 -0.8l2.8 0.8l3.3 3.7l0.2 1.3l-1.2 -0.5l-0.2 -0.8l-0.9 1.1l-2.6 -0.3l-1.4 1.1l-0.2 -1.1l-2.6 1.1l4.5 2.4l1.4 -1.6l0.9 0.5l-1.9 2.4l0 2.1l2.6 -1.6l1.6 0.8l-0.5 1.1l0.7 3.2l-0.2 2.1l0.5 1.1l0.7 -0.3l0.2 1.3l0.9 -0.5l-0.2 -0.8l1.2 -0.5l1.2 0.8l-0.9 2.4l-1.2 0l1.9 1.3l1.6 -1.3l-0.5 0.8l4.5 0.5l-1.6 -2.1l1.2 -0.8l1.9 0.8l0.7 -1.1l-0.5 2.9l0.7 2.1l6.3 7.9l5.9 3.2l1.6 1.6l3.3 0l2.8 2.4l3.3 4.5l4.2 3.4l0 1.3l-3 -2.6l-3.3 -0.5l-0.9 -2.6l-0.9 3.9l0.9 1.3l0 4.2l1.6 4.7l1.6 1.3l5.4 2.6l0.9 1.8l0 9.4l-0.5 1l-0.9 0.5l-0.2 -1l-0.9 0.8l0.2 3.4l-0.9 3.4l-0.9 -1.3l-0.2 -2.3l-1.9 -1.3l-0.7 -2.9l-1.9 -0.8l-2.1 3.1l0.9 3.7l-0.2 3.7l0.7 0.3l1.2 -1.3l-0.2 -0.8l1.9 1l0.5 1l1.2 0.3l1.4 2.9l-0.9 1l1.4 5.2l4.9 7l0.2 2.6l-0.7 -2.6l-4.2 -2.9l-0.2 1l1.9 2.1l0.7 -0.5l1.9 3.6l6.6 8.1l-0.7 -2.3l1.2 -0.3l1.2 2.3l2.6 1l2.8 8.6l0.5 4.1l0.7 2.1l-0.2 2.1l0.7 3.4l0.7 0.5l0.2 -0.8l3.8 4.1l0.9 3.4l2.1 1.8l0.7 5.7l1.4 2.3l0.7 0l1.2 -1l3.3 5.7l2.3 2.6l5.2 1.3l2.6 0l2.3 -0.8l3.3 -2.6l3 0.3l1.2 0.8l-0.7 1.8l0.5 0.8l0 2.1l1.6 -0.8l1.9 -3.1l0.7 -0.3l0.2 -1.8l2.3 0.5l0.5 1.3l2.1 0.5l0 0.5l-2.6 1l-2.3 3.4l-4.2 4.4l-0.5 3.1l-0.7 0.3l0 1.8l6.3 -1l3.8 1.3l1.4 1.5l2.1 0.8l0.5 8l46 59.3l119.4 16.3l0.7 -0.3l3 -4.1l21.3 36.8l-31 99.7l-140.7 49.8l-133.7 19.1l-6.6 2.5l-38.9 20.3l-26.7 33.7l-6.1 16.5l-1.4 1.7" />
+              <path class="tf-kd-isles" d="M349.6 801.2l1.9 0l1.6 1l1.6 -0.5l0.7 1.2l1.9 -0.7l-1.4 -0.2l-0.7 -1l1.9 -2.9l2.1 1.2l0.7 1.7l-0.2 0.5l1.2 0.2l0.5 1l1.6 0.7l-0.2 3.4l0.5 1.5l-0.5 1l-1.2 0l-1.2 -1.5l-2.6 -1l2.1 -1.2l-0.5 -1l-1.2 -0.7l-3.5 0.5l-1.6 1l-6.1 -3.9l-0.7 -1l-0.2 -1.7l-2.1 -1l-1.2 -3.7l3.5 1.7l1.4 2l0.2 1.7l1.6 1.7M351.7 791.9l0 2.7l1.4 0.5l0.5 1l-1.9 0l-0.7 0.7l0.5 1l2.6 1.2l0.2 1.7l-3.8 -1.5l-4 -4.9l4.2 -2.2l0.2 -1l-0.5 -1.2l-3.5 -1l0.7 -0.7l3.8 2.2l0.2 1.5M99.6 354.2l1.9 1.8l3.5 1l-0.7 1l-5.9 -2.9l-0.2 0.8l-2.3 -2.9l2.6 -3.1l-0.9 2.6l2.1 1.6M709.1 263.8l5.9 1.6l-0.9 0.5l-2.1 -0.8l-2.8 1.3l-1.2 -0.5l0 -1.6l-2.3 0.3l-1.6 2.4l0 -1.3l0.7 -1.3l1.4 -1.1l2.3 0l0.7 0.5M106.8 357.3l2.6 1.8l0.2 0.8l4.7 3.1l-0.5 0.5l-2.8 -2.3l-2.1 -0.8l-0.2 -1l-2.1 -1.6l-1.9 0.5l0.5 -1l1.6 0M111.5 362.8l4.5 2.1l-0.9 0l-0.2 0.8l0.9 0.5l1.2 -1.3l0.9 0.3l-2.8 2.9l-4.9 -4.9l-0.9 -2.1l2.3 1.8M100.5 349.5l0.9 0.3l-0.7 0.8l-2.3 -1.8l-0.2 -3.6l1.2 -1.8l-0.5 2.1l2.1 1.8l-0.5 2.3M119.7 362.2l0.7 1l0.5 2.6l-1.2 -1.6l-0.9 0.3l-0.9 -1.3l-0.7 0.5l0.7 -2.1l1.9 0.5" />
+
+              <!-- The hovered region is re-drawn on top of the border so its own outline
+                   is never clipped by a neighbour painted after it. -->
+              <g class="tf-kd-lift">
+              <use href="#tf-kd-najran" data-for="najran" pointer-events="none" />
+              <use href="#tf-kd-riyadh" data-for="riyadh" pointer-events="none" />
+              <use href="#tf-kd-eastern" data-for="eastern" pointer-events="none" />
+              <use href="#tf-kd-madinah" data-for="madinah" pointer-events="none" />
+              <use href="#tf-kd-qassim" data-for="qassim" pointer-events="none" />
+              <use href="#tf-kd-hail" data-for="hail" pointer-events="none" />
+              <use href="#tf-kd-tabuk" data-for="tabuk" pointer-events="none" />
+              <use href="#tf-kd-northern" data-for="northern" pointer-events="none" />
+              <use href="#tf-kd-jawf" data-for="jawf" pointer-events="none" />
+              <use href="#tf-kd-bahah" data-for="bahah" pointer-events="none" />
+              <use href="#tf-kd-asir" data-for="asir" pointer-events="none" />
+              <use href="#tf-kd-jazan" data-for="jazan" pointer-events="none" />
+              <use href="#tf-kd-makkah" data-for="makkah" pointer-events="none" />
+              </g>
+
+              <g class="tf-kd-nodes">
+              <g class="tf-kd-node" data-region="riyadh" style="--i:0;--b:6.5s;--d:0.0s" transform="translate(573.5 401.4)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="makkah" style="--i:1;--b:7.8s;--d:0.7s" transform="translate(222.6 566)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="eastern" style="--i:2;--b:9.1s;--d:1.4s" transform="translate(734.3 312.6)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="madinah" style="--i:3;--b:10.4s;--d:2.1s" transform="translate(242.4 414)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="makkah" style="--i:4;--b:11.7s;--d:2.8s" transform="translate(253.8 570.9)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="tabuk" style="--i:5;--b:6.5s;--d:3.5s" transform="translate(98.9 208.9)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="asir" style="--i:6;--b:7.8s;--d:4.2s" transform="translate(378 727.6)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="jazan" style="--i:7;--b:9.1s;--d:4.9s" transform="translate(380.1 794.4)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="hail" style="--i:8;--b:10.4s;--d:5.6s" transform="translate(339.7 255.2)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="qassim" style="--i:9;--b:11.7s;--d:6.3s" transform="translate(446.8 317.6)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="jawf" style="--i:10;--b:6.5s;--d:7.0s" transform="translate(270.1 123.7)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="northern" style="--i:11;--b:7.8s;--d:7.7s" transform="translate(308.4 69)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="najran" style="--i:12;--b:9.1s;--d:8.4s" transform="translate(454 764.8)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              <g class="tf-kd-node" data-region="bahah" style="--i:13;--b:10.4s;--d:9.1s" transform="translate(329.3 639.9)"><circle class="tf-kd-node-halo" r="9" /><circle class="tf-kd-node-core" r="2.1" /></g>
+              </g>
+            </svg>
+          <span class="tf-kingdom-tip" data-kingdom-tip aria-hidden="true"></span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  </div>
+
+  <!-- A signed-in Student's real request context continues below the fold; it
+       never competes with the Kingdom brand visual and never duplicates the
+       dashboard. Action-required data takes priority over the recent list. -->
+  <sc-if value="{{ showJourneyStrip }}" hint-placeholder-val="{{ false }}">
+    <aside class="tf-shell tf-journey-strip" data-action-required="{{ journeyActionRequired }}" aria-labelledby="journey-title">
+      <header class="tf-journey-head">
+        <h2 class="tf-journey-title" id="journey-title">{{ journeyTitle }}</h2>
+        <a class="tf-journey-all" href="{{ journeyAllHref }}">{{ journeyAllLabel }}</a>
+      </header>
+
+      <sc-if value="{{ journeyActionRequired }}" hint-placeholder-val="{{ false }}">
+        <div class="tf-journey-action" role="group" aria-labelledby="journey-action-title">
+          <div class="tf-journey-action-copy">
+            <span class="tf-journey-action-flag" id="journey-action-title">{{ journeyActionFlag }}</span>
+            <p class="tf-journey-action-title">{{ journeyActionRequestTitle }}</p>
+          </div>
+          <dl class="tf-journey-action-facts">
+            <sc-for list="{{ journeyActionFacts }}" as="f" hint-placeholder-count="2">
+              <div><dt>{{ f.label }}</dt><dd>{{ f.value }}</dd></div>
+            </sc-for>
+            <sc-if value="{{ journeyHasPrice }}" hint-placeholder-val="{{ true }}">
+              <div><dt>{{ journeyPriceLabel }}</dt><dd>
+                <sc-if value="{{ journeyPriceIsSar }}" hint-placeholder-val="{{ true }}">
+                  <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong class="tf-price-md">{{ journeyPriceNumber }}</strong></span>
+                </sc-if>
+                <sc-if value="{{ journeyPriceIsPlain }}" hint-placeholder-val="{{ false }}">{{ journeyPriceText }}</sc-if>
+              </dd></div>
+            </sc-if>
+          </dl>
+          <p class="tf-journey-reservation" role="status">{{ journeyReservationLabel }}</p>
+          <a class="tf-journey-pay" href="{{ journeyActionHref }}">{{ journeyPayLabel }}</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ journeyShowRecent }}" hint-placeholder-val="{{ true }}">
+        <ul class="tf-journey-list">
+          <sc-for list="{{ journeyItems }}" as="j" hint-placeholder-count="2">
+            <li class="tf-journey-item">
+              <div class="tf-journey-item-copy">
+                <p class="tf-journey-item-title">{{ j.title }}</p>
+                <p class="tf-journey-item-meta">
+                  <span class="tf-journey-badge" data-open="{{ j.isOpenFlag }}">{{ j.sourcingLabel }}</span>
+                  <span>{{ j.statusLabel }}</span>
+                  <sc-if value="{{ j.deadlineLabel }}" hint-placeholder-val="{{ true }}">
+                    <span class="tf-journey-deadline">{{ j.deadlineLabel }}</span>
+                  </sc-if>
+                </p>
+              </div>
+              <a class="tf-journey-item-cta" href="{{ j.href }}">{{ j.ctaLabel }}</a>
+            </li>
+          </sc-for>
+        </ul>
+      </sc-if>
+    </aside>
+  </sc-if>
+
+  <!-- Product understanding. One real interface canvas changes state while the
+       four narrative steps progress; it is not a second card grid and it never
+       intercepts or locks scrolling. -->
+  <section id="how" class="tf-shell tf-landing-how">
+    <div class="tf-landing-section-head tf-story-heading" data-reveal>
+      <div class="tf-landing-section-text">
+        <p class="tf-section-eyebrow">{{ storyEyebrow }}</p>
+        <h2>{{ storyTitle }}</h2>
+        <p>{{ storyLede }}</p>
+      </div>
+    </div>
+
+    <nav class="tf-story-entry-paths" aria-label="{{ storyEntryLabel }}" data-reveal>
+      <a href="Tafseel-Browse-Teachers.dc.html">
+        <span><strong>{{ storyChooseTitle }}</strong><small>{{ storyChooseBody }}</small></span>
+        <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+      </a>
+      <a href="Tafseel-Open-Marketplace.dc.html">
+        <span><strong>{{ storyPostTitle }}</strong><small>{{ storyPostBody }}</small></span>
+        <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+      </a>
+    </nav>
+
+    <div class="tf-product-story" data-product-story>
+      <div class="tf-story-visual" aria-hidden="true" data-reveal>
+        <div class="tf-story-canvas" data-story-state="{{ storyStepNumber }}">
+          <header class="tf-story-canvas-head">
+            <span class="tf-story-canvas-title"><i aria-hidden="true"></i>{{ storyCanvasTitle }}</span>
+            <span class="tf-story-canvas-status">{{ storyCanvasStatus }}</span>
+          </header>
+
+          <div class="tf-story-stage">
+            <section class="tf-story-panel tf-story-panel--upload" data-active="{{ storyStep1Active }}">
+              <div class="tf-story-doc">
+                <div class="tf-story-doc-file">
+                  <span class="tf-story-doc-kind">{{ storyDocKind }}</span>
+                  <span class="tf-story-doc-name">{{ storyDocName }}</span>
+                </div>
+                <p class="tf-story-doc-heading">{{ storyDocHeading }}</p>
+                <ol class="tf-story-doc-work">
+                  <sc-for list="{{ storyDocLines }}" as="dw" hint-placeholder-count="4">
+                    <li data-marked="{{ dw.marked }}">{{ dw.text }}</li>
+                  </sc-for>
+                </ol>
+              </div>
+              <div class="tf-story-upload-copy">
+                <span class="tf-story-panel-kicker">{{ storyUploadKicker }}</span>
+                <strong>{{ storyUploadTitle }}</strong>
+                <span>{{ storyUploadMeta }}</span>
+                <ul class="tf-story-formats" aria-hidden="true">
+                  <sc-for list="{{ storyFormats }}" as="sf" hint-placeholder-count="4"><li>{{ sf }}</li></sc-for>
+                </ul>
+              </div>
+            </section>
+
+            <section class="tf-story-panel tf-story-panel--context" data-active="{{ storyStep2Active }}">
+              <span class="tf-story-panel-kicker">{{ storyContextKicker }}</span>
+              <blockquote>{{ storyContextQuote }}</blockquote>
+              <div class="tf-story-selection">
+                <span>{{ storyContextLabel }}</span>
+                <p>{{ storyContextSelection }}</p>
+              </div>
+            </section>
+
+            <section class="tf-story-panel tf-story-panel--teacher" data-active="{{ storyStep3Active }}">
+              <span class="tf-story-panel-kicker">{{ storyTeacherKicker }}</span>
+              <sc-if value="{{ storyTeacherAvailable }}" hint-placeholder-val="{{ true }}">
+                <div class="tf-story-teacher-id">
+                  <img loading="lazy" decoding="async" class="tf-img-avatar" data-tf-avatar sc-camel-src="{{ storyTeacherAvatar }}" alt="" width="64" height="64" />
+                  <div><strong>{{ storyTeacherName }}</strong><span>{{ storyTeacherSubject }}</span></div>
+                  <span class="tf-story-qualified"><svg viewBox="0 0 24 24"><use href="#tf-i-check" /></svg>{{ storyTeacherQualified }}</span>
+                </div>
+                <dl class="tf-story-offer-facts">
+                  <sc-if value="{{ storyTeacherHasRating }}" hint-placeholder-val="{{ false }}"><div><dt>{{ storyRatingLabel }}</dt><dd>{{ storyTeacherRating }}</dd></div></sc-if>
+                  <sc-if value="{{ storyTeacherHasDelivery }}" hint-placeholder-val="{{ true }}"><div><dt>{{ storyDeliveryLabel }}</dt><dd>{{ storyTeacherDelivery }}</dd></div></sc-if>
+                  <sc-if value="{{ storyTeacherHasPrice }}" hint-placeholder-val="{{ true }}"><div><dt>{{ storyPriceLabel }}</dt><dd>{{ storyTeacherPrice }}</dd></div></sc-if>
+                </dl>
+              </sc-if>
+              <sc-if value="{{ storyTeacherMissing }}" hint-placeholder-val="{{ false }}">
+                <div class="tf-story-teacher-empty"><svg viewBox="0 0 24 24"><use href="#tf-i-compare" /></svg><span>{{ storyTeacherEmpty }}</span></div>
+              </sc-if>
+              <span class="tf-story-choice">{{ storyTeacherChoice }}</span>
+            </section>
+
+            <section class="tf-story-panel tf-story-panel--complete" data-active="{{ storyStep4Active }}">
+              <div class="tf-story-complete-mark"><svg viewBox="0 0 24 24"><use href="#tf-i-check" /></svg></div>
+              <span class="tf-story-panel-kicker">{{ storyCompleteKicker }}</span>
+              <strong>{{ storyCompleteTitle }}</strong>
+              <p>{{ storyCompleteBody }}</p>
+              <div class="tf-story-output-row"><span>{{ storyOutputVideo }}</span><i></i><span>{{ storyOutputNotes }}</span></div>
+            </section>
+          </div>
+
+          <div class="tf-story-progress" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        </div>
+      </div>
+
+      <ol class="tf-story-steps" aria-label="{{ storyStepsLabel }}">
+        <sc-for list="{{ storySteps }}" as="ps" hint-placeholder-count="4">
+          <li class="tf-story-step" data-product-story-step data-story-index="{{ ps.rawIndex }}" data-active="{{ ps.active }}">
+            <button type="button" data-story-select="{{ ps.rawIndex }}" onClick="{{ onStorySelect }}" aria-current="{{ ps.current }}">
+              <span class="tf-story-step-index" aria-hidden="true" data-i18n-skip>{{ ps.index }}</span>
+              <span class="tf-story-step-copy"><strong>{{ ps.title }}</strong><span>{{ ps.body }}</span></span>
+            </button>
+          </li>
+        </sc-for>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Discovery. A ruled catalogue rather than a card grid: the subject NAME is the
+       only thing /subjects/featured returns, so the hierarchy is built from an index,
+       type scale and rules - never from invented topic lists or the emoji the API
+       carries in `detail`. -->
+  <section id="subjects" class="tf-shell tf-landing-subjects">
+    <div class="tf-landing-section-head tf-landing-section-head--split">
+      <div class="tf-landing-section-text">
+        <p class="tf-section-eyebrow" data-i18n="subj_eyebrow">Explore by subject</p>
+        <h2 data-i18n="subj_h">Popular subjects</h2>
+        <p data-i18n="subj_p">From high-school revision to postgrad research support.</p>
+      </div>
+      <a class="tf-section-all" href="Tafseel-Browse-Teachers.dc.html" data-i18n="subj_all">All subjects</a>
+    </div>
+    <sc-if value="{{ subjectsLoading }}" hint-placeholder-val="{{ false }}">
+      <div class="tf-subject-grid" aria-busy="true" aria-live="polite">
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ subjectsEmpty }}" hint-placeholder-val="{{ false }}">
+      <p class="tf-landing-state" role="status" data-i18n="subj_empty">Subjects are unavailable right now. Please try again later.</p>
+    </sc-if>
+    <sc-if value="{{ subjectsReady }}" hint-placeholder-val="{{ true }}">
+      <div class="tf-subject-grid" data-reveal>
+        <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="4">
+          <a class="tf-subject-card" href="{{ s.href }}">
+            <span class="tf-subject-card-index" aria-hidden="true" data-i18n-skip>{{ s.index }}</span>
+            <span class="tf-subject-card-main">
+              <span class="tf-subject-card-title">{{ s.name }}</span>
+              <span class="tf-subject-card-cta">
+                <span>{{ s.cta }}</span>
+                <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+              </span>
+            </span>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
+  </section>
+
+  <!-- Credibility. Every value on this card is a field /teachers actually returns -
+       the qualification badge is the qualified_on_tafseel trust badge, delivery is
+       the context Offer's DeliveryHours, price is StartingPrice. Rating renders only
+       when a real rating exists, and no demo affordance is drawn because TeacherCardDto
+       carries no public demo source. -->
+  <section class="tf-shell tf-landing-teachers">
+    <div class="tf-landing-section-head tf-landing-section-head--split">
+      <div class="tf-landing-section-text">
+        <p class="tf-section-eyebrow" data-i18n="feat_eyebrow">Meet the teachers</p>
+        <h2 data-i18n="feat_h">Featured teachers</h2>
+        <p data-i18n="feat_p">Every teacher passes a recorded demo reviewed by our quality team.</p>
+      </div>
+      <a class="tf-section-all" href="Tafseel-Browse-Teachers.dc.html">{{ browseAllLabel }}</a>
+    </div>
+    <sc-if value="{{ teachersLoading }}" hint-placeholder-val="{{ true }}">
+      <div class="tf-tcard-grid" aria-busy="true">
+        <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
+        <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
+        <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
+      </div>
+      <p class="tf-sr-only" role="status">{{ teachersLoadingLabel }}</p>
+    </sc-if>
+    <sc-if value="{{ teachersEmpty }}" hint-placeholder-val="{{ false }}">
+      <p class="tf-landing-state" role="status">{{ teachersEmptyLabel }}</p>
+    </sc-if>
+    <sc-if value="{{ teachersReady }}" hint-placeholder-val="{{ false }}">
+      <div class="tf-tcard-grid" data-reveal-group>
+        <sc-for list="{{ teachers }}" as="t" hint-placeholder-count="3">
+          <article class="tf-tcard">
+            <div class="tf-tcard-head">
+              <img loading="lazy" decoding="async" class="tf-img-avatar tf-tcard-avatar" data-tf-avatar sc-camel-src="{{ t.avatar }}" alt="" width="76" height="76" />
+              <div class="tf-tcard-id">
+                <h3 class="tf-tcard-name">{{ t.name }}</h3>
+                <p class="tf-tcard-subject">{{ t.subject }}</p>
+                <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ false }}">
+                  <p class="tf-tcard-rating">
+                    <svg class="tf-tcard-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-star" /></svg>
+                    <strong>{{ t.rating }}</strong>
+                    <span>{{ t.reviewsLabel }}</span>
+                  </p>
+                </sc-if>
+              </div>
+            </div>
+            <sc-if value="{{ t.qualified }}" hint-placeholder-val="{{ true }}">
+              <p class="tf-tcard-qualified">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-check" /></svg>
+                <span>{{ t.qualifiedLabel }}</span>
+              </p>
+            </sc-if>
+            <sc-if value="{{ t.headline }}" hint-placeholder-val="{{ true }}">
+              <p class="tf-tcard-headline">{{ t.headline }}</p>
+            </sc-if>
+            <sc-if value="{{ t.hasTopics }}" hint-placeholder-val="{{ true }}">
+              <ul class="tf-tcard-topics" aria-label="{{ topicsLabel }}">
+                <sc-for list="{{ t.topics }}" as="tp" hint-placeholder-count="2">
+                  <li>{{ tp }}</li>
+                </sc-for>
+              </ul>
+            </sc-if>
+            <div class="tf-tcard-foot">
+              <sc-if value="{{ t.deliveryLabel }}" hint-placeholder-val="{{ false }}">
+                <p class="tf-tcard-delivery">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-clock" /></svg>
+                  <span>{{ t.deliveryLabel }}</span>
+                </p>
+              </sc-if>
+              <div class="tf-tcard-close">
+                <p class="tf-tcard-price">
+                  <span class="tf-tcard-price-label">{{ fromLabel }}</span>
+                  <sc-if value="{{ t.priceIsSar }}" hint-placeholder-val="{{ true }}">
+                    <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong class="tf-price-md">{{ t.priceNumber }}</strong></span>
+                  </sc-if>
+                  <sc-if value="{{ t.priceIsPlain }}" hint-placeholder-val="{{ false }}">
+                    <strong class="tf-tcard-price-text">{{ t.priceText }}</strong>
+                  </sc-if>
+                </p>
+                <a class="tf-tcard-cta" href="{{ t.profileHref }}" aria-label="{{ t.profileAria }}">
+                  <span>{{ t.profileLabel }}</span>
+                  <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div class="tf-quality-gate" data-reveal>
+      <p class="tf-quality-gate-title">{{ qualityGateTitle }}</p>
+      <ol class="tf-quality-gate-flow">
+        <sc-for list="{{ qualitySteps }}" as="qs" hint-placeholder-count="5">
+          <li data-final="{{ qs.final }}">
+            <span>{{ qs.label }}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+          </li>
+        </sc-for>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Possibilities. Rendered straight from /services, so the count is whatever the
+       catalogue publishes - the section never claims a number of its own. -->
+  <section id="pricing" class="tf-shell tf-landing-services">
+    <div class="tf-landing-section-head">
+      <div class="tf-landing-section-text">
+        <p class="tf-section-eyebrow" data-i18n="svc_eyebrow">What you can request</p>
+        <h2 data-i18n="svc_h">Ways to get help</h2>
+        <p data-i18n="svc_p">Pick the format that fits the week you’re having.</p>
+      </div>
+    </div>
+    <ol class="tf-svc-list" data-reveal>
+      <sc-for list="{{ services }}" as="sv" hint-placeholder-count="4">
+        <li class="tf-svc-item">
+          <span class="tf-svc-index" aria-hidden="true" data-i18n-skip>{{ sv.index }}</span>
+          <div class="tf-svc-body">
+            <h3 class="tf-svc-title">{{ sv.name }}</h3>
+            <p class="tf-svc-desc">{{ sv.desc }}</p>
+          </div>
+        </li>
+      </sc-for>
+    </ol>
+  </section>
+
+  <!-- Reassurance. Three pillars carry the argument and the escrow rail is the
+       picture of it; the platform counters that used to sit above this section were
+       the same two numbers as the hero orbs, so they were removed rather than shown
+       a second time. Only the subject total - which the orbs do not carry - survives,
+       as one line under the lede. -->
+  <section id="why" class="tf-landing-trust">
+    <div class="tf-shell tf-landing-trust-grid">
+      <div class="tf-trust-copy" data-reveal="left">
+        <p class="tf-section-eyebrow" data-i18n="why_eyebrow">Student protection</p>
+        <h2 data-i18n="why_h">Why students trust Tafseel</h2>
+        <p class="tf-trust-lede" data-i18n="why_p">We review every teacher before they accept requests, and hold each payment through the stated review window so you can approve, request a revision, or open a dispute.</p>
+        <sc-if value="{{ statsNote }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-trust-scale">{{ statsNote }}</p>
+        </sc-if>
+        <ol class="tf-trust-pillars" data-reveal-group>
+          <sc-for list="{{ trustPillars }}" as="tp" hint-placeholder-count="3">
+            <li class="tf-trust-pillar">
+              <span class="tf-trust-pillar-index" aria-hidden="true" data-i18n-skip>{{ tp.index }}</span>
+              <div class="tf-trust-pillar-body">
+                <h3 class="tf-trust-pillar-title">{{ tp.title }}</h3>
+                <p class="tf-trust-pillar-text">{{ tp.body }}</p>
+              </div>
+            </li>
+          </sc-for>
+        </ol>
+      </div>
+      <figure class="tf-escrow-rail" data-escrow-flow data-reveal="right">
+        <figcaption class="tf-escrow-head">
+          <span class="tf-section-eyebrow" data-i18n="why_escrow_title">How your payment moves</span>
+        </figcaption>
+        <ol class="tf-escrow-steps">
+          <sc-for list="{{ escrow }}" as="e" hint-placeholder-count="5">
+            <li class="tf-escrow-step">
+              <span class="tf-escrow-node" aria-hidden="true"><span class="tf-escrow-n" data-i18n-skip>{{ e.n }}</span></span>
+              <span class="tf-escrow-text">{{ e.text }}</span>
+            </li>
+          </sc-for>
+        </ol>
+        <p class="tf-escrow-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-shield" /></svg>
+          <span data-i18n="why_escrow_note">Your money stays with Tafseel until you approve the work.</span>
+        </p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Action. The Landing page is Student-first, so the Student half owns the
+       heading level, the width and both real controls; teacher recruitment keeps a
+       quiet column and one text link. -->
+  <section class="tf-shell tf-landing-cta">
+    <div class="tf-landing-cta-split" data-reveal data-pattern="corner" data-pattern-scale="lg">
+      <div class="tf-cta-student">
+        <h2 class="tf-cta-title" data-i18n="cta1_h">Get your first explanation this week</h2>
+        <p class="tf-cta-body" data-i18n="cta1_p">Upload your material, set a deadline, and pick from teachers who’ve already proven they can teach it.</p>
+        <p class="tf-cta-route-q" id="cta-route-q" data-i18n="sd_request_route_question">Do you already know which teacher you want?</p>
+        <div class="tf-cta-actions" role="group" aria-labelledby="cta-route-q">
+          <a class="tf-cta-primary" href="Tafseel-Open-Marketplace.dc.html" data-i18n="cta1_primary">Post your request</a>
+          <a class="tf-cta-secondary" href="Tafseel-Browse-Teachers.dc.html" data-i18n="cta1_secondary">Browse teachers</a>
+        </div>
+      </div>
+      <aside class="tf-cta-teacher" aria-labelledby="cta-teacher-title">
+        <h3 class="tf-cta-teacher-title" id="cta-teacher-title" data-i18n="cta2_h">Start teaching with Tafseel</h3>
+        <p class="tf-cta-teacher-body" data-i18n="cta2_p">Create your profile, submit a short teaching demo, pass our quality review, and start receiving requests that match your expertise.</p>
+        <a class="tf-cta-teacher-link" href="{{ teacherJoinHref }}">
+          <span data-i18n="nav_teach">Become a teacher</span>
+          <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+        </a>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer class="tf-landing-footer tf-ink-band" data-pattern="bottom" data-pattern-tone="lime">
+  <div class="tf-shell tf-landing-footer-main">
+    <section class="tf-landing-footer-intro" aria-labelledby="footer-brand-name">
+      <a class="tf-landing-footer-brand" href="#top" aria-label="{{ homeLabel }}">
+        <img loading="lazy" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark" src="assets/brand/tafseel-mark-dark.svg" alt="" width="29" height="40" />
+        <strong id="footer-brand-name" translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></strong>
+      </a>
+      <p class="tf-landing-footer-statement" data-i18n="foot_statement">An explanation that finally fits the way you learn.</p>
+      <p class="tf-landing-footer-copy" data-i18n="foot_tag">Education, tailored to you. Personalized explanations from verified teachers.</p>
+      <div class="tf-landing-footer-social">
+        <span class="tf-landing-footer-heading" data-i18n="foot_follow">Follow Tafseel</span>
+        <div class="tf-landing-footer-socials" aria-label="{{ footerSocialLabel }}">
+          <span class="tf-social-icon" data-network="x" aria-hidden="true"></span>
+          <span class="tf-social-icon" data-network="instagram" aria-hidden="true"></span>
+          <span class="tf-social-icon" data-network="linkedin" aria-hidden="true"></span>
+          <span class="tf-social-icon" data-network="facebook" aria-hidden="true"></span>
+        </div>
+        <span class="tf-landing-footer-social-note" data-i18n="foot_social_soon">Official accounts are coming soon.</span>
+      </div>
+    </section>
+    <nav class="tf-landing-footer-links" aria-labelledby="footer-explore-title">
+      <h2 id="footer-explore-title" data-i18n="foot_explore">Explore</h2>
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a>
+      <a href="#how" data-i18n="nav_how">How It Works</a>
+    </nav>
+    <nav class="tf-landing-footer-links" aria-labelledby="footer-start-title">
+      <h2 id="footer-start-title" data-i18n="foot_start">Start with Tafseel</h2>
+      <a href="Tafseel-Open-Marketplace.dc.html" data-i18n="nav_post_request">Post a Request</a>
+      <a href="Tafseel-Teacher-Apply.dc.html" data-i18n="nav_teach">Become a Teacher</a>
+    </nav>
+    <nav class="tf-landing-footer-links" aria-labelledby="footer-company-title">
+      <h2 id="footer-company-title" data-i18n="foot_company">Company</h2>
+      <a href="Tafseel-About.dc.html" data-i18n="nav_about">About</a>
+      <a href="Tafseel-Policies.dc.html?policy=terms" data-i18n="nav_terms">Terms of Service</a>
+      <a href="Tafseel-Policies.dc.html?policy=privacy" data-i18n="nav_privacy">Privacy Policy</a>
+    </nav>
+  </div>
+  <div class="tf-shell tf-landing-footer-meta">
+    <span data-i18n="foot_rights">© 2026 Tafseel. All rights reserved.</span>
+    <div class="tf-landing-footer-meta-actions">
+      <span data-i18n="foot_origin">Built in Saudi Arabia for every student looking for a clearer explanation.</span>
+      <button type="button" class="tf-lang-toggle" data-size="sm" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+    </div>
+  </div>
+</footer>
+
+<!-- Entry wizard: what used to be the promo band. Every published slot becomes
+     one step, so a visitor sees all of them in order instead of whichever one a
+     rotating band happened to be on. Copy is already loaded in both languages,
+     so stepping and language switching never refetch. -->
+<sc-if value="{{ wizardOpen }}" hint-placeholder-val="{{ false }}">
+  <div class="{{ wizardScrimClass }}" role="presentation" onClick="{{ closeWizard }}" onKeyDown="{{ wizardKeyDown }}">
+    <section data-promo-wizard tabindex="-1" class="{{ wizardClass }}" data-accent="{{ promoAccent }}" role="dialog" aria-modal="true" aria-labelledby="promo-wizard-title" onClick="{{ stopEvent }}">
+      <header class="tf-promo-wizard-head">
+        <sc-if value="{{ promoEyebrow }}" hint-placeholder-val="{{ true }}">
+          <p class="tf-promo-eyebrow">
+            <span class="tf-promo-eyebrow-mark" aria-hidden="true"></span>
+            <span>{{ promoEyebrow }}</span>
+          </p>
+        </sc-if>
+        <span class="tf-promo-wizard-step">{{ wizardStepLabel }}</span>
+        <button type="button" class="tf-promo-wizard-close" onClick="{{ closeWizard }}" aria-label="{{ wizardCloseLabel }}" title="{{ wizardCloseLabel }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </header>
+
+      <sc-if value="{{ wizardMultiStep }}" hint-placeholder-val="{{ true }}">
+        <div class="tf-promo-wizard-rail" aria-hidden="true">
+          <span class="tf-promo-wizard-rail-fill" style="{{ wizardProgressStyle }}"></span>
+        </div>
+      </sc-if>
+
+      <div class="tf-promo-wizard-body" data-step="{{ wizardStepKey }}" style="{{ wizardBodyStyle }}">
+        <sc-if value="{{ promoLeadFigure }}" hint-placeholder-val="{{ true }}">
+          <p class="tf-promo-lead tf-promo-lead--figure">
+            <span class="tf-promo-lead-figure">{{ promoHighlight }}</span>
+            <span class="tf-promo-lead-note">{{ promoLeadNote }}</span>
+          </p>
+        </sc-if>
+        <sc-if value="{{ promoLeadDate }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-promo-lead">
+            <div class="tf-promo-date">
+              <span class="tf-promo-date-day">{{ promoDateDay }}</span>
+              <span class="tf-promo-date-month">{{ promoDateMonth }}</span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ promoLeadIcon }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-promo-lead tf-promo-lead--mark" aria-hidden="true">
+            <img data-tafseel-mark data-tafseel-mark-force="dark" src="assets/brand/tafseel-mark-dark.svg" alt="" width="48" height="65" />
+          </div>
+        </sc-if>
+
+        <div class="tf-promo-wizard-copy">
+          <h2 class="tf-promo-title" id="promo-wizard-title">{{ promoTitle }}</h2>
+          <sc-if value="{{ promoBody }}" hint-placeholder-val="{{ true }}">
+            <p class="tf-promo-body">{{ promoBody }}</p>
+          </sc-if>
+          <sc-if value="{{ promoCode }}" hint-placeholder-val="{{ true }}">
+            <div class="tf-promo-field">
+              <span class="tf-promo-field-label">{{ promoCodeLabel }}</span>
+              <button type="button" class="tf-promo-code" onClick="{{ onCopyCode }}" title="{{ promoCopyLabel }}">
+                <span class="tf-promo-code-value">{{ promoCode }}</span>
+                <span class="tf-promo-code-copy">{{ promoCopyLabel }}</span>
+              </button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ promoHasCountdown }}" hint-placeholder-val="{{ true }}">
+            <div class="tf-promo-field">
+              <span class="tf-promo-field-label">{{ promoCountdownLabel }}</span>
+              <div class="tf-promo-countdown" role="timer" aria-label="{{ promoCountdownLabel }}">
+                <sc-for list="{{ promoCountdown }}" as="u" hint-placeholder-count="3">
+                  <span class="tf-promo-countdown-unit">
+                    <span class="tf-promo-countdown-value">{{ u.value }}</span>
+                    <span class="tf-promo-countdown-label">{{ u.label }}</span>
+                  </span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <footer class="tf-promo-wizard-foot">
+        <sc-if value="{{ wizardMultiStep }}" hint-placeholder-val="{{ true }}">
+          <div class="tf-promo-dots" role="tablist" aria-label="{{ promoRegionLabel }}">
+            <sc-for list="{{ promoDots }}" as="d" hint-placeholder-count="3">
+              <button type="button" class="tf-promo-dot" aria-current="{{ d.current }}" aria-label="{{ d.label }}" onClick="{{ d.onSelect }}"></button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div class="tf-promo-wizard-actions">
+          <sc-if value="{{ wizardShowBack }}" hint-placeholder-val="{{ false }}">
+            <button type="button" class="tf-promo-wizard-back" onClick="{{ wizardBack }}">{{ wizardBackLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ showPromoCta }}" hint-placeholder-val="{{ false }}">
+            <a class="tf-promo-cta" href="{{ promoHref }}" onClick="{{ onPromoCta }}">{{ promoCta }}</a>
+          </sc-if>
+          <button type="button" class="tf-promo-wizard-next" onClick="{{ wizardNext }}">{{ wizardNextLabel }}</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <!-- Above the wizard scrim: copying a coupon code from a step must show its
+       confirmation, not hide it behind the overlay. -->
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:100;background:var(--surface);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+
+class Component extends DCLogic {
+  state = { lang: Tafseel.lang, theme: Tafseel.theme, q: '', toast: '', toastLeaving: false, liveSubjects: null, subjectsLoaded: false, liveTeachers: null, liveServices: null, storyStep: 0, rotateIndex: 0, previousRotateIndex: 0, rotateTick: 0, reduceMotion: false, session: null, sessionChecked: false, promotions: null, platformStats: null, clockTick: 0, wizardOpen: false, wizardStep: 0, wizardTick: 0, wizardLeaving: false, journeyRequests: null, journeyState: 'idle', journeySelectedOffer: null };
+
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    this._motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this._onMotionChange = event => this._setReducedMotion(event.matches);
+    this._setReducedMotion(this._motionQuery.matches);
+    if (this._motionQuery.addEventListener) this._motionQuery.addEventListener('change', this._onMotionChange);
+    else if (this._motionQuery.addListener) this._motionQuery.addListener(this._onMotionChange);
+    this._onWizardEscape = event => {
+      if (event.key === 'Escape' && this.state.wizardOpen) this.closeWizard();
+    };
+    document.addEventListener('keydown', this._onWizardEscape);
+    Tafseel.api.ready()
+      .then(session => {
+        this.setState({ session, sessionChecked: true });
+        this._loadJourney(session);
+      })
+      .catch(() => this.setState({ session: null, sessionChecked: true }));
+    Promise.allSettled([
+      Tafseel.api.get('/subjects/featured?take=4'),
+      Tafseel.api.get('/teachers?pageSize=3'),
+      Tafseel.api.get('/services'),
+      Tafseel.api.get('/promotions'),
+      Tafseel.api.get('/platform/stats')
+    ]).then(results => {
+      const value = (i) => results[i] && results[i].status === 'fulfilled' ? results[i].value : null;
+      const subjects = value(0);
+      const teachers = value(1);
+      const services = value(2);
+      const promotions = value(3);
+      const platformStats = value(4);
+      this.setState({
+      promotions: Array.isArray(promotions) ? promotions : [],
+      platformStats: platformStats || null,
+      subjectsLoaded: true,
+      liveSubjects: subjects ? (subjects || []).map(subject => ({
+        id: subject.id,
+        name: subject.nameEn || subject.name,
+        nameAr: subject.nameAr || '',
+        href: 'Tafseel-Browse-Teachers.dc.html?subjectId=' + encodeURIComponent(subject.id)
+      })) : [],
+      /* Held as the server returned it. Every label the card shows is composed in
+         renderVals instead, so switching language re-renders the card rather than
+         leaving whichever language was current when the fetch landed. */
+      liveTeachers: teachers && teachers.items ? teachers.items.map(teacher => {
+        const badges = Array.isArray(teacher.trustBadges) ? teacher.trustBadges : [];
+        const offer = teacher.contextOffer || null;
+        const subjects = Array.isArray(teacher.subjects) ? teacher.subjects : [];
+        return {
+          name: teacher.fullName,
+          headline: teacher.headline || '',
+          subjects,
+          // The context Offer is the only source that carries a translated subject
+          // name; TeacherCardDto.Subjects is English-only.
+          subjectEn: (offer && offer.subjectName) || subjects[0] || '',
+          subjectAr: (offer && offer.subjectNameAr) || '',
+          qualified: badges.some(b => b && b.code === 'qualified_on_tafseel') || !!teacher.verified,
+          rating: teacher.rating,
+          ratingCount: teacher.ratingCount,
+          startingPrice: teacher.startingPrice,
+          currency: teacher.currency || 'SAR',
+          deliveryHours: offer && Number.isFinite(offer.deliveryHours) ? offer.deliveryHours : null,
+          avatar: Tafseel.avatarUrl(teacher.teacherId, teacher.hasAvatar, null, teacher.fullName),
+          profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(teacher.teacherId)
+        };
+      }) : null,
+      // No cap: the section renders whatever the public service catalogue publishes,
+      // so it can never advertise a count the catalogue does not have.
+      liveServices: services ? (services || []).map(sv => ({
+        name: sv.nameEn || sv.name || '',
+        nameAr: sv.nameAr || '',
+        desc: sv.descriptionEn || sv.detail || '',
+        descAr: sv.descriptionAr || ''
+      })) : null
+    }, () => { this._syncPromoClock(); this._openWizardOnEntry(); });
+    });
+    this._storyResize = () => this._syncProductStory();
+    window.addEventListener('resize', this._storyResize, { passive: true });
+    this._onStoryVisibility = () => this._setStoryAuto(this._storyInView);
+    document.addEventListener('visibilitychange', this._onStoryVisibility);
+    this._syncProductStory();
+    this._syncInitialAnchor();
+  }
+
+  _syncInitialAnchor() {
+    if (this._initialAnchorDone || location.hash !== '#how') return;
+    const roles = (this.state.session && this.state.session.roles) || [];
+    const journeyReady = roles.indexOf('Student') < 0 || this.state.journeyState === 'ready' || this.state.journeyState === 'error';
+    const hydrated = this.state.sessionChecked && this.state.subjectsLoaded && journeyReady;
+    cancelAnimationFrame(this._initialAnchorFrame);
+    this._initialAnchorFrame = requestAnimationFrame(() => {
+      document.getElementById('how')?.scrollIntoView({ block: 'start' });
+      if (hydrated) this._initialAnchorDone = true;
+    });
+  }
+
+  _syncRotateTimer() {
+    clearInterval(this._rotateTimer);
+    if (this.state.reduceMotion) return;
+    this._rotateTimer = setInterval(() => {
+      this.setState(prev => ({
+        previousRotateIndex: prev.rotateIndex,
+        rotateIndex: (prev.rotateIndex + 1) % 4,
+        rotateTick: prev.rotateTick + 1
+      }));
+    }, 2600);
+  }
+
+  setStoryStep(index, manual) {
+    const next = Math.min(3, Math.max(0, Number(index) || 0));
+    if (manual) this._setStoryAuto(this._storyInView);
+    if (next !== this.state.storyStep) this.setState({ storyStep: next });
+  }
+
+  _setStoryAuto(active) {
+    clearInterval(this._storyAutoTimer);
+    if (!active || this.state.reduceMotion || document.hidden) return;
+    this._storyAutoTimer = setInterval(() => {
+      this.setState(prev => ({ storyStep: (prev.storyStep + 1) % 4 }));
+    }, 4200);
+  }
+
+  /* Autoplay is scoped to the chapter itself. It pauses offscreen and while the
+     document is hidden, and the manual step buttons remain available at all times. */
+  _syncProductStory() {
+    cancelAnimationFrame(this._storySyncFrame);
+    this._storySyncFrame = requestAnimationFrame(() => {
+      if (this._storyObserver) this._storyObserver.disconnect();
+      this._storyObserver = null;
+      const story = document.querySelector('[data-product-story]');
+      if (!story || !('IntersectionObserver' in window)) {
+        this._storyInView = false;
+        this._setStoryAuto(false);
+        return;
+      }
+      this._storyObserver = new IntersectionObserver(entries => {
+        const entry = entries[0];
+        const inView = !!(entry && entry.isIntersecting && entry.intersectionRatio >= .18);
+        if (inView === this._storyInView) return;
+        this._storyInView = inView;
+        this._setStoryAuto(inView);
+      }, { threshold: [0, .18, .45] });
+      this._storyObserver.observe(story);
+    });
+  }
+
+  /* The countdown ticks at minute resolution — a per-second tick would re-render
+     the whole landing page for no visible gain. */
+  _syncPromoClock() {
+    clearInterval(this._clockTimer);
+    if ((this.state.promotions || []).some(x => x && x.endsAt)) {
+      this._clockTimer = setInterval(
+        () => this.setState(prev => ({ clockTick: prev.clockTick + 1 })), 30000);
+    }
+  }
+
+  /* Part 3 — a Student's own live requests, for the contextual hero module.
+     Only Students have requests to continue, so no other role pays for this call.
+     A failed load is held as 'error' and never collapsed into "you have no
+     requests" (Part 25): the How Tafseel Works card is shown instead, which is
+     honest rather than a fabricated empty state. */
+  _loadJourney(session) {
+    const roles = (session && session.roles) || [];
+    if (!session || roles.indexOf('Student') < 0) {
+      this.setState({ journeyState: 'idle', journeyRequests: null });
+      return;
+    }
+    this.setState({ journeyState: 'loading' });
+    Tafseel.api.get('/learning-requests/mine?page=1&pageSize=20')
+      .then(result => {
+        const rows = result && Array.isArray(result.items) ? result.items : [];
+        this.setState({ journeyRequests: rows, journeyState: 'ready' });
+        this._loadSelectedOffer(rows);
+      })
+      .catch(() => this.setState({ journeyRequests: null, journeyState: 'error' }));
+  }
+
+  /* The locked commercial terms live on the selected Offer, not on the request,
+     so the awaiting-payment module resolves them with one extra call for that one
+     request. If it fails the module still renders without a price rather than
+     showing a guessed or stale amount. */
+  _loadSelectedOffer(rows) {
+    const pending = Tafseel.projectStudentJourney(rows || []).actionRequired;
+    if (!pending) { this.setState({ journeySelectedOffer: null }); return; }
+    Tafseel.api.get('/open-marketplace/requests/' + encodeURIComponent(pending.id) + '/offers')
+      .then(offers => {
+        const list = Array.isArray(offers) ? offers : [];
+        const raw = (this.state.journeyRequests || []).find(x => x && x.id === pending.id);
+        const selectedId = raw && raw.selectedOfferId;
+        const selected = list.find(o => o && o.id === selectedId) || null;
+        this.setState({ journeySelectedOffer: selected });
+      })
+      .catch(() => this.setState({ journeySelectedOffer: null }));
+  }
+
+  /* Published slots the visitor has not dismissed or claimed this visit,
+     in DisplayOrder. A new campaign id still reaches them after they closed
+     an older one. */
+  livePromotionIds() {
+    return (this.state.promotions || []).map(item => item && item.id).filter(Boolean);
+  }
+
+  eligiblePromotions() {
+    return (this.state.promotions || [])
+      .filter(item => item && Tafseel.campaignIsEligible(item.id));
+  }
+
+  /* The wizard opens on entry when an eligible campaign exists. The short
+     delay lets the hero paint first, so the page never appears behind a dialog
+     that covers content the visitor has not seen yet. */
+  _openWizardOnEntry() {
+    if (!this.eligiblePromotions().length || this.state.wizardOpen) return;
+    // Closed a campaign this visit, and no newly published slot? Stay quiet
+    // rather than drip-feeding the next already-live slot on this refresh.
+    if (Tafseel.campaignDialogCoolingDown(this.livePromotionIds())) return;
+    clearTimeout(this._wizardOpenTimer);
+    this._wizardOpenTimer = setTimeout(() => this.openWizard(), 700);
+  }
+
+  openWizard() {
+    const eligible = this.eligiblePromotions();
+    if (!eligible.length) return;
+    Tafseel.recordCampaign(eligible[0].id, 'seenAt');
+    this.setState({ wizardOpen: true, wizardStep: 0, wizardLeaving: false, wizardTick: 0 });
+    this._wizardReturnFocus = document.activeElement;
+    document.body.style.overflow = 'hidden';
+    clearTimeout(this._wizardFocusTimer);
+    // Focus the dialog itself rather than its button: keyboard and screen-reader
+    // users land inside the wizard, and a mouse visitor is not met by a button
+    // that already looks pressed.
+    this._wizardFocusTimer = setTimeout(() => {
+      const dialog = document.querySelector('[data-promo-wizard]');
+      if (dialog) dialog.focus();
+    }, 80);
+  }
+
+  closeWizard() {
+    if (!this.state.wizardOpen || this.state.wizardLeaving) return;
+    // Record the dismissal before the state change: once the campaign is marked
+    // dismissed it stops being eligible for the rest of this visit. A later
+    // visit, or a campaign published after this close, may still auto-open.
+    const current = this.eligiblePromotions()[0];
+    if (current) Tafseel.recordCampaign(current.id, 'dismissedAt');
+    Tafseel.rememberCampaignDialogClosed(this.livePromotionIds());
+    document.body.style.overflow = '';
+    this.setState({ wizardLeaving: true });
+    clearTimeout(this._wizardCloseTimer);
+    this._wizardCloseTimer = setTimeout(() => {
+      this.setState({ wizardOpen: false, wizardLeaving: false });
+      const previous = this._wizardReturnFocus;
+      if (previous && previous.focus && document.documentElement.contains(previous)) previous.focus();
+    }, 180);
+  }
+
+  goToWizardStep(step) {
+    const total = (this.state.promotions || []).length;
+    if (!total) return;
+    const next = Math.min(Math.max(step, 0), total - 1);
+    if (next === this.state.wizardStep) return;
+    this.setState(prev => ({ wizardStep: next, wizardTick: prev.wizardTick + 1 }));
+  }
+
+  _setReducedMotion(reduceMotion) {
+    this.setState(prev => ({
+      reduceMotion,
+      previousRotateIndex: reduceMotion ? prev.rotateIndex : prev.previousRotateIndex
+    }), () => {
+      this._syncRotateTimer();
+      this._setStoryAuto(this._storyInView);
+    });
+  }
+
+  componentWillUnmount() {
+    Tafseel.offChange(this._sub);
+    clearInterval(this._clockTimer);
+    clearInterval(this._rotateTimer);
+    clearInterval(this._storyAutoTimer);
+    cancelAnimationFrame(this._storySyncFrame);
+    cancelAnimationFrame(this._initialAnchorFrame);
+    if (this._storyObserver) this._storyObserver.disconnect();
+    if (this._storyResize) window.removeEventListener('resize', this._storyResize);
+    if (this._onStoryVisibility) document.removeEventListener('visibilitychange', this._onStoryVisibility);
+    if (this._motionQuery && this._onMotionChange) {
+      if (this._motionQuery.removeEventListener) this._motionQuery.removeEventListener('change', this._onMotionChange);
+      else if (this._motionQuery.removeListener) this._motionQuery.removeListener(this._onMotionChange);
+    }
+    if (this._onWizardEscape) document.removeEventListener('keydown', this._onWizardEscape);
+    document.body.style.overflow = '';
+    clearTimeout(this._wizardOpenTimer);
+    clearTimeout(this._wizardFocusTimer);
+    clearTimeout(this._wizardCloseTimer);
+    clearTimeout(this._toastTimer);
+    clearTimeout(this._toastExitTimer);
+  }
+  componentDidUpdate() {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    this._syncProductStory();
+    this._syncInitialAnchor();
+  }
+
+  flash(msg) { Tafseel.flash(this, msg, 3000); }
+
+  renderVals() {
+    const ar = this.state.lang === 'ar';
+    const session = this.state.session;
+    const teacherJoinHref = session && (session.roles || []).includes('Teacher')
+      ? 'Tafseel-Teacher-Apply.dc.html'
+      : 'Tafseel-Auth.dc.html?mode=register&role=teacher';
+
+    /* Part 4 — role-aware account actions. Until the session check resolves the
+       page shows the public Student path, which is both the common case and the
+       correct guest experience, so no CTA flashes into something else. */
+    const sessionRoles = (session && session.roles) || [];
+    const viewerIsTeacher = sessionRoles.includes('Teacher');
+    const viewerIsStaff = sessionRoles.includes('Admin')
+      || sessionRoles.includes('QualityReviewer');
+    const heroAction = viewerIsTeacher
+      ? {
+        primaryLabel: ar ? 'استعرض الفرص' : 'View opportunities',
+        primaryHref: 'Tafseel-Teacher-Dashboard.dc.html?section=opportunities',
+        secondaryLabel: ar ? 'لوحة المعلم' : 'Teacher dashboard',
+        secondaryHref: 'Tafseel-Teacher-Dashboard.dc.html',
+        isPost: false,
+        note: ar
+          ? 'راجع طلبات الطلاب اللي تناسب مؤهلاتك، وقدّم عرضك.'
+          : 'Review Student requests matched to your qualifications and send an Offer.'
+      }
+      : viewerIsStaff
+        ? {
+          primaryLabel: ar ? 'فتح لوحة التحكم' : 'Open dashboard',
+          primaryHref: Tafseel.dashboardHrefForSession(session),
+          secondaryLabel: '', secondaryHref: '', isPost: false, note: ''
+        }
+        : {
+          primaryLabel: ar ? 'انشر طلبًا' : 'Post a Request',
+          primaryHref: 'Tafseel-Open-Marketplace.dc.html',
+          secondaryLabel: ar ? 'تصفح المعلمين' : 'Browse teachers',
+          secondaryHref: 'Tafseel-Browse-Teachers.dc.html',
+          isPost: true,
+          note: ar
+            ? 'تعرف معلمك؟ تصفّح الملفات. ما تعرفه؟ اكتب وش تحتاج واستقبل عروض.'
+            : 'Already know a teacher? Browse profiles. If not, describe what you need and compare offers.'
+        };
+    // Static marketing fallbacks for services only — subjects always come from /subjects.
+    const fallbackServices = [
+      { name: 'Custom recorded explanation', nameAr: 'شرح مسجّل مخصص', desc: 'A recorded video walking through your exact topic, step by step.', descAr: 'فيديو مسجّل يشرح لك موضوعك خطوة بخطوة.' },
+      { name: 'Assignment guidance', nameAr: 'إرشاد الواجبات', desc: 'Coaching through your assignment, not ghostwriting.', descAr: 'توجيه يساعدك تحل واجبك بنفسك، بدون ما أحد يكتبه عنك.' },
+      { name: 'Exam revision', nameAr: 'مراجعة الاختبار', desc: 'Focused revision on your syllabus and past papers.', descAr: 'مراجعة مكثفة لمنهجك وأسئلة الاختبارات السابقة.' },
+      { name: 'Live session', nameAr: 'جلسة مباشرة', desc: 'One-to-one video call with a shared whiteboard.', descAr: 'جلسة فيديو فردية مع سبورة مشتركة.' }
+    ];
+    // ----- Admin-published promo slot -----------------------------------
+    // One slot renders at a time. Copy arrives in both languages so switching
+    // language never refetches; the kind decides which layout the slot uses.
+    /* Part 3 — the contextual module is derived from the same shared projection
+       the dashboard's Needs Attention panel uses, so the two surfaces cannot
+       disagree about where the Student stands. Landing shows at most three rows
+       and never a filter, a table, or history. */
+    const journey = Tafseel.projectStudentJourney(this.state.journeyRequests || []);
+    const journeyVisible = this.state.journeyState === 'ready' && journey.total > 0;
+    const journeyAction = journeyVisible ? journey.actionRequired : null;
+    // The action-required request is promoted into its own module, so it is not
+    // repeated in the list below it.
+    const journeyItems = journeyVisible
+      ? journey.items.filter(x => !journeyAction || x.id !== journeyAction.id).slice(0, 3)
+      : [];
+
+    const journeyStatusLabel = item => {
+      if (item.awaitingPayment)
+        return item.reservationExpired
+          ? Tafseel.t('sd_market_reservation_expired')
+          : (ar ? 'بانتظار الدفع' : 'Awaiting payment');
+      if (item.isOpen && item.status === Tafseel.LEARNING_REQUEST_STATUS.OPEN_FOR_OFFERS) {
+        if (item.offerCount > 0)
+          return ar
+            ? Tafseel.number(item.offerCount) + ' عروض'
+            : Tafseel.number(item.offerCount) + (item.offerCount === 1 ? ' Offer' : ' Offers');
+        return ar ? 'بانتظار العروض' : 'Waiting for Offers';
+      }
+      // Direct requests keep the canonical lifecycle wording the dashboard uses.
+      return Tafseel.requestStatusLabel(item.status);
+    };
+
+    /* The reservation deadline is the server's PaymentReservationExpiresAt. If it
+       has already elapsed the Student is told so plainly — inventing remaining
+       minutes here would be fake urgency. */
+    const journeyReservationLabel = !journeyAction ? ''
+      : journeyAction.reservationExpired || journeyAction.reservationMsRemaining === null
+        ? Tafseel.t('sd_market_reservation_expired')
+        : (ar ? 'يتبقى على حجز الدفع ' : 'Payment reservation ends in ')
+          + Tafseel.number(Math.max(1, Math.ceil(journeyAction.reservationMsRemaining / 60000)))
+          + (ar ? ' دقيقة' : ' min');
+
+    /* Commercial terms come from the selected Offer, which is the record the
+       reservation actually locked. Teacher name falls back to the Offer when the
+       request row does not carry one. */
+    const selectedOffer = journeyAction ? this.state.journeySelectedOffer : null;
+    const journeyPrice = selectedOffer && selectedOffer.amount != null
+      ? Tafseel.moneyView(selectedOffer.amount, selectedOffer.currency || 'SAR')
+      : null;
+    const journeyTeacherName = (journeyAction && journeyAction.teacher)
+      || (selectedOffer && (selectedOffer.teacherDisplayName
+        || selectedOffer.teacherDisplayNameEnglish)) || '';
+
+    const journeyActionFacts = !journeyAction ? [] : [
+      journeyTeacherName
+        ? { label: ar ? 'المعلم' : 'Teacher', value: journeyTeacherName } : null,
+      selectedOffer && selectedOffer.deliveryHours
+        ? {
+          label: ar ? 'التسليم' : 'Delivery',
+          value: ar
+            ? 'خلال ' + Tafseel.number(selectedOffer.deliveryHours) + ' ساعة'
+            : Tafseel.number(selectedOffer.deliveryHours) + 'h'
+        }
+        : journeyAction.deadline
+          ? {
+            label: ar ? 'التسليم' : 'Delivery',
+            value: Tafseel.date(journeyAction.deadline, { month: 'short', day: 'numeric' })
+          } : null
+    ].filter(Boolean);
+
+    /* Part 16 — one primary promo, not a Next/Next/Next stack. The published
+       slots arrive in DisplayOrder, so the first one the visitor has not already
+       dismissed or claimed is the primary campaign; the rest stay available on
+       the Offers surface rather than queueing behind this dialog. */
+    const promotions = this.eligiblePromotions();
+    const promoIndex = 0;
+    const promo = promotions.length ? promotions[0] : null;
+    const promoText = (arValue, enValue) =>
+      (ar ? (arValue || enValue) : (enValue || arValue)) || '';
+    const promoKind = promo ? (promo.kindCode || 'announcement') : '';
+    const promoHighlight = promo ? promoText(promo.highlightAr, promo.highlightEn) : '';
+    // state.clockTick exists only so the countdown interval re-runs renderVals.
+    const promoEndsAt = promo && promo.endsAt ? new Date(promo.endsAt) : null;
+    const promoRemainingMs = promoEndsAt ? promoEndsAt.getTime() - Date.now() : 0;
+    const promoHasCountdown = !!(promoEndsAt && promoRemainingMs > 0
+      && (promoKind === 'discount' || promoKind === 'event'));
+    const promoTotalMinutes = Math.max(0, Math.floor(promoRemainingMs / 60000));
+    const promoCountdown = promoHasCountdown ? [
+      { value: Tafseel.number(Math.floor(promoTotalMinutes / 1440)), label: ar ? 'يوم' : 'days' },
+      { value: Tafseel.number(Math.floor((promoTotalMinutes % 1440) / 60)), label: ar ? 'ساعة' : 'hrs' },
+      { value: Tafseel.number(promoTotalMinutes % 60), label: ar ? 'دقيقة' : 'min' }
+    ] : [];
+    const promoLeadFigure = !!(promo && promoKind === 'discount' && promoHighlight);
+    const promoLeadDate = !!(promo && promoKind === 'event' && promoEndsAt);
+    const stats = this.state.platformStats;
+    const localizeService = x => ({
+      name: ar ? (x.nameAr || x.name) : (x.name || x.nameEn || ''),
+      desc: ar ? (x.descAr || x.descriptionAr || x.desc || '') : (x.desc || x.descriptionEn || x.detail || '')
+    });
+
+    /* Catalogue index. Decorative wayfinding rather than data, but it still follows
+       the reader's numeral system, so Arabic gets Arabic-Indic digits padded with
+       Arabic-Indic zero. Every element carrying one is aria-hidden. */
+    const idx = n => ar
+      ? Tafseel.number(n).padStart(2, '\u0660')
+      : String(n).padStart(2, '0');
+
+    /* Featured teacher cards. Composed from fields /teachers actually returns and
+       nothing else: no invented rating, review count, availability, photo or demo.
+       A missing value removes its row rather than showing a placeholder. */
+    const teacherCards = (this.state.liveTeachers || []).map(teacher => {
+      const hasPrice = teacher.startingPrice != null;
+      const price = hasPrice ? Tafseel.moneyView(teacher.startingPrice, teacher.currency) : null;
+      const hasRating = teacher.rating != null && teacher.ratingCount > 0;
+      /* Chips carry only what the subject line above them does NOT already say.
+         TeacherCardDto.Subjects is English-only, so a chip repeating the subject
+         showed "Physics" under "الفيزياء" - the same fact, twice, in two
+         languages. A teacher with one subject now gets no chip row at all. */
+      const shown = String(teacher.subjectEn || '').toLowerCase();
+      const topics = (teacher.subjects || [])
+        .filter(name => String(name || '').toLowerCase() !== shown)
+        .slice(0, 3);
+      const profileLabel = Tafseel.t('compare_view_profile');
+      return {
+        name: teacher.name,
+        avatar: teacher.avatar,
+        subject: ar ? (teacher.subjectAr || teacher.subjectEn) : teacher.subjectEn,
+        headline: teacher.headline,
+        qualified: teacher.qualified,
+        qualifiedLabel: Tafseel.t('trust_badge_qualified_on_tafseel'),
+        hasRating,
+        rating: hasRating
+          ? Tafseel.number(Number(teacher.rating), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+          : '',
+        reviewsLabel: hasRating ? '(' + Tafseel.number(teacher.ratingCount) + ')' : '',
+        hasTopics: topics.length > 0,
+        topics,
+        deliveryLabel: teacher.deliveryHours
+          ? Tafseel.t('feat_delivery', { hours: Tafseel.number(teacher.deliveryHours) })
+          : '',
+        showFrom: hasPrice,
+        priceIsSar: !!(price && price.isSarAmount),
+        priceIsPlain: !hasPrice || !!(price && price.isPlainAmount),
+        priceNumber: price ? price.amountNumber : '',
+        priceText: hasPrice ? price.amount : (ar ? 'السعر عند الطلب' : 'Price on request'),
+        profileHref: teacher.profileHref,
+        profileLabel,
+        // Several cards carry the same visible CTA text, so the accessible name
+        // names the teacher the link actually leads to.
+        profileAria: profileLabel + ' — ' + teacher.name
+      };
+    });
+
+    const storyStep = this.state.storyStep;
+    const storyCopy = ar ? [
+      { title: 'ارفع الجزئية اللي وقفتك', body: 'ملف PDF، سلايدات، صورة شاشة، أو حتى سؤال محدد.' },
+      { title: 'وضّح وين تحتاج الشرح', body: 'قل لنا وش فهمت، ووين بالضبط وقفت.' },
+      { title: 'قارن واختر معلمك', body: 'شيّك على المؤهل والسعر ووقت التسليم قبل تختار.' },
+      { title: 'استلم شرحًا على احتياجك', body: 'راجع النتيجة، وإذا احتجت اطلب تعديل.' }
+    ] : [
+      { title: 'Upload the part that stopped you', body: 'A PDF, slides, screenshot, or one focused question.' },
+      { title: 'Show where you need help', body: 'Explain what you understand and the exact point where you got stuck.' },
+      { title: 'Compare and choose your teacher', body: 'Review qualification, price, and delivery before choosing.' },
+      { title: 'Receive an explanation made for you', body: 'Review the result and request a revision when needed.' }
+    ];
+    const storyTeacher = teacherCards.find(teacher => teacher.qualified) || null;
+    const storyTeacherSource = storyTeacher
+      ? (this.state.liveTeachers || []).find(teacher => teacher.name === storyTeacher.name) : null;
+    const storyTeacherMoney = storyTeacherSource && storyTeacherSource.startingPrice != null
+      ? Tafseel.moneyView(storyTeacherSource.startingPrice, storyTeacherSource.currency) : null;
+    const qualityLabels = ar
+      ? ['الهوية', 'المؤهل', 'نموذج شرح', 'مراجعة الجودة', 'مؤهل على تفصيل']
+      : ['Identity', 'Qualification', 'Teaching sample', 'Quality review', 'Qualified on Tafseel'];
+
+    /* Part 10 — three pillars instead of six equal facts. Each states a mechanic the
+       product genuinely enforces (qualification review, held payment, the Student's
+       review window); none of them promises a guarantee the platform does not make. */
+    const trustPillars = [
+      { index: idx(1), title: Tafseel.t('why_pillar1_t'), body: Tafseel.t('why_pillar1_b') },
+      { index: idx(2), title: Tafseel.t('why_pillar2_t'), body: Tafseel.t('why_pillar2_b') },
+      { index: idx(3), title: Tafseel.t('why_pillar3_t'), body: Tafseel.t('why_pillar3_b') }
+    ];
+    const rotateWords = ar
+      ? ['احتياجك', 'مستواك', 'قدراتك', 'وقتك']
+      : ['needs', 'level', 'pace', 'schedule'];
+    const heroRotate = rotateWords[this.state.rotateIndex % rotateWords.length];
+    const heroRotatePrev = rotateWords[this.state.previousRotateIndex % rotateWords.length];
+    const rotateMotion = ' .56s cubic-bezier(.16,1,.3,1) both';
+    const rotatePulse = this.state.rotateTick % 2 ? 'b' : 'a';
+    const heroRotatePrevStyle = this.state.reduceMotion || !this.state.rotateTick
+      ? 'opacity:0;transform:translateY(-110%)'
+      : 'animation:tf-rotate-out-' + rotatePulse + rotateMotion;
+    const heroRotateCurrentStyle = this.state.reduceMotion || !this.state.rotateTick
+      ? 'opacity:1;transform:none'
+      : 'animation:tf-rotate-in-' + rotatePulse + rotateMotion;
+
+    return {
+      langSwitchLabel: Tafseel.t('admin_switch_language'),
+      toast: this.state.toast,
+      toastClass: Tafseel.toastClass(this.state.toastLeaving),
+      q: this.state.q,
+      heroLead: ar ? 'الشرح العام ما يكفيك' : 'Skip the generic course',
+      heroPrefix: ar ? 'تفصيل، شرحك على مقاس' : 'Learn around your',
+      heroHeadingLabel: ar
+        ? 'الشرح العام ما يكفيك. تفصيل، شرحك على مقاس ' + heroRotate
+        : 'Skip the generic course. Learn around your ' + heroRotate,
+      heroRotate,
+      heroRotatePrev,
+      heroRotatePrevStyle,
+      heroRotateCurrentStyle,
+      heroRotateMin: ar ? '5.6ch' : '8.6ch',
+      rotateTick: String(this.state.rotateTick),
+      heroSub: ar
+        ? 'ارفع ملفك، اختر الوقت اللي يناسبك، وخذ شرح واضح للجزئية اللي تحتاجها\nبدون تكرار ولا تشتيت'
+        : 'Upload your material, pick the timing, and get the exact part you need explained clearly',
+      heroCta: ar ? 'ابحث' : 'Search',
+      heroCta2: ar ? 'انضم كمعلم' : 'Become a teacher',
+      homeLabel: ar ? 'العودة إلى بداية الصفحة' : 'Back to the top of the page',
+      footerSocialLabel: ar ? 'قنوات تفصيل الاجتماعية — قريبًا' : 'Tafseel social channels — coming soon',
+      // ----- Part 3: contextual Student journey strip below the fold -----
+      showJourneyStrip: journeyVisible,
+      journeyShowRecent: journeyVisible && !journeyAction && journeyItems.length > 0,
+      journeyTitle: ar ? 'طلباتك' : 'Your requests',
+      journeyAllLabel: ar ? 'عرض الكل' : 'View all requests',
+      journeyAllHref: 'Tafseel-Student-Dashboard.dc.html?section=requests',
+      journeyItems: journeyItems.map(item => ({
+        title: item.title || (ar ? 'طلب تعلّم' : 'Learning request'),
+        href: item.href,
+        isOpenFlag: item.isOpen ? 'true' : 'false',
+        sourcingLabel: Tafseel.t(item.sourcingKey),
+        statusLabel: journeyStatusLabel(item),
+        deadlineLabel: item.deadline
+          ? (ar ? 'الموعد ' : 'Due ') + Tafseel.date(item.deadline, { month: 'short', day: 'numeric' })
+          : '',
+        ctaLabel: item.hasOffers
+          ? (ar ? 'مراجعة العروض' : 'Review Offers')
+          : (ar ? 'عرض الطلب' : 'View request')
+      })),
+      journeyActionRequired: !!journeyAction,
+      journeyActionFlag: ar ? 'إجراء مطلوب' : 'Action required',
+      journeyActionRequestTitle: journeyAction
+        ? (journeyAction.title || (ar ? 'طلب تعلّم' : 'Learning request')) : '',
+      journeyActionFacts: journeyActionFacts,
+      journeyHasPrice: !!journeyPrice,
+      journeyPriceLabel: ar ? 'السعر' : 'Price',
+      journeyPriceIsSar: !!(journeyPrice && journeyPrice.isSarAmount),
+      journeyPriceIsPlain: !!(journeyPrice && journeyPrice.isPlainAmount),
+      journeyPriceNumber: journeyPrice ? journeyPrice.amountNumber : '',
+      journeyPriceText: journeyPrice ? journeyPrice.amount : '',
+      journeyReservationLabel: journeyReservationLabel,
+      journeyActionHref: journeyAction ? journeyAction.href : '',
+      journeyPayLabel: ar ? 'متابعة الدفع' : 'Continue to payment',
+
+      heroNote: heroAction.note,
+      heroActionsLabel: (!viewerIsTeacher && !viewerIsStaff)
+        ? Tafseel.t('sd_request_route_question')
+        : (ar ? 'إجراءات الحساب' : 'Account actions'),
+      heroPrimaryLabel: heroAction.primaryLabel,
+      heroPrimaryHref: heroAction.primaryHref,
+      heroPrimaryIsPost: heroAction.isPost,
+      heroSecondaryLabel: heroAction.secondaryLabel,
+      heroSecondaryHref: heroAction.secondaryHref,
+      // "Become a Teacher" is a guest recruitment path, not an action for someone
+      // who already holds a Tafseel role.
+      heroShowTeacherJoin: !session,
+      browseAllLabel: ar ? 'تصفح الكل' : 'Browse all',
+      onQ: e => this.setState({ q: e.target.value }),
+      heroSearchLabel: ar ? 'دوّر باسم معلّم أو اكتب وش تحتاج' : 'Search a teacher or describe what you need',
+      heroSearchPlaceholder: ar ? 'دوّر باسم معلّم أو اكتب وش تحتاج…' : 'Search a teacher or describe what you need…',
+      onSearch: e => {
+        e.preventDefault();
+        const text = this.state.q.trim();
+        if (!text) {
+          this.flash(ar ? 'اكتب اسم معلّم أو وش تحتاج.' : 'Type a teacher name or what you need.');
+          return;
+        }
+        Tafseel.discovery.handoffToBrowse(text);
+      },
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      hasSession: !!session,
+      isGuest: this.state.sessionChecked && !session,
+      accountName: session ? Tafseel.userName(session) : '',
+      accountAvatar: Tafseel.avatarUrl(session && session.userId, session && session.hasAvatar),
+      accountHref: session ? Tafseel.dashboardHrefForSession(session) : 'Tafseel-Auth.dc.html',
+      teacherJoinHref,
+
+
+      // ----- Entry wizard (admin-published slots) + platform counters -----
+      wizardOpen: this.state.wizardOpen && !!promo,
+      wizardScrimClass: 'tf-promo-scrim' + (this.state.wizardLeaving ? ' is-leaving' : ''),
+      wizardClass: 'tf-promo-wizard tf-promo-wizard--' + (promoKind || 'announcement')
+        + (this.state.wizardLeaving ? ' is-leaving' : ''),
+      // Alternating keyframe names are what restarts the step transition: changing
+      // an attribute alone would not replay an animation on a reused node.
+      wizardBodyStyle: this.state.reduceMotion || !this.state.wizardTick
+        ? ''
+        : 'animation:tf-promo-step-' + (this.state.wizardTick % 2 ? 'b' : 'a') + ' .4s var(--ease-out) both',
+      wizardStepKey: String(promoIndex),
+      wizardStepLabel: '',
+      wizardProgressStyle: 'inline-size:100%',
+      wizardShowBack: false,
+      wizardBackLabel: '',
+      wizardNextLabel: ar ? 'تم' : 'Done',
+      wizardCloseLabel: ar ? 'إغلاق' : 'Close',
+      wizardNext: () => this.closeWizard(),
+      wizardBack: () => {},
+      closeWizard: () => this.closeWizard(),
+      wizardKeyDown: event => Tafseel.modalKeyDown(event, () => this.closeWizard()),
+      stopEvent: event => event.stopPropagation(),
+      promoAccent: 'violet',
+      promoRegionLabel: ar ? 'عروض وأخبار المنصة' : 'Platform offers and news',
+      promoEyebrow: promo ? promoText(promo.eyebrowAr, promo.eyebrowEn) : '',
+      promoTitle: promo ? promoText(promo.titleAr, promo.titleEn) : '',
+      promoBody: promo ? promoText(promo.bodyAr, promo.bodyEn) : '',
+      promoHighlight,
+      promoLeadNote: ar ? 'خصم' : 'off',
+      promoLeadFigure,
+      promoLeadDate,
+      promoLeadIcon: !!promo && !promoLeadFigure && !promoLeadDate,
+      promoDateDay: promoLeadDate ? Tafseel.number(promoEndsAt.getDate()) : '',
+      promoDateMonth: promoLeadDate ? Tafseel.date(promoEndsAt, { month: 'short' }) : '',
+      promoCode: promo ? (promo.couponCode || '') : '',
+      promoCopyLabel: ar ? 'نسخ' : 'Copy',
+      promoCodeLabel: ar ? 'استخدم الكود' : 'Use the code',
+      promoCountdownLabel: ar ? 'ينتهي العرض خلال' : 'Offer ends in',
+      promoHasCountdown,
+      promoCountdown,
+      promoCta: promo ? promoText(promo.ctaLabelAr, promo.ctaLabelEn) : '',
+      // Discount slots end on the code and the countdown — the code is the action,
+      // so a button beside it would compete with it.
+      showPromoCta: !!(promo && promoKind !== 'discount' && promoText(promo.ctaLabelAr, promo.ctaLabelEn)),
+      promoHref: promo ? (promo.ctaHref || 'Tafseel-Browse-Teachers.dc.html') : '',
+      // Following the campaign's own call to action counts as claiming it.
+      onPromoCta: () => {
+        if (!promo) return;
+        Tafseel.recordCampaign(promo.id, 'claimedAt');
+        Tafseel.rememberCampaignDialogClosed(this.livePromotionIds());
+      },
+      onCopyCode: async () => {
+        const code = promo && promo.couponCode;
+        if (!code) return;
+        // Taking the code is claiming the campaign for this visit.
+        Tafseel.recordCampaign(promo.id, 'claimedAt');
+        Tafseel.rememberCampaignDialogClosed(this.livePromotionIds());
+        try {
+          await navigator.clipboard.writeText(code);
+        } catch (_) {
+          const field = document.createElement('textarea');
+          field.value = code;
+          field.style.position = 'fixed';
+          field.style.opacity = '0';
+          document.body.appendChild(field);
+          field.select();
+          try { document.execCommand('copy'); } catch (_) { /* clipboard unavailable */ }
+          field.remove();
+        }
+        this.flash(ar ? 'تم نسخ كود الخصم.' : 'Discount code copied.');
+      },
+      wizardMultiStep: false,
+      promoDots: [],
+      orbsLede: ar ? 'مجتمع تفصيل' : 'The Tafseel community',
+      // The orbs are always on screen; only the number waits. A total is a claim
+      // about the business, so nothing is invented here — until /platform/stats
+      // answers, the orb holds a dash and says so, rather than showing a figure
+      // Tafseel cannot stand behind.
+      communityStats: [
+        { icon: 'tf-i-students', key: 'students', label: ar ? 'طالب' : 'Students' },
+        { icon: 'tf-i-teacher-cap', key: 'teachers', label: ar ? 'معلم' : 'Teachers' }
+      ].map(metric => {
+        const total = stats && Number.isFinite(stats[metric.key]) ? stats[metric.key] : null;
+        // `len` is the rendered character count — the orb sizes its number down
+        // as the platform grows, so six figures still clear the ring.
+        const value = total === null ? '—' : Tafseel.number(total);
+        return {
+          icon: metric.icon,
+          label: metric.label,
+          value,
+          len: String(value).length,
+          countUp: total === null ? '' : String(total),
+          pending: total === null
+        };
+      }),
+      /* The student/teacher totals are already the hero orbs, so they are not
+         repeated. The active-subject count is the one figure the orbs do not carry,
+         and it belongs to the trust argument, so it survives as a single line there. */
+      statsNote: stats
+        ? (ar
+          ? 'عندنا معلمون في ' + Tafseel.number(stats.subjects) + ' مادة نشطة، وكل معلم يجتاز مراجعة الجودة قبل يستقبل الطلبات.'
+          : 'Across ' + Tafseel.number(stats.subjects) + ' active subjects, with every teacher passing a quality review before taking requests.')
+        : '',
+
+      subjectsLoading: !this.state.subjectsLoaded,
+      subjectsEmpty: this.state.subjectsLoaded && !(this.state.liveSubjects && this.state.liveSubjects.length),
+      subjectsReady: !!(this.state.liveSubjects && this.state.liveSubjects.length),
+      subjects: (this.state.liveSubjects || []).map((x, i) => ({
+        ...x,
+        index: idx(i + 1),
+        name: ar && x.nameAr ? x.nameAr : x.name,
+        cta: Tafseel.t('subj_cta')
+      })),
+      storyEyebrow: ar ? 'كيف تستخدم تفصيل؟' : 'How Tafseel works',
+      storyTitle: ar ? 'من سؤالك لشرح مفصّل لك' : 'From your question to an explanation made for you',
+      storyLede: ar
+        ? 'عندك طريقتين تبدأ: اختر معلمك مباشرة، أو انشر طلبك واستقبل عروض. بعدها أرسل الجزئية اللي ودك تفهمها.'
+        : 'Choose a teacher directly, or post your request and compare offers. Then share the exact part you want explained.',
+      storyEntryLabel: ar ? 'اختر طريقة البدء' : 'Choose how to start',
+      storyChooseTitle: ar ? 'اختر معلمك' : 'Choose a teacher',
+      storyChooseBody: ar ? 'قارن الملفات والأسعار وابدأ مع المعلم المناسب.' : 'Compare profiles, prices, and delivery, then start directly.',
+      storyPostTitle: ar ? 'انشر طلبك' : 'Post your request',
+      storyPostBody: ar ? 'اكتب وش تحتاج واستقبل عروض من معلمين مؤهلين.' : 'Describe what you need and receive offers from qualified teachers.',
+      storyCanvasTitle: ar ? 'طلب شرح مخصص' : 'Custom explanation request',
+      storyCanvasStatus: (ar ? 'الخطوة ' : 'Step ') + Tafseel.number(storyStep + 1) + (ar ? ' من ٤' : ' of 4'),
+      storyStepNumber: String(storyStep + 1),
+      storyStep1Active: storyStep === 0,
+      storyStep2Active: storyStep === 1,
+      storyStep3Active: storyStep === 2,
+      storyStep4Active: storyStep === 3,
+      storyStepsLabel: ar ? 'مراحل طلب الشرح' : 'Explanation request stages',
+      storySteps: storyCopy.map((step, i) => ({
+        ...step,
+        rawIndex: String(i),
+        index: idx(i + 1),
+        active: storyStep === i,
+        current: storyStep === i ? 'step' : 'false'
+      })),
+      onStorySelect: event => this.setStoryStep(event.currentTarget.getAttribute('data-story-select'), true),
+      storyUploadKicker: ar ? 'اللي ودك تفهمه' : 'Your material',
+      storyUploadTitle: ar ? 'اختر الملف أو اكتب سؤالك' : 'Choose a file or question',
+      storyUploadMeta: ar ? 'ارفع الجزئية مثل ما هي' : 'Upload exactly what you need to understand',
+      storyFormats: ['PDF', 'PPT', 'PNG', 'JPG'],
+      storyDocKind: 'PDF',
+      /* No extension: the badge beside it already says PDF, and an Arabic name
+         with a Latin '.pdf' on the end flips to the wrong side under bidi. */
+      storyDocName: ar ? 'الفصل الثالث — المعادلات' : 'Chapter 3 — Equations',
+      storyDocHeading: ar ? 'حل المعادلة' : 'Solve the equation',
+      /* Real, correct working - not greeked bars. The marked line is where the
+         sign flips, which is the exact line the step-2 panel quotes back. */
+      storyDocLines: [
+        { text: '−2x + 8 = 14', marked: false },
+        { text: '−2x = 14 − 8', marked: true },
+        { text: '−2x = 6', marked: false },
+        { text: 'x = −3', marked: false }
+      ],
+      storyContextKicker: ar ? 'تفاصيلك تفرق' : 'Your context matters',
+      storyContextQuote: ar
+        ? 'أنا فاهم أول الخطوات، بس ماني فاهم ليش تغيّرت الإشارة هنا.'
+        : 'I understand the first steps, but I do not understand why the sign changed here.',
+      storyContextLabel: ar ? 'الجزئية المحددة' : 'Selected point',
+      storyContextSelection: ar ? 'ليش تغيّرت الإشارة في هالخطوة؟' : 'Why did the sign change in this step?',
+      storyTeacherKicker: ar ? 'قارن من ملف المعلم' : 'Compare from the public profile',
+      storyTeacherAvailable: !!storyTeacher,
+      storyTeacherMissing: !storyTeacher,
+      storyTeacherAvatar: storyTeacher ? storyTeacher.avatar : '',
+      storyTeacherName: storyTeacher ? storyTeacher.name : '',
+      storyTeacherSubject: storyTeacher ? storyTeacher.subject : '',
+      storyTeacherQualified: Tafseel.t('trust_badge_qualified_on_tafseel'),
+      storyTeacherHasRating: !!(storyTeacher && storyTeacher.hasRating),
+      storyTeacherRating: storyTeacher ? storyTeacher.rating + ' ★ ' + storyTeacher.reviewsLabel : '',
+      storyTeacherHasDelivery: !!(storyTeacher && storyTeacher.deliveryLabel),
+      storyTeacherDelivery: storyTeacher ? storyTeacher.deliveryLabel : '',
+      storyTeacherHasPrice: !!storyTeacherMoney,
+      storyTeacherPrice: storyTeacherMoney ? storyTeacherMoney.amount : '',
+      storyTeacherEmpty: ar ? 'عروض المعلمين المؤهلين تظهر هنا إذا توفرت.' : 'Qualified teacher offers appear here when available.',
+      storyTeacherChoice: ar ? 'راجع التفاصيل واختر اللي يناسبك' : 'Choose after reviewing the details',
+      storyRatingLabel: ar ? 'التقييم' : 'Rating',
+      storyDeliveryLabel: ar ? 'التسليم' : 'Delivery',
+      storyPriceLabel: ar ? 'السعر' : 'Price',
+      storyCompleteKicker: ar ? 'تم التسليم' : 'Delivered',
+      storyCompleteTitle: ar ? 'شرح مخصص للنقطة التي حددتها' : 'An explanation focused on the point you selected',
+      storyCompleteBody: ar ? 'راجع الشرح على راحتك، وبعدها اعتمده أو اطلب تعديل.' : 'Review the explanation, then approve it or request a revision.',
+      storyOutputVideo: ar ? 'شرح مسجل' : 'Recorded explanation',
+      storyOutputNotes: ar ? 'ملخص مكتوب' : 'Written summary',
+      kingdomEyebrow: ar ? 'المملكة العربية السعودية' : 'Across the Kingdom',
+      kingdomTitle: ar ? 'ثلاث عشرة منطقة، منصة واحدة' : 'Thirteen regions, one platform',
+      kingdomSub: ar
+        ? 'من تبوك لجازان، ومن الجوف للشرقية — تلقى معلمين معتمدين وين ما كنت.'
+        : 'From Tabuk to Jazan, from Al Jawf to the Eastern Province — verified teachers wherever you are.',
+      kingdomAria: ar
+        ? 'خريطة توضيحية للمملكة العربية السعودية بمناطقها الإدارية الثلاث عشرة.'
+        : 'A decorative map of Saudi Arabia showing its thirteen administrative regions.',
+      teachers: teacherCards,
+      teachersLoading: this.state.liveTeachers == null,
+      teachersEmpty: Array.isArray(this.state.liveTeachers) && this.state.liveTeachers.length === 0,
+      teachersReady: teacherCards.length > 0,
+      teachersLoadingLabel: ar ? 'جاري تحميل المعلمين…' : 'Loading teachers…',
+      teachersEmptyLabel: ar ? 'لا يوجد معلمون متاحون للعرض الآن.' : 'No teachers are available to feature right now.',
+      qualityGateTitle: ar ? 'وش يمر فيه المعلم قبل يتأهل على تفصيل؟' : 'How a teacher becomes qualified on Tafseel',
+      qualitySteps: qualityLabels.map((label, i) => ({ label, final: i === qualityLabels.length - 1 })),
+      fromLabel: Tafseel.t('common_from'),
+      topicsLabel: Tafseel.t('feat_topics_label'),
+      services: (this.state.liveServices && this.state.liveServices.length
+        ? this.state.liveServices
+        : fallbackServices).map((x, i) => ({ ...localizeService(x), index: idx(i + 1) })),
+      trustPillars,
+      escrow: [
+        ar ? 'تدفع بعد ما تقبل العرض' : 'Student pays when the offer is accepted',
+        ar ? 'تفصيل تحتفظ بالمبلغ بأمان' : 'Tafseel holds the payment securely',
+        ar ? 'المعلم يسلّم الخدمة' : 'Teacher delivers the service',
+        ar ? 'تراجع النتيجة: تعتمدها، تطلب تعديل، أو تفتح نزاع' : 'Student reviews: approve, request a revision, or open a dispute',
+        ar ? 'بعد اعتمادك، يتحوّل المبلغ للمعلم' : 'Payment is released to the teacher'
+      ].map((text, i) => ({ n: Tafseel.number(i + 1), text })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

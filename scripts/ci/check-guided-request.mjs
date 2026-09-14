@@ -183,10 +183,13 @@ assert(page.includes("composeDescription") || page.includes("buildDescription"),
 assert(page.includes('role="radiogroup"'), "style/service radiogroup");
 assert(page.includes("aria-current"), "progress aria-current");
 assert(!/localStorage\.setItem\([^)]*accessToken|JWT|refresh/i.test(page), "no token persistence in page");
-assert(page.includes("375") || page.includes("clamp(") || page.includes("minmax("), "responsive layout helpers present");
+assert(page.includes("req_step_compose"), "compose progress step");
+assert(page.includes("wizardVersion"), "draft wizard version for 2-step remap");
+assert(!page.includes("isStep5"), "5-step wizard flags removed");
+assert(page.includes("toggleMoreOptions"), "more-options disclosure");
 
 const student = readFileSync("Tafseel-Student-Dashboard.dc.html", "utf8");
-assert(student.includes('href="Tafseel-Browse-Teachers.dc.html"') && student.includes("dash_new_request"),
+assert(student.includes('href="Tafseel-Browse-Teachers.dc.html"') && student.includes("tf-student-route-card"),
   "Student Dashboard New request routes to Browse Teachers");
 assert(!/href="Tafseel-Request\.dc\.html"/.test(student), "Student Dashboard must not open Request without Teacher");
 assert(student.includes("learn_prefs_title") || student.includes("learnPrefsTitle"), "learning preferences settings section");

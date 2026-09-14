@@ -67,6 +67,11 @@ assert(delivery.focus === 'delivery' && delivery.orderId === orderId, 'delivery 
 const completed = T.notificationRoute({ type: 'OrderCompleted', link: `/orders/${orderId}` }, 'student');
 assert(completed.filter === 'done' && completed.focus === 'rate', 'completed → done + rate');
 
+const disputeId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+const dispute = T.notificationRoute({ type: 'Dispute', link: `/disputes/${disputeId}` }, 'student');
+assert(dispute.href === `Tafseel-Disputes.dc.html?selectedId=${disputeId}`, 'dispute → exact case');
+assert(dispute.external === true, 'dispute opens the dispute center');
+
 const reviewSubmitted = T.notificationRoute({ type: 'ReviewSubmitted', link: `/orders/${orderId}` }, 'student');
 assert(reviewSubmitted.filter === 'done' && reviewSubmitted.focus === 'review', 'review submitted → done');
 

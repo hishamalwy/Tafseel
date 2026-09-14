@@ -4,84 +4,122 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script src="js/boot-prefs.js"></script>
+<link rel="stylesheet" href="css/tafseel.css?v=identity-v1" />
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
+<link rel="icon" href="assets/brand/favicon.ico" />
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
+<script src="js/locales.js"></script>
+<script src="js/open-marketplace-locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+<script src="js/open-marketplace.js"></script>
+<script src="js/vendor/signalr.min.js"></script>
+<script src="js/chat-widget.js"></script>
+<meta name="description" content="Manage your requests, offers, sessions, and payments." />
+<link rel="canonical" href="Tafseel-Student-Dashboard.dc.html" />
+<meta name="robots" content="noindex, nofollow" />
+<meta property="og:title" content="Student dashboard — Tafseel" />
+<meta property="og:description" content="Manage your requests, offers, sessions, and payments." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Student dashboard — Tafseel" />
+<meta name="twitter:description" content="Manage your requests, offers, sessions, and payments." />
 </head>
 <body>
 <x-dc>
 <a class="tf-skip" href="#student-main" data-i18n="skip_to_content">Skip to main content</a>
-<helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Student dashboard — Tafseel</title>
-<script src="js/boot-prefs.js"></script>
-<link rel="stylesheet" href="css/tafseel.css" />
-<link rel="icon" href="assets/brand/favicon.ico" />
-  <script src="js/locales.js"></script>
-  <script src="js/tafseel.js"></script>
-<script src="js/api.js"></script>
-<script src="js/vendor/signalr.min.js"></script>
-<script src="js/chat-widget.js"></script>
+<helmet><title>Student dashboard — Tafseel</title>
+  
+  
+  
 </helmet>
 
-<div style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh" data-stack="app">
+<div class="tf-dashboard-shell" data-dash-role="student" data-stack="app" style="display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh">
 
-  <aside id="student-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}" style="background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:45;transition:transform var(--t)">
-    <a href="Tafseel-Landing.dc.html" style="display:flex;align-items:center;gap:10px;color:var(--text);padding:20px 20px 18px" aria-label="Tafseel home">
-      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="27" height="27" style="flex:none;object-fit:contain" />
-      <span translate="no" class="tf-mursala" style="font-weight:900;font-size:18px;letter-spacing:0">تفصيــل</span>
+  <aside id="student-sidebar" class="tf-dash-sidebar" aria-label="Dashboard navigation" data-drawer="{{ drawerState }}">
+    <a href="Tafseel-Landing.dc.html" class="tf-dash-brand" aria-label="Tafseel home">
+      <img decoding="async" class="tf-dash-brand-mark" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="20" height="27" />
+      <span translate="no" class="tf-mursala tf-wordmark tf-dash-brand-name"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+      <span class="tf-role-chip">{{ studentRoleBadge }}</span>
     </a>
-    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
-      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="10">
-        <button type="button" onClick="{{ n.onClick }}" aria-current="{{ n.current }}" style="{{ n.style }}">
-          <span aria-hidden="true" style="width:18px;text-align:center;font-size:14px">{{ n.icon }}</span>
-          <span>{{ n.label }}</span>
-          <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
-            <span style="margin-inline-start:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--primary-ink)">{{ n.badgeLabel }}</span>
-          </sc-if>
-        </button>
+    <nav class="tf-dash-nav" aria-label="Dashboard navigation">
+      <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="4">
+        <div class="tf-dash-nav-group">
+          <div class="tf-dash-nav-group-label">{{ g.label }}</div>
+          <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="4">
+            <button type="button" class="tf-dash-nav-item" onClick="{{ n.onClick }}" aria-current="{{ n.current }}">
+              <svg class="tf-dash-nav-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path sc-camel-d="{{ n.iconPath }}"></path></svg>
+              <span>{{ n.label }}</span>
+              <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}">
+                <span class="tf-dash-nav-badge">{{ n.badgeLabel }}</span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
       </sc-for>
     </nav>
-    <div style="padding:16px;border-top:1px solid var(--border)">
-      <button type="button" class="tf-dashboard-logout" onClick="{{ onLogout }}"><span aria-hidden="true">↪</span>{{ logoutLabel }}</button>
-    </div>
   </aside>
 
   <div data-drawer-overlay="{{ drawerState }}" onClick="{{ closeDrawer }}" aria-hidden="true"></div>
 
   <div style="display:flex;flex-direction:column;min-width:0">
-    <header data-dash-header="{{ headerElevated }}" style="position:sticky;top:0;z-index:40;background:color-mix(in oklab, var(--bg) 90%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;gap:14px;padding-inline:24px">
-      <button id="student-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="student-sidebar" style="{{ drawerToggleStyle }}">☰</button>
-      <div style="flex:1;max-width:420px;display:flex;align-items:center;gap:10px;height:38px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)" data-hide-sm="1">
-        <span aria-hidden="true" style="color:var(--muted);font-size:13px">⌕</span>
-        <label for="dash-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{ searchUnavailableLabel }}</label>
-        <input id="dash-q" disabled aria-disabled="true" title="{{ searchUnavailableLabel }}" placeholder="{{ searchUnavailableLabel }}" style="flex:1;border:0;background:transparent;outline:none;font-size:14px;min-width:0;opacity:.65;cursor:not-allowed" />
-      </div>
-      <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
-        <button id="student-notif-bell" type="button" onClick="{{ toggleNotifs }}" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="{{ notifsOpen }}" style="position:relative;width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);display:grid;place-items:center;color:var(--text-2)">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9a6 6 0 1 1 12 0c0 3.2 1 5 2 6H4c1-1 2-2.8 2-6Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
+    <header class="tf-dash-header" data-dash-header="{{ headerElevated }}">
+      <button id="student-drawer-toggle" data-drawer-toggle type="button" onClick="{{ toggleDrawer }}" aria-label="{{ drawerToggleLabel }}" aria-expanded="{{ drawerExpanded }}" aria-controls="student-sidebar" class="tf-icon-btn tf-dash-header__menu"><svg class="tf-dash-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+      <div class="tf-dash-header__title" data-hide-sm="1">{{ studentDashboardTitle }}</div>
+      <div class="tf-dash-header__actions">
+        <sc-if value="{{ showDisputesNav }}" hint-placeholder-val="{{ false }}">
+          <a href="Tafseel-Disputes.dc.html" class="tf-dash-header__context-link">{{ disputesCenterLabel }}</a>
+        </sc-if>
+        <button id="student-notif-bell" class="tf-dash-header__icon" type="button" onClick="{{ toggleNotifs }}" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="{{ notifsOpen }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9a6 6 0 1 1 12 0c0 3.2 1 5 2 6H4c1-1 2-2.8 2-6Z" /><path d="M10 19a2 2 0 0 0 4 0" /></svg>
           <sc-if value="{{ unread }}" hint-placeholder-val="{{ false }}">
-            <span style="position:absolute;top:-5px;inset-inline-end:-5px;min-width:17px;height:17px;padding-inline:4px;border-radius:999px;background:var(--error);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center">{{ unreadBadgeLabel }}</span>
+            <span class="tf-dash-header__badge">{{ unreadBadgeLabel }}</span>
           </sc-if>
         </button>
-        <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
-        <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
-        <div style="display:flex;align-items:center;gap:9px;height:38px;padding-inline:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface)">
-          <img sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
-          <span style="font-size:13.5px;font-weight:600" data-hide-sm="1">{{ accountName }}</span>
+        <button type="button" class="tf-lang-toggle tf-dash-header__locale" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+        <button type="button" class="tf-theme-toggle tf-dash-header__theme" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+        <div class="tf-dash-header__account">
+          <img decoding="async" class="tf-dash-header__avatar" sc-camel-src="{{ accountAvatar }}" alt="" width="24" height="24" />
+          <span class="tf-dash-header__account-name" data-hide-sm="1">{{ accountName }}</span>
         </div>
+        <button type="button" class="tf-dash-header__logout" onClick="{{ onLogout }}" aria-label="{{ logoutLabel }}"><svg class="tf-dash-control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" /></svg><span>{{ logoutLabel }}</span></button>
       </div>
     </header>
 
     <main id="student-main" style="padding:28px 24px 64px;display:flex;flex-direction:column;gap:22px">
     <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;flex-direction:column;gap:22px">
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div class="tf-student-overview-head">
         <div>
           <h1 style="font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:-.025em;margin-bottom:5px">{{ greetingTitle }}</h1>
-          <p style="color:var(--muted);font-size:14.5px">{{ greetingSub }}</p>
+          <p style="color:var(--muted);font-size:14px">{{ greetingSub }}</p>
         </div>
-        <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="dash_new_request" class="tf-press" style="min-height:44px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-md);font-weight:700;font-size:14.5px" style-hover="background:var(--primary-hover);color:var(--primary-ink)">＋ Find a Teacher</a>
+      </div>
+      <div class="tf-student-route">
+        <p class="tf-student-route-q" id="sd-route-q">{{ requestRouteQuestion }}</p>
+        <div class="tf-student-create-actions" role="group" aria-labelledby="sd-route-q">
+          <a href="Tafseel-Browse-Teachers.dc.html" class="tf-press tf-student-route-card">
+            <strong>{{ routeDirectLabel }}</strong>
+            <span>{{ routeDirectHint }}</span>
+          </a>
+          <a href="Tafseel-Open-Marketplace.dc.html" class="tf-press tf-student-route-card">
+            <strong>{{ routeOffersLabel }}</strong>
+            <span>{{ routeOffersHint }}</span>
+          </a>
+        </div>
+        <a href="Tafseel-Browse-Teachers.dc.html" class="tf-student-route-live">{{ routeLiveLabel }}</a>
       </div>
 
-      <section class="tf-attention" aria-labelledby="sd-attention-title" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px">
+      <div class="tf-overview-split">
+      <div class="tf-overview-now">
+      <section class="tf-attention" aria-labelledby="sd-attention-title">
         <div class="tf-attention-head">
           <h2 id="sd-attention-title">{{ attentionTitle }}</h2>
           <sc-if value="{{ attentionCount }}" hint-placeholder-val="{{ false }}">
@@ -112,11 +150,13 @@
           </div>
         </sc-if>
       </section>
+      </div>
 
-      <section class="tf-learning-tabs" aria-labelledby="sd-learning-title" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px">
+      <div class="tf-overview-main">
+      <section class="tf-learning-tabs" aria-labelledby="sd-learning-title">
         <div class="tf-attention-head" style="margin-bottom:4px">
           <h2 id="sd-learning-title">{{ learningTitle }}</h2>
-          <button type="button" onClick="{{ goRequests }}" style="border:0;background:none;padding:0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--primary)">{{ viewAllLearningLabel }}</button>
+          <button type="button" onClick="{{ goRequests }}" style="border:0;background:none;padding:0;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary)">{{ viewAllLearningLabel }}</button>
         </div>
         <div role="tablist" aria-label="{{ learningTitle }}">
           <sc-for list="{{ learningTabs }}" as="tab" hint-placeholder-count="4">
@@ -139,11 +179,11 @@
                 </tr>
               </thead>
               <tbody>
-                <sc-for list="{{ learningRows }}" as="r" hint-placeholder-count="4">
+                <template sc-for list="{{ learningRows }}" as="r" hint-placeholder-count="4">
                   <tr class="tf-row-slide">
                     <td>
                       <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
-                      <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
+                      <div style="font-size:12px;color:var(--muted)">{{ r.workMeta }}</div>
                       <sc-if value="{{ r.showLifecycleHint }}" hint-placeholder-val="{{ false }}">
                         <div style="font-size:12px;color:var(--text-2);margin-top:4px">{{ r.lifecycleHint }}</div>
                       </sc-if>
@@ -151,14 +191,19 @@
                     <td>
                       <div style="display:flex;align-items:center;gap:8px;min-width:0">
                         <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
-                          <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
+                          <img loading="lazy" decoding="async" class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
                         </sc-if>
-                        <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
+                        <span style="font-size:13px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
                       </div>
                     </td>
                     <td><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
-                    <td style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
-                    <td style="text-align:end;font-size:15px;font-weight:800;white-space:nowrap">{{ r.amount }}</td>
+                    <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
+                    <td style="text-align:end;font-size:15px;font-weight:800;white-space:nowrap">
+                      <sc-if value="{{ r.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                        <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong class="tf-price-md">{{ r.amountNumber }}</strong></span>
+                      </sc-if>
+                      <sc-if value="{{ r.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ r.amount }}</sc-if>
+                    </td>
                     <td style="text-align:end">
                       <sc-if value="{{ r.actionLabel }}">
                         <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
@@ -168,7 +213,7 @@
                       </sc-if>
                     </td>
                   </tr>
-                </sc-for>
+                </template>
               </tbody>
             </table>
           </div>
@@ -180,12 +225,17 @@
                     <p class="tf-work-card-title">{{ r.title }}</p>
                     <div class="tf-work-card-teacher">
                       <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
-                        <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--border);object-fit:cover" />
+                        <img loading="lazy" decoding="async" class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="24" height="24" style="width:24px;height:24px;border-radius:8px;border:1px solid var(--border);object-fit:cover" />
                       </sc-if>
                       <span>{{ r.teacher }}</span>
                     </div>
                   </div>
-                  <span class="tf-work-card-amount">{{ r.amount }}</span>
+                  <span class="tf-work-card-amount">
+                    <sc-if value="{{ r.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                      <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong>{{ r.amountNumber }}</strong></span>
+                    </sc-if>
+                    <sc-if value="{{ r.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ r.amount }}</sc-if>
+                  </span>
                 </div>
                 <div class="tf-work-card-meta">
                   <span class="tf-work-card-status" style="{{ r.statusStyle }}">{{ r.status }}</span>
@@ -193,13 +243,13 @@
                   <span>{{ r.deadline }}</span>
                 </div>
                 <sc-if value="{{ r.showLifecycleHint }}" hint-placeholder-val="{{ false }}">
-                  <p style="font-size:12.5px;color:var(--text-2);margin:0">{{ r.lifecycleHint }}</p>
+                  <p style="font-size:12px;color:var(--text-2);margin:0">{{ r.lifecycleHint }}</p>
                 </sc-if>
                 <sc-if value="{{ r.actionLabel }}">
                   <button type="button" class="tf-work-card-cta" onClick="{{ r.onAction }}">{{ r.actionLabel }}</button>
                 </sc-if>
                 <sc-if value="{{ r.showSecondary }}">
-                  <button type="button" onClick="{{ r.onTimeline }}" style="min-height:40px;width:100%;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:600">{{ r.timelineLabel }}</button>
+                  <button type="button" onClick="{{ r.onTimeline }}" style="min-height:44px;width:100%;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-md);font-weight:600">{{ r.timelineLabel }}</button>
                 </sc-if>
               </article>
             </sc-for>
@@ -208,7 +258,7 @@
             <div class="tf-empty" style="padding:36px 12px;text-align:center">
               <div class="tf-empty-title">{{ workEmptyTitle }}</div>
               <p class="tf-empty-body">{{ workEmptyBody }}</p>
-              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;display:inline-block;margin-top:12px" data-i18n="dash_browse_teachers">Browse teachers →</a>
+              <a href="Tafseel-Browse-Teachers.dc.html" style="font-size:14px;font-weight:600;display:inline-block;margin-top:12px" data-i18n="dash_browse_teachers">Browse teachers</a>
             </div>
           </sc-if>
         </sc-if>
@@ -218,16 +268,16 @@
             <sc-for list="{{ sessions }}" as="se" hint-placeholder-count="2">
               <article style="{{ se.cardStyle }}">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                  <span style="width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                  <span style="width:38px;height:38px;flex:none;border-radius:12px;border:1px solid var(--border);background:var(--surface-2)"></span>
                   <div style="min-width:0">
                     <div style="font-size:14px;font-weight:600">{{ se.teacher }}</div>
-                    <div style="font-size:12.5px;color:var(--muted)">{{ se.topic }}</div>
+                    <div style="font-size:12px;color:var(--muted)">{{ se.topic }}</div>
                   </div>
                   <span style="{{ se.countdownStyle }}">{{ se.countdown }}</span>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-                  <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ se.when }}</span>
-                  <button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button>
+                  <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-2)">{{ se.when }}</span>
+                  <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end"><sc-if value="{{ se.secondaryLabel }}"><button type="button" onClick="{{ se.onSecondary }}" style="min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text-2);font-size:12px;font-weight:600">{{ se.secondaryLabel }}</button></sc-if><sc-if value="{{ se.disputeLabel }}"><button type="button" onClick="{{ se.onDispute }}" style="min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text-2);font-size:12px;font-weight:600">{{ se.disputeLabel }}</button></sc-if><button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button></div>
                 </div>
               </article>
             </sc-for>
@@ -240,15 +290,8 @@
           </div>
         </sc-if>
       </section>
-
-      <section aria-labelledby="sd-quick-title" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px">
-        <h2 id="sd-quick-title" style="font-size:16px;font-weight:800;margin:0 0 12px">{{ quickTitle }}</h2>
-        <div class="tf-quick-actions">
-          <a href="Tafseel-Browse-Teachers.dc.html">{{ quickFindTeacher }}</a>
-          <button type="button" onClick="{{ quickContinueRequest }}">{{ quickContinueRequestLabel }}</button>
-          <button type="button" onClick="{{ goMessages }}">{{ quickMessages }}</button>
-        </div>
-      </section>
+      </div>
+      </div>
 
     </div>
     </sc-if>
@@ -256,8 +299,53 @@
     <sc-if value="{{ isRequests }}" hint-placeholder-val="{{ false }}">
       <div>
         <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ myWorkTitle }}</h1>
+        <section class="tf-published-requests" aria-labelledby="sd-published-requests-title">
+          <div class="tf-published-requests-head">
+            <div>
+              <h2 id="sd-published-requests-title">{{ publishedRequestsTitle }}</h2>
+              <p>{{ publishedRequestsSubtitle }}</p>
+            </div>
+            <span class="tf-published-requests-count">{{ publishedRequestsCount }}</span>
+          </div>
+          <sc-if value="{{ hasPublishedRequests }}" hint-placeholder-val="{{ false }}">
+            <div class="tf-published-requests-grid">
+              <sc-for list="{{ publishedRequests }}" as="r" hint-placeholder-count="3">
+                <button type="button" class="tf-published-request-card" onClick="{{ r.onAction }}" aria-label="{{ r.openLabel }}">
+                  <span class="tf-published-request-status">{{ r.status }}</span>
+                  <span class="tf-published-request-title">{{ r.title }}</span>
+                  <span class="tf-published-request-service">{{ r.service }}</span>
+                  <span class="tf-published-request-meta">
+                    <span>
+                      <span class="tf-published-request-k">{{ publishedDeadlineLabel }}</span>
+                      <span class="tf-published-request-v">{{ r.deadline }}</span>
+                    </span>
+                    <span>
+                      <span class="tf-published-request-k">{{ publishedOffersLabel }}</span>
+                      <span class="tf-published-request-v">{{ publishedAwaitingOffersLabel }}</span>
+                    </span>
+                  </span>
+                  <span class="tf-published-request-cta">{{ publishedOpenLabel }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ showPublishedMore }}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="tf-published-requests-more" onClick="{{ onTogglePublishedMore }}" aria-expanded="{{ publishedMoreExpanded }}">{{ publishedMoreLabel }}</button>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{ noPublishedRequests }}" hint-placeholder-val="{{ true }}">
+            <div class="tf-published-requests-empty">
+              <div>
+                <h3>{{ publishedEmptyTitle }}</h3>
+                <p>{{ publishedEmptyBody }}</p>
+              </div>
+              <a href="Tafseel-Open-Marketplace.dc.html">{{ publishedEmptyAction }}</a>
+            </div>
+          </sc-if>
+        </section>
+
+        <h2 class="tf-all-requests-title">{{ allRequestsTitle }}</h2>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-wrap:wrap" role="tablist" aria-label="{{ myWorkTitle }}">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-wrap:wrap" role="group" aria-label="{{ myWorkTitle }}">
             <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.active }}" style="{{ f.style }}">{{ f.label }}</button>
             </sc-for>
@@ -266,37 +354,42 @@
             <table>
               <thead>
                 <tr style="background:var(--surface-2)">
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colWork }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colTeacher }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
-                  <th scope="col" style="text-align:start;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colDeadline }}</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAmount }}</th>
-                  <th scope="col" style="text-align:end;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
+                  <th scope="col" style="text-align:start;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colWork }}</th>
+                  <th scope="col" style="text-align:start;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colTeacher }}</th>
+                  <th scope="col" style="text-align:start;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colStatus }}</th>
+                  <th scope="col" style="text-align:start;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 12px">{{ colDeadline }}</th>
+                  <th scope="col" style="text-align:end;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAmount }}</th>
+                  <th scope="col" style="text-align:end;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:11px 20px">{{ colAction }}</th>
                 </tr>
               </thead>
               <tbody>
-                <sc-for list="{{ allRequests }}" as="r" hint-placeholder-count="8">
+                <template sc-for list="{{ allRequests }}" as="r" hint-placeholder-count="8">
                   <tr class="tf-row-slide" style="border-top:1px solid var(--border)">
                     <td style="padding:14px 20px">
                       <div style="font-size:14px;font-weight:600;margin-bottom:3px">{{ r.title }}</div>
-                      <div style="font-size:12.5px;color:var(--muted)">{{ r.service }}</div>
+                      <div style="font-size:12px;color:var(--muted)">{{ r.workMeta }}</div>
                     </td>
                     <td style="padding:14px 12px">
                       <div style="display:flex;align-items:center;gap:8px;min-width:0">
                         <sc-if value="{{ r.showTeacherAvatar }}" hint-placeholder-val="{{ false }}">
-                          <img class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
+                          <img loading="lazy" decoding="async" class="tf-img-avatar" sc-camel-src="{{ r.teacherAvatar }}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);object-fit:cover;flex:none" />
                         </sc-if>
-                        <span style="font-size:13.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
+                        <span style="font-size:13px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.teacher }}</span>
                       </div>
                     </td>
                     <td style="padding:14px 12px">
                       <span style="{{ r.statusStyle }}">{{ r.status }}</span>
                       <sc-if value="{{ r.showGuide }}" hint-placeholder-val="{{ false }}">
-                        <div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:220px;line-height:1.4">{{ r.guideShort }}</div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:5px;max-width:220px;line-height:1.4">{{ r.guideShort }}</div>
                       </sc-if>
                     </td>
-                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
-                    <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">{{ r.amount }}</td>
+                    <td style="padding:14px 12px;font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap">{{ r.deadline }}</td>
+                    <td style="padding:14px 20px;text-align:end;font-size:14px;font-weight:700;white-space:nowrap">
+                      <sc-if value="{{ r.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                        <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong>{{ r.amountNumber }}</strong></span>
+                      </sc-if>
+                      <sc-if value="{{ r.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ r.amount }}</sc-if>
+                    </td>
                     <td style="padding:14px 20px;text-align:end">
                       <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
                         <sc-if value="{{ r.timelineLabel }}">
@@ -305,13 +398,14 @@
                         <sc-if value="{{ r.messageLabel }}">
                           <button type="button" onClick="{{ r.onMessage }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--primary);font-weight:600;white-space:nowrap">{{ r.messageLabel }}</button>
                         </sc-if>
+                        <sc-if value="{{ r.disputeLabel }}"><button type="button" onClick="{{ r.onDispute }}" style="height:32px;padding-inline:11px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);color:var(--warning);font-weight:600;white-space:nowrap">{{ r.disputeLabel }}</button></sc-if>
                         <sc-if value="{{ r.actionLabel }}">
                           <button type="button" onClick="{{ r.onAction }}" style="{{ r.actionBtnStyle }}">{{ r.actionLabel }}</button>
                         </sc-if>
                       </div>
                     </td>
                   </tr>
-                </sc-for>
+                </template>
               </tbody>
             </table>
           </div>
@@ -325,48 +419,61 @@
       </div>
     </sc-if>
 
+    <sc-if value="{{ isRequestDetail }}" hint-placeholder-val="{{ false }}">
+      <section class="tf-dashboard-workflow" aria-label="{{ requestDetailLabel }}">
+        <button type="button" class="tf-market-button tf-market-button--line" onClick="{{ closeRequestDetail }}">{{ backToRequestsLabel }}</button>
+        <div id="tf-student-request-detail" style="margin-top:18px"></div>
+      </section>
+    </sc-if>
+
     <sc-if value="{{ isSessions }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Live sessions</h1>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ sessionsTitle }}</h1>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
           <sc-for list="{{ allSessions }}" as="se" hint-placeholder-count="4">
             <article style="{{ se.cardStyle }}">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-                <span style="width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+                <span style="width:38px;height:38px;flex:none;border-radius:12px;border:1px solid var(--border);background:var(--surface-2)"></span>
                 <div style="min-width:0">
                   <div style="font-size:14px;font-weight:600">{{ se.teacher }}</div>
-                  <div style="font-size:12.5px;color:var(--muted)">{{ se.topic }}</div>
+                  <div style="font-size:12px;color:var(--muted)">{{ se.topic }}</div>
                 </div>
                 <span style="{{ se.countdownStyle }}">{{ se.countdown }}</span>
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-                <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2)">{{ se.when }}</span>
-                <button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button>
+                <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-2)">{{ se.when }}</span>
+                <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end"><sc-if value="{{ se.secondaryLabel }}"><button type="button" onClick="{{ se.onSecondary }}" style="min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text-2);font-size:12px;font-weight:600">{{ se.secondaryLabel }}</button></sc-if><sc-if value="{{ se.disputeLabel }}"><button type="button" onClick="{{ se.onDispute }}" style="min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text-2);font-size:12px;font-weight:600">{{ se.disputeLabel }}</button></sc-if><button type="button" onClick="{{ se.onJoin }}" style="{{ se.btnStyle }}">{{ se.btnLabel }}</button></div>
               </div>
             </article>
           </sc-for>
         </div>
+        <sc-if value="{{ sessionsEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-empty-enter" style="padding:48px 24px;text-align:center"><div style="font-size:15px;font-weight:700;margin-bottom:6px">{{ sessionsEmptyTitle }}</div><p style="font-size:14px;color:var(--muted);margin-bottom:16px">{{ sessionsEmptyBody }}</p><a href="Tafseel-Browse-Teachers.dc.html" class="tf-button">{{ sessionsEmptyCta }}</a></div></sc-if>
       </div>
     </sc-if>
 
     <sc-if value="{{ isSaved }}" hint-placeholder-val="{{ false }}">
       <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Saved teachers</h1>
+        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">{{ savedTitle }}</h1>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
           <sc-for list="{{ savedTeachers }}" as="t" hint-placeholder-count="4">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
               <div style="display:flex;gap:12px;margin-bottom:12px">
-                <img class="tf-img-avatar" sc-camel-src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
+                <img loading="lazy" decoding="async" class="tf-img-avatar" sc-camel-src="{{ t.avatar }}" alt="" width="44" height="44" style="width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--border)" />
                 <div style="min-width:0">
-                  <div style="font-size:14.5px;font-weight:700">{{ t.name }}</div>
-                  <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
+                  <div style="font-size:14px;font-weight:700">{{ t.name }}</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ t.subject }}</div>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:14px">
                 <sc-if value="{{ t.hasRating }}" hint-placeholder-val="{{ true }}">
                   <span style="color:var(--warning)">★</span><span style="font-weight:700">{{ t.rating }}</span>
                 </sc-if>
-                <span style="color:var(--muted)">· from {{ t.price }}</span>
+                <span style="color:var(--muted);display:inline-flex;align-items:baseline;gap:6px">· {{ t.fromWord }}
+                  <sc-if value="{{ t.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                    <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong>{{ t.amountNumber }}</strong></span>
+                  </sc-if>
+                  <sc-if value="{{ t.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ t.price }}</sc-if>
+                </span>
               </div>
               <a href="{{ t.profileHref }}" style="height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">View profile</a>
             </article>
@@ -376,37 +483,52 @@
     </sc-if>
 
     <sc-if value="{{ isPayments }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:16px">Payments</h1>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
-          <sc-for list="{{ paymentStats }}" as="p" hint-placeholder-count="3">
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
-              <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ p.label }}</div>
-              <div style="font-size:21px;font-weight:800">{{ p.value }}</div>
-            </div>
-          </sc-for>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border)"><h2 style="font-size:15px;font-weight:700">Transaction history</h2></div>
-          <div style="display:flex;flex-direction:column">
-            <sc-for list="{{ transactions }}" as="tx" hint-placeholder-count="6">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--border)">
-                <div>
-                  <div style="font-size:13.5px;font-weight:600">{{ tx.desc }}</div>
-                  <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-top:2px">{{ tx.date }}</div>
-                </div>
-                <span style="font-weight:700;font-size:14px">{{ tx.amount }}</span>
-              </div>
-            </sc-for>
+      <div class="tf-money-page">
+        <header>
+          <div>
+            <h1>{{ paymentsTitle }}</h1>
+            <p class="tf-money-lede">{{ paymentsLede }}</p>
           </div>
-        </div>
-      </div>
-    </sc-if>
-
-    <sc-if value="{{ isFiles }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin-bottom:12px">{{ filesTitle }}</h1>
-        <div class="tf-order-guide" role="status" style="max-width:640px">{{ filesUnavailableBody }}</div>
+        </header>
+        <p class="tf-dash-oneliner">{{ paymentsHoldNote }}</p>
+        <sc-if value="{{ paymentsLoading }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-empty" role="status">{{ paymentsLoadingText }}</p>
+        </sc-if>
+        <sc-if value="{{ paymentsEmpty }}" hint-placeholder-val="{{ false }}">
+          <p class="tf-empty" role="status">{{ paymentsEmptyText }}</p>
+        </sc-if>
+        <sc-if value="{{ paymentsHasRows }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-table-wrap">
+            <table class="tf-table">
+              <caption class="tf-sr-only">{{ paymentsHistoryTitle }}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ colWork }}</th>
+                  <th scope="col">{{ colTeacher }}</th>
+                  <th scope="col">{{ colDeadline }}</th>
+                  <th scope="col">{{ colStatus }}</th>
+                  <th scope="col">{{ colAmount }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template sc-for list="{{ transactions }}" as="tx" hint-placeholder-count="6">
+                  <tr>
+                    <td>{{ tx.title }}</td>
+                    <td>{{ tx.teacher }}</td>
+                    <td class="tf-money-when">{{ tx.when }}</td>
+                    <td>{{ tx.status }}</td>
+                    <td class="tf-money-amt">
+                      <sc-if value="{{ tx.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                        <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span><strong>{{ tx.amountNumber }}</strong></span>
+                      </sc-if>
+                      <sc-if value="{{ tx.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ tx.amount }}</sc-if>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -421,19 +543,19 @@
           <sc-for list="{{ myReviews }}" as="rv" hint-placeholder-count="3">
             <article style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px">
               <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-                <span style="font-size:14.5px;font-weight:700">{{ rv.teacher }}</span>
+                <span style="font-size:14px;font-weight:700">{{ rv.teacher }}</span>
                 <span style="color:var(--warning);font-size:13px;font-weight:700">{{ rv.scoreLabel }}</span>
               </div>
-              <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">{{ rv.service }}</div>
-              <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:8px">{{ rv.body }}</p>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:8px">{{ rv.service }}</div>
+              <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:8px">{{ rv.body }}</p>
               <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-                <div style="font-family:var(--font-mono);font-size:11.5px;color:var(--muted)">{{ rv.date }}</div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">{{ rv.date }}</div>
                 <span style="font-size:12px;color:var(--muted)">{{ rv.visibilityLabel }}</span>
               </div>
               <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-                <button type="button" onClick="{{ rv.onOpenOrder }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12.5px;font-weight:600">{{ rv.openOrderLabel }}</button>
+                <button type="button" onClick="{{ rv.onOpenOrder }}" style="height:32px;padding:0 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-size:12px;font-weight:600">{{ rv.openOrderLabel }}</button>
                 <sc-if value="{{ rv.hasProfile }}" hint-placeholder-val="{{ false }}">
-                  <a href="{{ rv.profileHref }}" style="height:32px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;font-weight:600;text-decoration:none;color:var(--text)">{{ rv.profileLabel }}</a>
+                  <a href="{{ rv.profileHref }}" style="height:32px;padding:0 12px;display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;font-weight:600;text-decoration:none;color:var(--text)">{{ rv.profileLabel }}</a>
                 </sc-if>
               </div>
             </article>
@@ -446,7 +568,7 @@
       <div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em">Notifications</h1>
-          <button type="button" onClick="{{ markAll }}" style="border:0;background:none;color:var(--primary);font-size:13.5px;font-weight:600">Mark all read</button>
+          <button type="button" onClick="{{ markAll }}" style="border:0;background:none;color:var(--primary);font-size:13px;font-weight:600">Mark all read</button>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
           <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
@@ -493,11 +615,12 @@
     </sc-if>
 
     <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
-      <div style="max-width:560px;display:flex;flex-direction:column;gap:16px">
-        <h1 style="font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0">{{ accountProfileTitle }}</h1>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+      <div class="tf-settings">
+        <h1 class="tf-settings__title">{{ accountProfileTitle }}</h1>
+        <div class="tf-settings__cards">
+        <div class="tf-settings__card">
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <img sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+            <img loading="lazy" decoding="async" sc-camel-src="{{ accountAvatar }}" alt="" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
             <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
               <span style="font-size:13px;color:var(--muted)">{{ accountPhotoHint }}</span>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -535,10 +658,17 @@
           </label>
           <button type="button" onClick="{{ onSaveSettings }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px;margin-top:6px">{{ accountSaveProfile }}</button>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+        <!-- Part 14 — hidden, not deleted. StudentLearningPreferences is persisted,
+               returned on the session, and purged on account deletion, but nothing in
+               matching, teacher search, request creation, offer eligibility or delivery
+               reads it (verified: no consumer outside AuthenticationService). Showing a
+               settings surface that changes nothing is dead chrome, so the UI is gated
+               off while the domain, API and stored data are left completely intact. -->
+        <sc-if value="{{ showLearningPreferences }}" hint-placeholder-val="{{ false }}">
+        <div class="tf-settings__card">
           <h2 style="font-size:17px;margin:0">{{ learnPrefsTitle }}</h2>
-          <p style="font-size:13.5px;color:var(--muted);margin:0;line-height:1.55">{{ learnPrefsIntro }}</p>
-          <p style="font-size:12.5px;color:var(--text-2);margin:0;line-height:1.5">{{ learnPrefsGuarantee }}</p>
+          <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.55">{{ learnPrefsIntro }}</p>
+          <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.5">{{ learnPrefsGuarantee }}</p>
           <fieldset style="border:0;padding:0;margin:0">
             <legend style="font-size:13px;font-weight:600;margin-bottom:10px">{{ learnPrefsStyleLegend }}</legend>
             <div role="radiogroup" aria-label="{{ learnPrefsStyleLegend }}" style="display:flex;flex-wrap:wrap;gap:8px">
@@ -568,7 +698,8 @@
             <button type="button" onClick="{{ onResetLearnPrefs }}" disabled="{{ learnPrefsBusy }}" style="height:42px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:14px;color:var(--text-2)">{{ learnPrefsReset }}</button>
           </div>
         </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px">
+        </sc-if>
+        <div class="tf-settings__card">
           <h2 style="font-size:17px;margin:0">{{ accountPasswordTitle }}</h2>
           <label style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:13px;font-weight:600">{{ accountCurrentPassword }}</span>
@@ -584,6 +715,27 @@
             <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPassword }}" autocomplete="new-password" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <button type="button" onClick="{{ onChangePassword }}" disabled="{{ accountBusy }}" style="height:42px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:14px">{{ accountUpdatePassword }}</button>
+        </div>
+        <div class="tf-settings__card">
+          <h2 style="font-size:17px;margin:0">{{ accountSessionsTitle }}</h2>
+          <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.55">{{ accountSessionsHint }}</p>
+          <sc-if value="{{ accountSessionsLoading }}" hint-placeholder-val="{{ false }}"><p role="status" style="font-size:13px;color:var(--muted);margin:0">{{ loadingLabel }}</p></sc-if>
+          <sc-for list="{{ accountSessions }}" as="session" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px;border:1px solid var(--border);border-radius:var(--r-sm);flex-wrap:wrap">
+              <div style="min-width:0"><strong style="font-size:13px">{{ session.label }}</strong><div style="font-size:12px;color:var(--muted);margin-top:3px">{{ session.detail }}</div></div>
+              <sc-if value="{{ session.canRevoke }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ session.onRevoke }}" disabled="{{ accountBusy }}" style="min-height:40px;padding:0 12px;border:1px solid var(--danger);border-radius:var(--r-sm);background:transparent;color:var(--danger);font-weight:700">{{ session.revokeLabel }}</button></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div class="tf-settings__card">
+          <h2 style="font-size:17px;margin:0">{{ privacyTitle }}</h2>
+          <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.55">{{ privacyHint }}</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="button" onClick="{{ onManageMfa }}" disabled="{{ accountBusy }}" style="min-height:42px;padding:0 14px;border:1px solid var(--primary);border-radius:var(--r-sm);background:var(--primary-soft);color:var(--primary);font-weight:700">{{ mfaLabel }}</button>
+            <button type="button" onClick="{{ onExportAccount }}" disabled="{{ accountBusy }}" style="min-height:42px;padding:0 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-weight:700">{{ exportAccountLabel }}</button>
+            <button type="button" onClick="{{ onDeleteAccount }}" disabled="{{ accountBusy }}" style="min-height:42px;padding:0 14px;border:1px solid var(--danger);border-radius:var(--r-sm);background:transparent;color:var(--danger);font-weight:700">{{ deleteAccountLabel }}</button>
+          </div>
+        </div>
         </div>
       </div>
     </sc-if>
@@ -608,7 +760,7 @@
           <p>{{ notificationsEmptyLabel }}</p>
         </div>
       </sc-if>
-      <sc-if value="{{ notificationsEmpty }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ notificationsHasItems }}" hint-placeholder-val="{{ false }}">
       <div class="tf-notif-list">
         <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="5">
           <button type="button" class="tf-notif-item" data-r5-notification onClick="{{ n.onClick }}">
@@ -627,7 +779,7 @@
 </sc-if>
 
 <sc-if value="{{ timelineOrder }}" hint-placeholder-val="{{ false }}">
-  <div role="presentation" onClick="{{ closeTimeline }}" onKeyDown="{{ timelineKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+  <div role="presentation" onClick="{{ closeTimeline }}" onKeyDown="{{ timelineKeyDown }}" style="position:fixed;inset:0;z-index:90;background:var(--scrim);display:grid;place-items:center;padding:16px">
     <div role="dialog" aria-modal="true" aria-labelledby="student-order-timeline-title" onClick="{{ stop }}" class="tf-order-dialog">
       <div class="tf-order-dialog-head">
         <div style="min-width:0;flex:1">
@@ -640,10 +792,10 @@
         <sc-if value="{{ showTimelineHero }}" hint-placeholder-val="{{ false }}">
           <div class="tf-order-hero" aria-label="{{ timelineOrderLabel }}">
             <div class="tf-order-hero-teacher">
-              <img class="tf-img-avatar tf-order-hero-avatar" sc-camel-src="{{ timelineTeacherAvatar }}" alt="" width="44" height="44" />
+              <img loading="lazy" decoding="async" class="tf-img-avatar tf-order-hero-avatar" sc-camel-src="{{ timelineTeacherAvatar }}" alt="" width="44" height="44" />
               <div style="min-width:0">
                 <div style="font-size:15px;font-weight:700">{{ timelineTeacherName }}</div>
-                <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ timelineServiceName }}</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ timelineServiceName }}</div>
               </div>
               <span style="{{ timelineStatusStyle }}">{{ timelineStatusLabel }}</span>
             </div>
@@ -686,7 +838,7 @@
                   <sc-for list="{{ timelineDeliveries }}" as="d" hint-placeholder-count="1">
                     <div class="tf-order-delivery-card" data-latest="{{ d.isLatest }}" data-focus-delivery="{{ d.focus }}">
                       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-                        <span style="font-size:12.5px;color:var(--muted)">{{ d.when }}</span>
+                        <span style="font-size:12px;color:var(--muted)">{{ d.when }}</span>
                         <span class="tf-order-delivery-meta">
                           <sc-if value="{{ d.isLatest }}" hint-placeholder-val="{{ false }}">
                             <span class="tf-order-latest-badge">{{ d.latestLabel }}</span>
@@ -694,8 +846,20 @@
                           <span>{{ d.versionLabel }}</span>
                         </span>
                       </div>
-                      <p style="font-size:13.5px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
-                      <button type="button" onClick="{{ d.onDownload }}" style="font-family:var(--font-mono);font-size:12px;padding:8px 12px;min-height:40px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ d.fileName }}</button>
+                      <p style="font-size:13px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
+                      <div class="tf-delivery-file-actions">
+                        <sc-for list="{{ d.files }}" as="f" hint-placeholder-count="1">
+                          <div class="tf-delivery-file-row">
+                            <span class="tf-delivery-file-name">{{ f.fileName }}</span>
+                            <span class="tf-delivery-file-buttons">
+                              <sc-if value="{{ f.canPreview }}" hint-placeholder-val="{{ false }}">
+                                <button type="button" onClick="{{ f.onPreview }}">{{ f.previewLabel }}</button>
+                              </sc-if>
+                              <sc-if value="{{ f.canDownload }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ f.onDownload }}">{{ f.downloadLabel }}</button></sc-if>
+                            </span>
+                          </div>
+                        </sc-for>
+                      </div>
                     </div>
                   </sc-for>
                 </div>
@@ -722,8 +886,8 @@
               <li class="tf-order-event">
                 <span class="tf-order-event-dot" aria-hidden="true"></span>
                 <div style="min-width:0">
-                  <div style="font-size:14.5px;font-weight:700;overflow-wrap:anywhere">{{ event.title }}</div>
-                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px">{{ event.actor }} · {{ event.occurredAt }}</div>
+                  <div style="font-size:14px;font-weight:700;overflow-wrap:anywhere">{{ event.title }}</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:3px">{{ event.actor }} · {{ event.occurredAt }}</div>
                   <sc-if value="{{ event.details }}">
                     <div style="font-size:13px;color:var(--text-2);margin-top:6px;overflow-wrap:anywhere">{{ event.details }}</div>
                   </sc-if>
@@ -738,7 +902,7 @@
 </sc-if>
 
 <sc-if value="{{ reviewModal }}" hint-placeholder-val="{{ false }}">
-  <div role="presentation" onClick="{{ closeReviewModal }}" onKeyDown="{{ reviewKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+  <div role="presentation" onClick="{{ closeReviewModal }}" onKeyDown="{{ reviewKeyDown }}" style="position:fixed;inset:0;z-index:90;background:var(--scrim);display:grid;place-items:center;padding:16px">
     <div role="dialog" aria-modal="true" aria-labelledby="student-review-title" onClick="{{ stop }}" style="width:min(560px,100%);max-height:min(88vh,780px);overflow:auto;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg)">
       <div style="position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;gap:16px;padding:20px;border-bottom:1px solid var(--border);background:var(--surface)">
         <div style="min-width:0;flex:1">
@@ -749,26 +913,26 @@
       </div>
       <div style="padding:20px">
         <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
-          <img class="tf-img-avatar" sc-camel-src="{{ reviewTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
+          <img loading="lazy" decoding="async" class="tf-img-avatar" sc-camel-src="{{ reviewTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:12px;border:1px solid var(--border);object-fit:cover" />
           <div style="min-width:0">
             <span style="font-size:12px;color:var(--muted)">{{ reviewTeacherLabel }}</span>
-            <div style="font-size:14.5px;font-weight:700">{{ reviewTeacherName }}</div>
-            <div style="font-size:12.5px;color:var(--muted)">{{ reviewServiceName }}</div>
+            <div style="font-size:14px;font-weight:700">{{ reviewTeacherName }}</div>
+            <div style="font-size:12px;color:var(--muted)">{{ reviewServiceName }}</div>
           </div>
         </div>
         <p class="tf-order-guide" style="margin-bottom:16px">{{ reviewGuide }}</p>
         <sc-if value="{{ showReviewRevisionsLeft }}" hint-placeholder-val="{{ false }}">
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">{{ reviewRevisionsLeft }}</p>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">{{ reviewRevisionsLeft }}</p>
         </sc-if>
         <h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">{{ reviewHistoryLabel }}</h3>
         <sc-if value="{{ reviewNoDeliveries }}" hint-placeholder-val="{{ false }}">
-          <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px">{{ sdReviewNoFiles }}</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">{{ sdReviewNoFiles }}</p>
         </sc-if>
         <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
           <sc-for list="{{ reviewDeliveries }}" as="d" hint-placeholder-count="1">
             <div class="tf-order-delivery-card" data-latest="{{ d.isLatest }}">
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-                <span style="font-size:12.5px;color:var(--muted)">{{ d.when }}</span>
+                <span style="font-size:12px;color:var(--muted)">{{ d.when }}</span>
                 <span class="tf-order-delivery-meta">
                   <sc-if value="{{ d.isLatest }}" hint-placeholder-val="{{ false }}">
                     <span class="tf-order-latest-badge">{{ d.latestLabel }}</span>
@@ -777,8 +941,20 @@
                 </span>
               </div>
               <p style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">{{ d.noteLabel }}</p>
-              <p style="font-size:13.5px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
-              <button type="button" onClick="{{ d.onDownload }}" style="font-family:var(--font-mono);font-size:12px;padding:8px 12px;min-height:40px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-weight:600">{{ d.fileName }}</button>
+              <p style="font-size:13px;color:var(--text);margin-bottom:10px;overflow-wrap:anywhere">{{ d.message }}</p>
+              <div class="tf-delivery-file-actions">
+                <sc-for list="{{ d.files }}" as="f" hint-placeholder-count="1">
+                  <div class="tf-delivery-file-row">
+                    <span class="tf-delivery-file-name">{{ f.fileName }}</span>
+                    <span class="tf-delivery-file-buttons">
+                      <sc-if value="{{ f.canPreview }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ f.onPreview }}">{{ f.previewLabel }}</button>
+                      </sc-if>
+                      <sc-if value="{{ f.canDownload }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ f.onDownload }}">{{ f.downloadLabel }}</button></sc-if>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
             </div>
           </sc-for>
         </div>
@@ -791,21 +967,31 @@
             <textarea value="{{ revisionReason }}" onChange="{{ onRevisionReason }}" rows="3" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
           </label>
           <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-            <button type="button" onClick="{{ cancelRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
-            <button type="button" onClick="{{ submitRevisionRequest }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionRequestRevision }}</button>
+            <button type="button" onClick="{{ cancelRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ sdReviewClose }}</button>
+            <button type="button" onClick="{{ submitRevisionRequest }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ sdActionRequestRevision }}</button>
           </div>
         </sc-if>
         <sc-if value="{{ showApproveActions }}" hint-placeholder-val="{{ false }}">
-          <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.5">{{ reviewApproveHint }}</p>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">{{ reviewApproveHint }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
             <sc-if value="{{ revisionAvailable }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ openRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionRequestRevision }}</button>
+              <button type="button" onClick="{{ openRevisionForm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ sdActionRequestRevision }}</button>
             </sc-if>
-            <button type="button" onClick="{{ approveDelivery }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--success,var(--primary));color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdActionApprove }}</button>
+            <button type="button" onClick="{{ startApproveConfirm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--success,var(--primary));color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ sdActionApprove }}</button>
           </div>
           <sc-if value="{{ revisionLimitReached }}" hint-placeholder-val="{{ false }}">
-            <p style="font-size:12.5px;color:var(--muted);margin-top:10px;text-align:end">{{ sdReviewRevisionLimitReached }}</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px;text-align:end">{{ sdReviewRevisionLimitReached }}</p>
           </sc-if>
+        </sc-if>
+        <sc-if value="{{ showApproveConfirm }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-review-approve-confirm" role="group" aria-labelledby="student-approve-confirm-title">
+            <p id="student-approve-confirm-title">{{ reviewApproveAmount }}</p>
+            <p>{{ reviewApproveRelease }}</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+              <button type="button" onClick="{{ cancelApproveConfirm }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ reviewApproveBack }}</button>
+              <button type="button" onClick="{{ approveDelivery }}" disabled="{{ reviewBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--success,var(--primary));color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ reviewApproveGo }}</button>
+            </div>
+          </div>
         </sc-if>
       </div>
     </div>
@@ -813,7 +999,7 @@
 </sc-if>
 
 <sc-if value="{{ rateModal }}" hint-placeholder-val="{{ false }}">
-  <div role="presentation" onClick="{{ closeRateModal }}" onKeyDown="{{ rateKeyDown }}" style="position:fixed;inset:0;z-index:90;background:rgba(10,12,18,.58);display:grid;place-items:center;padding:16px">
+  <div role="presentation" onClick="{{ closeRateModal }}" onKeyDown="{{ rateKeyDown }}" style="position:fixed;inset:0;z-index:90;background:var(--scrim);display:grid;place-items:center;padding:16px">
     <div role="dialog" aria-modal="true" aria-labelledby="student-rate-title" onClick="{{ stop }}" class="tf-order-dialog" style="width:min(520px,100%);max-height:min(88vh,780px);overflow:auto;padding:0">
       <div class="tf-order-dialog-head">
         <div style="min-width:0;flex:1">
@@ -824,10 +1010,10 @@
       </div>
       <div style="padding:20px">
         <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
-          <img class="tf-img-avatar" sc-camel-src="{{ rateTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);object-fit:cover" />
+          <img loading="lazy" decoding="async" class="tf-img-avatar" sc-camel-src="{{ rateTeacherAvatar }}" alt="" width="40" height="40" style="width:40px;height:40px;border-radius:12px;border:1px solid var(--border);object-fit:cover" />
           <div style="min-width:0">
             <span style="font-size:12px;color:var(--muted)">{{ rateTeacherLabel }}</span>
-            <div style="font-size:14.5px;font-weight:700">{{ rateTeacherName }}</div>
+            <div style="font-size:14px;font-weight:700">{{ rateTeacherName }}</div>
           </div>
         </div>
         <p class="tf-order-guide" style="margin-bottom:10px">{{ rateAboutService }}</p>
@@ -844,10 +1030,10 @@
             <textarea value="{{ rateComment }}" onChange="{{ onRateComment }}" placeholder="{{ sdRateCommentPlaceholder }}" rows="4" aria-invalid="{{ rateCommentInvalid }}" aria-describedby="student-rate-comment-hint" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical"></textarea>
             <span id="student-rate-comment-hint" style="font-size:12px;color:var(--muted)">{{ rateCommentHint }}</span>
             <sc-if value="{{ rateCommentError }}" hint-placeholder-val="{{ false }}">
-              <span role="alert" style="font-size:12.5px;color:var(--error)">{{ rateCommentError }}</span>
+              <span role="alert" style="font-size:12px;color:var(--error)">{{ rateCommentError }}</span>
             </sc-if>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px">
             <input type="checkbox" checked="{{ rateRecommends }}" onChange="{{ onRateRecommends }}" />
             <span>{{ sdRateRecommends }}</span>
           </label>
@@ -856,8 +1042,8 @@
           </sc-if>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-          <button type="button" onClick="{{ closeRateModal }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdReviewClose }}</button>
-          <button type="button" onClick="{{ submitReview }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13.5px">{{ sdRateSubmitLabel }}</button>
+          <button type="button" onClick="{{ closeRateModal }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 16px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ sdReviewClose }}</button>
+          <button type="button" onClick="{{ submitReview }}" disabled="{{ rateBusy }}" style="height:40px;padding:0 18px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:600;font-size:13px">{{ sdRateSubmitLabel }}</button>
         </div>
       </div>
     </div>
@@ -865,13 +1051,49 @@
 </sc-if>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:var(--tf-dashboard-toast-offset,24px);inset-inline-end:24px;z-index:80;background:var(--surface);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+<sc-if value="{{ mediaPreview }}" hint-placeholder-val="{{ false }}">
+  <div class="tf-secure-media-backdrop" role="presentation" onClick="{{ closeMediaPreview }}" onKeyDown="{{ mediaPreviewKeyDown }}">
+    <section class="tf-secure-media-dialog" role="dialog" aria-modal="true" aria-labelledby="student-media-preview-title" onClick="{{ stop }}">
+      <header class="tf-secure-media-head">
+        <div>
+          <span>{{ mediaPreviewLabel }}</span>
+          <h2 id="student-media-preview-title">{{ mediaPreviewName }}</h2>
+        </div>
+        <button type="button" autofocus onClick="{{ closeMediaPreview }}" aria-label="{{ mediaPreviewCloseLabel }}" title="{{ mediaPreviewCloseLabel }}">×</button>
+      </header>
+      <div class="tf-secure-media-stage" onContextMenu="{{ protectMedia }}" onDragStart="{{ protectMedia }}">
+        <sc-if value="{{ mediaPreviewLoading }}" hint-placeholder-val="{{ false }}"><p class="tf-secure-media-status" role="status">{{ mediaPreviewLoadingLabel }}</p></sc-if>
+        <sc-if value="{{ mediaPreviewIsVideo }}" hint-placeholder-val="{{ false }}">
+          <video sc-camel-src="{{ mediaPreviewUrl }}" controls autoplay playsinline preload="metadata" controlsList="nodownload noremoteplayback" disablePictureInPicture onContextMenu="{{ protectMedia }}"></video>
+        </sc-if>
+        <sc-if value="{{ mediaPreviewIsImage }}" hint-placeholder-val="{{ false }}"><img loading="lazy" decoding="async" sc-camel-src="{{ mediaPreviewUrl }}" alt="{{ mediaPreviewName }}" draggable="false" /></sc-if>
+        <sc-if value="{{ mediaPreviewIsAudio }}" hint-placeholder-val="{{ false }}"><audio sc-camel-src="{{ mediaPreviewUrl }}" controls autoplay controlsList="nodownload noremoteplayback"></audio></sc-if>
+        <sc-if value="{{ mediaPreviewIsPdf }}" hint-placeholder-val="{{ false }}"><iframe sc-camel-src="{{ mediaPreviewUrl }}" title="{{ mediaPreviewName }}"></iframe></sc-if>
+        <sc-if value="{{ mediaPreviewProtected }}" hint-placeholder-val="{{ false }}">
+          <div class="tf-secure-media-watermark" aria-hidden="true"><span>{{ mediaPreviewWatermark }}</span><span>{{ mediaPreviewWatermark }}</span><span>{{ mediaPreviewWatermark }}</span></div>
+        </sc-if>
+      </div>
+      <p class="tf-secure-media-note">{{ mediaPreviewProtectionNote }}</p>
+    </section>
+  </div>
 </sc-if>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 let REQUESTS = [];
+const PUBLISHED_REQUESTS_PAGE_SIZE = 6;
 let SAVED_TEACHERS = [];
+
+function disputesMineCount(payload) {
+  if (!payload) return 0;
+  if (Array.isArray(payload.items)) return payload.items.length;
+  if (Array.isArray(payload)) return payload.length;
+  const total = Number(payload.totalCount != null ? payload.totalCount : payload.total);
+  return Number.isFinite(total) && total > 0 ? total : 0;
+}
 
 const PAYMENT_STATS = [];
 const TRANSACTIONS = [];
@@ -904,17 +1126,27 @@ class Component extends DCLogic {
     settingsName: '', settingsNameEnglish: '', settingsEmail: '',
     hasAvatar: false, accountUserId: '', avatarVersion: 0,
     currentPassword: '', newPassword: '', confirmPassword: '', accountBusy: false,
+    accountSessions: [], accountSessionsLoading: false, mfaEnabled: false,
     notifyDeliveries: true, notifySessions: true,
     learnPrefsStyle: '', learnPrefsLanguageId: '', learnPrefsVersion: '',
     learnPrefsLanguages: [], learnPrefsBusy: false, learnPrefsLoading: false,
     learnPrefsError: '', learnPrefsSuccess: '',
     timelineOrder: null, timelineLoading: false, timelineError: false, timelineEvents: [],
     reviewModal: null, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: '',
+    approveConfirm: false,
+    mediaPreview: null,
     rateModal: null, rateBusy: false, rateError: '', rateCommentError: '',
     rateClarity: 5, rateKnowledge: 5, rateCommunication: 5, rateOnTime: 5, rateValue: 5,
     rateComment: '', rateRecommends: true,
     pendingDeepLink: null,
-    ordersLoaded: false
+    requestDetailId: (() => {
+      try { return (new URLSearchParams(location.search).get('requestId') || '').trim(); }
+      catch (_) { return ''; }
+    })(),
+    ordersLoaded: false,
+    eligibleDisputes: [],
+    myDisputesCount: 0,
+    publishedRequestsExpanded: false
   };
 
   componentDidMount() {
@@ -934,12 +1166,14 @@ class Component extends DCLogic {
       });
     } else if (section === 'requests' || section === 'overview' || section === 'sessions'
       || section === 'messages' || section === 'saved' || section === 'payments'
-      || section === 'files' || section === 'reviews' || section === 'notifications'
+      || section === 'reviews' || section === 'notifications'
       || section === 'settings') {
       const next = { section };
       if (filter) next.filter = filter;
       if (orderId) next.pendingDeepLink = { orderId, focus };
       this.setState(next);
+    } else if (section === 'files') {
+      this.setState({ section: 'overview' });
     } else if (section) {
       this.setState({ section: 'overview' });
     } else if (orderId) {
@@ -951,7 +1185,8 @@ class Component extends DCLogic {
     }
     const created = (query.get('requestCreated') || '').trim();
     if (created) {
-      this.flash(Tafseel.t('dash_request_created_ok'));
+      const openPublished = !!(query.get('requestId') || '').trim();
+      this.flash(Tafseel.t(openPublished ? 'dash_open_request_created_ok' : 'dash_request_created_ok'));
       try {
         const url = new URL(location.href);
         url.searchParams.delete('requestCreated');
@@ -967,18 +1202,21 @@ class Component extends DCLogic {
         settingsNameEnglish:session.fullNameEnglish || '',
         settingsEmail:session.email || '',
         hasAvatar: !!session.hasAvatar,
+        mfaEnabled: !!session.mfaEnabled,
         accountUserId: session.userId || ''
       });
       return Promise.allSettled([
-        Tafseel.api.get('/learning-requests/mine?pageSize=100'),
-        Tafseel.api.get('/orders/mine?pageSize=100'),
+        Tafseel.api.allPages('/learning-requests/mine', 50),
+        Tafseel.api.allPages('/orders/mine', 50),
         Tafseel.api.get('/favorite-teachers'),
-        Tafseel.api.get('/notifications?pageSize=100'),
-        Tafseel.api.get('/live-sessions/mine?pageSize=100'),
-        Tafseel.api.get('/notification-preferences'),
+        Tafseel.api.allPages('/notifications', 100),
+        Tafseel.api.allPages('/live-sessions/mine', 50),
+        Promise.resolve(null),
         Tafseel.api.get('/conversations?pageSize=50'),
-        Tafseel.api.get('/students/me/learning-preferences'),
-        Tafseel.api.get('/languages')
+        Promise.resolve(null),
+        Promise.resolve(null),
+        Tafseel.api.get('/disputes/eligible'),
+        Tafseel.api.get('/disputes/mine')
       ]);
     }).then(results => {
       if (!results) return;
@@ -993,19 +1231,28 @@ class Component extends DCLogic {
       const conversations = value(6);
       const learningPrefs = value(7);
       const languages = value(8);
-      [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(fail);
+      const eligibleDisputes = value(9);
+      const disputesMine = value(10);
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(fail);
       REQUESTS = Tafseel.projectStudentWorkList(
         requests && requests.items,
         orders && orders.items
       );
-      SAVED_TEACHERS = favorites ? favorites.map(x => ({
-        name:Tafseel.userName(x), subject:x.subjects.join(' · '),
-        hasRating:x.rating != null && x.ratingCount > 0,
-        rating:x.rating == null ? '' : Number(x.rating).toFixed(1),
-        price:Tafseel.money(x.startingPrice || 0, x.currency || 'SAR'),
-        avatar: Tafseel.avatarUrl(x.teacherId, x.hasAvatar, null, Tafseel.userName(x)),
-        profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(x.teacherId)
-      })) : [];
+      SAVED_TEACHERS = favorites ? favorites.map(x => {
+        const price = Tafseel.moneyView(x.startingPrice || 0, x.currency || 'SAR');
+        return {
+          name:Tafseel.userName(x), subject:x.subjects.join(' · '),
+          hasRating:x.rating != null && x.ratingCount > 0,
+          rating:x.rating == null ? '' : Number(x.rating).toFixed(1),
+          fromWord: Tafseel.lang === 'ar' ? 'من' : 'from',
+          price: price.amount,
+          amountNumber: price.amountNumber,
+          isSarAmount: price.isSarAmount,
+          isPlainAmount: price.isPlainAmount,
+          avatar: Tafseel.avatarUrl(x.teacherId, x.hasAvatar, null, Tafseel.userName(x)),
+          profileHref: 'Tafseel-Teacher-Profile.dc.html?id=' + encodeURIComponent(x.teacherId)
+        };
+      }) : [];
       this.setState({
         liveNotifs: notifications && notifications.items ? notifications.items.map(x => ({
           id:x.id, title:Tafseel.notificationTitle(x), body:Tafseel.notificationBody(x),
@@ -1017,11 +1264,17 @@ class Component extends DCLogic {
         prefsUnavailable: !preferences,
         liveConversations: conversations && conversations.items ? conversations.items : [],
         liveSessions: sessions && sessions.items ? sessions.items.map(x => ({
-          id:x.id, teacher: Tafseel.partyName(x, 'teacher'), topic:x.title,
+          id:x.id, kind:'session', teacher: Tafseel.partyName(x, 'teacher'), topic:x.title, service:x.title,
           when:Tafseel.date(x.startsAt), countdown:Tafseel.t('dash_session_scheduled'),
-          urgent:x.status === 1, version:x.version
+          urgent:Number(x.status) === 1, status:Number(x.status), version:x.version,
+          teacherId:x.teacherId || '', teacherServiceId:x.teacherServiceId || '',
+          hasReview:!!x.hasReview, disputeId:x.disputeId || ''
+          ,endsAt:x.endsAt, proposedStartsAt:x.proposedStartsAt || '',
+          rescheduleRequestedById:x.rescheduleRequestedById || ''
         })) : [],
         ordersLoaded: !!orders,
+        eligibleDisputes: Array.isArray(eligibleDisputes) ? eligibleDisputes : [],
+        myDisputesCount: disputesMineCount(disputesMine),
         learnPrefsStyle: learningPrefs && learningPrefs.explanationStyle ? learningPrefs.explanationStyle : '',
         learnPrefsLanguageId: learningPrefs && learningPrefs.preferredTeachingLanguage
           ? String(learningPrefs.preferredTeachingLanguage.id)
@@ -1039,14 +1292,98 @@ class Component extends DCLogic {
           : '')
       });
       this.applyPendingDeepLink();
+      this.loadSectionData(this.state.section);
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
   }
   componentWillUnmount() {
     this._timelineRequest = null;
+    this.releaseMediaPreview();
     Tafseel.uninstallDashboardDrawer(this);
     Tafseel.offChange(this._sub);
   }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
+  componentDidUpdate(previousProps, previousState) {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    this.mountRequestDetail();
+    // PASS 03: the drawer's scroll lock, focus, Escape and focus return come from the one
+    // shared shell mechanic rather than a fourth hand-rolled copy.
+    Tafseel.modal.sync(!!(this.state.drawer && this.state.compactNav), {
+      key: 'student-drawer',
+      panel: '#student-sidebar',
+      onRequestClose: () => this.setState({ drawer: false })
+    });
+    if (previousState && previousState.section !== this.state.section)
+      this.loadSectionData(this.state.section);
+  }
+
+  loadSectionData(section) {
+    if (!this._session || section !== 'settings') return;
+    this._sectionLoads = this._sectionLoads || new Set();
+    if (this._sectionLoads.has(section)) return;
+    this._sectionLoads.add(section);
+    this.setState({ accountSessionsLoading:true, learnPrefsLoading:true, learnPrefsError:'' });
+    Promise.allSettled([
+      Tafseel.api.get('/auth/sessions'),
+      Tafseel.api.get('/notification-preferences'),
+      Tafseel.api.get('/students/me/learning-preferences'),
+      Tafseel.api.get('/languages')
+    ]).then(results => {
+      const value = index => results[index].status === 'fulfilled' ? results[index].value : null;
+      const accountSessions = value(0);
+      const preferences = value(1);
+      const learningPrefs = value(2);
+      const languages = value(3);
+      const failed = results.find(result => result.status === 'rejected');
+      this.setState({
+        accountSessions:accountSessions || [], accountSessionsLoading:false,
+        notifyDeliveries:preferences ? preferences.emailEnabled : true,
+        notifySessions:preferences ? preferences.inAppEnabled : true,
+        prefsUnavailable:!preferences,
+        learnPrefsStyle:learningPrefs && learningPrefs.explanationStyle ? learningPrefs.explanationStyle : '',
+        learnPrefsLanguageId:learningPrefs && learningPrefs.preferredTeachingLanguage
+          ? String(learningPrefs.preferredTeachingLanguage.id) : '',
+        learnPrefsVersion:learningPrefs && learningPrefs.version ? learningPrefs.version : '',
+        learnPrefsLanguages:Array.isArray(languages) ? languages.filter(x => x && x.isActive !== false).map(x => ({
+          id:String(x.id), name:x.name || '', nameAr:x.nameAr || x.name || ''
+        })) : [],
+        learnPrefsLoading:false,
+        learnPrefsError:failed ? Tafseel.api.errorMessage(failed.reason) : ''
+      });
+      if (failed) this._sectionLoads.delete(section);
+    }).catch(error => {
+      this._sectionLoads.delete(section);
+      this.setState({ accountSessionsLoading:false, learnPrefsLoading:false, learnPrefsError:Tafseel.api.errorMessage(error) });
+    });
+  }
+
+  mountRequestDetail() {
+    const id = this.state.requestDetailId;
+    const root = document.getElementById('tf-student-request-detail');
+    if (!id || !root || !window.TafseelOpenMarketplace) return;
+    if (root.dataset.mounting === id) return;
+    root.dataset.mounting = id;
+    TafseelOpenMarketplace.mountStudentRequest(root, { requestId:id });
+  }
+
+  openRequestDetail(id) {
+    if (!id) return;
+    this.setState({ section:'requests', requestDetailId:String(id) });
+    try {
+      const url = new URL(location.href);
+      url.searchParams.set('section', 'requests');
+      url.searchParams.set('requestId', String(id));
+      history.pushState({}, '', url.pathname + url.search + url.hash);
+    } catch (_) { /* state navigation still works */ }
+  }
+
+  closeRequestDetail() {
+    this.setState({ requestDetailId:'' });
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('requestId');
+      history.pushState({}, '', url.pathname + url.search + url.hash);
+    } catch (_) { /* state navigation still works */ }
+  }
 
   flash(msg) {
     Tafseel.flash(this, msg);
@@ -1128,13 +1465,16 @@ class Component extends DCLogic {
       if (!session) return null;
       this._session = session;
       return Promise.all([
-        Tafseel.api.get('/learning-requests/mine?pageSize=100'),
-        Tafseel.api.get('/orders/mine?pageSize=100'),
-        Tafseel.api.get('/notifications?pageSize=100')
+        Tafseel.api.allPages('/learning-requests/mine', 50),
+        Tafseel.api.allPages('/orders/mine', 50),
+        Tafseel.api.allPages('/notifications', 100),
+        Tafseel.api.allPages('/live-sessions/mine', 50),
+        Tafseel.api.get('/disputes/eligible'),
+        Tafseel.api.get('/disputes/mine').catch(() => ({ items: [] }))
       ]);
     }).then(results => {
       if (!results) return;
-      const [requests, orders, notifications] = results;
+      const [requests, orders, notifications, sessions, eligibleDisputes, disputesMine] = results;
       REQUESTS = Tafseel.projectStudentWorkList(
         requests && requests.items,
         orders && orders.items
@@ -1145,7 +1485,16 @@ class Component extends DCLogic {
           time:Tafseel.date(x.createdAt), read:!!x.readAt, type:x.type, link:x.link || ''
         })) : [],
         read: notifications && notifications.items ? notifications.items.filter(x => x.readAt).map(x => x.id) : [],
-        ordersLoaded: !!orders
+        ordersLoaded: !!orders,
+        liveSessions: sessions && sessions.items ? sessions.items.map(x => ({
+          id:x.id, kind:'session', teacher:Tafseel.partyName(x,'teacher'), topic:x.title, service:x.title,
+          when:Tafseel.date(x.startsAt), countdown:Tafseel.t('dash_session_scheduled'), urgent:Number(x.status)===1,
+          status:Number(x.status), version:x.version, teacherId:x.teacherId||'', teacherServiceId:x.teacherServiceId||'',
+          hasReview:!!x.hasReview, disputeId:x.disputeId||'', endsAt:x.endsAt,
+          proposedStartsAt:x.proposedStartsAt||'', rescheduleRequestedById:x.rescheduleRequestedById||''
+        })) : [],
+        eligibleDisputes: Array.isArray(eligibleDisputes) ? eligibleDisputes : [],
+        myDisputesCount: disputesMineCount(disputesMine)
       });
       this.applyPendingDeepLink();
     }).catch(error => this.flash(Tafseel.api.errorMessage(error)));
@@ -1184,6 +1533,52 @@ class Component extends DCLogic {
   /** Canonical action button (label/style/handler) for one projected work row. Single source
    * used by both the overview and full work-list tables, avoiding drift between them. */
   orderActionRender(r) {
+    if (r.kind === 'order') {
+      if (r.canReportNonDelivery) return {
+        actionLabel:Tafseel.t('sd_action_report_non_delivery'),
+        onAction:()=>{ location.href='Tafseel-Disputes.dc.html?orderId='+encodeURIComponent(r.id)+'&type=non_delivery'; },
+        actionBtnStyle:'min-height:44px;padding-inline:14px;border:0;background:var(--danger);color:#fff;border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer'
+      };
+      const pending = (r.extensions || []).find(x => Number(x.status) === 0 && x.requestedById !== (this._session && this._session.userId));
+      if (pending) return {
+        actionLabel: Tafseel.lang === 'ar' ? 'مراجعة التمديد' : 'Review extension',
+        onAction: async () => {
+          const accept = await Tafseel.confirm((Tafseel.lang === 'ar' ? 'قبول الموعد الجديد: ' : 'Accept new deadline: ') + Tafseel.date(pending.proposedDeliveryAt));
+          try { await Tafseel.api.post('/orders/'+r.id+'/extensions/'+pending.id+'/respond',{accept,response:''},{'If-Match':r.version}); await this.reload(); }
+          catch(e){ this.flash(Tafseel.api.errorMessage(e)); }
+        },
+        actionBtnStyle:'min-height:44px;padding-inline:14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer'
+      };
+      if (r.isOverdue) return {
+        actionLabel:Tafseel.lang === 'ar' ? 'طلب تمديد' : 'Request extension',
+        onAction:async()=>{const days=Number(await Tafseel.prompt(Tafseel.lang==='ar'?'عدد أيام التمديد':'Extension days','2'));const reason=await Tafseel.prompt(Tafseel.lang==='ar'?'سبب التمديد':'Reason');if(!days||!reason)return;try{await Tafseel.api.post('/orders/'+r.id+'/extensions',{proposedDeliveryAt:new Date(Date.now()+days*86400000).toISOString(),reason},{'If-Match':r.version});await this.reload()}catch(e){this.flash(Tafseel.api.errorMessage(e))}},
+        actionBtnStyle:'min-height:44px;padding-inline:14px;border:1px solid var(--warning);background:var(--surface);color:var(--warning);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer'
+      };
+    }
+    if (r.kind === 'request' && Number(r.sourcingMode) === 1) {
+      const paymentActive = Number(r.rawStatus) === 6 && r.paymentReservationActive;
+      return {
+        actionLabel: Tafseel.t(paymentActive ? 'sd_attention_cta_pay' : 'sd_cta_view_offers'),
+        onAction: () => this.openRequestDetail(r.id),
+        actionBtnStyle: 'min-height:44px;padding-inline:14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer'
+      };
+    }
+    if (r.kind === 'order' && Number(r.rawStatus) === 4 && !r.action && r.teacherId && r.teacherServiceId) {
+      return {
+        actionLabel: Tafseel.t('sd_action_book_again'),
+        onAction: () => {
+          Tafseel.analytics.track('repeat_request_started', 'Order', {
+            sourceOrderId: r.id,
+            teacherId: r.teacherId,
+            teacherServiceId: r.teacherServiceId
+          }, String(r.id));
+          location.href = 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(r.teacherId)
+            + '&teacherServiceId=' + encodeURIComponent(r.teacherServiceId)
+            + '&repeatOrderId=' + encodeURIComponent(r.id);
+        },
+        actionBtnStyle: 'min-height:44px;padding-inline:14px;border:1px solid var(--primary);background:var(--surface);color:var(--primary);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer'
+      };
+    }
     if (r.kind !== 'order' || !r.action) return { actionLabel: '', actionBtnStyle: '', onAction: () => {} };
     const labelKey = r.action === 'pay' ? 'sd_action_pay'
       : r.action === 'review' ? 'sd_action_review_delivery'
@@ -1197,7 +1592,101 @@ class Component extends DCLogic {
     return {
       actionLabel: labelKey ? Tafseel.t(labelKey) : '',
       onAction,
-      actionBtnStyle: 'min-height:40px;padding-inline:14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13.5px;cursor:pointer'
+      actionBtnStyle: 'min-height:44px;padding-inline:14px;border:0;background:var(--primary);color:var(--primary-ink);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer'
+    };
+  }
+
+  sessionCard(se) {
+    const status = Number(se.status);
+    const terminal = status >= 2 && status <= 5;
+    const canRate = status === 2 && !se.hasReview;
+    const awaitingPayment = status === 0;
+    const primary = status === 1;
+    const me = this._session && this._session.userId;
+    const rescheduleNeedsResponse = !!se.proposedStartsAt && se.rescheduleRequestedById !== me;
+    const settlementNeedsConfirm = status === 6 || status === 7;
+    const teacherNoShowReview = status === 8;
+    const sessionEnded = se.endsAt && Date.now() >= new Date(se.endsAt).getTime();
+    const ended = se.endsAt && Date.now() >= new Date(se.endsAt).getTime() + 15 * 60000;
+    const outcomeNotice = se.passiveReviewRequired
+      ? Tafseel.t('session_outcome_under_review')
+      : se.outcomeReviewDeadline && sessionEnded
+        ? Tafseel.t('session_outcome_deadline', { date:Tafseel.date(se.outcomeReviewDeadline, { dateStyle:'medium', timeStyle:'short' }) })
+        : se.countdown;
+    return {
+      ...se,
+      cardStyle: 'border:1px solid ' + (primary ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (primary ? 'var(--primary-soft)' : 'var(--bg)'),
+      countdown: outcomeNotice,
+      countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11px;font-weight:500;color:' + (primary ? 'var(--primary)' : 'var(--muted)'),
+      btnLabel: rescheduleNeedsResponse ? (Tafseel.lang === 'ar' ? 'مراجعة الموعد الجديد' : 'Review new time')
+        : settlementNeedsConfirm ? (Tafseel.lang === 'ar' ? 'تأكيد نتيجة الجلسة' : 'Confirm session outcome')
+        : teacherNoShowReview ? (Tafseel.lang === 'ar' ? 'مراجعة ادعاء الغياب' : 'Review no-show claim')
+        : primary && sessionEnded ? Tafseel.t('session_outcome_required')
+        : Tafseel.t(canRate ? 'sd_action_rate_teacher' : terminal ? 'sd_action_book_session_again' : awaitingPayment ? 'sd_action_pay' : 'sd_session_join'),
+      disputeLabel: !se.disputeId && (this.state.eligibleDisputes || []).some(x => x.type === 'session' && x.id === se.id) ? (Tafseel.lang === 'ar' ? 'فتح نزاع' : 'Open dispute') : '',
+      onDispute: () => { location.href = 'Tafseel-Disputes.dc.html?liveSessionId=' + encodeURIComponent(se.id); },
+      secondaryLabel: primary ? (ended ? (Tafseel.lang === 'ar' ? 'المدرس لم يحضر' : 'Teacher did not attend') : (Tafseel.lang === 'ar' ? 'طلب تغيير الموعد' : 'Request a new time')) : '',
+      onSecondary: async () => {
+        try {
+          if (ended) {
+            if (!await Tafseel.confirm(Tafseel.lang === 'ar' ? 'تسجيل عدم حضور المدرس؟ سيُمنح المدرس وقتًا للمراجعة.' : 'Report the teacher absent? They will have time to review.')) return;
+            await Tafseel.api.post('/live-sessions/' + se.id + '/no-show', { studentNoShow:false }, { 'If-Match':se.version });
+          } else {
+            const local = await Tafseel.promptDateTime(Tafseel.lang === 'ar' ? 'اختر الموعد المقترح' : 'Choose the proposed time');
+            if (!local) return;
+            await Tafseel.api.post('/live-sessions/' + se.id + '/reschedule', { localStart:local, timeZoneId:Intl.DateTimeFormat().resolvedOptions().timeZone }, { 'If-Match':se.version });
+          }
+          await this.reload();
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      },
+      btnStyle: 'min-height:44px;padding:0 14px;border-radius:var(--r-sm);font-size:12px;font-weight:600;' + (primary
+        ? 'border:0;background:var(--primary);color:var(--primary-ink);'
+        : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
+      onJoin: async () => {
+        if (rescheduleNeedsResponse) {
+          const accept = await Tafseel.choice({
+            title: Tafseel.lang === 'ar' ? 'الرد على الموعد المقترح' : 'Respond to proposed time',
+            message: (Tafseel.lang === 'ar' ? 'الموعد المقترح: ' : 'Proposed time: ') + Tafseel.date(se.proposedStartsAt)
+          });
+          if (accept === null) return;
+          try { await Tafseel.api.post('/live-sessions/' + se.id + '/reschedule/respond', { accept }, { 'If-Match':se.version }); await this.reload(); }
+          catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          return;
+        }
+        if (settlementNeedsConfirm) {
+          if (!await Tafseel.confirm(Tafseel.lang === 'ar' ? 'تأكيد نتيجة الجلسة وتحريك المبلغ وفقًا لها؟' : 'Confirm this outcome and settle the payment?')) return;
+          try { await Tafseel.api.post('/live-sessions/' + se.id + '/settlement/confirm', null, { 'If-Match':se.version }); await this.reload(); }
+          catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+          return;
+        }
+        if (teacherNoShowReview) {
+          location.href = 'Tafseel-Disputes.dc.html?liveSessionId=' + encodeURIComponent(se.id);
+          return;
+        }
+        if (canRate) { this.openRateModal(se); return; }
+        if (terminal) {
+          Tafseel.analytics.track('repeat_session_started', 'LiveSession', {
+            sourceLiveSessionId: se.id,
+            teacherId: se.teacherId,
+            teacherServiceId: se.teacherServiceId
+          }, String(se.id));
+          location.href = 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(se.teacherId)
+            + '&teacherServiceId=' + encodeURIComponent(se.teacherServiceId);
+          return;
+        }
+        if (awaitingPayment) {
+          location.href = 'Tafseel-Payment.dc.html?liveSessionId=' + encodeURIComponent(se.id);
+          return;
+        }
+        if (primary && sessionEnded) {
+          this.flash(Tafseel.t('session_outcome_action_help'));
+          return;
+        }
+        try {
+          const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
+          location.href = join.url;
+        } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
+      }
     };
   }
 
@@ -1220,8 +1709,16 @@ class Component extends DCLogic {
       onTimeline: event => this.openTimeline(r, event.currentTarget),
       messageLabel: r.kind === 'order' ? Tafseel.t('chat_messages') : '',
       onMessage: () => window.TafseelChat && window.TafseelChat.openOrder(r.id, r.teacherId),
+      disputeLabel: r.kind === 'order' && (this.state.eligibleDisputes || []).some(x => x.type === 'order' && x.id === r.id) ? (Tafseel.lang === 'ar' ? 'فتح نزاع' : 'Open dispute') : '',
+      onDispute: () => { location.href = 'Tafseel-Disputes.dc.html?orderId=' + encodeURIComponent(r.id); },
       statusStyle,
       showTeacherAvatar: r.kind === 'order' && !!r.teacherAvatar,
+      sourcingLabel: r.kind === 'request'
+        ? Tafseel.t(Number(r.sourcingMode) === 1 ? 'sd_sourcing_open' : 'sd_sourcing_direct')
+        : '',
+      workMeta: r.kind === 'request'
+        ? (Tafseel.t(Number(r.sourcingMode) === 1 ? 'sd_sourcing_open' : 'sd_sourcing_direct') + ' · ' + (r.service || ''))
+        : (r.service || ''),
       teacherAvatar: r.teacherAvatar || (r.teacherId ? Tafseel.avatarUrl(r.teacherId, false, null, r.teacherName) : Tafseel.defaultAvatar),
       showGuide: !!guideShort,
       guideShort: guideShort
@@ -1268,21 +1765,132 @@ class Component extends DCLogic {
     });
   }
 
+  groupDeliveryPackages(list) {
+    const sorted = (list || []).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      || String(a.id || '').localeCompare(String(b.id || '')));
+    const groups = [];
+    sorted.forEach(item => {
+      const last = groups[groups.length - 1];
+      const same = last
+        && last.createdAt === item.createdAt
+        && String(last.message || '') === String(item.message || '');
+      if (same) last.files.push(item);
+      else groups.push({ createdAt: item.createdAt, message: item.message, files: [item] });
+    });
+    return groups;
+  }
+
+  deliveryPreviewable(item) {
+    const type = String(item && item.contentType || '').split(';')[0].trim().toLowerCase();
+    if (/^(image|video|audio)\//.test(type) || type === 'application/pdf') return true;
+    return /\.(mp4|webm|wav|mp3|m4a|aac|ogg|jpe?g|png|webp|gif|pdf)$/i.test((item && item.originalName) || '');
+  }
+
+  deliveryMediaKind(item) {
+    const type = String(item && item.contentType || '').split(';')[0].trim().toLowerCase();
+    const name = String(item && item.originalName || '');
+    if (type.startsWith('video/') || /\.(mp4|webm)$/i.test(name)) return 'video';
+    if (type.startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(name)) return 'image';
+    if (type.startsWith('audio/') || /\.(wav|mp3|m4a|aac|ogg)$/i.test(name)) return 'audio';
+    if (type === 'application/pdf' || /\.pdf$/i.test(name)) return 'pdf';
+    return '';
+  }
+
+  releaseMediaPreview() {
+    const preview = this.state && this.state.mediaPreview;
+    if (preview && preview.url) URL.revokeObjectURL(preview.url);
+  }
+
+  closeMediaPreview() {
+    this._mediaPreviewRequest = (this._mediaPreviewRequest || 0) + 1;
+    this.releaseMediaPreview();
+    this.setState({ mediaPreview: null });
+  }
+
+  async openDeliveryPreview(item, path, name) {
+    const kind = this.deliveryMediaKind(item);
+    if (!kind) return;
+    const request = this._mediaPreviewRequest = (this._mediaPreviewRequest || 0) + 1;
+    this.releaseMediaPreview();
+    this.setState({ mediaPreview: { name, kind, protected: kind === 'image' || kind === 'video', loading: true, url: '' } });
+    try {
+      const file = await Tafseel.api.blob(path);
+      const url = URL.createObjectURL(file.blob);
+      if (request !== this._mediaPreviewRequest) return URL.revokeObjectURL(url);
+      this.setState({ mediaPreview: { name, kind, protected: kind === 'image' || kind === 'video', loading: false, url } });
+    } catch (error) {
+      if (request !== this._mediaPreviewRequest) return;
+      this.setState({ mediaPreview: null });
+      this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  protectMedia(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.flash(Tafseel.t('sd_media_protected_toast'));
+  }
+
+  mediaPreviewKeyDown(event) {
+    if (event.key === 'Escape') return this.closeMediaPreview();
+    if (event.key === 'PrintScreen' || ((event.ctrlKey || event.metaKey) && /[ps]/i.test(event.key)))
+      return this.protectMedia(event);
+    Tafseel.modalKeyDown(event, () => this.closeMediaPreview());
+  }
+
+  mapDeliveryFiles(item) {
+    const name = (item && item.originalName) || Tafseel.t('td_download_file', { name: '' });
+    const path = '/orders/deliveries/' + encodeURIComponent(item.id) + '/content';
+    const kind = this.deliveryMediaKind(item);
+    const protectedMedia = kind === 'image' || kind === 'video';
+    return {
+      fileName: name,
+      canPreview: this.deliveryPreviewable(item),
+      canDownload: !protectedMedia,
+      previewLabel: Tafseel.t('sd_delivery_preview'),
+      downloadLabel: Tafseel.t('sd_delivery_download'),
+      onPreview: () => this.openDeliveryPreview(item, path, name),
+      onDownload: () => Tafseel.api.openBlob(path, { download: true, fileName: name })
+        .catch(error => this.flash(Tafseel.api.errorMessage(error)))
+    };
+  }
+
+  mapDeliveryPackages(list) {
+    const packages = this.groupDeliveryPackages(list).slice().reverse();
+    const total = packages.length;
+    return packages.map((pkg, index) => {
+      const chronological = total - index;
+      return {
+        when: Tafseel.date(pkg.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
+        message: (pkg.message || '').trim() || Tafseel.t('sd_review_no_message'),
+        isLatest: index === 0,
+        focus: index === 0,
+        latestLabel: Tafseel.t('sd_review_latest_badge'),
+        versionLabel: Tafseel.t('sd_review_version', {
+          n: String(chronological),
+          total: String(total)
+        }),
+        noteLabel: Tafseel.t('sd_review_teacher_note'),
+        files: (pkg.files || []).map(file => this.mapDeliveryFiles(file))
+      };
+    });
+  }
+
   openReviewModal(order) {
     this.setState({
-      reviewModal: order, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: ''
+      reviewModal: order, reviewBusy: false, reviewError: '', showRevisionForm: false, revisionReason: '',
+      approveConfirm: false
     });
   }
 
   closeReviewModal() {
     if (this.state.reviewBusy) return;
-    this.setState({ reviewModal: null, reviewError: '', showRevisionForm: false, revisionReason: '' });
+    this.setState({ reviewModal: null, reviewError: '', showRevisionForm: false, revisionReason: '', approveConfirm: false });
   }
 
   async approveDelivery() {
     const order = this.state.reviewModal;
-    if (!order || this.state.reviewBusy) return;
-    if (!confirm(Tafseel.t('sd_review_approve_confirm'))) return;
+    if (!order || this.state.reviewBusy || !this.state.approveConfirm) return;
     this.setState({ reviewBusy: true, reviewError: '' });
     try {
       await Tafseel.api.post('/orders/' + order.id + '/complete', null, { 'If-Match': order.version });
@@ -1314,8 +1922,8 @@ class Component extends DCLogic {
   }
 
   openRateModal(order) {
-    if (!order || order.kind !== 'order') return;
-    if (!(order.reviewCanSubmit || (Number(order.rawStatus) === 4 && !order.hasReview))) {
+    if (!order || (order.kind !== 'order' && order.kind !== 'session')) return;
+    if (order.kind === 'order' && !(order.reviewCanSubmit || (Number(order.rawStatus) === 4 && !order.hasReview))) {
       this.flash(Tafseel.t('sd_rate_not_eligible'));
       return;
     }
@@ -1354,7 +1962,8 @@ class Component extends DCLogic {
     }
     this.setState({ rateBusy: true, rateError: '', rateCommentError: '' });
     try {
-      await Tafseel.api.post('/orders/' + order.id + '/review', {
+      const path = order.kind === 'session' ? '/live-sessions/' + order.id + '/review' : '/orders/' + order.id + '/review';
+      await Tafseel.api.post(path, {
         explanationClarity: Number(s.rateClarity),
         subjectKnowledge: Number(s.rateKnowledge),
         communication: Number(s.rateCommunication),
@@ -1376,12 +1985,20 @@ class Component extends DCLogic {
     const NOTIFS = s.liveNotifs || [];
     const unread = NOTIFS.filter(n => !(s.read || []).includes(n.id)).length;
     const requestCount = REQUESTS.filter(x => x.kind === 'request' || (x.kind === 'order' && x.group !== 'done')).length;
+    const openMarketplaceRows = REQUESTS.filter(x => x.kind === 'request' && Number(x.sourcingMode) === 1);
+    const publishedRequestRows = openMarketplaceRows.filter(x => Number(x.rawStatus) === 5);
+    const openMarketplaceCount = openMarketplaceRows.length;
     const sessionCount = (s.liveSessions || []).length;
     const unreadMessages = (s.liveConversations || []).reduce((n, c) => n + (c.unreadCount || 0), 0);
-    const NAV = [
-      ['overview', '◱', 'sd_nav_overview', 0], ['requests', '◫', 'sd_nav_requests', requestCount], ['sessions', '◉', 'sd_nav_sessions', sessionCount],
-      ['messages', '✉', 'sd_nav_messages', unreadMessages], ['saved', '♡', 'sd_nav_saved', 0], ['payments', '▤', 'sd_nav_payments', 0],
-      ['files', '⇩', 'sd_nav_files', 0], ['reviews', '★', 'sd_nav_reviews', 0], ['settings', '⚙', 'sd_nav_settings', 0]
+    const NAV_GROUPS = [
+      { group: 'nav_group_overview', items: [['overview', 'sd_nav_overview', 0]] },
+      { group: 'nav_group_learning', items: [
+        ['requests', 'sd_nav_requests', requestCount], ['sessions', 'sd_nav_sessions', sessionCount], ['saved', 'sd_nav_saved', 0]
+      ]},
+      { group: 'nav_group_communication', items: [['messages', 'sd_nav_messages', unreadMessages]] },
+      { group: 'nav_group_account', items: [
+        ['payments', 'sd_nav_payments', 0], ['reviews', 'sd_nav_reviews', 0], ['settings', 'sd_nav_settings', 0]
+      ]}
     ];
 
     const rows = Tafseel.filterStudentWorkList(REQUESTS, s.filter).slice(0, 6);
@@ -1415,7 +2032,7 @@ class Component extends DCLogic {
     const navTo = (key) => {
       this.setState({ section: key });
       if (typeof this.closeDrawer === 'function') this.closeDrawer();
-      else { this.setState({ drawer: false }); document.body.style.overflow = ''; }
+      else this.setState({ drawer: false });
     };
 
     return {
@@ -1432,7 +2049,44 @@ class Component extends DCLogic {
       toast: s.toast,
       toastClass: Tafseel.toastClass(s.toastLeaving),
       stop: e => e.stopPropagation(),
+      mediaPreview: s.mediaPreview,
+      mediaPreviewLabel: Tafseel.t('sd_media_preview_label'),
+      mediaPreviewName: s.mediaPreview ? s.mediaPreview.name : '',
+      mediaPreviewUrl: s.mediaPreview ? s.mediaPreview.url : '',
+      mediaPreviewLoading: !!(s.mediaPreview && s.mediaPreview.loading),
+      mediaPreviewIsVideo: !!(s.mediaPreview && !s.mediaPreview.loading && s.mediaPreview.kind === 'video'),
+      mediaPreviewIsImage: !!(s.mediaPreview && !s.mediaPreview.loading && s.mediaPreview.kind === 'image'),
+      mediaPreviewIsAudio: !!(s.mediaPreview && !s.mediaPreview.loading && s.mediaPreview.kind === 'audio'),
+      mediaPreviewIsPdf: !!(s.mediaPreview && !s.mediaPreview.loading && s.mediaPreview.kind === 'pdf'),
+      mediaPreviewProtected: !!(s.mediaPreview && s.mediaPreview.protected && !s.mediaPreview.loading),
+      mediaPreviewLoadingLabel: Tafseel.t('sd_media_loading'),
+      mediaPreviewCloseLabel: Tafseel.t('sd_review_close'),
+      mediaPreviewProtectionNote: Tafseel.t('sd_media_protection_note'),
+      mediaPreviewWatermark: Tafseel.t('sd_media_watermark', {
+        student: s.settingsEmail || Tafseel.userName(this._session) || 'Tafseel Student'
+      }),
+      closeMediaPreview: () => this.closeMediaPreview(),
+      mediaPreviewKeyDown: event => this.mediaPreviewKeyDown(event),
+      protectMedia: event => this.protectMedia(event),
       goRequests: () => this.setState({ section: 'requests' }),
+      // Two equal destination cards under a question. Button text is the
+      // destination (Choose a teacher / Describe what you need), never Yes/No —
+      // those labels used as standalone CTAs previously read as "+ No — receive offers".
+      requestRouteQuestion: Tafseel.t('sd_request_route_question'),
+      routeDirectLabel: Tafseel.t('sd_request_route_direct'),
+      routeDirectHint: Tafseel.t('sd_request_route_direct_hint'),
+      routeOffersLabel: Tafseel.t('sd_request_route_offers'),
+      routeOffersHint: Tafseel.t('sd_request_route_offers_hint'),
+      routeLiveLabel: Tafseel.t('sd_request_route_live'),
+      hasMarketplaceRequests: openMarketplaceCount > 0,
+      marketplaceTitle: Tafseel.t('sd_market_title'),
+      marketplaceSubtitle: Tafseel.t('sd_market_subtitle'),
+      marketplaceViewAllLabel: Tafseel.t('sd_market_view_all'),
+      viewAllMarketplace: () => this.setState({ section: 'requests', filter: 'marketplace', learningTab: 'requests' }),
+      marketplaceRequests: openMarketplaceRows.slice(0, 3).map(r => {
+        const action = this.orderActionRender(r);
+        return { title:r.title, status:r.status, deadline:r.deadline, actionLabel:action.actionLabel, onAction:action.onAction };
+      }),
       goMessages: () => navTo('messages'),
       openChat: () => window.TafseelChat && window.TafseelChat.open(),
       searchUnavailableLabel: Tafseel.t('dash_search_unavailable'),
@@ -1472,6 +2126,8 @@ class Component extends DCLogic {
           };
         } else if (item.kind === 'upcoming_session' && item.session) {
           onAction = () => navTo('sessions');
+        } else if (item.kind === 'awaiting_payment' && row && Number(row.sourcingMode) === 1) {
+          onAction = enriched && enriched.onAction ? enriched.onAction : () => {};
         } else if (item.kind === 'request_action' && row) {
           onAction = () => this.setState({ section: 'requests', filter: 'pending', learningTab: 'requests' });
         } else if (enriched && enriched.onAction) {
@@ -1519,32 +2175,59 @@ class Component extends DCLogic {
       sessionsEmptyTitle: Tafseel.t('sd_sessions_empty_title'),
       sessionsEmptyBody: Tafseel.t('sd_sessions_empty_body'),
 
-      quickTitle: Tafseel.t('sd_quick_title'),
-      quickFindTeacher: Tafseel.t('sd_quick_find_teacher'),
-      quickContinueRequestLabel: Tafseel.t('sd_quick_continue_request'),
-      quickMessages: Tafseel.t('sd_quick_messages'),
-      quickContinueRequest: () => {
-        const pending = REQUESTS.find(x => x.kind === 'request');
-        if (pending) this.setState({ section: 'requests', filter: 'pending', learningTab: 'requests' });
-        else location.href = 'Tafseel-Browse-Teachers.dc.html';
-      },
-
-      navItems: NAV.map(([key, icon, labelKey, badge]) => ({
-        icon, label: Tafseel.t(labelKey), badge: badge || 0, badgeLabel: Tafseel.badgeCount(badge),
-        current: s.section === key ? 'page' : 'false',
-        style: 'display:flex;align-items:center;gap:11px;width:100%;text-align:start;padding:9px 12px;border:0;border-radius:var(--r-sm);font-size:14px;transition:all var(--t);' +
-          (s.section === key
-            ? 'background:var(--primary-soft);color:var(--primary);font-weight:700;'
-            : 'background:none;color:var(--text-2);font-weight:500;'),
-        onClick: () => navTo(key)
+      studentRoleBadge: Tafseel.t('sd_role_badge') || 'Student',
+      studentDashboardTitle: Tafseel.t('sd_dashboard_title'),
+      disputesCenterLabel: Tafseel.lang === 'ar' ? 'النزاعات' : 'Disputes',
+      showDisputesNav: (s.eligibleDisputes || []).length > 0
+        || (s.myDisputesCount || 0) > 0
+        || (s.liveSessions || []).some(se => se && se.disputeId),
+      navGroups: NAV_GROUPS.map(g => ({
+        label: Tafseel.t(g.group),
+        items: g.items.map(([key, labelKey, badge]) => ({
+          key, label: Tafseel.t(labelKey), iconPath: Tafseel.dashNavIconPath(key),
+          badge: badge || 0, badgeLabel: Tafseel.badgeCount(badge),
+          current: s.section === key ? 'page' : 'false',
+          onClick: () => { if (key === 'requests') this.setState({ requestDetailId:'' }); navTo(key); }
+        }))
       })),
 
       isOverview: s.section === 'overview',
-      isRequests: s.section === 'requests',
+      isRequests: s.section === 'requests' && !s.requestDetailId,
+      isRequestDetail: s.section === 'requests' && !!s.requestDetailId,
+      requestDetailLabel: Tafseel.t('sd_request_detail_label'),
+      backToRequestsLabel: Tafseel.t('sd_back_to_requests'),
+      closeRequestDetail: () => this.closeRequestDetail(),
+      publishedRequestsTitle: Tafseel.t('sd_published_requests_title'),
+      publishedRequestsSubtitle: Tafseel.t('sd_published_requests_subtitle'),
+      publishedRequestsCount: Tafseel.t('sd_published_requests_count', { n: String(publishedRequestRows.length) }),
+      hasPublishedRequests: publishedRequestRows.length > 0,
+      noPublishedRequests: publishedRequestRows.length === 0,
+      publishedDeadlineLabel: Tafseel.t('sd_published_deadline'),
+      publishedOffersLabel: Tafseel.t('sd_published_offers'),
+      publishedAwaitingOffersLabel: Tafseel.t('sd_published_awaiting_offers'),
+      publishedOpenLabel: Tafseel.t('sd_published_open'),
+      publishedEmptyTitle: Tafseel.t('sd_published_empty_title'),
+      publishedEmptyBody: Tafseel.t('sd_published_empty_body'),
+      publishedEmptyAction: Tafseel.t('sd_published_empty_action'),
+      allRequestsTitle: Tafseel.t('sd_all_requests_title'),
+      showPublishedMore: publishedRequestRows.length > PUBLISHED_REQUESTS_PAGE_SIZE,
+      publishedMoreExpanded: s.publishedRequestsExpanded ? 'true' : 'false',
+      publishedMoreLabel: Tafseel.t(s.publishedRequestsExpanded ? 'sd_published_less' : 'sd_published_more'),
+      onTogglePublishedMore: () => this.setState({ publishedRequestsExpanded: !s.publishedRequestsExpanded }),
+      publishedRequests: (s.publishedRequestsExpanded
+        ? publishedRequestRows
+        : publishedRequestRows.slice(0, PUBLISHED_REQUESTS_PAGE_SIZE)
+      ).map(r => ({
+        title: r.title,
+        service: r.service,
+        status: r.status,
+        deadline: r.deadline,
+        openLabel: Tafseel.t('sd_published_open_named', { title: r.title }),
+        onAction: () => this.openRequestDetail(r.id)
+      })),
       isSessions: s.section === 'sessions',
       isSaved: s.section === 'saved',
       isPayments: s.section === 'payments',
-      isFiles: s.section === 'files',
       isReviews: s.section === 'reviews',
       isNotifPage: s.section === 'notifications',
       isMessages: s.section === 'messages',
@@ -1654,31 +2337,7 @@ class Component extends DCLogic {
       timelineProfileLabel: Tafseel.t('sd_completed_view_profile'),
       showTimelineDeliveries: !!(s.timelineOrder && s.timelineOrder.deliveries && s.timelineOrder.deliveries.length),
       timelineDeliveriesHeading: Tafseel.t('sd_order_deliveries_heading'),
-      timelineDeliveries: (() => {
-        const list = (s.timelineOrder && s.timelineOrder.deliveries || []).slice().sort((a, b) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        const total = list.length;
-        return list.map((d, index) => {
-          const chronological = total - index;
-          return {
-            when: Tafseel.date(d.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
-            message: (d.message || '').trim() || Tafseel.t('sd_review_no_message'),
-            fileName: d.originalName || Tafseel.t('td_download_file', { name: '' }),
-            isLatest: index === 0,
-            focus: index === 0,
-            latestLabel: Tafseel.t('sd_review_latest_badge'),
-            versionLabel: Tafseel.t('sd_review_version', {
-              n: String(chronological),
-              total: String(total)
-            }),
-            onDownload: () => Tafseel.api.openBlob(
-              '/orders/deliveries/' + encodeURIComponent(d.id) + '/content',
-              { download: true, fileName: d.originalName || 'delivery' }
-            ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
-          };
-        });
-      })(),
+      timelineDeliveries: this.mapDeliveryPackages(s.timelineOrder && s.timelineOrder.deliveries),
       timelineCloseLabel: Tafseel.t('order_timeline_close'),
       timelineLoading: s.timelineLoading,
       timelineLoadingLabel: Tafseel.t('order_timeline_loading'),
@@ -1708,35 +2367,12 @@ class Component extends DCLogic {
         : Tafseel.t('order_guide_delivered'),
       reviewHistoryLabel: Tafseel.t('sd_review_history_label'),
       reviewNoDeliveries: !!s.reviewModal && (!s.reviewModal.deliveries || s.reviewModal.deliveries.length === 0),
-      reviewDeliveries: (() => {
-        const list = (s.reviewModal && s.reviewModal.deliveries || []).slice().sort((a, b) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        const total = list.length;
-        return list.map((d, index) => {
-          const chronological = total - index;
-          return {
-            when: Tafseel.date(d.createdAt, { dateStyle: 'medium', timeStyle: 'short' }),
-            message: (d.message || '').trim() || Tafseel.t('sd_review_no_message'),
-            noteLabel: Tafseel.t('sd_review_teacher_note'),
-            fileName: d.originalName || Tafseel.t('td_download_file', { name: '' }),
-            isLatest: index === 0,
-            latestLabel: Tafseel.t('sd_review_latest_badge'),
-            versionLabel: Tafseel.t('sd_review_version', {
-              n: String(chronological),
-              total: String(total)
-            }),
-            onDownload: () => Tafseel.api.openBlob(
-              '/orders/deliveries/' + encodeURIComponent(d.id) + '/content',
-              { download: true, fileName: d.originalName || 'delivery' }
-            ).catch(error => this.flash(Tafseel.api.errorMessage(error)))
-          };
-        });
-      })(),
+      reviewDeliveries: this.mapDeliveryPackages(s.reviewModal && s.reviewModal.deliveries),
       reviewError: s.reviewError,
       reviewBusy: !!s.reviewBusy,
       showRevisionForm: !!s.showRevisionForm,
-      showApproveActions: !s.showRevisionForm,
+      showApproveActions: !s.showRevisionForm && !s.approveConfirm,
+      showApproveConfirm: !s.showRevisionForm && !!s.approveConfirm,
       revisionReason: s.revisionReason,
       onRevisionReason: e => this.setState({ revisionReason: e.target.value, reviewError: '' }),
       revisionAvailable: !!s.reviewModal && s.reviewModal.revisionsUsed < s.reviewModal.revisionAllowance,
@@ -1748,8 +2384,18 @@ class Component extends DCLogic {
         })
         : '',
       reviewApproveHint: Tafseel.t('sd_review_approve_hint'),
-      openRevisionForm: () => this.setState({ showRevisionForm: true, reviewError: '' }),
+      reviewApproveRelease: Tafseel.t('sd_review_approve_release'),
+      reviewApproveAmount: s.reviewModal
+        ? Tafseel.t('sd_review_approve_amount', {
+          amount: Tafseel.money(s.reviewModal.studentTotal || 0, s.reviewModal.currency || 'SAR')
+        })
+        : '',
+      reviewApproveGo: Tafseel.t('sd_review_approve_go'),
+      reviewApproveBack: Tafseel.t('sd_review_approve_back'),
+      openRevisionForm: () => this.setState({ showRevisionForm: true, approveConfirm: false, reviewError: '' }),
       cancelRevisionForm: () => this.setState({ showRevisionForm: false, revisionReason: '', reviewError: '' }),
+      startApproveConfirm: () => this.setState({ approveConfirm: true, reviewError: '' }),
+      cancelApproveConfirm: () => this.setState({ approveConfirm: false }),
       closeReviewModal: () => this.closeReviewModal(),
       reviewKeyDown: event => Tafseel.modalKeyDown(event, () => this.closeReviewModal()),
       approveDelivery: () => this.approveDelivery(),
@@ -1796,49 +2442,42 @@ class Component extends DCLogic {
       sdRateSubmitLabel: s.rateBusy ? Tafseel.t('apply_saving') : Tafseel.t('sd_rate_submit'),
       sdReviewClose: Tafseel.t('sd_review_close'),
 
-      allSessions: s.liveSessions.map(se => ({
-        ...se,
-        cardStyle: 'border:1px solid ' + (se.urgent ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (se.urgent ? 'var(--primary-soft)' : 'var(--bg)'),
-        countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:' + (se.urgent ? 'var(--primary)' : 'var(--muted)'),
-        btnLabel: se.urgent ? 'Join session' : 'Reschedule',
-        btnStyle: 'height:32px;padding:0 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' + (se.urgent
-          ? 'border:0;background:var(--primary);color:var(--primary-ink);'
-          : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onJoin: async () => {
-          if (!se.id || !se.urgent) return this.flash(Tafseel.t('toast_session_not_ready'));
-          try {
-            const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
-            location.href = join.url;
-          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-        }
-      })),
+      allSessions: s.liveSessions.map(se => this.sessionCard(se)),
+      sessionsTitle: Tafseel.t('sd_nav_sessions'),
+      sessionsEmpty: s.liveSessions.length === 0,
+      sessionsEmptyTitle: Tafseel.t('sd_sessions_empty_title'),
+      sessionsEmptyBody: Tafseel.t('sd_sessions_empty_body'),
+      sessionsEmptyCta: Tafseel.t('sd_sessions_empty_cta'),
 
       savedTeachers: SAVED_TEACHERS,
-      paymentStats: (() => {
+      savedTitle: Tafseel.t('sd_nav_saved'),
+      paymentsTitle: Tafseel.t('sd_nav_payments'),
+      paymentsHoldNote: (() => {
         const orderRows = REQUESTS.filter(r => r.kind === 'order');
-        if (!s.ordersLoaded && !orderRows.length) {
-          return [
-            { label: Tafseel.t('dash_pay_total'), value: Tafseel.t('analytics_unavailable') },
-            { label: Tafseel.t('dash_pay_escrow'), value: Tafseel.t('analytics_unavailable') },
-            { label: Tafseel.t('dash_pay_refunded'), value: Tafseel.t('analytics_unavailable') }
-          ];
-        }
-        const paid = orderRows.filter(r => r.paymentStatus === 1 || r.rawStatus >= 1);
+        if (!s.ordersLoaded && !orderRows.length) return Tafseel.t('analytics_unavailable');
         const escrow = orderRows.filter(r => r.rawStatus === 1 || r.rawStatus === 2 || r.rawStatus === 3);
-        const total = paid.reduce((n, r) => n + (r.studentTotal || 0), 0);
         const escrowTotal = escrow.reduce((n, r) => n + (r.studentTotal || 0), 0);
-        const currency = (paid[0] && paid[0].currency) || (escrow[0] && escrow[0].currency) || 'SAR';
-        return [
-          { label: Tafseel.t('dash_pay_total'), value: currency + ' ' + total },
-          { label: Tafseel.t('dash_pay_escrow'), value: currency + ' ' + escrowTotal },
-          { label: Tafseel.t('dash_pay_refunded'), value: currency + ' 0' }
-        ];
+        const currency = (escrow[0] && escrow[0].currency) || 'SAR';
+        return Tafseel.t('dash_pay_escrow') + ' · ' + Tafseel.money(escrowTotal, currency);
       })(),
+      paymentsLede: Tafseel.t('sd_payments_lede'),
+      paymentsHistoryTitle: Tafseel.t('sd_payments_history'),
+      paymentsLoading: !s.ordersLoaded && REQUESTS.filter(r => r.kind === 'order').length === 0,
+      paymentsLoadingText: Tafseel.t('sd_payments_loading'),
+      paymentsEmpty: !!s.ordersLoaded && REQUESTS.filter(r => r.kind === 'order').length === 0,
+      paymentsEmptyText: Tafseel.t('sd_payments_empty'),
+      paymentsHasRows: REQUESTS.some(r => r.kind === 'order'),
       transactions: REQUESTS.filter(r => r.kind === 'order').map(r => ({
-        id: r.id, title: r.title, amount: r.amount, status: r.status, when: r.deadline
+        id: r.id,
+        title: r.title,
+        teacher: r.teacher || '',
+        when: r.deadline || '',
+        status: r.status,
+        amount: r.amount,
+        amountNumber: r.amountNumber,
+        isSarAmount: !!r.isSarAmount,
+        isPlainAmount: !!r.isPlainAmount
       })),
-      filesTitle: Tafseel.t('sd_nav_files'),
-      filesUnavailableBody: Tafseel.t('sd_files_unavailable_body'),
       myReviewsTitle: Tafseel.t('sd_nav_reviews'),
       myReviewsIntro: Tafseel.t('sd_my_reviews_intro'),
       myReviewsEmptyLabel: Tafseel.t('sd_my_reviews_empty'),
@@ -1900,6 +2539,72 @@ class Component extends DCLogic {
       accountConfirmPassword: Tafseel.t('account_confirm_password'),
       accountSaveProfile: Tafseel.t('account_save_profile'),
       accountUpdatePassword: Tafseel.t('account_update_password'),
+      accountSessionsTitle: Tafseel.lang === 'ar' ? 'الجلسات النشطة' : 'Active sessions',
+      accountSessionsHint: Tafseel.lang === 'ar' ? 'راجع أماكن تسجيل الدخول، وأنهِ أي جلسة لا تعرفها.' : 'Review signed-in sessions and revoke any you do not recognize.',
+      accountSessionsLoading: s.accountSessionsLoading,
+      loadingLabel: Tafseel.lang === 'ar' ? 'جارٍ التحميل…' : 'Loading…',
+      accountSessions: (s.accountSessions || []).map(session => ({
+        label: session.isCurrent ? (Tafseel.lang === 'ar' ? 'هذه الجلسة' : 'This session') : (Tafseel.lang === 'ar' ? 'جلسة أخرى' : 'Another session'),
+        detail: (Tafseel.lang === 'ar' ? 'بدأت ' : 'Started ') + Tafseel.date(session.createdAt),
+        canRevoke: !session.isCurrent,
+        revokeLabel: Tafseel.lang === 'ar' ? 'إنهاء الجلسة' : 'Revoke session',
+        onRevoke: async () => {
+          if (!await Tafseel.confirm(Tafseel.lang === 'ar' ? 'إنهاء هذه الجلسة؟' : 'Revoke this session?')) return;
+          this.setState({ accountBusy: true });
+          try {
+            await Tafseel.api.delete('/auth/sessions/' + encodeURIComponent(session.id));
+            this.setState({ accountSessions: s.accountSessions.filter(x => x.id !== session.id) });
+          } catch (e) { this.flash(Tafseel.api.errorMessage(e)); }
+          finally { this.setState({ accountBusy: false }); }
+        }
+      })),
+      privacyTitle: Tafseel.lang === 'ar' ? 'بياناتك وخصوصيتك' : 'Your data and privacy',
+      privacyHint: Tafseel.lang === 'ar' ? 'نزّل نسخة من بياناتك أولًا. عند تعطيل الحساب ستفقد الدخول نهائيًا وتُحذف بيانات الملف والتفضيلات، بينما تبقى سجلات الطلبات والمال والنزاعات بهوية مخفية.' : 'Download a copy of your data first. Deactivation permanently removes access and erases profile and preference data; anonymized order, financial, and dispute records are retained.',
+      exportAccountLabel: Tafseel.lang === 'ar' ? 'تنزيل بياناتي' : 'Download my data',
+      deleteAccountLabel: Tafseel.lang === 'ar' ? 'تعطيل الحساب وإخفاء الهوية' : 'Deactivate and anonymize',
+      mfaLabel: s.mfaEnabled ? (Tafseel.lang === 'ar' ? 'إيقاف التحقق بخطوتين' : 'Disable two-step verification') : (Tafseel.lang === 'ar' ? 'تفعيل التحقق بخطوتين' : 'Enable two-step verification'),
+      onManageMfa: async () => {
+        if (s.mfaEnabled) {
+          const password = await Tafseel.prompt(Tafseel.lang === 'ar' ? 'أدخل كلمة المرور.' : 'Enter your password.');
+          if (!password) return;
+          const code = await Tafseel.prompt(Tafseel.lang === 'ar' ? 'أدخل كود التطبيق أو كود الاسترداد.' : 'Enter an authenticator or recovery code.');
+          if (!code) return;
+          try { await Tafseel.api.post('/auth/mfa/disable', { password, code }); await Tafseel.api.logout(); location.replace('Tafseel-Auth.dc.html'); }
+          catch (e) { this.flash(Tafseel.api.errorMessage(e)); }
+          return;
+        }
+        this.setState({ accountBusy: true });
+        try {
+          const setup = await Tafseel.api.post('/auth/mfa/setup', {});
+          const code = await Tafseel.prompt((Tafseel.lang === 'ar' ? 'أضف هذا المفتاح لتطبيق المصادقة ثم أدخل الكود المكوّن من 6 أرقام:\n' : 'Add this key to your authenticator app, then enter the 6-digit code:\n') + setup.sharedKey);
+          if (!code) return;
+          const enabled = await Tafseel.api.post('/auth/mfa/enable', { code });
+          await Tafseel.dialog({ title: Tafseel.lang === 'ar' ? 'احفظ أكواد الاسترداد' : 'Save your recovery codes', message: (enabled.recoveryCodes || []).join('  ·  '), confirmLabel: Tafseel.lang === 'ar' ? 'حفظت الأكواد' : 'I saved them', cancelLabel: Tafseel.lang === 'ar' ? 'إغلاق' : 'Close' });
+          await Tafseel.api.logout(); location.replace('Tafseel-Auth.dc.html');
+        } catch (e) { this.flash(Tafseel.api.errorMessage(e)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onExportAccount: async () => {
+        this.setState({ accountBusy: true });
+        try {
+          const data = await Tafseel.api.get('/auth/privacy/export');
+          const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }));
+          const link = document.createElement('a'); link.href = url; link.download = 'tafseel-account-data.json'; link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+        } catch (e) { this.flash(Tafseel.api.errorMessage(e)); }
+        finally { this.setState({ accountBusy: false }); }
+      },
+      onDeleteAccount: async () => {
+        const password = await Tafseel.prompt(Tafseel.lang === 'ar' ? 'أدخل كلمة المرور للمتابعة. لن تتمكن من تسجيل الدخول بعد تعطيل الحساب.' : 'Enter your password to continue. You will not be able to sign in after deactivation.', '', Tafseel.lang === 'ar' ? 'تعطيل الحساب' : 'Deactivate account');
+        if (!password) return;
+        if (!await Tafseel.confirm(Tafseel.lang === 'ar' ? 'سيتم إنهاء كل جلساتك وإخفاء هويتك، ولا يمكن التراجع عن ذلك. تعطيل الحساب؟' : 'All sessions will end, your identity will be anonymized, and this cannot be undone. Deactivate account?')) return;
+        this.setState({ accountBusy: true });
+        try {
+          await Tafseel.api.deleteJson('/auth/account', { password });
+          await Tafseel.api.logout();
+          location.replace('Tafseel-Landing.dc.html');
+        } catch (e) { this.flash(Tafseel.api.errorMessage(e)); this.setState({ accountBusy: false }); }
+      },
       accountPasswordHint: Tafseel.t('account_password_hint'),
       notifyDeliveries: s.notifyDeliveries, onNotifyDeliveries: e => this.setState({ notifyDeliveries: e.target.checked }),
       notifySessions: s.notifySessions, onNotifySessions: e => this.setState({ notifySessions: e.target.checked }),
@@ -1909,6 +2614,11 @@ class Component extends DCLogic {
       learnPrefsTitle: Tafseel.t('learn_prefs_title'),
       learnPrefsIntro: Tafseel.t('learn_prefs_intro'),
       learnPrefsGuarantee: Tafseel.t('learn_prefs_guarantee'),
+      /* Part 14 — Learning Preferences currently drive no Product behaviour, so
+         the settings surface stays hidden. Flip this to true the moment a real
+         consumer exists (matching, ranking, request defaults); the domain, the
+         API and the stored rows are untouched, so nothing needs rebuilding. */
+      showLearningPreferences: false,
       learnPrefsStyleLegend: Tafseel.t('learn_prefs_style_legend'),
       learnPrefsLanguageLabel: Tafseel.t('learn_prefs_language_label'),
       learnPrefsLanguageNone: Tafseel.t('learn_prefs_language_none'),
@@ -1937,14 +2647,14 @@ class Component extends DCLogic {
         {
           label: Tafseel.t('learn_prefs_style_none'),
           checked: !s.learnPrefsStyle ? 'true' : 'false',
-          style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+          style: 'min-height:44px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
             (!s.learnPrefsStyle ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
           onClick: () => this.setState({ learnPrefsStyle: '', learnPrefsSuccess: '', learnPrefsError: '' })
         }
       ].concat(['step_by_step','short_direct','detailed','visual','exam_focused','practice_focused'].map(code => ({
         label: Tafseel.t('req_style_' + code),
         checked: s.learnPrefsStyle === code ? 'true' : 'false',
-        style: 'min-height:40px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
+        style: 'min-height:44px;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;' +
           (s.learnPrefsStyle === code ? 'border:2px solid var(--primary);background:var(--primary-soft);' : 'border:1px solid var(--border);background:var(--bg);'),
         onClick: () => this.setState({ learnPrefsStyle: code, learnPrefsSuccess: '', learnPrefsError: '' })
       }))),
@@ -2057,7 +2767,7 @@ class Component extends DCLogic {
         { label: Tafseel.t('dash_stat_completed'), value: String(REQUESTS.filter(x => x.kind === 'order' && x.group === 'done').length), icon: '✓', delta: '', tone: 'muted' }
       ].map(st => ({
         ...st,
-        deltaStyle: 'font-size:12.5px;font-weight:600;color:' + (st.tone === 'warn' ? 'var(--warning)' : st.tone === 'ok' ? 'var(--success)' : 'var(--muted)')
+        deltaStyle: 'font-size:12px;font-weight:600;color:' + (st.tone === 'warn' ? 'var(--warning)' : st.tone === 'ok' ? 'var(--success)' : 'var(--muted)')
       })),
 
       chart: [],
@@ -2068,13 +2778,14 @@ class Component extends DCLogic {
 
       filters: [
         { key: 'all', label: Tafseel.t('sd_filter_all') },
+        { key: 'marketplace', label: Tafseel.t('sd_filter_marketplace') },
         { key: 'pending', label: Tafseel.t('sd_filter_pending_requests') },
         { key: 'orders', label: Tafseel.t('sd_filter_orders') },
         { key: 'done', label: Tafseel.t('sd_filter_done') }
       ].map(f => ({
         label: f.label,
         active: s.filter === f.key,
-        style: 'height:30px;padding-inline:11px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' +
+        style: 'height:44px;padding-inline:11px;border-radius:var(--r-sm);font-size:12px;font-weight:600;transition:background-color var(--t),border-color var(--t),color var(--t);' +
           (s.filter === f.key
             ? 'border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);'
             : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);'),
@@ -2102,22 +2813,7 @@ class Component extends DCLogic {
       colAction: Tafseel.t('sd_col_action'),
       myWorkTitle: Tafseel.t('sd_my_work_title'),
 
-      sessions: s.liveSessions.slice(0, 2).map(se => ({
-        ...se,
-        cardStyle: 'border:1px solid ' + (se.urgent ? 'var(--primary)' : 'var(--border)') + ';border-radius:var(--r-md);padding:14px;background:' + (se.urgent ? 'var(--primary-soft)' : 'var(--bg)'),
-        countdownStyle: 'margin-inline-start:auto;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:' + (se.urgent ? 'var(--primary)' : 'var(--muted)'),
-        btnLabel: se.urgent ? 'Join session' : 'Reschedule',
-        btnStyle: 'height:32px;padding:0 14px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;' + (se.urgent
-          ? 'border:0;background:var(--primary);color:var(--primary-ink);'
-          : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
-        onJoin: async () => {
-          if (!se.id || !se.urgent) return this.flash(Tafseel.t('toast_session_not_ready'));
-          try {
-            const join = await Tafseel.api.get('/live-sessions/' + se.id + '/join');
-            location.href = join.url;
-          } catch (error) { this.flash(Tafseel.api.errorMessage(error)); }
-        }
-      })),
+      sessions: s.liveSessions.slice(0, 2).map(se => this.sessionCard(se)),
 
       recommended: [],
       recommendedEmpty: true,
@@ -2131,6 +2827,7 @@ class Component extends DCLogic {
       notificationsHeading: Tafseel.t('notif_center_title'),
       markAllLabel: Tafseel.t('notif_mark_all_read'),
       notificationsEmpty: NOTIFS.length === 0,
+      notificationsHasItems: NOTIFS.length > 0,
       notificationsEmptyTitle: Tafseel.t('notif_empty_title'),
       notificationsEmptyLabel: Tafseel.t('notif_empty_body'),
       toggleNotifs: () => this.setState({ notifsOpen: !s.notifsOpen }),

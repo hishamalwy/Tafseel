@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="js/boot-prefs.js"></script>
+<meta property="og:title" content="{{ pageTitle }}" />
+<meta name="twitter:title" content="{{ pageTitle }}" />
+<link rel="stylesheet" href="css/tafseel.css?v=identity-v1" />
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
+<link rel="icon" href="assets/brand/favicon.ico" />
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
+<script src="js/locales.js"></script>
+<script src="js/tafseel.js"></script>
+<script src="js/api.js"></script>
+<script src="js/media-preview.js?v=prestage-ux-1"></script>
+<meta name="description" content="View a verified Tafseel teacher's subjects, services, pricing, delivery times, and student reviews before you book." />
+<link rel="canonical" href="Tafseel-Teacher-Profile.dc.html" />
+<meta property="og:description" content="View a verified Tafseel teacher's subjects, services, pricing, delivery times, and student reviews before you book." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:description" content="View a verified Tafseel teacher's subjects, services, pricing, delivery times, and student reviews before you book." />
+</head>
+<body class="tf-mk-world">
+<x-dc>
+<helmet><title>{{ pageTitle }}</title>
+</helmet>
+
+<a href="#main" class="tf-skip">Skip to content</a>
+
+<header class="tf-public-header tf-profile-header">
+  <div data-public-header class="tf-shell tf-public-header__inner">
+    <a class="tf-public-header__brand" href="Tafseel-Landing.dc.html" aria-label="Tafseel home">
+      <img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="22" height="30" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+    </a>
+    <nav data-hide-sm class="tf-nav-track tf-public-header__nav" aria-label="Primary">
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Browse Teachers</a>
+      <a href="Tafseel-Open-Marketplace.dc.html" data-i18n="nav_post_request" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Post a Request</a>
+      <a href="Tafseel-Landing.dc.html#how" data-i18n="nav_how" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">How It Works</a>
+      <a href="{{ teacherJoinHref }}" data-i18n="nav_teach" style="padding:8px 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:14px;font-weight:500" style-hover="color:var(--text)">Become a Teacher</a>
+    </nav>
+    <div class="tf-public-header-actions tf-public-header__actions">
+      <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
+      <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
+      <a href="{{ accountHref }}" style="height:38px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-weight:600;color:var(--text)" style-hover="background:var(--surface-2);color:var(--text)">
+        <img decoding="async" sc-camel-src="{{ accountAvatar }}" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--border)" />
+        {{ accountLabel }}
+      </a>
+      <button type="button" data-public-menu-toggle aria-controls="profile-public-menu" aria-expanded="false">☰</button>
+    </div>
+  </div>
+  <div id="profile-public-menu" data-public-menu="closed" class="tf-shell">
+    <nav aria-label="Primary">
+      <a href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a>
+      <a href="Tafseel-Open-Marketplace.dc.html" data-i18n="nav_post_request">Post a Request</a>
+      <a href="Tafseel-Landing.dc.html#how" data-i18n="nav_how">How It Works</a>
+    </nav>
+    <div class="tf-public-menu-actions"><a href="{{ accountHref }}" class="tf-public-menu-login">{{ accountLabel }}</a></div>
+  </div>
+</header>
+
+<main id="main" class="tf-profile-page tf-mk-world">
+  <!--
+  THESIS: The teaching sample establishes trust before commerce; the page refuses the old stack of unrelated cards.
+  OWN-WORLD: A dark studio stage, bone editorial canvas, violet commerce shelf, cyan/violet service signals, and purpose-led surfaces.
+  STORY: Meet the teacher in context, inspect the sample, choose a truthful service, then act without losing price or availability.
+  FIRST VIEWPORT: Large media leads beside compact identity; selected service, facts, price, Message, and the primary CTA sit immediately below.
+  FORM: Browse C + Profile C, refined V3; studio stage with a persistent commerce shelf, selected in the completed design lab.
+  -->
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+    <div class="tf-mk-shell tf-mkp-loading">
+      <div class="tf-skeleton"></div><div class="tf-skeleton"></div>
+      <p class="tf-mk-meta" data-i18n="tp_loading">Loading teacher profile…</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isUnavailable }}" hint-placeholder-val="{{ false }}">
+    <div class="tf-mk-shell tf-mkp-unavailable"><div class="tf-mk-empty">
+      <h1 data-i18n="tp_unavailable">This teacher profile is unavailable.</h1>
+      <p data-i18n="tp_unavailable_hint">The link may be incomplete, or the teacher is not published yet.</p>
+      <div class="tf-mk-empty-actions"><a class="tf-mk-btn tf-mk-btn--primary" href="Tafseel-Browse-Teachers.dc.html" data-i18n="nav_browse">Browse Teachers</a></div>
+    </div></div>
+  </sc-if>
+
+  <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+    <section class="tf-mkp-stage"><div class="tf-mk-shell">
+      <nav class="tf-mkp-crumb" aria-label="Breadcrumb">
+        <a href="Tafseel-Landing.dc.html" data-i18n="tp_home">Home</a><span>/</span>
+        <a href="{{ browseHref }}">{{ breadcrumbSubject }}</a><span>/</span><span>{{ teacherName }}</span>
+      </nav>
+
+      <div class="tf-mkp-stage-in">
+        <section class="tf-mkp-media" aria-label="{{ mediaRegionLabel }}" tabindex="0" onKeyDown="{{ onCarouselKeyDown }}" onTouchStart="{{ onCarouselTouchStart }}" onTouchEnd="{{ onCarouselTouchEnd }}">
+          <div class="tf-mkp-media-head">
+            <div><h2 id="featured-sample-title">{{ featuredSampleTitle }}</h2><sc-if value="{{ featuredSampleMeta }}" hint-placeholder-val="{{ true }}"><div class="tf-mkp-media-sub">{{ featuredSampleMeta }}</div></sc-if></div>
+            <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><span class="tf-mkp-pos" role="status" aria-live="polite">{{ samplePositionLabel }}</span></sc-if>
+          </div>
+          <div class="tf-mkp-framewrap">
+            <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><button type="button" class="tf-mkp-arrow tf-mkp-arrow--prev" aria-label="{{ previousVideoLabel }}" onClick="{{ onPreviousSample }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button></sc-if>
+            <sc-if value="{{ hasFeaturedSample }}" hint-placeholder-val="{{ false }}">
+              <div class="tf-mkp-frame tf-media-frame">
+                <button type="button" class="tf-media-play" data-media-play aria-hidden="true" hidden><span aria-hidden="true">&#9654;</span></button>
+                <div class="tf-mkp-ov"><span class="{{ featuredSample.mkTrustClass }}">{{ featuredSample.trust }}</span><span class="tf-mkp-tagset"><sc-if value="{{ featuredSample.subjectName }}" hint-placeholder-val="{{ true }}"><span class="tf-mkp-tag">{{ featuredSample.subjectName }}</span></sc-if><sc-if value="{{ hasDuration }}" hint-placeholder-val="{{ false }}"><span class="tf-mkp-tag">{{ durationText }}</span></sc-if></span></div>
+                <div class="tf-media-watermark" aria-hidden="true">{{ mediaWatermark }}</div>
+                <video data-media-preview="true" data-media-type="{{ featuredSample.contentType }}" data-download-allowed="false" sc-camel-src="{{ featuredSample.contentUrl }}" fetchpriority="high" controls preload="metadata" playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture oncontextmenu="return false" aria-label="{{ featuredSample.title }}"></video>
+              </div>
+            </sc-if>
+            <sc-if value="{{ mediaLoadError }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-nomedia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm12 5 5-3v8l-5-3M3 3l18 18" /></svg><strong>{{ mediaErrorTitle }}</strong><p>{{ mediaErrorBody }}</p><div class="tf-mkp-nomedia-actions"><button type="button" onClick="{{ onRetryMedia }}">{{ retryMediaLabel }}</button><sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ onNextSample }}">{{ tryAnotherSampleLabel }}</button></sc-if></div></div></sc-if>
+            <sc-if value="{{ samplesEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-nomedia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm12 5 5-3v8l-5-3" /></svg><strong data-i18n="showcase_no_media">No media is available.</strong><p data-i18n="tp_samples_empty">No teaching samples published yet.</p></div></sc-if>
+            <sc-if value="{{ hasMultipleSamples }}" hint-placeholder-val="{{ true }}"><button type="button" class="tf-mkp-arrow tf-mkp-arrow--next" aria-label="{{ nextVideoLabel }}" onClick="{{ onNextSample }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button></sc-if>
+          </div>
+          <sc-if value="{{ hasFeaturedSample }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-cap"><p>{{ featuredSample.descriptionText }}</p><sc-if value="{{ featuredSample.isShowcase }}" hint-placeholder-val="{{ false }}"><p class="tf-mkp-moderation" data-i18n="showcase_reviewed_description">Reviewed by Tafseel. Approval does not verify every educational claim.</p></sc-if></div></sc-if>
+        </section>
+
+        <section class="tf-mkp-id" aria-labelledby="profile-heading">
+          <div class="tf-mkp-eyebrow" data-i18n="tp_teacher_profile_label">Teacher profile</div>
+          <div class="tf-mkp-lock">
+            <div class="tf-mk-av-wrap"><img decoding="async" fetchpriority="high" class="tf-mk-av tf-mk-av--l" sc-camel-src="{{ teacherAvatar }}" alt="{{ teacherName }}" width="82" height="82" /><sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}"><span class="tf-mk-av-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m7.5 12 3 3 6-7" /></svg></span></sc-if></div>
+            <div class="tf-mkp-name"><h1 id="profile-heading">{{ teacherName }}</h1><sc-if value="{{ hasRating }}" hint-placeholder-val="{{ true }}"><span class="tf-mkp-idrating"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 16.72l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86L12 3.2Z" /></svg><b>{{ ratingValue }}</b><span>({{ ratingCount }})</span></span></sc-if><sc-if value="{{ ratingEmpty }}" hint-placeholder-val="{{ false }}"><span class="tf-mkp-idrating" data-i18n="browse_no_public_reviews">No public reviews yet</span></sc-if></div>
+          </div>
+          <p class="tf-mkp-headline">{{ teacherHeadline }}</p>
+          <div class="tf-mkp-idfacts">
+            <sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}"><span class="tf-mkp-idfact tf-mkp-idfact--qual"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7.5 12 3 3 6-7" /></svg><span data-i18n="trust_badge_qualified_on_tafseel">Qualified on Tafseel</span></span></sc-if>
+            <sc-if value="{{ hasSubjects }}" hint-placeholder-val="{{ true }}"><span class="tf-mkp-idfact"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Zm3 3v5c3 2 9 2 12 0v-5" /></svg>{{ subjectSummary }}</span></sc-if>
+            <sc-if value="{{ hasLanguages }}" hint-placeholder-val="{{ true }}"><span class="tf-mkp-idfact"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" /></svg><span data-i18n-skip>{{ languageSummary }}</span></span></sc-if>
+          </div>
+          <div class="tf-mkp-idacts"><sc-if value="{{ showVisitorActions }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ onFav }}" aria-pressed="{{ fav }}" class="{{ favClass }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg><span>{{ favLabel }}</span></button></sc-if><button type="button" onClick="{{ onShare }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" /></svg><span data-i18n="tp_share">Share</span></button><sc-if value="{{ showVisitorActions }}" hint-placeholder-val="{{ true }}"><a href="{{ chatHref }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18.5 3.5 21l.8-4A8 8 0 1 1 7 19.2" /></svg><span data-i18n="tp_message">Message</span></a></sc-if></div>
+        </section>
+      </div>
+    </div></section>
+
+    <div class="tf-mkp-shelfwrap"><div class="tf-mk-shell tf-mkp-shelf" aria-label="{{ selectedServiceLabel }}">
+      <div class="tf-mkp-shelf-svc"><div class="tf-mkp-shelf-lbl">{{ selectedServiceLabel }}</div><h2>{{ selectedName }}</h2></div>
+      <sc-if value="{{ hasSelectedService }}" hint-placeholder-val="{{ true }}"><div class="tf-mkp-shelf-fact"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" /></svg>{{ selectedPrimaryFactLabel }}</span><strong class="{{ selectedPrimaryFactClass }}">{{ selectedPrimaryFactValue }}</strong></div><div class="tf-mkp-shelf-fact tf-mkp-shelf-fact--dur"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>{{ selectedSecondaryFactLabel }}</span><strong>{{ selectedSecondaryFactValue }}</strong></div><div class="tf-mkp-shelf-price"><span class="tf-mk-price tf-mk-price--l"><span class="{{ selectedMkCurrencyClass }}" title="{{ selectedPriceCurrencyTitle }}" aria-label="{{ selectedPriceCurrencyTitle }}" data-i18n-skip>{{ selectedPriceCurrency }}</span><span>{{ selectedPriceAmount }}</span><span class="tf-mk-unit">{{ selectedUnit }}</span></span></div></sc-if>
+      <div class="tf-mkp-shelf-acts"><sc-if value="{{ showVisitorActions }}" hint-placeholder-val="{{ true }}"><a class="tf-mk-btn tf-mk-btn--secondary" href="{{ chatHref }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18.5 3.5 21l.8-4A8 8 0 1 1 7 19.2" /></svg><span data-i18n="tp_message">Message</span></a></sc-if><sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><a class="tf-mk-btn tf-mk-btn--primary" href="{{ heroCtaHref }}">{{ heroCtaLabel }}</a></sc-if><sc-if value="{{ viewerIsOwner }}" hint-placeholder-val="{{ false }}"><a class="tf-mk-btn tf-mk-btn--secondary" href="{{ ownerServicesHref }}" data-owner-action data-i18n="tp_owner_manage_services">Manage services</a><a class="tf-mk-btn tf-mk-btn--primary" href="{{ ownerEditHref }}" data-owner-action data-i18n="tp_owner_edit_profile">Edit profile</a></sc-if></div>
+      <sc-if value="{{ viewerIsOwner }}" hint-placeholder-val="{{ false }}">
+        <p class="tf-mkp-owner-note" role="note" data-owner-note data-i18n="tp_owner_preview_note">This is how Students see your public profile.</p>
+      </sc-if>
+      <sc-if value="{{ heroCtaHidden }}" hint-placeholder-val="{{ false }}"><p class="tf-mkp-shelf-note" data-i18n="tp_services_empty">No services available.</p></sc-if>
+    </div></div>
+
+    <div class="tf-mk-shell">
+      <section id="profile-services" class="tf-mkp-sec" aria-labelledby="services-heading">
+        <div class="tf-mkp-sec-h"><h2 class="tf-mk-section-h" id="services-heading" data-i18n="tp_tab_services">Services</h2><p data-i18n="tp_timezone_note">Times shown in the teacher's time zone</p></div>
+        <sc-if value="{{ servicesEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-mk-empty"><h3 data-i18n="tp_services_empty">No services available.</h3></div></sc-if>
+        <div class="tf-mkp-svcs"><sc-for list="{{ services }}" as="sv" hint-placeholder-count="5"><article class="{{ sv.cardClass }}"><div class="tf-mkp-svc-in"><span class="tf-mkp-svc-kind">{{ sv.serviceTypeLabel }}</span><h3>{{ sv.name }}</h3><p class="tf-mkp-svc-desc">{{ sv.desc }}</p><div class="tf-mkp-svc-facts"><div><span>{{ sv.factOneLabel }}</span><strong class="{{ sv.factOneClass }}">{{ sv.factOneValue }}</strong></div><div><span>{{ sv.factTwoLabel }}</span><strong class="{{ sv.factTwoClass }}">{{ sv.factTwoValue }}</strong></div></div><div class="tf-mkp-svc-buy"><span class="tf-mk-price tf-mk-price--l"><span class="{{ sv.mkCurrencyClass }}" title="{{ sv.priceCurrencyTitle }}" aria-label="{{ sv.priceCurrencyTitle }}" data-i18n-skip>{{ sv.priceCurrency }}</span><span>{{ sv.priceAmount }}</span><span class="tf-mk-unit">{{ sv.priceUnit }}</span></span><button type="button" class="{{ sv.selectClass }}" aria-pressed="{{ sv.selected }}" disabled="{{ sv.disabled }}" onClick="{{ sv.onSelect }}">{{ sv.btnLabel }}</button></div></div></article></sc-for></div>
+      </section>
+
+      <section id="profile-reviews" class="tf-mkp-sec" aria-labelledby="reviews-heading">
+        <div class="tf-mkp-sec-h"><h2 class="tf-mk-section-h" id="reviews-heading" data-i18n="tp_tab_reviews">Reviews</h2><sc-if value="{{ hasReviews }}" hint-placeholder-val="{{ false }}"><p>{{ reviewsSummary }}</p></sc-if></div>
+        <sc-if value="{{ hasReviews }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-rev-top"><div class="tf-mkp-rev-score"><div class="tf-mkp-rev-n">{{ ratingValue }}</div><div><span class="tf-mkp-stars"><sc-for list="{{ ratingStarIcons }}" as="star" hint-placeholder-count="5"><svg class="{{ star.className }}" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 16.72l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86L12 3.2Z" /></svg></sc-for></span><div class="tf-mkp-rev-c">{{ reviewsSummary }}</div></div></div><div class="tf-mkp-rev-break"><sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="5"><div><span>{{ b.label }}</span><span class="tf-mkp-rev-track"><i style="{{ b.widthStyle }}"></i></span><b>{{ b.score }}</b></div></sc-for></div></div></sc-if>
+        <sc-if value="{{ reviewsEmpty }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-rev-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" /></svg><div><strong data-i18n="tp_reviews_first_title">Be the first student to review this teacher.</strong><p data-i18n="tp_reviews_first_body">After completing your first order or session, you’ll be able to leave a review.</p></div></div></sc-if>
+        <div class="tf-mkp-revs"><sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3"><article class="tf-mkp-rev"><span class="tf-mkp-stars" aria-label="{{ rv.ratingLabel }}"><sc-for list="{{ rv.starIcons }}" as="star" hint-placeholder-count="5"><svg class="{{ star.className }}" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 16.72l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86L12 3.2Z" /></svg></sc-for></span><p class="tf-mkp-rev-q">{{ rv.body }}</p><div class="tf-mkp-rev-by"><span class="tf-mkp-rev-mark" aria-hidden="true">{{ rv.initials }}</span><div class="tf-mkp-rev-who"><strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7.5 12 3 3 6-7" /></svg>{{ rv.name }}</strong><span>{{ rv.meta }}</span></div></div></article></sc-for></div>
+      </section>
+
+      <section id="profile-about" class="tf-mkp-sec" aria-labelledby="about-heading">
+        <div class="tf-mkp-sec-h"><h2 class="tf-mk-section-h" id="about-heading" data-i18n="tp_about_teacher">About this teacher</h2></div>
+        <div class="tf-mkp-about"><div><sc-for list="{{ bioParagraphs }}" as="bp" hint-placeholder-count="2"><p class="tf-mk-body-l">{{ bp }}</p></sc-for><div class="tf-mkp-trustrow"><div class="tf-mkp-trustcard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.9 8.4 7 10 4.1-1.6 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /></svg><div><strong data-i18n="tp_protected_payment">Protected payment</strong><span data-i18n="tp_protected_blurb">Your payment is held by Tafseel and released only after you approve the delivery.</span></div></div><sc-if value="{{ qualifiedOnTafseel }}" hint-placeholder-val="{{ true }}"><div class="tf-mkp-trustcard tf-mkp-trustcard--v"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7.5 12 3 3 6-7" /></svg><div><strong data-i18n="trust_badge_qualified_on_tafseel">Qualified on Tafseel</strong><span data-i18n="trust_badge_qualified_on_tafseel_detail">Has an active approved subject qualification on Tafseel.</span></div></div></sc-if></div><p class="tf-mkp-privacy" data-i18n="tp_privacy_note">Contact details are shared only after a request is paid — keep the conversation on Tafseel so disputes stay covered.</p></div>
+          <div class="tf-mkp-details">
+            <h3 data-i18n="tp_subjects">Subjects</h3>
+            <sc-if value="{{ subjectsEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-mk-meta" data-i18n="tp_subjects_empty">No subjects listed yet.</p></sc-if>
+            <div class="tf-mkp-topics"><sc-for list="{{ subjects }}" as="item" hint-placeholder-count="3"><span>{{ item }}</span></sc-for></div>
+            <h3 data-i18n="tp_topics">Topics</h3>
+            <sc-if value="{{ topicsEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-mk-meta" data-i18n="tp_topics_empty">No specialist topics listed yet.</p></sc-if>
+            <div class="tf-mkp-topics"><sc-for list="{{ topics }}" as="item" hint-placeholder-count="6"><span>{{ item }}</span></sc-for></div>
+            <h3 data-i18n="tp_teaching_levels">Teaching levels</h3>
+            <sc-if value="{{ levelsEmpty }}" hint-placeholder-val="{{ false }}"><p class="tf-mk-meta" data-i18n="tp_levels_empty">No teaching levels listed yet.</p></sc-if>
+            <div class="tf-mkp-topics"><sc-for list="{{ educationLevels }}" as="item" hint-placeholder-count="4"><span>{{ item }}</span></sc-for></div>
+            <sc-if value="{{ showCertifications }}" hint-placeholder-val="{{ false }}"><h3 data-i18n="tp_certifications">Education &amp; certificates</h3><div><sc-for list="{{ certifications }}" as="tl" hint-placeholder-count="3"><div class="tf-mkp-tl-item"><div><strong>{{ tl.title }}</strong><em>{{ tl.meta }}</em></div><time>{{ tl.years }}</time></div></sc-for></div></sc-if>
+            <sc-if value="{{ showExperience }}" hint-placeholder-val="{{ false }}"><h3 data-i18n="tp_experience">Experience</h3><div><sc-for list="{{ experience }}" as="tl" hint-placeholder-count="3"><div class="tf-mkp-tl-item"><div><strong>{{ tl.title }}</strong><em>{{ tl.meta }}</em></div><time>{{ tl.years }}</time></div></sc-for></div></sc-if>
+            <sc-if value="{{ hasLanguages }}" hint-placeholder-val="{{ true }}"><h3 class="tf-mkp-languages-h" data-i18n="tp_languages">Teaching languages</h3><div class="tf-mkp-topics"><span data-i18n-skip>{{ languageSummary }}</span></div></sc-if>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <sc-if value="{{ showHeroCta }}" hint-placeholder-val="{{ false }}"><div class="tf-mkp-mcta"><div class="tf-mkp-mcta-c"><span>{{ selectedName }}</span><span class="tf-mk-price tf-mk-price--m"><span class="{{ selectedMkCurrencyClass }}" title="{{ selectedPriceCurrencyTitle }}" aria-label="{{ selectedPriceCurrencyTitle }}" data-i18n-skip>{{ selectedPriceCurrency }}</span><span>{{ selectedPriceAmount }}</span><span class="tf-mk-unit">{{ selectedUnit }}</span></span></div><a class="tf-mk-btn tf-mk-btn--primary" href="{{ heroCtaHref }}">{{ heroCtaLabel }}</a></div></sc-if>
+  </sc-if>
+</main>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
+</sc-if>
+
+
+<footer class="tf-mini-footer" data-pattern="bottom" data-pattern-tone="lime">
+  <div class="tf-shell tf-mini-footer__inner">
+    <a class="tf-mini-footer__brand" href="Tafseel-Landing.dc.html" aria-label="Tafseel">
+      <img loading="lazy" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark" src="assets/brand/tafseel-mark-dark.svg" alt="" width="18" height="24" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+    </a>
+    <span class="tf-mini-footer__rights" data-i18n="foot_rights">© 2026 Tafseel. All rights reserved.</span>
+    <nav class="tf-mini-footer__links" aria-label="Tafseel">
+      <a href="Tafseel-About.dc.html" data-i18n="nav_about">About</a>
+      <a href="Tafseel-Policies.dc.html?policy=terms" data-i18n="nav_terms">Terms of Service</a>
+      <a href="Tafseel-Policies.dc.html?policy=privacy" data-i18n="nav_privacy">Privacy Policy</a>
+    </nav>
+  </div>
+</footer>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const STAFF_ROLES = ['Teacher', 'Admin', 'QualityReviewer'];
+Tafseel.defaultAvatar = 'assets/brand/default-avatar.svg?v=premium-1';
+
+function readTeacherId() {
+  const q = new URLSearchParams(location.search);
+  return String(q.get('id') || q.get('teacherId') || '').trim();
+}
+
+function readDiscoveryContext() {
+  const q = new URLSearchParams(location.search);
+  return {
+    teacherServiceId: String(q.get('teacherServiceId') || '').trim(),
+    subjectId: String(q.get('subjectId') || '').trim(),
+    serviceId: String(q.get('service') || '').trim()
+  };
+}
+
+function readMarketplaceReturnHref() {
+  try {
+    const referrer = document.referrer ? new URL(document.referrer) : null;
+    if (!referrer || referrer.origin !== location.origin || !/\/Tafseel-Student-Dashboard\.dc\.html$/i.test(referrer.pathname)) return '';
+    const saved = JSON.parse(sessionStorage.getItem('tafseel.teacherProfileReturn') || 'null');
+    if (!saved || saved.expiresAt < Date.now() || String(saved.teacherId) !== readTeacherId()) return '';
+    const target = new URL(saved.href, location.origin);
+    if (target.origin !== location.origin || !/\/Tafseel-Student-Dashboard\.dc\.html$/i.test(target.pathname)) return '';
+    return target.pathname + target.search + target.hash;
+  } catch (_) {
+    return '';
+  }
+}
+
+function formatDateOnly(value) {
+  if (!value) return '';
+  try { return Tafseel.date(value, { dateStyle: 'medium' }); }
+  catch (_) { return String(value); }
+}
+
+function formatCredentialYears(from, to) {
+  const a = from ? String(from).slice(0, 4) : '';
+  const b = to ? String(to).slice(0, 4) : (a ? Tafseel.t('tp_now') : '');
+  if (a && b) return a + ' – ' + b;
+  return a || b || '';
+}
+
+function formatDelivery(hours) {
+  const h = Number(hours) || 0;
+  if (h <= 0) return '—';
+  if (h <= 24) return Tafseel.t('tp_delivery_same_day');
+  const days = Math.max(1, Math.round(h / 24));
+  return days + ' ' + (days === 1 ? Tafseel.t('tp_day') : Tafseel.t('tp_days'));
+}
+
+function formatRevisions(n) {
+  const count = Number(n) || 0;
+  if (count <= 0) return Tafseel.t('tp_no_revisions');
+  return count + ' ' + Tafseel.t('tp_free_revisions');
+}
+
+function formatMoney(currency, price) {
+  return Tafseel.money(price, currency || 'SAR');
+}
+
+function formatMoneyParts(currency, price) {
+  if (price == null) return { amount: '—', currency: '', currencyClass: 'tf-price-currency', mkCurrencyClass: 'tf-mk-code', currencyTitle: '', isSar: false };
+  const parts = Tafseel.moneyParts(price, currency || 'SAR');
+  return {
+    amount: parts.amount,
+    currency: parts.isSar ? '' : parts.code,
+    currencyClass: parts.isSar ? 'tf-price-currency tf-price-currency--mark' : 'tf-price-currency',
+    mkCurrencyClass: parts.isSar ? 'tf-mk-riyal' : 'tf-mk-code',
+    currencyTitle: parts.isSar ? Tafseel.t('currency_sar_name') : parts.code,
+    isSar: !!parts.isSar
+  };
+}
+
+function serviceDuration(service) {
+  const minutes = Number((service && service.allowedDurations || [])[0]) || 0;
+  return minutes ? Tafseel.t('admin_service_minutes_value', { count: Tafseel.number(minutes) }) : '—';
+}
+
+function starIconList(value) {
+  const filled = Math.max(0, Math.min(5, Math.round(Number(value) || 0)));
+  return Array.from({ length: 5 }, (_, index) => ({ className: index < filled ? '' : 'is-off' }));
+}
+
+function formatMediaDuration(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  if (!total) return '';
+  const minutes = Math.floor(total / 60);
+  return minutes + ':' + String(total % 60).padStart(2, '0');
+}
+
+function carouselNavigationVisible(samples) {
+  return Array.isArray(samples) && samples.length > 1;
+}
+
+function carouselKeyDelta(key, isRtl) {
+  if (key === 'ArrowLeft') return isRtl ? 1 : -1;
+  if (key === 'ArrowRight') return isRtl ? -1 : 1;
+  return 0;
+}
+
+function carouselSwipeDelta(distance) {
+  if (Math.abs(distance) < 48) return 0;
+  return distance < 0 ? 1 : -1;
+}
+
+function serviceIconPath(service) {
+  const code = String(service.serviceCatalogCode || '').toLowerCase();
+  if (code === 'live_session' || service.requiresScheduling) return 'M8 10h8m-8 4h5m7-2-3.8-3.1A8 8 0 1 0 5 18.5L3 21l.8-4';
+  if (code === 'exam_revision') return 'm5 12 4 4L19 6M5 5h6M5 19h14';
+  if (code === 'assignment_guidance') return 'm4 16.5-.7 4.2 4.2-.7L18 9.5 14.5 6 4 16.5ZM13 7.5l3.5 3.5';
+  return 'M7 4.5v15l12-7.5-12-7.5Z';
+}
+
+function isBookableLiveService(service) {
+  return !!(service
+    && service.canBook
+    && String(service.serviceCatalogCode || '').toLowerCase() === 'live_session');
+}
+
+function canBookByRole(session) {
+  if (!session) return true;
+  const roles = session.roles || [];
+  if (roles.some(r => STAFF_ROLES.includes(r))) return false;
+  return roles.includes('Student');
+}
+
+function dashboardFor(session) {
+  const roles = session?.roles || [];
+  if (roles.includes('Admin')) return 'Tafseel-Admin-Dashboard.dc.html';
+  if (roles.includes('QualityReviewer')) return 'Tafseel-Quality-Dashboard.dc.html';
+  if (roles.includes('Teacher')) return 'Tafseel-Teacher-Dashboard.dc.html';
+  return 'Tafseel-Student-Dashboard.dc.html';
+}
+
+class Component extends DCLogic {
+  state = {
+    lang: Tafseel.lang,
+    theme: Tafseel.theme,
+    status: 'loading',
+    teacherId: '',
+    profile: null,
+    reviews: [],
+    session: null,
+    serviceId: '',
+    selectedSampleId: '',
+    mediaDuration: '',
+    mediaLoadError: false,
+    availabilitySummary: null,
+    availabilityError: false,
+    fav: false,
+    toast: '',
+    toastLeaving: false
+  };
+
+  componentDidMount() {
+    this._sub = Tafseel.onChange(() => this.setState({ lang: Tafseel.lang, theme: Tafseel.theme }));
+    this.load();
+  }
+
+  componentWillUnmount() {
+    Tafseel.offChange(this._sub);
+    if (this._featuredVideo && this._onMediaDuration)
+      this._featuredVideo.removeEventListener('loadedmetadata', this._onMediaDuration);
+    if (this._featuredVideo && this._onMediaError)
+      this._featuredVideo.removeEventListener('error', this._onMediaError);
+    if (this._onShelfScroll) {
+      window.removeEventListener('scroll', this._onShelfScroll);
+      window.removeEventListener('resize', this._onShelfScroll);
+    }
+  }
+
+  _syncMobileCta() {
+    const shelf = document.querySelector('.tf-mkp-shelfwrap');
+    const bar = document.querySelector('.tf-mkp-mcta');
+    if (!shelf || !bar || shelf === this._trackedShelf) return;
+    if (this._onShelfScroll) {
+      window.removeEventListener('scroll', this._onShelfScroll);
+      window.removeEventListener('resize', this._onShelfScroll);
+    }
+    this._trackedShelf = shelf;
+    this._onShelfScroll = () =>
+      bar.classList.toggle('is-on', shelf.getBoundingClientRect().bottom <= 0);
+    window.addEventListener('scroll', this._onShelfScroll, { passive: true });
+    window.addEventListener('resize', this._onShelfScroll);
+    this._onShelfScroll();
+  }
+
+  componentDidUpdate() {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    Tafseel.mediaPreview.sync();
+    this._syncMobileCta();
+    const video = document.querySelector('.tf-mkp-frame video');
+    if (!video || video === this._featuredVideo) return;
+    if (this._featuredVideo && this._onMediaDuration)
+      this._featuredVideo.removeEventListener('loadedmetadata', this._onMediaDuration);
+    if (this._featuredVideo && this._onMediaError)
+      this._featuredVideo.removeEventListener('error', this._onMediaError);
+    this._featuredVideo = video;
+    if (this.state.mediaLoadError) this.setState({ mediaLoadError: false });
+    this._onMediaDuration = () => {
+      const mediaDuration = formatMediaDuration(video.duration);
+      if (mediaDuration !== this.state.mediaDuration) this.setState({ mediaDuration });
+    };
+    // The native "This video format is not supported" browser chrome must never be the
+    // product's failure state — swap to a localized, on-brand panel instead. Root cause of
+    // any given failure (corrupt/incomplete file, wrong codec) still surfaces in devtools
+    // via the underlying MediaError; this only replaces what the Student sees.
+    this._onMediaError = () => this.setState({ mediaLoadError: true });
+    video.addEventListener('loadedmetadata', this._onMediaDuration);
+    video.addEventListener('error', this._onMediaError);
+    if (video.readyState >= 1) this._onMediaDuration();
+  }
+
+  flash(msg) {
+    Tafseel.flash(this, msg);
+  }
+
+  async load() {
+    const teacherId = readTeacherId();
+    if (!teacherId) {
+      this.setState({ status: 'unavailable', teacherId: '', profile: null, reviews: [] });
+      return;
+    }
+    this.setState({ status: 'loading', teacherId });
+    try {
+      const session = await Tafseel.api.ready();
+      const [profile, reviewsPage] = await Promise.all([
+        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId)),
+        Tafseel.api.get('/teachers/' + encodeURIComponent(teacherId) + '/reviews' + Tafseel.api.query({ pageSize: 50 }))
+      ]);
+      let fav = false;
+      if (session && (session.roles || []).includes('Student')) {
+        try {
+          const favorites = await Tafseel.api.get('/favorite-teachers');
+          fav = (favorites || []).some(t => t.teacherId === teacherId);
+        } catch (_) { fav = false; }
+      }
+      const services = profile.services || [];
+      const discovery = readDiscoveryContext();
+      const preferredRequest = services.find(x => x && x.id === discovery.teacherServiceId)
+        || services.find(x => x && x.serviceCatalogItemId === discovery.serviceId
+          && (!discovery.subjectId || x.subjectId === discovery.subjectId))
+        || services.find(x => x && x.canRequest)
+        || services.find(isBookableLiveService)
+        || null;
+      const availabilityServiceId = preferredRequest && (preferredRequest.requiresScheduling || isBookableLiveService(preferredRequest))
+        ? preferredRequest.id : undefined;
+      const availability = await Tafseel.api.get(Tafseel.availabilityPath([teacherId], availabilityServiceId)).catch(() => null);
+      this.setState({
+        status: 'ready',
+        session,
+        profile,
+        reviews: (reviewsPage && reviewsPage.items) || [],
+        availabilitySummary: availability && (availability.summaries || [])[0] || null,
+        availabilityError: !availability,
+        fav,
+        serviceId: preferredRequest ? preferredRequest.id : '',
+        selectedSampleId: profile.samples && profile.samples[0] ? profile.samples[0].id : ''
+      });
+      const selectedContext = preferredRequest ? {
+        subjectId: preferredRequest.subjectId || discovery.subjectId || null,
+        serviceCatalogItemId: preferredRequest.serviceCatalogItemId || discovery.serviceId || null,
+        teacherServiceId: preferredRequest.id,
+        teacherId: teacherId
+      } : { subjectId: discovery.subjectId || null, serviceCatalogItemId: discovery.serviceId || null, teacherId: teacherId };
+      Tafseel.analytics.track('teacher_opened', 'TeacherProfile', selectedContext,
+        teacherId + ':' + (preferredRequest ? preferredRequest.id : 'profile'));
+      if (preferredRequest)
+        Tafseel.analytics.track('service_selected', 'TeacherProfile', selectedContext,
+          teacherId + ':' + preferredRequest.id);
+    } catch (error) {
+      this.setState({
+        status: 'unavailable',
+        profile: null,
+        reviews: [],
+        availabilitySummary: null,
+        availabilityError: false
+      });
+      if (error && error.status && error.status !== 404)
+        this.flash(Tafseel.api.errorMessage(error));
+    }
+  }
+
+  async reloadAvailability(service) {
+    const teacherId = this.state.teacherId || readTeacherId();
+    const exactId = service && (service.requiresScheduling || isBookableLiveService(service)) ? service.id : undefined;
+    try {
+      const availability = await Tafseel.api.get(Tafseel.availabilityPath([teacherId], exactId));
+      this.setState({
+        availabilitySummary: availability && (availability.summaries || [])[0] || null,
+        availabilityError: false
+      });
+    } catch (_) {
+      this.setState({ availabilitySummary: null, availabilityError: true });
+    }
+  }
+
+  async toggleFavorite() {
+    if (this._favBusy) return;
+    const s = this.state;
+    const session = s.session || Tafseel.api.me();
+    if (!session || !(session.roles || []).includes('Student')) {
+      location.href = Tafseel.authHref(location.pathname + location.search);
+      return;
+    }
+    const next = !s.fav;
+    this._favBusy = true;
+    this.setState({ fav: next });
+    try {
+      await Tafseel.api.request('/favorite-teachers/' + encodeURIComponent(s.teacherId), {
+        method: next ? 'PUT' : 'DELETE'
+      });
+      this.flash(next ? Tafseel.t('tp_fav_saved') : Tafseel.t('tp_fav_removed'));
+    } catch (error) {
+      this.setState({ fav: !next });
+      if (error.status === 401) location.href = Tafseel.authHref(location.pathname + location.search);
+      else this.flash(Tafseel.api.errorMessage(error));
+    } finally {
+      this._favBusy = false;
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const t = key => Tafseel.t(key);
+    const profile = s.profile;
+    const services = (profile && profile.services) || [];
+    const selected = services.find(x => x.id === s.serviceId) || null;
+    const selectedBookService = isBookableLiveService(selected) ? selected : null;
+    const bookService = selectedBookService;
+    /* A Teacher opening their own public profile is previewing it, not shopping
+       on it. "Request this Teacher" / "Book" / "Select service" are Student
+       conversion actions and are nonsense pointed at yourself, so self-view
+       replaces them with the actions that actually apply: manage the profile and
+       the services behind it. */
+    const viewerIsOwner = !!(s.session && s.session.userId
+      && String(s.session.userId) === String(s.teacherId));
+    const roleOk = canBookByRole(s.session) && !viewerIsOwner;
+    const summaryBookable = !!(s.availabilitySummary
+      && bookService
+      && s.availabilitySummary.teacherServiceId === bookService.id
+      && ['available_today', 'next_available'].includes(s.availabilitySummary.state));
+    const canBook = !!(bookService && roleOk && summaryBookable);
+    const canRequest = !viewerIsOwner && !!(selected && selected.canRequest);
+
+    const teacherName = profile
+      ? (Tafseel.partyDisplayName(profile.fullName, profile.fullNameEnglish) || t('name_unavailable'))
+      : '';
+    const named = item => s.lang === 'ar' && item && item.nameAr ? item.nameAr : item && item.name || '';
+    const languageName = item => {
+      if (!item) return '';
+      if (s.lang === 'ar' && item.nameAr) return item.nameAr;
+      const name = String(item.name || '').trim();
+      const normalized = name.toLowerCase();
+      const code = item.code || item.detail || (normalized === 'arabic' ? 'ar' : normalized === 'english' ? 'en' : '');
+      return Tafseel.languageLabel({ code, name });
+    };
+    const subjects = ((profile && profile.subjects) || []).map(named).filter(Boolean);
+    const languages = [...new Set(((profile && profile.languages) || []).map(languageName).filter(Boolean))];
+    const topics = ((profile && profile.topics) || []).map(named).filter(Boolean);
+    const educationLevels = ((profile && profile.educationLevels) || []).map(named).filter(Boolean);
+    const metaParts = [];
+    if (subjects.length) metaParts.push(subjects.join(' · '));
+    if (profile && (profile.city || profile.country))
+      metaParts.push([profile.city, profile.country].filter(Boolean).join(', '));
+    if (languages.length) metaParts.push(t('tp_teaches_in') + ' ' + languages.join(', '));
+
+    const rating = profile && profile.rating != null ? Number(profile.rating) : null;
+    const ratingCount = profile ? Number(profile.ratingCount) || 0 : 0;
+
+    const bioText = (profile && profile.bio || '').trim();
+    const bioParagraphs = bioText ? bioText.split(/\n+/).map(p => p.trim()).filter(Boolean) : [];
+
+    const certifications = ((profile && profile.certifications) || []).map(c => ({
+        title: c.title,
+        meta: c.organization,
+        years: formatCredentialYears(c.from, c.to)
+      }));
+    const experience = ((profile && profile.experience) || []).map(e => ({
+        title: e.title,
+        meta: e.organization,
+        years: formatCredentialYears(e.from, e.to)
+      }));
+
+    const reviewItems = s.reviews || [];
+    const avg = (getter) => {
+      if (!reviewItems.length) return 0;
+      return reviewItems.reduce((sum, r) => sum + (Number(getter(r)) || 0), 0) / reviewItems.length;
+    };
+    const breakdownDefs = [
+      { key: 'explanationClarity', label: t('tp_clarity') },
+      { key: 'communication', label: t('tp_communication') },
+      { key: 'subjectKnowledge', label: t('tp_subject_knowledge') },
+      { key: 'onTimeDelivery', label: t('tp_delivery_time') },
+      { key: 'valueForMoney', label: t('tp_value') }
+    ];
+    const breakdown = breakdownDefs.map(def => {
+      const score = reviewItems.length ? avg(r => r[def.key]) : 0;
+      const pct = Math.max(0, Math.min(100, Math.round((score / 5) * 100)));
+      return {
+        label: def.label,
+        score: reviewItems.length ? score.toFixed(1) : '—',
+        widthStyle: 'width:' + pct + '%',
+        barStyle: 'display:block;height:100%;width:' + pct + '%;background:var(--primary);border-radius:999px'
+      };
+    });
+
+    const stars = n => '★'.repeat(Math.max(0, Math.min(5, Math.round(Number(n) || 0)))) +
+      '☆'.repeat(Math.max(0, 5 - Math.round(Number(n) || 0)));
+
+    const session = s.session;
+    const accountLabel = session ? Tafseel.userName(session) : t('tp_login');
+    const accountHref = session ? dashboardFor(session) : Tafseel.authHref(location.pathname + location.search);
+    const teacherJoinHref = session && (session.roles || []).includes('Teacher')
+      ? 'Tafseel-Teacher-Apply.dc.html'
+      : 'Tafseel-Auth.dc.html?mode=register&role=teacher';
+
+    const pageTitle = teacherName
+      ? teacherName + ' ' + t('tp_page_title_suffix')
+      : t('tp_page_title_fallback');
+    if (typeof document !== 'undefined') {
+      document.title = pageTitle;
+      document.querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]').forEach(meta => meta.setAttribute('content', pageTitle));
+    }
+    const subjectById = new Map(((profile && profile.subjects) || []).map(item => [item.id, named(item)]));
+    const discovery = readDiscoveryContext();
+    const browseQuery = new URLSearchParams(location.search);
+    browseQuery.delete('id');
+    browseQuery.delete('teacherId');
+    browseQuery.delete('teacherServiceId');
+    if (discovery.subjectId) browseQuery.set('subjectId', discovery.subjectId);
+    if (discovery.serviceId) browseQuery.set('service', discovery.serviceId);
+    const marketplaceReturnHref = readMarketplaceReturnHref();
+    const browseHref = marketplaceReturnHref || ('Tafseel-Browse-Teachers.dc.html' + (browseQuery.toString() ? '?' + browseQuery.toString() : ''));
+    const topicById = new Map(((profile && profile.topics) || []).map(item => [item.id, named(item)]));
+    const publicSamples = ((profile && profile.samples) || []).map(sm => {
+      const sourceCode = sm.sourceCode === 'qualification_sample' ? 'qualification_sample' : 'reviewed_showcase';
+      const isQualification = sourceCode === 'qualification_sample';
+      return {
+        ...sm,
+        trust: t(sourceCode === 'qualification_sample' ? 'trust_qualification_sample' : 'trust_reviewed_showcase'),
+        trustClass: isQualification ? 'tf-profile-trust-label tf-profile-trust-qualification' : 'tf-profile-trust-label tf-profile-trust-showcase',
+        mkTrustClass: isQualification ? 'tf-mkp-tag tf-mkp-tag--qual' : 'tf-mkp-tag',
+        isShowcase: !isQualification,
+        hasDescription: !!(sm.description || '').trim(),
+        descriptionText: (sm.description || '').trim() || t(isQualification ? 'showcase_qualification_description' : 'showcase_reviewed_description'),
+        subjectName: subjectById.get(sm.subjectId) || '',
+        headingMeta: [topicById.get(sm.topicId), sm.publishedAt ? formatDateOnly(sm.publishedAt) : '']
+          .filter(Boolean).join(' · '),
+        contentUrl: '/api/v1/teachers/samples/' + encodeURIComponent(sm.id) + '/content',
+        contentType: sm.contentType || 'video/mp4'
+      };
+    });
+    const featuredSample = publicSamples.find(sm => sm.id === s.selectedSampleId) || publicSamples[0] || null;
+    const sampleIndex = featuredSample ? publicSamples.findIndex(sm => sm.id === featuredSample.id) : -1;
+    const selectSample = index => {
+      if (!publicSamples.length) return;
+      const next = (index + publicSamples.length) % publicSamples.length;
+      this.setState({ selectedSampleId: publicSamples[next].id, mediaDuration: '', mediaLoadError: false });
+    };
+    const moveSample = delta => selectSample(sampleIndex + delta);
+    const teacherMeta = metaParts.join(' · ') || (profile && profile.headline) || '';
+    const availabilityLabel = s.availabilityError
+      ? t('availability_error')
+      : Tafseel.availabilityText(s.availabilitySummary);
+    const localizedServiceName = service => service
+      ? (s.lang === 'ar' && service.nameAr ? service.nameAr : service.nameEn || service.title || '')
+      : '';
+    const localizedServiceDescription = service => service
+      ? (s.lang === 'ar' && service.descriptionAr ? service.descriptionAr : service.descriptionEn || service.description || '')
+      : '';
+
+    return {
+      langLabel: t('language_target'),
+      postRequestLabel: Tafseel.lang === 'ar' ? 'انشر طلبًا' : 'Post a Request',
+      langSwitchLabel: Tafseel.t('admin_switch_language'),
+      themeIcon: s.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => Tafseel.toggleTheme(),
+      toggleLang: () => Tafseel.toggleLang(),
+      toast: s.toast,
+      toastClass: Tafseel.toastClass(s.toastLeaving),
+      pageTitle,
+
+      isLoading: s.status === 'loading',
+      isUnavailable: s.status === 'unavailable',
+      isReady: s.status === 'ready',
+
+      accountHref,
+      teacherJoinHref,
+      accountLabel,
+      accountAvatar: Tafseel.avatarUrl(session && session.userId, session && session.hasAvatar),
+      teacherAvatar: Tafseel.avatarUrl(s.teacherId, profile && profile.hasAvatar, null, teacherName),
+
+      teacherName,
+      teacherHeadline: (profile && profile.headline) || teacherMeta,
+      teacherMeta,
+      subjectChips: subjects,
+      subjectSummary: subjects.join(' · '),
+      hasSubjects: subjects.length > 0,
+      languageSummary: languages.join(' · '),
+      hasLanguages: languages.length > 0,
+      breadcrumbSubject: marketplaceReturnHref
+        ? t('sd_back_to_offers')
+        : (subjects[0] ? subjects[0] + ' ' + t('tp_teachers_suffix') : t('nav_browse')),
+      browseHref,
+      verified: !!(profile && profile.verified),
+      qualifiedOnTafseel: !!(profile && Array.isArray(profile.trustBadges)
+        && profile.trustBadges.some(b => b && b.code === 'qualified_on_tafseel'))
+        || !!(profile && profile.verified),
+      trustBadgeDetail: t('trust_badge_qualified_on_tafseel_detail'),
+
+      headStats: rating != null && ratingCount > 0 ? [
+        { value: rating.toFixed(1) + ' ★', label: ratingCount + ' ' + t('tp_stat_reviews') }
+      ] : [],
+
+      fav: s.fav,
+      favLabel: s.fav ? t('tp_saved') : t('tp_save'),
+      favClass: s.fav ? 'is-saved' : '',
+      onFav: () => this.toggleFavorite(),
+      onShare: async () => {
+        const url = location.href;
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(url);
+          copied = true;
+        } catch (_) {
+          try {
+            const el = document.createElement('textarea');
+            el.value = url;
+            el.style.position = 'fixed';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.select();
+            copied = document.execCommand('copy');
+            document.body.removeChild(el);
+          } catch (_) { copied = false; }
+        }
+        if (copied) this.flash(t('tp_share_copied'));
+      },
+
+      chatHref: 'Tafseel-Student-Dashboard.dc.html?chatWith=' + encodeURIComponent(s.teacherId),
+      bookHref: bookService
+        ? 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(s.teacherId) +
+          '&teacherServiceId=' + encodeURIComponent(bookService.id)
+        : 'Tafseel-Book-Session.dc.html',
+      canRequest,
+      canBook,
+      viewerIsOwner,
+      showVisitorActions: !viewerIsOwner,
+      ownerEditHref: 'Tafseel-Teacher-Dashboard.dc.html?section=profile',
+      ownerServicesHref: 'Tafseel-Teacher-Dashboard.dc.html?section=services',
+      showHeroCta: !!(canRequest || canBook),
+      heroCtaHidden: services.length === 0,
+      heroCtaHref: canRequest ? (selected
+        ? 'Tafseel-Request.dc.html?teacherId=' + encodeURIComponent(s.teacherId) + '&teacherServiceId=' + encodeURIComponent(selected.id)
+        : 'Tafseel-Request.dc.html') : bookService
+        ? 'Tafseel-Book-Session.dc.html?teacherId=' + encodeURIComponent(s.teacherId) + '&teacherServiceId=' + encodeURIComponent(bookService.id)
+        : '#',
+      heroCtaLabel: canRequest ? t('tp_request_service') : t('tp_book_live'),
+      availabilityLabel,
+      availabilityAria: t('availability_field'),
+      availabilityBookLabel: t('availability_book_action'),
+      showAvailabilityBook: canBook,
+
+      bioParagraphs,
+      showBio: bioParagraphs.length > 0,
+      showCertifications: certifications.length > 0,
+      certifications,
+      showExperience: experience.length > 0,
+      experience,
+      subjects,
+      subjectsEmpty: subjects.length === 0,
+      topics,
+      topicsEmpty: topics.length === 0,
+      educationLevels,
+      levelsEmpty: educationLevels.length === 0,
+
+      hasFeaturedSample: !!featuredSample && !s.mediaLoadError,
+      mediaLoadError: !!featuredSample && s.mediaLoadError,
+      mediaErrorTitle: t('tp_media_playback_error_title'),
+      mediaErrorBody: t('tp_media_playback_error_body'),
+      samplesEmpty: publicSamples.length === 0,
+      hasMultipleSamples: carouselNavigationVisible(publicSamples),
+      featuredSample,
+      featuredSampleTitle: featuredSample ? featuredSample.title : t('tp_media_region'),
+      featuredSampleMeta: [t('tp_media_region'), featuredSample && featuredSample.headingMeta].filter(Boolean).join(' · '),
+      durationText: s.mediaDuration,
+      hasDuration: !!s.mediaDuration,
+      samplePositionLabel: featuredSample
+        ? Tafseel.number(sampleIndex + 1) + ' / ' + Tafseel.number(publicSamples.length)
+        : '',
+      previousVideoLabel: t('tp_previous_video'),
+      nextVideoLabel: t('tp_next_video'),
+      mediaRegionLabel: t('tp_media_region'),
+      mediaWatermark: 'Tafseel · ' + (session && (session.email || session.userId) || teacherName),
+      retryMediaLabel: t('tp_media_retry'),
+      tryAnotherSampleLabel: t('tp_media_try_another'),
+      onRetryMedia: () => this.setState({ mediaLoadError: false, mediaDuration: '' }),
+      onPreviousSample: () => moveSample(-1),
+      onNextSample: () => moveSample(1),
+      onCarouselKeyDown: event => {
+        if (event.target !== event.currentTarget || !publicSamples.length) return;
+        const delta = carouselKeyDelta(event.key, s.lang === 'ar');
+        if (delta) { event.preventDefault(); moveSample(delta); }
+        if (event.key === 'Home') { event.preventDefault(); selectSample(0); }
+        if (event.key === 'End') { event.preventDefault(); selectSample(publicSamples.length - 1); }
+      },
+      onCarouselTouchStart: event => { this._carouselTouchX = event.changedTouches[0].clientX; },
+      onCarouselTouchEnd: event => {
+        const distance = event.changedTouches[0].clientX - (this._carouselTouchX || 0);
+        const delta = carouselSwipeDelta(distance);
+        if (delta) moveSample(delta);
+      },
+
+      services: services.map(sv => {
+        const urgent = /urgent|emergency|طارئ/i.test((sv.title || '') + ' ' + (sv.description || ''));
+        const price = formatMoneyParts(sv.currency, sv.price);
+        const isLive = !!sv.requiresScheduling;
+        const liveUnavailable = isLive && !sv.canBook;
+        const selectedNow = !!(selected && selected.id === sv.id);
+        const availableToday = isLive && s.availabilitySummary && s.availabilitySummary.state === 'available_today';
+        return {
+          id: sv.id,
+          iconPath: serviceIconPath(sv),
+          name: localizedServiceName(sv),
+          desc: localizedServiceDescription(sv),
+          price: formatMoney(sv.currency, sv.price),
+          priceAmount: price.amount,
+          priceCurrency: price.currency,
+          priceCurrencyClass: price.currencyClass,
+          mkCurrencyClass: price.mkCurrencyClass,
+          priceCurrencyTitle: price.currencyTitle,
+          priceUnit: isLive ? t('tp_per_session') : t('tp_starting_price'),
+          delivery: isLive ? availabilityLabel : formatDelivery(sv.deliveryHours),
+          revisions: formatRevisions(sv.revisions),
+          serviceTypeLabel: isLive ? t('browse_live_service') : t('browse_async_service'),
+          factOneLabel: isLive ? t('book_duration') : t('tp_estimated_delivery'),
+          factOneValue: isLive ? serviceDuration(sv) : formatDelivery(sv.deliveryHours),
+          factOneClass: '',
+          factTwoLabel: isLive ? t('tp_availability_title') : t('tp_revisions'),
+          factTwoValue: isLive ? availabilityLabel : formatRevisions(sv.revisions),
+          factTwoClass: availableToday ? 'is-today' : '',
+          badge: urgent ? t('tp_urgent') : '',
+          cardClass: 'tf-mkp-svc ' + (isLive ? 'is-live' : 'is-async') + (selectedNow ? ' is-selected' : ''),
+          selected: selectedNow,
+          selectClass: 'tf-mk-btn ' + (selectedNow ? 'tf-mk-btn--primary' : 'tf-mk-btn--secondary') + ' tf-mk-btn--sm',
+          disabled: liveUnavailable,
+          btnLabel: liveUnavailable ? t('tp_service_unavailable') : selected && selected.id === sv.id ? t('tp_selected') : t('tp_select'),
+          onSelect: () => {
+            if (liveUnavailable) return;
+            const query = new URLSearchParams(location.search);
+            query.set('teacherServiceId', sv.id);
+            history.replaceState(null, '', location.pathname + '?' + query.toString());
+            this.setState({ serviceId: sv.id }, () => this.reloadAvailability(sv));
+            Tafseel.analytics.track('service_selected', 'TeacherProfile', {
+              subjectId: sv.subjectId || null,
+              serviceCatalogItemId: sv.serviceCatalogItemId || null,
+              teacherServiceId: sv.id,
+              teacherId: s.teacherId
+            }, s.teacherId + ':' + sv.id);
+          }
+        };
+      }),
+      servicesEmpty: services.length === 0,
+
+      selectedServiceLabel: t('tp_selected_service'),
+      hasSelectedService: !!selected,
+      selectedName: selected ? localizedServiceName(selected) : t('tp_no_service_selected'),
+      selectedPrice: selected ? formatMoney(selected.currency, selected.price) : '—',
+      selectedPriceAmount: selected ? formatMoneyParts(selected.currency, selected.price).amount : '—',
+      selectedPriceCurrency: selected ? formatMoneyParts(selected.currency, selected.price).currency : '',
+      selectedPriceCurrencyClass: selected ? formatMoneyParts(selected.currency, selected.price).currencyClass : 'tf-price-currency',
+      selectedMkCurrencyClass: selected ? formatMoneyParts(selected.currency, selected.price).mkCurrencyClass : 'tf-mk-code',
+      selectedPriceCurrencyTitle: selected ? formatMoneyParts(selected.currency, selected.price).currencyTitle : '',
+      selectedUnit: selected ? (selected.requiresScheduling ? t('tp_per_session') : t('tp_starting_price')) : '',
+      selectedRequiresScheduling: !!(selected && selected.requiresScheduling),
+      selectedDelivery: selected ? (selected.requiresScheduling ? availabilityLabel : formatDelivery(selected.deliveryHours)) : '—',
+      selectedRevisions: selected ? formatRevisions(selected.revisions) : '—',
+      selectedPrimaryFactLabel: selected && selected.requiresScheduling ? t('tp_availability_title') : t('tp_estimated_delivery'),
+      selectedPrimaryFactValue: selected && selected.requiresScheduling ? availabilityLabel : selected ? formatDelivery(selected.deliveryHours) : '—',
+      selectedPrimaryFactClass: selected && selected.requiresScheduling && s.availabilitySummary && s.availabilitySummary.state === 'available_today' ? 'is-today' : '',
+      selectedSecondaryFactLabel: selected && selected.requiresScheduling ? t('book_duration') : t('tp_revisions'),
+      selectedSecondaryFactValue: selected && selected.requiresScheduling ? serviceDuration(selected) : selected ? formatRevisions(selected.revisions) : '—',
+
+      ratingValue: rating != null && ratingCount > 0 ? rating.toFixed(1) : '—',
+      ratingCount: Tafseel.number(ratingCount),
+      hasRating: rating != null && ratingCount > 0,
+      ratingEmpty: rating == null || ratingCount <= 0,
+      ratingStars: rating != null && ratingCount > 0 ? stars(rating) : '',
+      ratingStarIcons: starIconList(rating),
+      reviewsSummary: ratingCount
+        ? Tafseel.t('tp_reviews_based_on', { n: String(ratingCount) })
+        : t('tp_reviews_empty'),
+      breakdown,
+      reviews: reviewItems.map(rv => {
+        const scoreNum = Number(rv.overallScore || 0);
+        const id = String(rv.id || '');
+        const mono = ((parseInt(id.replace(/\D/g, '').slice(-2), 10) || 11) % 26);
+        const initials = String.fromCharCode(65 + mono) + String.fromCharCode(65 + ((mono + 7) % 26));
+        return {
+          initials,
+          name: t('tp_verified_student'),
+          meta: formatDateOnly(rv.createdAt),
+          score: scoreNum ? scoreNum.toFixed(1) : '',
+          ratingLabel: scoreNum ? (scoreNum.toFixed(1) + ' / 5') : '',
+          stars: stars(scoreNum),
+          starIcons: starIconList(scoreNum),
+          body: rv.originalComment || ''
+        };
+      }),
+      reviewsEmpty: reviewItems.length === 0,
+      hasReviews: reviewItems.length > 0
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -4,28 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-</head>
-<body>
-<x-dc>
-<helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Book a live session — Tafseel</title>
 <script src="js/boot-prefs.js"></script>
-<link rel="stylesheet" href="css/tafseel.css" />
+<link rel="stylesheet" href="css/tafseel.css?v=identity-v1" />
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
 <link rel="icon" href="assets/brand/favicon.ico" />
+<meta name="theme-color" content="#5036D8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020200" media="(prefers-color-scheme: dark)" />
 <script src="js/locales.js"></script>
 <script src="js/tafseel.js"></script>
 <script src="js/api.js"></script>
+<meta name="description" content="Pick a time and book a live session with your teacher." />
+<link rel="canonical" href="Tafseel-Book-Session.dc.html" />
+<meta name="robots" content="noindex, nofollow" />
+<meta property="og:title" content="Book a live session — Tafseel" />
+<meta property="og:description" content="Pick a time and book a live session with your teacher." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tafseel" />
+<meta property="og:image" content="assets/brand/tafseel-mark.png" />
+<meta property="og:locale" content="en" />
+<meta property="og:locale:alternate" content="ar" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Book a live session — Tafseel" />
+<meta name="twitter:description" content="Pick a time and book a live session with your teacher." />
+</head>
+<body>
+<x-dc>
+<helmet><title>Book a live session — Tafseel</title>
 </helmet>
 
-<header style="position:sticky;top:0;z-index:50;background:color-mix(in oklab, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)">
-  <div class="tf-shell" style="height:64px;display:flex;align-items:center;gap:16px">
-    <a href="{{ homeHref }}" style="display:flex;align-items:center;gap:10px;color:var(--text)" aria-label="Tafseel home">
-      <img data-tafseel-mark src="assets/brand/tafseel-mark.png" alt="" width="24" height="24" style="flex:none;object-fit:contain" />
-      <span translate="no" class="tf-mursala" style="font-weight:900;font-size:17px;letter-spacing:0">تفصيــل</span>
+<header class="tf-workflow-header">
+  <div class="tf-shell tf-workflow-header__inner">
+    <a class="tf-workflow-header__brand" href="{{ homeHref }}" aria-label="Tafseel home">
+      <img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="18" height="24" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
     </a>
-    <span style="color:var(--muted);font-size:14px">/ Book a live session</span>
-    <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px">
+    <span class="tf-workflow-header__crumb" data-i18n="wf_book_crumb">/ Book a live session</span>
+    <div class="tf-workflow-header__actions">
       <button type="button" class="tf-lang-toggle" onClick="{{ toggleLang }}" aria-label="{{ langSwitchLabel }}" title="{{ langSwitchLabel }}"></button>
       <button type="button" class="tf-theme-toggle" onClick="{{ toggleTheme }}" aria-label="Toggle dark mode"></button>
     </div>
@@ -35,13 +50,14 @@
 <main class="tf-shell" style="padding-block:32px 80px">
   <sc-if value="{{ showUnavailable }}" hint-placeholder-val="{{ false }}">
     <div class="tf-unavailable" role="status">
+      <h1 style="font-size:clamp(24px,4vw,34px);margin:0 0 10px">{{ pageHeading }}</h1>
       <p style="margin:0 0 12px">{{ unavailableMessage }}</p>
-      <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--primary);font-weight:700;text-decoration:underline">Browse Teachers</a>
+      <a href="Tafseel-Browse-Teachers.dc.html" style="color:var(--primary);font-weight:700;text-decoration:underline">{{ browseTeachersLabel }}</a>
     </div>
   </sc-if>
 
   <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ true }}">
-    <div class="tf-unavailable" role="status">Loading session options…</div>
+    <div class="tf-unavailable" role="status">{{ loadingLabel }}</div>
   </sc-if>
 
   <sc-if value="{{ showBooking }}" hint-placeholder-val="{{ false }}">
@@ -49,27 +65,27 @@
       <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
           <div style="display:flex;gap:14px;align-items:center">
-            <span style="width:48px;height:48px;flex:none;border-radius:14px;border:1px solid var(--border);background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--bg-alt) 5px 10px)"></span>
+            <span style="width:48px;height:48px;flex:none;border-radius:14px;border:1px solid var(--border);background:var(--surface-2)"></span>
             <div>
-              <div style="font-size:15.5px;font-weight:700">{{ teacherName }}</div>
-              <div style="font-size:12.5px;color:var(--muted)">{{ teacherMeta }}</div>
+              <div style="font-size:15px;font-weight:700">{{ teacherName }}</div>
+              <div style="font-size:12px;color:var(--muted)">{{ teacherMeta }}</div>
             </div>
           </div>
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-          <h1 style="font-size:19px;font-weight:800;letter-spacing:-.02em;margin-bottom:16px">Session details</h1>
+          <h1 style="font-size:19px;font-weight:800;letter-spacing:-.02em;margin-bottom:16px">{{ sessionDetailsLabel }}</h1>
           <div style="display:flex;flex-direction:column;gap:14px">
             <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Session title</span>
-              <input value="{{ title }}" onChange="{{ onTitle }}" placeholder="e.g. Rotational dynamics review before Thursday quiz" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+              <span style="font-size:13px;font-weight:600">{{ sessionTitleLabel }}</span>
+              <input value="{{ title }}" onChange="{{ onTitle }}" placeholder="{{ sessionTitlePlaceholder }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
             </label>
             <label style="display:flex;flex-direction:column;gap:6px">
-              <span style="font-size:13.5px;font-weight:600">Topic</span>
-              <input value="{{ topic }}" onChange="{{ onTopic }}" placeholder="e.g. Torque and angular momentum" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px" />
+              <span style="font-size:13px;font-weight:600">{{ topicLabel }}</span>
+              <input value="{{ topic }}" onChange="{{ onTopic }}" placeholder="{{ topicPlaceholder }}" style="height:42px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
             </label>
             <div>
-              <span style="font-size:13.5px;font-weight:600;display:block;margin-bottom:8px">Duration</span>
+              <span style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">{{ durationLabel }}</span>
               <div class="tf-cols-4" style="gap:8px">
                 <sc-for list="{{ durations }}" as="d" hint-placeholder-count="4">
                   <button type="button" onClick="{{ d.onClick }}" style="{{ d.style }}">{{ d.label }}</button>
@@ -80,25 +96,25 @@
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--primary);border-radius:var(--r-lg);padding:20px;display:flex;gap:14px;align-items:center">
-          <span style="font-size:20px">⚡</span>
+          <svg class="tf-session-kind-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 14h6l-1 8 9-13h-6V2Z"/></svg>
           <div style="flex:1">
-            <div style="font-size:14.5px;font-weight:700">Exam Night Emergency Session</div>
-            <div style="font-size:12.5px;color:var(--muted);margin-top:2px">Same-day 90-minute session, premium rate — for the night before your exam.</div>
+            <div style="font-size:14px;font-weight:700">{{ emergencyTitle }}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">{{ emergencyDescription }}</div>
           </div>
           <button type="button" onClick="{{ onEmergency }}" style="{{ emergencyStyle }}">{{ emergencyLabel }}</button>
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Pick a time</h2>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ pickTimeLabel }}</h2>
           <label style="display:flex;flex-direction:column;gap:6px;max-width:260px;margin-bottom:16px">
-            <span style="font-size:13px;font-weight:600">Your time zone</span>
+            <span style="font-size:13px;font-weight:600">{{ timezoneLabel }}</span>
             <input value="{{ timezone }}" onChange="{{ onTimezone }}" style="height:40px;padding-inline:12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px" />
           </label>
           <sc-if value="{{ slotsLoading }}" hint-placeholder-val="{{ false }}">
-            <div class="tf-unavailable" role="status" style="margin-bottom:12px">Loading session options…</div>
+            <div class="tf-unavailable" role="status" style="margin-bottom:12px">{{ loadingLabel }}</div>
           </sc-if>
           <sc-if value="{{ showNoSlots }}" hint-placeholder-val="{{ false }}">
-            <div class="tf-unavailable" role="status" style="margin-bottom:12px">No available slots for this duration and time zone.</div>
+            <div class="tf-unavailable" role="status" style="margin-bottom:12px">{{ noSlotsLabel }}</div>
           </sc-if>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
             <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
@@ -116,35 +132,43 @@
         </section>
 
         <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">Session notes and files</h2>
-          <textarea value="{{ notes }}" onChange="{{ onNotes }}" rows="3" placeholder="What should the teacher prepare for this session?" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical;margin-bottom:12px"></textarea>
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:12px">{{ notesLabel }}</h2>
+          <textarea value="{{ notes }}" onChange="{{ onNotes }}" rows="3" placeholder="{{ notesPlaceholder }}" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);font-size:14px;resize:vertical;margin-bottom:12px"></textarea>
           <label style="display:block;border:2px dashed var(--border-strong);border-radius:var(--r-md);padding:20px;text-align:center;cursor:pointer;background:var(--bg)">
             <input type="file" onChange="{{ onFilePick }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)" />
-            <span style="font-size:13.5px;color:var(--text-2)">⇧ Drag a file here or click to upload</span>
+            <span style="font-size:13px;color:var(--text-2)">{{ dragFileLabel }}</span>
           </label>
           <sc-if value="{{ fileName }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--text-2)">
               <span>📎 {{ fileName }}</span>
-              <button type="button" onClick="{{ removeFile }}" aria-label="Remove file" style="border:0;background:none;color:var(--muted)">✕</button>
+              <button type="button" onClick="{{ removeFile }}" aria-label="{{ removeFileLabel }}" style="border:0;background:none;color:var(--muted)">✕</button>
             </div>
           </sc-if>
         </section>
       </div>
 
       <aside data-sticky="1" style="position:sticky;top:92px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px">
-        <h2 style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:14px">Price summary</h2>
+        <h2 style="font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:14px">{{ priceSummaryLabel }}</h2>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
           <sc-for list="{{ priceLines }}" as="pl" hint-placeholder-count="2">
-            <div style="display:flex;justify-content:space-between;font-size:13.5px">
-              <span style="color:var(--text-2)">{{ pl.label }}</span><span>{{ pl.value }}</span>
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:var(--text-2)">{{ pl.label }}</span>
+              <sc-if value="{{ pl.isSarAmount }}" hint-placeholder-val="{{ true }}">
+                <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span>{{ pl.amountNumber }}</span>
+              </sc-if>
+              <sc-if value="{{ pl.isPlainAmount }}" hint-placeholder-val="{{ false }}">{{ pl.value }}</sc-if>
             </div>
           </sc-for>
         </div>
         <div style="display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);font-size:17px;font-weight:800;margin-bottom:18px">
-          <span>Total</span><span>{{ totalLabel }}</span>
+          <span>{{ totalWord }}</span>
+          <sc-if value="{{ totalIsSar }}" hint-placeholder-val="{{ true }}">
+            <span class="tf-price-line" dir="ltr"><span class="tf-price-currency tf-price-currency--mark" title="SAR" aria-label="SAR" data-i18n-skip></span>{{ totalAmountNumber }}</span>
+          </sc-if>
+          <sc-if value="{{ totalIsPlain }}" hint-placeholder-val="{{ false }}">{{ totalLabel }}</sc-if>
         </div>
         <sc-if value="{{ selectedSlotLabel }}" hint-placeholder-val="{{ false }}">
-          <div style="font-size:12.5px;color:var(--text-2);margin-bottom:14px;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2)"><span>Selected:</span> {{ selectedSlotLabel }}</div>
+          <div style="font-size:12px;color:var(--text-2);margin-bottom:14px;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface-2)"><span>{{ selectedLabel }}</span> {{ selectedSlotLabel }}</div>
         </sc-if>
         <button type="button" onClick="{{ onConfirm }}" disabled="{{ confirming }}" style="{{ confirmStyle }}">{{ confirmLabel }}</button>
       </aside>
@@ -153,7 +177,7 @@
 </main>
 
 <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
-  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
+  <div role="status" class="{{ toastClass }}" style="position:fixed;inset-block-end:24px;inset-inline-end:24px;z-index:80;background:var(--surface);box-shadow:var(--shadow-lg);border-radius:var(--r-md);padding:14px 18px;font-size:14px;font-weight:500;max-width:320px">{{ toast }}</div>
 </sc-if>
 
 </x-dc>
@@ -234,7 +258,11 @@ class Component extends DCLogic {
     });
   }
   componentWillUnmount() { Tafseel.offChange(this._sub); }
-  componentDidUpdate() { Tafseel.translate(); Tafseel.updateControls(); }
+  componentDidUpdate() {
+    Tafseel.translate();
+    Tafseel.updateControls();
+    document.title = Tafseel.t('book_title');
+  }
 
   flash(msg) {
     Tafseel.flash(this, msg);
@@ -300,9 +328,11 @@ class Component extends DCLogic {
   }
 
   money(amount, currency) {
-    const cur = currency || (this.state.service && this.state.service.currency) || 'SAR';
-    const rounded = Math.round((Number(amount) || 0) * 100) / 100;
-    return cur + ' ' + Tafseel.number(rounded, { maximumFractionDigits: 2 });
+    return Tafseel.money(amount, currency || (this.state.service && this.state.service.currency) || 'SAR');
+  }
+
+  moneyLine(amount, currency) {
+    return Tafseel.moneyView(amount, currency || (this.state.service && this.state.service.currency) || 'SAR');
   }
 
   buildWeek() {
@@ -335,7 +365,7 @@ class Component extends DCLogic {
           className: 'tf-slot-once' + (active ? ' is-picked' : ''),
           disabled: false,
           onClick: () => this.setState({ slotKey: id, slotLocalStart: localIso, slotLabel: label }),
-          style: 'height:44px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;transition:all var(--t);' + (active
+          style: 'height:44px;border-radius:var(--r-sm);font-size:12px;font-weight:600;transition:background-color var(--t),border-color var(--t),color var(--t);' + (active
             ? 'border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);'
             : 'border:1px solid var(--border);background:var(--surface);color:var(--text-2);')
         };
@@ -384,8 +414,12 @@ class Component extends DCLogic {
 
       showUnavailable,
       unavailableMessage: s.missingTeacherId
-        ? 'A teacher is required to book a live session.'
-        : (s.loadError || 'This teacher has no bookable live session right now.'),
+        ? Tafseel.t('book_missing_teacher')
+        : (s.loadError || Tafseel.t('book_no_live_service')),
+      pageHeading: Tafseel.t('book_title').replace(/\s+[—-]\s+Tafseel$/i, ''),
+      browseTeachersLabel: Tafseel.t('book_browse_teachers'),
+      loadingLabel: Tafseel.t('book_loading'),
+      noSlotsLabel: Tafseel.t('book_no_slots'),
       showLoading,
       showBooking,
       slotsLoading: s.slotsLoading,
@@ -394,26 +428,40 @@ class Component extends DCLogic {
       teacherName: profile ? Tafseel.userName(profile) : '',
       teacherMeta,
 
+      sessionDetailsLabel: Tafseel.t('book_session_details'),
+      sessionTitleLabel: Tafseel.t('book_session_title'),
+      sessionTitlePlaceholder: Tafseel.t('book_title_ph'),
+      topicLabel: Tafseel.t('book_topic'),
+      topicPlaceholder: Tafseel.t('book_topic_ph'),
+      durationLabel: Tafseel.t('book_duration'),
       title: s.title, onTitle: e => this.setState({ title: e.target.value }),
       topic: s.topic, onTopic: e => this.setState({ topic: e.target.value }),
       durations: durations.map(d => ({
-        label: d + ' min',
-        style: 'height:44px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:all var(--t);' +
+        label: Tafseel.t('book_dur_' + d),
+        style: 'height:44px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:background-color var(--t),border-color var(--t),color var(--t);' +
           (s.duration === d && !s.emergency ? 'border:1px solid var(--primary);background:var(--primary-soft);color:var(--primary);' : 'border:1px solid var(--border);background:var(--bg);color:var(--text-2);'),
         onClick: () => this.setDuration(d)
       })),
 
-      emergencyLabel: s.emergency ? 'Selected' : 'Select',
+      emergencyTitle: Tafseel.t('book_exam_emergency'),
+      emergencyDescription: Tafseel.t('book_exam_emergency_desc'),
+      emergencyLabel: Tafseel.t(s.emergency ? 'book_selected_action' : 'book_select'),
       emergencyStyle: 'height:44px;padding:0 16px;border-radius:var(--r-sm);font-weight:700;font-size:13px;' + (s.emergency
         ? 'border:0;background:var(--primary);color:var(--primary-ink);'
         : 'border:1px solid var(--border-strong);background:var(--surface);color:var(--text);'),
       onEmergency: () => this.setState({ emergency: !s.emergency }),
 
+      pickTimeLabel: Tafseel.t('book_pick_time'),
+      timezoneLabel: Tafseel.t('book_timezone'),
       timezone: s.timezone,
       onTimezone: e => this.setTimezone(e.target.value),
       week,
       selectedSlotLabel: s.slotLabel || '',
 
+      notesLabel: Tafseel.t('book_session_notes'),
+      notesPlaceholder: Tafseel.t('book_prepare_label'),
+      dragFileLabel: Tafseel.t('book_drag_file'),
+      removeFileLabel: Tafseel.t('book_remove_file'),
       notes: s.notes, onNotes: e => this.setState({ notes: e.target.value }),
       fileName: s.fileName,
       onFilePick: e => {
@@ -424,12 +472,18 @@ class Component extends DCLogic {
       removeFile: () => { this._file = null; this.setState({ fileName: '' }); },
 
       priceLines: [
-        { label: 'Base price', value: this.money(base, currency) }
-      ].concat(s.emergency ? [{ label: 'Emergency premium', value: this.money(premium, currency) }] : []),
+        Object.assign({ label: Tafseel.t('pay_base_price') }, this.moneyLine(base, currency), { value: this.money(base, currency) })
+      ].concat(s.emergency ? [Object.assign({ label: Tafseel.t('pay_emergency_premium') }, this.moneyLine(premium, currency), { value: this.money(premium, currency) })] : []),
+      priceSummaryLabel: Tafseel.t('pay_order_summary'),
+      totalWord: Tafseel.t('req_total'),
+      selectedLabel: Tafseel.t('book_selected'),
       totalLabel: this.money(total, currency),
+      totalAmountNumber: this.moneyLine(total, currency).amountNumber,
+      totalIsSar: this.moneyLine(total, currency).isSarAmount,
+      totalIsPlain: this.moneyLine(total, currency).isPlainAmount,
       confirming: s.confirming,
-      confirmLabel: s.confirming ? 'Booking…' : 'Confirm booking',
-      confirmStyle: 'height:46px;width:100%;border:0;border-radius:var(--r-md);font-weight:700;font-size:14.5px;' +
+      confirmLabel: Tafseel.t(s.confirming ? 'book_booking' : 'book_confirm'),
+      confirmStyle: 'height:46px;width:100%;border:0;border-radius:var(--r-md);font-weight:700;font-size:14px;' +
         (s.confirming
           ? 'background:var(--border);color:var(--muted);cursor:wait;'
           : 'background:var(--primary);color:var(--primary-ink);'),
@@ -441,11 +495,11 @@ class Component extends DCLogic {
     const s = this.state;
     if (s.confirming) return;
     if (!s.title.trim() || !s.topic.trim()) {
-      this.flash('Add a session title and topic first.');
+      this.flash(Tafseel.t('book_add_title_topic'));
       return;
     }
     if (!s.slotLocalStart) {
-      this.flash('Pick an available time slot to continue.');
+      this.flash(Tafseel.t('book_pick_slot'));
       return;
     }
     if (!s.service) {
