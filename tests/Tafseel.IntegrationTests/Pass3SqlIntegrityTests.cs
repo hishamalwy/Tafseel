@@ -172,17 +172,6 @@ public sealed class Pass3MigrationTests
     private static string ConnectionString(string label) =>
         SqlServerTestDatabase.ConnectionString($"Migration{label}");
 
-    private static async Task DropDatabase(string connectionString)
-    {
-        var builder = new SqlConnectionStringBuilder(connectionString);
-        var database = builder.InitialCatalog;
-        builder.InitialCatalog = "master";
-        await using var connection = new SqlConnection(builder.ConnectionString);
-        await connection.OpenAsync();
-        await using var command = connection.CreateCommand();
-        command.CommandText =
-            $"IF DB_ID(@database) IS NOT NULL BEGIN ALTER DATABASE [{database.Replace("]", "]]")}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{database.Replace("]", "]]")}]; END";
-        command.Parameters.AddWithValue("@database", database);
-        await command.ExecuteNonQueryAsync();
-    }
+    private static Task DropDatabase(string connectionString) =>
+        SqlServerTestDatabase.DropAsync(connectionString);
 }

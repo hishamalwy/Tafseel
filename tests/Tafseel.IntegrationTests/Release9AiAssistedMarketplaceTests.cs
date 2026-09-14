@@ -368,12 +368,15 @@ public sealed class AiTafseelApiFactory : TafseelApiFactory
     protected override void Dispose(bool disposing)
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 1) return;
-        if (disposing)
+        try
         {
-            using var scope = Services.CreateScope();
-            scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Database.EnsureDeleted();
+            base.Dispose(disposing);
         }
-        base.Dispose(disposing);
+        finally
+        {
+            if (disposing)
+                SqlServerTestDatabase.Drop(_connectionString);
+        }
     }
 }
 
