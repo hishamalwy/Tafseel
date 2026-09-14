@@ -1,0 +1,54 @@
+<form class="tf-form" (ngSubmit)="submit()" novalidate data-testid="decision-form">
+  <fieldset class="tf-decision-criteria" [attr.aria-describedby]="has('scores_incomplete') ? 'decision-scores-error' : null">
+    <legend>{{ t('quality_rubric', 'Rubric — score each criterion from 1 to 5') }}</legend>
+    @for (criterion of criteria; track criterion; let index = $index) {
+      <div class="tf-decision-criterion" role="group" [attr.aria-labelledby]="'criterion-' + index">
+        <span [id]="'criterion-' + index">{{ t('quality_criterion_' + criterion, criterion) }}</span>
+        <div class="tf-rubric-scale">
+          @for (point of points; track point) {
+            <button type="button" class="tf-rubric-point" [attr.aria-pressed]="draft().scores[index] === point"
+                    [attr.data-testid]="'score-' + index + '-' + point"
+                    [attr.aria-label]="t('quality_criterion_' + criterion, criterion) + ': ' + point"
+                    (click)="score(index, point)">{{ point }}</button>
+          }
+        </div>
+      </div>
+    }
+    @if (has('scores_incomplete')) { <p class="tf-field-error" id="decision-scores-error" role="alert">{{ t('quality_scores_incomplete', 'Score every criterion before recording a decision.') }}</p> }
+  </fieldset>
+
+  <fieldset class="tf-decision-choices" [attr.aria-describedby]="has('decision_required') ? 'decision-choice-error' : null">
+    <legend>{{ t('quality_decision', 'Decision') }}</legend>
+    @for (decision of decisions; track decision) {
+      <label class="tf-check">
+        <input type="radio" name="decision" [value]="decision" [checked]="draft().decision === decision" (change)="choose(decision)"
+               [attr.data-testid]="'decision-' + decision">
+        <span>{{ t(Review.decisionKey(decision), '') }}</span>
+      </label>
+    }
+    @if (has('decision_required')) { <p class="tf-field-error" id="decision-choice-error" role="alert">{{ t('quality_decision_required', 'Choose a decision.') }}</p> }
+  </fieldset>
+
+  <div class="tf-field">
+    <label for="decision-comment">{{ commentRequired() ? t('quality_comment_required_label', 'Feedback to the teacher (required)') : t('quality_comment_label', 'Feedback to the teacher (optional)') }}</label>
+    <textarea id="decision-comment" name="comment" [ngModel]="draft().comment" (ngModelChange)="comment($event)"
+              [attr.maxlength]="commentMax" [attr.aria-invalid]="has('comment_required') || has('comment_too_long')"
+              [attr.aria-describedby]="'decision-comment-help'"></textarea>
+    <span class="tf-field-help" id="decision-comment-help">{{ t('quality_comment_help', 'The teacher sees this with the decision.') }} {{ draft().comment.length }}/{{ commentMax }}</span>
+    @if (has('comment_required')) { <p class="tf-field-error" role="alert">{{ t('quality_comment_required', 'Explain what the teacher should change or why the application is rejected.') }}</p> }
+  </div>
+
+  <div class="tf-field">
+    <label for="decision-notes">{{ t('quality_notes_label', 'Internal notes (reviewers only)') }}</label>
+    <textarea id="decision-notes" name="notes" [ngModel]="draft().internalNotes" (ngModelChange)="notes($event)"
+              [attr.maxlength]="notesMax" [attr.aria-invalid]="has('notes_too_long')"></textarea>
+  </div>
+
+  @if (error()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="decision-error">{{ error() }}</div> }
+
+  <div class="tf-form-actions">
+    <button type="submit" class="tf-button" [disabled]="busy()" data-testid="record-decision">
+      {{ busy() ? t('common_saving', 'Saving…') : t('quality_record_decision', 'Record decision') }}
+    </button>
+  </div>
+</form>

@@ -1,0 +1,109 @@
+<tf-workspace-shell role="QualityReviewer" section="applications">
+  <a class="tf-review-back" routerLink="/quality/applications">← {{ t('quality_back_to_queue', 'All applications') }}</a>
+
+  @if (loading() && !review()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !review()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('quality_review_failed', 'This application could not be loaded.') }}</p>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (review(); as r) {
+    <header class="tf-page-header" data-face="sans">
+      <div class="tf-stack">
+        <span class="tf-page-header-eyebrow">{{ Review.subjectName(r.application, locale.isRtl()) }}@if (r.application.isAdditionalSubject) { · {{ t('quality_kind_additional', 'Additional subject') }} }</span>
+        <h1 data-testid="review-teacher">{{ r.application.teacherName || '—' }}</h1>
+        <p class="tf-page-header-desc">{{ locale.format('quality_submission_n', { n: r.application.submissionVersion }, 'Submission {n}') }} · {{ date(r.application.submittedAt) }}</p>
+      </div>
+      <div class="tf-page-header-actions">
+        <span class="tf-badge" data-testid="review-status" [attr.data-status]="r.application.status" [attr.data-tone]="Review.statusTone(r.application.status)">{{ status(r.application.status) }}</span>
+      </div>
+    </header>
+
+    <div class="tf-review-layout">
+      <div class="tf-review-column">
+        <section class="tf-profile-editor-card" aria-labelledby="review-demo-title">
+          <div><h2 id="review-demo-title">{{ t('apply_demo_title', 'Teaching demo') }}</h2><p>{{ Review.assignmentTitle(r.application, locale.isRtl()) }} · {{ t('quality_demo_length', 'Declared length') }} {{ duration(r.application.demoDurationSeconds) }}</p></div>
+          @if (!r.application.demoUploaded) {
+            <p class="tf-alert" data-kind="warning">{{ t('quality_demo_missing', 'No demo has been uploaded for this application.') }}</p>
+          } @else if (demo(); as video) {
+            <video class="tf-review-video" data-testid="demo-player" [src]="video.url" controls controlsList="nodownload" disablePictureInPicture preload="metadata"></video>
+          } @else {
+            <div><button type="button" class="tf-button tf-button-secondary" data-testid="watch-demo" (click)="watchDemo()" [disabled]="demoLoading()">{{ demoLoading() ? t('common_loading', 'Loading…') : t('quality_watch_demo', 'Watch demo') }}</button></div>
+          }
+          @if (demoError()) { <p class="tf-alert" data-kind="error" role="alert">{{ demoError() }}</p> }
+          @if (r.application.assignmentInstructions) {
+            <div><h3 class="tf-type-label">{{ t('quality_assignment_instructions', 'Assignment given to the teacher') }}</h3><p class="tf-review-instructions">{{ r.application.assignmentInstructions }}</p></div>
+          }
+        </section>
+
+        <section class="tf-profile-editor-card" aria-labelledby="review-decision-title">
+          <div><h2 id="review-decision-title">{{ t('quality_decision', 'Decision') }}</h2></div>
+          @if (actionError()) { <div class="tf-alert" data-kind="error" role="alert">{{ actionError() }}</div> }
+          @if (canStart()) {
+            <form class="tf-form" (ngSubmit)="startReview()">
+              <p class="tf-muted">{{ t('quality_start_intro', 'Start the review to take this application. It is then assigned to you, and only you can decide it.') }}</p>
+              <div class="tf-field">
+                <label for="review-priority">{{ t('quality_col_priority', 'Priority') }}</label>
+                <select id="review-priority" name="priority" [ngModel]="priority()" (ngModelChange)="setPriority($event)">
+                  @for (value of priorities; track value) { <option [ngValue]="value">{{ t(Review.priorityKey(value), '') }}</option> }
+                </select>
+              </div>
+              <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="start-review" [disabled]="starting()">{{ starting() ? t('common_saving', 'Saving…') : t('quality_start_review', 'Start review') }}</button></div>
+            </form>
+          } @else if (canDecide()) {
+            <tf-review-decision-form [review]="r" (decided)="onDecided($event)" />
+          } @else if (assignedElsewhere()) {
+            <p class="tf-alert" data-kind="warning">{{ t('quality_assigned_elsewhere', 'Another reviewer has taken this application. Only they can record the decision.') }}</p>
+          } @else {
+            <p class="tf-muted" data-testid="review-closed">{{ locale.format('quality_no_action', { status: status(r.application.status) }, 'This application is {status}; there is nothing to decide.') }}</p>
+            @if (r.application.publicFeedback) { <p class="tf-review-instructions">{{ r.application.publicFeedback }}</p> }
+          }
+        </section>
+      </div>
+
+      <aside class="tf-review-column">
+        <section class="tf-profile-editor-card" aria-labelledby="review-facts-title">
+          <div><h2 id="review-facts-title">{{ t('quality_application_facts', 'Application') }}</h2></div>
+          <dl class="tf-review-facts">
+            <div><dt>{{ t('apply_city', 'City') }}</dt><dd>{{ r.application.city || '—' }}</dd></div>
+            <div><dt>{{ t('apply_years', 'Years of experience') }}</dt><dd>{{ r.application.experienceYears }}</dd></div>
+            <div><dt>{{ t('quality_degree', 'Degree or qualification') }}</dt><dd>{{ r.application.degree || '—' }}</dd></div>
+            <div><dt>{{ t('quality_col_priority', 'Priority') }}</dt><dd>{{ t(Review.priorityKey(r.application.priority), '') }}</dd></div>
+            <div><dt>{{ t('quality_previous_feedback', 'Earlier feedback') }}</dt><dd>{{ r.application.hasPreviousFeedback ? t('common_yes', 'Yes') : t('common_no', 'No') }}</dd></div>
+          </dl>
+          @if (r.application.activeQualifications.length) {
+            <div><h3 class="tf-type-label">{{ t('quality_already_qualified', 'Already qualified in') }}</h3>
+              <p class="tf-cluster">@for (q of r.application.activeQualifications; track q.subjectId) { <span class="tf-badge" data-tone="success">{{ Review.subjectName(q, locale.isRtl()) }}</span> }</p></div>
+          }
+        </section>
+
+        <section class="tf-profile-editor-card" aria-labelledby="review-history-title">
+          <div><h2 id="review-history-title">{{ t('quality_history', 'History') }}</h2></div>
+          @if (r.history.length) {
+            <ol class="tf-review-timeline" data-testid="review-history">
+              @for (item of r.history; track $index) {
+                <li><strong>{{ status(item.previousStatus) }} → {{ status(item.nextStatus) }}</strong><small>{{ date(item.createdAt) }}@if (item.actorName) { · {{ item.actorName }} }</small>@if (item.note) { <span>{{ item.note }}</span> }</li>
+              }
+            </ol>
+          } @else { <p class="tf-muted">{{ t('quality_history_empty', 'No status changes yet.') }}</p> }
+        </section>
+
+        <section class="tf-profile-editor-card" aria-labelledby="review-records-title">
+          <div><h2 id="review-records-title">{{ t('quality_previous_reviews', 'Reviews') }}</h2></div>
+          @if (r.reviews.length) {
+            <ol class="tf-review-timeline" data-testid="review-records">
+              @for (record of r.reviews; track $index) {
+                <li><strong>{{ t(Review.decisionKey(record.decision), '') }}</strong><small>{{ date(record.createdAt) }}@if (record.reviewerName) { · {{ record.reviewerName }} }</small>
+                  @if (record.publicFeedback) { <span>{{ record.publicFeedback }}</span> }
+                  @if (record.internalNotes) { <small>{{ t('quality_notes_label', 'Internal notes (reviewers only)') }}: {{ record.internalNotes }}</small> }</li>
+              }
+            </ol>
+          } @else { <p class="tf-muted">{{ t('quality_reviews_empty', 'No decision has been recorded yet.') }}</p> }
+        </section>
+      </aside>
+    </div>
+  }
+</tf-workspace-shell>
+<tf-toast />

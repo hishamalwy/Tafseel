@@ -105,6 +105,12 @@
     },
     {
       "method": "GET",
+      "route": "/api/v1/teacher-applications/{p}/demo/content",
+      "file": "frontend-angular/src/app/features/quality/services/http-quality-review.gateway.ts",
+      "source": "demoPath (teaching demo, reviewer)"
+    },
+    {
+      "method": "GET",
       "route": "/api/v1/subjects",
       "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
       "source": "HttpCatalogGateway.all"

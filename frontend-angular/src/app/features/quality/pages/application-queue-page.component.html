@@ -1,0 +1,96 @@
+<tf-workspace-shell role="QualityReviewer" section="applications">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('quality_eyebrow', 'Quality review') }}</span>
+      <h1>{{ t('quality_queue_title', 'Teacher applications') }}</h1>
+      <p class="tf-page-header-desc">{{ t('quality_queue_intro', 'Open an application to watch the teaching demo, score it against the rubric and record your decision.') }}</p>
+    </div>
+    <div class="tf-page-header-actions">
+      <button type="button" class="tf-button tf-button-secondary" (click)="reload()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button>
+    </div>
+  </header>
+
+  @if (queue()?.summary; as summary) {
+    <dl class="tf-stat-grid" data-testid="queue-summary">
+      <div class="tf-stat-tile"><dt>{{ t('quality_summary_actionable', 'Need action') }}</dt><dd>{{ summary.actionable }}</dd></div>
+      <div class="tf-stat-tile"><dt>{{ t('apply_status_submitted', 'Submitted') }}</dt><dd>{{ summary.submitted }}</dd></div>
+      <div class="tf-stat-tile"><dt>{{ t('apply_status_under_review', 'Under review') }}</dt><dd>{{ summary.underReview }}</dd></div>
+      <div class="tf-stat-tile"><dt>{{ t('apply_status_changes', 'Changes requested') }}</dt><dd>{{ summary.changesRequested }}</dd></div>
+      <div class="tf-stat-tile"><dt>{{ t('quality_summary_additional', 'Additional subjects') }}</dt><dd>{{ summary.additionalActionable }}</dd></div>
+    </dl>
+  }
+
+  <form class="tf-cluster tf-queue-filters" (ngSubmit)="reload()" [attr.aria-label]="t('quality_queue_filters', 'Filter applications')">
+    <div class="tf-field">
+      <label for="queue-scope">{{ t('quality_filter_scope', 'Show') }}</label>
+      <select id="queue-scope" name="scope" [ngModel]="scope()" (ngModelChange)="change(() => scope.set($event))">
+        <option value="Actionable">{{ t('quality_scope_actionable', 'Needing action') }}</option>
+        <option value="All">{{ t('quality_scope_all', 'All applications') }}</option>
+      </select>
+    </div>
+    <div class="tf-field">
+      <label for="queue-kind">{{ t('quality_filter_kind', 'Kind') }}</label>
+      <select id="queue-kind" name="kind" [ngModel]="kind()" (ngModelChange)="change(() => kind.set($event))">
+        <option value="All">{{ t('quality_kind_all', 'Every application') }}</option>
+        <option value="Initial">{{ t('quality_kind_initial', 'First subject') }}</option>
+        <option value="Additional">{{ t('quality_kind_additional', 'Additional subject') }}</option>
+      </select>
+    </div>
+    <div class="tf-field">
+      <label for="queue-status">{{ t('apply_status_label', 'Status') }}</label>
+      <select id="queue-status" name="status" [ngModel]="status()" (ngModelChange)="change(() => status.set($event))">
+        <option [ngValue]="null">{{ t('quality_status_any', 'Any status') }}</option>
+        @for (value of statuses; track value) { <option [ngValue]="value">{{ t(Review.statusKey(value), '') }}</option> }
+      </select>
+    </div>
+    <div class="tf-field">
+      <label for="queue-sort">{{ t('quality_filter_sort', 'Order') }}</label>
+      <select id="queue-sort" name="sort" [ngModel]="sort()" (ngModelChange)="change(() => sort.set($event))">
+        <option value="OldestFirst">{{ t('quality_sort_oldest', 'Oldest first') }}</option>
+        <option value="NewestFirst">{{ t('quality_sort_newest', 'Newest first') }}</option>
+      </select>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (queue()?.failed) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('quality_queue_failed', 'The application queue could not be loaded.') }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="reload()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (!items().length) {
+    <div class="tf-state" role="status">
+      <p class="tf-state-title">{{ t('quality_queue_empty', 'No applications match these filters.') }}</p>
+      <p class="tf-state-body">{{ t('quality_queue_empty_body', 'Submitted applications appear here as teachers send them.') }}</p>
+    </div>
+  } @else {
+    <div class="tf-quality-queue" role="table" [attr.aria-label]="t('quality_queue_title', 'Teacher applications')">
+      <div class="tf-quality-queue-head" role="row">
+        <span role="columnheader">{{ t('quality_col_teacher', 'Teacher') }}</span>
+        <span role="columnheader">{{ t('apply_subject', 'Subject') }}</span>
+        <span role="columnheader">{{ t('apply_status_label', 'Status') }}</span>
+        <span role="columnheader">{{ t('quality_col_submitted', 'Submitted') }}</span>
+        <span role="columnheader">{{ t('quality_col_priority', 'Priority') }}</span>
+        <span role="columnheader">{{ t('quality_col_action', 'Action') }}</span>
+      </div>
+      @for (item of items(); track item.id) {
+        <div class="tf-quality-queue-row" role="row" data-testid="queue-row" [attr.data-application-id]="item.id">
+          <span role="cell" class="tf-quality-queue-person"><span><strong>{{ item.teacherName || '—' }}</strong><small>{{ item.city }}</small></span></span>
+          <span role="cell" [attr.data-label]="t('apply_subject', 'Subject')">{{ subject(item) }} @if (item.isAdditionalSubject) { <span class="tf-badge" data-tone="accent">{{ t('quality_kind_additional', 'Additional subject') }}</span> }</span>
+          <span role="cell" [attr.data-label]="t('apply_status_label', 'Status')"><span class="tf-badge" [attr.data-tone]="Review.statusTone(item.status)">{{ t(Review.statusKey(item.status), '') }}</span></span>
+          <span role="cell" [attr.data-label]="t('quality_col_submitted', 'Submitted')">{{ date(item.submittedAt) }}</span>
+          <span role="cell" [attr.data-label]="t('quality_col_priority', 'Priority')">{{ t(Review.priorityKey(item.priority), '') }}</span>
+          <span role="cell" class="tf-quality-queue-action"><a class="tf-button tf-button-secondary tf-button-sm" [routerLink]="['/quality/applications', item.id]">{{ t('quality_open_review', 'Open review') }}</a></span>
+        </div>
+      }
+    </div>
+    @if (pages() > 1) {
+      <nav class="tf-cluster tf-queue-pages" [attr.aria-label]="t('common_pagination', 'Pages')">
+        <button type="button" class="tf-button tf-button-ghost" (click)="go(page() - 1)" [disabled]="page() <= 1">{{ t('common_previous', 'Previous') }}</button>
+        <span>{{ locale.format('common_page_of', { page: page(), pages: pages() }, 'Page {page} of {pages}') }}</span>
+        <button type="button" class="tf-button tf-button-ghost" (click)="go(page() + 1)" [disabled]="page() >= pages()">{{ t('common_next', 'Next') }}</button>
+      </nav>
+    }
+  }
+</tf-workspace-shell>
