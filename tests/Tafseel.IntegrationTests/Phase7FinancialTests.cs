@@ -12,6 +12,7 @@ using Tafseel.Domain.Finance;
 using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.Orders;
 using Tafseel.Domain.TeacherApplications;
+using Tafseel.Infrastructure.Finance;
 using Tafseel.Infrastructure.Persistence;
 
 namespace Tafseel.IntegrationTests;
@@ -65,9 +66,22 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
         Assert.Single(completes, x => x.StatusCode == HttpStatusCode.NoContent);
         Assert.Single(completes, x => x.StatusCode == HttpStatusCode.Conflict);
 
-        var balances = JsonDocument.Parse(await teacher.GetStringAsync("/api/v1/withdrawals/balances"))
-            .RootElement.EnumerateArray().Single();
+        // Released earnings clear first: they are not withdrawable while the student can still
+        // open a dispute, and a maturity pass inside that window does not promote them.
+        var worker = factory.Services.GetRequiredService<EarningsMaturityWorker>();
+        await worker.MatureDueEarningsAsync(default);
+        var clearing = await BalanceAsync(teacher);
+        Assert.Equal(0m, clearing.GetProperty("available").GetDecimal());
+        Assert.Equal(85m, clearing.GetProperty("pendingClearance").GetDecimal());
+        Assert.Equal(HttpStatusCode.BadRequest, (await WithdrawalAsync(teacher, 60, "withdraw-early")).StatusCode);
+
+        factory.Clock.SetUtcNow((await MaturesAtAsync(data.OrderId)).AddMinutes(1));
+        await worker.MatureDueEarningsAsync(default);
+        var balances = await BalanceAsync(teacher);
         Assert.Equal(85m, balances.GetProperty("available").GetDecimal());
+        Assert.Equal(0m, balances.GetProperty("pendingClearance").GetDecimal());
+
+        await VerifyPayoutProfileAsync(data.Teacher.Id, teacher, admin);
         var withdrawals = await Task.WhenAll(
             WithdrawalAsync(teacher, 60, "withdraw-a"),
             WithdrawalAsync(teacher, 60, "withdraw-b"));
@@ -180,6 +194,9 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
 
     private async Task<SeedData> SeedAsync()
     {
+        // A test may advance the shared clock past the dispute window to mature earnings.
+        // Reset it so JWTs issued in the next test are valid against real wall time.
+        factory.Clock.SetUtcNow(DateTimeOffset.UtcNow);
         var student = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
         var teacher = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Teacher);
         var admin = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Admin);
@@ -253,9 +270,42 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
 
     private static Task<HttpResponseMessage> RefundAsync(HttpClient admin, Guid paymentId, string key)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/payments/{paymentId}/refund");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/payments/{paymentId}/refund")
+        {
+            Content = JsonContent.Create(new { reason = "Refund replay test" })
+        };
         request.Headers.TryAddWithoutValidation("Idempotency-Key", key);
         return admin.SendAsync(request);
+    }
+
+    private static async Task<JsonElement> BalanceAsync(HttpClient teacher) =>
+        JsonDocument.Parse(await teacher.GetStringAsync("/api/v1/withdrawals/balances"))
+            .RootElement.EnumerateArray().Single().Clone();
+
+    private async Task<DateTimeOffset> MaturesAtAsync(Guid orderId)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        return await db.TeacherEarningMaturities.Where(x => x.OrderId == orderId)
+            .Select(x => x.MaturesAt).SingleAsync();
+    }
+
+    private static async Task VerifyPayoutProfileAsync(string teacherId, HttpClient teacher, HttpClient admin)
+    {
+        var submitted = await teacher.PutAsJsonAsync("/api/v1/withdrawals/profile", new
+        {
+            legalName = "Verified Teacher",
+            countryCode = "SA",
+            payoutMethod = "Bank transfer",
+            destinationLabel = "IBAN •••• 1234",
+            identityLast4 = "1234"
+        });
+        submitted.EnsureSuccessStatusCode();
+        var profile = JsonDocument.Parse(await submitted.Content.ReadAsStringAsync()).RootElement;
+        var review = await SendAsync(admin, HttpMethod.Post,
+            $"/api/v1/admin/payout-profiles/{teacherId}/review", new { approve = true },
+            profile.GetProperty("version").GetString()!);
+        review.EnsureSuccessStatusCode();
     }
 
     private static async Task<HttpResponseMessage> SendAsync(
