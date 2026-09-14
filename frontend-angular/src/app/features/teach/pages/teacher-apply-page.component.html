@@ -5,7 +5,7 @@
     <p class="tf-muted">{{ t('apply_intro', 'Choose one subject-specific demo topic. Approval applies only to that subject.') }}</p>
     <ol class="tf-apply-steps" aria-label="Application progress">
       @for (item of steps; track item; let index = $index) {
-        <li><button type="button" [attr.data-state]="states()[item]" (click)="visit(item)">{{ index + 1 }}. {{ t('apply_step_' + item, item) }}</button></li>
+        <li><button type="button" [attr.data-state]="states()[item]" (click)="visit(item)">{{ index + 1 }}. {{ t('apply_step_label_' + item, item) }}</button></li>
       }
     </ol>
     @if (loading()) { <div class="tf-apply-skeleton" role="status">{{ t('apply_loading', 'Loading application…') }}<div class="tf-skeleton"></div><div class="tf-skeleton"></div></div> }
@@ -35,6 +35,9 @@
       @if (step() === 'demo') {
         <section class="tf-apply-panel">
           <h2>{{ t('apply_demo_title', 'Teaching demo') }}</h2>
+          @if (current()?.status === 3 && current()?.publicFeedback) {
+            <div class="tf-alert" data-kind="warning" role="status" data-testid="reviewer-feedback"><strong>{{ t('apply_changes_requested_title', 'The quality team asked for changes') }}</strong><p>{{ current()?.publicFeedback }}</p><p>{{ t('apply_changes_requested_body', 'Update your demo if needed, then submit again.') }}</p></div>
+          }
           @if (topic(); as assignment) {
             <article class="tf-assignment"><h2>{{ topicLabel(assignment) }}</h2><p>{{ Assignment.instructions(assignment, locale.isRtl()) }}</p><p>{{ t('apply_duration_required', 'Required duration') }}: {{ durationText(duration().min) }}–{{ durationText(duration().max) }}</p>
               @if (assignment.resources.length) { <ul>@for (resource of assignment.resources; track resource.url) { <li><span>{{ Assignment.resourceName(resource, locale.isRtl()) }}</span>@if (resource.isFile) { <button type="button" (click)="openResource(resource)">{{ t('apply_preview', 'Preview') }}</button><button type="button" (click)="openResource(resource, true)">{{ t('apply_download', 'Download') }}</button> } @else { <a [href]="Assignment.safeUrl(resource.url, '/')" target="_blank" rel="noopener">{{ t('apply_open_reference', 'Open') }}</a> }</li> }</ul> }
