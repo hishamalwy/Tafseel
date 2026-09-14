@@ -1,0 +1,139 @@
+<tf-workspace-shell role="Teacher" section="profile">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('setup_eyebrow', 'Marketplace setup') }}</span>
+      <h1>{{ t('setup_profile_title', 'Your teacher profile') }}</h1>
+      <p class="tf-page-header-desc">{{ t('setup_profile_intro', 'This is what students read before they choose you. Headline, bio, country and city are required to publish.') }}</p>
+    </div>
+    <div class="tf-page-header-actions">
+      <a class="tf-button tf-button-ghost" routerLink="/teacher/publication">{{ t('setup_publication_title', 'Publication') }}</a>
+    </div>
+  </header>
+
+  @if (loading() && !workspace()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !workspace()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('setup_profile_failed', 'Your profile could not be loaded.') }}</p>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (workspace(); as w) {
+    <div class="tf-teacher-profile-editor">
+      <section class="tf-profile-editor-card tf-teacher-profile-editor__heading" aria-labelledby="profile-core-title" data-testid="profile-core">
+        <div>
+          <h2 id="profile-core-title">{{ t('setup_profile_core', 'About you') }}</h2>
+          <p>{{ w.profile.isProfileComplete ? t('setup_profile_complete', 'Your profile has everything publication needs.') : t('setup_profile_incomplete', 'Fill in every field to be able to publish.') }}</p>
+        </div>
+        <form class="tf-form" (ngSubmit)="save()" novalidate>
+          <div class="tf-field">
+            <label for="profile-headline">{{ t('setup_headline', 'Headline') }}</label>
+            <input id="profile-headline" name="headline" [ngModel]="draft().headline" (ngModelChange)="set('headline', $event)"
+                   [attr.maxlength]="limits.headline" [attr.aria-invalid]="!!fieldError('headline')" aria-describedby="profile-headline-help">
+            <span class="tf-field-help" id="profile-headline-help">{{ t('setup_headline_help', 'One line students see on your card, e.g. “Patient physics explanations for secondary students”.') }}</span>
+            @if (fieldError('headline')) { <span class="tf-field-error">{{ fieldError('headline') }}</span> }
+          </div>
+          <div class="tf-field">
+            <label for="profile-bio">{{ t('setup_bio', 'Bio') }}</label>
+            <textarea id="profile-bio" name="bio" rows="6" [ngModel]="draft().bio" (ngModelChange)="set('bio', $event)"
+                      [attr.maxlength]="limits.bio" [attr.aria-invalid]="!!fieldError('bio')"></textarea>
+            <span class="tf-field-help">{{ draft().bio.length }}/{{ limits.bio }}</span>
+            @if (fieldError('bio')) { <span class="tf-field-error">{{ fieldError('bio') }}</span> }
+          </div>
+          <div class="tf-grid-2">
+            <div class="tf-field">
+              <label for="profile-country">{{ t('setup_country', 'Country') }}</label>
+              <input id="profile-country" name="country" [ngModel]="draft().country" (ngModelChange)="set('country', $event)"
+                     [attr.maxlength]="limits.country" [attr.aria-invalid]="!!fieldError('country')" autocomplete="country-name">
+              @if (fieldError('country')) { <span class="tf-field-error">{{ fieldError('country') }}</span> }
+            </div>
+            <div class="tf-field">
+              <label for="profile-city">{{ t('apply_city', 'City') }}</label>
+              <input id="profile-city" name="city" [ngModel]="draft().city" (ngModelChange)="set('city', $event)"
+                     [attr.maxlength]="limits.city" [attr.aria-invalid]="!!fieldError('city')" autocomplete="address-level2">
+              @if (fieldError('city')) { <span class="tf-field-error">{{ fieldError('city') }}</span> }
+            </div>
+            <div class="tf-field">
+              <label for="profile-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
+              <select id="profile-zone" name="timeZoneId" [ngModel]="draft().timeZoneId" (ngModelChange)="set('timeZoneId', $event)" [attr.aria-invalid]="!!fieldError('timeZoneId')">
+                @for (zone of zones(); track zone) { <option [value]="zone">{{ zone }}</option> }
+              </select>
+              <span class="tf-field-help">{{ locale.format('setup_browser_zone', { zone: browserZone }, 'This device is set to {zone}.') }}</span>
+              @if (fieldError('timeZoneId')) { <span class="tf-field-error">{{ fieldError('timeZoneId') }}</span> }
+            </div>
+            <div class="tf-field">
+              <label for="profile-response">{{ t('setup_response_time', 'Typical reply time (minutes)') }}</label>
+              <input id="profile-response" name="responseTimeMinutes" type="number" min="0" [attr.max]="limits.responseTimeMinutes" step="1"
+                     [ngModel]="draft().responseTimeMinutes" (ngModelChange)="set('responseTimeMinutes', $event)" [attr.aria-invalid]="!!fieldError('responseTimeMinutes')">
+              @if (fieldError('responseTimeMinutes')) { <span class="tf-field-error">{{ fieldError('responseTimeMinutes') }}</span> }
+            </div>
+          </div>
+          @if (errors().core) { <div class="tf-alert" data-kind="error" role="alert" data-testid="profile-error">{{ errors().core }}</div> }
+          <div class="tf-form-actions">
+            <button type="submit" class="tf-button" data-testid="save-profile" [disabled]="saving() === 'core'">{{ saving() === 'core' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+            <span class="tf-status" data-kind="success" role="status">{{ saved() === 'core' ? t('common_saved', 'Saved.') : '' }}</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- The API keeps these lists with the profile and returns none until "About you" has been saved once. -->
+      @if (w.profile.headline) {
+      <section class="tf-profile-editor-card" aria-labelledby="profile-languages-title">
+        <div><h2 id="profile-languages-title">{{ t('apply_languages', 'Teaching languages') }}</h2><p>{{ t('setup_languages_intro', 'The languages you teach in. At least one is required.') }}</p></div>
+        <fieldset class="tf-choice-grid"><legend class="tf-sr-only">{{ t('apply_languages', 'Teaching languages') }}</legend>
+          @for (item of w.languages; track item.id) {
+            <label class="tf-check"><input type="checkbox" [checked]="isSelected('languages', item.id)" (change)="toggle('languages', item.id, $any($event.target).checked)"><span>{{ name(item) }}</span></label>
+          }
+        </fieldset>
+        @if (errors().languages) { <div class="tf-alert" data-kind="error" role="alert">{{ errors().languages }}</div> }
+        <div class="tf-form-actions">
+          <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('languages')" [disabled]="saving() === 'languages' || !dirty('languages')">{{ saving() === 'languages' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+          <span class="tf-status" data-kind="success" role="status">{{ saved() === 'languages' ? t('common_saved', 'Saved.') : '' }}</span>
+        </div>
+      </section>
+
+      <section class="tf-profile-editor-card" aria-labelledby="profile-levels-title">
+        <div><h2 id="profile-levels-title">{{ t('setup_education_levels', 'Education levels') }}</h2><p>{{ t('setup_education_levels_intro', 'The stages you teach.') }}</p></div>
+        <fieldset class="tf-choice-grid"><legend class="tf-sr-only">{{ t('setup_education_levels', 'Education levels') }}</legend>
+          @for (item of w.educationLevels; track item.id) {
+            <label class="tf-check"><input type="checkbox" [checked]="isSelected('educationLevels', item.id)" (change)="toggle('educationLevels', item.id, $any($event.target).checked)"><span>{{ name(item) }}</span></label>
+          } @empty { <p class="tf-muted">{{ t('setup_list_empty', 'Nothing to choose from yet.') }}</p> }
+        </fieldset>
+        @if (errors().educationLevels) { <div class="tf-alert" data-kind="error" role="alert">{{ errors().educationLevels }}</div> }
+        <div class="tf-form-actions">
+          <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('educationLevels')" [disabled]="saving() === 'educationLevels' || !dirty('educationLevels')">{{ saving() === 'educationLevels' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+          <span class="tf-status" data-kind="success" role="status">{{ saved() === 'educationLevels' ? t('common_saved', 'Saved.') : '' }}</span>
+        </div>
+      </section>
+
+      <section class="tf-profile-editor-card tf-teacher-profile-editor__certificates" aria-labelledby="profile-topics-title">
+        <div><h2 id="profile-topics-title">{{ t('setup_topics', 'Topics') }}</h2><p>{{ t('setup_topics_intro', 'Topics within the subjects you are approved to teach.') }}</p></div>
+        @for (group of topicGroups(); track group.subject.id) {
+          <fieldset class="tf-choice-group"><legend><h3>{{ name(group.subject) }}</h3></legend>
+            <div class="tf-choice-grid">
+              @for (item of group.topics; track item.id) {
+                <label class="tf-check"><input type="checkbox" [checked]="isSelected('topics', item.id)" (change)="toggle('topics', item.id, $any($event.target).checked)"><span>{{ name(item) }}</span></label>
+              }
+            </div>
+          </fieldset>
+        } @empty {
+          <p class="tf-muted">{{ w.eligibleSubjects.length ? t('setup_topics_none', 'Your approved subjects have no topics yet.') : t('setup_topics_need_approval', 'Topics open up once you are approved in a subject.') }}</p>
+        }
+        @if (errors().topics) { <div class="tf-alert" data-kind="error" role="alert">{{ errors().topics }}</div> }
+        @if (topicGroups().length) {
+          <div class="tf-form-actions">
+            <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('topics')" [disabled]="saving() === 'topics' || !dirty('topics')">{{ saving() === 'topics' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+            <span class="tf-status" data-kind="success" role="status">{{ saved() === 'topics' ? t('common_saved', 'Saved.') : '' }}</span>
+          </div>
+        }
+      </section>
+
+      <tf-credential-list kind="certifications" [items]="w.profile.certifications" (changed)="refreshProfileOnly()" />
+      <tf-credential-list kind="experience" [items]="w.profile.experience" (changed)="refreshProfileOnly()" />
+      } @else {
+        <p class="tf-alert tf-teacher-profile-editor__certificates" data-testid="profile-save-first">{{ t('setup_profile_save_first', 'Save “About you” first. Your languages, education levels, topics, certifications and experience are added after that.') }}</p>
+      }
+    </div>
+  }
+</tf-workspace-shell>
+<tf-toast />

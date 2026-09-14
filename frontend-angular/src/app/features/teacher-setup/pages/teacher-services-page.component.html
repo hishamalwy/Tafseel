@@ -1,0 +1,137 @@
+<tf-workspace-shell role="Teacher" section="services">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('setup_eyebrow', 'Marketplace setup') }}</span>
+      <h1>{{ t('setup_services_title', 'Services and prices') }}</h1>
+      <p class="tf-page-header-desc">{{ t('setup_services_intro', 'Choose what you offer in each subject you are approved for, and your price within the range Tafseel sets for that service.') }}</p>
+    </div>
+    <div class="tf-page-header-actions">
+      <a class="tf-button tf-button-ghost" routerLink="/teacher/publication">{{ t('setup_publication_title', 'Publication') }}</a>
+    </div>
+  </header>
+
+  @if (loading() && !workspace()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !workspace()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('setup_services_failed', 'Your services could not be loaded.') }}</p>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (workspace(); as w) {
+    <div class="tf-services">
+      @if (!w.eligibleSubjects.length) {
+        <div class="tf-alert" data-kind="warning" data-testid="no-qualified-subject">
+          <strong>{{ t('setup_no_qualified_subject', 'You are not approved to teach a subject yet.') }}</strong>
+          {{ t('setup_no_qualified_subject_body', 'A service can only be sold in a subject the quality team has approved you for.') }}
+          <a routerLink="/teach/apply">{{ t('setup_apply_subject', 'Apply to teach a subject') }}</a>
+        </div>
+      } @else {
+        <p class="tf-muted" data-testid="eligible-subjects">{{ t('setup_eligible_subjects', 'Approved to teach:') }}
+          @for (subject of w.eligibleSubjects; track subject.id; let last = $last) { <strong>{{ named(subject) }}</strong>{{ last ? '' : ' · ' }} }
+        </p>
+      }
+
+      @for (type of types(); track type.id) {
+        <section class="tf-profile-editor-card" [attr.aria-labelledby]="'service-type-' + type.id" data-testid="service-type" [attr.data-code]="type.code">
+          <div>
+            <h2 [id]="'service-type-' + type.id">{{ typeName(type) }}</h2>
+            <p>{{ typeDescription(type) }}</p>
+          </div>
+          <ul class="tf-service-policy">
+            <li class="tf-badge" data-tone="neutral">{{ ServiceOffer.isAsync(type) ? t('setup_type_async', 'Explanation delivered to the student') : t('setup_type_live', 'Live session, booked from your availability') }}</li>
+            <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_price', { min: money(type.minPrice, type.currency), max: money(type.maxPrice, type.currency) }, 'Price {min} – {max}') }}</li>
+            @if (ServiceOffer.isAsync(type)) { <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_delivery', { min: type.minDeliveryHours ?? 1, max: type.maxDeliveryHours ?? 8760 }, 'Delivery {min}–{max} h') }}</li> }
+            <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_revisions', { max: type.maxRevisions }, 'Up to {max} revisions') }}</li>
+          </ul>
+          @if (type.availabilityState !== 'available') {
+            <p class="tf-alert" data-kind="warning" [attr.data-state]="type.availabilityState">{{ t('setup_type_state_' + type.availabilityState, type.availabilityState) }}</p>
+          }
+
+          @for (offering of ServiceOffer.current(type); track offering.id) {
+            <div class="tf-offer-row" data-testid="offering" [attr.data-offering-id]="offering.id" [attr.data-active]="offering.isActive">
+              <span><strong>{{ subjectName(type, offering.subjectId) }}</strong><small>{{ t('setup_offering_state_' + offering.configurationState, offering.configurationState) }}</small></span>
+              <span><small>{{ t('setup_price', 'Price') }}</small>{{ money(offering.price, offering.currency) }}</span>
+              <span>@if (ServiceOffer.isAsync(type)) { <small>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</small>{{ offering.deliveryHours }} }</span>
+              <span><small>{{ t('setup_revisions', 'Revisions') }}</small>{{ offering.revisions }}</span>
+              <span><small>{{ t('setup_marketplace_state', 'In the marketplace') }}</small>{{ offering.canRequest || offering.canBook ? t('setup_bookable', 'Can be requested') : t('setup_not_bookable', 'Not yet') }}</span>
+              <span class="tf-offer-actions">
+                <label class="tf-offer-switch">
+                  <input type="checkbox" role="switch" class="tf-switch" [checked]="offering.isActive" [disabled]="!!busy()"
+                         (change)="toggle(offering, $any($event.target).checked)" data-testid="offering-active">
+                  <span>{{ offering.isActive ? t('setup_service_active', 'On') : t('setup_service_inactive', 'Off') }}</span>
+                </label>
+                <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="isEditing(offering) ? close() : openEdit(type, offering)">{{ isEditing(offering) ? t('common_cancel', 'Cancel') : t('common_edit', 'Edit') }}</button>
+              </span>
+            </div>
+            @if (rowError()?.id === offering.id) { <p class="tf-alert" data-kind="error" role="alert">{{ rowError()!.text }}</p> }
+            @if (isEditing(offering)) { <ng-container *ngTemplateOutlet="termsForm; context: { $implicit: type }" /> }
+          }
+
+          @if (editor()?.mode === 'create' && editor()?.typeId === type.id) {
+            <ng-container *ngTemplateOutlet="termsForm; context: { $implicit: type }" />
+          } @else if (type.canEnable && sellable(type).length) {
+            <div><button type="button" class="tf-button tf-button-secondary" data-testid="add-offering" (click)="openCreate(type)">{{ t('setup_add_service', 'Offer this service') }}</button></div>
+          } @else if (type.canEnable && w.eligibleSubjects.length) {
+            <p class="tf-muted">{{ t('setup_all_subjects_offered', 'You already offer this service in every subject you are approved for.') }}</p>
+          }
+        </section>
+      } @empty {
+        <div class="tf-state" role="status"><p class="tf-state-title">{{ t('setup_no_service_types', 'No services are open to teachers right now.') }}</p></div>
+      }
+    </div>
+  }
+
+  <ng-template #termsForm let-type>
+    <form class="tf-form tf-offer-form" (ngSubmit)="submit(type)" novalidate data-testid="offering-form">
+      @if (editor()?.mode === 'create') {
+        <div class="tf-field">
+          <label for="offer-subject">{{ t('apply_subject', 'Subject') }}</label>
+          <select id="offer-subject" name="subject" [ngModel]="subjectId()" (ngModelChange)="subjectId.set($event)" [attr.aria-invalid]="!!problem('subject', type)">
+            @for (subject of sellable(type); track subject.id) { <option [value]="subject.id">{{ subjectName(type, subject.id) }}</option> }
+          </select>
+          <span class="tf-field-help">{{ t('setup_subject_help', 'Only subjects you are approved to teach are listed.') }}</span>
+          @if (problem('subject', type)) { <span class="tf-field-error">{{ problem('subject', type) }}</span> }
+        </div>
+      }
+      <div class="tf-grid-2">
+        <div class="tf-field">
+          <label for="offer-price">{{ locale.format('setup_price_in', { currency: type.currency }, 'Price ({currency})') }}</label>
+          <input id="offer-price" name="price" type="number" inputmode="decimal" step="0.01" [attr.min]="type.minPrice" [attr.max]="type.maxPrice"
+                 [ngModel]="terms().price" (ngModelChange)="setTerm('price', $event)" [attr.aria-invalid]="!!problem('price', type)">
+          @if (problem('price', type)) { <span class="tf-field-error">{{ problem('price', type) }}</span> }
+        </div>
+        @if (ServiceOffer.isAsync(type)) {
+          <div class="tf-field">
+            <label for="offer-delivery">{{ t('setup_delivery_hours', 'Delivery (hours)') }}</label>
+            <input id="offer-delivery" name="deliveryHours" type="number" step="1" [attr.min]="type.minDeliveryHours" [attr.max]="type.maxDeliveryHours"
+                   [ngModel]="terms().deliveryHours" (ngModelChange)="setTerm('deliveryHours', $event)" [attr.aria-invalid]="!!problem('deliveryHours', type)">
+            @if (problem('deliveryHours', type)) { <span class="tf-field-error">{{ problem('deliveryHours', type) }}</span> }
+          </div>
+        }
+        <div class="tf-field">
+          <label for="offer-revisions">{{ t('setup_revisions', 'Revisions') }}</label>
+          <input id="offer-revisions" name="revisions" type="number" step="1" min="0" [attr.max]="type.maxRevisions"
+                 [ngModel]="terms().revisions" (ngModelChange)="setTerm('revisions', $event)" [attr.aria-invalid]="!!problem('revisions', type)">
+          @if (problem('revisions', type)) { <span class="tf-field-error">{{ problem('revisions', type) }}</span> }
+        </div>
+      </div>
+      <div class="tf-grid-2">
+        <div class="tf-field">
+          <label for="offer-approach-en">{{ t('setup_approach_en', 'How you teach it (English, optional)') }}</label>
+          <textarea id="offer-approach-en" name="approachEn" dir="ltr" [attr.maxlength]="approachMax" [ngModel]="terms().approachEn" (ngModelChange)="setTerm('approachEn', $event)"></textarea>
+        </div>
+        <div class="tf-field">
+          <label for="offer-approach-ar">{{ t('setup_approach_ar', 'How you teach it (Arabic, optional)') }}</label>
+          <textarea id="offer-approach-ar" name="approachAr" dir="rtl" [attr.maxlength]="approachMax" [ngModel]="terms().approachAr" (ngModelChange)="setTerm('approachAr', $event)"></textarea>
+        </div>
+      </div>
+      @if (formError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="offering-error">{{ formError() }}</div> }
+      <div class="tf-form-actions">
+        <button type="submit" class="tf-button" data-testid="save-offering" [disabled]="!!busy()">{{ busy() ? t('common_saving', 'Saving…') : (editor()?.mode === 'create' ? t('setup_create_service', 'Create service') : t('common_save', 'Save')) }}</button>
+        <button type="button" class="tf-button tf-button-ghost" (click)="close()">{{ t('common_cancel', 'Cancel') }}</button>
+      </div>
+    </form>
+  </ng-template>
+</tf-workspace-shell>
+<tf-toast />

@@ -1,0 +1,140 @@
+<tf-workspace-shell role="Teacher" section="availability">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('setup_eyebrow', 'Marketplace setup') }}</span>
+      <h1>{{ t('setup_availability_title', 'Availability') }}</h1>
+      <p class="tf-page-header-desc">{{ t('setup_availability_intro', 'Students book live sessions inside your weekly windows. Time off blocks bookings for a period.') }}</p>
+    </div>
+    <div class="tf-page-header-actions">
+      <a class="tf-button tf-button-ghost" routerLink="/teacher/publication">{{ t('setup_publication_title', 'Publication') }}</a>
+    </div>
+  </header>
+
+  @if (loading() && !profile()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !profile()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('setup_availability_failed', 'Your availability could not be loaded.') }}</p>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (profile()) {
+    <div class="tf-availability">
+      <p class="tf-alert" data-testid="zone-note">{{ locale.format('setup_zone_note', { profile: defaultZone(), device: deviceZone }, 'Each weekly window is kept in the time zone shown next to it. New windows start in your profile time zone ({profile}); this device is set to {device}.') }}</p>
+
+      <section class="tf-profile-editor-card" aria-labelledby="weekly-title">
+        <div><h2 id="weekly-title">{{ t('setup_weekly_title', 'Weekly windows') }}</h2><p>{{ t('setup_weekly_intro', 'Repeat every week. Windows on the same day cannot overlap.') }}</p></div>
+        @if (rules().length) {
+          <ul class="tf-availability-list" data-testid="weekly-rules">
+            @for (item of rules(); track item.id) {
+              <li data-testid="rule" [attr.data-day]="item.dayOfWeek" [attr.data-start]="item.start" [attr.data-end]="item.end">
+                <strong>{{ dayName(item.dayOfWeek) }}</strong>
+                <span><time>{{ item.start }}</time>–<time>{{ item.end }}</time>@if (item.slotMinutes) { <small> · {{ locale.format('setup_slot_n', { n: item.slotMinutes }, '{n}-minute slots') }}</small> }</span>
+                <small dir="ltr">{{ item.timeZoneId }}</small>
+                <span class="tf-cluster">
+                  <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openEdit(item)" [disabled]="!!busy()">{{ t('common_edit', 'Edit') }}</button>
+                  <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="removeRule(item)" [disabled]="!!busy()" data-testid="remove-rule">{{ t('common_remove', 'Remove') }}</button>
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="tf-muted" data-testid="no-rules">{{ t('setup_weekly_empty', 'No weekly windows yet. A live service cannot be booked without them.') }}</p>
+        }
+
+        @if (editing() !== null) {
+          <form class="tf-form tf-availability-form" (ngSubmit)="saveRule()" novalidate data-testid="rule-form">
+            @if (editing() === '') {
+              <fieldset class="tf-availability-days">
+                <legend>{{ t('setup_rule_days', 'Days') }}</legend>
+                @for (day of days; track day) {
+                  <label class="tf-check"><input type="checkbox" [checked]="rule().days.includes(day)" (change)="toggleDay(day, $any($event.target).checked)" [attr.data-testid]="'day-' + day"><span>{{ dayName(day) }}</span></label>
+                }
+              </fieldset>
+            } @else {
+              <div class="tf-field">
+                <label for="rule-day">{{ t('setup_rule_day', 'Day') }}</label>
+                <select id="rule-day" name="day" [ngModel]="rule().days[0]" (ngModelChange)="setDay($event)">
+                  @for (day of days; track day) { <option [ngValue]="day">{{ dayName(day) }}</option> }
+                </select>
+              </div>
+            }
+            <div class="tf-availability-grid">
+              <div class="tf-field">
+                <label for="rule-start">{{ t('setup_rule_start', 'From') }}</label>
+                <input id="rule-start" name="start" type="time" step="900" [ngModel]="rule().start" (ngModelChange)="setRule('start', $event)" [attr.aria-invalid]="ruleProblems().length > 0">
+              </div>
+              <div class="tf-field">
+                <label for="rule-end">{{ t('setup_rule_end', 'Until') }}</label>
+                <input id="rule-end" name="end" type="time" step="900" [ngModel]="rule().end" (ngModelChange)="setRule('end', $event)" [attr.aria-invalid]="ruleProblems().includes('end_before_start')">
+              </div>
+              <div class="tf-field">
+                <label for="rule-slot">{{ t('setup_rule_slot', 'Session length') }}</label>
+                <select id="rule-slot" name="slot" [ngModel]="rule().slotMinutes" (ngModelChange)="setRule('slotMinutes', $event)">
+                  @for (slot of slots; track slot) { <option [ngValue]="slot">{{ locale.format('setup_minutes_n', { n: slot }, '{n} min') }}</option> }
+                </select>
+              </div>
+              <div class="tf-field">
+                <label for="rule-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
+                <select id="rule-zone" name="zone" [ngModel]="rule().timeZoneId" (ngModelChange)="setRule('timeZoneId', $event)">
+                  @for (zone of zones(); track zone) { <option [value]="zone">{{ zone }}</option> }
+                </select>
+              </div>
+            </div>
+            @if (ruleProblems().length) {
+              <ul class="tf-field-error" role="alert" data-testid="rule-problems">@for (problem of ruleProblems(); track problem) { <li [attr.data-problem]="problem">{{ ruleProblem(problem) }}</li> }</ul>
+            }
+            @if (ruleError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="rule-error">{{ ruleError() }}</div> }
+            <div class="tf-form-actions">
+              <button type="submit" class="tf-button" data-testid="save-rule" [disabled]="!!busy()">{{ busy() === 'rule' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+              <button type="button" class="tf-button tf-button-ghost" (click)="closeRule()">{{ t('common_cancel', 'Cancel') }}</button>
+            </div>
+          </form>
+        } @else {
+          @if (ruleError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="rule-error">{{ ruleError() }}</div> }
+          <div><button type="button" class="tf-button tf-button-secondary" data-testid="add-rule" (click)="openAdd()">{{ t('setup_rule_add', 'Add a weekly window') }}</button></div>
+        }
+      </section>
+
+      <section class="tf-profile-editor-card" aria-labelledby="exceptions-title">
+        <div><h2 id="exceptions-title">{{ t('setup_exceptions_title', 'Time off') }}</h2><p>{{ locale.format('setup_exceptions_intro', { zone: deviceZone }, 'Periods when you cannot be booked. Times are in this device’s time zone ({zone}).') }}</p></div>
+        @if (exceptions().length) {
+          <ul class="tf-availability-list" data-testid="exceptions">
+            @for (item of exceptions(); track item.id) {
+              <li data-testid="exception">
+                <span><time [attr.datetime]="item.startsAt">{{ instant(item.startsAt) }}</time></span>
+                <span><time [attr.datetime]="item.endsAt">{{ instant(item.endsAt) }}</time></span>
+                <small>{{ item.reason }}</small>
+                <span class="tf-cluster"><button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="removeException(item)" [disabled]="!!busy()" data-testid="remove-exception">{{ t('common_remove', 'Remove') }}</button></span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="tf-muted">{{ t('setup_exceptions_empty', 'No time off planned.') }}</p>
+        }
+        <form class="tf-form" (ngSubmit)="addException()" novalidate data-testid="exception-form">
+          <div class="tf-grid-2">
+            <div class="tf-field">
+              <label for="exception-start">{{ t('setup_exception_start', 'Starts') }}</label>
+              <input id="exception-start" name="startsAt" type="datetime-local" [ngModel]="exception().startsAt" (ngModelChange)="setException('startsAt', $event)" [attr.aria-invalid]="exceptionProblems().includes('time_required')">
+            </div>
+            <div class="tf-field">
+              <label for="exception-end">{{ t('setup_exception_end', 'Ends') }}</label>
+              <input id="exception-end" name="endsAt" type="datetime-local" [ngModel]="exception().endsAt" (ngModelChange)="setException('endsAt', $event)" [attr.aria-invalid]="exceptionProblems().includes('end_before_start')">
+            </div>
+          </div>
+          <div class="tf-field">
+            <label for="exception-reason">{{ t('setup_exception_reason', 'Note (optional)') }}</label>
+            <input id="exception-reason" name="reason" [attr.maxlength]="reasonMax" [ngModel]="exception().reason" (ngModelChange)="setException('reason', $event)">
+          </div>
+          @if (exceptionProblems().length) {
+            <ul class="tf-field-error" role="alert" data-testid="exception-problems">@for (problem of exceptionProblems(); track problem) { <li [attr.data-problem]="problem">{{ exceptionProblem(problem) }}</li> }</ul>
+          }
+          @if (exceptionError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="exception-error">{{ exceptionError() }}</div> }
+          <div class="tf-form-actions"><button type="submit" class="tf-button tf-button-secondary" data-testid="add-exception" [disabled]="!!busy()">{{ busy() === 'exception' ? t('common_saving', 'Saving…') : t('setup_exception_add', 'Add time off') }}</button></div>
+        </form>
+      </section>
+    </div>
+  }
+</tf-workspace-shell>
+<tf-toast />

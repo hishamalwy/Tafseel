@@ -1,0 +1,84 @@
+<tf-workspace-shell role="Teacher" section="publication">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('setup_eyebrow', 'Marketplace setup') }}</span>
+      <h1>{{ t('setup_publication_title', 'Publication') }}</h1>
+      <p class="tf-page-header-desc">{{ t('setup_publication_intro', 'Students find you once your profile is published. Tafseel checks what the marketplace needs first.') }}</p>
+    </div>
+    <div class="tf-page-header-actions">
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button>
+    </div>
+  </header>
+
+  @if (loading() && !workspace()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !workspace()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('setup_publication_failed', 'Publication status could not be loaded.') }}</p>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (workspace(); as w) {
+    <div class="tf-readiness">
+      <section class="tf-profile-editor-card" aria-labelledby="publication-state-title" data-testid="publication-state"
+               [attr.data-ready]="canPublish()" [attr.data-published]="visible()">
+        <div>
+          <h2 id="publication-state-title">
+            @if (visible()) { {{ t('setup_state_public', 'Your profile is public') }} }
+            @else if (switchedOn()) { {{ t('setup_state_hidden', 'Published, but hidden from students') }} }
+            @else if (canPublish()) { {{ t('setup_state_ready', 'Ready to publish') }} }
+            @else { {{ t('setup_state_blocked', 'Not ready to publish yet') }} }
+          </h2>
+          <p>
+            @if (visible()) { {{ t('setup_state_public_body', 'Students can find you in the marketplace and request your services.') }} }
+            @else if (switchedOn()) { {{ t('setup_state_hidden_body', 'Your profile is switched on, but students cannot see it until the items below are fixed.') }} }
+            @else if (canPublish()) { {{ t('setup_state_ready_body', 'Everything the marketplace needs is in place.') }} }
+            @else { {{ t('setup_state_blocked_body', 'Fix the items below, then publish.') }} }
+          </p>
+        </div>
+        @if (actionError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="publication-error">{{ actionError() }}</div> }
+        <div class="tf-form-actions">
+          @if (switchedOn()) {
+            @if (visible() && w.profile?.teacherId) {
+              <a class="tf-button tf-button-secondary" data-testid="view-public-profile" [routerLink]="['/teachers', w.profile!.teacherId]">{{ t('setup_view_public', 'View public profile') }}</a>
+            }
+            <button type="button" class="tf-button tf-button-ghost" data-testid="unpublish" (click)="publish(false)" [disabled]="busy()">{{ t('setup_unpublish', 'Unpublish') }}</button>
+          } @else {
+            <button type="button" class="tf-button" data-testid="publish" (click)="publish(true)" [disabled]="busy() || !canPublish()"
+                    [attr.aria-describedby]="canPublish() ? null : 'readiness-blockers-title'">
+              {{ busy() ? t('common_saving', 'Saving…') : t('setup_publish', 'Publish profile') }}
+            </button>
+          }
+        </div>
+      </section>
+
+      @if (blockers().length) {
+        <section class="tf-profile-editor-card" aria-labelledby="readiness-blockers-title">
+          <div><h2 id="readiness-blockers-title">{{ t('setup_blockers_title', 'What stops publishing') }}</h2></div>
+          <ul class="tf-readiness-list" data-testid="readiness-blockers">
+            @for (blocker of blockers(); track blocker.code) {
+              <li [attr.data-code]="blocker.code">
+                <span>{{ t(blocker.labelKey, blocker.fallback) }}</span>
+                @if (blocker.link) { <a [routerLink]="blocker.link">{{ t('setup_fix', 'Fix this') }}</a> }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section class="tf-profile-editor-card" aria-labelledby="readiness-steps-title">
+        <div><h2 id="readiness-steps-title">{{ t('setup_steps_title', 'Setup checklist') }}</h2></div>
+        <ol class="tf-readiness-list" data-testid="readiness-steps">
+          @for (step of steps(); track step.key) {
+            <li [attr.data-step]="step.key" [attr.data-done]="step.done">
+              <span><span class="tf-readiness-mark" aria-hidden="true">{{ step.done ? '✓' : '' }}</span>{{ t('setup_step_' + step.key, step.key) }}
+                <span class="tf-sr-only">{{ step.done ? t('setup_step_done', 'Done') : t('setup_step_todo', 'Not done') }}</span></span>
+              <a [routerLink]="step.link" [queryParams]="step.query ?? null">{{ step.done ? t('setup_review', 'Review') : t('setup_open', 'Open') }}</a>
+            </li>
+          }
+        </ol>
+      </section>
+    </div>
+  }
+</tf-workspace-shell>
+<tf-toast />
