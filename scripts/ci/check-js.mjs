@@ -1,107 +1,125 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from "node:fs";
+/**
+ * JavaScript and shipping-client checks (G-14).
+ *
+ * The site is the Angular client in frontend-angular/, published per locale from
+ * frontend-angular/dist/tafseel/browser/{ar,en}. The retired .dc.html runtime - its pages,
+ * support.js, and Babel/React loaded in the browser - is gone, and this script makes sure it
+ * stays gone and that what replaced it is complete.
+ *
+ *  1. Syntax: every tracked hand-written .js/.mjs/.cjs file parses.
+ *  2. Build output: both locale shells exist with the right <base href> and every file they
+ *     reference; the prerendered pages exist; no emitted script relies on eval, which the
+ *     host's Content-Security-Policy no longer allows.
+ *  3. The legacy runtime is not back.
+ *
+ * Run after the client is built (`dotnet build` builds it; so does `npm run build`).
+ */
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, unlinkSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { allPages, readPage } from "./lib/frontend-pages.mjs";
+import { join, extname } from "node:path";
 
-for (const file of readdirSync("js").filter(x => x.endsWith(".js")))
-  execFileSync(process.execPath, ["--check", join("js", file)], { stdio: "inherit" });
+const failures = [];
+const fail = message => failures.push(message);
 
-const support = readFileSync("support.js", "utf8");
-if (!support.includes("!window.__resources && window.parent !== window"))
-  throw new Error("Standalone pages must not fetch and parse their HTML twice");
-const teacherDashboard = readPage("Tafseel-Teacher-Dashboard.dc.html");
-const teacherBootstrapStart = teacherDashboard.indexOf("return Promise.allSettled([", teacherDashboard.indexOf("/teachers/onboarding-status"));
-const teacherBootstrapEnd = teacherDashboard.indexOf("]);", teacherBootstrapStart);
-const teacherBootstrap = teacherDashboard.slice(teacherBootstrapStart, teacherBootstrapEnd);
-if ((teacherBootstrap.match(/Tafseel\.api\./g) || []).length > 10)
-  throw new Error("Teacher dashboard bootstrap must keep section-only API calls deferred");
-if (!teacherDashboard.includes("loadSectionData(section, sectionView = '')"))
-  throw new Error("Teacher dashboard must load deferred data when its section opens");
-if (teacherDashboard.includes("payoutLegalName:payoutProfile ? payoutProfile.legalName : (session.fullName"))
-  throw new Error("Teacher bootstrap must not use the session callback variable outside its scope");
-const studentDashboard = readPage("Tafseel-Student-Dashboard.dc.html");
-const studentBootstrapStart = studentDashboard.indexOf("return Promise.allSettled([", studentDashboard.indexOf("requireRoles(['Student'])"));
-const studentBootstrapEnd = studentDashboard.indexOf("]);", studentBootstrapStart);
-const studentBootstrap = studentDashboard.slice(studentBootstrapStart, studentBootstrapEnd);
-if ((studentBootstrap.match(/Tafseel\.api\./g) || []).length > 7)
-  throw new Error("Student dashboard bootstrap must keep settings-only API calls deferred");
-if (!studentDashboard.includes("loadSectionData(section)"))
-  throw new Error("Student dashboard must load settings data only when settings opens");
-if (!studentDashboard.includes("publishedRequestRows = openMarketplaceRows.filter(x => Number(x.rawStatus) === 5)")
-  || !studentDashboard.includes('class="tf-published-requests"')
-  || !studentDashboard.includes("onAction: () => this.openRequestDetail(r.id)"))
-  throw new Error("Student dashboard must show published OpenForOffers requests as detail-linked cards");
-const adminDashboard = readPage("Tafseel-Admin-Dashboard.dc.html");
-if (adminDashboard.includes("Tafseel.api.allPages('/admin/users'"))
-  throw new Error("Admin users must use server-side pagination instead of downloading every account");
-if (!adminDashboard.includes("query.set('role', role)") || !adminDashboard.includes("onClick: () => this.reloadUsers(n)"))
-  throw new Error("Admin user filters and page controls must query the server");
-for (const endpoint of ["/admin/disputes", "/admin/withdrawals", "/admin/payout-profiles"]) {
-  if (adminDashboard.includes(`Tafseel.api.allPages('${endpoint}`))
-    throw new Error(`Admin queue ${endpoint} must use bounded server-side pagination`);
-}
-// PASS 05: operations lists are opened by the canonical router, which addresses them by tab key.
-if (!adminDashboard.includes("this.loadOperationList(tab, 1)")
-  || !/withdrawalsTotal:\s*Number\((?:result|withdrawals)\.totalCount\s*\|\|\s*0\)/.test(adminDashboard)
-  || !/payoutProfilesTotal:\s*Number\((?:result|profiles)\.totalCount\s*\|\|\s*0\)/.test(adminDashboard))
-  throw new Error("Admin dispute and finance queues must navigate with server totals and bounded pages");
-const disputeCenter = readPage("Tafseel-Disputes.dc.html");
-if (disputeCenter.includes("Tafseel.api.allPages(this.state.isAdmin?'/admin/disputes':'/disputes/mine'"))
-  throw new Error("Dispute Center must not download every case");
-if (!disputeCenter.includes("pageSize='+PAGE_SIZE") || !disputeCenter.includes("hasPagination:Number(s.total)>PAGE_SIZE"))
-  throw new Error("Dispute Center must expose bounded server-side case pagination");
-if (teacherDashboard.includes("Tafseel.api.allPages('/withdrawals/mine'"))
-  throw new Error("Teacher withdrawal history must not download every withdrawal");
-const vendorScripts = new Map([
-  ["js/vendor/react.production.min.js", "DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"],
-  ["js/vendor/react-dom.production.min.js", "gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"],
-  ["js/vendor/babel.min.js", "m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"]
-]);
-if (support.includes("unpkg.com")) throw new Error("support.js must not load runtime scripts from unpkg.com");
-for (const [file, expectedHash] of vendorScripts) {
-  if (!existsSync(file)) throw new Error(`Missing vendored runtime: ${file}`);
-  if (!support.includes(`./${file}`)) throw new Error(`support.js does not reference ${file}`);
-  if (createHash("sha384").update(readFileSync(file)).digest("base64") !== expectedHash)
-    throw new Error(`Vendored runtime hash mismatch: ${file}`);
-  execFileSync(process.execPath, ["--check", file], { stdio: "inherit" });
-}
-execFileSync(process.execPath, ["--check", "support.js"], { stdio: "inherit" });
-
-if (!existsSync("js/vendor/signalr.min.js"))
-  throw new Error("Missing vendored SignalR client: js/vendor/signalr.min.js");
-execFileSync(process.execPath, ["--check", "js/vendor/signalr.min.js"], { stdio: "inherit" });
-
-// Includes pages that have migrated to Angular and moved to legacy-archive/:
-// they are still published, so their embedded logic still has to parse.
-for (const { name: file, path: pagePath } of allPages()) {
-  const source = readFileSync(pagePath, "utf8");
-  const match = source.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/);
-  if (!match) continue;
-  const temp = join(tmpdir(), `${file}.check.js`);
-  writeFileSync(temp, match[1]);
-  try { execFileSync(process.execPath, ["--check", temp], { stdio: "inherit" }); }
-  finally { unlinkSync(temp); }
+// ---- 1. syntax -------------------------------------------------------------------------
+const tracked = execFileSync("git", ["ls-files", "*.js", "*.mjs", "*.cjs"], { encoding: "utf8" })
+  .split("\n").map(x => x.trim()).filter(Boolean).filter(existsSync);
+for (const file of tracked) {
+  try {
+    execFileSync(process.execPath, ["--check", file], { stdio: "pipe" });
+  } catch (error) {
+    fail(`${file} does not parse:\n${error.stderr?.toString() ?? error.message}`);
+  }
 }
 
-execFileSync(process.execPath, ["scripts/ci/check-auth-ui.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-localization.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-frontend-integrity.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-guided-request.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-sprint6-notification-routing.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-release6-discovery.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-release7-marketplace-intelligence.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-release9-ai-assisted-marketplace.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-unified-discovery-search.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-template-placeholder-leak.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-localization-usage.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-auth-return.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-open-marketplace.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-frontend-security.mjs"], { stdio: "inherit" });
-// PASS 05: the per-role IA gates now run with the rest of the frontend suite. They were written as
-// standalone scripts and were never invoked here, so an IA regression could land unnoticed.
-execFileSync(process.execPath, ["scripts/ci/check-admin-ux.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-quality-ux.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-teacher-ux.mjs"], { stdio: "inherit" });
-execFileSync(process.execPath, ["scripts/ci/check-dashboard-nav-unification.mjs"], { stdio: "inherit" });
+// ---- 2. the shipping client ------------------------------------------------------------
+const browser = join("frontend-angular", "dist", "tafseel", "browser");
+const locales = ["ar", "en"];
+const policies = [...readFileSync("frontend-angular/src/app/features/policies/models/policy.ts", "utf8")
+  .match(/POLICY_ORDER[^=]*=\s*\[([^\]]*)\]/)?.[1].matchAll(/'([a-z-]+)'/g) ?? []].map(m => m[1]);
+if (policies.length === 0) fail("Could not read POLICY_ORDER from policy.ts");
+
+if (!existsSync(browser)) {
+  fail(`${browser} does not exist. Build the client first (dotnet build, or npm run build in frontend-angular).`);
+} else {
+  for (const locale of locales) {
+    const root = join(browser, locale);
+    const shellPath = join(root, "index.csr.html");
+    if (!existsSync(shellPath)) { fail(`Missing client shell ${shellPath}`); continue; }
+    const shell = readFileSync(shellPath, "utf8");
+    if (!new RegExp(`<base href="/${locale}/"\\s*/?>`).test(shell)) fail(`${shellPath} must carry <base href="/${locale}/">`);
+    if (!shell.includes("<tf-root")) fail(`${shellPath} has no <tf-root> element`);
+
+    const referenced = [...shell.matchAll(/\s(?:src|href)="([^"#:]+)"/g)].map(m => m[1])
+      .filter(ref => !ref.startsWith("/") && !ref.startsWith("//"));
+    for (const ref of referenced) {
+      if (!existsSync(join(root, ref.split("?")[0]))) fail(`${shellPath} references ${ref}, which the build did not emit`);
+    }
+    for (const needed of ["main-", "polyfills-", "styles-"]) {
+      if (!referenced.some(ref => ref.startsWith(needed))) fail(`${shellPath} does not load its ${needed}* bundle`);
+    }
+
+    const prerendered = ["about", ...policies.map(p => `policies/${p}`)];
+    for (const page of prerendered) {
+      const file = join(root, page, "index.html");
+      if (!existsSync(file)) fail(`Missing prerendered page ${file}`);
+      else if (!new RegExp(`<base href="/${locale}/"\\s*/?>`).test(readFileSync(file, "utf8"))) fail(`${file} has the wrong <base href>`);
+    }
+
+    for (const file of walk(root).filter(f => extname(f) === ".js")) {
+      const source = readFileSync(file, "utf8");
+      if (/\beval\s*\(|\bnew\s+Function\s*\(/.test(source))
+        fail(`${file} uses eval or new Function, which script-src without 'unsafe-eval' blocks`);
+    }
+  }
+
+  // The emitted bundles are ES modules; check one parses as a module so a broken build is caught
+  // here and not in a browser.
+  const main = readdirSync(join(browser, "en")).find(f => /^main-.*\.js$/.test(f));
+  if (main) {
+    const dir = mkdtempSync(join(tmpdir(), "tafseel-check-"));
+    const copy = join(dir, "main.mjs");
+    writeFileSync(copy, readFileSync(join(browser, "en", main)));
+    try { execFileSync(process.execPath, ["--check", copy], { stdio: "pipe" }); }
+    catch (error) { fail(`Emitted ${main} does not parse as a module:\n${error.stderr?.toString() ?? error.message}`); }
+    finally { unlinkSync(copy); }
+  }
+}
+
+// `(ngSubmit)` is emitted by NgForm. A standalone component that binds it without importing
+// FormsModule gets a native submit instead: the page reloads and the handler never runs, which
+// is how sign-in, sign-up and password reset were all silently broken.
+for (const template of walk(join("frontend-angular", "src", "app")).filter(f => f.endsWith(".html"))) {
+  if (!readFileSync(template, "utf8").includes("(ngSubmit)")) continue;
+  const component = template.replace(/\.html$/, ".ts");
+  const source = existsSync(component) ? readFileSync(component, "utf8") : "";
+  if (!/\b(FormsModule|ReactiveFormsModule)\b/.test(source))
+    fail(`${template} binds (ngSubmit) but ${component} does not import FormsModule; the form would reload the page`);
+}
+
+// ---- 3. the legacy runtime stays retired (R-05) ---------------------------------------
+for (const retired of ["support.js", "legacy-archive", "js/vendor", "js/api.js", "js/tafseel.js"]) {
+  if (existsSync(retired)) fail(`${retired} belongs to the retired .dc.html runtime and must not return`);
+}
+const rootPages = readdirSync(".").filter(f => f.endsWith(".dc.html"));
+if (rootPages.length) fail(`Legacy pages are back at the repository root: ${rootPages.join(", ")}`);
+const program = readFileSync("src/Tafseel.Api/Program.cs", "utf8");
+if (program.includes("unsafe-eval")) fail("Program.cs must not allow 'unsafe-eval' in the Content-Security-Policy");
+if (/\.dc\.html"\s*,/.test(program)) fail("Program.cs must not serve .dc.html pages");
+const project = readFileSync("src/Tafseel.Api/Tafseel.Api.csproj", "utf8");
+if (/dc\.html|support\.js|Link>frontend\\/.test(project)) fail("Tafseel.Api.csproj must not publish the legacy frontend/ content");
+
+if (failures.length) {
+  console.error(failures.map(x => `✗ ${x}`).join("\n"));
+  process.exit(1);
+}
+console.log(`JavaScript checks passed: ${tracked.length} source files parse; ${locales.length} locale shells, ` +
+  `${1 + policies.length} prerendered pages each; no eval; legacy runtime absent.`);
+
+function walk(dir) {
+  return readdirSync(dir).flatMap(name => {
+    const path = join(dir, name);
+    return statSync(path).isDirectory() ? walk(path) : [path];
+  });
+}

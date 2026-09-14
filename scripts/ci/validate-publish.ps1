@@ -1,57 +1,45 @@
 param([string]$PublishDirectory = "artifacts/publish")
 $ErrorActionPreference = "Stop"
-$required = @(
-  "Tafseel.Api.dll",
-  "frontend/Tafseel-Landing.dc.html",
-  "frontend/Tafseel-Auth.dc.html",
-  "frontend/Tafseel-Confirm-Email.dc.html",
-  "frontend/Tafseel-Teacher-Apply.dc.html",
-  "frontend/Tafseel-Browse-Teachers.dc.html",
-  "frontend/Tafseel-Teacher-Profile.dc.html",
-  "frontend/Tafseel-Request.dc.html",
-  "frontend/Tafseel-Open-Marketplace.dc.html",
-  "frontend/Tafseel-Book-Session.dc.html",
-  "frontend/Tafseel-Payment.dc.html",
-  "frontend/Tafseel-Student-Dashboard.dc.html",
-  "frontend/Tafseel-Teacher-Dashboard.dc.html",
-  "frontend/Tafseel-Quality-Dashboard.dc.html",
-  "frontend/Tafseel-Admin-Dashboard.dc.html",
-  "frontend/js/locales.js",
-  "frontend/js/open-marketplace-locales.js",
-  "frontend/js/open-marketplace.js",
-  "frontend/js/api.js",
-  "frontend/js/tafseel.js",
-  "frontend/js/guided-request.js",
-  "frontend/js/chat-widget.js",
-  "frontend/js/vendor/react.production.min.js",
-  "frontend/js/vendor/react-dom.production.min.js",
-  "frontend/js/vendor/babel.min.js",
-  "frontend/js/vendor/signalr.min.js",
-  "frontend/css/tafseel.css",
-  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-light.woff2",
-  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2",
-  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-medium.woff2",
-  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-bold.woff2",
-  "frontend/assets/fonts/thmanyah-sans/thmanyah-sans-black.woff2",
-  "frontend/assets/fonts/inter/inter-regular.woff2",
-  "frontend/assets/fonts/inter/inter-medium.woff2",
-  "frontend/assets/fonts/inter/inter-semibold.woff2",
-  "frontend/assets/fonts/inter/inter-bold.woff2",
-  "frontend/assets/fonts/saudi-riyal/saudi-riyal.woff2",
-  "frontend/assets/brand/tafseel-mark.png",
-  "frontend/assets/brand/tafseel-mark-dark.png"
-)
+# The site is the Angular client, published per locale under webclient/ (G-15). The host has
+# no Node, so the SSR server half must not ship and the prerendered pages must be real files.
+$policies = @("terms", "privacy", "refunds", "integrity", "teacher", "disputes")
+$required = @("Tafseel.Api.dll", "web.config")
+foreach ($locale in @("ar", "en")) {
+  $required += "webclient/$locale/index.csr.html"
+  $required += "webclient/$locale/about/index.html"
+  $required += "webclient/$locale/assets/brand/tafseel-mark-dark.png"
+  $required += "webclient/$locale/assets/brand/favicon.ico"
+  $required += "webclient/$locale/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2"
+  $required += "webclient/$locale/locale/ar.json"
+  $required += "webclient/$locale/locale/en.json"
+  foreach ($policy in $policies) { $required += "webclient/$locale/policies/$policy/index.html" }
+}
 $missing = $required | Where-Object { -not (Test-Path (Join-Path $PublishDirectory $_)) }
 if ($missing) { throw "Publish output is missing: $($missing -join ', ')" }
-$support = Get-Content (Join-Path $PublishDirectory "frontend/support.js") -Raw
-if ($support -match "unpkg\.com") { throw "Published support.js must not reference unpkg.com." }
-if ($support -notmatch [regex]::Escape("!window.__resources && window.parent !== window")) {
-  throw "Published standalone pages would fetch and parse their HTML twice."
-}
-@("react.production.min.js", "react-dom.production.min.js", "babel.min.js") | ForEach-Object {
-  if ($support -notmatch [regex]::Escape("./js/vendor/$_")) {
-    throw "Published support.js does not reference local vendor script: $_"
+
+foreach ($locale in @("ar", "en")) {
+  $root = Join-Path $PublishDirectory "webclient/$locale"
+  $shell = Get-Content (Join-Path $root "index.csr.html") -Raw
+  if ($shell -notmatch [regex]::Escape("<base href=""/$locale/""")) {
+    throw "Published $locale shell does not carry <base href=""/$locale/"">."
   }
+  foreach ($bundle in @("main-", "polyfills-", "styles-")) {
+    $match = [regex]::Match($shell, "(?:src|href)=""($bundle[A-Za-z0-9_-]+.(?:js|css))""")
+    if (-not $match.Success) { throw "Published $locale shell does not load its $bundle* bundle." }
+    if (-not (Test-Path (Join-Path $root $match.Groups[1].Value))) {
+      throw "Published $locale shell references $($match.Groups[1].Value), which is not in the output."
+    }
+  }
+}
+if (Test-Path (Join-Path $PublishDirectory "webclient/server")) { throw "The Node SSR server leaked into publish output." }
+if (Get-ChildItem (Join-Path $PublishDirectory "webclient") -Recurse -Filter "*.mjs" -File) {
+  throw "Server-side .mjs bundles leaked into publish output."
+}
+
+# R-05: the retired .dc.html runtime must not be published again.
+if (Test-Path (Join-Path $PublishDirectory "frontend")) { throw "The retired frontend/ directory is in publish output." }
+if (Get-ChildItem $PublishDirectory -Recurse -Include "*.dc.html", "support.js", "babel.min.js" -File) {
+  throw "Retired .dc.html runtime files are in publish output."
 }
 if (Test-Path (Join-Path $PublishDirectory "src")) { throw "Source files leaked into publish output." }
 $hostFiles = Get-ChildItem $PublishDirectory -Filter "appsettings.*.Host.json" -File -ErrorAction SilentlyContinue
