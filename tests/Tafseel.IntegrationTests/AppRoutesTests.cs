@@ -66,6 +66,57 @@ public sealed partial class AppRoutesTests
         Assert.Contains(AngularRoutes(), pattern => pattern == "orders/:orderId");
     }
 
+    public static TheoryData<string, string> ClientNavigations()
+    {
+        var data = new TheoryData<string, string>();
+        var app = Path.Combine(Root, "frontend-angular", "src", "app");
+        foreach (var file in Directory.EnumerateFiles(app, "*.*", SearchOption.AllDirectories)
+                     .Where(f => (f.EndsWith(".ts", StringComparison.Ordinal) && !f.EndsWith(".spec.ts", StringComparison.Ordinal))
+                                 || f.EndsWith(".html", StringComparison.Ordinal)))
+        {
+            var source = Path.GetRelativePath(Root, file).Replace('\\', '/');
+            foreach (Match match in ClientNavigation().Matches(File.ReadAllText(file)))
+            {
+                var path = match.Groups["path"].Success
+                    ? match.Groups["path"].Value
+                    : NavigationArray(match.Groups["array"].Value);
+                if (path is not null) data.Add(source, path);
+            }
+        }
+        return data;
+    }
+
+    /// <summary>
+    /// The client's own absolute navigations - <c>router.navigate(['/…'])</c>, <c>navigateByUrl('/…')</c>
+    /// and <c>routerLink</c> - must name a route too. Registration once sent new accounts to
+    /// <c>/confirm-email</c>, which is not one.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ClientNavigations))]
+    public void Client_navigation_names_an_angular_route(string source, string path)
+    {
+        var route = AngularRoutes().FirstOrDefault(pattern => Matches(pattern, path.Split('?', 2)[0]));
+        Assert.True(route is not null, $"{source}: navigates to '{path}', which matches no route in app.routes.ts");
+    }
+
+    [Fact]
+    public void The_navigation_scan_sees_the_client_navigations()
+    {
+        var paths = ClientNavigations().Select(row => (string)row[1]).ToArray();
+        foreach (var expected in new[] { "/auth/confirm-email", "/quality/applications/:p", "/teacher/publication" })
+            Assert.Contains(expected, paths);
+    }
+
+    /// <summary>`'/quality/applications', item.id` → `/quality/applications/:p`; null unless it starts with a literal.</summary>
+    private static string? NavigationArray(string elements)
+    {
+        var parts = elements.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
+        if (parts.Length == 0 || !parts[0].StartsWith("'/", StringComparison.Ordinal)) return null;
+        return string.Join('/', parts.Select(part => part.StartsWith('\'') && part.EndsWith('\'')
+            ? part.Trim('\'').Trim('/')
+            : ":p")).Insert(0, "/");
+    }
+
     private static IEnumerable<(string Source, string Link)> AppRouteValues()
     {
         foreach (var field in typeof(AppRoutes).GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -169,6 +220,9 @@ public sealed partial class AppRoutesTests
 
     [GeneratedRegex(@"\$?""(?<path>/(?:orders|live-sessions|conversations|requests|disputes|teachers?|teach|student|quality|admin|messages|checkout|auth|policies|about|sessions)(?:[/?][^""]*)?)""")]
     private static partial Regex ClientPathLiteral();
+
+    [GeneratedRegex(@"(?:navigate\(\s*\[(?<array>[^\]]*)\]|\[routerLink\]=""\[(?<array>[^\]]*)\]""|navigateByUrl\(\s*'(?<path>/[^'$]*)'|\brouterLink=""(?<path>/[^""]*)"")")]
+    private static partial Regex ClientNavigation();
 
     [GeneratedRegex(@"\{[^}]+\}")]
     private static partial Regex Interpolation();

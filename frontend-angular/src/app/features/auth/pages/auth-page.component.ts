@@ -265,7 +265,7 @@ export class AuthPageComponent {
         role: this.role() === 'teacher' ? 'Teacher' : 'Student',
         lang: this.locale.lang()
       });
-      await this.router.navigate(['/confirm-email'], {
+      await this.router.navigate(['/auth/confirm-email'], {
         queryParams: { email: this.regEmail().trim(), role: this.role() }
       });
     } catch (error) {
@@ -273,7 +273,7 @@ export class AuthPageComponent {
       if (failure.reason === 'confirmation-not-sent') {
         // The account exists; only the mail failed. Send them on with a marker
         // rather than stranding them on a form they cannot usefully resubmit.
-        await this.router.navigate(['/confirm-email'], {
+        await this.router.navigate(['/auth/confirm-email'], {
           queryParams: { email: this.regEmail().trim(), role: this.role(), delivery: 'failed' }
         });
         return;
