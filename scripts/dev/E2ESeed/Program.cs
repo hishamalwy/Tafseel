@@ -13,8 +13,10 @@ using Tafseel.Infrastructure.Identity;
 using Tafseel.Infrastructure.Persistence;
 
 // Seeds the people and catalog a browser journey needs on a throwaway database that a running
-// Development host has already migrated: a student, two published teachers qualified in one
-// subject, each with an asynchronous service. Prints what it created as JSON.
+// Development host has already migrated, and prints what it created as JSON.
+//   default (Wave 2): a student, two published teachers qualified in one subject, each with an
+//                     asynchronous service.
+//   TAFSEEL_E2E_SCENARIO=supply (Wave 3A): a quality reviewer and catalog data only.
 //
 //   ConnectionStrings__Tafseel=...;Database=TafseelE2E...   TAFSEEL_E2E_PASSWORD=...   dotnet run
 var connection = Environment.GetEnvironmentVariable("ConnectionStrings__Tafseel")
@@ -61,6 +63,42 @@ async Task<(string Id, string Email)> UserAsync(string role, string handle, stri
     if (!created.Succeeded) throw new InvalidOperationException(string.Join("; ", created.Errors.Select(e => e.Description)));
     await users.AddToRoleAsync(user, role);
     return (user.Id, email);
+}
+
+if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "supply")
+{
+    // Wave 3A: only who and what the supply journey needs to exist beforehand - a quality
+    // reviewer, two subjects with a qualification topic each (the second is applied for and rejected),
+    // and the service types a teacher can pick. The teacher, the application, the review, the
+    // qualification, the profile, services, availability and publication all happen in the UI.
+    var reviewer = await UserAsync(Roles.QualityReviewer, "reviewer", "مراجع الجودة", "E2E Quality Reviewer");
+    var physics = new Subject($"E2E Physics {run}", "atom", $"فيزياء تجريبية {run}");
+    var chemistry = new Subject($"E2E Chemistry {run}", "flask", $"كيمياء تجريبية {run}");
+    var assignment = new QualificationTopic(physics.Id, $"Newton's second law {run}",
+        "Record a short explanation of F = ma with one worked example.", 300);
+    var chemistryAssignment = new QualificationTopic(chemistry.Id, $"Balancing equations {run}",
+        "Record a short explanation of balancing a chemical equation.", 300);
+    var topic = new Topic(physics.Id, $"Mechanics {run}", "intermediate", $"الميكانيكا {run}");
+    var explanation = new ServiceCatalogItem($"E2E Worked explanation {run}", "A recorded explanation of the student's question.",
+        $"e2e_explain_{run}", "شرح مسجّل تجريبي", "شرح مسجّل لسؤال الطالب", minPrice: 20, maxPrice: 500);
+    var live = new ServiceCatalogItem($"E2E Live lesson {run}", "A live one-to-one lesson.",
+        $"e2e_live_{run}", "درس مباشر تجريبي", "درس مباشر فردي", requiresScheduling: true, allowedDurations: [60],
+        minPrice: 50, maxPrice: 800);
+    db.AddRange(physics, chemistry, assignment, chemistryAssignment, topic, explanation, live);
+    var languages = db.TeachingLanguages.Count();
+    if (languages == 0) db.AddRange(new TeachingLanguage("Arabic", "ar"), new TeachingLanguage("English", "en"));
+    await db.SaveChangesAsync();
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        run,
+        reviewer = new { reviewer.Id, reviewer.Email },
+        subjectId = physics.Id, subjectName = physics.Name,
+        unqualifiedSubjectId = chemistry.Id, unqualifiedSubjectName = chemistry.Name,
+        qualificationTopicId = assignment.Id,
+        explanation = new { explanation.Id, explanation.Code },
+        live = new { live.Id, live.Code }
+    }));
+    return;
 }
 
 var student = await UserAsync(Roles.Student, "student", "طالب التجربة", "E2E Student");
