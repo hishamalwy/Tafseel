@@ -1,0 +1,12 @@
+[
+  "Microsoft.AspNetCore.DataProtection.Internal.DataProtectionHostedService",
+  "Microsoft.AspNetCore.Hosting.GenericWebHostService",
+  "Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckPublisherHostedService",
+  "Tafseel.Infrastructure.Finance.EarningsMaturityWorker",
+  "Tafseel.Infrastructure.Governance.DisputeSlaWorker",
+  "Tafseel.Infrastructure.Identity.DataRetentionWorker",
+  "Tafseel.Infrastructure.LiveSessions.LiveSessionSettlementWorker",
+  "Tafseel.Infrastructure.Messaging.NotificationOutboxWorker",
+  "Tafseel.Infrastructure.Orders.OpenMarketplaceReservationWorker",
+  "Tafseel.Infrastructure.Orders.OrderAutoReleaseWorker"
+]

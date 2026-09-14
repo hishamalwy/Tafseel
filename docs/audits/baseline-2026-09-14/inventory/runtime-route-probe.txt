@@ -1,0 +1,52 @@
+## root, locales, SPA fallback
+GET     /                                                              302 http://localhost:5199/app/Tafseel-Landing.dc.html
+GET     /ar                                                            200 
+GET     /en                                                            200 
+GET     /en/teachers                                                   200 
+GET     /en/student/overview                                           200 
+GET     /orders/00000000-0000-0000-0000-000000000001                   302 http://localhost:5199/ar/orders/00000000-0000-0000-0000-000000000001
+GET     /en/orders/00000000-0000-0000-0000-000000000001                200 
+GET     /en/conversations/00000000-0000-0000-0000-000000000001         200 
+GET     /en/live-sessions/00000000-0000-0000-0000-000000000001         200 
+## legacy pages (Program.cs allowlist)
+GET     /app/Tafseel-Landing.dc.html                                   200 
+GET     /app/Tafseel-Auth.dc.html                                      200 
+GET     /app/Tafseel-Confirm-Email.dc.html                             200 
+GET     /app/Tafseel-Browse-Teachers.dc.html                           200 
+GET     /app/Tafseel-Teacher-Profile.dc.html                           200 
+GET     /app/Tafseel-Request.dc.html                                   200 
+GET     /app/Tafseel-Book-Session.dc.html                              200 
+GET     /app/Tafseel-Payment.dc.html                                   200 
+GET     /app/Tafseel-Mock-Checkout.dc.html                             200 
+GET     /app/Tafseel-Open-Marketplace.dc.html                          200 
+GET     /app/Tafseel-Disputes.dc.html                                  200 
+GET     /app/Tafseel-Policies.dc.html                                  200 
+GET     /app/Tafseel-About.dc.html                                     200 
+GET     /app/Tafseel-Student-Dashboard.dc.html                         500 
+GET     /app/Tafseel-Teacher-Dashboard.dc.html                         500 
+GET     /app/Tafseel-Quality-Dashboard.dc.html                         500 
+GET     /app/Tafseel-Admin-Dashboard.dc.html                           500 
+GET     /app/Tafseel-Teacher-Apply.dc.html                             500 
+GET     /app/Tafseel-Chat.dc.html                                      301 http://localhost:5199/app/Tafseel-Student-Dashboard.dc.html?section=messages
+GET     /app/js/open-marketplace.js                                    500 
+GET     /app/js/open-marketplace-locales.js                            500 
+GET     /app/css/tafseel.css                                           200 
+GET     /app/support.js                                                200 
+GET     /favicon.ico                                                   200 
+## health
+GET     /health/live                                                   200 
+GET     /health/ready                                                  200 
+## API calls the Angular client makes that the endpoint table rejects
+POST    /api/v1/favorite-teachers                                      404 
+GET     /api/v1/open-marketplace/requests                              404 
+POST    /api/v1/open-marketplace/requests/00000000-0000-0000-0000-000000000001/offers 404 
+POST    /api/v1/open-marketplace/offers/00000000-0000-0000-0000-000000000001/accept 404 
+POST    /api/v1/learning-requests/00000000-0000-0000-0000-000000000001/publish 404 
+GET     /api/v1/teachers/availability?subjectId=00000000-0000-0000-0000-000000000001 404 
+PUT     /api/v1/admin/coupons/00000000-0000-0000-0000-000000000001/active 404 
+PUT     /api/v1/admin/promotions/00000000-0000-0000-0000-000000000001/active 404 
+PUT     /api/v1/admin/catalog/subjects/00000000-0000-0000-0000-000000000001/active 404 
+## controls
+GET     /api/v1/teachers                                               200 
+GET     /api/v1/does-not-exist                                         404 
+PATCH   /api/v1/admin/coupons/00000000-0000-0000-0000-000000000001/active 401 

@@ -1,0 +1,4181 @@
+[
+  {
+    "route": "/",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /"
+  },
+  {
+    "route": "/{*path:nonfile}",
+    "methods": [],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Fallback {*path:nonfile}"
+  },
+  {
+    "route": "/api/v1/admin/attention",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Attention",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Attention (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/audit",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Audit",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Audit (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/catalog/{type}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "AdminList",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.AdminList (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/catalog/{type}/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Catalog",
+    "action": "Update",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.Update (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/catalog/{type}/{id:guid}/active",
+    "methods": [
+      "PATCH"
+    ],
+    "controller": "Catalog",
+    "action": "SetActive",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.SetActive (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/catalog/services/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Catalog",
+    "action": "UpdateService",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.UpdateService (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/coupons",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Coupons",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Coupons (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/coupons",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Admin",
+    "action": "CreateCoupon",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.CreateCoupon (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/coupons/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Admin",
+    "action": "UpdateCoupon",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.UpdateCoupon (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/coupons/{id:guid}/active",
+    "methods": [
+      "PATCH"
+    ],
+    "controller": "Admin",
+    "action": "SetCouponActive",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.SetCouponActive (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/disputes",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "All",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.All (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/disputes/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "GetAny",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.GetAny (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/disputes/{id:guid}/messages",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "AdminMessage",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.AdminMessage (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/disputes/{id:guid}/resolve",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "Resolve",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Resolve (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/disputes/{id:guid}/start-review",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "StartReview",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.StartReview (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/education-levels",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "CreateEducationLevel",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.CreateEducationLevel (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/finance/reconciliation",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "Reconciliation",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.Reconciliation (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/finance/reconciliation/coupons",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "CouponReconciliation",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.CouponReconciliation (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/languages",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "CreateLanguage",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.CreateLanguage (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/marketplace-intelligence",
+    "methods": [
+      "GET"
+    ],
+    "controller": "AdminMarketplaceIntelligence",
+    "action": "Get",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "MarketplaceIntelligence.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminMarketplaceIntelligenceController.Get (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/metrics",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Metrics",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Metrics (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/orders",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Orders",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Orders (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/requests",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Requests",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Requests (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/sessions",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Sessions",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Sessions (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/sessions/{id:guid}/complete",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Admin",
+    "action": "ResolveSessionCompleted",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.ResolveSessionCompleted (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/sessions/{id:guid}/dispute",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Admin",
+    "action": "EscalateSessionDispute",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.EscalateSessionDispute (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/sessions/{id:guid}/student-no-show",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Admin",
+    "action": "ResolveSessionStudentNoShow",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.ResolveSessionStudentNoShow (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/operations/sessions/{id:guid}/teacher-no-show",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Admin",
+    "action": "ResolveSessionTeacherNoShow",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Resolve"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.ResolveSessionTeacherNoShow (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/payout-profiles",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "PayoutProfiles",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Review"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.PayoutProfiles (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/payout-profiles/{teacherId}/review",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "ReviewPayoutProfile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Review"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.ReviewPayoutProfile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/promotions",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Promotions",
+    "action": "List",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.List (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/promotions",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Promotions",
+    "action": "Create",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.Create (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/promotions/{id:guid}",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Promotions",
+    "action": "Delete",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.Delete (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/promotions/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Promotions",
+    "action": "Update",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.Update (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/promotions/{id:guid}/active",
+    "methods": [
+      "PATCH"
+    ],
+    "controller": "Promotions",
+    "action": "SetActive",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "PlatformSettings.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.SetActive (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/qualification-topics",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "CreateQualificationTopic",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Topics.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.CreateQualificationTopic (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/qualification-topics/{id:guid}/resources/file",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "AddQualificationFile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Topics.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.AddQualificationFile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/qualification-topics/{id:guid}/resources/link",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "AddQualificationLink",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Topics.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.AddQualificationLink (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/reports/popular-subjects",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "PopularSubjects",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reports.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.PopularSubjects (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/reviews",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "AdminReviews",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reviews.Moderate"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.AdminReviews (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/reviews/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "AdminReview",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reviews.Moderate"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.AdminReview (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/reviews/{id:guid}/moderate",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "Moderate",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reviews.Moderate"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Moderate (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/reviews/summary",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "AdminReviewSummary",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reviews.Moderate"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.AdminReviewSummary (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/services",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "CreateService",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.CreateService (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/subjects",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "CreateSubject",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Subjects.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.CreateSubject (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/topics",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Catalog",
+    "action": "CreateTopic",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Topics.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.CreateTopic (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/users",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Admin",
+    "action": "Users",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Users.View"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Users (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/users/{id}/roles",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Admin",
+    "action": "Role",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Users.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Role (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/users/{id}/suspension",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Admin",
+    "action": "Suspension",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Users.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AdminController.Suspension (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/admin/withdrawals",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "Withdrawals",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Review"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.Withdrawals (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/ai/discovery",
+    "methods": [
+      "POST"
+    ],
+    "controller": "AiMarketplace",
+    "action": "Discovery",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Students.CreateRequests"
+    ],
+    "authenticated": true,
+    "rateLimit": "ai",
+    "display": "Tafseel.Api.Controllers.AiMarketplaceController.Discovery (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/ai/product-help",
+    "methods": [
+      "POST"
+    ],
+    "controller": "AiMarketplace",
+    "action": "ProductHelp",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Students.CreateRequests"
+    ],
+    "authenticated": true,
+    "rateLimit": "ai",
+    "display": "Tafseel.Api.Controllers.AiMarketplaceController.ProductHelp (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/ai/request-assistant",
+    "methods": [
+      "POST"
+    ],
+    "controller": "AiMarketplace",
+    "action": "RequestAssistant",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Students.CreateRequests"
+    ],
+    "authenticated": true,
+    "rateLimit": "ai",
+    "display": "Tafseel.Api.Controllers.AiMarketplaceController.RequestAssistant (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/account",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Auth",
+    "action": "DeleteAccount",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.DeleteAccount (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/avatar",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Auth",
+    "action": "ClearAvatar",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.ClearAvatar (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/avatar",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "UploadAvatar",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.AuthController.UploadAvatar (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/confirm-email",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "ConfirmEmail",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.ConfirmEmail (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/forgot-password",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "ForgotPassword",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.ForgotPassword (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/login",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "Login",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.Login (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/logout",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "Logout",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.Logout (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/me",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Auth",
+    "action": "Me",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.Me (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/mfa/disable",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "DisableMfa",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.DisableMfa (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/mfa/enable",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "EnableMfa",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.EnableMfa (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/mfa/setup",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "SetupMfa",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.SetupMfa (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/password",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Auth",
+    "action": "ChangePassword",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.ChangePassword (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/privacy/export",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Auth",
+    "action": "ExportAccount",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.ExportAccount (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/profile",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Auth",
+    "action": "UpdateProfile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.UpdateProfile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/refresh",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "Refresh",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.Refresh (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/register",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "Register",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.Register (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/request-email-confirmation",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "RequestEmailConfirmation",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "confirmation",
+    "display": "Tafseel.Api.Controllers.AuthController.RequestEmailConfirmation (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/reset-password",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Auth",
+    "action": "ResetPassword",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "auth",
+    "display": "Tafseel.Api.Controllers.AuthController.ResetPassword (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/sessions",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Auth",
+    "action": "Sessions",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.Sessions (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/auth/sessions/{sessionId}",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Auth",
+    "action": "RevokeSession",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.RevokeSession (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/conversations",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Messaging",
+    "action": "Conversations",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Conversations (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/conversations",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Messaging",
+    "action": "Create",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Create (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/conversations/{id:guid}/messages",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Messaging",
+    "action": "Messages",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Messages (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/conversations/{id:guid}/messages",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Messaging",
+    "action": "Send",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": "messaging",
+    "display": "Tafseel.Api.Controllers.MessagingController.Send (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/conversations/{id:guid}/read",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Messaging",
+    "action": "Read",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Read (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/dispute-evidence/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "EvidenceContent",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.EvidenceContent (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/disputes",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "Open",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Open (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/disputes/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "GetMine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.GetMine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/disputes/{id:guid}/evidence",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "Evidence",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.GovernanceController.Evidence (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/disputes/{id:guid}/messages",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "Message",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Message (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/disputes/eligible",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "Eligible",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Eligible (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/disputes/mine",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "Mine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Disputes.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Mine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/education-levels",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "EducationLevels",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.EducationLevels (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/favorite-teachers",
+    "methods": [
+      "GET"
+    ],
+    "controller": "FavoriteTeachers",
+    "action": "Get",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.FavoriteTeachersController.Get (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/favorite-teachers/{teacherId}",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "FavoriteTeachers",
+    "action": "Remove",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.FavoriteTeachersController.Remove (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/favorite-teachers/{teacherId}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "FavoriteTeachers",
+    "action": "Add",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.FavoriteTeachersController.Add (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/languages",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "Languages",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.Languages (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "Create",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Students.CreateRequests"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Create (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LearningRequests",
+    "action": "Get",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Get (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}/accept",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "Accept",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Requests.Accept"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Accept (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}/attachments",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "AddAttachment",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Students.CreateRequests"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.AddAttachment (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}/cancel",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "Cancel",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Cancel (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}/decline",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "Decline",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Requests.Decline"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Decline (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}/reply-clarification",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "Reply",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Reply (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/{id:guid}/request-clarification",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LearningRequests",
+    "action": "Clarify",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Clarify (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/assigned",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LearningRequests",
+    "action": "TeacherAssigned",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.TeacherAssigned (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/attachments/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LearningRequests",
+    "action": "Attachment",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.Attachment (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/learning-requests/mine",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LearningRequests",
+    "action": "StudentMine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LearningRequestsController.StudentMine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "Book",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.Book"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Book (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{bookingId:guid}/review",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "LiveSessionReview",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reviews.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.LiveSessionReview (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/attachments",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "AddAttachment",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.AddAttachment (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/cancel",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "Cancel",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Cancel (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/complete",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "Complete",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Complete (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/join",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LiveSessions",
+    "action": "Join",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Join (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/no-show",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "NoShow",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.NoShow (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/reschedule",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "Reschedule",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Reschedule (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/reschedule/respond",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "RespondToReschedule",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.RespondToReschedule (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/{id:guid}/settlement/confirm",
+    "methods": [
+      "POST"
+    ],
+    "controller": "LiveSessions",
+    "action": "ConfirmSettlement",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.ConfirmSettlement (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/attachments/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LiveSessions",
+    "action": "Attachment",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Attachment (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/availability-summaries",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LiveSessions",
+    "action": "AvailabilitySummaries",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.AvailabilitySummaries (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/mine",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LiveSessions",
+    "action": "Mine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Sessions.ManageOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Mine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/live-sessions/teachers/{teacherId}/slots",
+    "methods": [
+      "GET"
+    ],
+    "controller": "LiveSessions",
+    "action": "Slots",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.LiveSessionsController.Slots (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/marketplace-intelligence/events",
+    "methods": [
+      "POST"
+    ],
+    "controller": "MarketplaceIntelligence",
+    "action": "Track",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceIntelligenceController.Track (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/message-attachments/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Messaging",
+    "action": "AttachmentContent",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.AttachmentContent (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/messages/{id:guid}/attachments",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Messaging",
+    "action": "Attachment",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.MessagingController.Attachment (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/notification-preferences",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Messaging",
+    "action": "Preferences",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Preferences (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/notification-preferences",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Messaging",
+    "action": "Preferences",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Preferences (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/notifications",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Messaging",
+    "action": "Notifications",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.Notifications (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/notifications/read",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Messaging",
+    "action": "ReadNotifications",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MessagingController.ReadNotifications (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/offers/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "UpdateOffer",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.UpdateOffer (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/offers/{id:guid}/withdraw",
+    "methods": [
+      "POST"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "WithdrawOffer",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.WithdrawOffer (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/opportunities",
+    "methods": [
+      "GET"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "Opportunities",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.Opportunities (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/opportunities/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "Opportunity",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.Opportunity (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/opportunities/{id:guid}/offers",
+    "methods": [
+      "POST"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "SubmitOffer",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.SubmitOffer (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/requests",
+    "methods": [
+      "POST"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "Publish",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.Publish (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/requests/{requestId:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "StudentRequest",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.StudentRequest (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/requests/{requestId:guid}/cancel-selection",
+    "methods": [
+      "POST"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "CancelSelection",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.CancelSelection (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/requests/{requestId:guid}/my-offer",
+    "methods": [
+      "GET"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "MyOffer",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.MyOffer (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/requests/{requestId:guid}/offers",
+    "methods": [
+      "GET"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "Offers",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.Offers (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/open-marketplace/requests/{requestId:guid}/offers/{offerId:guid}/select",
+    "methods": [
+      "POST"
+    ],
+    "controller": "OpenMarketplace",
+    "action": "Select",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.OpenMarketplaceController.Select (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Orders",
+    "action": "Get",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Get (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/cancel",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "Cancel",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Cancel (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/complete",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "Complete",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Requests.Complete"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Complete (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/deliveries",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "Deliver",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Requests.Deliver"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.OrdersController.Deliver (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/extensions",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "RequestExtension",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.RequestExtension (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/extensions/{extensionId:guid}/respond",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "RespondToExtension",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.RespondToExtension (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/revision",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "Revise",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Requests.RequestRevision"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Revise (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/start",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Orders",
+    "action": "Start",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Requests.Accept"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Start (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{id:guid}/timeline",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Orders",
+    "action": "Timeline",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Timeline (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/{orderId:guid}/review",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Governance",
+    "action": "Review",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Reviews.Create"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Review (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/assigned",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Orders",
+    "action": "TeacherAssigned",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Teacher"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.TeacherAssigned (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/deliveries/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Orders",
+    "action": "Delivery",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.Delivery (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/orders/mine",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Orders",
+    "action": "StudentMine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.OrdersController.StudentMine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "Get",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.ViewOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.Get (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/{id:guid}/refund",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "Refund",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.Manage"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.Refund (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/live-sessions/{liveSessionBookingId:guid}",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "InitiateLiveSession",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.ViewOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.PaymentsController.InitiateLiveSession (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/mock/capabilities",
+    "methods": [
+      "GET"
+    ],
+    "controller": "MockPaymentSimulator",
+    "action": "Capabilities",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.MockPaymentSimulatorController.Capabilities (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/mock/simulator",
+    "methods": [
+      "GET"
+    ],
+    "controller": "MockPaymentSimulator",
+    "action": "Session",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.ViewOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.MockPaymentSimulatorController.Session (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/mock/simulator/complete",
+    "methods": [
+      "POST"
+    ],
+    "controller": "MockPaymentSimulator",
+    "action": "Complete",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.ViewOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.MockPaymentSimulatorController.Complete (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/open-requests/{learningRequestId:guid}",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "InitiateOpenRequest",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.ViewOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.PaymentsController.InitiateOpenRequest (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/orders/{orderId:guid}",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "Initiate",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Payments.ViewOwn"
+    ],
+    "authenticated": true,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.PaymentsController.Initiate (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/webhooks/{provider}",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "Webhook",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.PaymentsController.Webhook (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/payments/webhooks/mock",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "MockWebhook",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": "payment",
+    "display": "Tafseel.Api.Controllers.PaymentsController.MockWebhook (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/platform/stats",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Promotions",
+    "action": "Stats",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.Stats (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/promotions",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Promotions",
+    "action": "Live",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PromotionsController.Live (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/qualification-resources/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "QualificationResource",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.QualificationResource (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/services",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "Services",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.Services (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/students/me/learning-preferences",
+    "methods": [
+      "GET"
+    ],
+    "controller": "StudentLearningPreferences",
+    "action": "Get",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.StudentLearningPreferencesController.Get (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/students/me/learning-preferences",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "StudentLearningPreferences",
+    "action": "Put",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [
+      "Student"
+    ],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.StudentLearningPreferencesController.Put (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/subjects",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "Subjects",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.Subjects (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/subjects/featured",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "FeaturedSubjects",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.FeaturedSubjects (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Create",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Create (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "QueueDetail",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewApplications"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.QueueDetail (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Update",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Update (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}/decision",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Decide",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewApplications"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Decide (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}/demo",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "UploadDemo",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.UploadDemo (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}/demo/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "DemoContent",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.DemoContent (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}/start-review",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "StartReview",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewApplications"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.StartReview (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}/submit",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Submit",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Submit (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/{id:guid}/withdraw",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Withdraw",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Withdraw (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/mine",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Mine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Mine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/queue",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "Queue",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewApplications"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.Queue (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-applications/queue/summary",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "QueueSummary",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewApplications"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.QueueSummary (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teacher-qualifications/{id:guid}/revoke",
+    "methods": [
+      "POST"
+    ],
+    "controller": "TeacherApplications",
+    "action": "RevokeQualification",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewApplications"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.RevokeQualification (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "Search",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.Search (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/{teacherId}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "Profile",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.Profile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/{teacherId}/reviews",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Governance",
+    "action": "Reviews",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.GovernanceController.Reviews (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/compare",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "Compare",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.Compare (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "Mine",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.Mine (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "UpdateProfile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.UpdateProfile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/{kind:regex(^certifications|experience$)}",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "AddCredential",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.AddCredential (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/{kind:regex(^certifications|experience$)}/{id:guid}",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Marketplace",
+    "action": "RemoveCredential",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.RemoveCredential (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/availability/exceptions",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "AddException",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.AddException (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/availability/exceptions/{id:guid}",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Marketplace",
+    "action": "RemoveException",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.RemoveException (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/availability/rules",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "AddRule",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.AddRule (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/availability/rules",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "ReplaceRules",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ReplaceRules (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/availability/rules/{id:guid}",
+    "methods": [
+      "DELETE"
+    ],
+    "controller": "Marketplace",
+    "action": "RemoveRule",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.RemoveRule (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/business/analytics",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherBusiness",
+    "action": "Analytics",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherBusinessController.Analytics (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/business/calendar.ics",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherBusiness",
+    "action": "Calendar",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherBusinessController.Calendar (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/business/home-summary",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherBusiness",
+    "action": "HomeSummary",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherBusinessController.HomeSummary (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/business/statement.csv",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherBusiness",
+    "action": "Statement",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherBusinessController.Statement (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/education-levels",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "SetEducationLevels",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SetEducationLevels (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/eligible-subjects",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "EligibleSubjects",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.EligibleSubjects (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/languages",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "GetLanguages",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.GetLanguages (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/languages",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "SetLanguages",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SetLanguages (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/marketplace-services",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "MarketplaceServices",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.MarketplaceServices (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/profile-videos",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "MyProfileVideos",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.MyProfileVideos (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/profile-videos/{id:guid}/featured",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "SetProfileVideoFeatured",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SetProfileVideoFeatured (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/profile-videos/{id:guid}/visibility",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "SetProfileVideoVisibility",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SetProfileVideoVisibility (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/profile-videos/order",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "ReorderProfileVideos",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ReorderProfileVideos (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/publication",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "PublishProfile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.PublishProfile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/qualifications",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "MyQualifications",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.MyQualifications (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/samples",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "AddSample",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.MarketplaceController.AddSample (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/samples/{id:guid}/publication",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "PublishSample",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.PublishSample (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/services",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "AddService",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.AddService (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/services/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "UpdateService",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.UpdateService (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/services/{id:guid}/active",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "SetServiceActive",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnServices"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SetServiceActive (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "MyShowcases",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.MyShowcases (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "CreateShowcase",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.CreateShowcase (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "MyShowcase",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.MyShowcase (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "UpdateShowcase",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.UpdateShowcase (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}/archive",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "ArchiveShowcase",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ArchiveShowcase (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}/submit",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "SubmitShowcase",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SubmitShowcase (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}/versions",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "CreateShowcaseVersion",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.CreateShowcaseVersion (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}/versions/{versionId:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "ShowcaseVersionContent",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ShowcaseVersionContent (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/{id:guid}/video",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "UploadShowcaseVideo",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": "upload",
+    "display": "Tafseel.Api.Controllers.MarketplaceController.UploadShowcaseVideo (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/showcases/order",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "ReorderShowcases",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ReorderShowcases (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/me/topics",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Marketplace",
+    "action": "SetTopics",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ManageOwnProfile"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.SetTopics (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/onboarding-status",
+    "methods": [
+      "GET"
+    ],
+    "controller": "TeacherApplications",
+    "action": "OnboardingStatus",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.Apply"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.TeacherApplicationsController.OnboardingStatus (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/samples/{id:guid}/content",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "Sample",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.Sample (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/showcase-moderation",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "ShowcaseQueue",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ShowcaseQueue (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/showcase-moderation/{id:guid}",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "ShowcaseQueueItem",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ShowcaseQueueItem (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/showcase-moderation/{id:guid}/versions/{versionId:guid}/decision",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "DecideShowcase",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.DecideShowcase (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/showcase-moderation/{id:guid}/versions/{versionId:guid}/start-review",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Marketplace",
+    "action": "StartShowcaseReview",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.StartShowcaseReview (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/teachers/showcase-moderation/summary",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Marketplace",
+    "action": "ShowcaseQueueSummary",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Teachers.ReviewShowcases"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.MarketplaceController.ShowcaseQueueSummary (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/topics",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Catalog",
+    "action": "Topics",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.CatalogController.Topics (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/users/{userId}/avatar",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Auth",
+    "action": "Avatar",
+    "kind": "controller",
+    "anonymous": true,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.AuthController.Avatar (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "RequestWithdrawal",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Request"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.RequestWithdrawal (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals/{id:guid}/process",
+    "methods": [
+      "POST"
+    ],
+    "controller": "Payments",
+    "action": "ProcessWithdrawal",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Review"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.ProcessWithdrawal (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals/balances",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "Balances",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Request"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.Balances (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals/mine",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "MyWithdrawals",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Request"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.MyWithdrawals (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals/policy",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "WithdrawalPolicy",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Request"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.WithdrawalPolicy (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals/profile",
+    "methods": [
+      "GET"
+    ],
+    "controller": "Payments",
+    "action": "MyPayoutProfile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Request"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.MyPayoutProfile (Tafseel.Api)"
+  },
+  {
+    "route": "/api/v1/withdrawals/profile",
+    "methods": [
+      "PUT"
+    ],
+    "controller": "Payments",
+    "action": "SubmitPayoutProfile",
+    "kind": "controller",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Withdrawals.Request"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "Tafseel.Api.Controllers.PaymentsController.SubmitPayoutProfile (Tafseel.Api)"
+  },
+  {
+    "route": "/app/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/{file}"
+  },
+  {
+    "route": "/app/assets/brand/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/assets/brand/{file}"
+  },
+  {
+    "route": "/app/assets/fonts/inter/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/assets/fonts/inter/{file}"
+  },
+  {
+    "route": "/app/assets/fonts/saudi-riyal/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/assets/fonts/saudi-riyal/{file}"
+  },
+  {
+    "route": "/app/assets/fonts/thmanyah-sans/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/assets/fonts/thmanyah-sans/{file}"
+  },
+  {
+    "route": "/app/assets/fonts/thmanyah-serif-display/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/assets/fonts/thmanyah-serif-display/{file}"
+  },
+  {
+    "route": "/app/css/tafseel.css",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/css/tafseel.css"
+  },
+  {
+    "route": "/app/js/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/js/{file}"
+  },
+  {
+    "route": "/app/js/vendor/{file}",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/js/vendor/{file}"
+  },
+  {
+    "route": "/app/support.js",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/support.js"
+  },
+  {
+    "route": "/app/Tafseel-Chat.dc.html",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /app/Tafseel-Chat.dc.html"
+  },
+  {
+    "route": "/favicon.ico",
+    "methods": [
+      "GET"
+    ],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "HTTP: GET /favicon.ico"
+  },
+  {
+    "route": "/health/live",
+    "methods": [],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Health checks"
+  },
+  {
+    "route": "/health/ready",
+    "methods": [],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [],
+    "authenticated": false,
+    "rateLimit": null,
+    "display": "Health checks"
+  },
+  {
+    "route": "/hubs/messages",
+    "methods": [],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "/hubs/messages"
+  },
+  {
+    "route": "/hubs/messages/negotiate",
+    "methods": [],
+    "controller": null,
+    "action": null,
+    "kind": "minimal",
+    "anonymous": false,
+    "roles": [],
+    "policies": [
+      "Messages.Use"
+    ],
+    "authenticated": true,
+    "rateLimit": null,
+    "display": "/hubs/messages/negotiate"
+  }
+]
