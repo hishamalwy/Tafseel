@@ -1,13 +1,4 @@
 {
   "description": "Client/server API contract violations present on 2026-09-14, each tracked by a row in docs/audits/baseline-2026-09-14/REMEDIATION_MATRIX.md. scripts/ci/check-api-contract.mjs fails on any violation not listed here and on any listed violation that no longer occurs. Remove an entry in the same change that fixes it.",
-  "violations": [
-    {
-      "matrix": "J3-07",
-      "kind": "BODY_MISSING_REQUIRED",
-      "method": "POST",
-      "route": "/api/v1/learning-requests/{p}/accept",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "detail": "AcceptLearningRequest requires agreedDeliveryAt, currency, finalPrice, revisionAllowance"
-    }
-  ]
+  "violations": []
 }

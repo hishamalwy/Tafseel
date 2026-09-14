@@ -66,7 +66,7 @@
                 }
                 @if (role === 'Student' && tab().key === 'orders' && row['status'] === 2) { <button type="button" (click)="rowAction(row, 'complete')">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
                 @if (role === 'Student' && tab().key === 'sessions') { <button type="button" (click)="rowAction(row, 'join')">{{ t('session_join', 'Join') }}</button> }
-                @if (role === 'Teacher' && tab().key === 'requests') { <button type="button" (click)="rowAction(row, 'accept')">{{ t('td_accept', 'Accept') }}</button><button type="button" (click)="rowAction(row, 'decline')">{{ t('td_decline', 'Decline') }}</button> }
+                @if (role === 'Teacher' && tab().key === 'requests') { @if (canAccept(row)) { <button type="button" data-testid="accept-request" (click)="rowAction(row, 'accept')">{{ t('td_accept', 'Accept') }}</button> } @if (canDecline(row)) { <button type="button" (click)="rowAction(row, 'decline')">{{ t('td_decline', 'Decline') }}</button> } }
                 @if (role === 'Teacher' && tab().key === 'orders' && row['status'] === 0) {
                   @if (canStart(row)) {
                     <button type="button" (click)="rowAction(row, 'start')">{{ t('td_start', 'Start') }}</button>
@@ -98,4 +98,5 @@
   </section>
 </div>
 <tf-protected-file-viewer />
+<tf-accept-request-dialog (accepted)="onAccepted()" />
 <tf-toast />

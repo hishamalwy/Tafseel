@@ -3218,5 +3218,16 @@
   "om_select_body": "يُحجز الطلب لهذا المعلم ريثما تُكمل الدفع، وتبقى العروض الأخرى معلّقة.",
   "om_selected": "تم اختيار العرض، والطلب محجوز للدفع.",
   "om_select_stale": "تغيّر الطلب أو العرض. تظهر الآن أحدث نسخة، فحاول مرة أخرى.",
-  "om_select_failed": "تعذّر اختيار العرض."
+  "om_select_failed": "تعذّر اختيار العرض.",
+  "accept_title": "قبول هذا الطلب",
+  "accept_price": "السعر النهائي",
+  "accept_price_range": "بين",
+  "accept_currency": "العملة",
+  "accept_delivery": "موعد التسليم المتفق عليه",
+  "accept_delivery_range": "بين",
+  "accept_hours_from_now": "ساعة من الآن",
+  "accept_revisions": "التعديلات المشمولة",
+  "accept_no_policy": "لم تعد هذه الخدمة متاحة للقبول.",
+  "accept_sending": "جارٍ القبول…",
+  "accept_done": "تم القبول، والطلب بانتظار دفع الطالب."
 }

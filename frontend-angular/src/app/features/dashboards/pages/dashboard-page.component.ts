@@ -23,18 +23,20 @@ import { BrandMarkComponent } from '@shared/components/brand-mark.component';
 import { LangToggleComponent } from '@shared/components/lang-toggle.component';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
+import { AcceptRequestDialogComponent } from '../components/accept-request-dialog.component';
 
 interface SourceResult { readonly source: string; readonly payload: unknown; readonly error?: string }
 
 @Component({
   selector: 'tf-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, ToastComponent, BrandMarkComponent, LangToggleComponent, ThemeToggleComponent, ProtectedFileViewerComponent],
+  imports: [FormsModule, RouterLink, ToastComponent, BrandMarkComponent, LangToggleComponent, ThemeToggleComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.css'
 })
 export class DashboardPageComponent {
   @ViewChild(ProtectedFileViewerComponent) private readonly viewer?: ProtectedFileViewerComponent;
+  @ViewChild(AcceptRequestDialogComponent) private readonly acceptDialog?: AcceptRequestDialogComponent;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly gateway = inject(DashboardGateway);
@@ -182,7 +184,15 @@ export class DashboardPageComponent {
       }
       if (action === 'complete') await this.gateway.post(`/orders/${id}/complete`, null, version);
       if (action === 'start') await this.gateway.post(`/orders/${id}/start`, null, version);
-      if (action === 'accept') await this.gateway.post(`/learning-requests/${id}/accept`, {}, version);
+      if (action === 'accept') {
+        // Acceptance sets the order's terms, so it is a form (J3-07); the dialog reports back.
+        await this.acceptDialog?.open({
+          id: String(row['id']), version, title: Dashboard.title(row),
+          teacherServiceId: String(row['teacherServiceId'] ?? ''),
+          preferredDeliveryAt: row['preferredDeliveryAt'] ? String(row['preferredDeliveryAt']) : null
+        });
+        return;
+      }
       if (action === 'decline') {
         const reason = await this.dialogs.prompt({ message: this.t('common_reason', 'Reason') });
         if (!reason) return;
@@ -200,6 +210,21 @@ export class DashboardPageComponent {
 
   activeToggle(row: Record<string, unknown>): string | null {
     return this.role === 'Admin' ? Dashboard.activeToggle(this.tab().key, row) : null;
+  }
+
+  /** Only a request still waiting for the teacher can be accepted (LearningRequest.Accept). */
+  canAccept(row: Record<string, unknown>): boolean {
+    return row['status'] === 0 && !!row['teacherServiceId'];
+  }
+
+  /** Only a request waiting for the teacher or for clarification can be declined. */
+  canDecline(row: Record<string, unknown>): boolean {
+    return row['status'] === 0 || row['status'] === 1;
+  }
+
+  async onAccepted(): Promise<void> {
+    await this.reload();
+    this.toasts.show(this.t('accept_done', 'Accepted. The order is waiting for the student’s payment.'));
   }
 
   async toggleActive(row: Record<string, unknown>): Promise<void> {

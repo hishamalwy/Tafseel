@@ -3218,5 +3218,16 @@
   "om_select_body": "The request is reserved for this teacher while you pay. Other offers stay on hold.",
   "om_selected": "Offer chosen. The request is reserved for payment.",
   "om_select_stale": "This request or offer changed. The latest version is shown; try again.",
-  "om_select_failed": "Could not choose the offer."
+  "om_select_failed": "Could not choose the offer.",
+  "accept_title": "Accept this request",
+  "accept_price": "Final price",
+  "accept_price_range": "Between",
+  "accept_currency": "Currency",
+  "accept_delivery": "Agreed delivery",
+  "accept_delivery_range": "Between",
+  "accept_hours_from_now": "hours from now",
+  "accept_revisions": "Revisions included",
+  "accept_no_policy": "This service is no longer available to accept.",
+  "accept_sending": "Accepting…",
+  "accept_done": "Accepted. The order is waiting for the student’s payment."
 }
