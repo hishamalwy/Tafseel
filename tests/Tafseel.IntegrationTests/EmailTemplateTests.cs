@@ -10,15 +10,21 @@ namespace Tafseel.IntegrationTests;
 
 public sealed class EmailTemplateTests
 {
-    [Fact]
-    public void Template_uses_public_brand_assets_and_escapes_content()
+    [Theory]
+    [InlineData("https://tafseel.example")]
+    [InlineData("https://tafseel.example/")]
+    // A host override that still names the retired /app site root.
+    [InlineData("https://tafseel.example/app/")]
+    public void Template_uses_public_brand_assets_and_escapes_content(string appBaseUrl)
     {
         var html = EmailTemplate.Render(
             "preheader", "kicker", "<heading>", ["body"],
-            "https://tafseel.example/app/");
+            appBaseUrl);
 
         Assert.Contains("font-family:'Thmanyah Sans'", html);
-        Assert.Contains("https://tafseel.example/app/assets/brand/tafseel-mark-dark.png", html);
+        Assert.Contains("https://tafseel.example/assets/brand/tafseel-mark-dark.png", html);
+        Assert.Contains("https://tafseel.example/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2", html);
+        Assert.DoesNotContain("/app/", html);
         Assert.Contains("&lt;heading&gt;", html);
         Assert.DoesNotContain("<heading>", html);
     }

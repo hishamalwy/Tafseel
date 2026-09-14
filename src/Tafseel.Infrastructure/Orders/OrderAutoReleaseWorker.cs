@@ -1,3 +1,4 @@
+using Tafseel.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -62,10 +63,10 @@ internal sealed class OrderAutoReleaseWorker(
                 order.CompleteAutomatically(clock.GetUtcNow());
                 await finance.ReleaseOrderEscrowAsync(order, "system:auto-release", ct);
                 await notifications.QueueAsync(order.StudentId, "OrderAutoCompleted", "Order completed",
-                    "The review window ended without a revision or dispute.", $"/orders/{order.Id}",
+                    "The review window ended without a revision or dispute.", AppRoutes.Order(order.Id),
                     $"order:{order.Id}:auto-completed:student", true, ct);
                 await notifications.QueueAsync(order.TeacherId, "OrderAutoCompleted", "Payment released",
-                    "The review window ended and your payment was released.", $"/orders/{order.Id}",
+                    "The review window ended and your payment was released.", AppRoutes.Order(order.Id),
                     $"order:{order.Id}:auto-completed:teacher", true, ct);
                 await db.SaveChangesAsync(ct);
             }

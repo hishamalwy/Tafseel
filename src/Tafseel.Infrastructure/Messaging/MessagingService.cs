@@ -143,7 +143,7 @@ internal sealed class MessagingService(
             : $"{(string.IsNullOrWhiteSpace(context.ServiceNameEnglish) ? "Order" : context.ServiceNameEnglish)} · Order {context.Id.ToString("N")[..8].ToUpperInvariant()}";
         foreach (var recipientId in recipientIds)
             await notificationWriter.QueueAsync(recipientId, "NewMessage", title,
-                notificationBody, $"/conversations/{conversationId}",
+                notificationBody, AppRoutes.Conversation(conversationId),
                 $"message:{message.Id}", email: false, ct);
         await db.SaveChangesAsync(ct); // system of record before broadcast
         var dto = Map(message);
@@ -490,9 +490,9 @@ internal sealed class NotificationOutboxWorker(
         foreach (var session in upcoming)
         {
             await writer.QueueAsync(session.StudentId, "SessionReminder", "Live session starts soon",
-                session.Title, $"/live-sessions/{session.Id}", $"session:{session.Id}:reminder:student", true, ct);
+                session.Title, AppRoutes.LiveSession(session.Id), $"session:{session.Id}:reminder:student", true, ct);
             await writer.QueueAsync(session.TeacherId, "SessionReminder", "Live session starts soon",
-                session.Title, $"/live-sessions/{session.Id}", $"session:{session.Id}:reminder:teacher", true, ct);
+                session.Title, AppRoutes.LiveSession(session.Id), $"session:{session.Id}:reminder:teacher", true, ct);
         }
         if (upcoming.Length > 0) await db.SaveChangesAsync(ct);
         var items = await db.NotificationOutbox
@@ -513,7 +513,7 @@ internal sealed class NotificationOutboxWorker(
                 {
                     var ctaUrl = string.IsNullOrWhiteSpace(notification.Link)
                         ? null
-                        : $"{emailOptions.Value.AppBaseUrl}{notification.Link}";
+                        : EmailLinks.Absolute(emailOptions.Value.AppBaseUrl, notification.Link);
                     var html = EmailTemplate.Render(
                         preheader: notification.Body,
                         kicker: "إشعار جديد",

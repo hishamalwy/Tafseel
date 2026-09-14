@@ -348,7 +348,7 @@ internal sealed class LiveSessionService(
             booking.CaptureServiceIdentity(service.Type);
             db.Add(booking);
             await notifications.QueueAsync(booking.TeacherId, "SessionBooking", "New live-session booking",
-                booking.Title, $"/live-sessions/{booking.Id}", $"session:{booking.Id}:booked", true, ct);
+                booking.Title, AppRoutes.LiveSession(booking.Id), $"session:{booking.Id}:booked", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             return Map(booking);
@@ -406,7 +406,7 @@ internal sealed class LiveSessionService(
             booking.RequestReschedule(userId, startsAt, endsAt, clock.GetUtcNow());
             var other = userId == booking.StudentId ? booking.TeacherId : booking.StudentId;
             await notifications.QueueAsync(other, "SessionRescheduleRequested", "Live session reschedule requested",
-                booking.Title, $"/live-sessions/{booking.Id}",
+                booking.Title, AppRoutes.LiveSession(booking.Id),
                 $"session:{booking.Id}:reschedule-requested:{booking.RescheduleRequestedAt?.UtcTicks}", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -438,7 +438,7 @@ internal sealed class LiveSessionService(
                 await notifications.QueueAsync(requester,
                     accept ? "SessionRescheduled" : "SessionRescheduleRejected",
                     accept ? "Live session rescheduled" : "Reschedule request declined",
-                    booking.Title, $"/live-sessions/{booking.Id}",
+                    booking.Title, AppRoutes.LiveSession(booking.Id),
                     $"session:{booking.Id}:reschedule-response:{booking.UpdatedAt.UtcTicks}", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -462,7 +462,7 @@ internal sealed class LiveSessionService(
             await finance.ReleaseLiveSessionEscrowAsync(booking, userId, ct);
         await notifications.QueueAsync(userId == booking.StudentId ? booking.TeacherId : booking.StudentId,
             "SessionCancelled", "Live session cancelled", booking.Title,
-            $"/live-sessions/{booking.Id}", $"session:{booking.Id}:cancelled", true, ct);
+            AppRoutes.LiveSession(booking.Id), $"session:{booking.Id}:cancelled", true, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -477,7 +477,7 @@ internal sealed class LiveSessionService(
         ApplyVersion(booking, version);
         booking.RequestCompletion(teacherId, clock.GetUtcNow());
         await notifications.QueueAsync(booking.StudentId, "SessionCompletionRequested", "Confirm the live session",
-            booking.Title, $"/live-sessions/{booking.Id}", $"session:{booking.Id}:completed", true, ct);
+            booking.Title, AppRoutes.LiveSession(booking.Id), $"session:{booking.Id}:completed", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -493,7 +493,7 @@ internal sealed class LiveSessionService(
         else booking.MarkTeacherNoShow(userId, clock.GetUtcNow(), _options.NoShowGraceMinutes);
         var recipient = studentNoShow ? booking.StudentId : booking.TeacherId;
         await notifications.QueueAsync(recipient, "SessionNoShowReview", "Review a live session no-show claim",
-            booking.Title, $"/live-sessions/{booking.Id}", $"session:{booking.Id}:no-show", true, ct);
+            booking.Title, AppRoutes.LiveSession(booking.Id), $"session:{booking.Id}:no-show", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -513,7 +513,7 @@ internal sealed class LiveSessionService(
                 booking, userId, $"session:{booking.Id}:confirmed-teacher-no-show-refund", ct);
         var recipient = userId == booking.StudentId ? booking.TeacherId : booking.StudentId;
         await notifications.QueueAsync(recipient, "SessionSettlementConfirmed", "Live session settlement confirmed",
-            booking.Title, $"/live-sessions/{booking.Id}",
+            booking.Title, AppRoutes.LiveSession(booking.Id),
             $"session:{booking.Id}:settlement-confirmed", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);

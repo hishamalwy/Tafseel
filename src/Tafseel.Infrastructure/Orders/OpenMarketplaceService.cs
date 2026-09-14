@@ -129,7 +129,7 @@ internal sealed class OpenMarketplaceService(
         else
             throw new DomainException("offer_already_exists", "Update the existing Offer instead.");
         await notifications.QueueAsync(request.StudentId, "OfferReceived", "New Teacher Offer",
-            request.Title, $"/requests/{request.Id}/offers", $"offer:{existing.Id}:submitted", true, ct);
+            request.Title, AppRoutes.RequestOffers(request.Id), $"offer:{existing.Id}:submitted", true, ct);
         await db.SaveChangesAsync(ct);
         return await MapOfferAsync(existing, includeTeacher: false, ct);
     }
@@ -213,7 +213,7 @@ internal sealed class OpenMarketplaceService(
         request.SelectOffer(studentId, offerId, now, _options.OfferReservationMinutes);
         offer.Select(now);
         await notifications.QueueAsync(offer.TeacherId, "OfferSelected", "Your Offer was selected",
-            $"The Student has {_options.OfferReservationMinutes} minutes to complete payment.", $"/requests/{request.Id}",
+            $"The Student has {_options.OfferReservationMinutes} minutes to complete payment.", AppRoutes.Request(request.Id),
             $"offer:{offer.Id}:selected", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -376,10 +376,10 @@ internal sealed class OpenMarketplaceReservationExpiryService(
                 x.LearningRequestId == request.Id && x.Status == Domain.Finance.PaymentStatus.Pending).ToArrayAsync(ct);
             foreach (var payment in pendingPayments) payment.Fail(now);
             await notifications.QueueAsync(request.StudentId, "OfferReservationExpired", "Offer reservation expired",
-                "The request is open for Offers again.", $"/requests/{request.Id}/offers",
+                "The request is open for Offers again.", AppRoutes.RequestOffers(request.Id),
                 $"request:{request.Id}:reservation-expired:{now.UtcTicks}", true, ct);
             await notifications.QueueAsync(offer.TeacherId, "OfferReservationExpired", "Offer selection expired",
-                "Your Offer is available to the Student again.", $"/requests/{request.Id}",
+                "Your Offer is available to the Student again.", AppRoutes.Request(request.Id),
                 $"offer:{offer.Id}:reservation-expired:{now.UtcTicks}", true, ct);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -401,7 +401,7 @@ internal sealed class OpenMarketplaceReservationExpiryService(
                 foreach (var offer in await db.TeacherOffers.Where(x => x.LearningRequestId == id).ToArrayAsync(ct))
                     offer.Expire(now);
                 await notifications.QueueAsync(request.StudentId, "RequestExpired", "Request expired",
-                    "The request deadline passed without conversion to an Order.", $"/requests/{id}",
+                    "The request deadline passed without conversion to an Order.", AppRoutes.Request(id),
                     $"request:{id}:expired", true, ct);
                 await db.SaveChangesAsync(ct);
             }

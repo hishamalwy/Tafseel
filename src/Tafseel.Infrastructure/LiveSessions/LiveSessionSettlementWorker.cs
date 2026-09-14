@@ -1,3 +1,4 @@
+using Tafseel.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,10 +74,10 @@ internal sealed class LiveSessionSettlementWorker(
                         + $"The Teacher can confirm completion or report Student no-show; the Student can report Teacher no-show or open a dispute. "
                         + $"Funds will not be released merely because both parties are silent. Please act before {deadline:O}.";
                     await notifications.QueueAsync(booking.StudentId, "SessionOutcomeRequired",
-                        "Live session outcome required", body, $"/live-sessions/{booking.Id}",
+                        "Live session outcome required", body, AppRoutes.LiveSession(booking.Id),
                         $"session:{booking.Id}:passive-outcome-reminder:student", true, ct);
                     await notifications.QueueAsync(booking.TeacherId, "SessionOutcomeRequired",
-                        "Live session outcome required", body, $"/live-sessions/{booking.Id}",
+                        "Live session outcome required", body, AppRoutes.LiveSession(booking.Id),
                         $"session:{booking.Id}:passive-outcome-reminder:teacher", true, ct);
                     if (now >= deadline)
                     {
@@ -90,7 +91,7 @@ internal sealed class LiveSessionSettlementWorker(
                             await notifications.QueueAsync(adminId, "SessionOutcomeAdminReview",
                                 "Live session outcome requires review",
                                 $"Neither participant reported an outcome for {booking.Title}. Escrow remains held.",
-                                "/admin/operations/sessions",
+                                AppRoutes.AdminSessions,
                                 $"session:{booking.Id}:passive-outcome-admin:{adminId}", true, ct);
                     }
                     await db.SaveChangesAsync(ct);
@@ -111,7 +112,7 @@ internal sealed class LiveSessionSettlementWorker(
                 foreach (var recipient in new[] { booking.StudentId, booking.TeacherId })
                     await notifications.QueueAsync(recipient, "SessionSettlementFinalized",
                         "Live session settlement finalized", booking.Title,
-                        $"/live-sessions/{booking.Id}",
+                        AppRoutes.LiveSession(booking.Id),
                         $"session:{booking.Id}:settlement-finalized:{recipient}", true, ct);
                 await db.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);

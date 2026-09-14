@@ -70,10 +70,10 @@ internal sealed class GovernanceService(
         audit.Add(studentId, "ReviewCreated", "TeacherReview", review.Id.ToString(),
             "Completed-order review created.", $"review:{review.Id}");
         await notifications.QueueAsync(order.TeacherId, "Review", "New review received",
-            "A Student reviewed a completed Order.", $"/teacher/reviews/{review.Id}",
+            "A Student reviewed a completed Order.", AppRoutes.TeacherReview(review.Id),
             $"review:{review.Id}:teacher", true, ct);
         await notifications.QueueAsync(studentId, "ReviewSubmitted", "Review submitted",
-            "Your rating was saved for this completed Order.", $"/orders/{order.Id}",
+            "Your rating was saved for this completed Order.", AppRoutes.Order(order.Id),
             $"review:{review.Id}:student", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -102,7 +102,7 @@ internal sealed class GovernanceService(
         audit.Add(studentId, "LiveSessionReviewCreated", "TeacherReview", review.Id.ToString(),
             "Completed-session review created.", $"review:{review.Id}");
         await notifications.QueueAsync(booking.TeacherId, "Review", "New review received",
-            "A Student reviewed a completed live session.", $"/live-sessions/{booking.Id}",
+            "A Student reviewed a completed live session.", AppRoutes.LiveSession(booking.Id),
             $"review:{review.Id}:teacher", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -257,7 +257,9 @@ internal sealed class GovernanceService(
             input.Visible
                 ? "Your review is visible on the teacher profile again."
                 : "Your review remains on your completed Order but is not shown publicly.",
-            $"/orders/{review.OrderId}",
+            review.OrderId is { } reviewedOrder
+                ? AppRoutes.Order(reviewedOrder)
+                : AppRoutes.LiveSession(review.LiveSessionBookingId!.Value),
             $"review:{review.Id}:moderation:{review.Moderation.Count}:student", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -339,7 +341,7 @@ internal sealed class GovernanceService(
         audit.Add(userId, "DisputeOpened", "Dispute", dispute.Id.ToString(),
             "Held-escrow dispute opened.", $"dispute:{dispute.Id}:opened");
         await notifications.QueueAsync(other, "Dispute", "Dispute opened",
-            "A dispute was opened for your purchase.", $"/disputes/{dispute.Id}",
+            "A dispute was opened for your purchase.", AppRoutes.Dispute(dispute.Id),
             $"dispute:{dispute.Id}:opened:{other}", true, ct);
         var adminIds = await (
             from membership in db.UserRoles.AsNoTracking()
@@ -349,7 +351,7 @@ internal sealed class GovernanceService(
             select user.Id).ToArrayAsync(ct);
         foreach (var adminId in adminIds)
             await notifications.QueueAsync(adminId, "DisputeAdmin", "New dispute requires triage",
-                "A protected-purchase dispute was opened.", $"/disputes/{dispute.Id}",
+                "A protected-purchase dispute was opened.", AppRoutes.Dispute(dispute.Id),
                 $"dispute:{dispute.Id}:opened:admin:{adminId}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -512,7 +514,7 @@ internal sealed class GovernanceService(
         var message = dispute.Messages.Last();
         var recipient = userId == dispute.StudentId ? dispute.TeacherId : dispute.StudentId;
         await notifications.QueueAsync(recipient, "Dispute", "New dispute message",
-            "The other party added a message to the dispute.", $"/disputes/{id}",
+            "The other party added a message to the dispute.", AppRoutes.Dispute(id),
             $"dispute:{id}:message:{message.Id}:{recipient}", true, ct);
         audit.Add(userId, "DisputeMessageAdded", "Dispute", id.ToString(),
             "A participant added a dispute message.", $"dispute:{id}:message:{message.Id}");
@@ -528,7 +530,7 @@ internal sealed class GovernanceService(
         var message = dispute.Messages.Last();
         foreach (var recipient in new[] { dispute.StudentId, dispute.TeacherId })
             await notifications.QueueAsync(recipient, "Dispute", "Reviewer requested information",
-                "The dispute reviewer added a message to the case.", $"/disputes/{id}",
+                "The dispute reviewer added a message to the case.", AppRoutes.Dispute(id),
                 $"dispute:{id}:message:{message.Id}:{recipient}", true, ct);
         audit.Add(adminId, "DisputeReviewerMessageAdded", "Dispute", id.ToString(),
             "The reviewer added a dispute message.", $"dispute:{id}:message:{message.Id}");
@@ -549,7 +551,7 @@ internal sealed class GovernanceService(
             var recipient = userId == dispute.StudentId ? dispute.TeacherId : dispute.StudentId;
             var newEvidence = dispute.Evidence.Last();
             await notifications.QueueAsync(recipient, "Dispute", "New dispute evidence",
-                "The other party uploaded evidence to the dispute.", $"/disputes/{id}",
+                "The other party uploaded evidence to the dispute.", AppRoutes.Dispute(id),
                 $"dispute:{id}:evidence:{newEvidence.Id}:{recipient}", true, ct);
             audit.Add(userId, "DisputeEvidenceAdded", "Dispute", id.ToString(),
                 "A participant uploaded dispute evidence.", $"dispute:{id}:evidence:{newEvidence.Id}");
@@ -588,7 +590,7 @@ internal sealed class GovernanceService(
             "Dispute review started.", $"dispute:{id}:review");
         foreach (var recipient in new[] { dispute.StudentId, dispute.TeacherId })
             await notifications.QueueAsync(recipient, "Dispute", "Dispute review started",
-                "Your dispute is now under review.", $"/disputes/{id}",
+                "Your dispute is now under review.", AppRoutes.Dispute(id),
                 $"dispute:{id}:review:{recipient}", true, ct);
         await db.SaveChangesAsync(ct);
     }
@@ -640,7 +642,7 @@ internal sealed class GovernanceService(
             $"Resolution: {input.Resolution}.", idempotencyKey);
         foreach (var recipient in new[] { dispute.StudentId, dispute.TeacherId })
             await notifications.QueueAsync(recipient, "Dispute", "Dispute resolved",
-                $"Resolution: {input.Resolution}.", $"/disputes/{id}",
+                $"Resolution: {input.Resolution}.", AppRoutes.Dispute(id),
                 $"dispute:{id}:resolved:{recipient}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -1229,7 +1231,7 @@ internal sealed class AdminService(
         foreach (var recipient in new[] { booking.StudentId, booking.TeacherId })
             await notifications.QueueAsync(recipient, "Dispute", "Live session outcome under review",
                 $"Admin escalated the unresolved outcome for governance review. Reason: {reason}",
-                $"/disputes/{dispute.Id}", $"{correlationId}:{recipient}", true, ct);
+                AppRoutes.Dispute(dispute.Id), $"{correlationId}:{recipient}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return dispute.Id;
@@ -1287,7 +1289,7 @@ internal sealed class AdminService(
         foreach (var recipient in new[] { booking.StudentId, booking.TeacherId })
             await notifications.QueueAsync(recipient, "SessionOutcomeResolved",
                 "Live session outcome resolved", $"Admin outcome: {outcome}. Reason: {reason}",
-                $"/live-sessions/{id}", $"{correlationId}:{recipient}", true, ct);
+                AppRoutes.LiveSession(id), $"{correlationId}:{recipient}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }

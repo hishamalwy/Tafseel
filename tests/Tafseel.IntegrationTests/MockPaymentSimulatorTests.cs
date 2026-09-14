@@ -40,7 +40,7 @@ public sealed class MockPaymentSimulatorTests : IClassFixture<MockPaymentSimulat
         var checkout = initiationDoc.RootElement.GetProperty("checkoutReference").GetString()!;
         var payment = initiationDoc.RootElement.GetProperty("payment");
         var reference = payment.GetProperty("providerReference").GetString()!;
-        Assert.StartsWith("/app/Tafseel-Mock-Checkout.dc.html", checkout, StringComparison.Ordinal);
+        Assert.StartsWith("/checkout/simulator?ref=", checkout, StringComparison.Ordinal);
         Assert.Contains(reference, checkout, StringComparison.Ordinal);
 
         var session = JsonDocument.Parse(
@@ -53,7 +53,7 @@ public sealed class MockPaymentSimulatorTests : IClassFixture<MockPaymentSimulat
         {
             providerReference = reference,
             succeeded = true,
-            returnPath = "/app/Tafseel-Student-Dashboard.dc.html"
+            returnPath = "/student/overview"
         });
         complete.EnsureSuccessStatusCode();
         using var completeDoc = JsonDocument.Parse(await complete.Content.ReadAsStringAsync());
@@ -119,7 +119,7 @@ public sealed class MockPaymentSimulatorTests : IClassFixture<MockPaymentSimulat
         complete.EnsureSuccessStatusCode();
         var returnUrl = JsonDocument.Parse(await complete.Content.ReadAsStringAsync())
             .RootElement.GetProperty("returnUrl").GetString()!;
-        Assert.StartsWith("/app/", returnUrl, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("/student/overview", returnUrl);
         Assert.DoesNotContain("evil.example", returnUrl, StringComparison.OrdinalIgnoreCase);
     }
 

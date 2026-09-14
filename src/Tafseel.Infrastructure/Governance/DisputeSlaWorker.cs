@@ -1,3 +1,4 @@
+using Tafseel.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -59,13 +60,13 @@ internal sealed class DisputeSlaWorker(
         {
             foreach (var adminId in adminIds)
                 await notifications.QueueAsync(adminId, "DisputeSla", "Overdue dispute requires action",
-                    $"Case {dispute.Id:N} exceeded its response target.", $"/disputes/{dispute.Id}",
+                    $"Case {dispute.Id:N} exceeded its response target.", AppRoutes.Dispute(dispute.Id),
                     $"dispute:{dispute.Id}:sla:{dispute.Status}:admin:{adminId}", true, ct);
             if (dispute.Status == DisputeStatus.UnderReview)
                 foreach (var participantId in new[] { dispute.StudentId, dispute.TeacherId })
                     await notifications.QueueAsync(participantId, "DisputeSla", "Dispute review is taking longer than expected",
                         "The case remains protected and has been escalated to the operations team.",
-                        $"/disputes/{dispute.Id}",
+                        AppRoutes.Dispute(dispute.Id),
                         $"dispute:{dispute.Id}:sla:{dispute.Status}:participant:{participantId}", true, ct);
         }
         await db.SaveChangesAsync(ct);

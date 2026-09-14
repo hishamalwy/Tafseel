@@ -63,12 +63,8 @@ internal static class EmailTemplate
             : $"© {DateTime.UtcNow.Year} Tafseel. All rights reserved.";
         var enc = HtmlEncoder.Default;
         var sb = new StringBuilder();
-        // Email clients are sensitive to asset URL paths; some environments provide AppBaseUrl
-        // without the `/app` prefix even though the frontend assets are served under `/app/...`.
-        var baseUrl = appBaseUrl.TrimEnd('/');
-        if (!baseUrl.EndsWith("/app", StringComparison.OrdinalIgnoreCase))
-            baseUrl += "/app";
-        var assets = baseUrl;
+        // The brand files ship with the web client at the site root (/assets/brand/...).
+        var assets = EmailLinks.SiteRoot(appBaseUrl);
 
         sb.Append($$"""
             <!DOCTYPE html>

@@ -14,6 +14,16 @@ This RunASP Staging endpoint currently serves HTTP only. The Staging Host URLs t
 enabled, change every public URL and CORS origin in the Host file to `https://`, set the flag to `true`,
 and recycle the application. Refresh cookies automatically become `Secure` `__Host-` cookies on HTTPS.
 
+The site is the Angular client at the root (`/ar/`, `/en/`); the old `/app/*.dc.html` pages are gone
+and their addresses redirect. Email links must therefore name the root, never `/app`. In the Host file:
+
+- `Email:ConfirmationUrl` and `Email:PasswordResetUrl` → `http://tafseel.runasp.net/auth`
+- `Email:AppBaseUrl` (if present) → `http://tafseel.runasp.net`
+- `Payments:Mock:DefaultReturnPath` (if present) → `/student/overview`
+
+A Host file still carrying the old values keeps working through the redirect table, but every email
+link then costs an extra redirect. Change the scheme to `https://` together with the TLS step below.
+
 Give the IIS application identity Modify permission on `App_Data`. Normal application logs are written
 to rolling files under `App_Data/logs` with a 14-file retention limit. ANCM stdout logging is disabled;
 enable it only while diagnosing a startup failure and disable it again immediately afterwards.

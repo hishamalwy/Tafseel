@@ -57,7 +57,7 @@ internal sealed class OrderService(
         request.CaptureServiceIdentity(row.catalog);
         db.Add(request);
         await notifications.QueueAsync(row.service.TeacherId, "NewRequest", "New learning request",
-            request.Title, $"/requests/{request.Id}", $"request:{request.Id}:created", true, ct);
+            request.Title, AppRoutes.Request(request.Id), $"request:{request.Id}:created", true, ct);
         await db.SaveChangesAsync(ct);
         return await MapRequestAsync(request, ct);
     }
@@ -137,7 +137,7 @@ internal sealed class OrderService(
         var request = await OwnedRequestAsync(teacherId, requestId, student: false, version, ct);
         request.RequestClarification(teacherId, message, clock.GetUtcNow());
         await notifications.QueueAsync(request.StudentId, "ClarificationRequested",
-            "Clarification requested", message, $"/requests/{request.Id}",
+            "Clarification requested", message, AppRoutes.Request(request.Id),
             $"request:{request.Id}:clarification:{request.UpdatedAt.UtcTicks}", true, ct);
         await db.SaveChangesAsync(ct);
     }
@@ -148,7 +148,7 @@ internal sealed class OrderService(
         var request = await OwnedRequestAsync(studentId, requestId, student: true, version, ct);
         request.ReplyToClarification(studentId, message, clock.GetUtcNow());
         await notifications.QueueAsync(request.TeacherId!, "ClarificationReplied",
-            "Student replied", message, $"/requests/{request.Id}",
+            "Student replied", message, AppRoutes.Request(request.Id),
             $"request:{request.Id}:reply:{request.UpdatedAt.UtcTicks}", true, ct);
         await db.SaveChangesAsync(ct);
     }
@@ -159,7 +159,7 @@ internal sealed class OrderService(
         var request = await OwnedRequestAsync(teacherId, requestId, student: false, version, ct);
         request.Decline(teacherId, reason, clock.GetUtcNow());
         await notifications.QueueAsync(request.StudentId, "RequestDeclined", "Request declined",
-            reason, $"/requests/{request.Id}", $"request:{request.Id}:declined", true, ct);
+            reason, AppRoutes.Request(request.Id), $"request:{request.Id}:declined", true, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -211,7 +211,7 @@ internal sealed class OrderService(
             order.CaptureServiceIdentity(row.catalog);
             db.Add(order);
             await notifications.QueueAsync(request.StudentId, "PaymentRequired",
-                "Request accepted — payment required", request.Title, $"/orders/{order.Id}",
+                "Request accepted — payment required", request.Title, AppRoutes.Order(order.Id),
                 $"order:{order.Id}:payment-required", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -349,7 +349,7 @@ internal sealed class OrderService(
         var order = await OwnedOrderAsync(teacherId, orderId, teacher: true, version, ct);
         order.Start(teacherId, clock.GetUtcNow());
         await notifications.QueueAsync(order.StudentId, "WorkStarted", "Teacher started work",
-            "Your order is now in progress.", $"/orders/{order.Id}", $"order:{order.Id}:started", true, ct);
+            "Your order is now in progress.", AppRoutes.Order(order.Id), $"order:{order.Id}:started", true, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -381,7 +381,7 @@ internal sealed class OrderService(
                 file.StorageKey, SafeName(uploads[index].FileName), file.ContentType, file.Size)).ToArray();
             order.Deliver(teacherId, package, message, clock.GetUtcNow());
             await notifications.QueueAsync(order.StudentId, "DeliveryUploaded", "Delivery uploaded",
-                "Your teacher uploaded a delivery.", $"/orders/{order.Id}",
+                "Your teacher uploaded a delivery.", AppRoutes.Order(order.Id),
                 $"order:{order.Id}:delivery:{order.Deliveries.Last().Id}", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -413,7 +413,7 @@ internal sealed class OrderService(
         var order = await OwnedOrderAsync(studentId, orderId, teacher: false, version, ct);
         order.RequestRevision(studentId, reason, clock.GetUtcNow());
         await notifications.QueueAsync(order.TeacherId, "RevisionRequested", "Revision requested",
-            reason, $"/orders/{order.Id}", $"order:{order.Id}:revision:{order.RevisionsUsed}", true, ct);
+            reason, AppRoutes.Order(order.Id), $"order:{order.Id}:revision:{order.RevisionsUsed}", true, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -427,10 +427,10 @@ internal sealed class OrderService(
         order.Complete(studentId, clock.GetUtcNow());
         await finance.ReleaseOrderEscrowAsync(order, studentId, ct);
         await notifications.QueueAsync(order.TeacherId, "OrderCompleted", "Order completed",
-            "The Student approved the delivery.", $"/orders/{order.Id}",
+            "The Student approved the delivery.", AppRoutes.Order(order.Id),
             $"order:{order.Id}:completed", true, ct);
         await notifications.QueueAsync(order.StudentId, "OrderCompleted", "Order completed",
-            "You can rate this completed service when ready.", $"/orders/{order.Id}",
+            "You can rate this completed service when ready.", AppRoutes.Order(order.Id),
             $"order:{order.Id}:completed:student", true, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
@@ -453,7 +453,7 @@ internal sealed class OrderService(
         order.RequestExtension(userId, input.ProposedDeliveryAt, input.Reason, clock.GetUtcNow());
         var other = userId == order.StudentId ? order.TeacherId : order.StudentId;
         await notifications.QueueAsync(other, "OrderExtensionRequested", "Delivery extension requested",
-            input.Reason, $"/orders/{order.Id}", $"order:{order.Id}:extension:{order.Extensions.Last().Id}", true, ct);
+            input.Reason, AppRoutes.Order(order.Id), $"order:{order.Id}:extension:{order.Extensions.Last().Id}", true, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -466,7 +466,7 @@ internal sealed class OrderService(
         var other = userId == order.StudentId ? order.TeacherId : order.StudentId;
         await notifications.QueueAsync(other, "OrderExtensionDecided",
             input.Accept ? "Delivery extension accepted" : "Delivery extension declined",
-            input.Response ?? "", $"/orders/{order.Id}",
+            input.Response ?? "", AppRoutes.Order(order.Id),
             $"order:{order.Id}:extension:{extensionId}:decision", true, ct);
         await db.SaveChangesAsync(ct);
     }
