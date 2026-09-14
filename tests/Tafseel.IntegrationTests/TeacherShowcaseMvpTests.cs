@@ -195,8 +195,13 @@ public sealed class TeacherShowcaseMvpTests(SqlServerTafseelApiFactory factory)
             var extension = await Assert.ThrowsAsync<DomainException>(() => storage.StorePrivateVideoAsync(
                 new MemoryStream(ValidMp4()), "video.mov", "video/mp4", 12, default));
             Assert.Equal("invalid_file_type", extension.Code);
+            // Browsers often declare an unknown type. It is accepted only when the extension and
+            // the file signature agree, and the stored type comes from the signature, not the browser.
+            var unknownDeclared = await storage.StorePrivateVideoAsync(
+                new MemoryStream(ValidMp4()), "video.mp4", "application/octet-stream", 12, default);
+            Assert.Equal("video/mp4", unknownDeclared.ContentType);
             var mime = await Assert.ThrowsAsync<DomainException>(() => storage.StorePrivateVideoAsync(
-                new MemoryStream(ValidMp4()), "video.mp4", "application/octet-stream", 12, default));
+                new MemoryStream(ValidMp4()), "video.mp4", "image/png", 12, default));
             Assert.Equal("invalid_file_type", mime.Code);
             var signature = await Assert.ThrowsAsync<DomainException>(() => storage.StorePrivateVideoAsync(
                 new MemoryStream(new byte[12]), "video.mp4", "video/mp4", 12, default));
