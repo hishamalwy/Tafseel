@@ -336,7 +336,7 @@ app.Use(async (context, next) =>
     headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), display-capture=()");
     var transportPolicy = enforceHttps ? "; upgrade-insecure-requests" : "";
     headers.Append("Content-Security-Policy",
-        $"default-src 'self'; script-src 'self' 'unsafe-eval'{inlineScriptHashes}; style-src 'self' 'unsafe-inline'; " +
+        $"default-src 'self'; script-src 'self'{inlineScriptHashes}; style-src 'self' 'unsafe-inline'; " +
         // The protected-file viewer fetches a delivery as a blob and shows it
         // from an object URL, so blob: has to be a legal source for the three
         // media kinds it renders and for the frame the PDF viewer uses. Framing
@@ -414,41 +414,33 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<MessagingHub>("/hubs/messages");
 
-// ---- legacy pages --------------------------------------------------------
-// The .dc.html pages are still the site. They are served from an allowlist so a
-// path cannot reach anything the list does not name.
-var frontendRoot = Path.Combine(AppContext.BaseDirectory, "frontend");
-var frontendPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+// ---- old addresses ---------------------------------------------------------
+// The .dc.html site is gone; the Angular client below is the site. Its addresses
+// live on in delivered emails, stored notifications and bookmarks, so each known
+// page redirects to its Angular route in the reader's locale (LegacyLinks), and
+// anything else under /app is a 404 - never the client shell, never a 500.
+// /{locale}/app/... is the same address reached from inside the client, where a
+// stored notification link resolves against the <base href>.
+app.MapGet("/app/{**rest}", (HttpContext context, string? rest) =>
+    LegacyRedirect(context, rest, PreferredLocale(context.Request.Headers.AcceptLanguage)));
+app.MapGet("/{locale:regex(^(ar|en)$)}/app/{**rest}", (HttpContext context, string locale, string? rest) =>
+    LegacyRedirect(context, rest, locale.ToLowerInvariant()));
+
+// Emails already delivered load the logo from /app/assets/brand/. The client ships
+// the same files, so they are answered from there rather than redirected: some
+// mail clients do not follow redirects for images.
+app.MapGet("/app/assets/brand/{file}", (string file) => BrandAsset(file));
+app.MapGet("/favicon.ico", () => BrandAsset("favicon.ico"));
+
+static IResult LegacyRedirect(HttpContext context, string? rest, string locale)
 {
-    "Tafseel-Landing.dc.html", "Tafseel-Browse-Teachers.dc.html", "Tafseel-Teacher-Profile.dc.html",
-    "Tafseel-Request.dc.html", "Tafseel-Student-Dashboard.dc.html", "Tafseel-Teacher-Dashboard.dc.html",
-    "Tafseel-Quality-Dashboard.dc.html", "Tafseel-Admin-Dashboard.dc.html", "Tafseel-Auth.dc.html",
-    "Tafseel-Confirm-Email.dc.html",
-    "Tafseel-Teacher-Apply.dc.html", "Tafseel-Book-Session.dc.html", "Tafseel-Payment.dc.html",
-    "Tafseel-Mock-Checkout.dc.html", "Tafseel-Open-Marketplace.dc.html",
-    "Tafseel-Disputes.dc.html", "Tafseel-Policies.dc.html",
-    "Tafseel-About.dc.html"
-};
-app.MapGet("/", () => Results.Redirect("/app/Tafseel-Landing.dc.html"));
-app.MapGet("/app/Tafseel-Chat.dc.html", () => Results.Redirect("/app/Tafseel-Student-Dashboard.dc.html?section=messages", permanent: true));
-app.MapGet("/app/{file}", (string file) =>
-    frontendPages.Contains(file)
-        ? Results.File(Path.Combine(frontendRoot, file), "text/html; charset=utf-8")
-        : Results.NotFound());
-app.MapGet("/app/support.js", () =>
-    Results.File(Path.Combine(frontendRoot, "support.js"), "text/javascript; charset=utf-8"));
-app.MapGet("/app/js/{file}", (string file) =>
-    file is "locales.js" or "open-marketplace-locales.js" or "open-marketplace.js" or "tafseel.js" or "api.js" or "teacher-apply.js" or "chat-widget.js" or "media-preview.js"
-        or "guided-request.js" or "boot-prefs.js"
-        ? Results.File(Path.Combine(frontendRoot, "js", file), "text/javascript; charset=utf-8")
-        : Results.NotFound());
-app.MapGet("/app/js/vendor/{file}", (string file) =>
-    file is "react.production.min.js" or "react-dom.production.min.js" or "babel.min.js" or "signalr.min.js"
-        ? Results.File(Path.Combine(frontendRoot, "js", "vendor", file), "text/javascript; charset=utf-8")
-        : Results.NotFound());
-app.MapGet("/app/css/tafseel.css", () =>
-    Results.File(Path.Combine(frontendRoot, "css", "tafseel.css"), "text/css; charset=utf-8"));
-app.MapGet("/app/assets/brand/{file}", (string file) =>
+    var file = rest ?? "";
+    if (file.Contains('/')) return Results.NotFound();
+    var target = Tafseel.Api.Routing.LegacyLinks.Resolve(file, context.Request.Query);
+    return target is null ? Results.NotFound() : Results.Redirect($"/{locale}{target}");
+}
+
+static IResult BrandAsset(string file)
 {
     var name = Path.GetFileName(file);
     if (string.IsNullOrWhiteSpace(name) || !string.Equals(name, file, StringComparison.Ordinal))
@@ -460,44 +452,11 @@ app.MapGet("/app/assets/brand/{file}", (string file) =>
         ".ico" => "image/x-icon",
         _ => null
     };
-    if (contentType is null)
-        return Results.NotFound();
-    var path = Path.Combine(frontendRoot, "assets", "brand", name);
-    return System.IO.File.Exists(path)
+    var path = Path.Combine(AppContext.BaseDirectory, "webclient", "en", "assets", "brand", name);
+    return contentType is not null && File.Exists(path)
         ? Results.File(path, contentType)
         : Results.NotFound();
-});
-app.MapGet("/favicon.ico", () =>
-    Results.File(Path.Combine(frontendRoot, "assets", "brand", "favicon.ico"), "image/x-icon"));
-app.MapGet("/app/assets/fonts/thmanyah-sans/{file}", (string file) =>
-    file is "thmanyah-sans-light.woff2" or "thmanyah-sans-regular.woff2"
-        or "thmanyah-sans-medium.woff2" or "thmanyah-sans-bold.woff2"
-        or "thmanyah-sans-black.woff2"
-        ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "thmanyah-sans", file), "font/woff2")
-        : Results.NotFound());
-app.MapGet("/app/assets/fonts/thmanyah-serif-display/{file}", (string file) =>
-    file is "thmanyah-serif-display-light.woff2" or "thmanyah-serif-display-regular.woff2"
-        or "thmanyah-serif-display-medium.woff2" or "thmanyah-serif-display-bold.woff2"
-        or "thmanyah-serif-display-black.woff2"
-        ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "thmanyah-serif-display", file), "font/woff2")
-        : Results.NotFound());
-app.MapGet("/app/assets/fonts/inter/{file}", (string file) =>
-    file is "inter-regular.woff2" or "inter-medium.woff2"
-        or "inter-semibold.woff2" or "inter-bold.woff2"
-        ? Results.File(Path.Combine(frontendRoot, "assets", "fonts", "inter", file), "font/woff2")
-        : Results.NotFound());
-app.MapGet("/app/assets/fonts/saudi-riyal/{file}", (string file) =>
-{
-    var contentType = file switch
-    {
-        "saudi-riyal.woff2" => "font/woff2",
-        "saudi-riyal.ttf" => "font/ttf",
-        _ => null
-    };
-    return contentType is null
-        ? Results.NotFound()
-        : Results.File(Path.Combine(frontendRoot, "assets", "fonts", "saudi-riyal", file), contentType);
-});
+}
 
 // ---- web client ----------------------------------------------------------
 // The Angular client publishes as one directory per locale (webclient/ar,

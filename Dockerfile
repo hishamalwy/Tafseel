@@ -1,4 +1,15 @@
 # syntax=docker/dockerfile:1.7
+# The site is the Angular client. The SDK image has no Node, so the client is built in its own
+# stage and handed to the publish step, which is told not to build it again.
+FROM node:22-bookworm-slim AS webclient
+WORKDIR /src
+COPY assets/ assets/
+COPY css/ css/
+COPY frontend-angular/package.json frontend-angular/package-lock.json frontend-angular/
+RUN cd frontend-angular && npm ci
+COPY frontend-angular/ frontend-angular/
+RUN cd frontend-angular && npm run build
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY Directory.Build.props Tafseel.sln ./
@@ -8,12 +19,10 @@ COPY src/Tafseel.Infrastructure/Tafseel.Infrastructure.csproj src/Tafseel.Infras
 COPY src/Tafseel.Api/Tafseel.Api.csproj src/Tafseel.Api/packages.lock.json src/Tafseel.Api/
 RUN dotnet restore src/Tafseel.Api/Tafseel.Api.csproj --locked-mode
 COPY src/ src/
-COPY Tafseel-*.dc.html support.js ./
-COPY js/ js/
-COPY css/ css/
+COPY --from=webclient /src/frontend-angular/dist/tafseel/browser frontend-angular/dist/tafseel/browser
 ARG VERSION=0.0.0
 ARG REVISION=unknown
-RUN dotnet publish src/Tafseel.Api/Tafseel.Api.csproj -c Release --no-restore -o /out \
+RUN dotnet publish src/Tafseel.Api/Tafseel.Api.csproj -c Release --no-restore -o /out -p:BuildWebClient=false \
     -p:Version=${VERSION} -p:InformationalVersion=${VERSION}+${REVISION}
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

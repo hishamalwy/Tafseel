@@ -9,13 +9,15 @@ public sealed class Phase11HardeningTests(SqlServerTafseelApiFactory factory)
     public async Task Security_headers_protect_frontend_and_api_responses()
     {
         var client = factory.CreateClient();
-        var frontend = await client.GetAsync("/app/Tafseel-Auth.dc.html");
+        var frontend = await client.GetAsync("/ar/auth");
         frontend.EnsureSuccessStatusCode();
         Assert.Equal("nosniff", frontend.Headers.GetValues("X-Content-Type-Options").Single());
         Assert.Equal("DENY", frontend.Headers.GetValues("X-Frame-Options").Single());
         var csp = frontend.Headers.GetValues("Content-Security-Policy").Single();
         Assert.Contains("frame-ancestors 'none'", csp);
         Assert.Contains("font-src 'self'", csp);
+        // R-05: the Babel-in-the-browser site is gone, and nothing left needs eval.
+        Assert.DoesNotContain("unsafe-eval", csp);
         Assert.DoesNotContain("fonts.googleapis.com", csp);
         Assert.DoesNotContain("fonts.gstatic.com", csp);
         Assert.Contains("camera=()",

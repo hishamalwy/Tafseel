@@ -55,7 +55,7 @@ EF Core 8 targets SQL Server. `TafseelDbContext` contains Identity, catalog, qua
 
 ## Frontend
 
-The frontend consists of twelve `.dc.html` pages with `support.js`, embedded React/Babel, shared API/localization/runtime modules and `css/tafseel.css`. Arabic/English and RTL/LTR behavior use the existing localization runtime. The frontend is not a separate SPA project.
+The frontend is the Angular client in `frontend-angular/`, built by `Tafseel.Api.csproj` into `webclient/{ar,en}` and served by `Program.cs`: `/` negotiates `/ar/` or `/en/`, prerendered pages are real files, and every other client path gets that locale's shell. The design system (`css/tafseel.css`, `assets/`) is copied into the build. Links the server writes into notifications and emails come from `AppRoutes` and are locale-free. The retired `.dc.html` pages are gone; their `/app/*` addresses redirect to the matching Angular route (`Routing/LegacyLinks.cs`).
 
 ## Deployment
 

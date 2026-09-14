@@ -1,8 +1,8 @@
 # Tafseel — Angular client
 
-Angular owns every former `.dc.html` screen. The legacy documents remain under
-`../legacy-archive/` only as migration evidence and compatibility publish assets;
-new frontend work belongs here.
+This is the site. It owns every former `.dc.html` screen; those pages and their runtime were
+removed in Wave 1 (their old `/app/*` addresses redirect here, see `src/Tafseel.Api/Routing/LegacyLinks.cs`).
+New frontend work belongs here.
 
 ## Requirements
 

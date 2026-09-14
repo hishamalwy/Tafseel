@@ -13,28 +13,34 @@ namespace Tafseel.IntegrationTests;
 public sealed class Phase10FrontendIntegrationTests(SqlServerTafseelApiFactory factory)
     : IClassFixture<SqlServerTafseelApiFactory>
 {
+    /// <summary>
+    /// Retargeted from the retired /app pages (G-13): the site is the Angular client, served per
+    /// locale from its build output, and the old runtime's scripts are no longer reachable.
+    /// </summary>
     [Fact]
-    public async Task Frontend_pages_and_assets_are_served_only_from_the_allowlist()
+    public async Task Frontend_client_and_assets_are_served_and_nothing_else_is()
     {
-        var client = factory.CreateClient();
-        var landing = await client.GetAsync("/app/Tafseel-Landing.dc.html");
-        landing.EnsureSuccessStatusCode();
-        Assert.Contains("js/locales.js", await landing.Content.ReadAsStringAsync());
-        Assert.Contains("js/api.js", await landing.Content.ReadAsStringAsync());
+        var client = factory.CreateClient(new() { AllowAutoRedirect = false });
+        var shell = await client.GetAsync("/ar/");
+        shell.EnsureSuccessStatusCode();
+        var html = await shell.Content.ReadAsStringAsync();
+        Assert.Contains("<base href=\"/ar/\"", html);
+        var bundle = System.Text.RegularExpressions.Regex.Match(html, "src=\"(main-[A-Za-z0-9_-]+\\.js)\"").Groups[1].Value;
+        Assert.NotEmpty(bundle);
+        var script = await client.GetAsync($"/ar/{bundle}");
+        script.EnsureSuccessStatusCode();
+        Assert.Contains("immutable", script.Headers.CacheControl?.ToString());
 
-        var locales = await client.GetStringAsync("/app/js/locales.js");
-        Assert.Contains("TafseelLocales", locales);
-        var api = await client.GetStringAsync("/app/js/api.js");
-        Assert.Contains("credentials: 'include'", api);
-        Assert.DoesNotContain("localStorage.setItem", api);
-        (await client.GetAsync("/app/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2"))
+        (await client.GetAsync("/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2"))
             .EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NotFound,
-            (await client.GetAsync("/app/js/not-allowed.js")).StatusCode);
+            (await client.GetAsync("/app/js/api.js")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
-            (await client.GetAsync("/app/assets/fonts/thmanyah-sans/not-allowed.woff2")).StatusCode);
+            (await client.GetAsync("/app/assets/fonts/thmanyah-sans/thmanyah-sans-regular.woff2")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
             (await client.GetAsync("/app/appsettings.json")).StatusCode);
+        var config = await client.GetAsync("/ar/appsettings.json");
+        Assert.DoesNotContain("ConnectionStrings", await config.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -81,44 +87,6 @@ public sealed class Phase10FrontendIntegrationTests(SqlServerTafseelApiFactory f
         Assert.Equal(HttpStatusCode.Unauthorized,
             (await factory.CreateClient().PutAsJsonAsync("/api/v1/auth/profile",
                 new { fullName = "Intruder" })).StatusCode);
-    }
-
-    [Fact]
-    public async Task Teacher_dashboard_configures_catalog_offerings_without_editing_catalog_identity()
-    {
-        var client = factory.CreateClient();
-        var html = await client.GetStringAsync("/app/Tafseel-Teacher-Dashboard.dc.html");
-
-        // Subject is selected only on first enable; catalog identity is read-only.
-        Assert.Contains("svcSubjectId", html);
-        Assert.Contains("onSvcSubjectId", html);
-        Assert.Contains("serviceCatalogItemId:catalog.id", html);
-        Assert.DoesNotContain("svcCatalogId", html);
-        Assert.DoesNotContain("svcTitle", html);
-        Assert.DoesNotContain("onSvcTitle", html);
-
-        // Teachers configure commercial terms, approaches, and availability only.
-        Assert.Contains("svcPrice", html);
-        Assert.Contains("onSvcPrice", html);
-        Assert.Contains("svcCurrency", html);
-        Assert.Contains("svcApproachEn", html);
-        Assert.Contains("svcApproachAr", html);
-        Assert.Contains("svcAvailable", html);
-
-        // Delivery/duration and revision fields remain wired and localized.
-        Assert.Contains("svcDeliveryHours", html);
-        Assert.Contains("onSvcDeliveryHours", html);
-        Assert.Contains("svcRevisions", html);
-        Assert.Contains("onSvcRevisions", html);
-        Assert.Contains("Tafseel.t('td_delivery_hours')", html);
-        Assert.Contains("Tafseel.t('td_revisions')", html);
-
-        // Save/update action and API payload mapping for both create and edit flows.
-        Assert.Contains("confirmServiceModal", html);
-        Assert.Contains("Tafseel.api.put('/teachers/me/services/'", html);
-        Assert.Contains("Tafseel.api.post('/teachers/me/services'", html);
-        Assert.Contains("serviceCatalogItemId:catalog.id", html);
-        Assert.Contains("serviceModalEnable", html);
     }
 
     private async Task<HttpClient> ClientAsync(string email)

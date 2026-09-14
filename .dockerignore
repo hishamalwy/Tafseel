@@ -12,3 +12,6 @@ uploads
 *.suo
 *failure.log
 src/Tafseel.Api/appsettings.Local.json
+**/node_modules
+frontend-angular/dist
+frontend-angular/.angular
