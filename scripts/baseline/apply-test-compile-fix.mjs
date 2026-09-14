@@ -40,6 +40,10 @@ console.log(`integration call sites patched: ${patched}`);
 
 const domain = path.join(copyRoot, 'tests', 'Tafseel.Domain.Tests', 'LiveSessionTests.cs');
 let text = fs.readFileSync(domain, 'utf8');
+if (!/\.(Reschedule|Complete)\(/.test(text)) {
+  console.log('domain LiveSessionTests already use the settlement lifecycle; nothing to fence');
+  process.exit(0);
+}
 for (const name of [
   'Payment_reschedule_cancel_and_terminal_rules_are_explicit',
   'Completion_and_no_show_wait_until_session_end_and_enforce_actor',

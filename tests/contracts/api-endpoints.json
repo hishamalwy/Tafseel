@@ -1,0 +1,4198 @@
+{
+  "endpoints": [
+    {
+      "route": "/api/v1/admin/attention",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Attention",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/audit",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Audit",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/catalog/services/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Catalog.UpdateService",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "ServiceCatalogInput",
+        "fields": [
+          {
+            "name": "allowedDurations",
+            "required": false
+          },
+          {
+            "name": "categoryCode",
+            "required": false
+          },
+          {
+            "name": "code",
+            "required": false
+          },
+          {
+            "name": "currencyCode",
+            "required": false
+          },
+          {
+            "name": "defaultDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "defaultPrice",
+            "required": false
+          },
+          {
+            "name": "defaultRevisions",
+            "required": false
+          },
+          {
+            "name": "descriptionAr",
+            "required": true
+          },
+          {
+            "name": "descriptionEn",
+            "required": true
+          },
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "iconCode",
+            "required": false
+          },
+          {
+            "name": "isActive",
+            "required": false
+          },
+          {
+            "name": "isPublic",
+            "required": false
+          },
+          {
+            "name": "maximumDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "maximumPrice",
+            "required": false
+          },
+          {
+            "name": "maximumRevisions",
+            "required": false
+          },
+          {
+            "name": "minimumDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "minimumPrice",
+            "required": false
+          },
+          {
+            "name": "nameAr",
+            "required": true
+          },
+          {
+            "name": "nameEn",
+            "required": true
+          },
+          {
+            "name": "orderType",
+            "required": false
+          },
+          {
+            "name": "qualificationPolicy",
+            "required": false
+          },
+          {
+            "name": "recommendedDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "recommendedPrice",
+            "required": false
+          },
+          {
+            "name": "teacherSelectable",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/catalog/{type}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.AdminList",
+      "access": "Subjects.Manage",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/catalog/{type}/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Catalog.Update",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "NamedCatalogInput",
+        "fields": [
+          {
+            "name": "allowedDurations",
+            "required": false
+          },
+          {
+            "name": "code",
+            "required": false
+          },
+          {
+            "name": "detail",
+            "required": false
+          },
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "instructionsAr",
+            "required": false
+          },
+          {
+            "name": "isPublic",
+            "required": false
+          },
+          {
+            "name": "maxPrice",
+            "required": false
+          },
+          {
+            "name": "maxVideoSeconds",
+            "required": false
+          },
+          {
+            "name": "minPrice",
+            "required": false
+          },
+          {
+            "name": "name",
+            "required": true
+          },
+          {
+            "name": "nameAr",
+            "required": false
+          },
+          {
+            "name": "requiresScheduling",
+            "required": false
+          },
+          {
+            "name": "teacherSelectable",
+            "required": false
+          },
+          {
+            "name": "type",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/catalog/{type}/{id:guid}/active",
+      "methods": [
+        "PATCH"
+      ],
+      "action": "Catalog.SetActive",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "SetActiveRequest",
+        "fields": [
+          {
+            "name": "isActive",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/coupons",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Coupons",
+      "access": "PlatformSettings.Manage",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/coupons",
+      "methods": [
+        "POST"
+      ],
+      "action": "Admin.CreateCoupon",
+      "access": "PlatformSettings.Manage",
+      "body": {
+        "kind": "json",
+        "type": "CreateCoupon",
+        "fields": [
+          {
+            "name": "code",
+            "required": true
+          },
+          {
+            "name": "discountType",
+            "required": true
+          },
+          {
+            "name": "discountValue",
+            "required": true
+          },
+          {
+            "name": "expiresAt",
+            "required": false
+          },
+          {
+            "name": "name",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/coupons/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Admin.UpdateCoupon",
+      "access": "PlatformSettings.Manage",
+      "body": {
+        "kind": "json",
+        "type": "UpdateCoupon",
+        "fields": [
+          {
+            "name": "discountType",
+            "required": true
+          },
+          {
+            "name": "discountValue",
+            "required": true
+          },
+          {
+            "name": "expiresAt",
+            "required": false
+          },
+          {
+            "name": "isActive",
+            "required": true
+          },
+          {
+            "name": "name",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/coupons/{id:guid}/active",
+      "methods": [
+        "PATCH"
+      ],
+      "action": "Admin.SetCouponActive",
+      "access": "PlatformSettings.Manage",
+      "body": {
+        "kind": "json",
+        "type": "SetCouponActiveRequest",
+        "fields": [
+          {
+            "name": "isActive",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/disputes",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.All",
+      "access": "Disputes.Resolve",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/disputes/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.GetAny",
+      "access": "Disputes.Resolve",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/disputes/{id:guid}/messages",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.AdminMessage",
+      "access": "Disputes.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "AddDisputeMessage",
+        "fields": [
+          {
+            "name": "body",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/disputes/{id:guid}/resolve",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.Resolve",
+      "access": "Disputes.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "ResolveDispute",
+        "fields": [
+          {
+            "name": "rationale",
+            "required": true
+          },
+          {
+            "name": "resolution",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/disputes/{id:guid}/start-review",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.StartReview",
+      "access": "Disputes.Resolve",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/education-levels",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.CreateEducationLevel",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "NamedCatalogInput",
+        "fields": [
+          {
+            "name": "allowedDurations",
+            "required": false
+          },
+          {
+            "name": "code",
+            "required": false
+          },
+          {
+            "name": "detail",
+            "required": false
+          },
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "instructionsAr",
+            "required": false
+          },
+          {
+            "name": "isPublic",
+            "required": false
+          },
+          {
+            "name": "maxPrice",
+            "required": false
+          },
+          {
+            "name": "maxVideoSeconds",
+            "required": false
+          },
+          {
+            "name": "minPrice",
+            "required": false
+          },
+          {
+            "name": "name",
+            "required": true
+          },
+          {
+            "name": "nameAr",
+            "required": false
+          },
+          {
+            "name": "requiresScheduling",
+            "required": false
+          },
+          {
+            "name": "teacherSelectable",
+            "required": false
+          },
+          {
+            "name": "type",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/finance/reconciliation",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.Reconciliation",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/finance/reconciliation/coupons",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.CouponReconciliation",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/languages",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.CreateLanguage",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "NamedCatalogInput",
+        "fields": [
+          {
+            "name": "allowedDurations",
+            "required": false
+          },
+          {
+            "name": "code",
+            "required": false
+          },
+          {
+            "name": "detail",
+            "required": false
+          },
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "instructionsAr",
+            "required": false
+          },
+          {
+            "name": "isPublic",
+            "required": false
+          },
+          {
+            "name": "maxPrice",
+            "required": false
+          },
+          {
+            "name": "maxVideoSeconds",
+            "required": false
+          },
+          {
+            "name": "minPrice",
+            "required": false
+          },
+          {
+            "name": "name",
+            "required": true
+          },
+          {
+            "name": "nameAr",
+            "required": false
+          },
+          {
+            "name": "requiresScheduling",
+            "required": false
+          },
+          {
+            "name": "teacherSelectable",
+            "required": false
+          },
+          {
+            "name": "type",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/marketplace-intelligence",
+      "methods": [
+        "GET"
+      ],
+      "action": "AdminMarketplaceIntelligence.Get",
+      "access": "MarketplaceIntelligence.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/metrics",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Metrics",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/operations/orders",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Orders",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/operations/requests",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Requests",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/operations/sessions",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Sessions",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/operations/sessions/{id:guid}/complete",
+      "methods": [
+        "POST"
+      ],
+      "action": "Admin.ResolveSessionCompleted",
+      "access": "Disputes.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "ResolvePassiveSessionOutcome",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/operations/sessions/{id:guid}/dispute",
+      "methods": [
+        "POST"
+      ],
+      "action": "Admin.EscalateSessionDispute",
+      "access": "Disputes.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "ResolvePassiveSessionOutcome",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/operations/sessions/{id:guid}/student-no-show",
+      "methods": [
+        "POST"
+      ],
+      "action": "Admin.ResolveSessionStudentNoShow",
+      "access": "Disputes.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "ResolvePassiveSessionOutcome",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/operations/sessions/{id:guid}/teacher-no-show",
+      "methods": [
+        "POST"
+      ],
+      "action": "Admin.ResolveSessionTeacherNoShow",
+      "access": "Disputes.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "ResolvePassiveSessionOutcome",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/payout-profiles",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.PayoutProfiles",
+      "access": "Withdrawals.Review",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/payout-profiles/{teacherId}/review",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.ReviewPayoutProfile",
+      "access": "Withdrawals.Review",
+      "body": {
+        "kind": "json",
+        "type": "ReviewPayoutProfile",
+        "fields": [
+          {
+            "name": "approve",
+            "required": true
+          },
+          {
+            "name": "rejectionReason",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/promotions",
+      "methods": [
+        "GET"
+      ],
+      "action": "Promotions.List",
+      "access": "PlatformSettings.Manage",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/promotions",
+      "methods": [
+        "POST"
+      ],
+      "action": "Promotions.Create",
+      "access": "PlatformSettings.Manage",
+      "body": {
+        "kind": "json",
+        "type": "PromotionInput",
+        "fields": [
+          {
+            "name": "accent",
+            "required": false
+          },
+          {
+            "name": "bodyAr",
+            "required": false
+          },
+          {
+            "name": "bodyEn",
+            "required": false
+          },
+          {
+            "name": "couponCode",
+            "required": false
+          },
+          {
+            "name": "ctaHref",
+            "required": false
+          },
+          {
+            "name": "ctaLabelAr",
+            "required": false
+          },
+          {
+            "name": "ctaLabelEn",
+            "required": false
+          },
+          {
+            "name": "displayOrder",
+            "required": true
+          },
+          {
+            "name": "endsAt",
+            "required": false
+          },
+          {
+            "name": "eyebrowAr",
+            "required": false
+          },
+          {
+            "name": "eyebrowEn",
+            "required": false
+          },
+          {
+            "name": "highlightAr",
+            "required": false
+          },
+          {
+            "name": "highlightEn",
+            "required": false
+          },
+          {
+            "name": "kind",
+            "required": true
+          },
+          {
+            "name": "startsAt",
+            "required": false
+          },
+          {
+            "name": "titleAr",
+            "required": true
+          },
+          {
+            "name": "titleEn",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/promotions/{id:guid}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Promotions.Delete",
+      "access": "PlatformSettings.Manage",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/promotions/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Promotions.Update",
+      "access": "PlatformSettings.Manage",
+      "body": {
+        "kind": "json",
+        "type": "PromotionInput",
+        "fields": [
+          {
+            "name": "accent",
+            "required": false
+          },
+          {
+            "name": "bodyAr",
+            "required": false
+          },
+          {
+            "name": "bodyEn",
+            "required": false
+          },
+          {
+            "name": "couponCode",
+            "required": false
+          },
+          {
+            "name": "ctaHref",
+            "required": false
+          },
+          {
+            "name": "ctaLabelAr",
+            "required": false
+          },
+          {
+            "name": "ctaLabelEn",
+            "required": false
+          },
+          {
+            "name": "displayOrder",
+            "required": true
+          },
+          {
+            "name": "endsAt",
+            "required": false
+          },
+          {
+            "name": "eyebrowAr",
+            "required": false
+          },
+          {
+            "name": "eyebrowEn",
+            "required": false
+          },
+          {
+            "name": "highlightAr",
+            "required": false
+          },
+          {
+            "name": "highlightEn",
+            "required": false
+          },
+          {
+            "name": "kind",
+            "required": true
+          },
+          {
+            "name": "startsAt",
+            "required": false
+          },
+          {
+            "name": "titleAr",
+            "required": true
+          },
+          {
+            "name": "titleEn",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/promotions/{id:guid}/active",
+      "methods": [
+        "PATCH"
+      ],
+      "action": "Promotions.SetActive",
+      "access": "PlatformSettings.Manage",
+      "body": {
+        "kind": "json",
+        "type": "SetPromotionActiveRequest",
+        "fields": [
+          {
+            "name": "isActive",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/qualification-topics",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.CreateQualificationTopic",
+      "access": "Topics.Manage",
+      "body": {
+        "kind": "json",
+        "type": "QualificationTopicInput",
+        "fields": [
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "evaluationGuidance",
+            "required": false
+          },
+          {
+            "name": "evaluationGuidanceAr",
+            "required": false
+          },
+          {
+            "name": "expectedVideoSeconds",
+            "required": false
+          },
+          {
+            "name": "instructions",
+            "required": true
+          },
+          {
+            "name": "instructionsAr",
+            "required": false
+          },
+          {
+            "name": "maxVideoSeconds",
+            "required": false
+          },
+          {
+            "name": "minVideoSeconds",
+            "required": false
+          },
+          {
+            "name": "name",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          },
+          {
+            "name": "titleAr",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/qualification-topics/{id:guid}/resources/file",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.AddQualificationFile",
+      "access": "Topics.Manage",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/admin/qualification-topics/{id:guid}/resources/link",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.AddQualificationLink",
+      "access": "Topics.Manage",
+      "body": {
+        "kind": "json",
+        "type": "QualificationLinkResourceInput",
+        "fields": [
+          {
+            "name": "displayName",
+            "required": true
+          },
+          {
+            "name": "displayNameAr",
+            "required": true
+          },
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "isRequired",
+            "required": false
+          },
+          {
+            "name": "url",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/reports/popular-subjects",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.PopularSubjects",
+      "access": "Reports.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/reviews",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.AdminReviews",
+      "access": "Reviews.Moderate",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/reviews/summary",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.AdminReviewSummary",
+      "access": "Reviews.Moderate",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/reviews/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.AdminReview",
+      "access": "Reviews.Moderate",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/reviews/{id:guid}/moderate",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.Moderate",
+      "access": "Reviews.Moderate",
+      "body": {
+        "kind": "json",
+        "type": "ModerateReview",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          },
+          {
+            "name": "visible",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/services",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.CreateService",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "ServiceCatalogInput",
+        "fields": [
+          {
+            "name": "allowedDurations",
+            "required": false
+          },
+          {
+            "name": "categoryCode",
+            "required": false
+          },
+          {
+            "name": "code",
+            "required": false
+          },
+          {
+            "name": "currencyCode",
+            "required": false
+          },
+          {
+            "name": "defaultDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "defaultPrice",
+            "required": false
+          },
+          {
+            "name": "defaultRevisions",
+            "required": false
+          },
+          {
+            "name": "descriptionAr",
+            "required": true
+          },
+          {
+            "name": "descriptionEn",
+            "required": true
+          },
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "iconCode",
+            "required": false
+          },
+          {
+            "name": "isActive",
+            "required": false
+          },
+          {
+            "name": "isPublic",
+            "required": false
+          },
+          {
+            "name": "maximumDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "maximumPrice",
+            "required": false
+          },
+          {
+            "name": "maximumRevisions",
+            "required": false
+          },
+          {
+            "name": "minimumDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "minimumPrice",
+            "required": false
+          },
+          {
+            "name": "nameAr",
+            "required": true
+          },
+          {
+            "name": "nameEn",
+            "required": true
+          },
+          {
+            "name": "orderType",
+            "required": false
+          },
+          {
+            "name": "qualificationPolicy",
+            "required": false
+          },
+          {
+            "name": "recommendedDeliveryHours",
+            "required": false
+          },
+          {
+            "name": "recommendedPrice",
+            "required": false
+          },
+          {
+            "name": "teacherSelectable",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/subjects",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.CreateSubject",
+      "access": "Subjects.Manage",
+      "body": {
+        "kind": "json",
+        "type": "SubjectInput",
+        "fields": [
+          {
+            "name": "displayOrder",
+            "required": false
+          },
+          {
+            "name": "icon",
+            "required": true
+          },
+          {
+            "name": "name",
+            "required": true
+          },
+          {
+            "name": "nameAr",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/topics",
+      "methods": [
+        "POST"
+      ],
+      "action": "Catalog.CreateTopic",
+      "access": "Topics.Manage",
+      "body": {
+        "kind": "json",
+        "type": "TopicInput",
+        "fields": [
+          {
+            "name": "difficulty",
+            "required": true
+          },
+          {
+            "name": "name",
+            "required": true
+          },
+          {
+            "name": "nameAr",
+            "required": false
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/users",
+      "methods": [
+        "GET"
+      ],
+      "action": "Admin.Users",
+      "access": "Users.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/users/{id}/roles",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Admin.Role",
+      "access": "Users.Manage",
+      "body": {
+        "kind": "json",
+        "type": "SetRole",
+        "fields": [
+          {
+            "name": "assigned",
+            "required": true
+          },
+          {
+            "name": "role",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/users/{id}/suspension",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Admin.Suspension",
+      "access": "Users.Manage",
+      "body": {
+        "kind": "json",
+        "type": "SetSuspension",
+        "fields": [
+          {
+            "name": "suspended",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/withdrawals",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.Withdrawals",
+      "access": "Withdrawals.Review",
+      "body": null
+    },
+    {
+      "route": "/api/v1/ai/discovery",
+      "methods": [
+        "POST"
+      ],
+      "action": "AiMarketplace.Discovery",
+      "access": "Students.CreateRequests",
+      "body": {
+        "kind": "json",
+        "type": "AiDiscoveryInput",
+        "fields": [
+          {
+            "name": "clarificationRound",
+            "required": false
+          },
+          {
+            "name": "input",
+            "required": true
+          },
+          {
+            "name": "viewerTimeZoneId",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/ai/product-help",
+      "methods": [
+        "POST"
+      ],
+      "action": "AiMarketplace.ProductHelp",
+      "access": "Students.CreateRequests",
+      "body": {
+        "kind": "json",
+        "type": "AiProductHelpInput",
+        "fields": [
+          {
+            "name": "question",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/ai/request-assistant",
+      "methods": [
+        "POST"
+      ],
+      "action": "AiMarketplace.RequestAssistant",
+      "access": "Students.CreateRequests",
+      "body": {
+        "kind": "json",
+        "type": "AiRequestAssistantInput",
+        "fields": [
+          {
+            "name": "notes",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/account",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Auth.DeleteAccount",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "DeleteAccountRequest",
+        "fields": [
+          {
+            "name": "password",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/avatar",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Auth.ClearAvatar",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/avatar",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.UploadAvatar",
+      "access": "authenticated",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/auth/confirm-email",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.ConfirmEmail",
+      "access": "anonymous",
+      "body": {
+        "kind": "json",
+        "type": "ConfirmEmailRequest",
+        "fields": [
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "token",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/forgot-password",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.ForgotPassword",
+      "access": "anonymous",
+      "body": {
+        "kind": "json",
+        "type": "ForgotPasswordRequest",
+        "fields": [
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "lang",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/login",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.Login",
+      "access": "none",
+      "body": {
+        "kind": "json",
+        "type": "LoginRequest",
+        "fields": [
+          {
+            "name": "code",
+            "required": false
+          },
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/logout",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.Logout",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/me",
+      "methods": [
+        "GET"
+      ],
+      "action": "Auth.Me",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/mfa/disable",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.DisableMfa",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "DisableMfaRequest",
+        "fields": [
+          {
+            "name": "code",
+            "required": true
+          },
+          {
+            "name": "password",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/mfa/enable",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.EnableMfa",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "MfaCodeRequest",
+        "fields": [
+          {
+            "name": "code",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/mfa/setup",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.SetupMfa",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/password",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Auth.ChangePassword",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "ChangePasswordRequest",
+        "fields": [
+          {
+            "name": "currentPassword",
+            "required": true
+          },
+          {
+            "name": "newPassword",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/privacy/export",
+      "methods": [
+        "GET"
+      ],
+      "action": "Auth.ExportAccount",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/profile",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Auth.UpdateProfile",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "UpdateProfileRequest",
+        "fields": [
+          {
+            "name": "fullName",
+            "required": true
+          },
+          {
+            "name": "fullNameEnglish",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/refresh",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.Refresh",
+      "access": "none",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/register",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.Register",
+      "access": "none",
+      "body": {
+        "kind": "json",
+        "type": "RegisterRequest",
+        "fields": [
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "fullName",
+            "required": true
+          },
+          {
+            "name": "lang",
+            "required": false
+          },
+          {
+            "name": "password",
+            "required": true
+          },
+          {
+            "name": "policyVersion",
+            "required": false
+          },
+          {
+            "name": "role",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/request-email-confirmation",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.RequestEmailConfirmation",
+      "access": "anonymous",
+      "body": {
+        "kind": "json",
+        "type": "EmailRequest",
+        "fields": [
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "lang",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/reset-password",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.ResetPassword",
+      "access": "anonymous",
+      "body": {
+        "kind": "json",
+        "type": "ResetPasswordRequest",
+        "fields": [
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "required": true
+          },
+          {
+            "name": "token",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/auth/sessions",
+      "methods": [
+        "GET"
+      ],
+      "action": "Auth.Sessions",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/auth/sessions/{sessionId}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Auth.RevokeSession",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/conversations",
+      "methods": [
+        "GET"
+      ],
+      "action": "Messaging.Conversations",
+      "access": "Messages.Use",
+      "body": null
+    },
+    {
+      "route": "/api/v1/conversations",
+      "methods": [
+        "POST"
+      ],
+      "action": "Messaging.Create",
+      "access": "Messages.Use",
+      "body": {
+        "kind": "json",
+        "type": "CreateConversation",
+        "fields": [
+          {
+            "name": "otherUserId",
+            "required": true
+          },
+          {
+            "name": "resourceId",
+            "required": false
+          },
+          {
+            "name": "scope",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/conversations/{id:guid}/messages",
+      "methods": [
+        "GET"
+      ],
+      "action": "Messaging.Messages",
+      "access": "Messages.Use",
+      "body": null
+    },
+    {
+      "route": "/api/v1/conversations/{id:guid}/messages",
+      "methods": [
+        "POST"
+      ],
+      "action": "Messaging.Send",
+      "access": "Messages.Use",
+      "body": {
+        "kind": "json",
+        "type": "SendMessage",
+        "fields": [
+          {
+            "name": "body",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/conversations/{id:guid}/read",
+      "methods": [
+        "POST"
+      ],
+      "action": "Messaging.Read",
+      "access": "Messages.Use",
+      "body": null
+    },
+    {
+      "route": "/api/v1/dispute-evidence/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.EvidenceContent",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/disputes",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.Open",
+      "access": "Disputes.Create",
+      "body": {
+        "kind": "json",
+        "type": "OpenDispute",
+        "fields": [
+          {
+            "name": "liveSessionBookingId",
+            "required": false
+          },
+          {
+            "name": "orderId",
+            "required": false
+          },
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/disputes/eligible",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.Eligible",
+      "access": "Disputes.Create",
+      "body": null
+    },
+    {
+      "route": "/api/v1/disputes/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.Mine",
+      "access": "Disputes.Create",
+      "body": null
+    },
+    {
+      "route": "/api/v1/disputes/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.GetMine",
+      "access": "Disputes.Create",
+      "body": null
+    },
+    {
+      "route": "/api/v1/disputes/{id:guid}/evidence",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.Evidence",
+      "access": "Disputes.Create",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/disputes/{id:guid}/messages",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.Message",
+      "access": "Disputes.Create",
+      "body": {
+        "kind": "json",
+        "type": "AddDisputeMessage",
+        "fields": [
+          {
+            "name": "body",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/education-levels",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.EducationLevels",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/favorite-teachers",
+      "methods": [
+        "GET"
+      ],
+      "action": "FavoriteTeachers.Get",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/favorite-teachers/{teacherId}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "FavoriteTeachers.Remove",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/favorite-teachers/{teacherId}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "FavoriteTeachers.Add",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/languages",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.Languages",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/learning-requests",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.Create",
+      "access": "Students.CreateRequests",
+      "body": {
+        "kind": "json",
+        "type": "CreateLearningRequest",
+        "fields": [
+          {
+            "name": "budget",
+            "required": false
+          },
+          {
+            "name": "description",
+            "required": true
+          },
+          {
+            "name": "preferredDeliveryAt",
+            "required": true
+          },
+          {
+            "name": "teacherServiceId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/learning-requests/assigned",
+      "methods": [
+        "GET"
+      ],
+      "action": "LearningRequests.TeacherAssigned",
+      "access": "Teacher",
+      "body": null
+    },
+    {
+      "route": "/api/v1/learning-requests/attachments/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "LearningRequests.Attachment",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/learning-requests/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "LearningRequests.StudentMine",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "LearningRequests.Get",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}/accept",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.Accept",
+      "access": "Requests.Accept",
+      "body": {
+        "kind": "json",
+        "type": "AcceptLearningRequest",
+        "fields": [
+          {
+            "name": "agreedDeliveryAt",
+            "required": true
+          },
+          {
+            "name": "currency",
+            "required": true
+          },
+          {
+            "name": "deliveryHours",
+            "required": false
+          },
+          {
+            "name": "finalPrice",
+            "required": true
+          },
+          {
+            "name": "revisionAllowance",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}/attachments",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.AddAttachment",
+      "access": "Students.CreateRequests",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}/cancel",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.Cancel",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}/decline",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.Decline",
+      "access": "Requests.Decline",
+      "body": {
+        "kind": "json",
+        "type": "ReasonInput",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}/reply-clarification",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.Reply",
+      "access": "Student",
+      "body": {
+        "kind": "json",
+        "type": "MessageInput",
+        "fields": [
+          {
+            "name": "message",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/learning-requests/{id:guid}/request-clarification",
+      "methods": [
+        "POST"
+      ],
+      "action": "LearningRequests.Clarify",
+      "access": "Teacher",
+      "body": {
+        "kind": "json",
+        "type": "MessageInput",
+        "fields": [
+          {
+            "name": "message",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.Book",
+      "access": "Sessions.Book",
+      "body": {
+        "kind": "json",
+        "type": "BookLiveSession",
+        "fields": [
+          {
+            "name": "durationMinutes",
+            "required": true
+          },
+          {
+            "name": "emergency",
+            "required": true
+          },
+          {
+            "name": "localStart",
+            "required": true
+          },
+          {
+            "name": "notes",
+            "required": false
+          },
+          {
+            "name": "studentTimeZoneId",
+            "required": true
+          },
+          {
+            "name": "teacherServiceId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions/attachments/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "LiveSessions.Attachment",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/availability-summaries",
+      "methods": [
+        "GET"
+      ],
+      "action": "LiveSessions.AvailabilitySummaries",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "LiveSessions.Mine",
+      "access": "Sessions.ManageOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/teachers/{teacherId}/slots",
+      "methods": [
+        "GET"
+      ],
+      "action": "LiveSessions.Slots",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/{bookingId:guid}/review",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.LiveSessionReview",
+      "access": "Reviews.Create",
+      "body": {
+        "kind": "json",
+        "type": "CreateReview",
+        "fields": [
+          {
+            "name": "comment",
+            "required": true
+          },
+          {
+            "name": "communication",
+            "required": true
+          },
+          {
+            "name": "explanationClarity",
+            "required": true
+          },
+          {
+            "name": "onTimeDelivery",
+            "required": true
+          },
+          {
+            "name": "recommends",
+            "required": true
+          },
+          {
+            "name": "subjectKnowledge",
+            "required": true
+          },
+          {
+            "name": "valueForMoney",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/attachments",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.AddAttachment",
+      "access": "Sessions.ManageOwn",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/cancel",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.Cancel",
+      "access": "Sessions.ManageOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/complete",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.Complete",
+      "access": "Sessions.ManageOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/join",
+      "methods": [
+        "GET"
+      ],
+      "action": "LiveSessions.Join",
+      "access": "Sessions.ManageOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/no-show",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.NoShow",
+      "access": "Sessions.ManageOwn",
+      "body": {
+        "kind": "json",
+        "type": "NoShowInput",
+        "fields": [
+          {
+            "name": "studentNoShow",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/reschedule",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.Reschedule",
+      "access": "Sessions.ManageOwn",
+      "body": {
+        "kind": "json",
+        "type": "RescheduleLiveSession",
+        "fields": [
+          {
+            "name": "localStart",
+            "required": true
+          },
+          {
+            "name": "timeZoneId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/reschedule/respond",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.RespondToReschedule",
+      "access": "Sessions.ManageOwn",
+      "body": {
+        "kind": "json",
+        "type": "RespondToLiveSessionReschedule",
+        "fields": [
+          {
+            "name": "accept",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/live-sessions/{id:guid}/settlement/confirm",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.ConfirmSettlement",
+      "access": "Sessions.ManageOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/marketplace-intelligence/events",
+      "methods": [
+        "POST"
+      ],
+      "action": "MarketplaceIntelligence.Track",
+      "access": "anonymous",
+      "body": {
+        "kind": "json",
+        "type": "TrackMarketplaceInteraction",
+        "fields": [
+          {
+            "name": "anonymousSessionId",
+            "required": false
+          },
+          {
+            "name": "clientEventId",
+            "required": true
+          },
+          {
+            "name": "eventName",
+            "required": true
+          },
+          {
+            "name": "languageFilterPresent",
+            "required": false
+          },
+          {
+            "name": "priceFilterPresent",
+            "required": false
+          },
+          {
+            "name": "queryPresent",
+            "required": false
+          },
+          {
+            "name": "resultCount",
+            "required": false
+          },
+          {
+            "name": "serviceCatalogItemId",
+            "required": false
+          },
+          {
+            "name": "sourceSurface",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": false
+          },
+          {
+            "name": "teacherId",
+            "required": false
+          },
+          {
+            "name": "teacherServiceId",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/message-attachments/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Messaging.AttachmentContent",
+      "access": "Messages.Use",
+      "body": null
+    },
+    {
+      "route": "/api/v1/messages/{id:guid}/attachments",
+      "methods": [
+        "POST"
+      ],
+      "action": "Messaging.Attachment",
+      "access": "Messages.Use",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/notification-preferences",
+      "methods": [
+        "GET"
+      ],
+      "action": "Messaging.Preferences",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/notification-preferences",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Messaging.Preferences",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "NotificationPreferences",
+        "fields": [
+          {
+            "name": "emailEnabled",
+            "required": true
+          },
+          {
+            "name": "inAppEnabled",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/notifications",
+      "methods": [
+        "GET"
+      ],
+      "action": "Messaging.Notifications",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/notifications/read",
+      "methods": [
+        "POST"
+      ],
+      "action": "Messaging.ReadNotifications",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/offers/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "OpenMarketplace.UpdateOffer",
+      "access": "Teacher",
+      "body": {
+        "kind": "json",
+        "type": "SubmitTeacherOffer",
+        "fields": [
+          {
+            "name": "amount",
+            "required": true
+          },
+          {
+            "name": "deliveryHours",
+            "required": true
+          },
+          {
+            "name": "includedRevisions",
+            "required": false
+          },
+          {
+            "name": "message",
+            "required": true
+          },
+          {
+            "name": "validityHours",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/open-marketplace/offers/{id:guid}/withdraw",
+      "methods": [
+        "POST"
+      ],
+      "action": "OpenMarketplace.WithdrawOffer",
+      "access": "Teacher",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/opportunities",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.Opportunities",
+      "access": "Teacher",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/opportunities/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.Opportunity",
+      "access": "Teacher",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/opportunities/{id:guid}/offers",
+      "methods": [
+        "POST"
+      ],
+      "action": "OpenMarketplace.SubmitOffer",
+      "access": "Teacher",
+      "body": {
+        "kind": "json",
+        "type": "SubmitTeacherOffer",
+        "fields": [
+          {
+            "name": "amount",
+            "required": true
+          },
+          {
+            "name": "deliveryHours",
+            "required": true
+          },
+          {
+            "name": "includedRevisions",
+            "required": false
+          },
+          {
+            "name": "message",
+            "required": true
+          },
+          {
+            "name": "validityHours",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/open-marketplace/requests",
+      "methods": [
+        "POST"
+      ],
+      "action": "OpenMarketplace.Publish",
+      "access": "Student",
+      "body": {
+        "kind": "json",
+        "type": "CreateOpenLearningRequest",
+        "fields": [
+          {
+            "name": "budgetMax",
+            "required": false
+          },
+          {
+            "name": "budgetMin",
+            "required": false
+          },
+          {
+            "name": "deadline",
+            "required": true
+          },
+          {
+            "name": "requirements",
+            "required": true
+          },
+          {
+            "name": "serviceCatalogItemId",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/open-marketplace/requests/{requestId:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.StudentRequest",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/requests/{requestId:guid}/cancel-selection",
+      "methods": [
+        "POST"
+      ],
+      "action": "OpenMarketplace.CancelSelection",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/requests/{requestId:guid}/my-offer",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.MyOffer",
+      "access": "Teacher",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/requests/{requestId:guid}/offers",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.Offers",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/requests/{requestId:guid}/offers/{offerId:guid}/select",
+      "methods": [
+        "POST"
+      ],
+      "action": "OpenMarketplace.Select",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/assigned",
+      "methods": [
+        "GET"
+      ],
+      "action": "Orders.TeacherAssigned",
+      "access": "Teacher",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/deliveries/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Orders.Delivery",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "Orders.StudentMine",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Orders.Get",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/cancel",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.Cancel",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/complete",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.Complete",
+      "access": "Requests.Complete",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/deliveries",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.Deliver",
+      "access": "Requests.Deliver",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/extensions",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.RequestExtension",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "RequestOrderExtension",
+        "fields": [
+          {
+            "name": "proposedDeliveryAt",
+            "required": true
+          },
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/extensions/{extensionId:guid}/respond",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.RespondToExtension",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "RespondOrderExtension",
+        "fields": [
+          {
+            "name": "accept",
+            "required": true
+          },
+          {
+            "name": "response",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/revision",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.Revise",
+      "access": "Requests.RequestRevision",
+      "body": {
+        "kind": "json",
+        "type": "ReasonInput",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/start",
+      "methods": [
+        "POST"
+      ],
+      "action": "Orders.Start",
+      "access": "Requests.Accept",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/{id:guid}/timeline",
+      "methods": [
+        "GET"
+      ],
+      "action": "Orders.Timeline",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/orders/{orderId:guid}/review",
+      "methods": [
+        "POST"
+      ],
+      "action": "Governance.Review",
+      "access": "Reviews.Create",
+      "body": {
+        "kind": "json",
+        "type": "CreateReview",
+        "fields": [
+          {
+            "name": "comment",
+            "required": true
+          },
+          {
+            "name": "communication",
+            "required": true
+          },
+          {
+            "name": "explanationClarity",
+            "required": true
+          },
+          {
+            "name": "onTimeDelivery",
+            "required": true
+          },
+          {
+            "name": "recommends",
+            "required": true
+          },
+          {
+            "name": "subjectKnowledge",
+            "required": true
+          },
+          {
+            "name": "valueForMoney",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/payments/live-sessions/{liveSessionBookingId:guid}",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.InitiateLiveSession",
+      "access": "Payments.ViewOwn",
+      "body": {
+        "kind": "json",
+        "type": "ApplyCouponRequest",
+        "fields": [
+          {
+            "name": "couponCode",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/payments/mock/capabilities",
+      "methods": [
+        "GET"
+      ],
+      "action": "MockPaymentSimulator.Capabilities",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/payments/mock/simulator",
+      "methods": [
+        "GET"
+      ],
+      "action": "MockPaymentSimulator.Session",
+      "access": "Payments.ViewOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/payments/mock/simulator/complete",
+      "methods": [
+        "POST"
+      ],
+      "action": "MockPaymentSimulator.Complete",
+      "access": "Payments.ViewOwn",
+      "body": {
+        "kind": "json",
+        "type": "MockSimulatorCompleteRequest",
+        "fields": [
+          {
+            "name": "providerReference",
+            "required": true
+          },
+          {
+            "name": "returnPath",
+            "required": false
+          },
+          {
+            "name": "succeeded",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/payments/open-requests/{learningRequestId:guid}",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.InitiateOpenRequest",
+      "access": "Payments.ViewOwn",
+      "body": {
+        "kind": "json",
+        "type": "ApplyCouponRequest",
+        "fields": [
+          {
+            "name": "couponCode",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/payments/orders/{orderId:guid}",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.Initiate",
+      "access": "Payments.ViewOwn",
+      "body": {
+        "kind": "json",
+        "type": "ApplyCouponRequest",
+        "fields": [
+          {
+            "name": "couponCode",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/payments/webhooks/mock",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.MockWebhook",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/payments/webhooks/{provider}",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.Webhook",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/payments/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.Get",
+      "access": "Payments.ViewOwn",
+      "body": null
+    },
+    {
+      "route": "/api/v1/payments/{id:guid}/refund",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.Refund",
+      "access": "Payments.Manage",
+      "body": {
+        "kind": "json",
+        "type": "AdminRefundRequest",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/platform/stats",
+      "methods": [
+        "GET"
+      ],
+      "action": "Promotions.Stats",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/promotions",
+      "methods": [
+        "GET"
+      ],
+      "action": "Promotions.Live",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/qualification-resources/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.QualificationResource",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/services",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.Services",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/students/me/learning-preferences",
+      "methods": [
+        "GET"
+      ],
+      "action": "StudentLearningPreferences.Get",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/students/me/learning-preferences",
+      "methods": [
+        "PUT"
+      ],
+      "action": "StudentLearningPreferences.Put",
+      "access": "Student",
+      "body": {
+        "kind": "json",
+        "type": "UpdateStudentLearningPreference",
+        "fields": [
+          {
+            "name": "explanationStyle",
+            "required": false
+          },
+          {
+            "name": "preferredTeachingLanguageId",
+            "required": false
+          },
+          {
+            "name": "version",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/subjects",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.Subjects",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/subjects/featured",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.FeaturedSubjects",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.Create",
+      "access": "Teachers.Apply",
+      "body": {
+        "kind": "json",
+        "type": "CreateTeacherApplication",
+        "fields": [
+          {
+            "name": "city",
+            "required": true
+          },
+          {
+            "name": "degree",
+            "required": false
+          },
+          {
+            "name": "experienceYears",
+            "required": true
+          },
+          {
+            "name": "qualificationTopicId",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teacher-applications/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.Mine",
+      "access": "Teachers.Apply",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications/queue",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.Queue",
+      "access": "Teachers.ReviewApplications",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications/queue/summary",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.QueueSummary",
+      "access": "Teachers.ReviewApplications",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.QueueDetail",
+      "access": "Teachers.ReviewApplications",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "TeacherApplications.Update",
+      "access": "Teachers.Apply",
+      "body": {
+        "kind": "json",
+        "type": "CreateTeacherApplication",
+        "fields": [
+          {
+            "name": "city",
+            "required": true
+          },
+          {
+            "name": "degree",
+            "required": false
+          },
+          {
+            "name": "experienceYears",
+            "required": true
+          },
+          {
+            "name": "qualificationTopicId",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}/decision",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.Decide",
+      "access": "Teachers.ReviewApplications",
+      "body": {
+        "kind": "json",
+        "type": "DecideTeacherApplication",
+        "fields": [
+          {
+            "name": "comment",
+            "required": false
+          },
+          {
+            "name": "decision",
+            "required": true
+          },
+          {
+            "name": "internalNotes",
+            "required": false
+          },
+          {
+            "name": "scores",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}/demo",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.UploadDemo",
+      "access": "Teachers.Apply",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}/demo/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.DemoContent",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}/start-review",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.StartReview",
+      "access": "Teachers.ReviewApplications",
+      "body": {
+        "kind": "json",
+        "type": "StartReviewRequest",
+        "fields": [
+          {
+            "name": "priority",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}/submit",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.Submit",
+      "access": "Teachers.Apply",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-applications/{id:guid}/withdraw",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.Withdraw",
+      "access": "Teachers.Apply",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teacher-qualifications/{id:guid}/revoke",
+      "methods": [
+        "POST"
+      ],
+      "action": "TeacherApplications.RevokeQualification",
+      "access": "Teachers.ReviewApplications",
+      "body": {
+        "kind": "json",
+        "type": "RevokeQualificationInput",
+        "fields": [
+          {
+            "name": "reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.Search",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/compare",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.Compare",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.Mine",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.UpdateProfile",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "UpdateTeacherProfile",
+        "fields": [
+          {
+            "name": "bio",
+            "required": true
+          },
+          {
+            "name": "city",
+            "required": true
+          },
+          {
+            "name": "country",
+            "required": true
+          },
+          {
+            "name": "headline",
+            "required": true
+          },
+          {
+            "name": "responseTimeMinutes",
+            "required": true
+          },
+          {
+            "name": "timeZoneId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/availability/exceptions",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.AddException",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "AvailabilityExceptionInput",
+        "fields": [
+          {
+            "name": "endsAt",
+            "required": true
+          },
+          {
+            "name": "reason",
+            "required": false
+          },
+          {
+            "name": "startsAt",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/availability/exceptions/{id:guid}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Marketplace.RemoveException",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/availability/rules",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.AddRule",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "AvailabilityRuleInput",
+        "fields": [
+          {
+            "name": "dayOfWeek",
+            "required": true
+          },
+          {
+            "name": "end",
+            "required": true
+          },
+          {
+            "name": "slotMinutes",
+            "required": false
+          },
+          {
+            "name": "start",
+            "required": true
+          },
+          {
+            "name": "timeZoneId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/availability/rules",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.ReplaceRules",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "ReplaceAvailabilityRules",
+        "fields": [
+          {
+            "name": "rules",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/availability/rules/{id:guid}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Marketplace.RemoveRule",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/business/analytics",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherBusiness.Analytics",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/business/calendar.ics",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherBusiness.Calendar",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/business/home-summary",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherBusiness.HomeSummary",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/business/statement.csv",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherBusiness.Statement",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/education-levels",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetEducationLevels",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "IdList",
+        "fields": [
+          {
+            "name": "ids",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/eligible-subjects",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.EligibleSubjects",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/languages",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.GetLanguages",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/languages",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetLanguages",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "IdList",
+        "fields": [
+          {
+            "name": "ids",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/marketplace-services",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.MarketplaceServices",
+      "access": "Teachers.ManageOwnServices",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/profile-videos",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.MyProfileVideos",
+      "access": "Teachers.ManageOwnServices",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/profile-videos/order",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.ReorderProfileVideos",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "ProfileVideoOrderInput",
+        "fields": [
+          {
+            "name": "ids",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/profile-videos/{id:guid}/featured",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetProfileVideoFeatured",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "ProfileVideoFeaturedInput",
+        "fields": [
+          {
+            "name": "featured",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/profile-videos/{id:guid}/visibility",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetProfileVideoVisibility",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "ProfileVideoVisibilityInput",
+        "fields": [
+          {
+            "name": "visible",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/publication",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.PublishProfile",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "PublicationRequest",
+        "fields": [
+          {
+            "name": "published",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/qualifications",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.MyQualifications",
+      "access": "Teachers.Apply",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/samples",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.AddSample",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/samples/{id:guid}/publication",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.PublishSample",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "PublicationRequest",
+        "fields": [
+          {
+            "name": "published",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/services",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.AddService",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "TeacherServiceInput",
+        "fields": [
+          {
+            "name": "approachAr",
+            "required": false
+          },
+          {
+            "name": "approachEn",
+            "required": false
+          },
+          {
+            "name": "currency",
+            "required": true
+          },
+          {
+            "name": "deliveryHours",
+            "required": true
+          },
+          {
+            "name": "description",
+            "required": false
+          },
+          {
+            "name": "isAvailable",
+            "required": false
+          },
+          {
+            "name": "price",
+            "required": true
+          },
+          {
+            "name": "revisions",
+            "required": true
+          },
+          {
+            "name": "serviceCatalogItemId",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/services/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.UpdateService",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "TeacherServiceInput",
+        "fields": [
+          {
+            "name": "approachAr",
+            "required": false
+          },
+          {
+            "name": "approachEn",
+            "required": false
+          },
+          {
+            "name": "currency",
+            "required": true
+          },
+          {
+            "name": "deliveryHours",
+            "required": true
+          },
+          {
+            "name": "description",
+            "required": false
+          },
+          {
+            "name": "isAvailable",
+            "required": false
+          },
+          {
+            "name": "price",
+            "required": true
+          },
+          {
+            "name": "revisions",
+            "required": true
+          },
+          {
+            "name": "serviceCatalogItemId",
+            "required": true
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/services/{id:guid}/active",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetServiceActive",
+      "access": "Teachers.ManageOwnServices",
+      "body": {
+        "kind": "json",
+        "type": "ActiveRequest",
+        "fields": [
+          {
+            "name": "active",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.MyShowcases",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.CreateShowcase",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": {
+        "kind": "json",
+        "type": "CreateShowcaseInput",
+        "fields": [
+          {
+            "name": "description",
+            "required": false
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": true
+          },
+          {
+            "name": "topicId",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/order",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.ReorderShowcases",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": {
+        "kind": "json",
+        "type": "ShowcaseOrderInput",
+        "fields": [
+          {
+            "name": "ids",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.MyShowcase",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.UpdateShowcase",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": {
+        "kind": "json",
+        "type": "UpdateShowcaseDraftInput",
+        "fields": [
+          {
+            "name": "description",
+            "required": false
+          },
+          {
+            "name": "subjectId",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": true
+          },
+          {
+            "name": "topicId",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}/archive",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.ArchiveShowcase",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}/submit",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.SubmitShowcase",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}/versions",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.CreateShowcaseVersion",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}/versions/{versionId:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.ShowcaseVersionContent",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/showcases/{id:guid}/video",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.UploadShowcaseVideo",
+      "access": "Teachers.ManageOwnShowcases",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/topics",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetTopics",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "IdList",
+        "fields": [
+          {
+            "name": "ids",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/{kind:regex(^certifications|experience$)}",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.AddCredential",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "CredentialInput",
+        "fields": [
+          {
+            "name": "from",
+            "required": false
+          },
+          {
+            "name": "organization",
+            "required": true
+          },
+          {
+            "name": "title",
+            "required": true
+          },
+          {
+            "name": "to",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/{kind:regex(^certifications|experience$)}/{id:guid}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Marketplace.RemoveCredential",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/onboarding-status",
+      "methods": [
+        "GET"
+      ],
+      "action": "TeacherApplications.OnboardingStatus",
+      "access": "Teachers.Apply",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/samples/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.Sample",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/showcase-moderation",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.ShowcaseQueue",
+      "access": "Teachers.ReviewShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/showcase-moderation/summary",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.ShowcaseQueueSummary",
+      "access": "Teachers.ReviewShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/showcase-moderation/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.ShowcaseQueueItem",
+      "access": "Teachers.ReviewShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/showcase-moderation/{id:guid}/versions/{versionId:guid}/decision",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.DecideShowcase",
+      "access": "Teachers.ReviewShowcases",
+      "body": {
+        "kind": "json",
+        "type": "ShowcaseDecisionInput",
+        "fields": [
+          {
+            "name": "decision",
+            "required": true
+          },
+          {
+            "name": "internalNote",
+            "required": false
+          },
+          {
+            "name": "reasonCode",
+            "required": false
+          },
+          {
+            "name": "teacherVisibleNote",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/showcase-moderation/{id:guid}/versions/{versionId:guid}/start-review",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.StartShowcaseReview",
+      "access": "Teachers.ReviewShowcases",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/{teacherId}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.Profile",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/{teacherId}/reviews",
+      "methods": [
+        "GET"
+      ],
+      "action": "Governance.Reviews",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/topics",
+      "methods": [
+        "GET"
+      ],
+      "action": "Catalog.Topics",
+      "access": "none",
+      "body": null
+    },
+    {
+      "route": "/api/v1/users/{userId}/avatar",
+      "methods": [
+        "GET"
+      ],
+      "action": "Auth.Avatar",
+      "access": "anonymous",
+      "body": null
+    },
+    {
+      "route": "/api/v1/withdrawals",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.RequestWithdrawal",
+      "access": "Withdrawals.Request",
+      "body": {
+        "kind": "json",
+        "type": "RequestWithdrawal",
+        "fields": [
+          {
+            "name": "amount",
+            "required": true
+          },
+          {
+            "name": "currency",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/withdrawals/balances",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.Balances",
+      "access": "Withdrawals.Request",
+      "body": null
+    },
+    {
+      "route": "/api/v1/withdrawals/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.MyWithdrawals",
+      "access": "Withdrawals.Request",
+      "body": null
+    },
+    {
+      "route": "/api/v1/withdrawals/policy",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.WithdrawalPolicy",
+      "access": "Withdrawals.Request",
+      "body": null
+    },
+    {
+      "route": "/api/v1/withdrawals/profile",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.MyPayoutProfile",
+      "access": "Withdrawals.Request",
+      "body": null
+    },
+    {
+      "route": "/api/v1/withdrawals/profile",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Payments.SubmitPayoutProfile",
+      "access": "Withdrawals.Request",
+      "body": {
+        "kind": "json",
+        "type": "SubmitPayoutProfile",
+        "fields": [
+          {
+            "name": "countryCode",
+            "required": true
+          },
+          {
+            "name": "destinationLabel",
+            "required": true
+          },
+          {
+            "name": "identityLast4",
+            "required": true
+          },
+          {
+            "name": "legalName",
+            "required": true
+          },
+          {
+            "name": "payoutMethod",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/withdrawals/{id:guid}/process",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.ProcessWithdrawal",
+      "access": "Withdrawals.Review",
+      "body": {
+        "kind": "json",
+        "type": "ProcessWithdrawal",
+        "fields": [
+          {
+            "name": "approve",
+            "required": true
+          },
+          {
+            "name": "providerReference",
+            "required": false
+          },
+          {
+            "name": "rejectionReason",
+            "required": false
+          }
+        ]
+      }
+    }
+  ]
+}

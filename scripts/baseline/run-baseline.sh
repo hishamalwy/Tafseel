@@ -127,4 +127,8 @@ note ""; note "## Contract"
 node "$REPO/scripts/baseline/inventory-client.mjs" "$REPO" "$OUT/inventory" >> "$S" 2>&1
 node "$REPO/scripts/baseline/match-contract.mjs" "$OUT/inventory" > "$OUT/contract.txt" 2>&1
 head -2 "$OUT/contract.txt" | tee -a "$S"
+( cd "$REPO" && node scripts/ci/check-api-contract.mjs ) > "$OUT/ci-api-contract.log" 2>&1
+note "ci: check-api-contract.mjs exit $?  $(head -1 "$OUT/ci-api-contract.log")"
+( cd "$REPO" && node scripts/ci/check-api-contract.mjs --strict ) > /dev/null 2>&1
+note "ci: check-api-contract.mjs --strict exit $? (non-zero while known violations remain)"
 note ""; note "done. Logs and inventories: $OUT"
