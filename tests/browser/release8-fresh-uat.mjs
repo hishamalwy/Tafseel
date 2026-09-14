@@ -76,7 +76,7 @@ async function main() {
   console.log("login student", sLogin.status);
   console.log("login teacher", tLogin.status);
 
-  const adminPass = process.env.TAFSEEL_UAT_ADMIN_PASSWORD || "@Admin1234";
+  const adminPass = requiredEnv("TAFSEEL_UAT_ADMIN_PASSWORD");
   const authDir = path.join("tests", "browser", ".auth");
   fs.mkdirSync(authDir, { recursive: true });
   fs.writeFileSync(path.join(authDir, "r8-session.env"), [
@@ -92,3 +92,9 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
+
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Set ${name} (the Development SeedUsers:Password).`);
+  return value;
+}

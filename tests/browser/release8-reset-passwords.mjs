@@ -61,7 +61,7 @@ async function main() {
     `TAFSEEL_UAT_SESSION_PASSWORD=${password}`,
     `TAFSEEL_UAT_STUDENT_PASSWORD=${password}`,
     `TAFSEEL_UAT_TEACHER_PASSWORD=${password}`,
-    "TAFSEEL_UAT_ADMIN_PASSWORD=@Admin1234"
+    "TAFSEEL_UAT_ADMIN_PASSWORD=<your Development SeedUsers:Password>"
   ].join("\n"));
   console.log("password-reset-ok");
 }

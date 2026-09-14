@@ -39,7 +39,7 @@ async function main() {
       ASPNETCORE_ENVIRONMENT: "Development",
       ASPNETCORE_URLS: base,
       SeedUsers__Enabled: "true",
-      SeedUsers__Password: process.env.TAFSEEL_UAT_ADMIN_PASSWORD || "@Admin1234",
+      SeedUsers__Password: requiredEnv("TAFSEEL_UAT_ADMIN_PASSWORD"),
       SeedDemoData__Enabled: "true"
     },
     stdio: ["ignore", "pipe", "pipe"]
@@ -109,3 +109,9 @@ main().catch(err => {
   console.error(err);
   process.exit(1);
 });
+
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Set ${name} (the Development SeedUsers:Password).`);
+  return value;
+}

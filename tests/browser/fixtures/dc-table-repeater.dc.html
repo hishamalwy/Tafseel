@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<!-- The <meta> is load-bearing: HTMLMetaElement exposes its content attribute as a string
+     `.content` property, which is exactly the shape that breaks a naive `node.content || node`
+     child-scope helper. Keep it here so that regression stays covered. -->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DC table repeater runtime fixture</title>
+</helmet>
+<main>
+  <div id="controls">
+    <button type="button" id="set-0" onClick="{{ set0 }}">0</button>
+    <button type="button" id="set-1" onClick="{{ set1 }}">1</button>
+    <button type="button" id="set-2" onClick="{{ set2 }}">2</button>
+    <button type="button" id="set-8" onClick="{{ set8 }}">8</button>
+    <button type="button" id="seq-abc" onClick="{{ seqAbc }}">ABC</button>
+    <button type="button" id="seq-ac" onClick="{{ seqAc }}">AC</button>
+    <button type="button" id="seq-d" onClick="{{ seqD }}">D</button>
+    <button type="button" id="seq-empty" onClick="{{ seqEmpty }}">empty</button>
+    <button type="button" id="seq-ab" onClick="{{ seqAb }}">AB</button>
+    <button type="button" id="filter-on" onClick="{{ filterOn }}">filter</button>
+    <button type="button" id="filter-off" onClick="{{ filterOff }}">clear</button>
+    <button type="button" id="page-next" onClick="{{ pageNext }}">next</button>
+    <button type="button" id="page-prev" onClick="{{ pagePrev }}">prev</button>
+    <button type="button" id="toggle-section" onClick="{{ toggleSection }}">section</button>
+    <span id="last-action">{{ lastAction }}</span>
+    <span id="page-label">{{ pageLabel }}</span>
+  </div>
+
+  <!-- PRIMARY: repeated semantic rows, full binding surface, nested sc-if, scoped events. -->
+  <table id="people">
+    <caption>{{ tableCaption }}</caption>
+    <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+    <tbody>
+      <template sc-for list="{{ visibleRows }}" as="r" hint-placeholder-count="8">
+        <tr class="row {{ r.rowClass }}" data-id="{{ r.id }}">
+          <td class="cell-name">{{ r.name }}</td>
+          <td class="cell-email"><a href="{{ r.mailto }}">{{ r.email }}</a></td>
+          <td class="cell-role">{{ r.role }}</td>
+          <td class="cell-status">
+            <sc-if value="{{ r.isActive }}"><span class="badge-active">{{ r.statusLabel }}</span></sc-if>
+            <sc-if value="{{ r.isSuspended }}"><span class="badge-suspended">{{ r.statusLabel }}</span></sc-if>
+          </td>
+          <td class="cell-action">
+            <button type="button" class="row-action" aria-label="{{ r.actionLabel }}" onClick="{{ r.onAction }}">{{ r.actionText }}</button>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+
+  <!-- SECOND TABLE on the same page: proves per-table isolation. -->
+  <table id="totals">
+    <tbody>
+      <template sc-for list="{{ totals }}" as="t">
+        <tr class="total-row"><td class="total-label">{{ t.label }}</td><td class="total-value">{{ t.value }}</td></tr>
+      </template>
+    </tbody>
+  </table>
+
+  <!-- NESTED: repeated rows whose cells are themselves repeated (thead + tbody). -->
+  <table id="matrix">
+    <thead><tr><th scope="col">Field</th><template sc-for list="{{ columns }}" as="c"><th scope="col" class="matrix-head">{{ c }}</th></template></tr></thead>
+    <tbody>
+      <template sc-for list="{{ matrixRows }}" as="row">
+        <tr class="matrix-row"><th scope="row">{{ row.label }}</th><template sc-for list="{{ row.values }}" as="v"><td class="matrix-cell">{{ v }}</td></template></tr>
+      </template>
+    </tbody>
+  </table>
+
+  <!-- sc-if -> sc-for: a whole table section gated by a condition. -->
+  <table id="gated">
+    <tbody>
+      <template sc-if value="{{ sectionVisible }}">
+        <template sc-for list="{{ gatedRows }}" as="g">
+          <tr class="gated-row"><td>{{ g.name }}</td></tr>
+        </template>
+      </template>
+    </tbody>
+  </table>
+
+  <!-- CONTROL: non-table repeaters must be completely unaffected by the table repair. -->
+  <div id="cards"><sc-for list="{{ visibleRows }}" as="r"><article class="card" data-id="{{ r.id }}"><h3>{{ r.name }}</h3><sc-if value="{{ r.isActive }}"><em class="card-active">{{ r.statusLabel }}</em></sc-if></article></sc-for></div>
+  <ul id="list"><sc-for list="{{ visibleRows }}" as="r"><li class="list-item">{{ r.name }}</li></sc-for></ul>
+  <select id="picker"><sc-for list="{{ visibleRows }}" as="r"><option value="{{ r.id }}">{{ r.name }}</option></sc-for></select>
+  <div id="btn-group"><sc-for list="{{ visibleRows }}" as="r"><button type="button" class="grp-btn" onClick="{{ r.onAction }}">{{ r.name }}</button></sc-for></div>
+  <div id="empty-repeat"><sc-for list="{{ nothing }}" as="n"><span class="never">x</span></sc-for></div>
+  <div id="siblings"><sc-for list="{{ totals }}" as="t"><span class="sib-a">{{ t.label }}</span></sc-for><sc-for list="{{ columns }}" as="c"><span class="sib-b">{{ c }}</span></sc-for></div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const PEOPLE = [
+  { id: 'u1', name: 'Ahmed Salah',    email: 'ahmed@example.com',  role: 'Teacher', suspended: false },
+  { id: 'u2', name: 'Bushra Nasser',  email: 'bushra@example.com', role: 'Student', suspended: true  },
+  { id: 'u3', name: 'Camelia Roux',   email: 'camelia@example.com',role: 'Admin',   suspended: false },
+  { id: 'u4', name: 'Dawud Haddad',   email: 'dawud@example.com',  role: 'Teacher', suspended: false },
+  { id: 'u5', name: 'Eman Farouk',    email: 'eman@example.com',   role: 'Student', suspended: true  },
+  { id: 'u6', name: 'Faris Qadir',    email: 'faris@example.com',  role: 'Teacher', suspended: false },
+  { id: 'u7', name: 'Ghada Mansour',  email: 'ghada@example.com',  role: 'Student', suspended: false },
+  { id: 'u8', name: 'Hisham Tawfiq',  email: 'hisham@example.com', role: 'Admin',   suspended: false }
+];
+const PAGE_SIZE = 3;
+const named = (ids) => ids.map(id => PEOPLE.find(p => p.id === id));
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { people: PEOPLE.slice(0, 8), filter: '', page: 1, lastAction: 'none', sectionVisible: true };
+  }
+  set(n) { this.setState({ people: PEOPLE.slice(0, n), page: 1 }); }
+  renderVals() {
+    const s = this.state;
+    const filtered = s.filter ? s.people.filter(p => p.role === s.filter) : s.people;
+    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const page = Math.min(s.page, pageCount);
+    // `visibleRows` is deliberately NOT paginated — pagination is exercised through `matrixRows`
+    // so the primary table's row count always equals the supplied collection length.
+    const visibleRows = filtered.map(p => ({
+      id: p.id,
+      name: p.name,
+      email: p.email,
+      mailto: 'mailto:' + p.email,
+      role: p.role,
+      rowClass: p.suspended ? 'is-suspended' : 'is-active',
+      isActive: !p.suspended,
+      isSuspended: p.suspended,
+      statusLabel: p.suspended ? 'Suspended' : 'Active',
+      actionText: p.suspended ? 'Restore' : 'Suspend',
+      actionLabel: (p.suspended ? 'Restore ' : 'Suspend ') + p.name,
+      onAction: () => this.setState({ lastAction: 'action:' + p.id })
+    }));
+    const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    return {
+      visibleRows,
+      nothing: [],
+      tableCaption: 'People (' + visibleRows.length + ')',
+      lastAction: s.lastAction,
+      pageLabel: page + '/' + pageCount,
+      sectionVisible: s.sectionVisible,
+      gatedRows: visibleRows.slice(0, 2),
+      totals: [ { label: 'Rows', value: String(visibleRows.length) }, { label: 'Filter', value: s.filter || 'none' } ],
+      columns: ['Alpha', 'Beta'],
+      matrixRows: pageRows.map(p => ({ label: p.name, values: [p.role, p.suspended ? 'Suspended' : 'Active'] })),
+      set0: () => this.set(0), set1: () => this.set(1), set2: () => this.set(2), set8: () => this.set(8),
+      seqAbc: () => this.setState({ people: named(['u1','u2','u3']), page: 1 }),
+      seqAc:  () => this.setState({ people: named(['u1','u3']), page: 1 }),
+      seqD:   () => this.setState({ people: named(['u4']), page: 1 }),
+      seqEmpty: () => this.setState({ people: [], page: 1 }),
+      seqAb:  () => this.setState({ people: named(['u1','u2']), page: 1 }),
+      filterOn: () => this.setState({ filter: 'Teacher', page: 1 }),
+      filterOff: () => this.setState({ filter: '', page: 1 }),
+      pageNext: () => this.setState({ page: Math.min(pageCount, page + 1) }),
+      pagePrev: () => this.setState({ page: Math.max(1, page - 1) }),
+      toggleSection: () => this.setState({ sectionVisible: !s.sectionVisible })
+    };
+  }
+}
+</script>
+</body>
+</html>

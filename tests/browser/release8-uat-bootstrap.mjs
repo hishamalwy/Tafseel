@@ -65,7 +65,7 @@ async function main() {
   }
 
   // Admin/Quality use SeedUsers password
-  const adminPass = process.env.TAFSEEL_UAT_ADMIN_PASSWORD || "@Admin1234";
+  const adminPass = requiredEnv("TAFSEEL_UAT_ADMIN_PASSWORD");
   for (const email of ["qa.admin.sprint02@example.com", "qa.reviewer.sprint02@example.com"]) {
     const res = await api("POST", "/api/v1/auth/login", { email, password: adminPass });
     console.log(`seed-role ${email} status=${res.status}`);
@@ -86,3 +86,9 @@ main().catch(err => {
   console.error(err);
   process.exit(1);
 });
+
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Set ${name} (the Development SeedUsers:Password).`);
+  return value;
+}

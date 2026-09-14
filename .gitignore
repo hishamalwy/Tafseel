@@ -90,6 +90,7 @@ _html_usage.json
 /self-test-results.json
 /scripts/tmp-*.mjs
 tests/browser/_*.mjs
+tests/browser/tmp-*.mjs
 
 # Angular client (frontend-angular)
 frontend-angular/dist/
