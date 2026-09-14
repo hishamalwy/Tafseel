@@ -8,13 +8,25 @@ export interface CreatedRequest {
 }
 
 export interface NewRequest {
+  /** Client-side only: which teacher's draft to clear. The service names the teacher on the wire. */
   readonly teacherId: string;
   readonly teacherServiceId: string;
   readonly title: string;
   readonly description: string;
-  readonly deliveryDate: string | null;
+  /** ISO instant, in the future. */
+  readonly preferredDeliveryAt: string;
+  /** Null when the student is flexible on budget. */
   readonly budget: number | null;
-  readonly flexibleBudget: boolean;
+}
+
+/** What the request assistant answered (AiRequestAssistantResult). */
+export interface BriefSuggestion {
+  /** success, needs_clarification, no_canonical_match, unavailable, unsupported */
+  readonly status: string;
+  /** The server's own sentence for the reader, whatever the status. */
+  readonly message: string;
+  /** Suggested description when the status is success. */
+  readonly suggestion: string | null;
 }
 
 export interface LearningPreferences {
@@ -55,7 +67,7 @@ export interface RequestGateway {
   create(request: NewRequest): Observable<CreatedRequest>;
   attach(requestId: string, file: File, version: string): Observable<void>;
   /** AI-assisted first draft of the brief; entirely optional to the flow. */
-  assist(prompt: string): Observable<string>;
+  assist(notes: string): Observable<BriefSuggestion>;
 }
 
 /** The open marketplace: requests published for any qualified teacher to bid on. */

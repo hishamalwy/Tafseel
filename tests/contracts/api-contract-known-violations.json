@@ -2,44 +2,12 @@
   "description": "Client/server API contract violations present on 2026-09-14, each tracked by a row in docs/audits/baseline-2026-09-14/REMEDIATION_MATRIX.md. scripts/ci/check-api-contract.mjs fails on any violation not listed here and on any listed violation that no longer occurs. Remove an entry in the same change that fixes it.",
   "violations": [
     {
-      "matrix": "J3-04",
-      "kind": "BODY_MISSING_REQUIRED",
-      "method": "POST",
-      "route": "/api/v1/ai/request-assistant",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "AiRequestAssistantInput requires notes"
-    },
-    {
-      "matrix": "J3-02",
-      "kind": "BODY_MISSING_REQUIRED",
-      "method": "POST",
-      "route": "/api/v1/learning-requests",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "CreateLearningRequest requires preferredDeliveryAt"
-    },
-    {
       "matrix": "J3-07",
       "kind": "BODY_MISSING_REQUIRED",
       "method": "POST",
       "route": "/api/v1/learning-requests/{p}/accept",
       "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
       "detail": "AcceptLearningRequest requires agreedDeliveryAt, currency, finalPrice, revisionAllowance"
-    },
-    {
-      "matrix": "J3-04",
-      "kind": "BODY_UNKNOWN_FIELD",
-      "method": "POST",
-      "route": "/api/v1/ai/request-assistant",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "AiRequestAssistantInput does not bind prompt"
-    },
-    {
-      "matrix": "J3-02",
-      "kind": "BODY_UNKNOWN_FIELD",
-      "method": "POST",
-      "route": "/api/v1/learning-requests",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "CreateLearningRequest does not bind teacherId, deliveryDate, flexibleBudget"
     },
     {
       "matrix": "J4-01",

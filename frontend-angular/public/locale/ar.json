@@ -3199,5 +3199,6 @@
   "not_found_title": "لم نعثر على هذه الصفحة",
   "not_found_body": "ربما يكون الرابط قديمًا، أو نُقلت الصفحة إلى مكان آخر.",
   "not_found_home": "العودة إلى الصفحة الرئيسية",
-  "notification_open": "عرض التفاصيل"
+  "notification_open": "عرض التفاصيل",
+  "req_delivery_future": "اختر اليوم أو يومًا لاحقًا."
 }

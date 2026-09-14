@@ -141,8 +141,11 @@
           @if (step() === 3) {
             <div class="tf-field">
               <label for="req-delivery">{{ t('req_delivery', 'When do you need it?') }}</label>
-              <input id="req-delivery" type="date"
+              <input id="req-delivery" type="date" required [min]="minDeliveryDate"
                      [value]="deliveryDate()" (input)="deliveryDate.set($any($event.target).value)" />
+              @if (deliveryDate() && !deliveryAt()) {
+                <p class="tf-field-error" role="alert">{{ t('req_delivery_future', 'Choose today or a later day.') }}</p>
+              }
             </div>
 
             <label class="tf-check">

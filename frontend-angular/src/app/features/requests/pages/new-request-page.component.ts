@@ -9,7 +9,8 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import {
-  DRAFT_VERSION, RequestDraft, RequestableService, composeDescription, promptsForService
+  DRAFT_VERSION, RequestDraft, RequestableService, composeDescription, preferredDeliveryAt, promptsForService,
+  todayInputValue
 } from '../models/learning-request';
 import { CreatedRequest } from '../services/request.ports';
 import {
@@ -162,13 +163,19 @@ export class NewRequestPageComponent {
     switch (this.step()) {
       case 1: return this.service() !== null && this.requestTitle().trim().length > 0;
       case 2: return this.goal().trim().length > 0;
-      case 3: return this.flexibleBudget() || Number(this.budget()) > 0;
+      case 3: return this.deliveryAt() !== null && (this.flexibleBudget() || Number(this.budget()) > 0);
       default: return this.agreed();
     }
   });
 
+  /** The chosen day as the instant the API needs, or null while it is missing or past. */
+  readonly deliveryAt = computed(() => preferredDeliveryAt(this.deliveryDate()));
+  readonly minDeliveryDate = todayInputValue();
+
   readonly canSubmit = computed(() =>
     !this.submitting() && this.agreed()
+    && this.deliveryAt() !== null
+    && (this.flexibleBudget() || Number(this.budget()) > 0)
     && this.service() !== null
     && this.requestTitle().trim().length > 0
     && this.goal().trim().length > 0);
@@ -270,9 +277,15 @@ export class NewRequestPageComponent {
       this.toasts.show(this.t('req_ai_needs_seed', 'Add a title or a goal first.'));
       return;
     }
+    if (seed.trim().length < 3) {
+      this.toasts.show(this.t('req_ai_needs_seed', 'Add a title or a goal first.'));
+      return;
+    }
     this.aiBusy.set(true);
     try {
-      this.aiDraft.set(await this.assist.execute(seed));
+      const answer = await this.assist.execute(seed);
+      if (answer.suggestion) this.aiDraft.set(answer.suggestion);
+      else this.toasts.show(answer.message || this.t('req_ai_failed', 'The assistant is unavailable right now.'));
     } catch {
       this.toasts.show(this.t('req_ai_failed', 'The assistant is unavailable right now.'));
     } finally {
@@ -291,7 +304,8 @@ export class NewRequestPageComponent {
 
   async submit(): Promise<void> {
     const service = this.service();
-    if (!service || !this.canSubmit()) return;
+    const deliveryAt = this.deliveryAt();
+    if (!service || !deliveryAt || !this.canSubmit()) return;
 
     this.submitting.set(true);
     try {
@@ -300,9 +314,8 @@ export class NewRequestPageComponent {
         teacherServiceId: service.id,
         title: this.requestTitle().trim(),
         description: this.description(),
-        deliveryDate: this.deliveryDate() || null,
-        budget: this.flexibleBudget() ? null : Number(this.budget()) || null,
-        flexibleBudget: this.flexibleBudget()
+        preferredDeliveryAt: deliveryAt,
+        budget: this.flexibleBudget() ? null : Number(this.budget()) || null
       }, this.files(), this.studentId());
 
       this.created.set(outcome.request);

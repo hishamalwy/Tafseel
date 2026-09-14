@@ -3199,5 +3199,6 @@
   "not_found_title": "We couldn’t find that page",
   "not_found_body": "The link may be old, or the page may have moved.",
   "not_found_home": "Go to the home page",
-  "notification_open": "View details"
+  "notification_open": "View details",
+  "req_delivery_future": "Choose today or a later day."
 }

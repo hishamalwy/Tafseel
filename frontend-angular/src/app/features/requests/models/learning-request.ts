@@ -115,6 +115,25 @@ export function composeDescription(input: DescriptionInput, labels: DescriptionL
 }
 
 /** Attachment limits, mirroring what the endpoint accepts. */
+/**
+ * The wizard asks for a day; the API takes an instant that must be in the future
+ * (`CreateLearningRequest.PreferredDeliveryAt`). The day means "by the end of it" in the
+ * student's own time zone. Returns null for an empty, malformed or past day.
+ */
+export function preferredDeliveryAt(day: string, now: Date = new Date()): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day ?? '');
+  if (!match) return null;
+  const endOfDay = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 23, 59, 0, 0);
+  if (Number.isNaN(endOfDay.getTime()) || endOfDay.getDate() !== Number(match[3])) return null;
+  return endOfDay.getTime() > now.getTime() ? endOfDay.toISOString() : null;
+}
+
+/** Today as a date input value, for its `min`. */
+export function todayInputValue(now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 export const REQUEST_FILE_LIMITS = {
   maxFiles: 5,
   maxBytes: 25 * 1024 * 1024,

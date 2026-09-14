@@ -4,7 +4,7 @@ import {
   FileRejection, RequestDraft, RequestableService, requestableServices, validateFile
 } from '../models/learning-request';
 import {
-  CreatedRequest, DRAFT_STORE, LearningPreferences, MARKETPLACE_GATEWAY,
+  BriefSuggestion, CreatedRequest, DRAFT_STORE, LearningPreferences, MARKETPLACE_GATEWAY,
   NewRequest, Offer, OpenRequest, REQUEST_GATEWAY
 } from './request.ports';
 
@@ -139,8 +139,11 @@ export class AcceptFiles {
 export class AssistWithBrief {
   private readonly requests = inject(REQUEST_GATEWAY);
 
-  execute(prompt: string): Promise<string> {
-    return firstValueFrom(this.requests.assist(prompt.trim()));
+  /** The API accepts 3 to 4000 characters of notes. */
+  execute(notes: string): Promise<BriefSuggestion> {
+    const trimmed = notes.trim().slice(0, 4000);
+    if (trimmed.length < 3) return Promise.reject(new Error('assist-needs-notes'));
+    return firstValueFrom(this.requests.assist(trimmed));
   }
 }
 

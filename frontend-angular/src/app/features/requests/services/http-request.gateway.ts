@@ -6,7 +6,7 @@ import {
   DRAFT_VERSION, REQUEST_FILE_LIMITS, RequestDraft, RequestableService, draftKey
 } from '../models/learning-request';
 import {
-  CreatedRequest, DraftStore, LearningPreferences, MarketplaceGateway,
+  BriefSuggestion, CreatedRequest, DraftStore, LearningPreferences, MarketplaceGateway,
   NewRequest, Offer, OpenRequest, RequestGateway
 } from '../services/request.ports';
 
@@ -31,16 +31,15 @@ export class HttpRequestGateway implements RequestGateway {
       })));
   }
 
+  /** CreateLearningRequest(TeacherServiceId, Title, Description, PreferredDeliveryAt, Budget) - nothing else. */
   create(request: NewRequest): Observable<CreatedRequest> {
     return this.http
       .post<{ id: string; version?: string }>('/api/v1/learning-requests', {
-        teacherId: request.teacherId,
         teacherServiceId: request.teacherServiceId,
         title: request.title,
         description: request.description,
-        deliveryDate: request.deliveryDate,
-        budget: request.flexibleBudget ? null : request.budget,
-        flexibleBudget: request.flexibleBudget
+        preferredDeliveryAt: request.preferredDeliveryAt,
+        budget: request.budget
       })
       .pipe(map(r => ({ id: r.id, version: r.version ?? '' })));
   }
@@ -53,10 +52,18 @@ export class HttpRequestGateway implements RequestGateway {
       { headers: new HttpHeaders({ 'If-Match': version }) });
   }
 
-  assist(prompt: string): Observable<string> {
+  /** AiRequestAssistantInput(Notes) -> AiRequestAssistantResult(Status, Message, Draft). */
+  assist(notes: string): Observable<BriefSuggestion> {
     return this.http
-      .post<{ draft?: string; text?: string }>('/api/v1/ai/request-assistant', { prompt })
-      .pipe(map(result => result.draft ?? result.text ?? ''));
+      .post<{ status?: string; message?: string; draft?: { suggestedDescription?: string } | null }>(
+        '/api/v1/ai/request-assistant', { notes })
+      .pipe(map(result => ({
+        status: result.status ?? 'unavailable',
+        message: result.message ?? '',
+        suggestion: result.status === 'success' && result.draft?.suggestedDescription
+          ? result.draft.suggestedDescription
+          : null
+      })));
   }
 }
 
