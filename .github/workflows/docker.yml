@@ -83,10 +83,17 @@ jobs:
           for attempt in {1..30}; do curl -fsS http://localhost:8080/health/ready && break; sleep 2; done
           curl -fsS http://localhost:8080/health/ready
           curl -fsS http://localhost:8080/health/live
-          curl -fsS http://localhost:8080/app/Tafseel-Landing.dc.html >/dev/null
-          curl -fsS http://localhost:8080/app/Tafseel-Auth.dc.html >/dev/null
+          # G-20: the image serves the Angular client built in the Dockerfile's webclient stage.
+          test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Accept-Language: ar' http://localhost:8080/)" = "302 http://localhost:8080/ar/"
+          curl -fsS http://localhost:8080/ar/ | grep -q '<base href="/ar/"'
+          curl -fsS http://localhost:8080/en/ | grep -q '<base href="/en/"'
+          curl -fsS http://localhost:8080/en/about/ | grep -q '<base href="/en/"'
+          main="$(curl -fsS http://localhost:8080/en/ | grep -o 'main-[A-Za-z0-9_-]*\.js' | head -1)"
+          test -n "$main" && curl -fsS "http://localhost:8080/en/$main" >/dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app/Tafseel-Landing.dc.html)" = 302
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app/appsettings.json)" = 404
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app/unknown.js)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/does-not-exist)" = 404
       - name: Production must reject mock providers
         run: |
           id="$(docker run -d --network host \
