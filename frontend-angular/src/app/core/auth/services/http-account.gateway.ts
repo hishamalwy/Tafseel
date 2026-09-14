@@ -35,7 +35,8 @@ export class HttpAccountGateway implements AccountGateway {
     return this.http.post<void>('/api/v1/auth/reset-password', {
       email: reset.email,
       token: reset.token,
-      newPassword: reset.newPassword
+      // `ResetPasswordRequest(Email, Token, Password)` binds `password`; `newPassword` was ignored (J2-04).
+      password: reset.newPassword
     }, { withCredentials: true })
       .pipe(catchError(e => throwError(() => toAuthFailure(e))));
   }

@@ -10,14 +10,6 @@
       "detail": "AiRequestAssistantInput requires notes"
     },
     {
-      "matrix": "J2-04",
-      "kind": "BODY_MISSING_REQUIRED",
-      "method": "POST",
-      "route": "/api/v1/auth/reset-password",
-      "file": "frontend-angular/src/app/core/auth/services/http-account.gateway.ts",
-      "detail": "ResetPasswordRequest requires password"
-    },
-    {
       "matrix": "J3-02",
       "kind": "BODY_MISSING_REQUIRED",
       "method": "POST",
@@ -40,14 +32,6 @@
       "route": "/api/v1/ai/request-assistant",
       "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
       "detail": "AiRequestAssistantInput does not bind prompt"
-    },
-    {
-      "matrix": "J2-04",
-      "kind": "BODY_UNKNOWN_FIELD",
-      "method": "POST",
-      "route": "/api/v1/auth/reset-password",
-      "file": "frontend-angular/src/app/core/auth/services/http-account.gateway.ts",
-      "detail": "ResetPasswordRequest does not bind newPassword"
     },
     {
       "matrix": "J3-02",
