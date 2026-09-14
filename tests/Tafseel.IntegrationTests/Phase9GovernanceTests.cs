@@ -274,7 +274,7 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Governance teacher", "Teacher profile used by governance tests.",
             "Egypt", "Cairo", "Egypt Standard Time", 10, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         var service = new TeacherService(teacher.Id, subject.Id, type.Id, "Governance order",
             "Order used to test reviews and disputes.", 100, "SAR", 24, 1, factory.Clock.GetUtcNow());
         var request = new LearningRequest(student.Id, teacher.Id, service.Id, "Governance request",

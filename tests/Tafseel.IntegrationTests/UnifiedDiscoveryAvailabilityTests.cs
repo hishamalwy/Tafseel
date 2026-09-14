@@ -116,7 +116,7 @@ public sealed class UnifiedDiscoveryAvailabilityTests(SqlServerTafseelApiFactory
             var profile = new TeacherProfile(teacherId, factory.Clock.GetUtcNow());
             profile.Update("Unified discovery teacher", "Published teacher used for exact-service availability.",
                 "Egypt", "Cairo", "UTC", 10, factory.Clock.GetUtcNow());
-            if (publish) profile.Publish(factory.Clock.GetUtcNow());
+            if (publish) profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
             var service = new TeacherService(
                 teacherId, subject.Id, type.Id, "Discovery service", "Exact service availability fixture.",
                 120, "SAR", 24, 0, factory.Clock.GetUtcNow());

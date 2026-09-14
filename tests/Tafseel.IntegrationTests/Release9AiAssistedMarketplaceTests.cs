@@ -316,7 +316,7 @@ public sealed class Release9AiAssistedMarketplaceTests(AiTafseelApiFactory facto
             var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);
             profile.Update("Calculus teacher", "Detailed professional teacher biography.", "Egypt", "Cairo",
                 "Egypt Standard Time", 30, DateTimeOffset.UtcNow);
-            profile.Publish(DateTimeOffset.UtcNow);
+            profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
             db.AddRange(profile,
                 new TeacherService(teacher.Id, subject.Id, service.Id, "Recorded calculus help",
                     "A focused explanation.", 120, "SAR", 24, 1, DateTimeOffset.UtcNow),

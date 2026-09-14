@@ -166,7 +166,7 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("DST teacher", "DST availability summary profile.",
             "United States", "New York", "Eastern Standard Time", 10, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         var service = new TeacherService(
             teacher.Id, subject.Id, type.Id, "DST service", "DST service details.",
             100, "SAR", 24, 0, factory.Clock.GetUtcNow());
@@ -216,7 +216,7 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
             var profile = new TeacherProfile(user.Id, factory.Clock.GetUtcNow());
             profile.Update("Availability teacher", "Availability summary test profile.",
                 "Egypt", "Cairo", "UTC", 10, factory.Clock.GetUtcNow());
-            if (publish) profile.Publish(factory.Clock.GetUtcNow());
+            if (publish) profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
             var service = new TeacherService(
                 user.Id, subject.Id, type.Id, "Test service", "Availability test service.",
                 100, "SAR", 24, 0, factory.Clock.GetUtcNow());
@@ -319,7 +319,7 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Guard teacher", "Schedule mutation guard profile.",
             "Egypt", "Cairo", "UTC", 10, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         var service = new TeacherService(
             teacher.Id, subject.Id, type.Id, "Guard service", "Guard service details.",
             100, "SAR", 24, 0, factory.Clock.GetUtcNow());

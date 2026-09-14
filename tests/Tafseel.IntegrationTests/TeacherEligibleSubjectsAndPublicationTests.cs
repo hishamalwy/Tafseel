@@ -197,7 +197,7 @@ public sealed class TeacherEligibleSubjectsAndPublicationTests(SqlServerTafseelA
         var profile = new TeacherProfile(user.Id, DateTimeOffset.UtcNow);
         profile.Update("Clear explanations", "Detailed professional teacher biography.", "Egypt", "Cairo",
             "Egypt Standard Time", 30, DateTimeOffset.UtcNow);
-        if (withApproved && publish) profile.Publish(DateTimeOffset.UtcNow);
+        if (withApproved && publish) profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         db.Add(profile);
         TeacherService? service = null;
         if (withService || schedulingService)

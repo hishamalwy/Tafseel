@@ -156,7 +156,7 @@ public sealed class Phase8MessagingTests(SqlServerTafseelApiFactory factory)
         var profile = new TeacherProfile(teacherId, factory.Clock.GetUtcNow());
         profile.Update("Messaging teacher", "A published teacher available for student inquiries.",
             "Egypt", "Cairo", "Egypt Standard Time", 10, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         db.Add(profile);
         await db.SaveChangesAsync();
     }

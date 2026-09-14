@@ -149,7 +149,7 @@ public sealed class TeacherTrustBadgeTests(SqlServerTafseelApiFactory factory)
         profile.Update(
             "Trust headline", "Trust biography for published teacher.",
             "Egypt", "Cairo", "Egypt Standard Time", 30, DateTimeOffset.UtcNow);
-        profile.Publish(DateTimeOffset.UtcNow);
+        profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         db.Add(profile);
         await db.SaveChangesAsync();
         return new(teacher.Id, teacher.Email, subject.Id, service.Id);

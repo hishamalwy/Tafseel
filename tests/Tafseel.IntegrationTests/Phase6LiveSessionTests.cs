@@ -178,7 +178,7 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Live teacher", "Teacher profile for session tests.", "Egypt", "Cairo",
             "Egypt Standard Time", 10, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         var service = new TeacherService(teacher.Id, subject.Id, type.Id, "Live explanation",
             "A private live explanation session.", 120, "SAR", 24, 0, factory.Clock.GetUtcNow());
         db.AddRange(subject, profile, service,

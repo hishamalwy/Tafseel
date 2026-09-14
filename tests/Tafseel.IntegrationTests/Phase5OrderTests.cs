@@ -345,7 +345,7 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);
         profile.Update("Live teacher", "Teacher for scheduling rejection.", "Egypt", "Cairo",
             "Egypt Standard Time", 15, DateTimeOffset.UtcNow);
-        profile.Publish(DateTimeOffset.UtcNow);
+        profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         var service = new TeacherService(
             teacher.Id, subject.Id, live.Id, "Live help",
             "A live session that must be booked.", 120, "SAR", 24, 0, DateTimeOffset.UtcNow);
@@ -382,7 +382,7 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);
         profile.Update("Order teacher", "Teacher profile for request integration tests.", "Egypt", "Cairo",
             "Egypt Standard Time", 15, DateTimeOffset.UtcNow);
-        profile.Publish(DateTimeOffset.UtcNow);
+        profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         var service = new TeacherService(
             teacher.Id, subject.Id, type.Id, "Custom explanation",
             "A custom explanation for the supplied files.", 100, "SAR", 24, 1, DateTimeOffset.UtcNow);

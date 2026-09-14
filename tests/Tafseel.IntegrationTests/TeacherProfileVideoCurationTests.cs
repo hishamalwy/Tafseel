@@ -215,7 +215,7 @@ public sealed class TeacherProfileVideoCurationTests(SqlServerTafseelApiFactory 
         profile.Update(
             "Curation teacher", "A complete public teacher profile for curation validation.",
             "Egypt", "Cairo", "Egypt Standard Time", 30, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         var qualification = new TeacherSubjectQualification(
             teacher.Id, subject.Id, factory.Clock.GetUtcNow());
         var stored = await storage.StorePrivateVideoAsync(

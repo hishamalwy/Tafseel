@@ -163,7 +163,7 @@ public sealed class TeacherPublicProfileHardeningTests(SqlServerTafseelApiFactor
             "Clear explanations",
             "Detailed professional teacher biography for hardening tests.",
             "Egypt", "Cairo", "Egypt Standard Time", 30, DateTimeOffset.UtcNow);
-        if (publish) profile.Publish(DateTimeOffset.UtcNow);
+        if (publish) profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         db.Add(profile);
 
         if (withApprovedShowcase)

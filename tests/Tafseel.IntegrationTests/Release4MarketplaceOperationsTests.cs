@@ -245,7 +245,7 @@ public sealed class Release4MarketplaceOperationsTests(SqlServerTafseelApiFactor
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Ops Review Teacher", "Profile for operations review discovery.",
             "Egypt", "Cairo", "Egypt Standard Time", 10, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         var service = new TeacherService(teacher.Id, subject.Id, type.Id, "Ops review service",
             "Used to test admin review discovery.", 100, "SAR", 24, 1, factory.Clock.GetUtcNow());
         var request = new LearningRequest(student.Id, teacher.Id, service.Id, "Ops review request",
@@ -294,7 +294,7 @@ public sealed class Release4MarketplaceOperationsTests(SqlServerTafseelApiFactor
         var profile = new TeacherProfile(teacher.Id, factory.Clock.GetUtcNow());
         profile.Update("Ops media teacher", "Profile used for media operations tests.",
             "Egypt", "Cairo", "Egypt Standard Time", 20, factory.Clock.GetUtcNow());
-        profile.Publish(factory.Clock.GetUtcNow());
+        profile.Publish(TeacherProfileReadiness.Ready, factory.Clock.GetUtcNow());
         db.AddRange(
             subject, topic, serviceType, profile,
             new TeacherSubjectQualification(teacher.Id, subject.Id, factory.Clock.GetUtcNow()),

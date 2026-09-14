@@ -294,7 +294,7 @@ public sealed class Release5OrderCommunicationAcceptanceTests(SqlServerTafseelAp
         var profile = new TeacherProfile(teacher.Id, DateTimeOffset.UtcNow);
         profile.Update("R5 teacher", "Teacher profile for Release 5 acceptance.", "Egypt", "Cairo",
             "Egypt Standard Time", 15, DateTimeOffset.UtcNow);
-        profile.Publish(DateTimeOffset.UtcNow);
+        profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         var service = new TeacherService(
             teacher.Id, subject.Id, type.Id, "Custom explanation",
             "A custom explanation for the supplied files.", 100, "SAR", 24, 1, DateTimeOffset.UtcNow);

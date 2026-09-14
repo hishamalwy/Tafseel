@@ -383,7 +383,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         var profile = new TeacherProfile(user.Id, DateTimeOffset.UtcNow);
         profile.Update("Clear explanations", "Detailed professional teacher biography.", "Egypt", "Cairo",
             "Egypt Standard Time", 30, DateTimeOffset.UtcNow);
-        if (approved) profile.Publish(DateTimeOffset.UtcNow);
+        if (approved) profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
         db.Add(profile);
         TeacherService? service = null;
         if (withService)

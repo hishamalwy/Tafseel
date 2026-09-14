@@ -196,7 +196,7 @@ public sealed class TeacherComparisonTests(SqlServerTafseelApiFactory factory)
                 index == 3 ? "UNPUBLISHED_PRIVATE_MARKER" : $"Public biography {index + 1}.",
                 "Egypt", "Cairo", "Egypt Standard Time", 30, DateTimeOffset.UtcNow);
             if (index == 0) profile.SetRating(4.6m, 2, DateTimeOffset.UtcNow);
-            if (index < 3) profile.Publish(DateTimeOffset.UtcNow);
+            if (index < 3) profile.Publish(TeacherProfileReadiness.Ready, DateTimeOffset.UtcNow);
             db.Add(profile);
         }
 
