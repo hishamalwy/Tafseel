@@ -157,7 +157,8 @@ public sealed class TeacherAdditionalSubjectQualificationTests(SqlServerTafseelA
         // pending different-subject application.
         var before = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/onboarding-status");
         Assert.True(before.GetProperty("status").GetInt32() >= (int)TeacherOnboardingStatus.ApprovedButProfileIncomplete);
-        Assert.Contains("Dashboard", before.GetProperty("nextUrl").GetString());
+        // The teacher workspace (/teacher/...), never the application at /teach/apply.
+        Assert.StartsWith("/teacher/", before.GetProperty("nextUrl").GetString());
 
         var created = await teacher.PostAsJsonAsync("/api/v1/teacher-applications", new
         {
@@ -171,7 +172,7 @@ public sealed class TeacherAdditionalSubjectQualificationTests(SqlServerTafseelA
 
         var after = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/onboarding-status");
         Assert.Equal(before.GetProperty("status").GetInt32(), after.GetProperty("status").GetInt32());
-        Assert.Contains("Dashboard", after.GetProperty("nextUrl").GetString());
+        Assert.StartsWith("/teacher/", after.GetProperty("nextUrl").GetString());
         Assert.False(after.GetProperty("nextUrl").GetString()!.Contains("Apply", StringComparison.OrdinalIgnoreCase));
         Assert.False(after.GetProperty("nextUrl").GetString()!.Contains("Demo", StringComparison.OrdinalIgnoreCase));
     }

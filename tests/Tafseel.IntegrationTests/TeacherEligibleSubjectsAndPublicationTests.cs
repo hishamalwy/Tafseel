@@ -154,7 +154,7 @@ public sealed class TeacherEligibleSubjectsAndPublicationTests(SqlServerTafseelA
         var onboarding = JsonDocument.Parse(
             await client.GetStringAsync("/api/v1/teachers/onboarding-status")).RootElement;
         Assert.True(onboarding.GetProperty("status").GetInt32() >= 9);
-        Assert.Contains("Tafseel-Teacher-Dashboard", onboarding.GetProperty("nextUrl").GetString());
+        Assert.StartsWith("/teacher/", onboarding.GetProperty("nextUrl").GetString());
     }
 
     private async Task<HttpClient> ClientForAsync(string email)
