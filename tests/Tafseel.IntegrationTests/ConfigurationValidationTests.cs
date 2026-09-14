@@ -18,6 +18,35 @@ namespace Tafseel.IntegrationTests;
 
 public sealed class ConfigurationValidationTests
 {
+    // Every negative case below changes one key of this baseline and expects validation to
+    // fail. That only proves something if the unchanged baseline is valid for each options
+    // type, so the baseline is asserted first.
+    [Fact]
+    public void Baseline_configuration_is_valid_for_every_validated_options_type()
+    {
+        using var services = Provider("Disputes:WindowDays", "7");
+        _ = services.GetRequiredService<IOptions<JwtOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<EmailOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<ResendClientOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<FeeOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<LiveSessionOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<PaymentOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<TeacherShowcaseOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<DisputeOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<OrderLifecycleOptions>>().Value;
+        _ = services.GetRequiredService<IOptions<AiOptions>>().Value;
+    }
+
+    [Theory]
+    [InlineData("Orders:NonDeliveryGraceHours", "0")]
+    [InlineData("Orders:NonDeliveryGraceHours", "721")]
+    public void Invalid_order_lifecycle_boundaries_fail_validation(string key, string value)
+    {
+        using var services = Provider(key, value);
+        Assert.Throws<OptionsValidationException>(
+            () => services.GetRequiredService<IOptions<OrderLifecycleOptions>>().Value);
+    }
+
     [Theory]
     [InlineData("Jwt:Issuer", "")]
     [InlineData("Jwt:Audience", "")]
@@ -119,7 +148,8 @@ public sealed class ConfigurationValidationTests
     [Theory]
     [InlineData("Payments:WebhookSecret", "short")]
     [InlineData("Payments:Provider", "Unknown")]
-    [InlineData("Payments:AutoReleaseEnabled", "true")]
+    [InlineData("Payments:AutoReleaseAfterHours", "23")]
+    [InlineData("Payments:AutoReleaseAfterHours", "721")]
     public void Invalid_payment_configuration_fails_validation(string key, string value)
     {
         using var services = Provider(key, value);
@@ -199,8 +229,10 @@ public sealed class ConfigurationValidationTests
             ["LiveSessions:JoinWindowMinutes"] = "15",
             ["Payments:Provider"] = "Mock",
             ["Payments:WebhookSecret"] = "configuration-tests-payment-webhook-secret",
-            ["Payments:AutoReleaseEnabled"] = "false",
-            ["Disputes:WindowDays"] = "7"
+            ["Payments:AutoReleaseEnabled"] = "true",
+            ["Payments:AutoReleaseAfterHours"] = "72",
+            ["Disputes:WindowDays"] = "7",
+            ["Orders:NonDeliveryGraceHours"] = "24"
         };
         values[changedKey] = changedValue;
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
