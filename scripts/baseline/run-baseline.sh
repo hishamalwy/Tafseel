@@ -105,12 +105,19 @@ if [ -n "$PS" ]; then
 fi
 
 # ---------------------------------------------------------------- last commit
-note ""; note "## Last commit (git archive HEAD)"
+note ""; note "## Last commit (git archive HEAD): a clean checkout, committed files only"
 rm -rf "$OUT/head"; mkdir -p "$OUT/head"
 git -C "$REPO" archive HEAD | tar -xf - -C "$OUT/head"
 H="$OUT/head"
 ( cd "$H" && dotnet restore Tafseel.sln --locked-mode ) > "$OUT/head-restore.log" 2>&1; note "restore --locked-mode: exit $?"
-( cd "$H" && dotnet build Tafseel.sln -c Release --no-restore -p:BuildWebClient=false ) > "$OUT/head-build.log" 2>&1; note "build: exit $?"
+if [ -f "$H/frontend-angular/package-lock.json" ]; then
+  # The API build compiles the Angular client, so a clean checkout needs its packages first.
+  ( cd "$H/frontend-angular" && npm ci --no-audit --no-fund --prefer-offline ) > "$OUT/head-npm-ci.log" 2>&1
+  note "npm ci (frontend-angular): exit $?"
+  ( cd "$H" && dotnet build Tafseel.sln -c Release --no-restore ) > "$OUT/head-build.log" 2>&1; note "build (incl. Angular): exit $?"
+else
+  ( cd "$H" && dotnet build Tafseel.sln -c Release --no-restore -p:BuildWebClient=false ) > "$OUT/head-build.log" 2>&1; note "build: exit $?"
+fi
 for p in Tafseel.ArchitectureTests Tafseel.Domain.Tests Tafseel.Application.Tests; do
   ( cd "$H" && dotnet test "tests/$p" -c Release --no-build ) > "$OUT/head-test-$p.log" 2>&1
   note "$p  $(counts "$OUT/head-test-$p.log")"
