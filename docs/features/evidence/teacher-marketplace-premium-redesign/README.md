@@ -20,6 +20,8 @@ Browse and Profile each include before/after captures at 1440, 1024, 768, 390, a
 - [Dark mode index](dark/README.md)
 - [RTL index](rtl/README.md)
 - [Responsive DOM audit](responsive-audit.json)
+- [Accessibility audit](accessibility-audit.json)
+- [Adversarial review dispositions](ADVERSARIAL_REVIEW.md)
 
 ## Truth-state coverage
 

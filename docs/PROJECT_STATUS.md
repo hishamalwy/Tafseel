@@ -1,8 +1,19 @@
 # Tafseel Project Status
 
-Last updated: 2026-08-09.
+Last updated: 2026-08-11.
 
 ## Roadmap
+
+**MARKETPLACE EXPERIENCE CONVERGENCE (2026-08-11): VERIFIED.**
+Presentation-only IA pass. Find a Teacher and Post a Request are two sourcing strategies inside one Tafseel marketplace. Student management lives in My Requests / Request Detail. Teacher Opportunities live under Work inside the Teacher Dashboard. The mixed-role standalone Open Marketplace page is reduced to a public Post a Request entry with compatibility redirects. Canonical domain (`LearningRequest` + `TeacherOffer` + existing Payment/Order) unchanged. Landing hero frozen. Three shells only. Backend 1+95+14+264. No commit/push/deploy.
+See [convergence report](./reports/MARKETPLACE_EXPERIENCE_CONVERGENCE_2026_08.md) and [evidence](./features/evidence/marketplace-experience-convergence/).
+
+**OPEN REQUEST MARKETPLACE (2026-08-11): IMPLEMENTED; FINAL VERDICT RECORDED BY THE ACCEPTANCE REPORT.**
+Canonical `LearningRequest` open sourcing, private `TeacherOffer`, exact two-hour payment reservation,
+secure qualified-Teacher attachment access, and payment-to-existing-`Order` conversion are delivered.
+See [feature contract](./features/OPEN_REQUEST_MARKETPLACE.md),
+[implementation report](./reports/OPEN_REQUEST_MARKETPLACE_IMPLEMENTATION.md), and
+[browser evidence](./features/evidence/open-request-marketplace/README.md). No commit/push/deploy.
 
 **PHASE 3 — Release 3: COMPLETE** (conditionally certified — see Sprint 8 certification below).
 
@@ -43,6 +54,28 @@ leaks, 0 required resource failures); 60 high-risk screenshots manually reviewed
 Release build 0 errors; isolated `:5092` publish smoke then stopped. No commit/push/deploy required
 by the acceptance gate. See [feature report](./features/RELEASE_8_PRODUCT_EXPERIENCE_AND_RESPONSIVE_HARDENING.md)
 and [final acceptance](./reports/RELEASE_8_FINAL_ACCEPTANCE.md).
+
+**FINAL PRODUCT CONVERGENCE (additive, 2026-08-09): VERIFIED.**
+Blocker-closure completed: Admin Arabic product chrome fully wired via locales (adversarial AR
+crawl leaves only intentional tech identifiers), Teacher + Admin navigation IA grouped with shared
+SVG icons (notifications remain header-only), full regression green (Architecture 1 / Domain 89 /
+Application 14 / Integration 257), frontend gates including localization (3301 keys), format + EF
+clean, Release build 0/0, isolated publish smoke PASS. Visual recert under
+`docs/features/evidence/final-product-convergence/blocker-closure/`. R5–R8 history unchanged; R9
+remains separate/conditional. Commit/push/deploy NOT PERFORMED.
+See [convergence report](./reports/FINAL_PRODUCT_CONVERGENCE_2026_08.md) and
+[evidence](./features/evidence/final-product-convergence/CHECKPOINT.md).
+
+**DASHBOARD DESIGN LAB (2026-08-10): BLOCKED.** Incremental dashboard polish rejected. Isolated
+lab built three complete role systems (A editorial / B dense / C split hybrid); winner is C shell
++ A Student attention + B tables, refined V1–V3. Production gained shared `.tf-dashboard-shell`,
+grouped SVG nav on Student/Teacher/Quality/Admin, and Overview hierarchy (Needs Attention split,
+Teacher KPI wall removed, Quality one-liner, Admin metric strip + Intelligence CTA). Lab matrix
+clean (0 page errors). Backend 361/361 + format + EF clean. Held BLOCKED: authenticated
+production visual recert not run; inner sections still legacy chrome; Release publish smoke
+not re-run. Marketplace
+Browse/Profile CSS untouched. No commit/push/deploy. See
+[DASHBOARD_DESIGN_LAB_AND_INTEGRATION.md](./reports/DASHBOARD_DESIGN_LAB_AND_INTEGRATION.md).
 
 **RELEASE 9 — AI-ASSISTED MARKETPLACE: CONDITIONALLY VERIFIED (2026-08-08).**
 The optional Student AI layer is implemented behind `IAiProvider` with Groq/OpenAI-compatible

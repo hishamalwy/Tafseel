@@ -21,7 +21,11 @@ dotnet run --project src/Tafseel.Api
 ```
 
 Development startup applies pending migrations to LocalDB. Production deployments must apply migrations before starting the API.
-Open the local frontend at `/app/Tafseel-Landing.dc.html`.
+Open the site at `/`, which redirects to `/ar` or `/en` depending on the
+browser's `Accept-Language`. `dotnet run` builds the Angular client first; pass
+`-p:BuildWebClient=false` to reuse the last build while working on the API, or
+run `npm start` in `frontend-angular/` for the client's own dev server with
+hot reload (it proxies `/api` to port 5089).
 
 Run the checks:
 

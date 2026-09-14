@@ -1,0 +1,19 @@
+﻿Isolated publish + health certification — 2026-08-17
+====================================================
+Publish : dotnet publish -c Release -o <temp>/publish-final   exit 0
+Runtime : ASPNETCORE_ENVIRONMENT=Staging, http://127.0.0.1:5124, LocalDB TafseelLocal
+
+  /health/live   HTTP 200   body: Healthy
+  /health/ready  HTTP 200   body: Healthy
+
+Host filtering (security, not a publish failure):
+  appsettings.Staging.json sets AllowedHosts = "tafseel.runasp.net".
+  A request with a disallowed Host returns HTTP 400 by design; health was
+  certified with the allowed Host header.
+
+This pass's changes confirmed present in the published output:
+  js/tafseel.js                 roleHomeHref, campaignDialogCoolingDown, projectStudentJourney
+  Tafseel-Open-Marketplace      data-subject-picker
+  Tafseel-Teacher-Profile       data-owner-action
+
+Instance stopped after certification. No deploy, no Azure, no Production change.

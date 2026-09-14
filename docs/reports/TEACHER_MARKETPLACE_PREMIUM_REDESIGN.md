@@ -10,7 +10,7 @@ The previous result card presented useful data but made service type, availabili
 
 ## Browse — Redesign
 
-Browse now follows an Ecosystem Index structure: a full-width discovery/search instrument, a dedicated filter rail, and decision-first result cards. Each result exposes teacher fit first, then service type and fulfillment, then an oversized commercial block with a dominant request action.
+Browse now follows an Ecosystem Index structure: a full-width discovery/search instrument, a dedicated desktop filter rail, and decision-first result cards. Advanced filters collapse below 1180 pixels so a teacher enters the initial tablet/mobile viewport. Each result exposes teacher fit first, then service type and fulfillment, then an oversized commercial block with a dominant request action.
 
 ## Smart Search / Filters
 
@@ -38,7 +38,7 @@ Profile now uses a Feature Stack composition: a 70/30 desktop layout with the la
 
 ## Video / Media
 
-Video remains the dominant visual object and was not shrunk into a thumbnail. Playable media behavior is unchanged. Controlled media-error and no-media states preserve the stage dimensions and give truthful recovery/empty messaging.
+Video remains the dominant visual object and was not shrunk into a thumbnail. Playable media behavior is unchanged. Controlled media-error and no-media states preserve the stage dimensions; playback failure now provides retry and alternate-sample actions where available.
 
 ## Identity / Trust
 
@@ -50,7 +50,7 @@ The sidebar leads with selected service, oversized price, delivery/revisions, li
 
 ## Service Selection
 
-Async services use the violet system and on-demand language; live services use the cyan system and per-session language. Selected state is unmistakable through fill, border, label, and the synchronized conversion rail. Existing selection and booking/request URLs are preserved.
+Async services use the violet system and on-demand language; live services use the cyan system and per-session language. Selected state is unmistakable through fill, border, label, and the synchronized conversion rail. Live services without configured availability are explicitly unavailable and cannot be newly selected. Existing valid selection and booking/request URLs are preserved.
 
 ## Ratings & Reviews
 
@@ -82,11 +82,11 @@ Hover motion is limited to short translation or color/shadow changes; focus rema
 
 ## Mobile
 
-At 390 and 375 pixels, search and filters stack, cards become single-column, action priority is preserved, service names wrap safely, and Profile uses a fixed conversion CTA without covering action rows. Additional 320/414 DOM checks found no horizontal overflow or wrapped clickable labels.
+At 390 and 375 pixels, search and primary filters stack, advanced filters collapse behind a labeled control, cards become single-column, action priority is preserved, service names wrap safely, and Profile uses a fixed conversion CTA without covering action rows. Additional 320/414 DOM checks found no horizontal overflow or wrapped clickable labels.
 
 ## Tablet
 
-At 768 pixels, the Profile rail collapses into the mobile CTA while video, identity, services, and reviews remain full-width. Browse preserves readable search/filter controls and a single decision card without overflow.
+At 768 pixels, the Profile rail becomes an inline selected-service summary with price, fulfillment, protection, and CTA; the fixed mobile CTA is reserved for phone widths. Browse collapses advanced filters and keeps the first decision card inside the initial viewport.
 
 ## Desktop
 
@@ -112,10 +112,11 @@ The evidence set contains 40 PNGs plus indexes and a responsive DOM audit. It in
 
 - Nine relevant frontend CI checks passed: JavaScript, unified discovery, Releases 6/7/9, localization, localization usage, placeholder leak, frontend integrity, and profile mobile CTA.
 - `dotnet format Tafseel.sln --verify-no-changes` passed.
-- `dotnet build Tafseel.sln -c Release --no-restore` passed with 0 errors and 2 pre-existing nullable warnings in `TeacherApplicationService.cs`.
+- Final `dotnet build Tafseel.sln -c Release --no-restore` passed with 0 errors and 0 warnings.
 - 43 targeted marketplace/profile integration tests passed.
 - 89 domain tests, 14 application tests, and 1 architecture test passed.
 - Responsive DOM audit passed all recorded widths with no horizontal overflow.
+- An independent adversarial product/art-direction pass raised 25 findings; material mobile hierarchy, localization, media recovery, service availability/type, review-copy, and contrast findings were corrected before final scoring.
 - Impeccable detector reported only pre-existing/shared warnings outside this scoped layer: legacy Inter fallback declarations, old layout-property transitions, and file-local heuristics that cannot see the shared type system.
 
 ## Files Changed

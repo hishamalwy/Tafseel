@@ -1,0 +1,32 @@
+PASS  async service resolved — recorded_explanation
+PASS  Student publishes an Open Request — e572887f-060e-468d-a0a9-41cc3244d923
+PASS  published as OpenForOffers — status=5
+PASS  qualified Teacher sees the Opportunity
+PASS  anonymous cannot open the Opportunity — status=401
+PASS  anonymous cannot read the Student request — status=401
+PASS  qualified Teacher submits an Offer — 5e74581c-8503-4b86-9162-a8d11a219a96
+PASS  request list carries a live Offer count — offerCount=1
+PASS  Student sees the Offer on their request
+PASS  Student selects the Offer
+PASS  request is AwaitingPayment — status=6
+PASS  server issued a payment reservation — 2026-08-17T00:43:49.5853513+00:00
+PASS  reservation is the canonical two hours — 120 min
+PASS  Teacher's Offer reads Selected while awaiting payment — status=1
+PASS  Landing surfaces the awaiting-payment action
+PASS  Landing shows the server reservation, not a guess
+  shot 01-landing-awaiting-payment.png
+PASS  Needs Attention surfaces the same action
+PASS  Needs Attention names the same request Landing named
+  shot 02-student-needs-attention-awaiting-payment.png
+  shot 03-teacher-dashboard-after-offer.png
+PASS  payment initiated for the reserved request — mock_e572887f060e468da0a941cc3244d923
+PASS  mock payment callback accepted — HTTP 204
+PASS  replayed callback is not an error path — HTTP 204
+PASS  request converted to Order — status=7
+PASS  payment reservation consumed
+PASS  exactly one canonical Order exists — count=1
+PASS  Order price equals the selected Offer amount — price=180
+PASS  Order is Paid — paymentStatus=1
+  shot 04-student-order-after-payment.png
+  shot 05-teacher-active-work-after-payment.png
+PASS  Teacher's winning Offer is Accepted after payment — status=2
