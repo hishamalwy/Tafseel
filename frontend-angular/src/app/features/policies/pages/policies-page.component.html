@@ -1,0 +1,60 @@
+<a href="#main" class="tf-skip">{{ chrome().skip }}</a>
+
+<header class="tf-workflow-header">
+  <div class="tf-shell tf-workflow-header__inner">
+    <a class="tf-workflow-header__brand" routerLink="/" aria-label="Tafseel home">
+      <img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="18" height="24" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+    </a>
+    <span class="tf-workflow-header__crumb">/ {{ chrome().policies }}</span>
+    <div class="tf-workflow-header__actions">
+      <button type="button" class="tf-lang-toggle" (click)="locale.toggle()"
+              [attr.aria-label]="langLabel()" [attr.title]="langLabel()"></button>
+      <button type="button" class="tf-theme-toggle" (click)="theme.toggle()"
+              [attr.aria-label]="themeLabel()"></button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="tf-shell tf-policy">
+  <div class="tf-policy-mast">
+    <p class="tf-policy-mast__meta">
+      <span>{{ chrome().policies }}</span><span>{{ chrome().version }}</span><span>{{ chrome().effective }}</span>
+    </p>
+    <h1 class="tf-policy-mast__title">{{ active().title }}</h1>
+    <p class="tf-policy-mast__lede">{{ active().intro }}</p>
+  </div>
+
+  <nav class="tf-policy-nav" [attr.aria-label]="chrome().policies">
+    @for (item of nav(); track item.id) {
+      <button type="button" class="tf-policy-nav__item" (click)="select(item.id)"
+              [attr.aria-current]="item.current ? 'page' : 'false'">{{ item.label }}</button>
+    }
+  </nav>
+
+  <article class="tf-policy-doc">
+    @for (section of active().sections; track section.title) {
+      <section class="tf-policy-section">
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.body }}</p>
+      </section>
+    }
+    <p class="tf-policy-contact">{{ chrome().contact }} <a href="mailto:support@tafseel.com">support&#64;tafseel.com</a></p>
+  </article>
+</main>
+
+<footer class="tf-mini-footer" data-pattern="bottom">
+  <div class="tf-shell tf-mini-footer__inner">
+    <a class="tf-mini-footer__brand" routerLink="/" aria-label="Tafseel">
+      <img class="tf-footer-mark-light" loading="lazy" decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="18" height="24" />
+      <img class="tf-footer-mark-dark" loading="lazy" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark" src="assets/brand/tafseel-mark-dark.svg" alt="" width="18" height="24" />
+      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+    </a>
+    <span class="tf-mini-footer__rights">{{ chrome().rights }}</span>
+    <nav class="tf-mini-footer__links" aria-label="Tafseel">
+      <a routerLink="/about">{{ chrome().about }}</a>
+      <a routerLink="/browse">{{ chrome().browse }}</a>
+      <a routerLink="/requests/new">{{ chrome().post }}</a>
+    </nav>
+  </div>
+</footer>

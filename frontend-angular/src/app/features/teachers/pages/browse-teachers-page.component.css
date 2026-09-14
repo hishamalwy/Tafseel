@@ -1,0 +1,54 @@
+/* The page renders from the design system in css/tafseel.css — the same
+   tf-mkb-* / tf-mk-* rules the original page uses. Re-declaring anything that
+   sheet already owns is what made this screen drift away from it, so only the
+   comparison tray and panel live here: they are this client's own addition and
+   the shared sheet names nothing for them. */
+:host { display: block; }
+
+.tf-compare-tray {
+  position: sticky;
+  inset-block-end: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.tf-compare-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: auto;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.tf-compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: 18px;
+}
+
+.tf-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.tf-compare-card {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+@media (max-width: 600px) {
+  .tf-compare-tray { flex-wrap: wrap; inset-inline: 8px; }
+}

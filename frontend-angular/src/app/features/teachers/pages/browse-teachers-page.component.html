@@ -1,0 +1,327 @@
+<tf-skip-link />
+<tf-public-header menuId="browse-public-menu" />
+
+<main id="main" class="tf-shell tf-marketplace-browse tf-mk-world" style="padding-block:0">
+  <section class="tf-mkb-mast">
+    <nav class="tf-mkb-crumb" [attr.aria-label]="t('tp_breadcrumb', 'Breadcrumb')">
+      <a routerLink="/">{{ t('tp_home', 'Home') }}</a>
+      <span>/</span>
+      <span style="color:var(--mk-ink-2);font-weight:600">{{ t('nav_browse', 'Browse teachers') }}</span>
+    </nav>
+
+    <div class="tf-mkb-mast-row tf-page-header">
+      <div class="tf-page-header-text">
+        <h1 class="tf-mk-display">{{ t('browse_h', 'Find your teacher') }}</h1>
+        <p class="tf-mk-lede">{{ t('browse_lede', 'Choose a teacher who fits your need and learning style.') }}</p>
+      </div>
+      <div class="tf-mkb-trust">
+        <span style="color:var(--mk-green)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 4.6 2.9 8.4 7 10 4.1-1.6 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /></svg>
+          <span style="color:var(--mk-ink-2)">{{ t('tp_protected_payment', 'Protected payment') }}</span>
+        </span>
+        <span style="color:var(--mk-violet)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7.5 12 3 3 6-7" /></svg>
+          <span style="color:var(--mk-ink-2)">{{ t('trust_badge_qualified_on_tafseel', 'Qualified on Tafseel') }}</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="tf-mkb-cmd">
+      <form role="search" class="tf-smart-search tf-smart-search--browse"
+            (ngSubmit)="applyFilters(); $event.preventDefault()" [attr.aria-busy]="loading()">
+        <div class="tf-smart-search__bar">
+          <div class="tf-smart-search__field">
+            <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+            <label for="f-q" class="tf-sr-only">{{ t('browse_search_label', 'Search teachers') }}</label>
+            <input class="tf-smart-search__input" id="f-q" maxlength="2000"
+                   [placeholder]="t('browse_search_placeholder', 'Search a teacher or describe what you need…')"
+                   [value]="draft().q ?? ''" (input)="patchDraft({ q: $any($event.target).value })" />
+          </div>
+          <button type="submit" class="tf-smart-search__submit" [disabled]="loading()" [attr.data-busy]="loading()">
+            <svg class="tf-smart-search__submit-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+            <span class="tf-smart-search__spinner" aria-hidden="true"></span>
+            <span>{{ t('browse_search', 'Search') }}</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Two choices carry the search; everything else lives one click away so
+           teachers, not controls, are the first thing below the search line. -->
+      <div class="tf-mkb-filters" role="group" [attr.aria-label]="t('browse_primary_filters', 'Main filters')">
+        <label class="tf-sr-only" for="f-subject">{{ t('browse_subject', 'Subject') }}</label>
+        <select class="tf-mk-select" id="f-subject" [attr.aria-label]="t('browse_subject', 'Subject')"
+                [value]="draft().subjectId ?? ''"
+                (change)="patchDraft({ subjectId: $any($event.target).value }); applyFilters()">
+          <option value="">{{ t('browse_all_subjects', 'All subjects') }}</option>
+          @for (item of catalogs().subjects; track item.id) {
+            <option [value]="item.id">{{ catalogLabel(item) }}</option>
+          }
+        </select>
+
+        <label class="tf-sr-only" for="f-service">{{ t('browse_service', 'Service') }}</label>
+        <select class="tf-mk-select" id="f-service" [attr.aria-label]="t('browse_service', 'Service')"
+                [value]="draft().serviceId ?? ''"
+                (change)="patchDraft({ serviceId: $any($event.target).value }); applyFilters()">
+          <option value="">{{ t('browse_all_services', 'All services') }}</option>
+          @for (item of catalogs().services; track item.id) {
+            <option [value]="item.id">{{ catalogLabel(item) }}</option>
+          }
+        </select>
+
+        <button type="button" class="tf-mkb-sheet-btn" aria-controls="browse-filter-sheet"
+                [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" /></svg>
+          <span>{{ t('browse_more_filters', 'More filters') }}</span><b>{{ activeFilterCount() }}</b>
+        </button>
+      </div>
+
+      <div class="tf-mkb-mobile">
+        <button type="button" class="tf-mkb-sheet-btn" aria-controls="browse-filter-sheet"
+                [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" /></svg>
+          <span>{{ t('browse_filters', 'Filters') }}</span><b>{{ activeFilterCount() }}</b>
+        </button>
+        <label class="tf-sr-only" for="sort-mobile">{{ t('browse_sort', 'Sort') }}</label>
+        <select class="tf-mk-select" id="sort-mobile" [attr.aria-label]="t('browse_sort', 'Sort')"
+                [value]="draft().sort ?? ''"
+                (change)="patchDraft({ sort: $any($event.target).value }); applyFilters()">
+          <option value="">{{ t('browse_sort_relevance', 'Most relevant') }}</option>
+          <option value="rating">{{ t('browse_sort_rating', 'Highest rated') }}</option>
+          <option value="price">{{ t('browse_sort_price', 'Lowest price') }}</option>
+        </select>
+      </div>
+    </div>
+
+    @if (filtersOpen()) {
+      <div id="browse-filter-sheet" class="tf-mkb-sheet">
+        <label class="tf-mkb-sheet-field">
+          <span>{{ t('browse_level', 'Education level') }}</span>
+          <select class="tf-mk-select" [value]="draft().educationLevelId ?? ''"
+                  (change)="patchDraft({ educationLevelId: $any($event.target).value })">
+            <option value="">{{ t('browse_all_levels', 'All levels') }}</option>
+            @for (item of catalogs().educationLevels; track item.id) {
+              <option [value]="item.id">{{ catalogLabel(item) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="tf-mkb-sheet-field">
+          <span>{{ t('browse_max_price', 'Maximum price') }}</span>
+          <input class="tf-mk-select" type="number" min="0" step="10" [value]="draft().maxPrice ?? ''"
+                 (input)="patchDraft({ maxPrice: +$any($event.target).value || undefined })" />
+        </label>
+
+        <label class="tf-mkb-sheet-field">
+          <span>{{ t('browse_min_rating', 'Minimum rating') }}</span>
+          <select class="tf-mk-select" [value]="draft().minRating ?? ''"
+                  (change)="patchDraft({ minRating: +$any($event.target).value || undefined })">
+            <option value="">{{ t('browse_any_rating', 'Any rating') }}</option>
+            <option value="3">3+</option><option value="4">4+</option><option value="4.5">4.5+</option>
+          </select>
+        </label>
+
+        <label class="tf-mkb-sheet-check">
+          <input type="checkbox" [checked]="draft().verifiedOnly === true"
+                 (change)="patchDraft({ verifiedOnly: $any($event.target).checked || undefined })" />
+          <span>{{ t('browse_verified_only', 'Verified teachers only') }}</span>
+        </label>
+
+        <div class="tf-mk-empty-actions">
+          <button type="button" class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--sm" (click)="applyFilters()">
+            {{ t('browse_apply', 'Apply') }}
+          </button>
+          <button type="button" class="tf-mk-btn tf-mk-btn--secondary tf-mk-btn--sm" (click)="clearFilters()">
+            {{ t('browse_clear', 'Clear') }}
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <section class="tf-mkb-results">
+    <div class="tf-mkb-bar">
+      <div class="tf-mkb-bar-left">
+        <p class="tf-mkb-count">
+          <span>{{ fmt.number(totalCount()) }}</span>
+          <span>{{ t('browse_matches', 'teachers match your filters') }}</span>
+        </p>
+      </div>
+      <div class="tf-mkb-sort">
+        <label for="sort">{{ t('browse_sort', 'Sort') }}</label>
+        <select class="tf-mk-select" id="sort" [value]="draft().sort ?? ''"
+                (change)="patchDraft({ sort: $any($event.target).value }); applyFilters()">
+          <option value="">{{ t('browse_sort_relevance', 'Most relevant') }}</option>
+          <option value="rating">{{ t('browse_sort_rating', 'Highest rated') }}</option>
+          <option value="price">{{ t('browse_sort_price', 'Lowest price') }}</option>
+        </select>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div role="status" aria-live="polite">
+        <span class="tf-sr-only">{{ t('browse_loading', 'Loading teachers…') }}</span>
+        <div class="tf-mkb-skeletons" aria-hidden="true">
+          <div class="tf-skeleton"></div><div class="tf-skeleton"></div><div class="tf-skeleton"></div>
+        </div>
+      </div>
+    } @else if (error()) {
+      <div class="tf-mk-empty" role="alert">
+        <p style="color:var(--error);margin:0 0 16px">{{ t('browse_failed', 'Could not load teachers.') }}</p>
+        <button type="button" class="tf-mk-btn tf-mk-btn--primary" (click)="load()">
+          {{ t('browse_retry', 'Try again') }}
+        </button>
+      </div>
+    } @else if (!cards().length) {
+      <div class="tf-mk-empty">
+        <h2>{{ t('browse_empty_title', 'No teachers match these filters') }}</h2>
+        <p>{{ t('browse_empty', 'No teachers match these filters yet.') }}</p>
+        <div class="tf-mk-empty-actions">
+          <button type="button" class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--sm" (click)="clearFilters()">
+            {{ t('browse_reset_filters', 'Reset filters') }}
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="tf-mkb-grid">
+        @for (card of cards(); track card.id) {
+          <article class="tf-mkb-card">
+            <div class="tf-mkb-strip">
+              <span class="tf-mkb-dot" aria-hidden="true"></span>
+              <span>{{ card.serviceName || card.subject }}</span>
+              @if (card.serviceName && card.subject) {
+                <span class="tf-mkb-subj">{{ card.subject }}</span>
+              }
+              <span class="tf-mkb-tools">
+                @if (isStudent()) {
+                  <button type="button" (click)="favourite(card.id)"
+                          [disabled]="favouriteBusy() === card.id"
+                          [attr.aria-pressed]="card.isFavourite"
+                          [attr.aria-label]="t('tp_save', 'Save')" [attr.title]="t('tp_save', 'Save')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                         [attr.fill]="card.isFavourite ? 'currentColor' : 'none'"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+                  </button>
+                }
+                <button type="button" (click)="toggleCompare(card.id)"
+                        [attr.aria-pressed]="card.isCompared"
+                        [disabled]="!card.isCompared && compareFull()"
+                        [attr.aria-label]="t('browse_compare', 'Compare')" [attr.title]="t('browse_compare', 'Compare')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h7M4 12h7M4 18h7M17 4v16m0-16-3 3m3-3 3 3" /></svg>
+                </button>
+              </span>
+            </div>
+
+            <div class="tf-mkb-body">
+              <div class="tf-mkb-id">
+                <img loading="lazy" decoding="async" class="tf-mk-av tf-mk-av--m tf-img-avatar"
+                     [src]="card.avatar" alt="" width="64" height="64" />
+                <div class="tf-mkb-idcopy">
+                  <a class="tf-mkb-name" [routerLink]="['/teachers', card.id]">
+                    {{ card.name }}
+                    @if (card.isQualified) {
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <title>{{ t('trust_badge_qualified_on_tafseel', 'Qualified on Tafseel') }}</title>
+                        <path d="m7.5 12 3 3 6-7" />
+                      </svg>
+                    }
+                  </a>
+                  @if (card.languagesLabel) {
+                    <div class="tf-mkb-langs">{{ card.languagesLabel }}</div>
+                  }
+                  <div class="tf-mkb-rate">
+                    @if (card.rating) {
+                      <span class="tf-mk-rating">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 16.72l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86L12 3.2Z" /></svg>
+                        <b>{{ card.ratingLabel }}</b><span>({{ fmt.number(card.reviewCount) }})</span>
+                      </span>
+                    } @else {
+                      <span class="tf-mk-rating--none">{{ t('tp_no_reviews', 'No reviews yet') }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              @if (card.headline) {
+                <p class="tf-mkb-headline">{{ card.headline }}</p>
+              }
+
+              <dl class="tf-mkb-facts">
+                <dt>{{ t('browse_fact_subject', 'Subject') }}</dt>
+                <dd>{{ card.subjectsLabel || '—' }}</dd>
+                @if (card.deliveryDays) {
+                  <dt>{{ t('browse_fact_delivery', 'Delivery') }}</dt>
+                  <dd>{{ card.deliveryDays }} {{ t('tp_days', 'days') }}</dd>
+                } @else if (card.responseTimeMinutes) {
+                  <dt>{{ t('browse_fact_response', 'Responds in') }}</dt>
+                  <dd>{{ fmt.number(card.responseTimeMinutes) }} {{ t('common_minutes', 'min') }}</dd>
+                } @else {
+                  <dt>{{ t('tp_completed', 'Completed') }}</dt>
+                  <dd>{{ fmt.number(card.completedOrders) }}</dd>
+                }
+              </dl>
+            </div>
+
+            <div class="tf-mkb-buy">
+              @if (card.fromAmount !== null) {
+                <div class="tf-mk-price-block">
+                  <span class="tf-mk-label">{{ t('common_from', 'From') }}</span>
+                  <tf-price size="lg" [amount]="card.fromAmount" [currency]="card.fromCurrency" />
+                </div>
+              }
+              <a class="tf-mkb-profile-link" [routerLink]="['/teachers', card.id]">
+                {{ t('browse_view_profile', 'View profile') }}
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <nav class="tf-mkb-pager" [attr.aria-label]="t('browse_pagination', 'Pages')">
+          <button type="button" (click)="goToPage(page() - 1)" [disabled]="!canGoBack()">
+            {{ t('common_previous', 'Previous') }}
+          </button>
+          <span aria-live="polite">{{ page() }} / {{ totalPages() }}</span>
+          <button type="button" (click)="goToPage(page() + 1)" [disabled]="!canGoForward()">
+            {{ t('common_next', 'Next') }}
+          </button>
+        </nav>
+      }
+    }
+  </section>
+
+  @if (compareIds().length) {
+    <div class="tf-compare-tray" role="region" [attr.aria-label]="t('browse_compare', 'Compare')">
+      <span>{{ compareIds().length }} / 4</span>
+      <button type="button" class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--sm" (click)="openComparison()">
+        {{ t('browse_compare_open', 'Compare selected') }}
+      </button>
+      <button type="button" class="tf-mk-btn tf-mk-btn--secondary tf-mk-btn--sm" (click)="compareIds.set([])">
+        {{ t('browse_clear', 'Clear') }}
+      </button>
+    </div>
+  }
+
+  @if (comparison(); as rows) {
+    <div class="tf-compare-panel" role="dialog" aria-modal="true"
+         [attr.aria-label]="t('browse_compare', 'Compare')">
+      <div class="tf-compare-head">
+        <h2>{{ t('browse_compare', 'Compare') }}</h2>
+        <button type="button" class="tf-mk-btn tf-mk-btn--secondary tf-mk-btn--sm" (click)="closeComparison()">
+          {{ t('close', 'Close') }}
+        </button>
+      </div>
+      <div class="tf-compare-grid">
+        @for (row of rows; track row.id) {
+          <article class="tf-compare-card">
+            <strong>{{ fmt.userName(row) }}</strong>
+            <span>{{ row.rating ? fmt.number(row.rating, { maximumFractionDigits: 1 }) : '—' }}</span>
+            <span>{{ fmt.number(row.completedOrders) }} {{ t('tp_completed', 'completed') }}</span>
+            <a [routerLink]="['/teachers', row.id]">{{ t('browse_view_profile', 'View profile') }}</a>
+          </article>
+        }
+      </div>
+    </div>
+  }
+</main>
+
+<tf-toast />

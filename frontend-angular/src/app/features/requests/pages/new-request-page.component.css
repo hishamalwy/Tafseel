@@ -1,0 +1,83 @@
+/* Request wizard. tf-req-context-* already exist in css/tafseel.css; the rest
+   is the wizard chrome the legacy page carried inline. */
+:host { display: block; }
+
+.tf-req-page { padding-block: 28px 96px; }
+.tf-req-state { padding: 56px 0; text-align: center; display: grid; gap: 12px; justify-items: center; color: var(--muted); }
+
+.tf-req-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 900px) { .tf-req-layout { grid-template-columns: 1fr; } }
+
+.tf-req-form {
+  display: grid; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 22px;
+}
+.tf-req-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.tf-req-head h1 { font-size: 22px; letter-spacing: -.02em; }
+.tf-req-step { color: var(--muted); font-size: 13px; margin: 0; }
+
+.tf-req-page input[type='text'],
+.tf-req-page input[type='number'],
+.tf-req-page input[type='date'],
+.tf-req-page select,
+.tf-req-page textarea {
+  inline-size: 100%; padding: 11px 12px;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+.tf-req-page textarea { resize: vertical; }
+.tf-req-page select { block-size: 44px; }
+
+.tf-inline-action {
+  border: 0; background: none; padding: 0; font: inherit;
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  cursor: pointer; min-block-size: 44px; display: inline-flex; align-items: center;
+  justify-self: start;
+}
+.tf-inline-action:disabled { opacity: .6; cursor: progress; }
+
+.tf-req-ai {
+  display: grid; gap: 10px; padding: 14px;
+  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2);
+}
+.tf-req-ai__label { margin: 0; font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
+.tf-req-ai__body { margin: 0; line-height: 1.7; white-space: pre-wrap; }
+.tf-req-ai__actions { display: flex; gap: 10px; }
+
+.tf-req-attach { cursor: pointer; justify-content: center; }
+.tf-req-files { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.tf-req-files li {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--bg); font-size: 13px;
+}
+.tf-req-files button {
+  border: 0; background: none; cursor: pointer; font-size: 18px; line-height: 1;
+  color: var(--muted); min-inline-size: 32px; min-block-size: 32px;
+}
+
+.tf-req-review { display: grid; gap: 10px; }
+.tf-req-review h2 { font-size: 16px; }
+.tf-req-review__title { margin: 0; font-weight: 700; }
+.tf-req-review__body {
+  margin: 0; padding: 14px; white-space: pre-wrap; font: inherit; line-height: 1.7;
+  border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg);
+  overflow-x: auto;
+}
+.tf-req-review__files { margin: 0; font-size: 13px; color: var(--muted); }
+
+.tf-req-nav { display: flex; gap: 10px; justify-content: space-between; margin-block-start: 4px; }
+.tf-req-draft { margin: 0; font-size: 12px; color: var(--muted); }
+
+.tf-req-success { display: grid; gap: 14px; justify-items: center; text-align: center; padding-block: 56px; }
+.tf-req-failed-files {
+  display: grid; gap: 8px; justify-items: center;
+  padding: 14px; border-radius: var(--r-md); background: var(--error-soft); color: var(--error);
+}
+.tf-req-failed-files ul { list-style: none; margin: 0; padding: 0; font-size: 13px; }

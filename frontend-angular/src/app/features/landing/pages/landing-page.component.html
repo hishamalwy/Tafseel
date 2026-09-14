@@ -1,0 +1,358 @@
+<tf-skip-link />
+<tf-public-header menuId="landing-public-menu" />
+<tf-landing-sprite />
+
+<main id="main" class="tf-landing-main">
+
+  <!-- First screen: the hero alone. Promotions moved into the entry dialog and
+       the counters moved down the page, so the fold carries one message. -->
+  <div class="tf-landing-fold">
+    <section data-stack="hero" class="tf-shell tf-landing-hero">
+      <div class="tf-hero-stagger tf-landing-hero-copy">
+        <h1 class="tf-hero-headline" [attr.aria-label]="headlineLabel()">
+          <span class="tf-hero-headline-lead">{{ copy().heroLead }}</span>
+          <span class="tf-hero-headline-main">
+            <span class="tf-hero-headline-phrase">
+              <span>{{ copy().heroPrefix }}</span>
+              <tf-hero-rotator [words]="rotateWords()" [minWidth]="copy().heroRotateMin" />
+            </span>
+          </span>
+        </h1>
+        <p class="tf-hero-sub">{{ copy().heroSub }}</p>
+
+        <form class="tf-smart-search tf-smart-search--hero" (submit)="search($event)" role="search">
+          <div class="tf-smart-search__bar">
+            <div class="tf-smart-search__field">
+              <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+              <label for="hero-q" class="tf-sr-only">{{ copy().searchLabel }}</label>
+              <input class="tf-smart-search__input" id="hero-q" maxlength="2000"
+                     [value]="query()" (input)="query.set($any($event.target).value)"
+                     [placeholder]="copy().searchPlaceholder" />
+            </div>
+            <button type="submit" class="tf-smart-search__submit">
+              <svg class="tf-smart-search__submit-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
+              <span>{{ copy().heroCta }}</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- The two marketplace sourcing paths are the hero's account actions.
+             They are role-aware: a Teacher is never asked to post a Student
+             request, and staff are never offered Student conversion. -->
+        <div class="tf-hero-actions" role="group" [attr.aria-label]="heroActionsLabel()">
+          <a class="tf-hero-action tf-hero-action--primary" [routerLink]="heroAction().primaryLink">
+            @if (heroAction().isPost) {
+              <span aria-hidden="true" class="tf-hero-action-plus">＋</span>
+            }
+            <span>{{ heroAction().primaryLabel }}</span>
+          </a>
+          @if (heroAction().secondaryLabel) {
+            <a class="tf-hero-action tf-hero-action--secondary" [routerLink]="heroAction().secondaryLink">
+              {{ heroAction().secondaryLabel }}
+            </a>
+          }
+        </div>
+        @if (heroAction().note) {
+          <p class="tf-hero-note">{{ heroAction().note }}</p>
+        }
+
+        <!-- Teacher recruitment is a different audience from the Student the fold
+             is written for, so it steps out of the action row and becomes one
+             quiet line of text. -->
+        @if (showsTeacherJoin()) {
+          <p class="tf-hero-teach">
+            <span class="tf-hero-teach-lead">{{ locale.t('hero_teach_lead', 'Good at explaining?') }}</span>
+            <a class="tf-hero-teach-link" [routerLink]="teacherJoinLink().path"
+               [queryParams]="teacherJoinLink().query">
+              <span>{{ copy().heroJoin }}</span>
+              <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+            </a>
+          </p>
+        }
+
+        <!-- Platform scale as two quiet orbs rather than a KPI row: read on the
+             way past, not studied. The wrapper renders unconditionally and
+             reserves its own height, so the fold cannot jump when stats land. -->
+        <div class="tf-orbs">
+          <p class="tf-orbs-lede">{{ copy().orbsLede }}</p>
+          <ul class="tf-orb-row">
+            @for (orb of communityStats(); track orb.icon) {
+              <li class="tf-orb" [attr.data-pending]="orb.pending">
+                <svg class="tf-orb-ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                  <circle class="tf-orb-track" cx="50" cy="50" r="46" />
+                  <g class="tf-orb-spin">
+                    <circle class="tf-orb-arc" cx="50" cy="50" r="46" pathLength="100" />
+                    <circle class="tf-orb-bead" cx="96" cy="50" r="1.9" />
+                  </g>
+                </svg>
+                <span class="tf-orb-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><use [attr.href]="'#' + orb.icon" /></svg></span>
+                <span class="tf-orb-value" [style.--len]="orb.len" [attr.data-count-up]="orb.countUp">{{ orb.value }}</span>
+                <span class="tf-orb-label">{{ orb.label }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="tf-landing-hero-visual">
+        <figure class="tf-kingdom">
+          <figcaption class="tf-kingdom-head">
+            <h2 class="tf-kingdom-title">{{ copy().kingdomTitle }}</h2>
+            <span class="tf-kingdom-sub">{{ copy().kingdomSub }}</span>
+          </figcaption>
+          <tf-kingdom-map [label]="copy().kingdomAria" />
+        </figure>
+      </div>
+    </section>
+  </div>
+
+  <!-- A signed-in Student's real request context continues below the fold; it
+       never competes with the Kingdom visual and never duplicates the dashboard. -->
+  @if (showsJourney()) {
+    <tf-journey-strip [journey]="journeyValue()!" [selectedOffer]="journeyOffer()" />
+  }
+
+  <!-- Product understanding. One real interface canvas changes state while four
+       narrative steps progress; it never intercepts or locks scrolling. -->
+  <section id="how" class="tf-shell tf-landing-how">
+    <tf-product-story [teacher]="storyTeacher()" />
+  </section>
+
+  <!-- Discovery. A ruled catalogue rather than a card grid: the subject name is
+       the only thing /subjects/featured returns, so the hierarchy is built from
+       an index, a type scale and rules — never from invented topic lists. -->
+  <section id="subjects" class="tf-shell tf-landing-subjects">
+    <div class="tf-landing-section-head tf-landing-section-head--split">
+      <div class="tf-landing-section-text">
+        <h2>{{ locale.t('subj_h', 'Popular subjects') }}</h2>
+        <p>{{ locale.t('subj_p', 'From high-school revision to postgrad research support.') }}</p>
+      </div>
+      <a class="tf-section-all" routerLink="/teachers">{{ locale.t('subj_all', 'All subjects') }}</a>
+    </div>
+
+    @if (subjectsLoading()) {
+      <div class="tf-subject-grid" aria-busy="true" aria-live="polite">
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+        <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
+      </div>
+    } @else if (subjectsEmpty()) {
+      <p class="tf-landing-state" role="status">
+        {{ locale.t('subj_empty', 'Subjects are unavailable right now. Please try again later.') }}
+      </p>
+    } @else {
+      <div class="tf-subject-grid">
+        @for (subject of subjects(); track subject.id) {
+          <a class="tf-subject-card" routerLink="/teachers" [queryParams]="{ subjectId: subject.id }">
+            <span class="tf-subject-card-index" aria-hidden="true" data-i18n-skip>{{ subject.index }}</span>
+            <span class="tf-subject-card-main">
+              <span class="tf-subject-card-title">{{ subject.name }}</span>
+              <span class="tf-subject-card-cta">
+                <span>{{ subject.cta }}</span>
+                <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+              </span>
+            </span>
+          </a>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Credibility. Every value on this card is a field /teachers actually
+       returns; rating renders only when a real rating exists, and no demo
+       affordance is drawn because the card DTO carries no public demo source. -->
+  <section class="tf-shell tf-landing-teachers">
+    <div class="tf-landing-section-head tf-landing-section-head--split">
+      <div class="tf-landing-section-text">
+        <h2>{{ locale.t('feat_h', 'Featured teachers') }}</h2>
+        <p>{{ locale.t('feat_p', 'Every teacher passes a recorded demo reviewed by our quality team.') }}</p>
+      </div>
+      <a class="tf-section-all" routerLink="/teachers">{{ copy().browseAll }}</a>
+    </div>
+
+    @if (teachersLoading()) {
+      <div class="tf-tcard-grid" aria-busy="true">
+        <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
+        <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
+        <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
+      </div>
+      <p class="tf-sr-only" role="status">{{ copy().teachersLoading }}</p>
+    } @else if (teachersEmpty()) {
+      <p class="tf-landing-state" role="status">{{ copy().teachersEmpty }}</p>
+    } @else {
+      <div class="tf-tcard-grid">
+        @for (teacher of teacherCards(); track teacher.id) {
+          <article class="tf-tcard">
+            <div class="tf-tcard-head">
+              <img loading="lazy" decoding="async" class="tf-img-avatar tf-tcard-avatar" data-tf-avatar
+                   [src]="teacher.avatar" alt="" width="76" height="76" />
+              <div class="tf-tcard-id">
+                <h3 class="tf-tcard-name">{{ teacher.name }}</h3>
+                <p class="tf-tcard-subject">{{ teacher.subject }}</p>
+                @if (teacher.hasRating) {
+                  <p class="tf-tcard-rating">
+                    <svg class="tf-tcard-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-star" /></svg>
+                    <strong>{{ teacher.rating }}</strong>
+                    <span>{{ teacher.reviewsLabel }}</span>
+                  </p>
+                }
+              </div>
+            </div>
+
+            @if (teacher.qualified) {
+              <p class="tf-tcard-qualified">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-check" /></svg>
+                <span>{{ teacher.qualifiedLabel }}</span>
+              </p>
+            }
+            @if (teacher.headline) {
+              <p class="tf-tcard-headline">{{ teacher.headline }}</p>
+            }
+            @if (teacher.topics.length) {
+              <ul class="tf-tcard-topics" [attr.aria-label]="topicsLabel()">
+                @for (topic of teacher.topics; track topic) { <li>{{ topic }}</li> }
+              </ul>
+            }
+
+            <div class="tf-tcard-foot">
+              @if (teacher.deliveryLabel) {
+                <p class="tf-tcard-delivery">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-clock" /></svg>
+                  <span>{{ teacher.deliveryLabel }}</span>
+                </p>
+              }
+              <div class="tf-tcard-close">
+                <p class="tf-tcard-price">
+                  <span class="tf-tcard-price-label">{{ fromLabel() }}</span>
+                  @if (teacher.hasPrice) {
+                    <tf-price size="md" [amount]="teacher.price" [currency]="teacher.currency" />
+                  } @else {
+                    <strong class="tf-tcard-price-text">{{ teacher.priceOnRequest }}</strong>
+                  }
+                </p>
+                <a class="tf-tcard-cta" [routerLink]="['/teachers', teacher.id]"
+                   [attr.aria-label]="teacher.profileAria">
+                  <span>{{ teacher.profileLabel }}</span>
+                  <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+
+  </section>
+
+  <!-- Possibilities. Rendered straight from /services, so the count is whatever
+       the catalogue publishes — the section never claims a number of its own. -->
+  <section id="pricing" class="tf-shell tf-landing-services">
+    <div class="tf-landing-section-head">
+      <div class="tf-landing-section-text">
+        <h2>{{ locale.t('svc_h', 'Ways to get help') }}</h2>
+        <p>{{ locale.t('svc_p', 'Pick the format that fits the week you’re having.') }}</p>
+      </div>
+    </div>
+    <ol class="tf-svc-list">
+      @for (service of services(); track service.index) {
+        <li class="tf-svc-item">
+          <span class="tf-svc-index" aria-hidden="true" data-i18n-skip>{{ service.index }}</span>
+          <div class="tf-svc-body">
+            <h3 class="tf-svc-title">{{ service.name }}</h3>
+            <p class="tf-svc-desc">{{ service.description }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <!-- Reassurance. Three pillars carry the argument and the escrow rail is the
+       picture of it. The student and teacher totals are already the hero orbs,
+       so only the subject count survives here, as one line under the lede. -->
+  <section id="why" class="tf-landing-trust">
+    <div class="tf-shell tf-landing-trust-grid">
+      <div class="tf-trust-copy">
+        <h2>{{ locale.t('why_h', 'Why students trust Tafseel') }}</h2>
+        <p class="tf-trust-lede">
+          {{ locale.t('why_p', 'We review every teacher before they accept requests, and hold each payment through the stated review window so you can approve, request a revision, or open a dispute.') }}
+        </p>
+        @if (scaleNote(); as note) {
+          <p class="tf-trust-scale">{{ note }}</p>
+        }
+        <ol class="tf-trust-pillars">
+          @for (pillar of trustPillars(); track pillar.index) {
+            <li class="tf-trust-pillar">
+              <span class="tf-trust-pillar-index" aria-hidden="true" data-i18n-skip>{{ pillar.index }}</span>
+              <div class="tf-trust-pillar-body">
+                <h3 class="tf-trust-pillar-title">{{ pillar.title }}</h3>
+                <p class="tf-trust-pillar-text">{{ pillar.body }}</p>
+              </div>
+            </li>
+          }
+        </ol>
+      </div>
+
+      <figure class="tf-escrow-rail" data-escrow-flow>
+        <figcaption class="tf-escrow-head">
+          <h3 class="tf-escrow-title">{{ locale.t('why_escrow_title', 'How your payment moves') }}</h3>
+        </figcaption>
+        <ol class="tf-escrow-steps">
+          @for (step of escrow(); track step.text) {
+            <li class="tf-escrow-step">
+              <span class="tf-escrow-node" aria-hidden="true"><span class="tf-escrow-n" data-i18n-skip>{{ step.n }}</span></span>
+              <span class="tf-escrow-text">{{ step.text }}</span>
+            </li>
+          }
+        </ol>
+        <p class="tf-escrow-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-shield" /></svg>
+          <span>{{ locale.t('why_escrow_note', 'Your money stays with Tafseel until you approve the work.') }}</span>
+        </p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Action. The page is Student-first, so the Student half owns the heading
+       level, the width and both real controls; teacher recruitment keeps a quiet
+       column and one text link. -->
+  <section class="tf-shell tf-landing-cta">
+    <div class="tf-landing-cta-split" data-pattern="corner" data-pattern-scale="lg">
+      <div class="tf-cta-student">
+        <h2 class="tf-cta-title">{{ locale.t('cta1_h', 'Get your first explanation this week') }}</h2>
+        <p class="tf-cta-body">
+          {{ locale.t('cta1_p', 'Upload your material, set a deadline, and pick from teachers who’ve already proven they can teach it.') }}
+        </p>
+        <p class="tf-cta-route-q" id="cta-route-q">
+          {{ locale.t('sd_request_route_question', 'Do you already know which teacher you want?') }}
+        </p>
+        <div class="tf-cta-actions" role="group" aria-labelledby="cta-route-q">
+          <a class="tf-cta-primary" routerLink="/requests">{{ locale.t('cta1_primary', 'Post your request') }}</a>
+          <a class="tf-cta-secondary" routerLink="/teachers">{{ locale.t('cta1_secondary', 'Browse teachers') }}</a>
+        </div>
+      </div>
+      <aside class="tf-cta-teacher" aria-labelledby="cta-teacher-title">
+        <h3 class="tf-cta-teacher-title" id="cta-teacher-title">{{ locale.t('cta2_h', 'Start teaching with Tafseel') }}</h3>
+        <p class="tf-cta-teacher-body">
+          {{ locale.t('cta2_p', 'Create your profile, submit a short teaching demo, pass our quality review, and start receiving requests that match your expertise.') }}
+        </p>
+        <a class="tf-cta-teacher-link" [routerLink]="teacherJoinLink().path"
+           [queryParams]="teacherJoinLink().query">
+          <span>{{ locale.t('nav_teach', 'Become a teacher') }}</span>
+          <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+        </a>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<tf-landing-footer [copy]="footerCopy()" [socialLabel]="copy().socialLabel" idPrefix="footer" />
+
+@if (wizardPromotion(); as promotion) {
+  <tf-promo-wizard [promotion]="promotion" (closed)="onWizardClosed()"
+                   (claimed)="onWizardClaimed()" (codeCopied)="onCodeCopied()" />
+}
+
+<!-- Above the dialog scrim: copying a coupon code must show its confirmation,
+     not hide it behind the overlay. -->
+<tf-toast />

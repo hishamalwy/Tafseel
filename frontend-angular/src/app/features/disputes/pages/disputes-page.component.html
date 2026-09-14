@@ -1,0 +1,207 @@
+<tf-workflow-header [crumb]="c().center" />
+
+<main class="tf-shell tf-dispute-page">
+  <div class="tf-dispute-mast">
+    <div>
+      <p class="tf-dispute-eyebrow">{{ c().trust }}</p>
+      <h1 class="tf-dispute-title">{{ c().center }}</h1>
+      <p class="tf-dispute-lede">{{ c().intro }}</p>
+    </div>
+    <button type="button" class="tf-button tf-dispute-refresh" (click)="load()" [disabled]="loading()">
+      {{ c().refresh }}
+    </button>
+  </div>
+
+  @if (canOpenCase()) {
+    <section class="tf-dispute-create">
+      <h2>{{ c().create }}</h2>
+      <p class="tf-dispute-create__intro">{{ c().createIntro }}</p>
+      <form class="tf-dispute-create__form" (ngSubmit)="create($event)">
+        <label for="dispute-target">{{ c().purchase }}</label>
+        <select id="dispute-target" required
+                [value]="targetKey()" (change)="targetKey.set($any($event.target).value)">
+          <option value="">{{ c().choose }}</option>
+          @for (option of eligibleOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        @if (selectedEligibility(); as until) {
+          <p class="tf-dispute-hint">{{ until }}</p>
+        }
+
+        <label for="dispute-reason">{{ c().reasonLabel }}</label>
+        <textarea id="dispute-reason" rows="4" maxlength="2000" required
+                  [placeholder]="c().reason"
+                  [value]="createReason()" (input)="createReason.set($any($event.target).value)"></textarea>
+        <p class="tf-dispute-hint">{{ c().reasonHint }}</p>
+
+        @if (createError(); as message) {
+          <p role="alert" class="tf-dispute-error-text">{{ message }}</p>
+        }
+        <div class="tf-dispute-create__actions">
+          <button type="submit" class="tf-button" [disabled]="busy()">{{ c().submit }}</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (noEligible()) {
+    <section class="tf-dispute-note">
+      <strong>{{ c().noEligibleTitle }}</strong>
+      <p>{{ c().noEligibleBody }}</p>
+    </section>
+  }
+
+  @if (error(); as message) {
+    <p role="alert" class="tf-dispute-error">{{ message }}</p>
+  }
+
+  <div class="tf-dispute-layout">
+    <section class="tf-dispute-list">
+      <header><h2>{{ c().cases }}</h2></header>
+
+      @if (!loading() && caseRows().length === 0) {
+        <div class="tf-dispute-empty">
+          <p>{{ c().empty }}</p>
+          <a [href]="dashboardRoute()" class="tf-button tf-dispute-back">{{ c().back }}</a>
+        </div>
+      }
+
+      @for (item of caseRows(); track item.id) {
+        <button type="button" class="tf-dispute-row" [class.is-current]="item.current"
+                [attr.aria-current]="item.current" (click)="select(item.id)">
+          <span class="tf-dispute-row__head">
+            <strong>{{ item.target }}</strong>
+            <span class="tf-dispute-status" [attr.data-tone]="item.statusTone">{{ item.status }}</span>
+          </span>
+          <span class="tf-dispute-row__reason">{{ item.reason }}</span>
+          <span class="tf-dispute-row__date">{{ item.date }}</span>
+        </button>
+      }
+
+      @if (hasPagination()) {
+        <nav class="tf-dispute-pager" [attr.aria-label]="c().cases">
+          <button type="button" class="tf-button tf-button-secondary"
+                  (click)="goToPage(page() - 1)" [disabled]="!canGoBack()">
+            {{ locale.lang() === 'ar' ? 'السابق' : 'Previous' }}
+          </button>
+          <span aria-live="polite">{{ pageLabel() }}</span>
+          <button type="button" class="tf-button tf-button-secondary"
+                  (click)="goToPage(page() + 1)" [disabled]="!canGoForward()">
+            {{ locale.lang() === 'ar' ? 'التالي' : 'Next' }}
+          </button>
+        </nav>
+      }
+    </section>
+
+    <section class="tf-dispute-detail">
+      @if (detail(); as d) {
+        <header class="tf-dispute-detail__head">
+          <div>
+            <p class="tf-dispute-detail__target">{{ d.target }}</p>
+            <h2>{{ d.reason }}</h2>
+            @if (d.actionDue) {
+              <p class="tf-dispute-due" [class.is-overdue]="d.overdue">{{ d.actionDue }}</p>
+            }
+          </div>
+          <span class="tf-dispute-status tf-dispute-status--pill" [attr.data-tone]="d.statusTone">{{ d.status }}</span>
+        </header>
+
+        <div class="tf-dispute-detail__body">
+          <section>
+            <h3>{{ c().conversation }}</h3>
+            <div class="tf-dispute-messages">
+              @for (m of d.messages; track m.date) {
+                <div class="tf-dispute-message" [class.is-mine]="m.mine">
+                  <strong>{{ m.sender }}</strong>
+                  <p>{{ m.body }}</p>
+                  <time>{{ m.date }}</time>
+                </div>
+              } @empty {
+                <p class="tf-dispute-muted">{{ c().messagesEmpty }}</p>
+              }
+            </div>
+          </section>
+
+          <section>
+            <h3>{{ locale.lang() === 'ar' ? 'سجل الحالة' : 'Status timeline' }}</h3>
+            <ol class="tf-dispute-timeline">
+              @for (event of d.timeline; track event.date) {
+                <li><span>{{ event.label }}</span><time>{{ event.date }}</time></li>
+              }
+            </ol>
+          </section>
+
+          <section>
+            <h3>{{ c().evidence }}</h3>
+            <div class="tf-dispute-evidence">
+              @for (file of d.evidence; track file.id) {
+                <button type="button" class="tf-button tf-dispute-file"
+                        (click)="download(file.id, file.fileName)">{{ file.fileName }}</button>
+              } @empty {
+                <span class="tf-dispute-muted">{{ c().evidenceEmpty }}</span>
+              }
+            </div>
+          </section>
+
+          @if (d.canParticipate) {
+            <form class="tf-dispute-reply" (ngSubmit)="send($event)">
+              <label for="case-message">{{ messageFieldLabel() }}</label>
+              <textarea id="case-message" rows="3" maxlength="2000" required
+                        [value]="messageBody()" (input)="messageBody.set($any($event.target).value)"></textarea>
+              <div class="tf-dispute-reply__actions">
+                @if (d.canUploadEvidence) {
+                  <label class="tf-button tf-dispute-attach">
+                    {{ c().addEvidence }}
+                    <input type="file" accept="image/jpeg,image/png,application/pdf,text/plain"
+                           (change)="attach($event)" hidden />
+                  </label>
+                }
+                <button type="submit" class="tf-button" [disabled]="busy()">{{ c().send }}</button>
+              </div>
+              @if (d.canUploadEvidence) {
+                <p class="tf-dispute-hint">{{ c().fileHint }}</p>
+              }
+            </form>
+          }
+
+          @if (d.showResolvedHint) {
+            <p class="tf-dispute-closed">{{ c().resolvedHint }}</p>
+          }
+
+          @if (d.adminActions) {
+            <section class="tf-dispute-decision">
+              <h3>{{ c().decision }}</h3>
+              @if (d.canStartReview) {
+                <button type="button" class="tf-button" (click)="beginReview()" [disabled]="busy()">
+                  {{ c().start }}
+                </button>
+              }
+              @if (d.canResolve) {
+                <form class="tf-dispute-resolve" (ngSubmit)="resolve($event)">
+                  <select [value]="resolution()" (change)="onResolutionChange($any($event.target).value)">
+                    <option value="refund-student">{{ c().refund }}</option>
+                    <option value="release-teacher">{{ c().release }}</option>
+                    <option value="no-action">{{ c().none }}</option>
+                  </select>
+                  <textarea rows="3" maxlength="2000" required [placeholder]="c().rationale"
+                            [value]="rationale()" (input)="rationale.set($any($event.target).value)"></textarea>
+                  <button type="submit" class="tf-button" [disabled]="busy()">{{ c().resolve }}</button>
+                </form>
+              }
+            </section>
+          }
+
+          @if (d.decision) {
+            <section class="tf-dispute-final">
+              <strong>{{ c().final }}</strong>
+              <p>{{ d.decision }}</p>
+            </section>
+          }
+        </div>
+      } @else {
+        <div class="tf-dispute-placeholder">{{ c().select }}</div>
+      }
+    </section>
+  </div>
+</main>

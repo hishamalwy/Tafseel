@@ -1,0 +1,82 @@
+<div [class]="scrimClass()" role="presentation" (click)="close()">
+  <section #dialog data-promo-wizard tabindex="-1" [class]="wizardClass()"
+           data-accent="violet" role="dialog" aria-modal="true"
+           aria-labelledby="promo-wizard-title" (click)="$event.stopPropagation()">
+    <header class="tf-promo-wizard-head">
+      @if (eyebrow(); as text) {
+        <p class="tf-promo-eyebrow">
+          <span class="tf-promo-eyebrow-mark" aria-hidden="true"></span>
+          <span>{{ text }}</span>
+        </p>
+      }
+      <span class="tf-promo-wizard-step"></span>
+      <button type="button" class="tf-promo-wizard-close" (click)="close()"
+              [attr.aria-label]="copy().promoClose" [title]="copy().promoClose">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+
+    <div class="tf-promo-wizard-body" data-step="0" [style]="bodyStyle()">
+      @switch (lead()) {
+        @case ('figure') {
+          <p class="tf-promo-lead tf-promo-lead--figure">
+            <span class="tf-promo-lead-figure">{{ highlight() }}</span>
+            <span class="tf-promo-lead-note">{{ copy().promoOff }}</span>
+          </p>
+        }
+        @case ('date') {
+          <div class="tf-promo-lead">
+            <div class="tf-promo-date">
+              <span class="tf-promo-date-day">{{ dateDay() }}</span>
+              <span class="tf-promo-date-month">{{ dateMonth() }}</span>
+            </div>
+          </div>
+        }
+        @default {
+          <div class="tf-promo-lead tf-promo-lead--mark" aria-hidden="true">
+            <img data-tafseel-mark data-tafseel-mark-force="dark"
+                 src="assets/brand/tafseel-mark-dark.svg" alt="" width="48" height="65" />
+          </div>
+        }
+      }
+
+      <div class="tf-promo-wizard-copy">
+        <h2 class="tf-promo-title" id="promo-wizard-title">{{ title() }}</h2>
+        @if (body(); as text) { <p class="tf-promo-body">{{ text }}</p> }
+
+        @if (code(); as coupon) {
+          <div class="tf-promo-field">
+            <span class="tf-promo-field-label">{{ copy().promoCodeLabel }}</span>
+            <button type="button" class="tf-promo-code" (click)="copyCode()" [title]="copy().promoCopy">
+              <span class="tf-promo-code-value">{{ coupon }}</span>
+              <span class="tf-promo-code-copy">{{ copy().promoCopy }}</span>
+            </button>
+          </div>
+        }
+
+        @if (countdown(); as units) {
+          <div class="tf-promo-field">
+            <span class="tf-promo-field-label">{{ copy().promoCountdown }}</span>
+            <div class="tf-promo-countdown" role="timer" [attr.aria-label]="copy().promoCountdown">
+              @for (unit of units; track unit.label) {
+                <span class="tf-promo-countdown-unit">
+                  <span class="tf-promo-countdown-value">{{ unit.value }}</span>
+                  <span class="tf-promo-countdown-label">{{ unit.label }}</span>
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="tf-promo-wizard-foot">
+      <div class="tf-promo-wizard-actions">
+        @if (showsCta()) {
+          <a class="tf-promo-cta" [href]="href()" (click)="claim()">{{ ctaLabel() }}</a>
+        }
+        <button type="button" class="tf-promo-wizard-next" (click)="close()">{{ copy().promoDone }}</button>
+      </div>
+    </footer>
+  </section>
+</div>

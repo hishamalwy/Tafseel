@@ -1,0 +1,45 @@
+{
+  "name": "tafseel-frontend",
+  "version": "0.1.0",
+  "description": "Tafseel web client. Angular 22, standalone + zoneless, talking to the existing .NET 8 API at /api/v1.",
+  "private": true,
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
+  "scripts": {
+    "sync:design": "node scripts/sync-design-system.mjs",
+    "prestart": "npm run sync:design",
+    "prebuild": "npm run sync:design && npm run check:i18n && npm run check:styles",
+    "pretest": "npm run sync:design && npm run check:i18n && npm run check:styles",
+    "start": "ng serve",
+    "build": "ng build",
+    "check:i18n": "node scripts/check-locales.mjs",
+    "check:styles": "node scripts/check-component-styles.mjs",
+    "test": "ng test",
+    "watch": "ng build --watch --configuration development"
+  },
+  "dependencies": {
+    "@angular/common": "22.1.5",
+    "@angular/compiler": "22.1.5",
+    "@angular/core": "22.1.5",
+    "@angular/forms": "22.1.5",
+    "@angular/localize": "22.1.5",
+    "@angular/platform-browser": "22.1.5",
+    "@angular/platform-server": "^22.1.5",
+    "@angular/router": "22.1.5",
+    "@angular/ssr": "^22.1.5",
+    "express": "^5.2.1",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "22.1.5",
+    "@angular/cli": "22.1.5",
+    "@angular/compiler-cli": "22.1.5",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.1",
+    "jsdom": "^26.0.0",
+    "typescript": "6.0.3",
+    "vitest": "^4.0.8"
+  }
+}

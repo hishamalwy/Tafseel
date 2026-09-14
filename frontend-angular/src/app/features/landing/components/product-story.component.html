@@ -1,0 +1,118 @@
+<div class="tf-landing-section-head tf-story-heading">
+  <div class="tf-landing-section-text">
+    <h2>{{ copy().storyTitle }}</h2>
+    <p>{{ copy().storyLede }}</p>
+  </div>
+</div>
+
+<nav class="tf-story-entry-paths" [attr.aria-label]="copy().storyEntryLabel">
+  <a routerLink="/teachers">
+    <span><strong>{{ copy().storyChooseTitle }}</strong><small>{{ copy().storyChooseBody }}</small></span>
+    <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+  </a>
+  <a routerLink="/requests">
+    <span><strong>{{ copy().storyPostTitle }}</strong><small>{{ copy().storyPostBody }}</small></span>
+    <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
+  </a>
+</nav>
+
+<div class="tf-product-story" data-product-story #story>
+  <div class="tf-story-visual" aria-hidden="true">
+    <div class="tf-story-canvas" [attr.data-story-state]="step() + 1">
+      <header class="tf-story-canvas-head">
+        <span class="tf-story-canvas-title"><i aria-hidden="true"></i>{{ copy().storyCanvasTitle }}</span>
+        <span class="tf-story-canvas-status">{{ canvasStatus() }}</span>
+      </header>
+
+      <div class="tf-story-stage">
+        <section class="tf-story-panel tf-story-panel--upload" [attr.data-active]="step() === 0">
+          <div class="tf-story-doc">
+            <div class="tf-story-doc-file">
+              <span class="tf-story-doc-kind">PDF</span>
+              <span class="tf-story-doc-name">{{ copy().storyDocName }}</span>
+            </div>
+            <p class="tf-story-doc-heading">{{ copy().storyDocHeading }}</p>
+            <ol class="tf-story-doc-work">
+              @for (line of docLines; track line.text) {
+                <li [attr.data-marked]="line.marked">{{ line.text }}</li>
+              }
+            </ol>
+          </div>
+          <div class="tf-story-upload-copy">
+            <span class="tf-story-panel-kicker">{{ copy().storyUploadKicker }}</span>
+            <strong>{{ copy().storyUploadTitle }}</strong>
+            <span>{{ copy().storyUploadMeta }}</span>
+            <ul class="tf-story-formats" aria-hidden="true">
+              @for (format of formats; track format) { <li>{{ format }}</li> }
+            </ul>
+          </div>
+        </section>
+
+        <section class="tf-story-panel tf-story-panel--context" [attr.data-active]="step() === 1">
+          <span class="tf-story-panel-kicker">{{ copy().storyContextKicker }}</span>
+          <blockquote>{{ copy().storyContextQuote }}</blockquote>
+          <div class="tf-story-selection">
+            <span>{{ copy().storyContextLabel }}</span>
+            <p>{{ copy().storyContextSelection }}</p>
+          </div>
+        </section>
+
+        <section class="tf-story-panel tf-story-panel--teacher" [attr.data-active]="step() === 2">
+          <span class="tf-story-panel-kicker">{{ copy().storyTeacherKicker }}</span>
+          @if (teacher(); as featured) {
+            <div class="tf-story-teacher-id">
+              <img loading="lazy" decoding="async" class="tf-img-avatar" data-tf-avatar
+                   [src]="featured.avatar" alt="" width="64" height="64" />
+              <div><strong>{{ featured.name }}</strong><span>{{ featured.subject }}</span></div>
+              <span class="tf-story-qualified">
+                <svg viewBox="0 0 24 24"><use href="#tf-i-check" /></svg>{{ qualifiedLabel() }}
+              </span>
+            </div>
+            <dl class="tf-story-offer-facts">
+              @if (featured.rating) {
+                <div><dt>{{ copy().storyRating }}</dt><dd>{{ featured.rating }}</dd></div>
+              }
+              @if (featured.delivery) {
+                <div><dt>{{ copy().storyDelivery }}</dt><dd>{{ featured.delivery }}</dd></div>
+              }
+              @if (featured.price) {
+                <div><dt>{{ copy().storyPrice }}</dt><dd>{{ featured.price }}</dd></div>
+              }
+            </dl>
+          } @else {
+            <div class="tf-story-teacher-empty">
+              <svg viewBox="0 0 24 24"><use href="#tf-i-compare" /></svg>
+              <span>{{ copy().storyTeacherEmpty }}</span>
+            </div>
+          }
+          <span class="tf-story-choice">{{ copy().storyTeacherChoice }}</span>
+        </section>
+
+        <section class="tf-story-panel tf-story-panel--complete" [attr.data-active]="step() === 3">
+          <div class="tf-story-complete-mark"><svg viewBox="0 0 24 24"><use href="#tf-i-check" /></svg></div>
+          <span class="tf-story-panel-kicker">{{ copy().storyCompleteKicker }}</span>
+          <strong>{{ copy().storyCompleteTitle }}</strong>
+          <p>{{ copy().storyCompleteBody }}</p>
+          <div class="tf-story-output-row">
+            <span>{{ copy().storyOutputVideo }}</span><i></i><span>{{ copy().storyOutputNotes }}</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="tf-story-progress" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <ol class="tf-story-steps" [attr.aria-label]="copy().storyStepsLabel">
+    @for (item of steps(); track item.rawIndex) {
+      <li class="tf-story-step" data-product-story-step
+          [attr.data-story-index]="item.rawIndex" [attr.data-active]="item.active">
+        <button type="button" (click)="select(item.rawIndex)"
+                [attr.aria-current]="item.active ? 'step' : 'false'">
+          <span class="tf-story-step-index" aria-hidden="true" data-i18n-skip>{{ item.index }}</span>
+          <span class="tf-story-step-copy"><strong>{{ item.title }}</strong><span>{{ item.body }}</span></span>
+        </button>
+      </li>
+    }
+  </ol>
+</div>

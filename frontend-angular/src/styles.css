@@ -1,0 +1,14 @@
+/*
+ * Everything visual comes from the synced `src/legacy/tafseel.css`, which is the
+ * same file the legacy pages load. This file adds only what Angular introduces:
+ * host elements the legacy markup never had, which default to `display:inline`
+ * and would otherwise break a `min-height:100vh` layout placed inside them.
+ *
+ * Nothing here may declare colour, type or spacing — that would fork the design
+ * system, which is exactly what this migration is meant to avoid.
+ */
+tf-root,
+tf-auth-page {
+  display: block;
+  min-block-size: 100dvh;
+}

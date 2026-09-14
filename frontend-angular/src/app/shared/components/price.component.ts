@@ -1,0 +1,52 @@
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { FormatService } from '@core/i18n/format.service';
+
+/**
+ * An amount of money, rendered the way Tafseel renders money.
+ *
+ * SAR is drawn with the SAMA mark rather than a Unicode glyph or the letters
+ * "SAR" — the glyph is missing from many fonts and lands as tofu. Every other
+ * currency falls back to `amount CODE`. The legacy pages repeated this pair of
+ * `sc-if` branches at every price on every screen; the decision belongs to the
+ * amount, not to each site that shows one.
+ *
+ * `dir="ltr"` is on the number on purpose: prices read left-to-right even in an
+ * Arabic layout.
+ */
+@Component({
+  selector: 'tf-price',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (view().isSarAmount) {
+      <span class="tf-price-line" dir="ltr">
+        <span class="tf-price-currency tf-price-currency--mark"
+              title="SAR" aria-label="SAR" data-i18n-skip></span>@if (size(); as scale) {
+          <strong [class]="'tf-price-' + scale">{{ view().amountNumber }}</strong>
+        } @else {
+          {{ view().amountNumber }}
+        }
+      </span>
+    } @else {
+      {{ view().amount }}
+    }
+  `,
+  styles: `:host { display: contents; }`
+})
+export class PriceComponent {
+  private readonly fmt = inject(FormatService);
+
+  readonly amount = input.required<number | string | null | undefined>();
+  readonly currency = input<string>('SAR');
+  /** Shown when the amount is missing; defaults to the translated placeholder. */
+  readonly emptyText = input<string | undefined>(undefined);
+  /**
+   * Type scale, when the site wants one. It has to sit *inside* `.tf-price-line`
+   * because `css/tafseel.css` sizes the riyal mark from it
+   * (`.tf-price-line:has(.tf-price-md) .tf-price-currency--mark`) — putting the
+   * class on a wrapper would leave the mark at body size beside a 28px number.
+   */
+  readonly size = input<'md' | 'lg' | 'xl' | ''>('');
+
+  readonly view = computed(() =>
+    this.fmt.moneyView(this.amount(), this.currency(), this.emptyText()));
+}

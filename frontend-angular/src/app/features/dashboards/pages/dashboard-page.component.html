@@ -1,0 +1,94 @@
+<div class="tf-dashboard" [class.drawer-open]="drawer()">
+  <aside class="tf-dashboard-sidebar" id="dashboard-sidebar">
+    <a routerLink="/" class="tf-dashboard-brand"><tf-brand-mark [width]="25" [height]="34" /></a>
+    <nav [attr.aria-label]="t('dashboard_navigation', 'Dashboard navigation')">
+      @for (item of config.areas; track item.key) {
+        <button type="button" [class.active]="area().key === item.key" (click)="navigate(item)">{{ areaLabel(item) }}</button>
+      }
+    </nav>
+  </aside>
+  @if (drawer()) { <button class="tf-dashboard-backdrop" type="button" (click)="drawer.set(false)" [attr.aria-label]="t('common_close_navigation', 'Close navigation')"></button> }
+  <section class="tf-dashboard-main">
+    <header class="tf-dashboard-topbar">
+      <button type="button" class="tf-dashboard-menu" (click)="drawer.set(!drawer())" aria-controls="dashboard-sidebar" [attr.aria-expanded]="drawer()" [attr.aria-label]="t('common_open_navigation', 'Open navigation')">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
+      <div><strong>{{ t(config.titleKey, config.title) }}</strong><small>{{ sessionStore.current()?.fullName }}</small></div>
+      <span></span><tf-lang-toggle /><tf-theme-toggle />
+    </header>
+    <main class="tf-dashboard-content">
+      <header class="tf-dashboard-heading"><h1>{{ heading() }}</h1><button type="button" class="tf-button tf-button-secondary" (click)="reload()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button></header>
+      @if (area().tabs.length > 1) { <nav class="tf-dashboard-tabs" [attr.aria-label]="t('dashboard_section_tabs', 'Section tabs')">@for (item of area().tabs; track item.key) { <button type="button" [class.active]="tab().key === item.key" (click)="chooseTab(item)">{{ tabLabel(item) }}</button> }</nav> }
+      @if (tab().key === 'settings') {
+        <section class="tf-dashboard-settings"><h2>{{ t('settings_profile', 'Profile & security') }}</h2><div class="tf-grid-2"><label class="tf-field"><span>{{ t('auth_full_name', 'Full name') }}</span><input [ngModel]="profileName()" (ngModelChange)="profileName.set($event)"></label><label class="tf-field"><span>{{ t('auth_full_name_english', 'English name') }}</span><input [ngModel]="profileNameEnglish()" (ngModelChange)="profileNameEnglish.set($event)"></label></div><div class="tf-form-actions"><button class="tf-button" type="button" (click)="saveProfile()">{{ t('common_save', 'Save') }}</button><button class="tf-button tf-button-secondary" type="button" (click)="exportData()">{{ t('settings_export_data', 'Export my data') }}</button></div></section>
+      }
+      @if (tab().key === 'notifications') { <button class="tf-button tf-button-secondary" type="button" (click)="markAllRead()">{{ t('notifications_mark_all', 'Mark all as read') }}</button> }
+      <label class="tf-dashboard-search"><span class="tf-sr-only">{{ t('common_search', 'Search') }}</span><input type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="t('common_search', 'Search')"></label>
+      @if (loading()) { <div class="tf-dashboard-loading" role="status">{{ t('common_loading', 'Loading…') }}<div class="tf-skeleton"></div><div class="tf-skeleton"></div></div> }
+      @for (error of errors(); track error.source) { <div class="tf-alert" data-kind="error" role="alert"><strong>{{ t('dashboard_load_failed', 'This section could not be loaded.') }}</strong><button type="button" class="tf-button tf-button-secondary" (click)="reload()">{{ t('common_retry', 'Retry') }}</button></div> }
+      @if (!loading() && !rows().length && !errors().length) { <div class="tf-dashboard-empty"><h2>{{ t('common_empty_title', 'Nothing here yet') }}</h2><p>{{ t('common_empty_body', 'New activity will appear here.') }}</p></div> }
+      @if (!loading() && rows().length) {
+        <div class="tf-dashboard-grid">
+          @for (row of rows(); track row['id'] || $index) {
+            <article class="tf-dashboard-card">
+              <div class="tf-dashboard-card-head"><h2>{{ Dashboard.title(row) }}</h2>@if (row['status'] != null || row['statusName']) { <span class="tf-badge">{{ text(row['statusName'] || row['status']) }}</span> }</div>
+              @if (Dashboard.detail(row)) { <p>{{ Dashboard.detail(row) }}</p> }
+              <dl>@for (field of FIELDS; track field.key) { @if (row[field.key] != null) { <div><dt>{{ t(field.labelKey, field.fallback) }}</dt><dd>{{ text(row[field.key]) }}</dd></div> } }</dl>
+              @if (filesOf(row, 'deliveries').length) {
+                <section class="tf-dashboard-files" [attr.aria-label]="t('delivery_files', 'Explanation files')">
+                  <strong>{{ t('delivery_files', 'Explanation files') }}</strong>
+                  @for (file of filesOf(row, 'deliveries'); track file['id']) {
+                    <button type="button" (click)="previewDelivery(file)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7zM14 3v5h5M9.5 13h5M9.5 17h5" /></svg>
+                      <span>{{ fileName(file) }}</span><small>{{ t('protected_view_action', 'View in Tafseel') }}</small>
+                    </button>
+                  }
+                </section>
+              }
+              @if (filesOf(row, 'attachments').length && tab().key === 'sessions') {
+                <section class="tf-dashboard-files" [attr.aria-label]="t('session_files', 'Session files')">
+                  <strong>{{ t('session_files', 'Session files') }}</strong>
+                  @for (file of filesOf(row, 'attachments'); track file['id']) {
+                    <button type="button" (click)="previewSessionFile(file)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7zM14 3v5h5M9.5 13h5M9.5 17h5" /></svg>
+                      <span>{{ fileName(file) }}</span><small>{{ t('protected_view_action', 'View in Tafseel') }}</small>
+                    </button>
+                  }
+                </section>
+              }
+              <div class="tf-dashboard-card-actions">
+                @if (role === 'Student' && tab().key === 'orders' && row['status'] === 2) { <button type="button" (click)="rowAction(row, 'complete')">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
+                @if (role === 'Student' && tab().key === 'sessions') { <button type="button" (click)="rowAction(row, 'join')">{{ t('session_join', 'Join') }}</button> }
+                @if (role === 'Teacher' && tab().key === 'requests') { <button type="button" (click)="rowAction(row, 'accept')">{{ t('td_accept', 'Accept') }}</button><button type="button" (click)="rowAction(row, 'decline')">{{ t('td_decline', 'Decline') }}</button> }
+                @if (role === 'Teacher' && tab().key === 'orders' && row['status'] === 0) {
+                  @if (canStart(row)) {
+                    <button type="button" (click)="rowAction(row, 'start')">{{ t('td_start', 'Start') }}</button>
+                  } @else {
+                    <p class="tf-dashboard-card-hint">{{ t('td_start_awaiting_payment', 'Waiting for the student’s payment to be confirmed.') }}</p>
+                  }
+                }
+                @if (role === 'Teacher' && tab().key === 'orders' && canDeliver(row)) {
+                  <label class="tf-dashboard-file-picker" [class.is-busy]="uploadingFileFor() === row['id']">
+                    <input type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg" (change)="uploadDelivery(row, $event)" [disabled]="!!uploadingFileFor()" />
+                    <span>{{ uploadingFileFor() === row['id'] ? t('common_uploading', 'Uploading…') : t('delivery_upload', 'Submit explanation files') }}</span>
+                  </label>
+                }
+                @if (role === 'Teacher' && tab().key === 'sessions') {
+                  <label class="tf-dashboard-file-picker" [class.is-busy]="uploadingFileFor() === row['id']">
+                    <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg" (change)="uploadSessionFile(row, $event)" [disabled]="!!uploadingFileFor()" />
+                    <span>{{ uploadingFileFor() === row['id'] ? t('common_uploading', 'Uploading…') : t('session_upload_file', 'Add session file') }}</span>
+                  </label>
+                }
+                @if (role === 'QualityReviewer' && (tab().key === 'applications' || tab().key === 'additional')) { <button type="button" (click)="rowAction(row, 'review')">{{ t('quality_start_review', 'Start review') }}</button> }
+                @if (role === 'Admin' && ['users','teachers','students','reviewers'].includes(tab().key)) { <button type="button" (click)="rowAction(row, 'suspend')">{{ row['isSuspended'] ? t('admin_unsuspend', 'Unsuspend') : t('admin_suspend', 'Suspend') }}</button> }
+                @if (role === 'Admin' && ['services','subjects','topics','educationLevels','assignments','promotions','coupons'].includes(tab().key)) { <button type="button" (click)="toggleActive(row)">{{ row['isActive'] ? t('common_disable', 'Disable') : t('common_enable', 'Enable') }}</button> }
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </main>
+  </section>
+</div>
+<tf-protected-file-viewer />
+<tf-toast />

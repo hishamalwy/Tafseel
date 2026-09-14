@@ -1,0 +1,46 @@
+<footer class="tf-landing-footer" data-pattern="bottom">
+  <div class="tf-shell tf-landing-footer-main">
+    <section class="tf-landing-footer-intro" [attr.aria-labelledby]="idPrefix() + '-brand'">
+      <a class="tf-landing-footer-brand" routerLink="/" [attr.aria-label]="labels().home">
+        <img class="tf-footer-mark-light" loading="lazy" decoding="async" data-tafseel-mark
+             src="assets/brand/tafseel-mark.svg" alt="" width="29" height="40" />
+        <img class="tf-footer-mark-dark" loading="lazy" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
+             src="assets/brand/tafseel-mark-dark.svg" alt="" width="29" height="40" />
+        <strong [id]="idPrefix() + '-brand'" translate="no" class="tf-mursala tf-wordmark">
+          <span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span>
+        </strong>
+      </a>
+      <p class="tf-landing-footer-statement">{{ copy().statement }}</p>
+      <p class="tf-landing-footer-copy">{{ copy().tagline }}</p>
+      @if (socialLabel(); as label) {
+        <div class="tf-landing-footer-social">
+          <span class="tf-landing-footer-heading">{{ labels().follow }}</span>
+          <div class="tf-landing-footer-socials" [attr.aria-label]="label">
+            @for (network of NETWORKS; track network) {
+              <span class="tf-social-icon" [attr.data-network]="network" aria-hidden="true"></span>
+            }
+          </div>
+          <span class="tf-landing-footer-social-note">{{ labels().socialSoon }}</span>
+        </div>
+      }
+    </section>
+
+    <nav class="tf-landing-footer-directory" [attr.aria-label]="labels().explore">
+      <a routerLink="/teachers">{{ labels().browse }}</a>
+      <a routerLink="/" fragment="how">{{ labels().how }}</a>
+      <a routerLink="/requests">{{ labels().post }}</a>
+      <a routerLink="/teach/apply">{{ labels().teach }}</a>
+      <a routerLink="/about">{{ labels().about }}</a>
+      <a routerLink="/policies/terms">{{ labels().terms }}</a>
+      <a routerLink="/policies/privacy">{{ labels().privacy }}</a>
+    </nav>
+  </div>
+
+  <div class="tf-shell tf-landing-footer-meta">
+    <span>{{ copy().rights }}</span>
+    <div class="tf-landing-footer-meta-actions">
+      <span>{{ copy().origin }}</span>
+      <tf-lang-toggle />
+    </div>
+  </div>
+</footer>

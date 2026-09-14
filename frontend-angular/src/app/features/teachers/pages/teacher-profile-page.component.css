@@ -1,0 +1,5 @@
+/* The profile renders from the design system in css/tafseel.css — 228 tf-mkp-*
+   rules already describe this screen. The component previously re-declared its
+   own tf-profile-* vocabulary on top, which is what made the page stop looking
+   like the rest of the site; nothing belongs here that the shared sheet owns. */
+:host { display: block; }

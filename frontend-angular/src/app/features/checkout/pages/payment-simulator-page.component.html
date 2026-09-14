@@ -1,0 +1,87 @@
+<tf-workflow-header [crumb]="t('mock_pay_breadcrumb', 'Payment simulator')" />
+
+<main class="tf-shell tf-pay-main tf-pay-page">
+  @if (loading()) {
+    <div class="tf-pay-state" role="status">{{ t('mock_pay_loading', 'Loading the simulator…') }}</div>
+  }
+
+  @if (!loading() && unavailable()) {
+    <div class="tf-pay-state" role="alert">
+      <h1>{{ t('mock_pay_unavailable_title', 'Simulator not available') }}</h1>
+      <p class="tf-pay-lede">{{ t('mock_pay_unavailable_body', 'This environment does not use the payment simulator.') }}</p>
+      <a routerLink="/student" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
+    </div>
+  }
+
+  @if (!loading() && !unavailable() && session(); as s) {
+    <div class="tf-pay-layout">
+      @if (order(); as o) {
+        <aside class="tf-req-context" [attr.aria-label]="t('pay_context_aria', 'What you are paying for')">
+          <p class="tf-req-context-eyebrow">{{ t('pay_context_eyebrow', 'Your purchase') }}</p>
+          <p class="tf-req-context-teacher">{{ teacherName() }}</p>
+          <p class="tf-req-context-service">{{ serviceName() }}</p>
+          <ul class="tf-req-context-facts">
+            <li><span>{{ t('pay_context_delivery', 'Delivery') }}</span><strong>{{ deliveryValue() }}</strong></li>
+            <li>
+              <span>{{ t('req_total', 'Total') }}</span>
+              <strong><tf-price [amount]="s.amount" [currency]="s.currency" /></strong>
+            </li>
+          </ul>
+        </aside>
+      }
+
+      <div class="tf-pay-receipt">
+        <h1>{{ t('mock_pay_title', 'Simulated checkout') }}</h1>
+        <p class="tf-pay-lede">{{ t('mock_pay_blurb', 'Choose an outcome to simulate the payment provider.') }}</p>
+        <p class="tf-pay-note">
+          {{ t('pay_checkout_ref', 'Checkout reference') }}
+          <strong class="tf-pay-mono">{{ s.providerReference }}</strong>
+        </p>
+
+        @if (showActions()) {
+          <div class="tf-sim-actions">
+            <button type="button" class="tf-pay-cta" (click)="complete(true)"
+                    [disabled]="submitting()" [class.is-busy]="submitting()">
+              {{ t('mock_pay_confirm', 'Confirm payment') }}
+            </button>
+            <button type="button" class="tf-pay-secondary-link tf-sim-fail" (click)="complete(false)"
+                    [disabled]="submitting()">
+              {{ t('mock_pay_fail', 'Simulate failure') }}
+            </button>
+          </div>
+          <a class="tf-pay-secondary-link" [routerLink]="cancelLink().path"
+             [queryParams]="cancelLink().query">{{ t('mock_pay_cancel', 'Back to payment') }}</a>
+        }
+
+        @if (confirmed()) {
+          <div class="tf-pay-success tf-sim-outcome">
+            <div class="tf-check-draw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
+            <h2>{{ t('mock_pay_confirmed_title', 'Payment confirmed') }}</h2>
+            @if (countdown() > 0) {
+              <p class="tf-pay-note" aria-live="polite">
+                {{ t('mock_pay_returning', 'Returning to your dashboard in') }} {{ countdown() }}
+              </p>
+              <button type="button" class="tf-pay-secondary-link" (click)="stopCountdown()">
+                {{ t('mock_pay_stay', 'Stay on this page') }}
+              </button>
+            }
+            <button type="button" class="tf-pay-primary-link" (click)="returnNow()">
+              {{ t('pay_go_dashboard', 'Go to dashboard') }}
+            </button>
+          </div>
+        }
+
+        @if (failed()) {
+          <div class="tf-sim-outcome" role="alert">
+            <h2>{{ t('mock_pay_failed_title', 'Payment failed') }}</h2>
+            <p class="tf-pay-note">{{ t('mock_pay_failed_body', 'Nothing was charged. You can try again.') }}</p>
+            <a class="tf-pay-primary-link" [routerLink]="cancelLink().path"
+               [queryParams]="cancelLink().query">{{ t('mock_pay_retry', 'Try again') }}</a>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</main>
+
+<tf-toast />

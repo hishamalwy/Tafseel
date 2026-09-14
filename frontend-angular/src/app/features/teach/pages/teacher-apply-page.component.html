@@ -1,0 +1,54 @@
+<tf-workflow-header [crumb]="t('apply_title', 'Teacher qualification')" />
+<main class="tf-workflow tf-apply-page">
+  <section class="tf-panel" aria-labelledby="apply-title">
+    <h1 id="apply-title">{{ t('apply_title', 'Teacher qualification') }}</h1>
+    <p class="tf-muted">{{ t('apply_intro', 'Choose one subject-specific demo topic. Approval applies only to that subject.') }}</p>
+    <ol class="tf-apply-steps" aria-label="Application progress">
+      @for (item of steps; track item; let index = $index) {
+        <li><button type="button" [attr.data-state]="states()[item]" (click)="visit(item)">{{ index + 1 }}. {{ t('apply_step_' + item, item) }}</button></li>
+      }
+    </ol>
+    @if (loading()) { <div class="tf-apply-skeleton" role="status">{{ t('apply_loading', 'Loading application…') }}<div class="tf-skeleton"></div><div class="tf-skeleton"></div></div> }
+    @if (!loading() && workspace(); as ws) {
+      @if (ws.applications.length && step() !== 'demo') {
+        <div class="tf-apply-apps">
+          @for (application of ws.applications; track application.id) {
+            <button type="button" class="tf-apply-app" [class.is-active]="application.id === current()?.id" (click)="select(application)">
+              <span><strong>{{ application.subjectName || t('apply_subject', 'Subject') }}</strong><small>{{ application.city }}</small></span>
+              <span class="tf-apply-status" [attr.data-kind]="statusKind(application.status)">{{ statusName(application.status) }}</span>
+            </button>
+          }
+        </div>
+      }
+      @if (step() === 'details') {
+        <form class="tf-form" (ngSubmit)="save()">
+          <div class="tf-grid-2">
+            <div class="tf-field"><label for="apply-subject">{{ t('apply_subject', 'Subject') }}</label><select id="apply-subject" name="subject" [ngModel]="subjectId()" (ngModelChange)="changeSubject($event)" required>@for (item of selectedSubjects(); track item.id) { <option [value]="item.id" [disabled]="item.disabled">{{ label(item) }}{{ item.reason ? ' — ' + t(item.reason, '') : '' }}</option> }</select></div>
+            <div class="tf-field"><label for="apply-topic">{{ t('apply_topic', 'Qualification topic') }}</label><select id="apply-topic" name="topic" [ngModel]="topicId()" (ngModelChange)="topicId.set($event)" required>@for (item of topics(); track item.id) { <option [value]="item.id">{{ topicLabel(item) }}</option> }</select></div>
+            <div class="tf-field"><label for="apply-city">{{ t('apply_city', 'City') }}</label><input id="apply-city" name="city" [ngModel]="city()" (ngModelChange)="city.set($event)" maxlength="150" required></div>
+            <div class="tf-field"><label for="apply-years">{{ t('apply_years', 'Years of experience') }}</label><input id="apply-years" name="years" type="number" [ngModel]="years()" (ngModelChange)="years.set($event)" min="0" max="80" required></div>
+          </div>
+          <fieldset><legend>{{ t('apply_languages', 'Teaching languages') }}</legend><div class="tf-chip-row">@for (language of ws.languages; track language.id) { <label class="tf-lang-chip"><input type="checkbox" [checked]="checked(language.id)" (change)="toggleLanguage(language.id, $any($event.target).checked)"><span>{{ language.name }}</span></label> }</div></fieldset>
+          <button class="tf-button" type="submit" [disabled]="busy()">{{ busy() ? t('apply_saving', 'Saving…') : t('apply_save_continue', 'Save and continue') }}</button>
+        </form>
+      }
+      @if (step() === 'demo') {
+        <section class="tf-apply-panel">
+          <h2>{{ t('apply_demo_title', 'Teaching demo') }}</h2>
+          @if (topic(); as assignment) {
+            <article class="tf-assignment"><h2>{{ topicLabel(assignment) }}</h2><p>{{ Assignment.instructions(assignment, locale.isRtl()) }}</p><p>{{ t('apply_duration_required', 'Required duration') }}: {{ durationText(duration().min) }}–{{ durationText(duration().max) }}</p>
+              @if (assignment.resources.length) { <ul>@for (resource of assignment.resources; track resource.url) { <li><span>{{ Assignment.resourceName(resource, locale.isRtl()) }}</span>@if (resource.isFile) { <button type="button" (click)="openResource(resource)">{{ t('apply_preview', 'Preview') }}</button><button type="button" (click)="openResource(resource, true)">{{ t('apply_download', 'Download') }}</button> } @else { <a [href]="Assignment.safeUrl(resource.url, '/')" target="_blank" rel="noopener">{{ t('apply_open_reference', 'Open') }}</a> }</li> }</ul> }
+            </article>
+          }
+          <label class="tf-upload-drop"><input type="file" accept=".mp4,.webm,video/mp4,video/webm" (change)="chooseFile($event)"><span>{{ t('apply_demo_pick', 'Drop your teaching demo here, or browse') }}</span></label>
+          @if (demoFile(); as file) { <p>{{ file.name }} · {{ fileSize(file) }} @if (demoSeconds() != null) { · {{ durationText(demoSeconds()!) }} }</p> }
+          <div class="tf-form-actions"><button class="tf-button" type="button" (click)="upload()" [disabled]="busy() || !demoFile()">{{ t('apply_upload_demo', 'Upload demo') }}</button><button class="tf-button tf-button-secondary" type="button" (click)="submit()" [disabled]="busy() || !current()?.demoUploaded">{{ t('apply_submit_review', 'Submit for review') }}</button></div>
+        </section>
+      }
+      @if (step() === 'review' && current(); as application) {
+        <section class="tf-apply-review"><span class="tf-apply-status" [attr.data-kind]="statusKind(application.status)">{{ statusName(application.status) }}</span><h2>{{ t(application.status === 4 ? 'apply_review_approved_title' : application.status === 5 ? 'apply_review_rejected_title' : 'apply_review_pending_title', 'Application status') }}</h2><p>{{ application.publicFeedback || t('apply_review_pending_body', 'The quality team is reviewing your application.') }}</p><button type="button" class="tf-button tf-button-secondary" (click)="startAnother()">{{ t('apply_start_new', 'Start another application') }}</button></section>
+      }
+    }
+  </section>
+</main>
+<tf-toast />

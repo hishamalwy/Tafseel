@@ -1,0 +1,131 @@
+<tf-workflow-header [crumb]="t('book_breadcrumb', 'Book a live session')" />
+
+<main class="tf-shell tf-book-page">
+  @if (loading()) {
+    <div class="tf-pay-state" role="status">{{ t('book_loading', 'Loading availability…') }}</div>
+  }
+
+  @if (missingTeacher()) {
+    <div class="tf-pay-state" role="alert">
+      <h1>{{ t('book_missing_teacher_title', 'No teacher selected') }}</h1>
+      <p class="tf-pay-lede">{{ t('book_missing_teacher_body', 'Choose a teacher before booking a session.') }}</p>
+      <a routerLink="/teachers" class="tf-pay-primary-link">{{ t('nav_browse', 'Browse teachers') }}</a>
+    </div>
+  }
+
+  @if (!loading() && !missingTeacher() && noBookableService()) {
+    <div class="tf-pay-state" role="alert">
+      <h1>{{ t('book_unavailable_title', 'No live sessions available') }}</h1>
+      <p class="tf-pay-lede">
+        {{ loadError() || t('book_unavailable_body', 'This teacher is not offering live sessions right now.') }}
+      </p>
+      <a routerLink="/teachers" class="tf-pay-primary-link">{{ t('nav_browse', 'Browse teachers') }}</a>
+    </div>
+  }
+
+  @if (!loading() && !missingTeacher() && !noBookableService() && service(); as svc) {
+    <div class="tf-book-layout">
+      <section class="tf-book-form" aria-labelledby="book-title">
+        <h1 id="book-title">{{ t('book_title', 'Book a live session') }}</h1>
+        <p class="tf-book-lede">{{ t('book_with', 'with') }} <strong>{{ teacherName() }}</strong></p>
+
+        <div class="tf-field">
+          <label for="book-session-title">{{ t('book_session_title', 'Session title') }}</label>
+          <input id="book-session-title" type="text" maxlength="120" required
+                 [value]="sessionTitle()" (input)="sessionTitle.set($any($event.target).value)" />
+        </div>
+
+        <div class="tf-field">
+          <label for="book-topic">{{ t('book_topic', 'What do you want to cover?') }}</label>
+          <textarea id="book-topic" rows="3" maxlength="1000" required
+                    [placeholder]="t('book_topic_placeholder', 'The exact part you are stuck on.')"
+                    [value]="topic()" (input)="topic.set($any($event.target).value)"></textarea>
+        </div>
+
+        <fieldset class="tf-book-fieldset">
+          <legend>{{ t('book_duration', 'Duration') }}</legend>
+          <div class="tf-book-durations">
+            @for (minutes of durations(); track minutes) {
+              <button type="button" class="tf-book-chip" [class.is-selected]="duration() === minutes"
+                      [attr.aria-pressed]="duration() === minutes" (click)="setDuration(minutes)">
+                {{ minutes }} {{ t('book_minutes', 'min') }}
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <div class="tf-field">
+          <label for="book-timezone">{{ t('book_timezone', 'Your timezone') }}</label>
+          <select id="book-timezone" [value]="timezone()"
+                  (change)="setTimezone($any($event.target).value)">
+            @for (zone of timezones(); track zone) {
+              <option [value]="zone">{{ zone }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="tf-field">
+          <label for="book-notes">{{ t('book_notes', 'Anything else the teacher should know') }}</label>
+          <textarea id="book-notes" rows="2" maxlength="1000"
+                    [value]="notes()" (input)="notes.set($any($event.target).value)"></textarea>
+        </div>
+
+        <div class="tf-field">
+          <label class="tf-button tf-book-attach">
+            {{ attachment()?.name || t('book_attach', 'Attach a file (optional)') }}
+            <input type="file" (change)="onFile($event)" hidden />
+          </label>
+        </div>
+      </section>
+
+      <section class="tf-book-slots" aria-labelledby="book-slots-title">
+        <h2 id="book-slots-title">{{ t('book_pick_time', 'Pick a time') }}</h2>
+
+        @if (slotsLoading()) {
+          <p class="tf-book-muted" role="status">{{ t('book_loading_slots', 'Loading slots…') }}</p>
+        } @else if (!hasAnySlot()) {
+          <p class="tf-book-muted">{{ t('book_no_slots', 'No open slots in the next seven days.') }}</p>
+        } @else {
+          <div class="tf-book-week">
+            @for (day of week(); track day.key) {
+              <div class="tf-book-day">
+                <p class="tf-book-day__head"><strong>{{ day.weekday }}</strong><span>{{ day.date }}</span></p>
+                @for (slot of day.slots; track slot.key) {
+                  <button type="button" class="tf-book-slot"
+                          [class.is-selected]="selectedSlot()?.key === slot.key"
+                          [class.is-emergency]="slot.emergency"
+                          [attr.aria-pressed]="selectedSlot()?.key === slot.key"
+                          (click)="selectSlot(slot)">{{ slot.label }}</button>
+                } @empty {
+                  <span class="tf-book-day__empty" aria-hidden="true">—</span>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <div class="tf-book-summary">
+          @if (selectedSlot(); as slot) {
+            <p class="tf-book-chosen">{{ t('book_selected', 'Selected') }}: <strong>{{ slot.label }}</strong></p>
+          }
+          @if (emergency()) {
+            <p class="tf-book-emergency">{{ t('book_emergency_note', 'Short-notice booking includes a premium.') }}</p>
+          }
+          @if (total(); as amount) {
+            <p class="tf-book-total">
+              <span>{{ t('req_total', 'Total') }}</span>
+              <strong><tf-price [amount]="amount.amount" [currency]="amount.currency" /></strong>
+            </p>
+          }
+          <button type="button" class="tf-button tf-book-confirm"
+                  (click)="confirm()" [disabled]="!canConfirm()">
+            {{ confirming() ? t('book_confirming', 'Booking…') : t('book_confirm', 'Confirm and pay') }}
+          </button>
+          <p class="tf-book-muted">{{ t('req_protected_payment', 'Protected payment') }}</p>
+        </div>
+      </section>
+    </div>
+  }
+</main>
+
+<tf-toast />

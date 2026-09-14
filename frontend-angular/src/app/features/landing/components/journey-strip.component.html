@@ -1,0 +1,49 @@
+<aside class="tf-shell tf-journey-strip" [attr.data-action-required]="!!action()"
+       aria-labelledby="journey-title">
+  <header class="tf-journey-head">
+    <h2 class="tf-journey-title" id="journey-title">{{ copy().journeyTitle }}</h2>
+    <a class="tf-journey-all" routerLink="/student/requests">{{ copy().journeyAll }}</a>
+  </header>
+
+  @if (action(); as item) {
+    <div class="tf-journey-action" role="group" aria-labelledby="journey-action-title">
+      <div class="tf-journey-action-copy">
+        <span class="tf-journey-action-flag" id="journey-action-title">{{ copy().journeyFlag }}</span>
+        <p class="tf-journey-action-title">{{ actionTitle() }}</p>
+      </div>
+      <dl class="tf-journey-action-facts">
+        @for (fact of facts(); track fact.label) {
+          <div><dt>{{ fact.label }}</dt><dd>{{ fact.value }}</dd></div>
+        }
+        @if (price(); as offer) {
+          <div>
+            <dt>{{ copy().journeyPriceLabel }}</dt>
+            <dd><tf-price size="md" [amount]="offer.amount" [currency]="offer.currency" /></dd>
+          </div>
+        }
+      </dl>
+      <p class="tf-journey-reservation" role="status">{{ reservationLabel() }}</p>
+      <a class="tf-journey-pay" routerLink="/student/requests"
+         [queryParams]="{ requestId: item.id }">{{ copy().journeyPay }}</a>
+    </div>
+  } @else if (recent().length) {
+    <ul class="tf-journey-list">
+      @for (item of recent(); track item.id) {
+        <li class="tf-journey-item">
+          <div class="tf-journey-item-copy">
+            <p class="tf-journey-item-title">{{ item.title }}</p>
+            <p class="tf-journey-item-meta">
+              <span class="tf-journey-badge" [attr.data-open]="item.isOpen">{{ item.sourcingLabel }}</span>
+              <span>{{ item.statusLabel }}</span>
+              @if (item.deadlineLabel) {
+                <span class="tf-journey-deadline">{{ item.deadlineLabel }}</span>
+              }
+            </p>
+          </div>
+          <a class="tf-journey-item-cta" routerLink="/student/requests"
+             [queryParams]="{ requestId: item.id }">{{ item.ctaLabel }}</a>
+        </li>
+      }
+    </ul>
+  }
+</aside>

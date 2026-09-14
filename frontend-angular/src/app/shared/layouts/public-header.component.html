@@ -1,0 +1,58 @@
+<header class="tf-public-header">
+  <div data-public-header class="tf-shell tf-public-header__inner">
+    <a class="tf-brand-home tf-public-header__brand" routerLink="/" [attr.aria-label]="labels().home">
+      <tf-brand-mark [width]="22" [height]="30" />
+    </a>
+
+    <nav data-hide-sm class="tf-nav-track tf-public-header__nav" [attr.aria-label]="labels().primaryNav">
+      <a class="tf-nav-link" routerLink="/teachers" routerLinkActive="is-current"
+         [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{ labels().browse }}</a>
+      <a class="tf-nav-link" routerLink="/requests" routerLinkActive="is-current"
+         ariaCurrentWhenActive="page">{{ labels().post }}</a>
+      <a class="tf-nav-link" routerLink="/about" routerLinkActive="is-current"
+         ariaCurrentWhenActive="page">{{ labels().about }}</a>
+    </nav>
+
+    <div class="tf-public-header-actions tf-public-header__actions">
+      <tf-lang-toggle />
+      <tf-theme-toggle />
+
+      @if (session(); as user) {
+        <a data-hide-sm class="tf-public-header__account" [routerLink]="accountHref()">
+          <img decoding="async" [src]="avatarSrc()" alt="" width="24" height="24" />
+          <span>{{ accountName() }}</span>
+        </a>
+      } @else {
+        <a data-hide-sm class="tf-nav-login" routerLink="/auth">{{ labels().login }}</a>
+      }
+
+      <button type="button" class="tf-icon-btn" data-public-menu-toggle (click)="toggleMenu()"
+              [attr.aria-controls]="menuId()" [attr.aria-expanded]="menuOpen()"
+              [attr.aria-label]="labels().menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" aria-hidden="true" focusable="false">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- The mobile sheet. `data-public-menu` is what the stylesheet animates. -->
+  <div [id]="menuId()" [attr.data-public-menu]="menuOpen() ? 'open' : 'closed'" class="tf-shell">
+    <nav [attr.aria-label]="labels().menu">
+      <a routerLink="/teachers" (click)="closeMenu()">{{ labels().browse }}</a>
+      <a routerLink="/requests" (click)="closeMenu()">{{ labels().post }}</a>
+      <a routerLink="/about" (click)="closeMenu()">{{ labels().about }}</a>
+    </nav>
+    <div class="tf-public-menu-actions">
+      @if (session(); as user) {
+        <a class="tf-public-menu-login" [routerLink]="accountHref()" (click)="closeMenu()">
+          <img decoding="async" [src]="avatarSrc()" alt="" width="24" height="24" />
+          {{ accountName() }}
+        </a>
+      } @else {
+        <a class="tf-public-menu-login" routerLink="/auth" (click)="closeMenu()">{{ labels().login }}</a>
+      }
+    </div>
+  </div>
+</header>

@@ -1,0 +1,128 @@
+<tf-skip-link />
+<tf-public-header menuId="marketplace-public-menu" />
+
+<main id="main" class="tf-shell tf-market-page">
+  <header class="tf-market-mast">
+    <h1>{{ side() === 'teacher' ? t('om_opportunities', 'Open opportunities') : t('om_my_requests', 'My open requests') }}</h1>
+    <p class="tf-market-lede">
+      {{ side() === 'teacher'
+        ? t('om_teacher_lede', 'Requests from students you are qualified to help with.')
+        : t('om_student_lede', 'Describe what you need and compare the offers you receive.') }}
+    </p>
+    @if (side() === 'student') {
+      <a class="tf-button" routerLink="/requests/new">{{ t('om_post', 'Post a request') }}</a>
+    }
+  </header>
+
+  @if (isGuest()) {
+    <div class="tf-market-state" role="status">
+      <p>{{ t('om_sign_in', 'Log in to use the open marketplace.') }}</p>
+      <a class="tf-button" routerLink="/auth">{{ t('nav_login', 'Log in') }}</a>
+    </div>
+  } @else if (loading()) {
+    <p class="tf-market-muted" role="status">{{ t('om_loading', 'Loading…') }}</p>
+  } @else if (error(); as message) {
+    <div class="tf-market-state tf-market-state--error" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="tf-button" (click)="load()">{{ t('browse_retry', 'Try again') }}</button>
+    </div>
+  } @else {
+    <div class="tf-market-layout">
+      <section class="tf-market-list" aria-labelledby="market-list-title">
+        <h2 id="market-list-title" class="tf-sr-only">{{ t('om_requests', 'Requests') }}</h2>
+        @for (row of rows(); track row.id) {
+          <button type="button" class="tf-market-row" [class.is-current]="row.current"
+                  [attr.aria-current]="row.current" (click)="select(row.id)">
+            <span class="tf-market-row__head">
+              <strong>{{ row.title }}</strong>
+              <span class="tf-market-badge">{{ row.offerCount }} {{ t('om_offers', 'offers') }}</span>
+            </span>
+            <span class="tf-market-row__meta">{{ row.subject }} · {{ row.deadline }}</span>
+            @if (row.budget !== null) {
+              <span class="tf-market-row__budget">
+                <tf-price [amount]="row.budget" [currency]="row.currency" />
+              </span>
+            }
+          </button>
+        } @empty {
+          <div class="tf-market-state" role="status">
+            <p>
+              {{ side() === 'teacher'
+                ? t('om_no_opportunities', 'No open opportunities right now.')
+                : t('om_no_requests', 'You have not published a request yet.') }}
+            </p>
+          </div>
+        }
+      </section>
+
+      <section class="tf-market-detail">
+        @if (selected(); as request) {
+          <header class="tf-market-detail__head">
+            <h2>{{ request.title }}</h2>
+            @if (request.deadline) {
+              <p class="tf-market-muted">{{ t('om_deadline', 'Deadline') }}: {{ fmt.dateOnly(request.deadline) }}</p>
+            }
+          </header>
+          <p class="tf-market-description">{{ request.description }}</p>
+
+          @if (side() === 'student') {
+            <section aria-labelledby="market-offers-title">
+              <h3 id="market-offers-title">{{ t('om_offers', 'offers') }}</h3>
+              @if (offersLoading()) {
+                <p class="tf-market-muted" role="status">{{ t('om_loading_offers', 'Loading offers…') }}</p>
+              } @else {
+                <ul class="tf-market-offers">
+                  @for (offer of offerRows(); track offer.id) {
+                    <li class="tf-market-offer">
+                      <div>
+                        <strong>{{ offer.teacher }}</strong>
+                        <span class="tf-market-muted">{{ offer.deliveryLabel }}</span>
+                      </div>
+                      <p>{{ offer.message }}</p>
+                      <div class="tf-market-offer__foot">
+                        <strong><tf-price [amount]="offer.price" [currency]="offer.currency" /></strong>
+                        <button type="button" class="tf-button" (click)="accept(offer)" [disabled]="busy()">
+                          {{ t('om_accept', 'Accept') }}
+                        </button>
+                      </div>
+                    </li>
+                  } @empty {
+                    <li class="tf-market-muted">{{ t('om_no_offers', 'No offers yet.') }}</li>
+                  }
+                </ul>
+              }
+            </section>
+          } @else {
+            <form class="tf-market-offer-form" (ngSubmit)="sendOffer($event)">
+              <h3>{{ t('om_submit_offer', 'Send an offer') }}</h3>
+              <div class="tf-market-offer-grid">
+                <label>
+                  <span>{{ t('om_price', 'Price') }}</span>
+                  <input type="number" min="1" step="10" required
+                         [value]="offerPrice()" (input)="offerPrice.set($any($event.target).value)" />
+                </label>
+                <label>
+                  <span>{{ t('om_delivery_days', 'Delivery in days') }}</span>
+                  <input type="number" min="1" step="1" required
+                         [value]="offerDays()" (input)="offerDays.set($any($event.target).value)" />
+                </label>
+              </div>
+              <label>
+                <span>{{ t('om_message', 'Message') }}</span>
+                <textarea rows="3" maxlength="1000"
+                          [value]="offerMessage()" (input)="offerMessage.set($any($event.target).value)"></textarea>
+              </label>
+              <button type="submit" class="tf-button" [disabled]="!canSubmitOffer()">
+                {{ busy() ? t('om_sending', 'Sending…') : t('om_send_offer', 'Send offer') }}
+              </button>
+            </form>
+          }
+        } @else {
+          <p class="tf-market-muted">{{ t('om_select', 'Select a request to see the detail.') }}</p>
+        }
+      </section>
+    </div>
+  }
+</main>
+
+<tf-toast />

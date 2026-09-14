@@ -1,0 +1,23 @@
+/* Landing-only type. The section layout, the Kingdom, the orbs, the story
+   canvas and the promo dialog are all in css/tafseel.css already; what lives
+   here is the handful of declarations the legacy page carried as inline
+   `style=` attributes on the hero, which had no home in the stylesheet and so
+   could not be overridden, inspected, or reused. */
+:host { display: contents; }
+
+.tf-hero-headline {
+  font-size: clamp(34px, 4.4vw, 52px);
+  letter-spacing: -.035em;
+  font-weight: 800;
+  margin-block-end: 16px;
+}
+
+.tf-hero-sub {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-inline-size: 560px;
+  margin-block-end: 24px;
+  /* The Arabic copy carries its own line break, which is part of the sentence. */
+  white-space: pre-line;
+}

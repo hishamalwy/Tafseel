@@ -1,0 +1,23 @@
+/*
+ * Checkout styling: the handful of inline `style="…"` attributes the legacy
+ * page carried, at the same values. Everything structural already lives in
+ * css/tafseel.css under the tf-pay-* names.
+ */
+
+:host { display: block; }
+
+.tf-pay-page { padding-block: 32px 96px; }
+
+.tf-pay-teacher-copy { min-inline-size: 0; }
+.tf-pay-teacher-copy .tf-req-context-teacher { margin: 0; }
+.tf-pay-teacher-copy .tf-req-context-meta { margin: 4px 0 0; }
+
+.tf-pay-badge { margin-block-start: 12px; }
+.tf-pay-resume { margin-block-start: 10px; }
+.tf-pay-protection-foot { margin-block-start: 18px; margin-block-end: 0; }
+
+.tf-pay-method input[type='radio'] { margin-block-start: 3px; }
+
+/* The legacy page set opacity and cursor inline off the submitting flag. */
+.tf-pay-cta.is-busy,
+.tf-pay-mobile-cta button.is-busy { opacity: .65; cursor: wait; }

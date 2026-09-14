@@ -1,0 +1,65 @@
+<tf-skip-link />
+<tf-public-header menuId="about-public-menu" />
+
+<main id="main" class="tf-about">
+  <!-- The page's one loud brand moment: ink, the mark at full size, and the wing
+       pattern surfacing behind it. Everything below this band is bone and quiet. -->
+  <section class="tf-about-hero tf-ink-band" data-pattern="top" data-pattern-tone="lime" aria-labelledby="about-title">
+    <div class="tf-shell tf-about-hero__inner">
+      <div class="tf-about-hero__copy">
+        <p class="tf-about-eyebrow"><span class="tf-chip-live">{{ c().heroEyebrow }}</span></p>
+        <h1 id="about-title" class="tf-about-hero__title">{{ c().heroTitle }}</h1>
+        <p class="tf-about-hero__lede">{{ c().heroLede }}</p>
+      </div>
+      <div class="tf-about-hero__mark" aria-hidden="true">
+        <img decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
+             src="assets/brand/tafseel-mark-dark.svg" alt="" width="162" height="220" />
+      </div>
+    </div>
+  </section>
+
+  <!-- The argument, as one editorial statement rather than a wall of cards. -->
+  <section class="tf-shell tf-about-belief" aria-labelledby="about-belief-title">
+    <h2 id="about-belief-title" class="tf-about-belief__title">{{ c().beliefTitle }}</h2>
+    <p class="tf-about-belief__body">{{ c().beliefBody }}</p>
+  </section>
+
+  <section class="tf-shell tf-about-principles" aria-labelledby="about-principles-title">
+    <h2 id="about-principles-title" class="tf-about-kicker"><span class="tf-highlight">{{ c().principlesKicker }}</span></h2>
+    <ol class="tf-about-principles__list">
+      @for (item of c().principles; track item.num) {
+        <li class="tf-about-principle">
+          <span class="tf-about-principle__num" aria-hidden="true">{{ item.num }}</span>
+          <div class="tf-about-principle__text">
+            <h3 class="tf-about-principle__title">{{ item.title }}</h3>
+            <p class="tf-about-principle__body">{{ item.body }}</p>
+          </div>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <!-- Origin. Bone canvas, quiet pattern, and one oversized wing bleeding off
+       the inline edge, so the section is unmistakably Tafseel without a
+       headline having to say so. -->
+  <section class="tf-about-origin" aria-labelledby="about-origin-title">
+    <span class="tf-wing-watermark is-stroke tf-about-origin__wing" aria-hidden="true"></span>
+    <div class="tf-shell tf-about-origin__inner">
+      <h2 id="about-origin-title" class="tf-about-origin__title">{{ c().originTitle }}</h2>
+      <p class="tf-about-origin__body">{{ c().originBody }}</p>
+    </div>
+  </section>
+
+  <section class="tf-shell tf-about-cta" aria-labelledby="about-cta-title">
+    <div class="tf-about-cta__card" data-pattern="corner">
+      <h2 id="about-cta-title" class="tf-about-cta__title">{{ c().ctaTitle }}</h2>
+      <p class="tf-about-cta__body">{{ c().ctaBody }}</p>
+      <div class="tf-about-cta__actions">
+        <a class="tf-hero-action tf-hero-action--primary" routerLink="/requests">{{ c().ctaPrimary }}</a>
+        <a class="tf-hero-action tf-hero-action--secondary" routerLink="/teach/apply">{{ c().ctaSecondary }}</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<tf-landing-footer [copy]="footerCopy()" idPrefix="about-foot" />

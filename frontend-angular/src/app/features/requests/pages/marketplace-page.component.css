@@ -1,0 +1,72 @@
+/* Open marketplace. The legacy page used a two-pane master/detail; the tokens
+   and .tf-button come from css/tafseel.css, only the pane chrome lives here. */
+:host { display: block; }
+
+.tf-market-page { padding-block: 28px 96px; display: grid; gap: 22px; }
+.tf-market-mast { display: grid; gap: 8px; justify-items: start; }
+.tf-market-mast h1 { font-size: 26px; letter-spacing: -.02em; }
+.tf-market-lede { margin: 0; color: var(--muted); max-inline-size: 62ch; }
+.tf-market-muted { color: var(--muted); font-size: 13px; margin: 0; }
+
+.tf-market-state {
+  display: grid; gap: 12px; justify-items: center; text-align: center;
+  padding: 40px 20px; border: 1px solid var(--border);
+  border-radius: var(--r-lg); background: var(--surface); color: var(--muted);
+}
+.tf-market-state--error { border-color: var(--error); color: var(--error); }
+
+.tf-market-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 900px) { .tf-market-layout { grid-template-columns: 1fr; } }
+
+.tf-market-list { display: grid; gap: 10px; align-content: start; }
+.tf-market-row {
+  display: grid; gap: 6px; inline-size: 100%; text-align: start;
+  padding: 14px; font: inherit; color: inherit; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  transition: border-color .15s ease, background .15s ease;
+}
+.tf-market-row:hover { border-color: var(--primary); }
+.tf-market-row.is-current { border-color: var(--primary); background: var(--surface-2); }
+.tf-market-row__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tf-market-row__meta { color: var(--muted); font-size: 13px; }
+.tf-market-row__budget { font-weight: 700; }
+.tf-market-badge {
+  flex: none; font-size: 12px; font-weight: 700; padding: 3px 8px;
+  border-radius: 999px; background: var(--surface-2); color: var(--text-2);
+}
+
+.tf-market-detail {
+  display: grid; gap: 16px; padding: 22px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+}
+.tf-market-detail__head { display: grid; gap: 4px; }
+.tf-market-detail__head h2 { font-size: 20px; letter-spacing: -.01em; }
+.tf-market-description { margin: 0; line-height: 1.8; white-space: pre-wrap; }
+
+.tf-market-offers { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.tf-market-offer {
+  display: grid; gap: 8px; padding: 14px;
+  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg);
+}
+.tf-market-offer > div:first-child { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+.tf-market-offer p { margin: 0; line-height: 1.7; }
+.tf-market-offer__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.tf-market-offer-form { display: grid; gap: 14px; }
+.tf-market-offer-form h3 { font-size: 16px; }
+.tf-market-offer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .tf-market-offer-grid { grid-template-columns: 1fr; } }
+.tf-market-offer-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.tf-market-offer-form input,
+.tf-market-offer-form textarea {
+  inline-size: 100%; padding: 11px 12px; font: inherit;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--bg); color: var(--text);
+}
+.tf-market-offer-form textarea { resize: vertical; }
+.tf-market-offer-form > .tf-button { justify-self: start; }

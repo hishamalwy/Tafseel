@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en" target-language="ar" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="7215034126313663268" datatype="html">
+        <source>Tafseel home</source>
+        <target>الصفحة الرئيسية لتفصيل</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">4,5</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8952554382316647903" datatype="html">
+        <source>Switch language</source>
+        <target>تغيير اللغة</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">11,12</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="612948716745016440" datatype="html">
+        <source>Switch between light and dark</source>
+        <target>التبديل بين الوضع الفاتح والداكن</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">15,16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7192796381296293439" datatype="html">
+        <source>Log in or sign up</source>
+        <target>تسجيل الدخول أو إنشاء حساب</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">22,23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2336550011721758066" datatype="html">
+        <source>Log in</source>
+        <target>تسجيل الدخول</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">26,27</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">147,148</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7028204981963450021" datatype="html">
+        <source>Sign up</source>
+        <target>إنشاء حساب</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">30,31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8946598963355686807" datatype="html">
+        <source>Check <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/><x id="INTERPOLATION" equiv-text="{{ s.email }}"/><x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> for a confirmation link. You can log in once your email is confirmed.</source>
+        <target>راجع <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/><x id="INTERPOLATION" equiv-text="{{ s.email }}"/><x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> لتجد رابط التأكيد. يمكنك تسجيل الدخول بعد تأكيد بريدك.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">37,38</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="804793265126552077" datatype="html">
+        <source>Enter the 6-digit code from your authenticator app.</source>
+        <target>أدخل الرمز المكوّن من ٦ أرقام من تطبيق المصادقة.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">42,43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8051552582499709590" datatype="html">
+        <source> Resend the confirmation email </source>
+        <target> إعادة إرسال رسالة التأكيد </target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8301535046747035390" datatype="html">
+        <source>Full name</source>
+        <target>الاسم الكامل</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">63,64</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6535933858001664956" datatype="html">
+        <source>Enter your name as you want teachers to see it.</source>
+        <target>اكتب اسمك كما تريد أن يراه المعلمون.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">68,69</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2182327550914809595" datatype="html">
+        <source>I am joining as</source>
+        <target>أنضم بصفتي</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">73,74</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2085601269500844276" datatype="html">
+        <source>A student</source>
+        <target>طالبًا</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">77,78</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="383241926055548645" datatype="html">
+        <source>A teacher</source>
+        <target>معلمًا</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">81,82</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4768749765465246664" datatype="html">
+        <source>Email</source>
+        <target>البريد الإلكتروني</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">88,89</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3538634276910895484" datatype="html">
+        <source>Enter your email address.</source>
+        <target>أدخل بريدك الإلكتروني.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">96,97</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8734014385031385531" datatype="html">
+        <source>That does not look like an email address.</source>
+        <target>هذا لا يبدو بريدًا إلكترونيًا صحيحًا.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">98,99</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1431416938026210429" datatype="html">
+        <source>Password</source>
+        <target>كلمة المرور</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">105,106</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5554528553553249088" datatype="html">
+        <source>Show password</source>
+        <target>إظهار كلمة المرور</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">114,115</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8261817211687986042" datatype="html">
+        <source>At least 10 characters.</source>
+        <target>١٠ أحرف على الأقل.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">119,120</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8763496050557912800" datatype="html">
+        <source>Passwords need at least 10 characters.</source>
+        <target>كلمة المرور تحتاج ١٠ أحرف على الأقل.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">124,125</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4936798468235834061" datatype="html">
+        <source>That password is too long.</source>
+        <target>كلمة المرور طويلة جدًا.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">126,127</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7206690825838385338" datatype="html">
+        <source>Enter your password.</source>
+        <target>أدخل كلمة المرور.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">128,129</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2138692935902602464" datatype="html">
+        <source>Authenticator code</source>
+        <target>رمز المصادقة</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">136,137</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1188193109474903303" datatype="html">
+        <source>Working…</source>
+        <target>جارٍ التنفيذ…</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">145,146</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5907476126990913307" datatype="html">
+        <source>Create account</source>
+        <target>إنشاء الحساب</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">149,150</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2012659005494284050" datatype="html">
+        <source>Forgot your password?</source>
+        <target>نسيت كلمة المرور؟</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.html</context>
+          <context context-type="linenumber">154,155</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="883225603593837541" datatype="html">
+        <source>Something went wrong. Please try again.</source>
+        <target>حدث خطأ ما. حاول مرة أخرى.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">140</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1169294148864287929" datatype="html">
+        <source>That authenticator code is not right. Check the app and try again.</source>
+        <target>رمز المصادقة غير صحيح. راجع التطبيق وحاول مجددًا.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">151</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6666809212157643815" datatype="html">
+        <source>Incorrect email or password.</source>
+        <target>البريد الإلكتروني أو كلمة المرور غير صحيحة.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">155</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7886976425300011144" datatype="html">
+        <source>Confirm your email address before logging in.</source>
+        <target>أكِّد بريدك الإلكتروني قبل تسجيل الدخول.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">159</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="990274521230191535" datatype="html">
+        <source>This account is suspended. Contact support to restore access.</source>
+        <target>هذا الحساب موقوف. تواصل مع الدعم لاستعادة الوصول.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">163</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2400448404514899919" datatype="html">
+        <source>That email cannot be registered. Try logging in instead.</source>
+        <target>لا يمكن تسجيل هذا البريد. جرّب تسجيل الدخول بدلًا من ذلك.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">169</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4164803888426504260" datatype="html">
+        <source>The terms have changed. Reload the page and try again.</source>
+        <target>تغيّرت الشروط. أعد تحميل الصفحة وحاول مجددًا.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">173</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4325555630135981447" datatype="html">
+        <source>Your account was created but the confirmation email did not send.</source>
+        <target>أُنشئ حسابك لكن رسالة التأكيد لم تُرسل.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">177</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8728208350904931089" datatype="html">
+        <source>Could not reach Tafseel. Check your connection and try again.</source>
+        <target>تعذّر الوصول إلى تفصيل. تحقّق من اتصالك وحاول مجددًا.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">182</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6601847515219107856" datatype="html">
+        <source>Tafseel is having trouble right now. Try again in a moment.</source>
+        <target>تفصيل يواجه مشكلة حاليًا. حاول بعد قليل.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/auth/auth-page.component.ts</context>
+          <context context-type="linenumber">186</context>
+        </context-group>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

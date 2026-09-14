@@ -1,0 +1,95 @@
+/*
+ * Auth-screen styling.
+ *
+ * These declarations are not new: every one of them was an inline `style="…"` in
+ * `Tafseel-Auth.dc.html`, repeated at each use site. Moving them here changes
+ * nothing on screen — the values are carried over exactly — but it makes them
+ * reviewable, overridable per theme, and impossible to drift between the login,
+ * register and reset panels that used to hold three copies each.
+ *
+ * Everything still resolves through the tokens `css/tafseel.css` defines.
+ */
+
+:host { display: block; }
+
+.tf-auth-heading {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.tf-auth-copy--spaced { margin-block-end: 22px; }
+
+/* A button that reads as a link: forgot-password, resend, mode switches. The
+   44px floor is the touch target, not decoration. */
+.tf-inline-action {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-align: start;
+}
+.tf-inline-action:disabled { opacity: .6; cursor: progress; }
+
+.tf-auth-alert {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+  background: var(--error-soft);
+  border-radius: var(--r-sm);
+}
+
+.tf-auth-note {
+  margin-block-end: 16px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+}
+
+.tf-auth-inline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tf-auth-submit {
+  block-size: 44px;
+  font-size: 14px;
+  margin-block-start: 4px;
+}
+
+.tf-auth-switch {
+  margin-block-start: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tf-match-hint {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--error);
+}
+.tf-match-hint--ok { color: var(--success); }
+
+.tf-form--tight { gap: 14px; }
+.tf-grid-2--tight { gap: 12px; }
+
+/* Pushes the card up off the footer edge, as the bare <span> did before. */
+.tf-auth-spacer { margin-block-start: auto; }

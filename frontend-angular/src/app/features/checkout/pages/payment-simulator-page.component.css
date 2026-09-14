@@ -1,0 +1,19 @@
+/* The simulator reuses the checkout surfaces; only its own actions are new. */
+:host { display: block; }
+
+.tf-pay-page { padding-block: 32px 96px; }
+
+.tf-sim-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-block: 20px 12px;
+}
+.tf-sim-fail {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+}
+.tf-sim-outcome { margin-block-start: 20px; display: grid; gap: 10px; justify-items: start; }
+
+.tf-pay-cta.is-busy { opacity: .65; cursor: wait; }

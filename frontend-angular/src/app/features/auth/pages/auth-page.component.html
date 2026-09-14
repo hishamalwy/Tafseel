@@ -1,0 +1,228 @@
+<tf-auth-shell [homeLabel]="t('nav_home', 'Tafseel home')">
+
+    <div class="tf-auth-card-wrap">
+      <div class="tf-panel tf-panel-narrow tf-auth-panel">
+        <div class="tf-auth-tabs" role="tablist">
+          @for (m of modeTabs(); track m.mode) {
+            <button type="button" role="tab" [attr.aria-selected]="m.active" (click)="goMode(m.mode)">{{ m.label }}</button>
+          }
+        </div>
+
+        @switch (mode()) {
+
+          @case ('login') {
+            <div class="tf-auth-panel">
+              <div class="tf-auth-copy tf-auth-copy--spaced">
+                <h1 class="tf-auth-heading">{{ t('auth_welcome_back', 'Welcome back') }}</h1>
+                <p class="tf-muted">{{ t('auth_login_sub', 'Log in to manage your requests and sessions.') }}</p>
+              </div>
+
+              <form class="tf-form" (ngSubmit)="onLogin()" novalidate>
+                <tf-text-field
+                  fieldId="login-email" type="email" autocomplete="email" placeholder="you@example.com"
+                  [label]="t('auth_email', 'Email')"
+                  [(value)]="email"
+                  [invalid]="loginEmailInvalid()"
+                  [message]="loginEmailError()"
+                  (blurred)="emailTouched.set(true)" />
+
+                <tf-password-field
+                  fieldId="login-password" autocomplete="current-password" placeholder="••••••••"
+                  [label]="t('auth_password', 'Password')"
+                  [(value)]="password"
+                  [invalid]="loginPasswordInvalid()"
+                  [message]="loginPasswordError()"
+                  (blurred)="passwordTouched.set(true)" />
+
+                @if (needsMfa()) {
+                  <tf-text-field
+                    fieldId="login-mfa" inputMode="numeric" autocomplete="one-time-code"
+                    placeholder="123456" dir="ltr" [maxLength]="6"
+                    [label]="t('auth_mfa_code', 'Authenticator code')"
+                    [(value)]="mfaCode"
+                    [message]="t('auth_mfa_help', 'Enter the current 6-digit code from your authenticator app.')" />
+                }
+
+                @if (loginError()) {
+                  <p class="tf-auth-alert" role="alert">{{ loginError() }}</p>
+                }
+
+                @if (needsConfirmationResend()) {
+                  <button type="button" class="tf-inline-action" (click)="onResendConfirmation()"
+                          [disabled]="resendingConfirmation()">
+                    {{ t('auth_resend_confirmation', 'Resend confirmation email') }}
+                  </button>
+                }
+
+                <div class="tf-auth-inline-row">
+                  <label class="tf-check">
+                    <input type="checkbox" [checked]="remember()" (change)="remember.set($any($event.target).checked)" />
+                    {{ t('auth_remember_me', 'Remember me') }}
+                  </label>
+                  <button type="button" class="tf-inline-action" (click)="onForgot()">
+                    {{ t('auth_forgot_password', 'Forgot password?') }}
+                  </button>
+                </div>
+
+                <button class="tf-button tf-auth-submit" type="submit" [disabled]="loginSubmitDisabled()">
+                  {{ loggingIn() ? t('auth_logging_in', 'Logging in…') : t('auth_login', 'Log in') }}
+                </button>
+              </form>
+
+              <p class="tf-auth-switch">
+                {{ t('auth_no_account', "Don't have an account?") }}
+                <button type="button" class="tf-inline-action" (click)="goMode('register')">{{ t('auth_signup', 'Sign up') }}</button>
+              </p>
+            </div>
+          }
+
+          @case ('register') {
+            <div class="tf-auth-panel">
+              <div class="tf-auth-copy tf-auth-copy--spaced">
+                <h1 class="tf-auth-heading">{{ t('auth_create_account_h', 'Create your account') }}</h1>
+                <p class="tf-muted">{{ t('auth_choose_usage', 'Choose how you want to use Tafseel.') }}</p>
+              </div>
+
+              <div class="tf-auth-roles">
+                @for (r of roleCards(); track r.role) {
+                  <button type="button" class="tf-auth-role" (click)="role.set(r.role)" [attr.aria-pressed]="r.active">
+                    <span class="tf-auth-role-icon" aria-hidden="true">
+                      <tf-icon [name]="r.role === 'student' ? 'student' : 'teacher'" [size]="22" />
+                    </span>
+                    <span class="tf-auth-role-copy">
+                      <span class="tf-auth-role-label">{{ r.label }}</span>
+                      <span class="tf-auth-role-desc">{{ r.desc }}</span>
+                    </span>
+                  </button>
+                }
+              </div>
+
+              @if (role() === 'teacher') {
+                <p class="tf-auth-note">
+                  {{ t('auth_teacher_blurb', 'Teacher accounts go through a short application after sign-up: your background, a subject, and a 3-minute teaching demo reviewed by our quality team.') }}
+                </p>
+              }
+
+              <form class="tf-form tf-form--tight" (ngSubmit)="onRegister()" novalidate>
+                <tf-text-field
+                  fieldId="reg-fullname" autocomplete="name"
+                  [label]="t('auth_full_name', 'Full name')"
+                  [(value)]="fullName"
+                  [invalid]="fullNameInvalid()"
+                  [message]="fullNameError()"
+                  (blurred)="fullNameTouched.set(true)" />
+
+                <tf-text-field
+                  fieldId="reg-email" type="email" autocomplete="email"
+                  [label]="t('auth_email', 'Email')"
+                  [(value)]="regEmail"
+                  [invalid]="regEmailInvalid()"
+                  [message]="regEmailError()"
+                  (blurred)="regEmailTouched.set(true)" />
+
+                <div class="tf-grid-2 tf-grid-2--tight">
+                  <tf-password-field
+                    fieldId="reg-password" autocomplete="new-password"
+                    [label]="t('auth_password', 'Password')"
+                    [(value)]="regPassword"
+                    [invalid]="regPasswordInvalid()"
+                    [revealedState]="regShowPassword"
+                    (focused)="regPasswordFocused.set(true)"
+                    (blurred)="regPasswordTouched.set(true); regPasswordFocused.set(false)" />
+
+                  <tf-password-field
+                    fieldId="reg-confirm" autocomplete="new-password"
+                    [label]="t('auth_confirm_password', 'Confirm password')"
+                    [(value)]="regConfirm"
+                    [invalid]="regConfirmInvalid()"
+                    [revealedState]="regShowPassword"
+                    (blurred)="regConfirmTouched.set(true)" />
+                </div>
+
+                @if (showRegPasswordHints()) {
+                  <tf-password-rules [rules]="regPasswordRules()" [heading]="t('auth_password_must_contain', 'Password must contain')" />
+                }
+
+                @if (regConfirmMatch(); as match) {
+                  <p class="tf-match-hint" [class.tf-match-hint--ok]="match.ok">{{ match.text }}</p>
+                }
+
+                @if (regError()) {
+                  <p class="tf-auth-alert" role="alert">{{ regError() }}</p>
+                }
+
+                <label class="tf-check tf-check--start">
+                  <input type="checkbox" [checked]="agreeTerms()" (change)="agreeTerms.set($any($event.target).checked)" />
+                  <span>{{ t('auth_policy_prefix', 'I agree to the') }}
+                    <a routerLink="/policies/terms" target="_blank" rel="noopener">{{ t('auth_terms', 'Terms of Service') }}</a>
+                    {{ t('auth_policy_join', 'and') }}
+                    <a routerLink="/policies/privacy" target="_blank" rel="noopener">{{ t('auth_privacy', 'Privacy Policy') }}</a>
+                    (v{{ policyVersion }})</span>
+                </label>
+
+                <button class="tf-button tf-auth-submit" type="submit" [disabled]="registerSubmitDisabled()">
+                  {{ registering() ? t('auth_creating', 'Creating…') : t('auth_create_account', 'Create account') }}
+                </button>
+              </form>
+
+              <p class="tf-auth-switch">
+                {{ t('auth_have_account', 'Already have an account?') }}
+                <button type="button" class="tf-inline-action" (click)="goMode('login')">{{ t('auth_login', 'Log in') }}</button>
+              </p>
+            </div>
+          }
+
+          @case ('reset') {
+            <div class="tf-auth-panel">
+              <div class="tf-auth-copy tf-auth-copy--spaced">
+                <h1 class="tf-auth-heading">{{ t('auth_reset_h', 'Choose a new password') }}</h1>
+                <p class="tf-muted">{{ t('auth_reset_sub', 'Set a strong password for your Tafseel account.') }}</p>
+              </div>
+
+              <form class="tf-form" (ngSubmit)="onReset()" novalidate>
+                <tf-password-field
+                  fieldId="reset-password" autocomplete="new-password"
+                  [label]="t('auth_new_password', 'New password')"
+                  [(value)]="resetPassword"
+                  [invalid]="resetPasswordInvalid()"
+                  [revealedState]="resetShowPassword"
+                  (focused)="resetPasswordFocused.set(true)"
+                  (blurred)="resetPasswordTouched.set(true); resetPasswordFocused.set(false)" />
+
+                <tf-password-field
+                  fieldId="reset-confirm" autocomplete="new-password"
+                  [label]="t('auth_confirm_password', 'Confirm password')"
+                  [(value)]="resetConfirm"
+                  [invalid]="resetConfirmInvalid()"
+                  [revealedState]="resetShowPassword"
+                  (blurred)="resetConfirmTouched.set(true)" />
+
+                @if (showResetPasswordHints()) {
+                  <tf-password-rules [rules]="resetPasswordRules()" [heading]="t('auth_password_must_contain', 'Password must contain')" />
+                }
+
+                @if (resetConfirmMatch(); as match) {
+                  <p class="tf-match-hint" [class.tf-match-hint--ok]="match.ok">{{ match.text }}</p>
+                }
+
+                @if (resetError()) {
+                  <p class="tf-auth-alert" role="alert">{{ resetError() }}</p>
+                }
+
+                <button class="tf-button tf-auth-submit" type="submit" [disabled]="resetSubmitDisabled()">
+                  {{ resetting() ? t('auth_saving', 'Saving…') : t('auth_save_password', 'Save password') }}
+                </button>
+              </form>
+
+              <p class="tf-auth-switch">
+                <button type="button" class="tf-inline-action" (click)="goMode('login')">{{ t('auth_back_to_login', 'Back to login') }}</button>
+              </p>
+            </div>
+          }
+        }
+      </div>
+    </div>
+    <span class="tf-auth-spacer"></span>
+</tf-auth-shell>
+
+<tf-toast [message]="toast()" />

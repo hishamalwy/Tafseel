@@ -1,0 +1,112 @@
+/*
+ * Booking screen. The legacy page built its whole layout from inline styles on
+ * a `tf-shell`, so unlike the other ports there was no tf-* structure to inherit
+ * — these are those inline values, named.
+ */
+:host { display: block; }
+
+.tf-book-page { padding-block: 32px 96px; }
+
+.tf-book-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .tf-book-layout { grid-template-columns: 1fr; }
+}
+
+.tf-book-form,
+.tf-book-slots {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.tf-book-form h1 { font-size: 24px; letter-spacing: -.02em; }
+.tf-book-lede { color: var(--muted); margin: 0; }
+.tf-book-slots h2 { font-size: 18px; }
+.tf-book-muted { color: var(--muted); font-size: 13px; margin: 0; }
+
+.tf-book-page input[type='text'],
+.tf-book-page select,
+.tf-book-page textarea {
+  inline-size: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.tf-book-page textarea { resize: vertical; }
+.tf-book-page select { block-size: 44px; }
+
+.tf-book-fieldset { border: 0; padding: 0; margin: 0; }
+.tf-book-fieldset legend { font-size: 13px; font-weight: 700; margin-block-end: 8px; }
+.tf-book-durations { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.tf-book-chip,
+.tf-book-slot {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--r-sm);
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  min-block-size: 40px;
+}
+.tf-book-chip.is-selected,
+.tf-book-slot.is-selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  font-weight: 700;
+}
+.tf-book-slot.is-emergency { border-style: dashed; }
+
+.tf-book-attach { cursor: pointer; justify-content: center; }
+
+.tf-book-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+}
+@media (max-width: 720px) {
+  .tf-book-week { grid-template-columns: repeat(4, minmax(90px, 1fr)); }
+}
+
+.tf-book-day { display: grid; gap: 6px; align-content: start; }
+.tf-book-day__head {
+  display: grid;
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.tf-book-day__head strong { color: var(--text); font-size: 13px; }
+.tf-book-day__empty { text-align: center; color: var(--muted); font-size: 12px; }
+
+.tf-book-summary {
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 16px;
+  display: grid;
+  gap: 10px;
+}
+.tf-book-chosen { margin: 0; font-size: 14px; }
+.tf-book-emergency { margin: 0; font-size: 13px; color: var(--warning); }
+.tf-book-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+  font-size: 15px;
+}
+.tf-book-confirm { block-size: 46px; }
+.tf-book-confirm:disabled { opacity: .6; cursor: not-allowed; }
