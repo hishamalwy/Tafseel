@@ -190,8 +190,8 @@ describe('ResolveLandingRoute', () => {
 
   /** The one exception carried over from the original `destination()`. */
   it('sends an unpublished teacher to their lifecycle step, overriding the request', async () => {
-    configure({ lifecycle: { onboardingStatus: () => of({ isPublished: false, nextUrl: '/teacher-apply/demo' }) } });
-    await expect(run(['Teacher'], '/teacher/services')).resolves.toBe('/teacher-apply/demo');
+    configure({ lifecycle: { onboardingStatus: () => of({ isPublished: false, nextUrl: '/teach/apply' }) } });
+    await expect(run(['Teacher'], '/teacher/services')).resolves.toBe('/teach/apply');
   });
 
   it('lets a published teacher keep the requested destination', async () => {
@@ -201,6 +201,6 @@ describe('ResolveLandingRoute', () => {
 
   it('falls back to the application when onboarding status cannot be read', async () => {
     configure({ lifecycle: { onboardingStatus: () => throwError(() => new Error('500')) } });
-    await expect(run(['Teacher'], '/teacher/services')).resolves.toBe('/teacher-apply');
+    await expect(run(['Teacher'], '/teacher/services')).resolves.toBe('/teach/apply');
   });
 });

@@ -3185,5 +3185,19 @@
   "tp_link_copied": "Profile link copied.",
   "tp_share_failed": "Could not copy the link.",
   "tp_sample_qualification": "Qualification sample",
-  "tp_sample_showcase": "Teacher showcase"
+  "tp_sample_showcase": "Teacher showcase",
+  "order_detail_title": "Order",
+  "order_detail_missing_title": "This order isn’t available",
+  "order_detail_missing_body": "It may belong to another account, or it no longer exists.",
+  "order_detail_failed": "We couldn’t load this order.",
+  "order_detail_total": "Total",
+  "order_detail_due": "Agreed delivery",
+  "order_detail_revisions": "Revisions used",
+  "order_detail_created": "Ordered",
+  "order_detail_no_deliveries": "Nothing has been delivered yet.",
+  "order_detail_open_dashboard": "Open in your dashboard",
+  "not_found_title": "We couldn’t find that page",
+  "not_found_body": "The link may be old, or the page may have moved.",
+  "not_found_home": "Go to the home page",
+  "notification_open": "View details"
 }

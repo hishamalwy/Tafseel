@@ -1,0 +1,82 @@
+<tf-workflow-header [crumb]="t('order_detail_title', 'Order')" />
+
+<main id="main" class="tf-shell tf-order-detail">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="tf-order-detail__state" role="status" aria-live="polite">{{ t('common_loading', 'Loading…') }}</p>
+    }
+    @case ('missing') {
+      <section class="tf-order-detail__state" role="alert">
+        <h1>{{ t('order_detail_missing_title', 'This order isn’t available') }}</h1>
+        <p>{{ t('order_detail_missing_body', 'It may belong to another account, or it no longer exists.') }}</p>
+        <a class="tf-button" routerLink="/">{{ t('not_found_home', 'Go to the home page') }}</a>
+      </section>
+    }
+    @case ('failed') {
+      <section class="tf-order-detail__state" role="alert">
+        <h1>{{ t('order_detail_failed', 'We couldn’t load this order.') }}</h1>
+        <button type="button" class="tf-button" (click)="load()">{{ t('common_retry', 'Retry') }}</button>
+      </section>
+    }
+    @case ('ready') {
+      @if (order(); as o) {
+        <header class="tf-order-detail__head">
+          <div>
+            <h1>{{ heading() }}</h1>
+            <p class="tf-order-detail__parties">
+              {{ fmt.partyName(o, 'student') }} · {{ fmt.partyName(o, 'teacher') }}
+            </p>
+          </div>
+          <span class="tf-badge" data-testid="order-status">{{ statusLabel() }}</span>
+        </header>
+
+        <dl class="tf-order-detail__facts">
+          <div><dt>{{ t('order_detail_total', 'Total') }}</dt><dd><tf-price [amount]="o.studentTotal" [currency]="o.currency" /></dd></div>
+          <div><dt>{{ t('order_detail_due', 'Agreed delivery') }}</dt><dd>{{ fmt.date(o.agreedDeliveryAt) }}</dd></div>
+          <div><dt>{{ t('order_detail_revisions', 'Revisions used') }}</dt><dd>{{ o.revisionsUsed }} / {{ o.revisionAllowance }}</dd></div>
+          <div><dt>{{ t('order_detail_created', 'Ordered') }}</dt><dd>{{ fmt.date(o.createdAt) }}</dd></div>
+        </dl>
+
+        <section class="tf-order-detail__section" [attr.aria-label]="t('delivery_files', 'Explanation files')">
+          <h2>{{ t('delivery_files', 'Explanation files') }}</h2>
+          @if (o.deliveries.length) {
+            <ul class="tf-order-detail__files">
+              @for (file of o.deliveries; track file.id) {
+                <li>
+                  <button type="button" class="tf-button tf-button-secondary" (click)="openDelivery(file)">
+                    {{ file.originalName }} · {{ t('protected_view_action', 'View in Tafseel') }}
+                  </button>
+                  @if (file.message) { <p>{{ file.message }}</p> }
+                </li>
+              }
+            </ul>
+          } @else {
+            <p>{{ t('order_detail_no_deliveries', 'Nothing has been delivered yet.') }}</p>
+          }
+        </section>
+
+        <section class="tf-order-detail__section" [attr.aria-label]="t('order_timeline_title', 'Order timeline')">
+          <h2>{{ t('order_timeline_title', 'Order timeline') }}</h2>
+          @if (timelineFailed()) {
+            <p role="alert">{{ t('order_timeline_error', 'We couldn’t load the complete timeline.') }}</p>
+          } @else if (timeline().length) {
+            <ol class="tf-order-detail__timeline">
+              @for (event of timeline(); track event.id) {
+                <li><strong>{{ eventLabel(event) }}</strong><span>{{ actorLabel(event) }} · {{ fmt.date(event.occurredAt) }}</span></li>
+              }
+            </ol>
+          } @else {
+            <p>{{ t('order_timeline_empty', 'No persisted lifecycle events are available for this order.') }}</p>
+          }
+        </section>
+
+        <nav class="tf-order-detail__actions">
+          <a class="tf-button" [routerLink]="dashboardLink().path" [queryParams]="dashboardLink().query">
+            {{ t('order_detail_open_dashboard', 'Open in your dashboard') }}
+          </a>
+        </nav>
+      }
+    }
+  }
+</main>
+<tf-protected-file-viewer />

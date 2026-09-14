@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
 import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards/auth.guards';
 
 /**
@@ -29,10 +29,25 @@ import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards
  *   Tafseel-Payment            /checkout/                     (?orderId= / ?bookingId=)
  *   Tafseel-Mock-Checkout      /checkout/simulator/
  *
- * Screens not yet migrated are absent rather than stubbed: an absent route falls
- * through to the legacy page, which is the behaviour that keeps the site working
- * mid-migration. Adding a placeholder component would break that.
+ * The server links to what a notification or email is about, without knowing who
+ * will open it: `/orders/:orderId`, `/live-sessions/:sessionId`,
+ * `/conversations/:conversationId`, `/requests/:requestId`, `/disputes/:disputeId`.
+ * An order has its own page. The others have no single-item screen yet, so a guard
+ * sends the reader to the screen for their role with the id kept in the query, and
+ * that screen opens on it. Old `/app/*.dc.html` links are redirected by the server.
+ * Anything else is `**`: a real not-found page, never an empty shell.
  */
+type LinkTables = typeof import('@features/navigation/link.routes');
+
+/** A signed-in link that only forwards the reader; its rules load with the first such link. */
+function link(path: string, table: (tables: LinkTables) => Routes): Route {
+  return {
+    path,
+    canActivate: [authenticatedGuard],
+    loadChildren: () => import('@features/navigation/link.routes').then(table)
+  };
+}
+
 export const routes: Routes = [
   // ---- public ----
   {
@@ -55,6 +70,8 @@ export const routes: Routes = [
       import('@features/requests/pages/new-request-page.component')
         .then(m => m.NewRequestPageComponent)
   },
+  link('requests/:requestId/offers', m => m.REQUEST_OFFERS_LINK),
+  link('requests/:requestId', m => m.REQUEST_LINK),
   {
     path: 'requests',
     pathMatch: 'full',
@@ -161,5 +178,25 @@ export const routes: Routes = [
     data: { role: 'Admin' },
     loadComponent: () => import('@features/dashboards/pages/dashboard-page.component').then(m => m.DashboardPageComponent)
   },
-  { path: 'admin', pathMatch: 'full', redirectTo: 'admin/home' }
+  { path: 'admin', pathMatch: 'full', redirectTo: 'admin/home' },
+
+  // ---- links the server hands out ----
+  {
+    path: 'orders/:orderId',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('@features/orders/pages/order-detail-page.component')
+      .then(m => m.OrderDetailPageComponent)
+  },
+  link('live-sessions/:sessionId', m => m.LIVE_SESSION_LINK),
+  link('conversations/:conversationId', m => m.CONVERSATION_LINK),
+  link('messages', m => m.CONVERSATION_LINK),
+  link('disputes/:disputeId', m => m.DISPUTE_LINK),
+  link('teacher/reviews/:reviewId', m => m.TEACHER_REVIEW_LINK),
+  link('admin/operations/:tab', m => m.ADMIN_OPERATIONS_TAB_LINK),
+
+  {
+    path: '**',
+    loadComponent: () => import('@features/navigation/pages/not-found-page.component')
+      .then(m => m.NotFoundPageComponent)
+  }
 ];

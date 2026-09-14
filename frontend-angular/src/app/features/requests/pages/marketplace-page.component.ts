@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -40,6 +40,7 @@ export class MarketplacePageComponent {
   private readonly acceptOfferUseCase = inject(AcceptOffer);
   private readonly store = inject(SignalSessionStore);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
   private readonly toasts = inject(ToastService);
   private readonly dialogs = inject(DialogService);
@@ -114,7 +115,10 @@ export class MarketplacePageComponent {
         ? await this.list.opportunities()
         : await this.list.mine();
       this.requests.set(requests);
-      if (requests.length) await this.select(requests[0]!.id);
+      // A notification link names the request (`?requestId=`); open on it when it is in the list.
+      const linked = this.route.snapshot.queryParamMap.get('requestId');
+      const first = requests.find(r => r.id === linked) ?? requests[0];
+      if (first) await this.select(first.id);
     } catch {
       this.error.set(this.t('om_failed', 'Could not load the marketplace.'));
     } finally {

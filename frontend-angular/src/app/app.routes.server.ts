@@ -55,7 +55,15 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'quality/**', renderMode: RenderMode.Client },
   { path: 'admin/**', renderMode: RenderMode.Client },
 
-  // Placeholder until those routes are migrated; keeps the config honest about
-  // intent rather than silently defaulting everything to one mode.
-  { path: '**', renderMode: RenderMode.Prerender }
+  // Links the server hands out, all behind a login.
+  { path: 'orders/:orderId', renderMode: RenderMode.Client },
+  { path: 'live-sessions/:sessionId', renderMode: RenderMode.Client },
+  { path: 'conversations/:conversationId', renderMode: RenderMode.Client },
+  { path: 'messages', renderMode: RenderMode.Client },
+  { path: 'requests/**', renderMode: RenderMode.Client },
+  { path: 'disputes/**', renderMode: RenderMode.Client },
+
+  // Unknown addresses render the not-found page in the browser; there is nothing to
+  // prerender for a path nobody defined.
+  { path: '**', renderMode: RenderMode.Client }
 ];

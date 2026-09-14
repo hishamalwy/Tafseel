@@ -3185,5 +3185,19 @@
   "tp_link_copied": "تم نسخ رابط الملف الشخصي.",
   "tp_share_failed": "تعذّر نسخ الرابط.",
   "tp_sample_qualification": "نموذج تأهيل",
-  "tp_sample_showcase": "عيّنة المعلم"
+  "tp_sample_showcase": "عيّنة المعلم",
+  "order_detail_title": "الطلب",
+  "order_detail_missing_title": "هذا الطلب غير متاح",
+  "order_detail_missing_body": "قد يكون مرتبطًا بحساب آخر، أو لم يعد موجودًا.",
+  "order_detail_failed": "تعذّر تحميل هذا الطلب.",
+  "order_detail_total": "الإجمالي",
+  "order_detail_due": "موعد التسليم المتفق عليه",
+  "order_detail_revisions": "التعديلات المستخدمة",
+  "order_detail_created": "تاريخ الطلب",
+  "order_detail_no_deliveries": "لم يُسلَّم شيء بعد.",
+  "order_detail_open_dashboard": "افتحه في لوحتك",
+  "not_found_title": "لم نعثر على هذه الصفحة",
+  "not_found_body": "ربما يكون الرابط قديمًا، أو نُقلت الصفحة إلى مكان آخر.",
+  "not_found_home": "العودة إلى الصفحة الرئيسية",
+  "notification_open": "عرض التفاصيل"
 }

@@ -31,7 +31,7 @@ export class ResolveLandingRoute {
       } catch {
         // Status unknown: send them to the application rather than a workspace
         // that may reject them.
-        return '/teacher-apply';
+        return '/teach/apply';
       }
     }
     return requested ?? this.homeFor(roles);
