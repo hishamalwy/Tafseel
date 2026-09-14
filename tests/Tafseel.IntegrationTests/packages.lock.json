@@ -1385,6 +1385,7 @@
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[8.0.21, )",
           "Serilog.AspNetCore": "[8.0.3, )",
           "Serilog.Sinks.Console": "[6.0.0, )",
+          "Serilog.Sinks.File": "[5.0.0, )",
           "Swashbuckle.AspNetCore": "[6.6.2, )",
           "Tafseel.Application": "[1.0.0, )",
           "Tafseel.Infrastructure": "[1.0.0, )"
