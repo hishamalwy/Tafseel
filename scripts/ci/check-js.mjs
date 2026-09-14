@@ -23,8 +23,7 @@ const failures = [];
 const fail = message => failures.push(message);
 
 // ---- 1. syntax -------------------------------------------------------------------------
-const tracked = execFileSync("git", ["ls-files", "*.js", "*.mjs", "*.cjs"], { encoding: "utf8" })
-  .split("\n").map(x => x.trim()).filter(Boolean).filter(existsSync);
+const tracked = sourceFiles();
 for (const file of tracked) {
   try {
     execFileSync(process.execPath, ["--check", file], { stdio: "pipe" });
@@ -116,6 +115,26 @@ if (failures.length) {
 }
 console.log(`JavaScript checks passed: ${tracked.length} source files parse; ${locales.length} locale shells, ` +
   `${1 + policies.length} prerendered pages each; no eval; legacy runtime absent.`);
+
+/** Tracked JS files; outside a git checkout (an exported tree), the same set found on disk. */
+function sourceFiles() {
+  try {
+    return execFileSync("git", ["ls-files", "*.js", "*.mjs", "*.cjs"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+      .split("\n").map(x => x.trim()).filter(Boolean).filter(existsSync);
+  } catch {
+    const skip = new Set(["node_modules", "dist", ".angular", "bin", "obj", ".git", "artifacts", "generated"]);
+    const found = [];
+    const visit = dir => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) { if (!skip.has(entry.name)) visit(path); }
+        else if (/\.(c|m)?js$/.test(entry.name)) found.push(path);
+      }
+    };
+    for (const root of ["scripts", "js", "tests/browser", "frontend-angular/scripts"]) if (existsSync(root)) visit(root);
+    return found;
+  }
+}
 
 function walk(dir) {
   return readdirSync(dir).flatMap(name => {
