@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthFailure } from '@core/auth/models/auth-failure';
 import { EmailAddress } from '@shared/models/email-address';
@@ -39,7 +40,7 @@ type RoleChoice = 'student' | 'teacher';
   selector: 'tf-auth-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink, AuthShellComponent, IconComponent, TextFieldComponent,
+    FormsModule, RouterLink, AuthShellComponent, IconComponent, TextFieldComponent,
     PasswordFieldComponent, PasswordRulesComponent, ToastComponent
   ],
   templateUrl: './auth-page.component.html',

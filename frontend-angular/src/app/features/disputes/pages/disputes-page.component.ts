@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { Dispute, DisputeResolution, EligiblePurchase } from '@features/disputes/models/dispute';
@@ -27,7 +28,7 @@ import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.compone
 @Component({
   selector: 'tf-disputes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [WorkflowHeaderComponent],
+  imports: [FormsModule, WorkflowHeaderComponent],
   templateUrl: './disputes-page.component.html',
   styleUrl: './disputes-page.component.css'
 })

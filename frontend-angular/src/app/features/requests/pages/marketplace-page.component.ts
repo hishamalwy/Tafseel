@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
@@ -30,7 +31,7 @@ type Side = 'student' | 'teacher';
 @Component({
   selector: 'tf-marketplace-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PublicHeaderComponent, SkipLinkComponent, ToastComponent, PriceComponent],
+  imports: [FormsModule, RouterLink, PublicHeaderComponent, SkipLinkComponent, ToastComponent, PriceComponent],
   templateUrl: './marketplace-page.component.html',
   styleUrl: './marketplace-page.component.css'
 })
