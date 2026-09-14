@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Data.SqlClient;
@@ -13,7 +14,8 @@ public sealed class SqlServerTafseelApiFactory : TafseelApiFactory
     private readonly string _connectionString = SqlServerTestDatabase.ConnectionString("Api");
 
     public FailRefreshRevocationInterceptor Failure { get; } = new();
-    public CountingCommandInterceptor Commands { get; } = new();
+    // Query budgets in these tests measure one HTTP request; worker ticks must not count.
+    public CountingCommandInterceptor Commands { get; } = new(requestsOnly: true);
     private int _disposed;
 
     protected override void ConfigureDatabase(IServiceCollection services)
@@ -150,8 +152,17 @@ internal static partial class SqlServerTestDatabase
     private static partial System.Text.RegularExpressions.Regex TestDatabaseName();
 }
 
-public sealed class CountingCommandInterceptor : DbCommandInterceptor
+/// <summary>
+/// Counts SQL commands for query-budget assertions. With <c>requestsOnly</c> it counts only the
+/// commands issued while serving an HTTP request: background workers share the test host's
+/// database, and counting their periodic scans made budgets such as "comparison uses 8 reads"
+/// fail whenever a tick landed inside the measured request (G-18).
+/// </summary>
+public sealed class CountingCommandInterceptor(bool requestsOnly = false) : DbCommandInterceptor
 {
+    // HttpContextAccessor keeps the current request in a static AsyncLocal, so any instance
+    // observes the request the command belongs to.
+    private static readonly HttpContextAccessor Request = new();
     private int _readCount;
     private int _writeCount;
     public int ReadCount => Volatile.Read(ref _readCount);
@@ -161,30 +172,31 @@ public sealed class CountingCommandInterceptor : DbCommandInterceptor
         Interlocked.Exchange(ref _readCount, 0);
         Interlocked.Exchange(ref _writeCount, 0);
     }
+    private bool InRequest => !requestsOnly || Request.HttpContext is not null;
     public override InterceptionResult<DbDataReader> ReaderExecuting(
         DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
     {
-        Interlocked.Increment(ref _readCount);
+        if (InRequest) Interlocked.Increment(ref _readCount);
         return result;
     }
     public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
         DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
         CancellationToken cancellationToken = default)
     {
-        Interlocked.Increment(ref _readCount);
+        if (InRequest) Interlocked.Increment(ref _readCount);
         return ValueTask.FromResult(result);
     }
     public override InterceptionResult<int> NonQueryExecuting(
         DbCommand command, CommandEventData eventData, InterceptionResult<int> result)
     {
-        Interlocked.Increment(ref _writeCount);
+        if (InRequest) Interlocked.Increment(ref _writeCount);
         return result;
     }
     public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
         DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        Interlocked.Increment(ref _writeCount);
+        if (InRequest) Interlocked.Increment(ref _writeCount);
         return ValueTask.FromResult(result);
     }
 }

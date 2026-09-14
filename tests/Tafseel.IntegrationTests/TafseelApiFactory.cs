@@ -17,9 +17,7 @@ namespace Tafseel.IntegrationTests;
 
 public class TafseelApiFactory : WebApplicationFactory<Program>
 {
-    // Microsoft.Data.Sqlite keeps a process-wide function dictionary. Parallel
-    // WebApplicationFactory / SqliteConnection startup corrupts it via CreateFunctionCore.
-    private static readonly object HostInitializationLock = new();
+    private static readonly SemaphoreSlim HostInitialization = new(1, 1);
 
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly string _filesPath = Path.Combine(Path.GetTempPath(), $"tafseel-tests-{Guid.NewGuid():N}");
@@ -42,23 +40,38 @@ public class TafseelApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<IEmailSender>(EmailSender);
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(Clock);
+            // Schema and identity must exist before any background worker runs. Under minimal
+            // hosting the factory does not control when the host starts: Program's app.Run()
+            // starts every hosted service on the entry-point thread while CreateHost is still
+            // returning, and NotificationOutboxWorker queries on its first tick. Doing this work
+            // in CreateHost therefore raced the workers on the shared in-memory connection
+            // (G-17). Hosted services start one at a time in registration order, so running the
+            // initialization as the first one orders it ahead of every worker on any thread.
+            services.Insert(0, ServiceDescriptor.Singleton<IHostedService>(
+                provider => new DatabaseInitialization(this, provider)));
         });
     }
 
-    protected override IHost CreateHost(IHostBuilder builder)
+    private sealed class DatabaseInitialization(TafseelApiFactory factory, IServiceProvider services) : IHostedService
     {
-        lock (HostInitializationLock)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            // Build then initialize, then Start. base.CreateHost Starts immediately, which
-            // lets NotificationOutboxWorker open Sqlite concurrently with EnsureCreated /
-            // InitializeIdentity and hit the same CreateFunctionCore race.
-            var host = builder.Build();
-            using (var scope = host.Services.CreateScope())
-                InitializeDatabase(scope.ServiceProvider);
-            host.Services.InitializeIdentityAsync().GetAwaiter().GetResult();
-            host.Start();
-            return host;
+            // Microsoft.Data.Sqlite also keeps process-wide function state that concurrent
+            // connection setup can corrupt, so hosts never initialize at the same time.
+            await HostInitialization.WaitAsync(cancellationToken);
+            try
+            {
+                using (var scope = services.CreateScope())
+                    factory.InitializeDatabase(scope.ServiceProvider);
+                await services.InitializeIdentityAsync();
+            }
+            finally
+            {
+                HostInitialization.Release();
+            }
         }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     protected virtual void ConfigureDatabase(IServiceCollection services)
