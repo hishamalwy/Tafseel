@@ -141,7 +141,9 @@ public sealed partial class AppRoutesTests
     private static Dictionary<string, Dictionary<string, HashSet<string>>> Dashboards()
     {
         if (_dashboards is not null) return _dashboards;
-        var source = File.ReadAllText(Path.Combine(Root, "frontend-angular", "src", "app", "features", "dashboards", "models", "dashboard.ts"));
+        var source = File.ReadAllText(Path.Combine(Root, "frontend-angular", "src", "app", "features", "dashboards", "models", "dashboard.ts"))
+            // A checkout with core.autocrlf has CRLF; the parse below is line based.
+            .Replace("\r\n", "\n");
         var result = new Dictionary<string, Dictionary<string, HashSet<string>>>();
         foreach (Match config in DashboardConfig().Matches(source))
         {
