@@ -475,6 +475,7 @@ internal sealed class TeacherApplicationService(
     {
         var application = await Required(applicationId, ct);
         SetExpectedVersion(application, expectedVersion);
+        EnsureNotOwnApplication(application, reviewerId);
         application.StartReview(reviewerId, priority, clock.GetUtcNow());
         await notifications.QueueAsync(application.TeacherId, "ApplicationUnderReview",
             "Application under review", "A quality reviewer has started reviewing your application.",
@@ -495,6 +496,7 @@ internal sealed class TeacherApplicationService(
             : null;
         var application = await Required(applicationId, ct);
         SetExpectedVersion(application, expectedVersion);
+        EnsureNotOwnApplication(application, reviewerId);
         if (input.Scores.GroupBy(x => x.Criterion).Any(group => group.Count() != 1))
             throw new DomainException("incomplete_evaluation", "Each evaluation criterion must be scored exactly once.");
         var scores = input.Scores
@@ -609,6 +611,16 @@ internal sealed class TeacherApplicationService(
         await transaction.CommitAsync(ct);
     }
 
+    /// <summary>
+    /// Roles are additive, so a teacher can also hold the Quality Reviewer role. Reviewing is
+    /// still never done on one's own application: approval grants a qualification.
+    /// </summary>
+    private static void EnsureNotOwnApplication(TeacherApplication application, string reviewerId)
+    {
+        if (string.Equals(application.TeacherId, reviewerId, StringComparison.Ordinal))
+            throw new DomainException("self_review_forbidden", "You cannot review your own application.");
+    }
+
     public async Task<TeacherOnboardingStatusDto> GetOnboardingStatusAsync(
         string teacherId, CancellationToken ct)
     {
@@ -677,7 +689,7 @@ internal sealed class TeacherApplicationService(
             TeacherOnboardingStatus.PendingReview or TeacherOnboardingStatus.UnderReview
                 or TeacherOnboardingStatus.Rejected => ("View application status", AppRoutes.TeacherApply),
             TeacherOnboardingStatus.ApprovedButProfileIncomplete => ("Complete profile", AppRoutes.TeacherProfileArea),
-            TeacherOnboardingStatus.ApprovedButNotPublished => ("Finish marketplace setup", AppRoutes.TeacherProfileArea),
+            TeacherOnboardingStatus.ApprovedButNotPublished => ("Finish marketplace setup", AppRoutes.TeacherPublication),
             TeacherOnboardingStatus.Published => ("Open teacher dashboard", AppRoutes.TeacherHome),
             _ => ("Continue teacher setup", AppRoutes.TeacherHome)
         };
