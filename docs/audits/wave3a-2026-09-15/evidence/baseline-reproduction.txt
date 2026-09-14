@@ -1,0 +1,49 @@
+# Tafseel baseline  2026-09-15T02:29:26+03:00
+repo HEAD: 9f249dc (2026-09-15)  branch: feat/wave3a-teacher-supply
+warning: in the working copy of 'docs/audits/baseline-2026-09-14/REMEDIATION_MATRIX.md', LF will be replaced by CRLF the next time Git touches it
+uncommitted: 1 file changed, 8 insertions(+), 8 deletions(-)  untracked paths: 16
+dotnet 9.0.100 | node v24.19.0 | npm 11.12.1
+
+## Working tree (as found)
+restore --locked-mode: exit 0  0 NU1004
+format --verify-no-changes: exit 0  0 errors
+angular build (sync:design, check:i18n, check:styles, ng build): exit 0
+angular unit tests: exit 0   Tests 270 passed (270)
+copy: unlocked restore exit 0
+copy: build Tafseel.ArchitectureTests as-is: exit 0  0 error lines
+copy: build Tafseel.Application.Tests as-is: exit 0  0 error lines
+copy: build Tafseel.Domain.Tests as-is: exit 0  0 error lines
+copy: build Tafseel.IntegrationTests as-is: exit 0  0 error lines
+copy: solution build after compile fix: exit 0
+endpoint inventory probe: exit 0
+copy: Tafseel.ArchitectureTests  Failed:     0, Passed:     1, Skipped:     0, Total:     1
+copy: Tafseel.Domain.Tests  Failed:     0, Passed:   117, Skipped:     0, Total:   117
+copy: Tafseel.Application.Tests  Failed:     0, Passed:    14, Skipped:     0, Total:    14
+copy: integration (provider-neutral)  Failed:     0, Passed:   357, Skipped:     0, Total:   357
+copy: integration (SQL Server)  Failed:     0, Passed:   218, Skipped:     0, Total:   218
+copy: failing tests listed in failed-tests.txt (0)
+ci: check-js.mjs exit 0
+ci: deploy-gates.tests.ps1 exit 0
+ci: staging-migration.tests.ps1 exit 0
+ci: check-migration-safety.tests.ps1 exit 0
+ci: ef has-pending-model-changes exit 0  No changes have been made to the model since the last migration.
+ci: publish exit 0
+ci: validate-publish.ps1 exit 0
+
+## Last commit (git archive HEAD): a clean checkout, committed files only
+restore --locked-mode: exit 0
+npm ci (frontend-angular): exit 0
+build (incl. Angular): exit 0
+Tafseel.ArchitectureTests  Failed:     0, Passed:     1, Skipped:     0, Total:     1
+Tafseel.Domain.Tests  Failed:     0, Passed:   117, Skipped:     0, Total:   117
+Tafseel.Application.Tests  Failed:     0, Passed:    14, Skipped:     0, Total:    14
+integration (provider-neutral)  Failed:     0, Passed:   357, Skipped:     0, Total:   357
+integration (SQL Server)  Failed:     0, Passed:   218, Skipped:     0, Total:   218
+
+## Contract
+client call shapes=144 OK=144 WRONG_VERB=0 NO_ROUTE=0 SHADOWED=0 FALLBACK_ONLY=0
+api endpoints=237 called-by-angular=136 no-angular-caller=101
+ci: check-api-contract.mjs exit 0  API contract: 175 client call shapes, 175 route matches, 0 violations
+ci: check-api-contract.mjs --strict exit 0 (non-zero while known violations remain)
+
+done. Logs and inventories: <scratch>/wave3a/baseline
