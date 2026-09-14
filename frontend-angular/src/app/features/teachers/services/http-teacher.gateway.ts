@@ -5,7 +5,7 @@ import {
   Credential, Teacher, TeacherReview, TeacherSample, TeacherService, TrustBadge
 } from '../models/teacher';
 import {
-  AvailabilitySummary, CatalogGateway, CatalogItem, Catalogs,
+  AvailabilityState, AvailabilitySummary, CatalogGateway, CatalogItem, Catalogs,
   FavouritesGateway, TeacherGateway, TeacherPage, TeacherQuery
 } from '../services/teacher.ports';
 
@@ -150,6 +150,30 @@ function toTeacher(dto: TeacherDto): Teacher {
   };
 }
 
+/** AvailabilitySummaryDto. */
+export interface AvailabilitySummaryDto {
+  teacherId: string;
+  teacherServiceId: string | null;
+  state: string;
+  nextSlotStartUtc: string | null;
+  nextSlotEndUtc: string | null;
+  durationMinutes: number | null;
+}
+
+export function toAvailability(dto: AvailabilitySummaryDto): AvailabilitySummary {
+  return {
+    teacherId: dto.teacherId,
+    teacherServiceId: dto.teacherServiceId ?? null,
+    state: dto.state as AvailabilityState,
+    nextAvailableAt: dto.nextSlotStartUtc ?? null,
+    durationMinutes: dto.durationMinutes ?? null
+  };
+}
+
+function viewerTimeZone(): string | null {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; }
+}
+
 /** Only send parameters that carry a value; the API treats empty as unfiltered. */
 function toParams(query: TeacherQuery): string {
   const params = new URLSearchParams();
@@ -201,15 +225,21 @@ export class HttpTeacherGateway implements TeacherGateway {
       .pipe(map(page => page.items ?? []));
   }
 
+  /**
+   * GET /teachers/availability matched /teachers/{teacherId} with the id "availability" (J1-04).
+   * The summaries live on the live-session API; the viewer's time zone decides what "today" is.
+   */
   availability(
     teacherIds: readonly string[], teacherServiceId?: string
   ): Observable<readonly AvailabilitySummary[]> {
     const params = new URLSearchParams();
     for (const id of teacherIds) params.append('teacherIds', id);
     if (teacherServiceId) params.set('teacherServiceId', teacherServiceId);
+    const zone = viewerTimeZone();
+    if (zone) params.set('viewerTimeZoneId', zone);
     return this.http
-      .get<{ summaries?: AvailabilitySummary[] }>(`/api/v1/teachers/availability?${params}`)
-      .pipe(map(result => result.summaries ?? []));
+      .get<{ summaries?: AvailabilitySummaryDto[] }>(`/api/v1/live-sessions/availability-summaries?${params}`)
+      .pipe(map(result => (result.summaries ?? []).map(toAvailability)));
   }
 
   compare(teacherIds: readonly string[]): Observable<readonly Teacher[]> {
@@ -248,14 +278,16 @@ export class HttpCatalogGateway implements CatalogGateway {
 export class HttpFavouritesGateway implements FavouritesGateway {
   private readonly http = inject(HttpClient);
 
+  /** The API answers TeacherCardDto[]; each card's id is its `teacherId`. */
   mine(): Observable<readonly string[]> {
     return this.http
       .get<{ teacherId?: string }[]>('/api/v1/favorite-teachers')
-      .pipe(map(list => (list ?? []).map(f => String(f.teacherId ?? ''))));
+      .pipe(map(list => (list ?? []).map(card => String(card.teacherId ?? '')).filter(Boolean)));
   }
 
+  /** PUT /favorite-teachers/{teacherId}, no body (J1-07); the old POST with a body had no route. */
   add(teacherId: string): Observable<void> {
-    return this.http.post<void>('/api/v1/favorite-teachers', { teacherId });
+    return this.http.put<void>(`/api/v1/favorite-teachers/${encodeURIComponent(teacherId)}`, null);
   }
 
   remove(teacherId: string): Observable<void> {

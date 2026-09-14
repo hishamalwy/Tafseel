@@ -103,7 +103,9 @@ export class TeacherProfilePageComponent {
   readonly availabilityLabel = computed(() => {
     const view = this.view();
     if (!view || view.availabilityFailed) return '';
-    const next = view.availability?.nextAvailableAt;
+    // A teacher without live sessions has no schedule; "no open slots" would mislead.
+    if (!view.availability || view.availability.state === 'no_schedule_configured') return '';
+    const next = view.availability.nextAvailableAt;
     return next
       ? `${this.t('tp_next_available', 'Next available')} ${this.fmt.date(next)}`
       : this.t('tp_no_slots', 'No open slots right now');

@@ -46,10 +46,19 @@ export interface Catalogs {
   readonly languages: readonly CatalogItem[];
 }
 
+/** `AvailabilitySummaryDto.State`. */
+export type AvailabilityState =
+  | 'available_today' | 'next_available' | 'no_upcoming_availability'
+  | 'no_schedule_configured' | 'temporarily_unavailable' | 'fully_booked';
+
+/** One teacher's next live-session slot, from GET /live-sessions/availability-summaries. */
 export interface AvailabilitySummary {
   readonly teacherId: string;
+  readonly teacherServiceId: string | null;
+  readonly state: AvailabilityState;
+  /** Start of the next bookable slot, when there is one. */
   readonly nextAvailableAt: string | null;
-  readonly openSlotCount: number;
+  readonly durationMinutes: number | null;
 }
 
 export interface TeacherGateway {

@@ -8,22 +8,6 @@
       "route": "/api/v1/learning-requests/{p}/accept",
       "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
       "detail": "AcceptLearningRequest requires agreedDeliveryAt, currency, finalPrice, revisionAllowance"
-    },
-    {
-      "matrix": "J1-04",
-      "kind": "SHADOWED",
-      "method": "GET",
-      "route": "/api/v1/teachers/availability",
-      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
-      "detail": "\"availability\" binds /api/v1/teachers/{teacherId} (Marketplace.Profile)"
-    },
-    {
-      "matrix": "J1-07",
-      "kind": "WRONG_VERB",
-      "method": "POST",
-      "route": "/api/v1/favorite-teachers",
-      "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
-      "detail": "path exists only as GET"
     }
   ]
 }
