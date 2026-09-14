@@ -18,8 +18,11 @@ public sealed class AuthController(
 {
     private const string HostRefreshCookie = "__Host-tafseel-refresh";
     private const string StagingRefreshCookie = "tafseel-staging-refresh";
-    private bool SecureRefreshCookie => Request.IsHttps
-        || !configuration.GetValue<bool>("Security:AllowInsecureRefreshCookie");
+    // Staging compatibility mode: the host is reachable over plain HTTP, so the refresh token
+    // travels in a non-Secure cookie. Production refuses to start with it enabled.
+    private bool InsecureRefreshCookieAllowed =>
+        configuration.GetValue<bool>("Security:AllowInsecureRefreshCookie");
+    private bool SecureRefreshCookie => Request.IsHttps || !InsecureRefreshCookieAllowed;
     private string RefreshCookie => SecureRefreshCookie ? HostRefreshCookie : StagingRefreshCookie;
 
     [HttpPost("register")]
@@ -389,8 +392,13 @@ public sealed class AuthController(
 
     private void ClearRefreshCookies()
     {
-        Response.Cookies.Delete(HostRefreshCookie, CookieOptions(secure: true));
-        Response.Cookies.Delete(StagingRefreshCookie, CookieOptions(secure: false));
+        // Browsers drop a Secure cookie sent over plain HTTP, so the __Host- cookie is only
+        // expired where it can exist. The non-Secure staging cookie is only ever expired in
+        // compatibility mode; everywhere else a response carries the single __Host- cookie.
+        if (SecureRefreshCookie)
+            Response.Cookies.Delete(HostRefreshCookie, CookieOptions(secure: true));
+        if (InsecureRefreshCookieAllowed)
+            Response.Cookies.Delete(StagingRefreshCookie, CookieOptions(secure: false));
     }
 
     private CookieOptions IssueCookieOptions(DateTimeOffset? expires = null) =>
