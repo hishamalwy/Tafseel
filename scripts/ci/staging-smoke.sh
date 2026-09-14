@@ -44,9 +44,14 @@ echo "Live probe succeeded."
 curl --fail --silent --show-error --max-time "$CURL_MAX_TIME" "$APP_URL/health/ready" >/dev/null
 echo "Ready re-check succeeded."
 
-curl --fail --silent --show-error --max-time "$CURL_MAX_TIME" \
-  "$APP_URL/app/Tafseel-Landing.dc.html" >/dev/null
-echo "Landing page probe succeeded."
+# The site is the Angular client: each locale serves its shell with its own base href.
+for locale in ar en; do
+  if ! curl --fail --silent --show-error --max-time "$CURL_MAX_TIME" "$APP_URL/$locale/" | grep -q "<base href=\"/$locale/\""; then
+    echo "Expected the /$locale/ client shell."
+    exit 1
+  fi
+done
+echo "Landing page probe succeeded (/ar/ and /en/ client shells)."
 
 auth_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time "$CURL_MAX_TIME" \
   "$APP_URL/api/v1/auth/me")"

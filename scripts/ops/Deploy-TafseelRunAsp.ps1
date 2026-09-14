@@ -28,7 +28,7 @@ if ($site.Length -le 3 -or $site -eq [IO.Path]::GetPathRoot($site)) { throw "Sit
 if ($backupBase.StartsWith($site + '\', [StringComparison]::OrdinalIgnoreCase)) {
   throw "BackupRoot must be outside SiteRoot."
 }
-foreach ($required in @('Tafseel.Api.dll', 'web.config', 'frontend\Tafseel-Landing.dc.html')) {
+foreach ($required in @('Tafseel.Api.dll', 'web.config', 'webclient\ar\index.csr.html', 'webclient\en\index.csr.html')) {
   if (-not (Test-Path -LiteralPath (Join-Path $publish $required))) { throw "Publish output is missing $required." }
 }
 if (-not (Test-Path -LiteralPath (Join-Path $site 'appsettings.Staging.Host.json'))) {

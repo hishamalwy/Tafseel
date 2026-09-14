@@ -85,7 +85,8 @@ jobs:
           for attempt in {1..40}; do curl -fsS "$APP_URL/health/ready" && break; sleep 5; done
           curl -fsS "$APP_URL/health/ready"
           curl -fsS "$APP_URL/health/live"
-          curl -fsS "$APP_URL/app/Tafseel-Landing.dc.html" >/dev/null
+          curl -fsS "$APP_URL/ar/" | grep -q '<base href="/ar/"'
+          curl -fsS "$APP_URL/en/" | grep -q '<base href="/en/"'
           test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/app/appsettings.json")" = 404
           test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/v1/auth/me")" = 401
       - name: Roll back application on failed health

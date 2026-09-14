@@ -80,7 +80,7 @@ Assert-True "wait script requires success conclusion" ($waitText -match 'conclus
 $smokeText = Get-Content -LiteralPath $smokeScript -Raw
 Assert-True "smoke verifies health/live" ($smokeText -match '/health/live')
 Assert-True "smoke verifies health/ready" ($smokeText -match '/health/ready')
-Assert-True "smoke verifies Landing page" ($smokeText -match 'Tafseel-Landing\.dc\.html')
+Assert-True "smoke verifies the Angular landing shells" (($smokeText -match 'for locale in ar en') -and ($smokeText -match 'base href'))
 Assert-True "smoke verifies auth/me 401" ($smokeText -match 'api/v1/auth/me')
 Assert-True "smoke fails when ready never succeeds" ($smokeText -match 'Ready probe never succeeded')
 Assert-True "smoke mentions manual migration on ready failure" ($smokeText -match 'idempotent SQL')
