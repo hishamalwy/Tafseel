@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, Injector, ViewChild, afterNextRender, computed, inject, signal
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -8,7 +10,9 @@ import { combineLatest } from 'rxjs';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { ProblemDetailsDto } from '@core/http/api.dto';
 import { DashboardGateway } from '../services/dashboard.gateway';
-import { DASHBOARDS, Dashboard, DashboardArea, DashboardConfig, DashboardRole, DashboardTab } from '../models/dashboard';
+import {
+  DASHBOARDS, Dashboard, DashboardArea, DashboardConfig, DashboardRole, DashboardTab, NotificationAction
+} from '../models/dashboard';
 import { LocaleService } from '@core/i18n/locale.service';
 import { FormatService } from '@core/i18n/format.service';
 import { ProtectedFile } from '@core/http/protected-file.service';
@@ -40,6 +44,7 @@ export class DashboardPageComponent {
   private readonly toasts = inject(ToastService);
   private readonly files = inject(ProtectedFile);
   private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
   readonly Dashboard = Dashboard;
@@ -55,6 +60,8 @@ export class DashboardPageComponent {
   readonly profileName = signal(this.sessionStore.current()?.fullName ?? '');
   readonly profileNameEnglish = signal(this.sessionStore.current()?.fullNameEnglish ?? '');
   readonly uploadingFileFor = signal('');
+  /** The item a link named (`?orderId=`, `?sessionId=` …); its card is highlighted and focused. */
+  readonly focusId = signal(Dashboard.focusId(this.route.snapshot.queryParamMap));
 
   readonly area = computed(() => Dashboard.area(this.config, this.sectionKey()));
   readonly tab = computed(() => Dashboard.tab(this.area(), this.tabKey()));
@@ -71,6 +78,7 @@ export class DashboardPageComponent {
     combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([params, query]) => {
       this.sectionKey.set(params.get('section') ?? '');
       this.tabKey.set(query.get('tab') ?? '');
+      this.focusId.set(Dashboard.focusId(query));
       void this.openFromRoute();
     });
   }
@@ -109,6 +117,29 @@ export class DashboardPageComponent {
    * whose only possible answer was "Payment confirmation is required". The
    * card says what it is waiting for instead.
    */
+  isFocused(row: Record<string, unknown>): boolean {
+    return !!this.focusId() && String(row['id'] ?? '') === this.focusId();
+  }
+
+  isNotification(row: Record<string, unknown>): boolean {
+    return String(row['_source'] ?? '').startsWith('/notifications');
+  }
+
+  /** The action a notification card offers, or null when it has no link this app may follow. */
+  notificationAction(row: Record<string, unknown>): NotificationAction | null {
+    return this.isNotification(row) ? Dashboard.notificationAction(row['link']) : null;
+  }
+
+  /**
+   * Opening a notification marks it read on the way out. The request is not awaited: the link
+   * is followed at once, and a failed mark only leaves the notification unread.
+   */
+  markRead(row: Record<string, unknown>): void {
+    if (row['readAt']) return;
+    const id = encodeURIComponent(String(row['id'] ?? ''));
+    if (id) this.gateway.post(`/notifications/read?id=${id}`).catch(() => undefined);
+  }
+
   canStart(row: Record<string, unknown>): boolean {
     return String(row['paymentStatus'] ?? '').toLowerCase() === '1'
       || String(row['paymentStatus'] ?? '').toLowerCase() === 'paid';
@@ -224,6 +255,17 @@ export class DashboardPageComponent {
     const selected = this.tab();
     this.titleService.setTitle(`${this.t(selected.labelKey, selected.fallback)} — Tafseel`);
     await this.reload();
+    this.revealFocused();
+  }
+
+  private revealFocused(): void {
+    const id = this.focusId();
+    if (!id || !this.rows().some(row => this.isFocused(row))) return;
+    afterNextRender(() => {
+      const card = this.document.getElementById(`dashboard-item-${id}`);
+      card?.scrollIntoView({ block: 'center' });
+      card?.focus({ preventScroll: true });
+    }, { injector: this.injector });
   }
 
   private preview(path: string, file: Record<string, unknown>): void {

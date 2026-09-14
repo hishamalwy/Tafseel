@@ -30,7 +30,7 @@
       @if (!loading() && rows().length) {
         <div class="tf-dashboard-grid">
           @for (row of rows(); track row['id'] || $index) {
-            <article class="tf-dashboard-card">
+            <article class="tf-dashboard-card" [class.is-focused]="isFocused(row)" [class.is-unread]="isNotification(row) && !row['readAt']" [attr.id]="isFocused(row) ? 'dashboard-item-' + row['id'] : null" [attr.tabindex]="isFocused(row) ? -1 : null" [attr.aria-current]="isFocused(row) ? 'true' : null">
               <div class="tf-dashboard-card-head"><h2>{{ Dashboard.title(row) }}</h2>@if (row['status'] != null || row['statusName']) { <span class="tf-badge">{{ text(row['statusName'] || row['status']) }}</span> }</div>
               @if (Dashboard.detail(row)) { <p>{{ Dashboard.detail(row) }}</p> }
               <dl>@for (field of FIELDS; track field.key) { @if (row[field.key] != null) { <div><dt>{{ t(field.labelKey, field.fallback) }}</dt><dd>{{ text(row[field.key]) }}</dd></div> } }</dl>
@@ -57,6 +57,13 @@
                 </section>
               }
               <div class="tf-dashboard-card-actions">
+                @if (notificationAction(row); as action) {
+                  @if (action.kind === 'route') {
+                    <a class="tf-dashboard-card-link" data-testid="notification-action" [routerLink]="action.path" [queryParams]="action.query" (click)="markRead(row)">{{ t('notification_open', 'View details') }}</a>
+                  } @else {
+                    <a class="tf-dashboard-card-link" data-testid="notification-action" [attr.href]="action.href" (click)="markRead(row)">{{ t('notification_open', 'View details') }}</a>
+                  }
+                }
                 @if (role === 'Student' && tab().key === 'orders' && row['status'] === 2) { <button type="button" (click)="rowAction(row, 'complete')">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
                 @if (role === 'Student' && tab().key === 'sessions') { <button type="button" (click)="rowAction(row, 'join')">{{ t('session_join', 'Join') }}</button> }
                 @if (role === 'Teacher' && tab().key === 'requests') { <button type="button" (click)="rowAction(row, 'accept')">{{ t('td_accept', 'Accept') }}</button><button type="button" (click)="rowAction(row, 'decline')">{{ t('td_decline', 'Decline') }}</button> }

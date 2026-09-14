@@ -22,4 +22,23 @@ describe('Dashboard route model', () => {
       for (const area of config.areas) expect(area.tabs.length).toBeGreaterThan(0);
     }
   });
+
+  it('follows only notification links that stay on this site, inside the reader’s locale', () => {
+    expect(Dashboard.notificationAction('/orders/o1')).toEqual({ kind: 'route', path: '/orders/o1', query: {} });
+    expect(Dashboard.notificationAction('/en/requests/r1/offers?x=1')).toEqual({ kind: 'route', path: '/requests/r1/offers', query: { x: '1' } });
+    expect(Dashboard.notificationAction('/ar')).toEqual({ kind: 'route', path: '/', query: {} });
+    expect(Dashboard.notificationAction('/arabic')).toEqual({ kind: 'route', path: '/arabic', query: {} });
+    expect(Dashboard.notificationAction('/app/Tafseel-Disputes.dc.html?id=d1')).toEqual({ kind: 'legacy', href: 'app/Tafseel-Disputes.dc.html?id=d1' });
+    for (const hostile of [
+      'https://evil.example/orders', '//evil.example/orders', '/\\evil.example', 'javascript:alert(1)', 'orders/o1',
+      '/api/v1/orders/o1', '/hubs/chat', '/health', '/app/../api/v1/x', '/orders\u0000', '/ord\ners','', null, 42
+    ]) expect(Dashboard.notificationAction(hostile), String(hostile)).toBeNull();
+  });
+
+  it('reads the focused item from whichever id a link carried', () => {
+    const query = (values: Record<string, string>) => ({ get: (name: string) => values[name] ?? null });
+    expect(Dashboard.focusId(query({ tab: 'orders', orderId: 'o1' }))).toBe('o1');
+    expect(Dashboard.focusId(query({ sessionId: 's1' }))).toBe('s1');
+    expect(Dashboard.focusId(query({ tab: 'orders' }))).toBe('');
+  });
 });

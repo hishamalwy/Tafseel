@@ -78,8 +78,41 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
   }
 };
 
+/**
+ * Where a notification's `link` goes. Only a path on this site is followed: an absolute or
+ * protocol-relative address, a backslash trick or an API path is dropped, so a notification can
+ * never send the reader somewhere else. A path is routed inside the reader's current locale (a
+ * `/ar/` or `/en/` prefix in a stored link is ignored). Links stored before the move to this app
+ * point at `/app/*.dc.html`; those stay plain hrefs relative to the locale base so the server's
+ * redirect table can answer them.
+ */
+export type NotificationAction =
+  | { readonly kind: 'route'; readonly path: string; readonly query: Readonly<Record<string, string>> }
+  | { readonly kind: 'legacy'; readonly href: string };
+
+/** Query parameters a link may carry to name the item the destination should open on. */
+export const FOCUS_PARAMS = ['orderId', 'sessionId', 'requestId', 'conversationId', 'reviewId', 'selectedId'] as const;
+
 export const Dashboard = {
   record,
+  notificationAction(link: unknown): NotificationAction | null {
+    if (typeof link !== 'string') return null;
+    const raw = link.trim();
+    // eslint-disable-next-line no-control-regex
+    if (!raw.startsWith('/') || raw.startsWith('//') || /[\\\u0000-\u001f]/.test(raw)) return null;
+    const base = 'https://link.invalid';
+    let url: URL;
+    try { url = new URL(raw, base); } catch { return null; }
+    if (url.origin !== base) return null;
+    const path = url.pathname.replace(/^\/(ar|en)(?=\/|$)/i, '') || '/';
+    if (/^\/(api|hubs|health)(\/|$)/i.test(path)) return null;
+    if (/^\/app\//i.test(path)) return { kind: 'legacy', href: path.slice(1) + url.search };
+    return { kind: 'route', path, query: Object.fromEntries(url.searchParams) };
+  },
+  focusId(query: { get(name: string): string | null }): string {
+    for (const name of FOCUS_PARAMS) { const value = query.get(name); if (value) return value; }
+    return '';
+  },
   area(config: DashboardConfig, key: string): DashboardArea {
     return config.areas.find(x => x.key.toLowerCase() === key.toLowerCase()) ?? config.areas[0];
   },
@@ -96,7 +129,7 @@ export const Dashboard = {
     return String(row['title'] || row['name'] || row['fullName'] || row['subjectName'] || row['email'] || row['code'] || row['id'] || '—');
   },
   detail(row: Record<string, unknown>): string {
-    return ['statusName', 'teacherName', 'studentName', 'city', 'description', 'detail', 'reason']
+    return ['statusName', 'teacherName', 'studentName', 'city', 'description', 'detail', 'reason', 'body']
       .map(k => row[k]).filter(v => typeof v === 'string' && v).slice(0, 3).join(' · ');
   }
 } as const;
