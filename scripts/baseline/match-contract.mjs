@@ -7,24 +7,14 @@ const inv = process.argv[2];
 const endpoints = JSON.parse(fs.readFileSync(path.join(inv, 'endpoints.json'), 'utf8'));
 const captured = JSON.parse(fs.readFileSync(path.join(inv, 'angular-api-calls.json'), 'utf8'));
 
-// Calls whose URL is computed at runtime; resolved by reading the call sites.
-const dynamic = [
-  ['POST', '/api/v1/payments/orders/{p}', 'features/checkout/models/payable.ts:115'],
-  ['POST', '/api/v1/payments/live-sessions/{p}', 'features/checkout/models/payable.ts:116'],
-  ['POST', '/api/v1/orders/{p}/deliveries', 'features/dashboards/pages/dashboard-page.component.ts:197'],
-  ['POST', '/api/v1/live-sessions/{p}/attachments', 'features/dashboards/pages/dashboard-page.component.ts:206'],
-  ['GET', '/api/v1/orders/deliveries/{p}/content', 'features/dashboards/pages/dashboard-page.component.ts:181'],
-  ['GET', '/api/v1/live-sessions/attachments/{p}/content', 'features/dashboards/pages/dashboard-page.component.ts:185'],
-  ['GET', '/api/v1/auth/privacy/export', 'features/dashboards/pages/dashboard-page.component.ts:210'],
-  ['GET', '/api/v1/users/{p}/avatar', 'core/i18n/format.service.ts:96'],
-  ['GET', '/api/v1/teachers/samples/{p}/content', 'features/teachers/services/http-teacher.gateway.ts:102'],
-  ['GET', '/api/v1/education-levels', 'features/teachers/services/http-teacher.gateway.ts:241'],
-  ['GET', '/api/v1/live-sessions/{p}/join', 'features/dashboards/pages/dashboard-page.component.ts:146'],
-  ['GET', '/api/v1/qualification-resources/{p}/content', 'features/teach/pages/teacher-apply-page.component.ts:177'],
-  ...['promotions', 'coupons'].map(t => ['PUT', `/api/v1/admin/${t}/{p}/active`, 'features/dashboards/pages/dashboard-page.component.ts:173']),
-  ...['services', 'subjects', 'topics', 'educationLevels', 'assignments']
-    .map(t => ['PUT', `/api/v1/admin/catalog/${t}/{p}/active`, 'features/dashboards/pages/dashboard-page.component.ts:175']),
-].map(([method, route, at]) => ({ method, route, file: 'frontend-angular/src/app/' + at.split(':')[0], line: +at.split(':')[1], via: 'resolved dynamic path' }));
+// Calls whose URL is computed at runtime. They are declared once, for the CI gate, in
+// tests/contracts/dynamic-client-calls.json; reading that file keeps this baseline tool from
+// drifting (it used to carry a hand-copied list that still named the PUT toggles J13-02 removed).
+const repo = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..', '..');
+const declared = JSON.parse(fs.readFileSync(path.join(repo, 'tests', 'contracts', 'dynamic-client-calls.json'), 'utf8'));
+const dynamic = declared.calls.map(call => ({
+  method: call.method, route: call.route, file: call.file, line: 0, via: `declared dynamic call (${call.source})`
+}));
 
 const calls = [...captured.filter(c => c.route && !c.route.startsWith('/api/v1/locale/')), ...dynamic];
 
