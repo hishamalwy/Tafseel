@@ -51,16 +51,23 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
       area('work', 'Work', [tab('requests', 'Requests', ['/learning-requests/assigned?pageSize=50']), tab('orders', 'Orders', ['/orders/assigned?pageSize=50']), tab('sessions', 'Sessions', ['/live-sessions/mine?pageSize=50'])]),
       area('opportunities', 'Opportunities', [tab('opportunities', 'Opportunities', ['/open-marketplace/opportunities?pageSize=50'])]),
       area('messages', 'Messages', [tab('messages', 'Messages', ['/conversations?pageSize=50'])]),
-      area('services', 'Services', [tab('catalog', 'Service catalogue', ['/teachers/me/eligible-subjects', '/teachers/me/marketplace-services']), tab('availability', 'Availability', ['/teachers/me'])]),
+      // Profile, services, availability and publication are their own screens
+      // (features/teacher-setup); the router serves them before this generic page.
+      area('profile', 'Profile', [tab('details', 'Profile details', [])]),
+      area('services', 'Services', [tab('catalog', 'Services & prices', [])]),
+      area('availability', 'Availability', [tab('availability', 'Availability', [])]),
+      area('publication', 'Publication', [tab('publication', 'Publication', [])]),
+      area('qualifications', 'Qualifications & reviews', [tab('qualifications', 'Qualifications', ['/teachers/me/qualifications']), tab('videos', 'Videos & showcases', ['/teachers/me/profile-videos', '/teachers/me/showcases?pageSize=20']), tab('reviews', 'Reviews', ['/teachers/me'])], 'dash_qualifications_reviews'),
       area('earnings', 'Earnings', [tab('summary', 'Summary', ['/withdrawals/balances', '/teachers/me/business/analytics']), tab('withdrawals', 'Withdrawals', ['/withdrawals/mine?page=1&pageSize=20', '/withdrawals/profile', '/withdrawals/policy'])]),
-      area('profile', 'Profile', [tab('details', 'Profile details', ['/teachers/me', '/teachers/me/eligible-subjects', '/topics', '/education-levels']), tab('qualifications', 'Qualifications', ['/teachers/me/qualifications']), tab('videos', 'Videos & showcases', ['/teachers/me/profile-videos', '/teachers/me/showcases?pageSize=20']), tab('reviews', 'Reviews', ['/teachers/me'])]),
       area('settings', 'Settings', [tab('settings', 'Settings', ['/notification-preferences'])])
     ]
   },
   QualityReviewer: {
     role: 'QualityReviewer', basePath: '/quality', titleKey: 'qd_title', title: 'Quality workspace',
     areas: [
-      area('review', 'Review', [tab('applications', 'Applications', ['/teacher-applications/queue?page=1&pageSize=20&sort=OldestFirst', '/teacher-applications/queue/summary', '/subjects', '/topics?qualificationOnly=true']), tab('additional', 'Additional reviews', ['/teacher-applications/queue?page=1&pageSize=20&kind=Additional']), tab('showcases', 'Showcases', ['/teachers/showcase-moderation?pageSize=20', '/teachers/showcase-moderation/summary'])]),
+      // The application queue and review are their own screens (features/quality).
+      area('applications', 'Applications', [tab('applications', 'Applications', [])]),
+      area('showcases', 'Showcases', [tab('showcases', 'Showcases', ['/teachers/showcase-moderation?pageSize=20', '/teachers/showcase-moderation/summary'])]),
       area('account', 'Account', [tab('settings', 'Settings', ['/notification-preferences', '/notifications?pageSize=20'])])
     ]
   },

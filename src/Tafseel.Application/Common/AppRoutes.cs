@@ -57,22 +57,23 @@ public static class AppRoutes
 
     public const string TeacherHome = "/teacher/home";
     public const string TeacherProfileArea = "/teacher/profile";
-    public const string TeacherVideos = "/teacher/profile?tab=videos";
+    public const string TeacherVideos = "/teacher/qualifications?tab=videos";
     public const string TeacherServices = "/teacher/services";
+    public const string TeacherPublication = "/teacher/publication";
     public const string TeacherEarnings = "/teacher/earnings";
     public static string TeacherReview(Guid reviewId) => $"/teacher/reviews/{reviewId}";
 
-    public const string QualityApplications = "/quality/review?tab=applications";
-    public const string QualityShowcases = "/quality/review?tab=showcases";
+    public const string QualityApplications = "/quality/applications";
+    public const string QualityShowcases = "/quality/showcases";
 
     /// <summary>
-    /// A reviewer's notification is about one item, so its link carries that
-    /// item's id, and the queue opens with that item highlighted.
+    /// A reviewer's notification is about one item: an application opens its review
+    /// screen; a showcase opens the moderation queue with that item highlighted.
     /// </summary>
     public static string QualityApplication(Guid applicationId) =>
-        $"{QualityApplications}&selectedId={applicationId}";
+        $"{QualityApplications}/{applicationId}";
     public static string QualityShowcase(Guid sampleId) =>
-        $"{QualityShowcases}&selectedId={sampleId}";
+        $"{QualityShowcases}?selectedId={sampleId}";
 
     public const string AdminHome = "/admin/home";
     public const string AdminSessions = "/admin/operations?tab=sessions";

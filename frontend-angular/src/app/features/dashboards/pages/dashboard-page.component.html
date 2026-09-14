@@ -86,7 +86,6 @@
                     <span>{{ uploadingFileFor() === row['id'] ? t('common_uploading', 'Uploading…') : t('session_upload_file', 'Add session file') }}</span>
                   </label>
                 }
-                @if (role === 'QualityReviewer' && (tab().key === 'applications' || tab().key === 'additional')) { <button type="button" (click)="rowAction(row, 'review')">{{ t('quality_start_review', 'Start review') }}</button> }
                 @if (role === 'Admin' && ['users','teachers','students','reviewers'].includes(tab().key)) { <button type="button" (click)="rowAction(row, 'suspend')">{{ row['isSuspended'] ? t('admin_unsuspend', 'Unsuspend') : t('admin_suspend', 'Suspend') }}</button> }
                 @if (activeToggle(row)) { <button type="button" (click)="toggleActive(row)">{{ row['isActive'] ? t('common_disable', 'Disable') : t('common_enable', 'Enable') }}</button> }
               </div>

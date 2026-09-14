@@ -23,7 +23,7 @@ const has = (roles: readonly Role[], role: Role) => roles.includes(role);
 /** The workspace a signed-in user lands on when a link has no screen for their role. */
 export function homeDestination(roles: readonly Role[]): Destination {
   if (has(roles, 'Admin')) return { path: '/admin/home' };
-  if (has(roles, 'QualityReviewer')) return { path: '/quality/review' };
+  if (has(roles, 'QualityReviewer')) return { path: '/quality/applications' };
   if (has(roles, 'Teacher')) return { path: '/teacher/home' };
   if (has(roles, 'Student')) return { path: '/student/overview' };
   return { path: '/' };
@@ -74,5 +74,5 @@ export function disputeDestination(disputeId: string): Destination {
 
 /** A review of a teacher, shown in that teacher's profile reviews. */
 export function teacherReviewDestination(reviewId: string): Destination {
-  return { path: '/teacher/profile', query: { tab: 'reviews', reviewId } };
+  return { path: '/teacher/qualifications', query: { tab: 'reviews', reviewId } };
 }

@@ -203,7 +203,6 @@ export class DashboardPageComponent {
         if (!await this.dialogs.confirm({ body: this.t('admin_confirm_user_state', 'Change this user status?') })) return;
         await this.gateway.put(`/admin/users/${id}/suspension`, { suspended });
       }
-      if (action === 'review') await this.gateway.post(`/teacher-applications/${id}/start-review`, { priority: 1 }, version);
       await this.reload(); this.toasts.show(this.t('common_saved', 'Saved.'));
     } catch (error) { this.fail(error); }
   }

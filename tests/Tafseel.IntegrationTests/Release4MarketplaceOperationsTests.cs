@@ -87,8 +87,7 @@ public sealed class Release4MarketplaceOperationsTests(SqlServerTafseelApiFactor
         {
             var link = n.GetProperty("link").GetString() ?? "";
             return n.GetProperty("type").GetString() == "ApplicationSubmitted"
-                && link.Contains(applicationId.ToString(), StringComparison.OrdinalIgnoreCase)
-                && link.StartsWith("/quality/review?tab=applications", StringComparison.Ordinal);
+                && link == $"/quality/applications/{applicationId}";
         });
     }
 

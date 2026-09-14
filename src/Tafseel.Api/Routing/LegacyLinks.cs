@@ -45,7 +45,7 @@ public static partial class LegacyLinks
             ["Tafseel-Chat.dc.html"] = _ => new("/messages"),
             ["Tafseel-Student-Dashboard.dc.html"] = q => Dashboard(q, "student", "overview"),
             ["Tafseel-Teacher-Dashboard.dc.html"] = q => Dashboard(q, "teacher", "home"),
-            ["Tafseel-Quality-Dashboard.dc.html"] = q => Dashboard(q, "quality", "review"),
+            ["Tafseel-Quality-Dashboard.dc.html"] = q => Dashboard(q, "quality", "applications"),
             ["Tafseel-Admin-Dashboard.dc.html"] = q => Dashboard(q, "admin", "home"),
         };
 
@@ -73,8 +73,8 @@ public static partial class LegacyLinks
         {
             (_, null) => new($"/{role}/{home}", "section"),
             ("student", "messages") => new("/messages", "section"),
-            ("teacher", "samples") => new("/teacher/profile", ["section"], [("tab", "videos")]),
-            ("quality", "applications" or "showcases") => new("/quality/review", ["section"], [("tab", section)]),
+            ("teacher", "samples") => new("/teacher/qualifications", ["section"], [("tab", "videos")]),
+            ("quality", "applications" or "showcases") => new($"/quality/{section}", "section"),
             _ => new($"/{role}/{section}", "section"),
         };
     }

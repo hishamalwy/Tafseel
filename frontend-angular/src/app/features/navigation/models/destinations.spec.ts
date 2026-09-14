@@ -9,7 +9,7 @@ describe('server link destinations', () => {
     expect(liveSessionDestination(['Student'], 's1')).toEqual({ path: '/student/sessions', query: { sessionId: 's1' } });
     expect(liveSessionDestination(['Teacher'], 's1')).toEqual({ path: '/teacher/work', query: { tab: 'sessions', sessionId: 's1' } });
     expect(liveSessionDestination(['Admin'], 's1')).toEqual({ path: '/admin/operations', query: { tab: 'sessions', sessionId: 's1' } });
-    expect(liveSessionDestination(['QualityReviewer'], 's1')).toEqual({ path: '/quality/review' });
+    expect(liveSessionDestination(['QualityReviewer'], 's1')).toEqual({ path: '/quality/applications' });
   });
 
   it('opens a conversation in the reader’s messages and tolerates a link without an id', () => {
@@ -30,7 +30,7 @@ describe('server link destinations', () => {
 
   it('keeps disputes and reviews on the screens that already read their ids', () => {
     expect(disputeDestination('d1')).toEqual({ path: '/disputes', query: { selectedId: 'd1' } });
-    expect(teacherReviewDestination('v1')).toEqual({ path: '/teacher/profile', query: { tab: 'reviews', reviewId: 'v1' } });
+    expect(teacherReviewDestination('v1')).toEqual({ path: '/teacher/qualifications', query: { tab: 'reviews', reviewId: 'v1' } });
   });
 
   it('never bakes a locale into a destination', () => {

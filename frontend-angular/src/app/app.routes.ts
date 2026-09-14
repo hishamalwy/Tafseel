@@ -1,4 +1,5 @@
-import { Route, Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanActivateFn, Route, Router, Routes } from '@angular/router';
 import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards/auth.guards';
 
 /**
@@ -25,6 +26,10 @@ import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards
  *   Tafseel-Teacher-Dashboard  /teacher/:section/
  *   Tafseel-Quality-Dashboard  /quality/:section/
  *   Tafseel-Admin-Dashboard    /admin/:section/
+ *
+ * A few workspace sections are their own screens rather than the generic dashboard, and
+ * are declared ahead of `:section`: the teacher's profile, services, availability and
+ * publication, and the reviewer's application queue and review.
  *   Tafseel-Disputes           /disputes/
  *   Tafseel-Payment            /checkout/                     (?orderId= / ?bookingId=)
  *   Tafseel-Mock-Checkout      /checkout/simulator/
@@ -46,6 +51,13 @@ function link(path: string, table: (tables: LinkTables) => Routes): Route {
     canActivate: [authenticatedGuard],
     loadChildren: () => import('@features/navigation/link.routes').then(table)
   };
+}
+
+/** A `?tab=` that moved to another section keeps working from links stored before the move. */
+function movedTab(target: string, tabs: readonly string[]): CanActivateFn {
+  return route => tabs.includes(route.queryParamMap.get('tab') ?? '')
+    ? inject(Router).createUrlTree([target], { queryParams: route.queryParams })
+    : true;
 }
 
 export const routes: Routes = [
@@ -158,6 +170,28 @@ export const routes: Routes = [
     loadComponent: () => import('@features/dashboards/pages/dashboard-page.component').then(m => m.DashboardPageComponent)
   },
   { path: 'student', pathMatch: 'full', redirectTo: 'student/overview' },
+
+  // ---- teacher supply: each section is its own screen, ahead of the generic dashboard ----
+  {
+    path: 'teacher/profile',
+    canActivate: [authenticatedGuard, roleGuard('Teacher'), movedTab('/teacher/qualifications', ['qualifications', 'videos', 'reviews'])],
+    loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.PROFILE_ROUTES)
+  },
+  {
+    path: 'teacher/services',
+    canActivate: [authenticatedGuard, roleGuard('Teacher'), movedTab('/teacher/availability', ['availability'])],
+    loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.SERVICES_ROUTES)
+  },
+  {
+    path: 'teacher/availability',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.AVAILABILITY_ROUTES)
+  },
+  {
+    path: 'teacher/publication',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.PUBLICATION_ROUTES)
+  },
   {
     path: 'teacher/:section',
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
@@ -166,12 +200,33 @@ export const routes: Routes = [
   },
   { path: 'teacher', pathMatch: 'full', redirectTo: 'teacher/home' },
   {
+    path: 'quality/applications/:applicationId',
+    canActivate: [authenticatedGuard, roleGuard('QualityReviewer')],
+    loadChildren: () => import('@features/quality/quality.routes').then(m => m.REVIEW_ROUTES)
+  },
+  {
+    path: 'quality/applications',
+    canActivate: [authenticatedGuard, roleGuard('QualityReviewer')],
+    loadChildren: () => import('@features/quality/quality.routes').then(m => m.QUEUE_ROUTES)
+  },
+  // The review area was split into applications and showcases; stored links still name it.
+  {
+    path: 'quality/review',
+    pathMatch: 'full',
+    redirectTo: ({ queryParams }) => {
+      const router = inject(Router), selectedId = queryParams['selectedId'];
+      if (queryParams['tab'] === 'showcases')
+        return router.createUrlTree(['/quality/showcases'], { queryParams: selectedId ? { selectedId } : {} });
+      return router.createUrlTree(selectedId ? ['/quality/applications', selectedId] : ['/quality/applications']);
+    }
+  },
+  {
     path: 'quality/:section',
     canActivate: [authenticatedGuard, roleGuard('QualityReviewer')],
     data: { role: 'QualityReviewer' },
     loadComponent: () => import('@features/dashboards/pages/dashboard-page.component').then(m => m.DashboardPageComponent)
   },
-  { path: 'quality', pathMatch: 'full', redirectTo: 'quality/review' },
+  { path: 'quality', pathMatch: 'full', redirectTo: 'quality/applications' },
   {
     path: 'admin/:section',
     canActivate: [authenticatedGuard, roleGuard('Admin')],

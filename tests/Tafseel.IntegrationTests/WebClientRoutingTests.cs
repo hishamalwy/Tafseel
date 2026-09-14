@@ -111,9 +111,9 @@ public sealed partial class WebClientRoutingTests(TafseelApiFactory factory)
     [InlineData(null, "/app/Tafseel-Student-Dashboard.dc.html", "/ar/student/overview")]
     [InlineData(null, "/app/Tafseel-Student-Dashboard.dc.html?section=payments", "/ar/student/payments")]
     [InlineData(null, "/app/Tafseel-Teacher-Dashboard.dc.html", "/ar/teacher/home")]
-    [InlineData(null, "/app/Tafseel-Teacher-Dashboard.dc.html?section=samples", "/ar/teacher/profile?tab=videos")]
+    [InlineData(null, "/app/Tafseel-Teacher-Dashboard.dc.html?section=samples", "/ar/teacher/qualifications?tab=videos")]
     [InlineData(null, "/app/Tafseel-Quality-Dashboard.dc.html?section=applications&selectedId=a1",
-        "/ar/quality/review?selectedId=a1&tab=applications")]
+        "/ar/quality/applications?selectedId=a1")]
     [InlineData(null, "/app/Tafseel-Admin-Dashboard.dc.html", "/ar/admin/home")]
     // A link resolved against the client's <base href> keeps the reader's locale.
     [InlineData("ar", "/en/app/Tafseel-Disputes.dc.html", "/en/disputes")]
