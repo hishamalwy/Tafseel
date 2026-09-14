@@ -10,22 +10,6 @@
       "detail": "AcceptLearningRequest requires agreedDeliveryAt, currency, finalPrice, revisionAllowance"
     },
     {
-      "matrix": "J4-01",
-      "kind": "NO_ROUTE",
-      "method": "POST",
-      "route": "/api/v1/learning-requests/{p}/publish",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "no endpoint has this path"
-    },
-    {
-      "matrix": "J4-07",
-      "kind": "NO_ROUTE",
-      "method": "POST",
-      "route": "/api/v1/open-marketplace/offers/{p}/accept",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "no endpoint has this path"
-    },
-    {
       "matrix": "J1-04",
       "kind": "SHADOWED",
       "method": "GET",
@@ -34,27 +18,11 @@
       "detail": "\"availability\" binds /api/v1/teachers/{teacherId} (Marketplace.Profile)"
     },
     {
-      "matrix": "J4-02",
-      "kind": "WRONG_VERB",
-      "method": "GET",
-      "route": "/api/v1/open-marketplace/requests",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
-      "detail": "path exists only as POST"
-    },
-    {
       "matrix": "J1-07",
       "kind": "WRONG_VERB",
       "method": "POST",
       "route": "/api/v1/favorite-teachers",
       "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
-      "detail": "path exists only as GET"
-    },
-    {
-      "matrix": "J4-05",
-      "kind": "WRONG_VERB",
-      "method": "POST",
-      "route": "/api/v1/open-marketplace/requests/{p}/offers",
-      "file": "frontend-angular/src/app/features/requests/services/http-request.gateway.ts",
       "detail": "path exists only as GET"
     }
   ]

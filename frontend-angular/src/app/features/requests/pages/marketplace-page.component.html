@@ -35,7 +35,7 @@
                   [attr.aria-current]="row.current" (click)="select(row.id)">
             <span class="tf-market-row__head">
               <strong>{{ row.title }}</strong>
-              <span class="tf-market-badge">{{ row.offerCount }} {{ t('om_offers', 'offers') }}</span>
+              <span class="tf-market-badge">{{ row.reserved ? t('om_reserved_short', 'Reserved') : row.offerCount + ' ' + t('om_offers', 'offers') }}</span>
             </span>
             <span class="tf-market-row__meta">{{ row.subject }} · {{ row.deadline }}</span>
             @if (row.budget !== null) {
@@ -66,6 +66,15 @@
           <p class="tf-market-description">{{ request.description }}</p>
 
           @if (side() === 'student') {
+            @if (reservation(); as held) {
+              <div class="tf-market-state" role="status" data-testid="offer-reservation">
+                <p>
+                  {{ t('om_reserved', 'Reserved for payment of the chosen offer') }}@if (held.expiresAt) {
+                    · {{ t('om_reserved_until', 'until') }} {{ fmt.date(held.expiresAt) }}
+                  }
+                </p>
+              </div>
+            }
             <section aria-labelledby="market-offers-title">
               <h3 id="market-offers-title">{{ t('om_offers', 'offers') }}</h3>
               @if (offersLoading()) {
@@ -73,17 +82,21 @@
               } @else {
                 <ul class="tf-market-offers">
                   @for (offer of offerRows(); track offer.id) {
-                    <li class="tf-market-offer">
+                    <li class="tf-market-offer" [class.is-current]="offer.isSelected" data-testid="offer">
                       <div>
                         <strong>{{ offer.teacher }}</strong>
-                        <span class="tf-market-muted">{{ offer.deliveryLabel }}</span>
+                        <span class="tf-market-muted">{{ offer.deliveryLabel }} · {{ offer.revisionsLabel }}</span>
                       </div>
                       <p>{{ offer.message }}</p>
                       <div class="tf-market-offer__foot">
                         <strong><tf-price [amount]="offer.price" [currency]="offer.currency" /></strong>
-                        <button type="button" class="tf-button" (click)="accept(offer)" [disabled]="busy()">
-                          {{ t('om_accept', 'Accept') }}
-                        </button>
+                        @if (offer.isSelected) {
+                          <span class="tf-market-badge">{{ t('om_chosen', 'Chosen') }}</span>
+                        } @else if (canSelect() && offer.selectable) {
+                          <button type="button" class="tf-button" (click)="choose(offer)" [disabled]="busy()">
+                            {{ t('om_choose_offer', 'Choose offer') }}
+                          </button>
+                        }
                       </div>
                     </li>
                   } @empty {
@@ -92,24 +105,39 @@
                 </ul>
               }
             </section>
+          } @else if (request.myOfferId) {
+            <p class="tf-market-state" role="status" data-testid="offer-sent">{{ t('om_offer_already_sent', 'You have sent an offer on this request.') }}</p>
           } @else {
             <form class="tf-market-offer-form" (ngSubmit)="sendOffer($event)">
               <h3>{{ t('om_submit_offer', 'Send an offer') }}</h3>
               <div class="tf-market-offer-grid">
                 <label>
                   <span>{{ t('om_price', 'Price') }}</span>
-                  <input type="number" min="1" step="10" required
+                  <input name="amount" type="number" min="1" step="1" required
                          [value]="offerPrice()" (input)="offerPrice.set($any($event.target).value)" />
                 </label>
                 <label>
                   <span>{{ t('om_delivery_days', 'Delivery in days') }}</span>
-                  <input type="number" min="1" step="1" required
+                  <input name="deliveryDays" type="number" min="1" [attr.max]="limits.maxDeliveryHours / 24" step="1" required
                          [value]="offerDays()" (input)="offerDays.set($any($event.target).value)" />
+                </label>
+                <label>
+                  <span>{{ t('om_revisions', 'Revisions included') }}</span>
+                  <input name="includedRevisions" type="number" min="0" [attr.max]="limits.maxRevisions" step="1" required
+                         [value]="offerRevisions()" (input)="offerRevisions.set($any($event.target).value)" />
+                </label>
+                <label>
+                  <span>{{ t('om_validity', 'Offer open for') }}</span>
+                  <select name="validityDays" [value]="offerValidityDays()" (change)="offerValidityDays.set($any($event.target).value)">
+                    @for (days of validityDays; track days) {
+                      <option [value]="days" [selected]="+offerValidityDays() === days">{{ days }} {{ t('tp_days', 'days') }}</option>
+                    }
+                  </select>
                 </label>
               </div>
               <label>
                 <span>{{ t('om_message', 'Message') }}</span>
-                <textarea rows="3" maxlength="1000"
+                <textarea name="message" rows="3" [attr.maxlength]="limits.maxMessage" required
                           [value]="offerMessage()" (input)="offerMessage.set($any($event.target).value)"></textarea>
               </label>
               <button type="submit" class="tf-button" [disabled]="!canSubmitOffer()">

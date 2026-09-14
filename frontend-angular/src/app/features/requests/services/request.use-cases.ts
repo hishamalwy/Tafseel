@@ -5,7 +5,7 @@ import {
 } from '../models/learning-request';
 import {
   BriefSuggestion, CreatedRequest, DRAFT_STORE, LearningPreferences, MARKETPLACE_GATEWAY,
-  NewRequest, Offer, OpenRequest, REQUEST_GATEWAY
+  NewRequest, Offer, OfferTerms, OpenRequest, REQUEST_GATEWAY
 } from './request.ports';
 
 export interface WizardContext {
@@ -166,35 +166,43 @@ export class ListMarketplaceRequests {
   }
 }
 
+/** Offer terms as the SubmitTeacherOffer contract bounds them. */
+export const OFFER_LIMITS = {
+  maxDeliveryHours: 8760,
+  maxRevisions: 20,
+  minValidityHours: 1,
+  maxValidityHours: 720,
+  maxMessage: 2000
+} as const;
+
 @Injectable({ providedIn: 'root' })
 export class SubmitOffer {
   private readonly marketplace = inject(MARKETPLACE_GATEWAY);
 
-  execute(
-    requestId: string, price: number, deliveryDays: number, message: string
-  ): Promise<void> {
-    if (!(price > 0)) throw new Error('offer-needs-price');
-    if (!(deliveryDays > 0)) throw new Error('offer-needs-delivery');
-    return firstValueFrom(
-      this.marketplace.submitOffer(requestId, price, deliveryDays, message.trim()));
+  /** Validates in the order the form shows the fields; the server re-checks catalog policy. */
+  execute(requestId: string, terms: OfferTerms): Promise<void> {
+    if (!(terms.amount > 0)) return Promise.reject(new Error('offer-needs-price'));
+    if (!(Number.isInteger(terms.deliveryHours) && terms.deliveryHours >= 1 && terms.deliveryHours <= OFFER_LIMITS.maxDeliveryHours)) {
+      return Promise.reject(new Error('offer-needs-delivery'));
+    }
+    if (!(Number.isInteger(terms.includedRevisions) && terms.includedRevisions >= 0 && terms.includedRevisions <= OFFER_LIMITS.maxRevisions)) {
+      return Promise.reject(new Error('offer-needs-revisions'));
+    }
+    if (!(Number.isInteger(terms.validityHours) && terms.validityHours >= OFFER_LIMITS.minValidityHours && terms.validityHours <= OFFER_LIMITS.maxValidityHours)) {
+      return Promise.reject(new Error('offer-needs-validity'));
+    }
+    const message = terms.message.trim();
+    if (!message) return Promise.reject(new Error('offer-needs-message'));
+    return firstValueFrom(this.marketplace.submitOffer(requestId, { ...terms, message: message.slice(0, OFFER_LIMITS.maxMessage) }));
   }
 }
 
 @Injectable({ providedIn: 'root' })
-export class AcceptOffer {
+export class SelectOffer {
   private readonly marketplace = inject(MARKETPLACE_GATEWAY);
 
-  /** Accepting creates the order; the caller sends the student to checkout. */
-  execute(offerId: string): Promise<{ orderId: string }> {
-    return firstValueFrom(this.marketplace.acceptOffer(offerId));
-  }
-}
-
-@Injectable({ providedIn: 'root' })
-export class PublishRequest {
-  private readonly marketplace = inject(MARKETPLACE_GATEWAY);
-
-  execute(requestId: string): Promise<void> {
-    return firstValueFrom(this.marketplace.publish(requestId));
+  /** Reserves the request for payment of this offer. No order exists until payment. */
+  execute(request: Pick<OpenRequest, 'id' | 'version'>, offer: Pick<Offer, 'id' | 'version'>): Promise<void> {
+    return firstValueFrom(this.marketplace.selectOffer(request, offer));
   }
 }

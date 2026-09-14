@@ -7,7 +7,7 @@ import {
 } from '../models/learning-request';
 import {
   BriefSuggestion, CreatedRequest, DraftStore, LearningPreferences, MarketplaceGateway,
-  NewRequest, Offer, OpenRequest, RequestGateway
+  NewRequest, Offer, OfferTerms, OpenRequest, RequestGateway
 } from '../services/request.ports';
 
 interface PageDto<T> { items?: T[] }
@@ -67,50 +67,116 @@ export class HttpRequestGateway implements RequestGateway {
   }
 }
 
+/** `RequestSourcingMode.OpenMarketplace` on LearningRequestDto. */
+const OPEN_MARKETPLACE = 1;
+/** Catalog prices are SAR (ServiceCatalogItem.CurrencyCode); LearningRequestDto carries no currency. */
+const PLATFORM_CURRENCY = 'SAR';
+
+/** LearningRequestDto, the student's view. */
+export interface StudentRequestDto {
+  id: string; title: string; description: string; preferredDeliveryAt: string; budget: number | null;
+  status: number; createdAt: string; version: string; sourcingMode: number;
+  serviceNameEnglish?: string | null; serviceNameArabic?: string | null;
+  selectedOfferId?: string | null; paymentReservationExpiresAt?: string | null; offerCount?: number | null;
+}
+
+/** OpenRequestDto, the teacher's view. */
+export interface OpportunityDto {
+  id: string; title: string; requirements: string; deadline: string;
+  budgetMin: number | null; budgetMax: number | null; currency: string; status: number; publishedAt: string;
+  paymentReservationExpiresAt: string | null; selectedOfferId: string | null;
+  subjectName: string; subjectNameArabic: string | null; version: string;
+  offerCount?: number | null; myOffer?: { id: string } | null;
+}
+
+/** TeacherOfferDto. */
+export interface OfferDto {
+  id: string; teacherId: string; amount: number; currency: string; deliveryHours: number; message: string;
+  status: number; version: string; teacherDisplayName?: string | null; teacherDisplayNameEnglish?: string | null;
+  includedRevisions?: number; validUntil?: string | null;
+}
+
+export function fromStudentRequest(dto: StudentRequestDto): OpenRequest {
+  return {
+    id: dto.id, title: dto.title, description: dto.description,
+    subjectName: dto.serviceNameEnglish ?? dto.serviceNameArabic ?? '',
+    subjectNameArabic: dto.serviceNameArabic ?? dto.serviceNameEnglish ?? '',
+    status: dto.status, deadline: dto.preferredDeliveryAt ?? null, budget: dto.budget ?? null,
+    currency: PLATFORM_CURRENCY, offerCount: dto.offerCount ?? 0, createdAt: dto.createdAt,
+    version: dto.version, selectedOfferId: dto.selectedOfferId ?? null,
+    paymentReservationExpiresAt: dto.paymentReservationExpiresAt ?? null, myOfferId: null
+  };
+}
+
+export function fromOpportunity(dto: OpportunityDto): OpenRequest {
+  return {
+    id: dto.id, title: dto.title, description: dto.requirements,
+    subjectName: dto.subjectName, subjectNameArabic: dto.subjectNameArabic ?? dto.subjectName,
+    status: dto.status, deadline: dto.deadline ?? null, budget: dto.budgetMax ?? dto.budgetMin ?? null,
+    currency: dto.currency || PLATFORM_CURRENCY, offerCount: dto.offerCount ?? 0, createdAt: dto.publishedAt,
+    version: dto.version, selectedOfferId: dto.selectedOfferId ?? null,
+    paymentReservationExpiresAt: dto.paymentReservationExpiresAt ?? null, myOfferId: dto.myOffer?.id ?? null
+  };
+}
+
+export function fromOffer(dto: OfferDto): Offer {
+  return {
+    id: dto.id, teacherId: dto.teacherId,
+    teacherDisplayName: dto.teacherDisplayName ?? null, teacherDisplayNameEnglish: dto.teacherDisplayNameEnglish ?? null,
+    price: dto.amount, currency: dto.currency, deliveryHours: dto.deliveryHours,
+    includedRevisions: dto.includedRevisions ?? 0, validUntil: dto.validUntil ?? null,
+    message: dto.message, status: dto.status, version: dto.version
+  };
+}
+
 @Injectable()
 export class HttpMarketplaceGateway implements MarketplaceGateway {
   private readonly http = inject(HttpClient);
 
+  /**
+   * There is no GET on /open-marketplace/requests (that path only publishes). A student's open
+   * requests are their own learning requests whose sourcing mode is the open marketplace.
+   */
   myRequests(): Observable<readonly OpenRequest[]> {
     return this.http
-      .get<PageDto<OpenRequest>>('/api/v1/open-marketplace/requests?pageSize=50')
-      .pipe(map(page => page.items ?? []));
+      .get<PageDto<StudentRequestDto>>('/api/v1/learning-requests/mine?pageSize=50')
+      .pipe(map(page => (page.items ?? [])
+        .filter(request => request.sourcingMode === OPEN_MARKETPLACE)
+        .map(fromStudentRequest)));
   }
 
   opportunities(): Observable<readonly OpenRequest[]> {
     return this.http
-      .get<PageDto<OpenRequest>>('/api/v1/open-marketplace/opportunities?pageSize=50')
-      .pipe(map(page => page.items ?? []));
+      .get<PageDto<OpportunityDto>>('/api/v1/open-marketplace/opportunities?pageSize=50')
+      .pipe(map(page => (page.items ?? []).map(fromOpportunity)));
   }
 
-  request(requestId: string): Observable<OpenRequest> {
-    return this.http.get<OpenRequest>(
-      `/api/v1/open-marketplace/requests/${encodeURIComponent(requestId)}`);
-  }
-
+  /** The API answers a plain array here, not a page. */
   offers(requestId: string): Observable<readonly Offer[]> {
     return this.http
-      .get<PageDto<Offer>>(
-        `/api/v1/open-marketplace/requests/${encodeURIComponent(requestId)}/offers`)
-      .pipe(map(page => page.items ?? []));
+      .get<OfferDto[]>(`/api/v1/open-marketplace/requests/${encodeURIComponent(requestId)}/offers`)
+      .pipe(map(list => (list ?? []).map(fromOffer)));
   }
 
-  submitOffer(
-    requestId: string, price: number, deliveryDays: number, message: string
+  submitOffer(requestId: string, terms: OfferTerms): Observable<void> {
+    return this.http.post<void>(
+      `/api/v1/open-marketplace/opportunities/${encodeURIComponent(requestId)}/offers`,
+      {
+        amount: terms.amount,
+        deliveryHours: terms.deliveryHours,
+        includedRevisions: terms.includedRevisions,
+        validityHours: terms.validityHours,
+        message: terms.message
+      });
+  }
+
+  selectOffer(
+    request: Pick<OpenRequest, 'id' | 'version'>, offer: Pick<Offer, 'id' | 'version'>
   ): Observable<void> {
     return this.http.post<void>(
-      `/api/v1/open-marketplace/requests/${encodeURIComponent(requestId)}/offers`,
-      { price, deliveryDays, message });
-  }
-
-  acceptOffer(offerId: string): Observable<{ orderId: string }> {
-    return this.http.post<{ orderId: string }>(
-      `/api/v1/open-marketplace/offers/${encodeURIComponent(offerId)}/accept`, {});
-  }
-
-  publish(requestId: string): Observable<void> {
-    return this.http.post<void>(
-      `/api/v1/learning-requests/${encodeURIComponent(requestId)}/publish`, {});
+      `/api/v1/open-marketplace/requests/${encodeURIComponent(request.id)}/offers/${encodeURIComponent(offer.id)}/select`,
+      null,
+      { headers: new HttpHeaders({ 'If-Match': request.version, 'X-Offer-Version': offer.version }) });
   }
 }
 

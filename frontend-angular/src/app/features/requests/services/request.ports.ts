@@ -34,11 +34,20 @@ export interface LearningPreferences {
   readonly preferredTeachingLanguageId: string | null;
 }
 
-/** An open request on the marketplace, as seen by a student or a teacher. */
+/** `LearningRequestStatus` as the API serializes it. */
+export const enum RequestStatus { OpenForOffers = 5, AwaitingPayment = 6, ConvertedToOrder = 7, Expired = 8 }
+/** `TeacherOfferStatus` as the API serializes it. */
+export const enum OfferStatus { Submitted = 0, Selected = 1, Accepted = 2, Withdrawn = 3, NotSelected = 4, Expired = 5 }
+
+/**
+ * An open request, as seen by a student (from `GET /learning-requests/mine`) or a teacher
+ * (from `GET /open-marketplace/opportunities`). Both are mapped into this one shape.
+ */
 export interface OpenRequest {
   readonly id: string;
   readonly title: string;
   readonly description: string;
+  /** The subject for a teacher; the service for a student, whose list does not carry the subject. */
   readonly subjectName: string;
   readonly subjectNameArabic: string;
   readonly status: number;
@@ -47,6 +56,13 @@ export interface OpenRequest {
   readonly currency: string;
   readonly offerCount: number;
   readonly createdAt: string;
+  /** Concurrency token; sent as If-Match when the student selects an offer. */
+  readonly version: string;
+  readonly selectedOfferId: string | null;
+  /** While the request is reserved for payment of the selected offer. */
+  readonly paymentReservationExpiresAt: string | null;
+  /** The teacher's own offer on this request, if they already sent one. */
+  readonly myOfferId: string | null;
 }
 
 export interface Offer {
@@ -56,9 +72,22 @@ export interface Offer {
   readonly teacherDisplayNameEnglish: string | null;
   readonly price: number;
   readonly currency: string;
-  readonly deliveryDays: number | null;
+  readonly deliveryHours: number;
+  readonly includedRevisions: number;
+  readonly validUntil: string | null;
   readonly message: string;
   readonly status: number;
+  /** Concurrency token; sent as X-Offer-Version when the student selects it. */
+  readonly version: string;
+}
+
+/** What a teacher offers (SubmitTeacherOffer). */
+export interface OfferTerms {
+  readonly amount: number;
+  readonly deliveryHours: number;
+  readonly includedRevisions: number;
+  readonly validityHours: number;
+  readonly message: string;
 }
 
 export interface RequestGateway {
@@ -72,15 +101,18 @@ export interface RequestGateway {
 
 /** The open marketplace: requests published for any qualified teacher to bid on. */
 export interface MarketplaceGateway {
+  /** The student's own open-marketplace requests. */
   myRequests(): Observable<readonly OpenRequest[]>;
   opportunities(): Observable<readonly OpenRequest[]>;
-  request(requestId: string): Observable<OpenRequest>;
   offers(requestId: string): Observable<readonly Offer[]>;
-  submitOffer(
-    requestId: string, price: number, deliveryDays: number, message: string
+  submitOffer(requestId: string, terms: OfferTerms): Observable<void>;
+  /**
+   * Selects an offer. This does not create an order: it reserves the request for payment of
+   * that offer. Both versions come from the server and guard against a stale selection.
+   */
+  selectOffer(
+    request: Pick<OpenRequest, 'id' | 'version'>, offer: Pick<Offer, 'id' | 'version'>
   ): Observable<void>;
-  acceptOffer(offerId: string): Observable<{ readonly orderId: string }>;
-  publish(requestId: string): Observable<void>;
 }
 
 /** Draft persistence. Behind a port so it can move off localStorage later. */
