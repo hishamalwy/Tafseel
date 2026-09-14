@@ -89,6 +89,14 @@ export interface AcceptableRequest {
         </div>
       </form>
     </dialog>
+  `,
+  styles: `
+    .tf-system-dialog-field select {
+      min-height: 48px; width: 100%; padding-inline: 12px; color: var(--text); background: var(--bg);
+      border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: inherit; font-size: 16px;
+    }
+    .tf-system-dialog-field small { font-weight: var(--weight-regular, 400); color: var(--text-2); }
+    .tf-system-dialog-field small.tf-field-error { color: var(--error); }
   `
 })
 export class AcceptRequestDialogComponent {

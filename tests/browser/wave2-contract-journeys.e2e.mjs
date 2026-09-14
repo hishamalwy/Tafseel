@@ -1,0 +1,280 @@
+/* Wave 2 end-to-end: the journeys behind the fixed Angular -> API calls, in a real browser.
+ *
+ * Runs against a published build in Development on a throwaway TafseelE2E* database seeded by
+ * scripts/dev/E2ESeed (a student and two published teachers with services). Every step goes
+ * through the rendered client; the requests it sends are captured and checked against the API
+ * contract.
+ *
+ *   J1-07  profile favourite toggle: PUT then DELETE /favorite-teachers/{teacherId}
+ *   J3-02  teacher profile -> request wizard -> submit: POST /learning-requests with the five keys
+ *   J3-07  teacher accepts in the dialog: four terms, If-Match, Idempotency-Key -> order awaiting payment
+ *   J4-05  teacher opportunity -> send offer: POST /open-marketplace/opportunities/{id}/offers
+ *   J4-02  student open-request list from /learning-requests/mine
+ *   J4-07  student chooses the offer: select route, If-Match + X-Offer-Version, reserved, no order, no checkout
+ *
+ * Environment:
+ *   TAFSEEL_BASE_URL       default http://localhost:5312
+ *   TAFSEEL_E2E_SEED       path to the JSON E2ESeed printed (required)
+ *   TAFSEEL_E2E_PASSWORD   the password E2ESeed used (required)
+ *   TAFSEEL_E2E_SQL_SERVER default (localdb)\MSSQLLocalDB
+ *   TAFSEEL_E2E_DATABASE   the throwaway database (required)
+ *   TAFSEEL_SHOT_DIR       optional directory for screenshots
+ */
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium } from '@playwright/test';
+
+const BASE = (process.env.TAFSEEL_BASE_URL ?? 'http://localhost:5312').replace(/\/$/, '');
+const SEED = JSON.parse(readFileSync(required('TAFSEEL_E2E_SEED'), 'utf8'));
+const PASSWORD = required('TAFSEEL_E2E_PASSWORD');
+const SQL_SERVER = process.env.TAFSEEL_E2E_SQL_SERVER ?? '(localdb)\\MSSQLLocalDB';
+const DATABASE = required('TAFSEEL_E2E_DATABASE');
+if (!/^TafseelE2E/i.test(DATABASE)) throw new Error('TAFSEEL_E2E_DATABASE must be a throwaway TafseelE2E* database');
+const SHOTS = process.env.TAFSEEL_SHOT_DIR;
+if (SHOTS) mkdirSync(SHOTS, { recursive: true });
+
+const results = [];
+async function step(name, run) {
+  try {
+    await run();
+    results.push({ name, ok: true });
+    console.log(`✓ ${name}`);
+  } catch (error) {
+    results.push({ name, ok: false });
+    console.log(`✗ ${name}\n  ${String(error?.message ?? error).split('\n').join('\n  ')}`);
+  }
+}
+
+const browser = await chromium.launch();
+const requestTitle = `Explain limits ${Date.now()}`;
+const openTitle = `Explain integrals ${Date.now()}`;
+let openRequestId = '';
+
+/** A signed-in context. Records API requests so each step can check what the client sent. */
+async function signIn(email) {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-US' });
+  const page = await ctx.newPage();
+  page.sent = [];
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.startsWith('/api/v1/')) page.sent.push(request);
+  });
+  page.problems = [];
+  page.on('pageerror', error => page.problems.push(String(error)));
+  await page.goto(`${BASE}/en/auth`, { waitUntil: 'networkidle' });
+  await page.locator('#login-email').fill(email);
+  await page.locator('#login-password').fill(PASSWORD);
+  await page.locator('form button[type=submit]').click();
+  await page.waitForURL(url => !/\/auth\/?$/.test(new URL(String(url)).pathname), { timeout: 15000 });
+  return { ctx, page };
+}
+
+const waitForCall = (page, method, pattern) => page.waitForResponse(r =>
+  r.request().method() === method && pattern.test(new URL(r.url()).pathname), { timeout: 15000 });
+
+async function shot(page, name) {
+  if (SHOTS) await page.screenshot({ path: join(SHOTS, `${name}.png`) });
+}
+
+const student = await signIn(SEED.student.Email);
+const teacher = await signIn(SEED.teacherA.Email);
+
+await step('J1-07 favourite toggle on the teacher profile uses PUT then DELETE', async () => {
+  const { page } = student;
+  await page.goto(`${BASE}/en/teachers/${SEED.teacherA.Id}`, { waitUntil: 'networkidle' });
+  const toggle = page.locator('button[aria-pressed]').first();
+  await toggle.waitFor({ state: 'visible', timeout: 15000 });
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+
+  const added = waitForCall(page, 'PUT', new RegExp(`^/api/v1/favorite-teachers/${SEED.teacherA.Id}$`));
+  await toggle.click();
+  assert.equal((await added).status(), 204);
+  await page.waitForFunction(() => document.querySelector('button[aria-pressed]')?.getAttribute('aria-pressed') === 'true');
+
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.querySelector('button[aria-pressed]')?.getAttribute('aria-pressed') === 'true',
+    null, { timeout: 15000 });
+  const removed = waitForCall(page, 'DELETE', new RegExp(`^/api/v1/favorite-teachers/${SEED.teacherA.Id}$`));
+  await page.locator('button[aria-pressed]').first().click();
+  assert.equal((await removed).status(), 204);
+  assert.ok(!page.sent.some(r => r.method() === 'POST' && new URL(r.url()).pathname === '/api/v1/favorite-teachers'));
+});
+
+await step('J3-02 teacher profile -> request wizard -> submit posts CreateLearningRequest', async () => {
+  const { page } = student;
+  await page.goto(`${BASE}/en/teachers/${SEED.teacherA.Id}`, { waitUntil: 'networkidle' });
+  await page.getByRole('link', { name: /request this service/i }).first().click();
+  await page.waitForURL(url => /\/requests\/new\/?$/.test(new URL(String(url)).pathname), { timeout: 15000 });
+
+  await page.locator('#req-title').waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('#req-title').fill(requestTitle);
+  await page.getByRole('button', { name: /^next$/i }).click();
+  await page.locator('#req-goal').fill('Understand limits well enough to solve the exam questions.');
+  await page.getByRole('button', { name: /^next$/i }).click();
+
+  const nextButton = page.getByRole('button', { name: /^next$/i });
+  const yesterday = new Date(Date.now() - 86_400_000);
+  await page.locator('#req-delivery').fill(dayInput(yesterday));
+  assert.ok(await nextButton.isDisabled(), 'a past delivery day blocks Next');
+  await page.locator('#req-delivery').fill(dayInput(new Date(Date.now() + 5 * 86_400_000)));
+  await nextButton.click();
+
+  await page.locator('.tf-check--start input[type=checkbox]').check();
+  const created = waitForCall(page, 'POST', /^\/api\/v1\/learning-requests$/);
+  await page.getByRole('button', { name: /send request/i }).click();
+  const response = await created;
+  const body = response.request().postDataJSON();
+
+  assert.equal(response.status(), 201, await response.text());
+  assert.deepEqual(Object.keys(body).sort(), ['budget', 'description', 'preferredDeliveryAt', 'teacherServiceId', 'title']);
+  assert.equal(body.teacherServiceId, SEED.teacherA.serviceId);
+  assert.equal(body.budget, null);
+  assert.ok(new Date(body.preferredDeliveryAt) > new Date(), 'preferredDeliveryAt is in the future');
+  await page.getByRole('heading', { name: /your request is on its way/i }).waitFor({ timeout: 15000 });
+  await shot(page, 'request-sent');
+});
+
+await step('J3-07 teacher accepts in the dialog and an order awaiting payment exists', async () => {
+  const { page } = teacher;
+  await page.goto(`${BASE}/en/teacher/work?tab=requests`, { waitUntil: 'networkidle' });
+  const card = page.locator('article', { hasText: requestTitle });
+  await card.waitFor({ state: 'visible', timeout: 15000 });
+  await card.locator('[data-testid=accept-request]').click();
+
+  const dialog = page.locator('[data-testid=accept-dialog]');
+  await dialog.locator('#accept-price').waitFor({ state: 'visible', timeout: 15000 });
+  assert.equal(await dialog.locator('#accept-price').inputValue(), '100');
+  assert.equal(await dialog.locator('input[name=currency]').inputValue(), 'SAR');
+  await shot(page, 'accept-dialog');
+
+  // Cancel first: nothing is sent.
+  const before = page.sent.filter(r => /\/accept$/.test(r.url())).length;
+  await dialog.getByRole('button', { name: /cancel/i }).click();
+  await page.waitForFunction(() => !document.querySelector('[data-testid=accept-dialog]')?.hasAttribute('open'));
+  assert.equal(page.sent.filter(r => /\/accept$/.test(r.url())).length, before, 'cancel sends nothing');
+
+  await card.locator('[data-testid=accept-request]').click();
+  await dialog.locator('#accept-price').waitFor({ state: 'visible', timeout: 15000 });
+  // Outside the catalog's price range (the seeded catalog allows 0.01 to 1,000,000).
+  await dialog.locator('#accept-price').fill('0');
+  await dialog.locator('button[type=submit]').click();
+  await page.waitForFunction(() => document.querySelector('#accept-price')?.getAttribute('aria-invalid') === 'true', null, { timeout: 5000 });
+  assert.equal(page.sent.filter(r => /\/accept$/.test(r.url())).length, before, 'invalid terms send nothing');
+
+  await dialog.locator('#accept-price').fill('110');
+  const accepted = waitForCall(page, 'POST', /^\/api\/v1\/learning-requests\/[^/]+\/accept$/);
+  await dialog.locator('button[type=submit]').click();
+  const response = await accepted;
+  const request = response.request();
+  assert.equal(response.status(), 200, await response.text());
+  assert.deepEqual(Object.keys(request.postDataJSON()).sort(), ['agreedDeliveryAt', 'currency', 'finalPrice', 'revisionAllowance']);
+  const headers = await request.allHeaders();
+  assert.ok(headers['if-match'], 'If-Match sent');
+  assert.match(headers['idempotency-key'] ?? '', /^[0-9a-f-]{36}$/);
+
+  const order = sql(`SET NOCOUNT ON; SELECT CONCAT(o.Status, ':', o.PaymentStatus, ':', o.Price) FROM Orders o
+    JOIN LearningRequests r ON r.Id = o.LearningRequestId WHERE r.Title = '${requestTitle}'`).trim();
+  assert.equal(order, '0:0:110.00', 'order AwaitingPayment, payment Pending, at the accepted price');
+  await shot(page, 'accepted');
+});
+
+await step('J4-05 teacher opportunity -> send offer posts SubmitTeacherOffer to the opportunity route', async () => {
+  openRequestId = await publishOpenRequest();
+  const { page } = teacher;
+  await page.goto(`${BASE}/en/requests`, { waitUntil: 'networkidle' });
+  await page.locator('.tf-market-row', { hasText: openTitle }).click();
+  const form = page.locator('.tf-market-offer-form');
+  await form.waitFor({ state: 'visible', timeout: 15000 });
+  await form.locator('input[name=amount]').fill('180');
+  await form.locator('input[name=deliveryDays]').fill('2');
+  await form.locator('input[name=includedRevisions]').fill('3');
+  await form.locator('select[name=validityDays]').selectOption('14');
+  await form.locator('textarea[name=message]').fill('I can explain every exercise step by step.');
+
+  const offered = waitForCall(page, 'POST', new RegExp(`^/api/v1/open-marketplace/opportunities/${openRequestId}/offers$`));
+  await form.locator('button[type=submit]').click();
+  const response = await offered;
+  assert.equal(response.status(), 201, await response.text());
+  assert.deepEqual(response.request().postDataJSON(),
+    { amount: 180, deliveryHours: 48, includedRevisions: 3, validityHours: 336, message: 'I can explain every exercise step by step.' });
+  await page.locator('[data-testid=offer-sent]').waitFor({ timeout: 15000 });
+  await shot(page, 'offer-sent');
+});
+
+await step('J4-02 + J4-07 student sees the offer and chooses it: reserved, no order, no checkout', async () => {
+  const { page } = student;
+  const listed = waitForCall(page, 'GET', /^\/api\/v1\/learning-requests\/mine$/);
+  await page.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
+  assert.equal((await listed).status(), 200);
+  assert.ok(!page.sent.some(r => r.method() === 'GET' && new URL(r.url()).pathname === '/api/v1/open-marketplace/requests'));
+
+  const offer = page.locator('[data-testid=offer]').first();
+  await offer.waitFor({ state: 'visible', timeout: 15000 });
+  assert.match(await offer.innerText(), /3 revisions included/);
+  await offer.getByRole('button', { name: /choose offer/i }).click();
+
+  const selected = waitForCall(page, 'POST', new RegExp(`^/api/v1/open-marketplace/requests/${openRequestId}/offers/[^/]+/select$`));
+  await page.locator('dialog[open]').getByRole('button', { name: /choose offer/i }).click();
+  const response = await selected;
+  const headers = await response.request().allHeaders();
+  assert.equal(response.status(), 204, await response.text());
+  assert.ok(headers['if-match'], 'If-Match (request version) sent');
+  assert.ok(headers['x-offer-version'], 'X-Offer-Version sent');
+
+  await page.locator('[data-testid=offer-reservation]').waitFor({ state: 'visible', timeout: 15000 });
+  assert.match(new URL(page.url()).pathname, /^\/en\/requests\/?$/, 'stays on the marketplace, not checkout');
+  assert.equal(sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM Orders WHERE LearningRequestId = '${openRequestId}'`).trim(), '0');
+  assert.equal(sql(`SET NOCOUNT ON; SELECT Status FROM LearningRequests WHERE Id = '${openRequestId}'`).trim(), '6');
+  await shot(page, 'offer-reserved');
+});
+
+await step('no page error on any journey', async () => {
+  assert.deepEqual([...student.page.problems, ...teacher.page.problems], []);
+});
+
+await browser.close();
+const failed = results.filter(r => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} Wave 2 journeys passed`);
+if (failed.length) process.exit(1);
+
+// ---- helpers -----------------------------------------------------------------------------
+function required(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Set ${name}`);
+  return value;
+}
+
+function dayInput(date) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** The open-request form is Wave 3, so the request is published through the API. */
+async function publishOpenRequest() {
+  const login = await fetch(`${BASE}/api/v1/auth/login`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: SEED.student.Email, password: PASSWORD })
+  });
+  assert.equal(login.status, 200);
+  const { accessToken } = await login.json();
+  const published = await fetch(`${BASE}/api/v1/open-marketplace/requests`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({
+      subjectId: SEED.subjectId, serviceCatalogItemId: SEED.catalogId, title: openTitle,
+      requirements: 'Every exercise in chapter four, please.', deadline: new Date(Date.now() + 4 * 86_400_000).toISOString(),
+      budgetMin: null, budgetMax: null
+    })
+  });
+  const text = await published.text();
+  assert.equal(published.status, 201, text);
+  return JSON.parse(text).id;
+}
+
+function sql(query) {
+  const candidates = ['C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/sqlcmd.exe',
+    'C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/180/Tools/Binn/sqlcmd.exe'];
+  const sqlcmd = candidates.find(existsSync) ?? 'sqlcmd';
+  return execFileSync(sqlcmd, ['-S', SQL_SERVER, '-d', DATABASE, '-E', '-b', '-h', '-1', '-W', '-Q', query], { encoding: 'utf8' });
+}
