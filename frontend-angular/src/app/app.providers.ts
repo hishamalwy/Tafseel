@@ -6,7 +6,6 @@ import { HttpAccountGateway } from '@core/auth/services/http-account.gateway';
 import { HttpSessionGateway } from '@core/auth/services/http-session.gateway';
 import { HttpTeacherLifecycleGateway } from '@core/auth/services/http-teacher-lifecycle.gateway';
 import { SignalSessionStore } from '@core/auth/services/session.store';
-import { POLICY_REPOSITORY } from '@features/policies/services/policy.ports';
 import {
   DRAFT_STORE, MARKETPLACE_GATEWAY, REQUEST_GATEWAY
 } from '@features/requests/services/request.ports';
@@ -31,7 +30,6 @@ import {
 import {
   HttpDisputeAdminGateway, HttpDisputeGateway
 } from '@features/disputes/services/http-dispute.gateway';
-import { StaticPolicyRepository } from '@features/policies/services/static-policy.repository';
 import {
   CAMPAIGN_MEMORY, LANDING_GATEWAY, STUDENT_JOURNEY_GATEWAY
 } from '@features/landing/services/landing.ports';
@@ -55,9 +53,6 @@ export const appProviders: Provider[] = [
 
   HttpTeacherLifecycleGateway,
   { provide: TEACHER_LIFECYCLE_GATEWAY, useExisting: HttpTeacherLifecycleGateway },
-
-  StaticPolicyRepository,
-  { provide: POLICY_REPOSITORY, useExisting: StaticPolicyRepository },
 
   HttpDisputeGateway,
   { provide: DISPUTE_GATEWAY, useExisting: HttpDisputeGateway },

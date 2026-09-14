@@ -177,8 +177,11 @@ const AR_POLICIES: Readonly<Record<PolicyId, Policy>> = {
   },
 };
 
-/** In-memory adapter. The copy ships with the bundle; there is no network call. */
-@Injectable()
+/**
+ * In-memory adapter. The copy ships with the policies page chunk, not the initial bundle:
+ * nothing outside that page injects it. There is no network call.
+ */
+@Injectable({ providedIn: 'root' })
 export class StaticPolicyRepository implements PolicyRepository {
   all(lang: "ar" | "en"): readonly Policy[] {
     const table = lang === "ar" ? AR_POLICIES : EN_POLICIES;
