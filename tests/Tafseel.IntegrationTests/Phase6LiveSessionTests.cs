@@ -111,12 +111,21 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         Assert.StartsWith("https://meet.local/session/", JsonDocument.Parse(
             await join.Content.ReadAsStringAsync()).RootElement.GetProperty("url").GetString());
 
+        // The 30-minute session ends at start+30; a no-show can be claimed only after the
+        // 15-minute grace period, only by a participant, and then awaits settlement.
         factory.Clock.SetUtcNow(start.AddMinutes(31));
         version = await VersionAsync(id);
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(teacher, HttpMethod.Post,
+            $"/api/v1/live-sessions/{id}/no-show", new { studentNoShow = true }, version)).StatusCode);
+
+        factory.Clock.SetUtcNow(start.AddMinutes(45));
+        version = await VersionAsync(id);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(outsider, HttpMethod.Post,
+            $"/api/v1/live-sessions/{id}/no-show", new { studentNoShow = false }, version)).StatusCode);
         (await SendAsync(teacher, HttpMethod.Post, $"/api/v1/live-sessions/{id}/no-show",
             new { studentNoShow = true }, version)).EnsureSuccessStatusCode();
         await using var scope = factory.Services.CreateAsyncScope();
-        Assert.Equal(LiveSessionStatus.StudentNoShow,
+        Assert.Equal(LiveSessionStatus.StudentNoShowPending,
             await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().LiveSessionBookings
                 .Where(x => x.Id == id).Select(x => x.Status).SingleAsync());
     }
