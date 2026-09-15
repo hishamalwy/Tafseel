@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { ADMIN_ACTIVE_TOGGLES, DASHBOARDS, Dashboard } from './dashboard';
 
 describe('Dashboard route model', () => {
+  it('opens each work item on its own screen rather than acting on it inside the list', () => {
+    expect(Dashboard.detailLink({ _source: '/orders/mine?page=1', id: 'o1' })).toEqual(['/orders', 'o1']);
+    expect(Dashboard.detailLink({ _source: '/orders/assigned', id: 'o1' })).toEqual(['/orders', 'o1']);
+    expect(Dashboard.detailLink({ _source: '/live-sessions/mine', id: 'b1' })).toEqual(['/live-sessions', 'b1']);
+    expect(Dashboard.detailLink({ _source: '/learning-requests/assigned', id: 'r1' })).toEqual(['/requests', 'r1']);
+    expect(Dashboard.detailLink({ _source: '/open-marketplace/opportunities', id: 'r2' })).toEqual(['/teacher/opportunities', 'r2']);
+    expect(Dashboard.detailLink({ _source: '/conversations', id: 'c1' })).toEqual(['/conversations', 'c1']);
+    expect(Dashboard.detailLink({ _source: '/admin/users', id: 'u1' })).toBeNull();
+    expect(Dashboard.detailLink({ _source: '/orders/mine' })).toBeNull();
+  });
+
   it('falls unknown sections and tabs back to the first usable destination', () => {
     const config = DASHBOARDS.Admin;
     const area = Dashboard.area(config, 'does-not-exist');

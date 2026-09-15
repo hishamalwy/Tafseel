@@ -14,10 +14,6 @@
       "snippet": "await this.gateway.patch(endpoint, { isActive: !row['isActive'] }"
     },
     {
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "snippet": "await this.gateway.upload(path, files"
-    },
-    {
       "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
       "snippet": ".get<CatalogItem[] | PageDto<CatalogItem>>(path)"
     }
@@ -45,27 +41,9 @@
     },
     {
       "method": "POST",
-      "route": "/api/v1/orders/{p}/deliveries",
-      "body": {
-        "kind": "form"
-      },
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "source": "uploadDelivery"
-    },
-    {
-      "method": "POST",
-      "route": "/api/v1/live-sessions/{p}/attachments",
-      "body": {
-        "kind": "form"
-      },
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "source": "uploadSessionFile"
-    },
-    {
-      "method": "GET",
-      "route": "/api/v1/live-sessions/{p}/join",
-      "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
-      "source": "rowAction join via gateway.load"
+      "route": "/api/v1/payments/open-requests/{p}",
+      "file": "frontend-angular/src/app/features/checkout/models/payable.ts",
+      "source": "Payable.paymentPath (open request)"
     },
     {
       "method": "GET",
@@ -222,6 +200,30 @@
       },
       "file": "frontend-angular/src/app/features/dashboards/pages/dashboard-page.component.ts",
       "source": "toggleActive via ADMIN_ACTIVE_TOGGLES.assignments"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/orders/deliveries/{p}/content",
+      "file": "frontend-angular/src/app/features/orders/pages/order-detail-page.component.ts",
+      "source": "openDelivery (protected viewer)"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/learning-requests/attachments/{p}/content",
+      "file": "frontend-angular/src/app/features/demand/pages/request-detail-page.component.ts",
+      "source": "openAttachment (protected viewer)"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/message-attachments/{p}/content",
+      "file": "frontend-angular/src/app/features/messages/services/messages.gateway.ts",
+      "source": "attachmentPath (protected viewer)"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/live-sessions/attachments/{p}/content",
+      "file": "frontend-angular/src/app/features/live-sessions/services/live-session.gateway.ts",
+      "source": "attachmentPath (protected viewer)"
     }
   ]
 }

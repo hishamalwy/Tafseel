@@ -64,28 +64,8 @@
                     <a class="tf-dashboard-card-link" data-testid="notification-action" [attr.href]="action.href" (click)="markRead(row)">{{ t('notification_open', 'View details') }}</a>
                   }
                 }
-                @if (role === 'Student' && tab().key === 'orders' && row['status'] === 2) { <button type="button" (click)="rowAction(row, 'complete')">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
-                @if (role === 'Student' && tab().key === 'sessions') { <button type="button" (click)="rowAction(row, 'join')">{{ t('session_join', 'Join') }}</button> }
+                @if (Dashboard.detailLink(row); as link) { <a class="tf-dashboard-card-link" data-testid="row-open" [routerLink]="link">{{ t('dashboard_open', 'Open') }}</a> }
                 @if (role === 'Teacher' && tab().key === 'requests') { @if (canAccept(row)) { <button type="button" data-testid="accept-request" (click)="rowAction(row, 'accept')">{{ t('td_accept', 'Accept') }}</button> } @if (canDecline(row)) { <button type="button" (click)="rowAction(row, 'decline')">{{ t('td_decline', 'Decline') }}</button> } }
-                @if (role === 'Teacher' && tab().key === 'orders' && row['status'] === 0) {
-                  @if (canStart(row)) {
-                    <button type="button" (click)="rowAction(row, 'start')">{{ t('td_start', 'Start') }}</button>
-                  } @else {
-                    <p class="tf-dashboard-card-hint">{{ t('td_start_awaiting_payment', 'Waiting for the student’s payment to be confirmed.') }}</p>
-                  }
-                }
-                @if (role === 'Teacher' && tab().key === 'orders' && canDeliver(row)) {
-                  <label class="tf-dashboard-file-picker" [class.is-busy]="uploadingFileFor() === row['id']">
-                    <input type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg" (change)="uploadDelivery(row, $event)" [disabled]="!!uploadingFileFor()" />
-                    <span>{{ uploadingFileFor() === row['id'] ? t('common_uploading', 'Uploading…') : t('delivery_upload', 'Submit explanation files') }}</span>
-                  </label>
-                }
-                @if (role === 'Teacher' && tab().key === 'sessions') {
-                  <label class="tf-dashboard-file-picker" [class.is-busy]="uploadingFileFor() === row['id']">
-                    <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg" (change)="uploadSessionFile(row, $event)" [disabled]="!!uploadingFileFor()" />
-                    <span>{{ uploadingFileFor() === row['id'] ? t('common_uploading', 'Uploading…') : t('session_upload_file', 'Add session file') }}</span>
-                  </label>
-                }
                 @if (role === 'Admin' && ['users','teachers','students','reviewers'].includes(tab().key)) { <button type="button" (click)="rowAction(row, 'suspend')">{{ row['isSuspended'] ? t('admin_unsuspend', 'Unsuspend') : t('admin_suspend', 'Suspend') }}</button> }
                 @if (activeToggle(row)) { <button type="button" (click)="toggleActive(row)">{{ row['isActive'] ? t('common_disable', 'Disable') : t('common_enable', 'Enable') }}</button> }
               </div>

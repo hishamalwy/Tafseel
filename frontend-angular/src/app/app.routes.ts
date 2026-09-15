@@ -29,7 +29,8 @@ import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards
  *
  * A few workspace sections are their own screens rather than the generic dashboard, and
  * are declared ahead of `:section`: the teacher's profile, services, availability and
- * publication, and the reviewer's application queue and review.
+ * publication, and the reviewer's application queue and review. Messages are one screen
+ * for every role (`/messages`, `/conversations/:conversationId`).
  *   Tafseel-Disputes           /disputes/
  *   Tafseel-Payment            /checkout/                     (?orderId= / ?bookingId=)
  *   Tafseel-Mock-Checkout      /checkout/simulator/
@@ -37,9 +38,10 @@ import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards
  * The server links to what a notification or email is about, without knowing who
  * will open it: `/orders/:orderId`, `/live-sessions/:sessionId`,
  * `/conversations/:conversationId`, `/requests/:requestId`, `/disputes/:disputeId`.
- * An order has its own page. The others have no single-item screen yet, so a guard
- * sends the reader to the screen for their role with the id kept in the query, and
- * that screen opens on it. Old `/app/*.dc.html` links are redirected by the server.
+ * Orders, sessions, conversations and requests have their own participant-aware pages
+ * (a teacher's link to an open request lands on `/teacher/opportunities/:requestId`).
+ * Disputes and reviews still have no single-item screen, so a guard sends the reader to
+ * the screen for their role with the id kept in the query, and that screen opens on it. Old `/app/*.dc.html` links are redirected by the server.
  * Anything else is `**`: a real not-found page, never an empty shell.
  */
 type LinkTables = typeof import('@features/navigation/link.routes');
@@ -82,8 +84,21 @@ export const routes: Routes = [
       import('@features/requests/pages/new-request-page.component')
         .then(m => m.NewRequestPageComponent)
   },
-  link('requests/:requestId/offers', m => m.REQUEST_OFFERS_LINK),
-  link('requests/:requestId', m => m.REQUEST_LINK),
+  {
+    path: 'requests/new/open',
+    canActivate: [authenticatedGuard, roleGuard('Student')],
+    loadChildren: () => import('@features/demand/demand.routes').then(m => m.OPEN_REQUEST_ROUTES)
+  },
+  {
+    path: 'requests/:requestId/offers',
+    canActivate: [authenticatedGuard, roleGuard('Student')],
+    loadChildren: () => import('@features/demand/demand.routes').then(m => m.OFFERS_ROUTES)
+  },
+  {
+    path: 'requests/:requestId',
+    canActivate: [authenticatedGuard],
+    loadChildren: () => import('@features/demand/demand.routes').then(m => m.REQUEST_ROUTES)
+  },
   {
     path: 'requests',
     pathMatch: 'full',
@@ -163,6 +178,9 @@ export const routes: Routes = [
         .then(m => m.ConfirmEmailPageComponent),
     title: 'Confirm your email — Tafseel'
   },
+  // Messages are one screen for every role.
+  { path: 'student/messages', pathMatch: 'full', redirectTo: '/messages' },
+  { path: 'teacher/messages', pathMatch: 'full', redirectTo: '/messages' },
   {
     path: 'student/:section',
     canActivate: [authenticatedGuard, roleGuard('Student')],
@@ -170,6 +188,11 @@ export const routes: Routes = [
     loadComponent: () => import('@features/dashboards/pages/dashboard-page.component').then(m => m.DashboardPageComponent)
   },
   { path: 'student', pathMatch: 'full', redirectTo: 'student/overview' },
+  {
+    path: 'teacher/opportunities/:requestId',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/demand/demand.routes').then(m => m.OPPORTUNITY_ROUTES)
+  },
 
   // ---- teacher supply: each section is its own screen, ahead of the generic dashboard ----
   {
@@ -242,9 +265,21 @@ export const routes: Routes = [
     loadComponent: () => import('@features/orders/pages/order-detail-page.component')
       .then(m => m.OrderDetailPageComponent)
   },
-  link('live-sessions/:sessionId', m => m.LIVE_SESSION_LINK),
-  link('conversations/:conversationId', m => m.CONVERSATION_LINK),
-  link('messages', m => m.CONVERSATION_LINK),
+  {
+    path: 'live-sessions/:sessionId',
+    canActivate: [authenticatedGuard],
+    loadChildren: () => import('@features/live-sessions/live-sessions.routes').then(m => m.LIVE_SESSION_ROUTES)
+  },
+  {
+    path: 'conversations/:conversationId',
+    canActivate: [authenticatedGuard],
+    loadChildren: () => import('@features/messages/messages.routes').then(m => m.MESSAGES_ROUTES)
+  },
+  {
+    path: 'messages',
+    canActivate: [authenticatedGuard],
+    loadChildren: () => import('@features/messages/messages.routes').then(m => m.MESSAGES_ROUTES)
+  },
   link('disputes/:disputeId', m => m.DISPUTE_LINK),
   link('teacher/reviews/:reviewId', m => m.TEACHER_REVIEW_LINK),
   link('admin/operations/:tab', m => m.ADMIN_OPERATIONS_TAB_LINK),

@@ -61,7 +61,6 @@ export class DashboardPageComponent {
   readonly tabKey = signal(this.route.snapshot.queryParamMap.get('tab') ?? '');
   readonly profileName = signal(this.sessionStore.current()?.fullName ?? '');
   readonly profileNameEnglish = signal(this.sessionStore.current()?.fullNameEnglish ?? '');
-  readonly uploadingFileFor = signal('');
   /** The item a link named (`?orderId=`, `?sessionId=` …); its card is highlighted and focused. */
   readonly focusId = signal(Dashboard.focusId(this.route.snapshot.queryParamMap));
 
@@ -113,12 +112,6 @@ export class DashboardPageComponent {
   fileName(file: Record<string, unknown>): string {
     return String(file['originalName'] || file['fileName'] || this.t('common_file', 'File'));
   }
-  /**
-   * `Order.Start` needs AwaitingPayment *and* a captured payment, so offering
-   * the button on the first condition alone put a teacher in front of a control
-   * whose only possible answer was "Payment confirmation is required". The
-   * card says what it is waiting for instead.
-   */
   isFocused(row: Record<string, unknown>): boolean {
     return !!this.focusId() && String(row['id'] ?? '') === this.focusId();
   }
@@ -140,15 +133,6 @@ export class DashboardPageComponent {
     if (row['readAt']) return;
     const id = encodeURIComponent(String(row['id'] ?? ''));
     if (id) this.gateway.post(`/notifications/read?id=${id}`).catch(() => undefined);
-  }
-
-  canStart(row: Record<string, unknown>): boolean {
-    return String(row['paymentStatus'] ?? '').toLowerCase() === '1'
-      || String(row['paymentStatus'] ?? '').toLowerCase() === 'paid';
-  }
-  canDeliver(row: Record<string, unknown>): boolean {
-    const status = String(row['status'] ?? '').toLowerCase();
-    return status === '1' || status === '3' || status === 'inprogress' || status === 'revisionrequested';
   }
 
   async navigate(area: DashboardArea, tab = area.tabs[0]): Promise<void> {
@@ -175,15 +159,6 @@ export class DashboardPageComponent {
     const id = encodeURIComponent(String(row['id'] ?? '')), version = String(row['version'] ?? '');
     if (!id) return;
     try {
-      if (action === 'join') {
-        const join = await this.gateway.load([`/live-sessions/${id}/join`]);
-        const payload = join[0]?.payload as Record<string, unknown> | null;
-        const url = String(payload?.['url'] ?? payload?.['joinUrl'] ?? '');
-        if (url) this.document.location.href = url;
-        return;
-      }
-      if (action === 'complete') await this.gateway.post(`/orders/${id}/complete`, null, version);
-      if (action === 'start') await this.gateway.post(`/orders/${id}/start`, null, version);
       if (action === 'accept') {
         // Acceptance sets the order's terms, so it is a form (J3-07); the dialog reports back.
         await this.acceptDialog?.open({
@@ -241,27 +216,6 @@ export class DashboardPageComponent {
     this.preview(`/api/v1/live-sessions/attachments/${encodeURIComponent(String(file['id']))}/content`, file);
   }
 
-  async uploadDelivery(row: Record<string, unknown>, event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    input.value = '';
-    if (!this.validViewOnlyFiles(files, 6)) return;
-    if (!await this.dialogs.confirm({
-      body: this.t('delivery_submit_confirm', 'Submit these files to the student? They will be viewable inside Tafseel.')
-    })) return;
-    await this.upload(
-      row, `/orders/${encodeURIComponent(String(row['id']))}/deliveries`, files, 'files');
-  }
-
-  async uploadSessionFile(row: Record<string, unknown>, event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    input.value = '';
-    if (!this.validViewOnlyFiles(files, 1)) return;
-    await this.upload(
-      row, `/live-sessions/${encodeURIComponent(String(row['id']))}/attachments`, files, 'file');
-  }
-
   async exportData(): Promise<void> {
     try { await this.files.open('/api/v1/auth/privacy/export', { download: true, fileName: 'tafseel-account-data.json' }); }
     catch (error) { this.fail(error); }
@@ -295,34 +249,6 @@ export class DashboardPageComponent {
 
   private preview(path: string, file: Record<string, unknown>): void {
     void this.viewer?.open(path, this.fileName(file), String(file['contentType'] ?? ''));
-  }
-
-  private validViewOnlyFiles(files: readonly File[], limit: number): boolean {
-    const viewable = /^(application\/pdf|image\/|video\/(mp4|webm)|audio\/(wav|mpeg|mp4|aac|ogg))/i;
-    const valid = files.length > 0 && files.length <= limit
-      && files.every(file => file.size > 0 && file.size <= 250 * 1024 * 1024 && viewable.test(file.type));
-    if (!valid) this.toasts.show(this.t(
-      'protected_upload_invalid',
-      'Choose PDF, image, audio, or video files; each file must be 250 MB or smaller.'
-    ));
-    return valid;
-  }
-
-  private async upload(
-    row: Record<string, unknown>, path: string, files: readonly File[], fieldName: string
-  ): Promise<void> {
-    const id = String(row['id'] ?? '');
-    if (!id || this.uploadingFileFor()) return;
-    this.uploadingFileFor.set(id);
-    try {
-      await this.gateway.upload(path, files, String(row['version'] ?? ''), fieldName);
-      await this.reload();
-      this.toasts.show(this.t('protected_upload_done', 'The files are ready to view inside Tafseel.'));
-    } catch (error) {
-      this.fail(error);
-    } finally {
-      this.uploadingFileFor.set('');
-    }
   }
 
   /**

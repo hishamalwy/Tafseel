@@ -151,6 +151,21 @@ export const Dashboard = {
     const id = String(row['id'] ?? '');
     return toggle && id && source === toggle.listSource ? toggle.endpoint(id) : null;
   },
+  /**
+   * The screen for one row, by the list it came from: an order, a live session, a request, an
+   * open-marketplace opportunity or a conversation each have their own page.
+   */
+  detailLink(row: Record<string, unknown>): readonly string[] | null {
+    const source = String(row['_source'] ?? '').split('?')[0];
+    const id = String(row['id'] ?? '');
+    if (!id) return null;
+    if (source === '/orders/mine' || source === '/orders/assigned') return ['/orders', id];
+    if (source === '/live-sessions/mine') return ['/live-sessions', id];
+    if (source === '/learning-requests/mine' || source === '/learning-requests/assigned') return ['/requests', id];
+    if (source === '/open-marketplace/opportunities') return ['/teacher/opportunities', id];
+    if (source === '/conversations') return ['/conversations', id];
+    return null;
+  },
   focusId(query: { get(name: string): string | null }): string {
     for (const name of FOCUS_PARAMS) { const value = query.get(name); if (value) return value; }
     return '';
