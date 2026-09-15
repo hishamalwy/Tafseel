@@ -1,0 +1,57 @@
+# Tafseel baseline  2026-09-15T14:50:10+03:00
+repo HEAD: e8aa5a3 (2026-09-15)  branch: feat/wave3b-demand-fulfilment
+uncommitted:   untracked paths: 27
+dotnet 9.0.100 | node v24.19.0 | npm 11.12.1
+
+## Working tree (as found)
+restore --locked-mode: exit 0  0 NU1004
+format --verify-no-changes: exit 0  0 errors
+angular build (sync:design, check:i18n, check:styles, ng build): exit 0
+angular unit tests: exit 0   Tests 331 passed (331)
+copy: unlocked restore exit 0
+copy: build Tafseel.ArchitectureTests as-is: exit 0  0 error lines
+copy: build Tafseel.Application.Tests as-is: exit 0  0 error lines
+copy: build Tafseel.Domain.Tests as-is: exit 0  0 error lines
+copy: build Tafseel.IntegrationTests as-is: exit 0  0 error lines
+integration call sites patched: 0
+domain LiveSessionTests already use the settlement lifecycle; nothing to fence
+copy: solution build after compile fix: exit 0
+endpoint inventory probe: exit 0
+copy: Tafseel.ArchitectureTests  Failed:     0, Passed:     1, Skipped:     0, Total:     1
+copy: Tafseel.Domain.Tests  Failed:     0, Passed:   117, Skipped:     0, Total:   117
+copy: Tafseel.Application.Tests  Failed:     0, Passed:    14, Skipped:     0, Total:    14
+copy: integration (provider-neutral)  Failed:     0, Passed:   375, Skipped:     0, Total:   375
+copy: integration (SQL Server)  Failed:     0, Passed:   223, Skipped:     0, Total:   223
+copy: failing tests listed in failed-tests.txt (0)
+ci: check-js.mjs exit 0
+ci: deploy-gates.tests.ps1 exit 0
+ci: staging-migration.tests.ps1 exit 0
+ci: check-migration-safety.tests.ps1 exit 0
+ci: ef has-pending-model-changes exit 0  No changes have been made to the model since the last migration.
+ci: publish exit 0
+ci: validate-publish.ps1 exit 0
+
+## Last commit (git archive HEAD): a clean checkout, committed files only
+restore --locked-mode: exit 0
+npm ci (frontend-angular): exit 0
+build (incl. Angular): exit 0
+Tafseel.ArchitectureTests  Failed:     0, Passed:     1, Skipped:     0, Total:     1
+Tafseel.Domain.Tests  Failed:     0, Passed:   117, Skipped:     0, Total:   117
+Tafseel.Application.Tests  Failed:     0, Passed:    14, Skipped:     0, Total:    14
+integration (provider-neutral)  Failed:     0, Passed:   375, Skipped:     0, Total:   375
+integration (SQL Server)  Failed:     0, Passed:   223, Skipped:     0, Total:   223
+
+## Contract
+routes=41 wildcard=true apiCalls=217 unresolved=4
+client call shapes=171 OK=171 WRONG_VERB=0 NO_ROUTE=0 SHADOWED=0 FALLBACK_ONLY=0
+api endpoints=237 called-by-angular=163 no-angular-caller=74
+ci: check-api-contract.mjs exit 0  API contract: 217 client call shapes, 217 route matches, 0 violations
+ci: check-api-contract.mjs --strict exit 0 (non-zero while known violations remain)
+
+done. Logs and inventories: <scratchpad>/wave3b/baseline
+
+## First reproduction on 29d6ba0 (before e8aa5a3)
+copy: integration (SQL Server)  Failed:     1, Passed:   222, Skipped:     0, Total:   223
+copy: failing tests listed in failed-tests.txt (1)
+integration (SQL Server)  Failed:     0, Passed:   223, Skipped:     0, Total:   223
+failed: Tafseel.IntegrationTests.OpenMarketplaceTests.Qualified_private_offers_convert_once_into_the_existing_order_lifecycle - DoesNotContain("150") matched an offer id ending ...cf1509f
