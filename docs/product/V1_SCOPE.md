@@ -1,0 +1,216 @@
+# Tafseel V1 Scope
+
+**Status:** frozen · Release Control 1, 2026-09-15. Changes only through a ticket that passes
+Gate 1 of [`SDLC.md`](../engineering/SDLC.md). Terms: [Product Contract](./TAFSEEL_PRODUCT_CONTRACT.md).
+
+## What V1 is
+
+**Tafseel V1 is a commercially usable, Saudi-first learning-help marketplace in which a student can
+find a qualified teacher (or let qualified teachers compete), pay safely, receive and revise the
+work or attend a live session, communicate, complete and review — and in which a teacher can
+qualify, publish, earn and get paid — operated by Quality and Admin with only the controls needed to
+run real money safely.**
+
+V1 is not a demonstration of every backend endpoint. **No UI is required solely because an API
+capability exists.**
+
+## Categories
+
+| Category | Meaning |
+|----------|---------|
+| **MUST SHIP V1** | Without it the marketplace cannot be used commercially or operated safely. Launch is blocked. |
+| **SHOULD SHIP V1** | Expected by users; launch is possible without it but with visible friction. Decided per ticket; not launch-blocking by default. |
+| **V1.1** | Deliberately deferred; listed in [`V1_1_BACKLOG.md`](./V1_1_BACKLOG.md) with reason and risk. |
+| **LATER / OPTIONAL** | No V1 or V1.1 commitment. |
+| **EXTERNAL / PROVIDER** | Depends on a third party, a contract or an operational action outside the code. |
+
+"State" is the verified state on `bec03a8`: **Proven** = passed a browser business journey;
+**Built** = UI exists with unit/integration tests but no browser journey; **API only**; **Partial**;
+**Missing**. Matrix IDs refer to the
+[remediation matrix](../audits/baseline-2026-09-14/REMEDIATION_MATRIX.md).
+
+---
+
+## 1. Visitor and account
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Landing page (featured subjects, teachers, services, stats) | J1-02 | Built | MUST |
+| Browse and filter published teachers | J1-03 | Proven (3B) | MUST |
+| Public teacher profile with offerings and public reviews | J1-06 | Proven (3B) | MUST |
+| Availability indicator on cards and profile | J1-04 | Built | SHOULD |
+| Compare teachers | J1-05 | Built | LATER |
+| Save a teacher (favourites) | J1-07 | Proven (W2) | SHOULD |
+| Register, confirm email, sign in, stay signed in, sign out | J2-01..03 | Proven (W1, 3A, 3B) | MUST |
+| Reset password | J2-04 | Proven (W1) | MUST |
+| Resend confirmation | J2-05 | Built | MUST |
+| Account settings: name, data export | J2-06 | Built (generic page) | SHOULD |
+| Change password / revoke other sessions UI | J2-06 | API only | V1.1 |
+| Policies pages (terms, privacy, refund) | — | Built (static content) | MUST (content via `LEG-01`) |
+| Arabic/English switch, RTL | — | Proven | MUST |
+| Product analytics | J1-08 | Missing | V1.1 |
+
+## 2. Student demand
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Direct request from a teacher's offering (wizard, attachments) | J3-01..03 | Proven (3B, Arabic phone) | MUST |
+| AI help writing the brief | J3-04 | Built; `Ai.Enabled` off in Production but the button is always shown | LATER (hide: `UX-08`) |
+| Answer a teacher's clarifying question | J3-05 | Built on `/requests/:id` (3B), no browser journey | MUST (`QA-02`) |
+| Cancel a request | J3-06 | Built on `/requests/:id` (3B), no browser journey | MUST (`QA-02`) |
+| Choose "direct teacher" vs "open request" | J4-01 | Proven (3B) | MUST |
+| Publish an open request | J4-01 | Proven (3B) | MUST |
+| See my requests and their state | J4-02 | Proven (3B screens; generic list on the dashboard) | MUST |
+| Compare offers | J4-03/J4-06 | Proven (3B) | MUST |
+| Select an offer; reservation; release | J4-07, J4-09 | Proven (3B) | MUST |
+| Duplicate open-marketplace list page `/requests` (Wave 2 inline offer/choose) | J4-02..07 | Proven (W2) | MUST remove duplication (`UX-05`) |
+
+## 3. Checkout
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Pay an accepted order | J5-01 | Proven (3B, mock) | MUST |
+| Pay a reserved open request → order created once | J4-08 | Proven (3B, mock) | MUST |
+| Pay a live-session booking | J5-02 | Proven (3B, mock) | MUST (with live sessions) |
+| Real payment provider | J5-05 | Missing | EXTERNAL (`PAY-01..03`) — MUST |
+| Coupons at checkout | J5-03 | **Missing in checkout** (matrix "WORKS" was API only); landing promo shows codes | DECISION (`DEC-09`) — default V1.1 |
+| Mock simulator | J5-04 | Built; forbidden in Production | not shipped |
+
+## 4. Order fulfilment
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Participant order screen (summary, timeline, actions) | J6-06 | Proven (3B) | MUST |
+| Teacher starts a paid order | J6-01 | Proven (3B) | MUST |
+| Teacher delivers files with a note, upload progress | J6-02 | Proven (3B) | MUST |
+| Student opens protected delivery files | J6-03 | Proven (3B) | MUST |
+| Revision within allowance; redelivery | J6-04 | Proven (3B) | MUST |
+| Complete; automatic completion after the window | J6-05, J6-09 | Proven (complete); worker tested (IT) | MUST |
+| Cancel an unpaid order | J6-08 | Built on `/orders/:id` (3B), no browser journey | MUST (`QA-02`) |
+| Order conversation | — | Proven (3B) | MUST |
+| Extensions | J6-07 | API only | V1.1 |
+| Dispute: open, evidence, messages (participants) | J6-10, J10-01, J10-03 | Built (`/disputes`) | MUST |
+
+## 5. Reviews
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Review a completed order once; public rating updates | J7-01 | Proven (3B) | MUST |
+| Review a completed live session | J7-01 | API only | V1.1 |
+| Admin hides a review (moderation) | J7-02 | Partial (list only) | SHOULD (`OPS-02`) |
+| Teacher opens a review from a notification | J7-03 | Recorded DEAD LINK (Wave 3A added a teacher-review link route; not re-verified) | V1.1 (verify) |
+
+## 6. Live sessions
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Book a slot (duration, time zone), pay | J8-01 | Proven (3B) | MUST* |
+| Session screen for both participants | J8-06 | Proven (3B) | MUST* |
+| Join inside the window (both roles) | J8-02 | Proven (3B, mock room) | MUST* |
+| Completion and no-show settlement | J8-05 | Proven (3B) | MUST* |
+| Cancel with refund rule | J8-04 | Proven (3B) | MUST* |
+| Reschedule propose/answer | J8-03 | Built on `/live-sessions/:id` (3B), no browser journey | SHOULD (`QA-02`) |
+| Session files | — | Built (3B) | SHOULD |
+| Real meeting provider | J8-07 | Missing | EXTERNAL (`MEET-01`) — MUST* |
+| Emergency premium | — | API flag only | DECISION (`DEC-07`) — default LATER (disabled) |
+| Admin resolves a stuck session | J8-08 | Partial (list; complete/no-show admin endpoints exist) | SHOULD (`OPS-03`) |
+
+\* **MUST only if live sessions are enabled at launch** (`DEC-10`). If not, the `live_session`
+Catalog Service stays inactive, the five MUST* rows and `MEET-01` move to V1.1, and the launch count
+in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md) drops accordingly.
+
+## 7. Messaging and notifications
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Inbox, thread, send, unread, attachments; SignalR + polling | J9-01, J9-02 | Proven (3B) | MUST |
+| Open a conversation / item from a notification; server links resolve | J9-03..05 | Proven (W1, 3B) | MUST |
+| Notification preferences | J9-06 | API only | V1.1 |
+| Email notifications (confirmation, reset, activity) | — | Built (Resend) | MUST (domain via `INF-06`) |
+
+## 8. Teacher supply
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Land in the right place after sign-in | J11-01 | Proven | MUST |
+| Apply per subject with a demo; see reviewer feedback; resubmit | J11-02 | Proven (3A) | MUST |
+| Withdraw an application | J11-03 | API only | LATER |
+| Profile | J11-06 | Proven (3A) | MUST |
+| Offerings within Admin range | J11-07 | Proven (3A) | MUST |
+| Availability and time off | J11-08 | Proven (3A) | MUST |
+| Publication with server blockers | J11-09 | Proven (3A) | MUST |
+| Direct request handling (question, accept, decline) | J3-07/J3-08 | Proven (3B accept) | MUST |
+| Opportunities and offers (send, change, withdraw) | J4-04..06 | Proven (3B) | MUST |
+| Orders, sessions, messages | — | Proven (3B) | MUST |
+| Qualifications list | — | Built (generic) | SHOULD |
+| Samples, profile videos, showcases | J11-10 | API only; Production requires validated media capabilities | V1.1 |
+| Business analytics / exports | J11-12 | API only | LATER |
+| **Earnings: available, pending clearance, next clearance** | J12-01 | Partial (generic list) | MUST (`FIN-01`) |
+| **Payout profile** | J12-02 | Missing | MUST (`FIN-02`, `DEC-04`) |
+| **Withdrawal request and history** | J12-03 | Missing | MUST (`FIN-03`) |
+| Maturity worker metrics | J12-05 | Warning log only | MUST (`OBS-02`) |
+
+## 9. Quality
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Application queue with filters and counts | J11-04 | Proven (3A) | MUST |
+| Review screen, demo access, decision | J11-05 | Proven (3A) | MUST |
+| Qualification revoke | J11-05 | API only (no qualification id on the read side) | V1.1 |
+| Showcase moderation | J11-11 | Missing | V1.1 (with showcases) |
+
+## 10. Admin
+
+| Capability | Matrix | State | Category |
+|------------|--------|-------|----------|
+| Attention list / command centre, metrics | J14-01 | Built (generic) | SHOULD (`OPS-01`) |
+| Users: list, suspend | J14-02 | Built (generic) | MUST |
+| Change a user's roles | J14-03 | API only | LATER |
+| Catalog: list, enable/disable | J13-01/02 | Built (generic) | MUST |
+| **Catalog Service policy (price range, delivery, revisions) editing** | J13-03 | API only | MUST (`PROD-01`) |
+| Subjects/topics/qualification topics create and edit | J13-03 | API only | SHOULD (`OPS-04`; seeding/ops runbook acceptable for launch) |
+| Coupons, promotions | J13-04/05 | Broken toggle / no editor | DECISION (`DEC-09`), default V1.1 |
+| Operations lists (requests, orders, sessions) | J14-01 | Built (generic) | SHOULD |
+| **Disputes: review, message the parties, resolve** | J10-02 | Partial (cannot message parties) | MUST (`FIN-07`) |
+| **Refund a payment** | J14-04 | API only | MUST (`FIN-06`) |
+| **Verify payout profiles** | J12-04 | API only | MUST (`FIN-04`) |
+| **Process withdrawals** | J12-04 | API only | MUST (`FIN-05`) |
+| Reconciliation view | — | Built (generic) | SHOULD (`FIN-08`) |
+| Audit log | J14-01 | Built (generic) | SHOULD |
+| Finance and demand reports | J14-05 | API only | LATER |
+| Admin AI tools | J14-06 | API only, disabled | LATER |
+| Marketplace intelligence reports | — | Built (generic) | LATER |
+
+## 11. Platform, providers, operations
+
+| Capability | State | Category |
+|------------|-------|----------|
+| Payment provider (charge, webhook, refund) | Mock only | EXTERNAL — MUST (`PAY-01..03`) |
+| Meeting provider | Mock only | EXTERNAL — MUST* (`MEET-01`) |
+| Payout execution | Manual; destination masked | EXTERNAL/DECISION — MUST (`DEC-04`, `PAY-04`) |
+| Private file storage (Azure Blob) | Built; Production-enforced | MUST (`INF-05`) |
+| Malware scanning of uploads | Missing | MUST (`SEC-04`) |
+| Secure paid-video delivery / DRM | Missing | LATER — V1 deliveries are files; protected download only. Becomes MUST only if V1 sells protected streaming video (`DEC-11`) |
+| Email sending domain | onboarding sender | EXTERNAL — MUST (`INF-06`) |
+| Container image CI (G-20) | Unverified | MUST (`INF-01`) |
+| Credential rotation | Pending | MUST (`SEC-01`, `SEC-02`) |
+| Observability, alerts, on-call | App Insights package only | MUST (`OBS-01`, `OBS-02`) |
+| VAT / e-invoicing | Missing | DECISION — MUST if required (`DEC-08`) |
+| Initial bundle headroom | 696.7 / 700 kB warning | MUST (`ENG-01`) |
+
+---
+
+## Summary
+
+| Category | Count of capability rows |
+|----------|--------------------------|
+| MUST SHIP V1 (incl. MUST* live-session rows and rows whose MUST depends on a ticket) | 66 |
+| SHOULD SHIP V1 | 13 |
+| V1.1 | 9 |
+| LATER / OPTIONAL | 9 |
+| EXTERNAL / PROVIDER (all also required for launch) | 6 |
+| DECISION pending classification (coupons at checkout, emergency premium, coupons and promotions admin, VAT) | 4 |
+| Not shipped (mock payment simulator) | 1 |
+
+Counts are of the rows above and exist to make scope drift visible; the launch count is the ticket
+count in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md).
