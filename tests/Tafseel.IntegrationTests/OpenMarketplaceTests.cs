@@ -85,7 +85,11 @@ public sealed class OpenMarketplaceTests(SqlServerTafseelApiFactory factory)
         var offerB = await OfferAsync(teacherB, requestId, 150, 24, "I will add worked examples.");
         var mine = await teacherA.GetStringAsync($"/api/v1/open-marketplace/requests/{requestId}/my-offer");
         Assert.DoesNotContain(data.TeacherB.Id, mine, StringComparison.Ordinal);
-        Assert.DoesNotContain("150", mine, StringComparison.Ordinal);
+        // Compare values, not text: a random id can contain the digits "150" (it did: "…cf1509f").
+        var mineJson = JsonDocument.Parse(mine).RootElement;
+        Assert.Equal(120m, mineJson.GetProperty("amount").GetDecimal());
+        Assert.DoesNotContain(mineJson.EnumerateObject(),
+            p => p.Value.ValueKind == JsonValueKind.Number && p.Value.GetDecimal() == 150m);
 
         request = JsonDocument.Parse(await student.GetStringAsync(
             $"/api/v1/open-marketplace/requests/{requestId}")).RootElement;
