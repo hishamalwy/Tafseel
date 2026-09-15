@@ -7,7 +7,8 @@ Status of each decision: [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md). Tic
 This pack prepares the nine V1-blocking owner decisions. **Every "Recommendation" below is a
 recommendation, not a decision.** On 2026-09-15 the Product Owner **decided DEC-01, DEC-02, DEC-04, DEC-05,
 DEC-06, DEC-10 and DEC-11** (each card carries its status); **DEC-08 and DEC-12 remain OPEN**. The
-post-decision dependency recalculation is at the end of this document. Nothing here changes code or configuration. Facts are taken from the
+post-decision dependency recalculation is at the end of this document. **DEC-13** (listed price reference) was raised in
+Release Control 3 and decided the same day (Option A) — see the addendum at the end. Nothing here changes code or configuration. Facts are taken from the
 repository at `8b38920`; anything that needs market, provider, legal or tax input is marked
 **EXTERNAL INPUT REQUIRED**.
 
@@ -813,3 +814,39 @@ flowchart LR
   LEG01 --> QA01
   QA01 --> LAUNCH((V1 launch))
 ```
+
+---
+
+## Addendum — DEC-13 Listed price reference (Release Control 3, 2026-09-15)
+
+> **Status: DECIDED — Option A** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-13--listed-price-reference-for-the-agreed-price-disclosure).
+
+1. **Current behaviour.** Teacher Offering prices are updated in place (`TeacherService.Configure`).
+   `OrderService.CreateRequestAsync` validates the offering price but stores no copy on the Learning Request. The Order stores
+   only the agreed price. Checkout labels the agreed price "Listed price".
+2. **Why it matters.** DEC-02 requires showing the listed price next to the agreed price. Without a snapshot, "listed" can only
+   mean the current price, which may have changed since the student sent the request.
+3. **Options.**
+   - A: snapshot the offering price and currency on the Direct Request at creation.
+   - B: compare with the current offering price.
+   - C: show no comparison.
+4. **Recommendation.** A.
+5. **Product impact.** The student sees the price they actually saw and the price after the teacher's review. Historical
+   requests show no comparison.
+6. **Technical impact.**
+   - Two nullable fields on `LearningRequest` with one immutable capture method, mirroring `CaptureServiceIdentity`.
+   - One migration: nullable, no backfill, both-or-neither check.
+   - Two nullable read fields on `LearningRequestDto` and `OrderDto`.
+   - No new endpoint.
+7. **Financial / security / legal impact.**
+   - No change to fees, snapshots, payment or ledger.
+   - The value is server-captured (client input is never trusted) and readable by participants only.
+   - It supports consumer price transparency.
+8. **Tickets.** UX-09 Gate 3 unblocked; UX-09 re-estimated S → M; no new ticket.
+9. **Document changes.** Product Contract §3.2, §3.3; V1_OWNER_DECISIONS; V1_RELEASE_BLOCKERS; PRODUCTION_READINESS U11; UX-09.
+10. **External input.** None.
+
+**Recalculation after DEC-13:**
+- Blocker count: 45 → **44** (DEC-13 closed; UX-09 remains the implementing blocker).
+- Open blocking decisions: DEC-08 and DEC-12.

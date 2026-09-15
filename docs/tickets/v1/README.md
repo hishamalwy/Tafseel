@@ -18,7 +18,7 @@ Backlog). Blocker list: [`V1_RELEASE_BLOCKERS.md`](../../releases/V1_RELEASE_BLO
 | [UX-02](./UX-02.md) | Teacher home: action first | M | ✅ | ✅ | ✅ no new contract | **Ready** | FIN-01, UX-04 (build) |
 | [UX-03](./UX-03.md) | V1 navigation | M | ✅ | ✅ | ✅ no new contract | **Ready** | UX-01, UX-02 (+ UX-04, UX-05) |
 | [UX-06](./UX-06.md) | Arabic phone verification | M | ✅ | ✅ | — | **Ready** | the other UX tickets (screens final) |
-| [UX-09](./UX-09.md) | Agreed-price disclosure | S (+ backend if DEC-13 = A) | ✅ | ✅ | ⛔ DEC-13 | **Backlog** | **DEC-13** (owner decision) |
+| [UX-09](./UX-09.md) | Agreed-price disclosure (incl. DEC-13 snapshot) | M | ✅ | ✅ | ✅ two nullable read fields on existing DTOs; migration | **Ready** | UX-04 (build) |
 
 ## Dependencies
 
@@ -30,7 +30,7 @@ flowchart LR
   UX01 --> UX03[UX-03 navigation]
   UX02 --> UX03
   UX05[UX-05 canonical paths] --> UX03
-  D13[DEC-13 listed price - OPEN] --> UX09[UX-09 agreed price]
+  D13[DEC-13 listed price - DECIDED A] -.-> UX09[UX-09 agreed price + snapshot]
   UX04 --> UX09
   UX03 --> UX06[UX-06 Arabic phone]
   UX07[UX-07 promo codes] --> UX06
@@ -48,15 +48,15 @@ flowchart LR
 | **D** | UX-02 | One major journey (teacher home) — after FIN-01 |
 | **E** | UX-03 | Navigation over the new homes; re-runs Wave 1–3B journeys |
 | **F** | UX-07 + UX-08 | Two small independent tickets; can be pulled forward into any gap (no dependencies) |
-| **G** | UX-09 | Only after DEC-13 is decided |
+| **G** | UX-09 | One vertical slice (M, protected domain + migration); after UX-04; can move ahead of E/F if the Product Owner prefers, but alone (major journey) |
 | **H** | UX-06 | Last: verifies final screens in Arabic at 390px |
 
 The expected shape "C = UX-01 + UX-02" was evaluated and split: both are M journeys, so running them together would break
-the WIP rule. UX-09 was not paired with F because it is blocked.
+the WIP rule. UX-09 is not paired with F because it is an M slice touching protected code.
 
-## Open product question raised by RC3
+## Product question raised by RC3 — decided
 
-**DEC-13 — Listed price reference for the agreed-price disclosure** (blocks UX-09): Teacher Offering prices are updated in
-place and neither the Learning Request nor the Order stores the price the student saw, so "listed price" after acceptance
-is not recoverable. Options and recommendation in [UX-09](./UX-09.md#dependencies) and
+**DEC-13 — Listed price reference for the agreed-price disclosure — DECIDED, Option A (2026-09-15):** an immutable server-side
+snapshot of the offering price and currency on every new Direct Request, no backfill for historical requests; implemented by
+UX-09 (no separate ticket). Details in [UX-09](./UX-09.md#dependencies) and
 [`V1_OWNER_DECISIONS.md`](../../releases/V1_OWNER_DECISIONS.md#dec-13--listed-price-reference-for-the-agreed-price-disclosure).

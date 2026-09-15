@@ -24,8 +24,8 @@ category — there is **no overall percentage**, because the categories are not 
 | Legal / operations | 0 | 2 | **0%** |
 | Rollback / recovery | 1 | 2 | **50%** |
 
-**Launch decision:** not ready. Tafseel is **45 blocker tickets** from V1 production readiness (Release Control 3 added
-DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](../tickets/v1/README.md)).
+**Launch decision:** not ready. Tafseel is **44 blocker tickets** from V1 production readiness (Release Control 3 raised and
+decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](../tickets/v1/README.md)).
 
 ---
 
@@ -65,7 +65,7 @@ DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](../ticke
 | U8 | No duplicate paths to the same goal | ❌ | UX-05 |
 | U9 | All customer-facing screens verified in Arabic at 390px | ❌ | UX-06 |
 | U10 | No dead or misleading controls (unredeemable promo codes, disabled AI assistant) | ❌ | UX-07, UX-08 |
-| U11 | Agreed price disclosed when it differs from the listed price (DEC-02) | ⛔ | UX-09 (blocked by DEC-13) |
+| U11 | Agreed price disclosed when it differs from the price at request time (DEC-02, DEC-13 snapshot) | ❌ | UX-09 (Ready) |
 
 ## 3. Financial readiness
 

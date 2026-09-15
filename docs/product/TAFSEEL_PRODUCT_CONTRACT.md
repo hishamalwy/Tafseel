@@ -115,14 +115,26 @@ different from the listed Teacher Offering price, provided it stays inside the A
 policy, the student sees the final amount before paying, and the student is not charged until they
 explicitly proceed with payment. The student's optional budget is **guidance, not a server cap**. When the
 agreed price differs from the listed price, the request, order and checkout screens must show the listed
-price, the agreed price and the final amount payable (`UX-09`, not yet built). Which "listed price" is shown is **open —
-`DEC-13`**: the offering price is updated in place and is not stored on the request or order today.
+price, the agreed price and the final amount payable (`UX-09`, not yet built).
+
+**Listed price at request — DECIDED (DEC-13, 2026-09-15).** The "listed price" is the Teacher Offering price the student saw when
+the Direct Request was created.
+- The server captures it (price and currency) from the selected offering at creation.
+- It is an **immutable historical snapshot**: later offering edits never change or reinterpret it, and client-supplied prices
+  are never trusted.
+- Every new Direct Request has it. Requests created before it existed keep none: no backfill, and no listed-vs-agreed
+  comparison.
+- The student sees «السعر عند إرسال الطلب» / "Price when you sent the request" and «السعر بعد مراجعة المعلم لطلبك» / "Price
+  after the teacher reviewed your request" only when the two differ, plus «الإجمالي المطلوب» / "Total to pay" (fee and total
+  from the agreed price).
+- Today the offering price is updated in place and not stored on the request; `UX-09` implements the snapshot.
 
 ### 3.3 Learning Request
 *Code: `LearningRequest`.* The student's request for work. It has a **sourcing mode**:
 
 - **Direct Request** (`RequestSourcingMode.Direct`) — the student chose a specific teacher's
   offering and asks that teacher.
+  A Direct Request carries the immutable **listed price at request** snapshot (DEC-13, §3.2; to be built in `UX-09`).
 - **Open Request** (`RequestSourcingMode.OpenMarketplace`) — the student publishes a need (subject,
   asynchronous Catalog Service, title, requirements, deadline, optional budget range) without
   choosing a teacher; qualified teachers compete.

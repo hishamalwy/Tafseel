@@ -15,7 +15,7 @@ Product Owner has stated it explicitly; the documents listed for it are updated 
 | DEC-10 | Live sessions in V1 | **DECIDED** | Option A — live sessions ship in V1 |
 | DEC-11 | Secure paid video at launch | **DECIDED** | Option A — private authorized files; HLS/DASH/DRM V1.1+ |
 | DEC-12 | Production hosting and data location | **OPEN** | Direction recorded; provider and region open |
-| DEC-13 | Listed price reference for the agreed-price disclosure | **OPEN** | Raised in Release Control 3 by UX-09 |
+| DEC-13 | Listed price reference for the agreed-price disclosure | **DECIDED** | Option A — immutable server-side snapshot at Direct Request creation; no backfill; implemented by UX-09 |
 
 All decisions were recorded as documentation and planning only; no code, configuration, database value or
 historical record was changed.
@@ -53,7 +53,7 @@ historical record was changed.
 - **Effective V1 rule:** current server behaviour, plus disclosure: when the accepted price differs from the
   listed price, request, order and checkout show the listed price, the agreed price and the final amount
   payable.
-- **Tickets unblocked / created:** **UX-09 — Agreed price disclosure** (V1 blocker, S; not implemented)
+- **Tickets unblocked / created:** **UX-09 — Agreed price disclosure** (V1 blocker; re-estimated M after DEC-13; not implemented)
 - **Documents affected:** Product Contract §3.2 · V1_SCOPE §4 · V1_RELEASE_BLOCKERS · PRODUCTION_READINESS U11
 
 ## DEC-04 — Teacher payout mechanism
@@ -153,24 +153,37 @@ historical record was changed.
 - **Documents affected when decided:** PRODUCTION_READINESS I6 · Product Contract §8 · V1_RELEASE_BLOCKERS
 
 ## DEC-13 — Listed price reference for the agreed-price disclosure
-- **Status:** **OPEN** (raised in Release Control 3, 2026-09-15)
-- **Decision:** — not decided.
-- **Context:** DEC-02 requires the request, order and checkout to show the *listed* Teacher Offering price next to the
-  agreed price. Teacher Offering prices are updated in place (`TeacherService.Configure`), and neither the Learning
-  Request nor the Order stores the price the student saw when requesting. After acceptance the only available "listed
-  price" is the offering's current price.
-- **Options:**
-  - **A. Snapshot (recommended).** Store the offering price and currency on the Direct Request at creation; expose it on
-    the request and order responses.
-    - Accurate.
-    - Needs owner authorization for a protected `Tafseel.Domain` change plus a migration.
-    - Earlier requests show no comparison.
-  - **B. Current price.** Compare with the teacher's current offering price at view time.
-    - No backend change.
-    - Misleading when the teacher edits the offering between request and payment.
-  - **C. No comparison.** Show only the proposed price and the total.
-    - No backend change.
-    - Does not meet DEC-02 as recorded.
-- **Effective V1 rule:** — (today: checkout labels the agreed price "Listed price"; UX-09 corrects the label under any option)
-- **Tickets blocked:** UX-09 (Gate 3); UX-06 disclosure rows
-- **Documents affected when decided:** Product Contract §3.2 · UX-09 · V1_RELEASE_BLOCKERS
+- **Status:** DECIDED (Product Owner, 2026-09-15) — Option A. Raised in Release Control 3 by UX-09.
+- **Decision:** For a Direct Request, Tafseel preserves the price the student actually saw on the Teacher Offering when the
+  request was created, as an **immutable historical snapshot**.
+  - **Later edits:** changes to the Teacher Offering never change or reinterpret it.
+  - **Example:** the offering is 100 SAR at request time, the teacher later edits it to 120 SAR, then accepts at 150 SAR. The
+    student sees "price when you sent the request" 100 SAR and "price after the teacher reviewed your request" 150 SAR. The
+    current 120 SAR is irrelevant to the comparison.
+  - **Historical records:** Direct Requests created before the snapshot exists keep a null snapshot. They are **not backfilled**
+    (in particular not from the current offering price), and no listed-vs-agreed comparison is shown without an authentic
+    snapshot.
+  - **New requests:** every new Direct Request must have the snapshot. The server captures it at creation from the actual
+    Teacher Offering the student selected, never from a client-supplied value, and it cannot be edited afterwards.
+  - **Currency:** preserved with the price, as required by the existing decimal-plus-currency money model.
+  - **Scope:** no other offering field is snapshotted (title, description, delivery policy, history/audit are out of scope).
+  - **Open Requests:** unaffected (the Teacher Offer sets their amount).
+  - **DEC-02:** unchanged. The agreed price stays inside Admin policy, the budget is guidance, and the student accepts only by
+    paying.
+- **Rationale:** the only option that shows the student the price they really saw; the alternatives either mislead (current
+  price) or fail DEC-02 (no comparison).
+- **Effective V1 rule:** as above, implemented by UX-09.
+  - UX wording: «السعر عند إرسال الطلب» / "Price when you sent the request", «السعر بعد مراجعة المعلم لطلبك» / "Price after
+    the teacher reviewed your request", «الإجمالي المطلوب» / "Total to pay".
+  - No "price increase" or "teacher changed your price" wording.
+  - No comparison when the prices are equal.
+- **Implementation constraints:** this touches protected `Tafseel.Domain` and persistence, which the Product Owner authorizes
+  under the existing rule.
+  - A failing test comes first.
+  - The domain change is minimal (one immutable capture on `LearningRequest`).
+  - The migration adds nullable columns with no backfill and is reviewed.
+  - Financial semantics are otherwise unchanged.
+- **Tickets unblocked / changed:** UX-09 Gates 1–3 complete; re-estimated S → M as one vertical slice (snapshot, migration,
+  read contracts, disclosure, tests, browser proof). **No separate snapshot ticket.**
+- **Documents affected:** Product Contract §3.2, §3.3 · V1_DECISION_PACK · V1_RELEASE_BLOCKERS · PRODUCTION_READINESS U11 ·
+  `docs/tickets/v1/UX-09.md` · ticket board
