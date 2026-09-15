@@ -1,7 +1,8 @@
 # Tafseel V1 Scope
 
-**Status:** frozen · Release Control 1, 2026-09-15. Changes only through a ticket that passes
-Gate 1 of [`SDLC.md`](../engineering/SDLC.md). Terms: [Product Contract](./TAFSEEL_PRODUCT_CONTRACT.md).
+**Status:** frozen · Release Control 1, 2026-09-15; updated in Release Control 2 with the Product Owner
+decisions ([Owner decisions](../releases/V1_OWNER_DECISIONS.md)). Changes only through a ticket that passes Gate 1 of
+[`SDLC.md`](../engineering/SDLC.md). Terms: [Product Contract](./TAFSEEL_PRODUCT_CONTRACT.md).
 
 ## What V1 is
 
@@ -71,7 +72,7 @@ capability exists.**
 |------------|--------|-------|----------|
 | Pay an accepted order | J5-01 | Proven (3B, mock) | MUST |
 | Pay a reserved open request → order created once | J4-08 | Proven (3B, mock) | MUST |
-| Pay a live-session booking | J5-02 | Proven (3B, mock) | MUST (with live sessions) |
+| Pay a live-session booking | J5-02 | Proven (3B, mock) | MUST |
 | Real payment provider | J5-05 | Missing | EXTERNAL (`PAY-01..03`) — MUST |
 | Coupons at checkout | J5-03 | **Missing in checkout** (matrix "WORKS" was API only); landing promo shows codes | DECISION (`DEC-09`) — default V1.1 |
 | Mock simulator | J5-04 | Built; forbidden in Production | not shipped |
@@ -81,6 +82,7 @@ capability exists.**
 | Capability | Matrix | State | Category |
 |------------|--------|-------|----------|
 | Participant order screen (summary, timeline, actions) | J6-06 | Proven (3B) | MUST |
+| Agreed-price disclosure when the accepted price differs from the listed price (DEC-02) | — | Missing | MUST (`UX-09`) |
 | Teacher starts a paid order | J6-01 | Proven (3B) | MUST |
 | Teacher delivers files with a note, upload progress | J6-02 | Proven (3B) | MUST |
 | Student opens protected delivery files | J6-03 | Proven (3B) | MUST |
@@ -104,20 +106,19 @@ capability exists.**
 
 | Capability | Matrix | State | Category |
 |------------|--------|-------|----------|
-| Book a slot (duration, time zone), pay | J8-01 | Proven (3B) | MUST* |
-| Session screen for both participants | J8-06 | Proven (3B) | MUST* |
-| Join inside the window (both roles) | J8-02 | Proven (3B, mock room) | MUST* |
-| Completion and no-show settlement | J8-05 | Proven (3B) | MUST* |
-| Cancel with refund rule | J8-04 | Proven (3B) | MUST* |
-| Reschedule propose/answer | J8-03 | Built on `/live-sessions/:id` (3B), no browser journey | SHOULD (`QA-02`) |
+| Book a slot (duration, time zone), pay | J8-01 | Proven (3B) | MUST |
+| Session screen for both participants | J8-06 | Proven (3B) | MUST |
+| Join inside the window (both roles) | J8-02 | Proven (3B, mock room) | MUST |
+| Completion and no-show settlement | J8-05 | Proven (3B) | MUST |
+| Cancel with refund rule | J8-04 | Proven (3B) | MUST |
+| Reschedule propose/answer | J8-03 | Built on `/live-sessions/:id` (3B), no browser journey | MUST (`QA-02`) — shown in the V1 session screen, so it must work |
 | Session files | — | Built (3B) | SHOULD |
-| Real meeting provider | J8-07 | Missing | EXTERNAL (`MEET-01`) — MUST* |
+| Real meeting provider | J8-07 | Missing | EXTERNAL (`MEET-01`) — MUST |
 | Emergency premium | — | API flag only | DECISION (`DEC-07`) — default LATER (disabled) |
 | Admin resolves a stuck session | J8-08 | Partial (list; complete/no-show admin endpoints exist) | SHOULD (`OPS-03`) |
 
-\* **MUST only if live sessions are enabled at launch** (`DEC-10`). If not, the `live_session`
-Catalog Service stays inactive, the five MUST* rows and `MEET-01` move to V1.1, and the launch count
-in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md) drops accordingly.
+**Live sessions are part of V1 — DECIDED (DEC-10, 2026-09-15).** `MEET-01` remains a launch blocker; the
+mock provider stays forbidden in Production.
 
 ## 7. Messaging and notifications
 
@@ -146,7 +147,7 @@ in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md) drops accordin
 | Samples, profile videos, showcases | J11-10 | API only; Production requires validated media capabilities | V1.1 |
 | Business analytics / exports | J11-12 | API only | LATER |
 | **Earnings: available, pending clearance, next clearance** | J12-01 | Partial (generic list) | MUST (`FIN-01`) |
-| **Payout profile** | J12-02 | Missing | MUST (`FIN-02`, `DEC-04`) |
+| **Payout profile** (destination handled per DEC-04) | J12-02 | Missing | MUST (`FIN-02`, `PAY-04a`) |
 | **Withdrawal request and history** | J12-03 | Missing | MUST (`FIN-03`) |
 | Maturity worker metrics | J12-05 | Warning log only | MUST (`OBS-02`) |
 
@@ -167,12 +168,13 @@ in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md) drops accordin
 | Users: list, suspend | J14-02 | Built (generic) | MUST |
 | Change a user's roles | J14-03 | API only | LATER |
 | Catalog: list, enable/disable | J13-01/02 | Built (generic) | MUST |
-| **Catalog Service policy (price range, delivery, revisions) editing** | J13-03 | API only | MUST (`PROD-01`) |
+| **Catalog Service policy (price range, delivery, revisions) editing** — V1 values decided (DEC-01) | J13-03 | API only | MUST (`PROD-01`) |
 | Subjects/topics/qualification topics create and edit | J13-03 | API only | SHOULD (`OPS-04`; seeding/ops runbook acceptable for launch) |
 | Coupons, promotions | J13-04/05 | Broken toggle / no editor | DECISION (`DEC-09`), default V1.1 |
 | Operations lists (requests, orders, sessions) | J14-01 | Built (generic) | SHOULD |
 | **Disputes: review, message the parties, resolve** | J10-02 | Partial (cannot message parties) | MUST (`FIN-07`) |
-| **Refund a payment** | J14-04 | API only | MUST (`FIN-06`) |
+| **Refund a payment** (full refunds only, DEC-05) | J14-04 | API only | MUST (`FIN-06`) |
+| Partial refunds | — | Missing | V1.1 (`B11-21`, DEC-05) |
 | **Verify payout profiles** | J12-04 | API only | MUST (`FIN-04`) |
 | **Process withdrawals** | J12-04 | API only | MUST (`FIN-05`) |
 | Reconciliation view | — | Built (generic) | SHOULD (`FIN-08`) |
@@ -186,16 +188,18 @@ in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md) drops accordin
 | Capability | State | Category |
 |------------|-------|----------|
 | Payment provider (charge, webhook, refund) | Mock only | EXTERNAL — MUST (`PAY-01..03`) |
-| Meeting provider | Mock only | EXTERNAL — MUST* (`MEET-01`) |
-| Payout execution | Manual; destination masked | EXTERNAL/DECISION — MUST (`DEC-04`, `PAY-04`) |
+| Meeting provider | Mock only | EXTERNAL — MUST (`MEET-01`, DEC-10) |
+| Payout execution — `IPayoutProvider`, audited manual fallback, provider payouts if safely supported (DEC-04) | Missing | EXTERNAL — MUST (`PAY-01`, `PAY-04a`) |
+| Alternative/automated payout adapter not used in V1 | Missing | V1.1 (`PAY-04b`) |
 | Private file storage (Azure Blob) | Built; Production-enforced | MUST (`INF-05`) |
 | Malware scanning of uploads | Missing | MUST (`SEC-04`) |
-| Secure paid-video delivery / DRM | Missing | LATER — V1 deliveries are files; protected download only. Becomes MUST only if V1 sells protected streaming video (`DEC-11`) |
+| Private authorized delivery files with V1 hardening (DEC-11) | Built (headers, watermark); scanning missing | MUST (`SEC-04`, `LEG-01`) |
+| HLS/DASH streaming and DRM | Missing | V1.1 (`B11-22`, DEC-11) |
 | Email sending domain | onboarding sender | EXTERNAL — MUST (`INF-06`) |
 | Container image CI (G-20) | Unverified | MUST (`INF-01`) |
 | Credential rotation | Pending | MUST (`SEC-01`, `SEC-02`) |
 | Observability, alerts, on-call | App Insights package only | MUST (`OBS-01`, `OBS-02`) |
-| VAT / e-invoicing | Missing | DECISION — MUST if required (`DEC-08`) |
+| VAT / e-invoicing | Missing | DECISION — OPEN; legal/tax advice required (`DEC-08`) |
 | Initial bundle headroom | 696.7 / 700 kB warning | MUST (`ENG-01`) |
 
 ---
@@ -204,12 +208,12 @@ in [`V1_RELEASE_BLOCKERS.md`](../releases/V1_RELEASE_BLOCKERS.md) drops accordin
 
 | Category | Count of capability rows |
 |----------|--------------------------|
-| MUST SHIP V1 (incl. MUST* live-session rows and rows whose MUST depends on a ticket) | 66 |
-| SHOULD SHIP V1 | 13 |
-| V1.1 | 9 |
-| LATER / OPTIONAL | 9 |
+| MUST SHIP V1 | 69 |
+| SHOULD SHIP V1 | 12 |
+| V1.1 | 12 |
+| LATER / OPTIONAL | 8 |
 | EXTERNAL / PROVIDER (all also required for launch) | 6 |
-| DECISION pending classification (coupons at checkout, emergency premium, coupons and promotions admin, VAT) | 4 |
+| DECISION pending classification (Coupons at checkout; Emergency premium; Coupons, promotions; VAT / e-invoicing) | 4 |
 | Not shipped (mock payment simulator) | 1 |
 
 Counts are of the rows above and exist to make scope drift visible; the launch count is the ticket

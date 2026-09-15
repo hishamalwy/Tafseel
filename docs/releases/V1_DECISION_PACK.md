@@ -5,7 +5,9 @@ Status of each decision: [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md). Tic
 [`V1_RELEASE_BLOCKERS.md`](./V1_RELEASE_BLOCKERS.md). Rules: [Product Contract](../product/TAFSEEL_PRODUCT_CONTRACT.md).
 
 This pack prepares the nine V1-blocking owner decisions. **Every "Recommendation" below is a
-recommendation, not a decision.** Nothing here changes code or configuration. Facts are taken from the
+recommendation, not a decision.** On 2026-09-15 the Product Owner **decided DEC-01, DEC-02, DEC-04, DEC-05,
+DEC-06, DEC-10 and DEC-11** (each card carries its status); **DEC-08 and DEC-12 remain OPEN**. The
+post-decision dependency recalculation is at the end of this document. Nothing here changes code or configuration. Facts are taken from the
 repository at `8b38920`; anything that needs market, provider, legal or tax input is marked
 **EXTERNAL INPUT REQUIRED**.
 
@@ -16,6 +18,10 @@ Card structure: 1 current behaviour · 2 why it matters · 3 options · 4 recomm
 ---
 
 ## DEC-01 — Catalog Service price boundaries
+
+> **Status: DECIDED — Option B, with the proposed ranges and delivery/revision policy** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-01--catalog-service-price-boundaries). The analysis below is kept as the record of the
+> options considered.
 
 **1. Current implemented behaviour.** Admin owns each Catalog Service's commercial policy
 (`ServiceCatalogItem`: `MinPrice`, `MaxPrice`, `DefaultPrice`, `RecommendedPrice`, delivery hours,
@@ -80,6 +86,10 @@ values in the staging and future production databases.
 
 ## DEC-02 — Direct-request accepted price
 
+> **Status: DECIDED — Option B; budget remains guidance; UX-09 created** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-02--direct-request-accepted-price). The analysis below is kept as the record of the
+> options considered.
+
 **1. Current implemented behaviour.** On acceptance the teacher sends `finalPrice`, `currency`,
 `agreedDeliveryAt`, `revisionAllowance` (`POST /learning-requests/{id}/accept`, If-Match, Idempotency-Key).
 `EnsureAcceptedTerms` checks the price against the **Catalog Service range only**, the delivery hours
@@ -136,6 +146,10 @@ agrees by paying; screens disclose a changed price." `V1_RELEASE_BLOCKERS.md`: a
 ---
 
 ## DEC-04 — Teacher payout mechanism
+
+> **Status: DECIDED — Option C; PAY-01 evaluates Moyasar and Tap Payments payout capabilities first; PAY-04 split into PAY-04a / PAY-04b** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-04--teacher-payout-mechanism). The analysis below is kept as the record of the
+> options considered.
 
 **1. Current implemented behaviour.**
 - **Earnings:** ledger accounts `TeacherPending` → `TeacherAvailable` by the maturity worker after the
@@ -208,6 +222,10 @@ bank details; finance staffing for manual processing.
 
 ## DEC-05 — Refund policy
 
+> **Status: DECIDED — Option A; full monetary refunds only; partial refunds V1.1** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-05--refund-policy). The analysis below is kept as the record of the
+> options considered.
+
 **1. Current implemented behaviour.** Every refund in the code is **full** (the whole payment amount,
 including the student fee).
 
@@ -272,6 +290,10 @@ Arabia; provider refund fees and whether fees are returned on refund.
 
 ## DEC-06 — Commercial fees
 
+> **Status: DECIDED — Option A; provider fees and VAT are separate costs** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-06--commercial-fees). The analysis below is kept as the record of the
+> options considered.
+
 **1. Current implemented behaviour** (`Fees:StudentFeePercent = 8`, `Fees:TeacherCommissionPercent = 15`,
 snapshotted onto each Order and Live Session Booking at creation, so later config changes do not alter
 existing purchases).
@@ -334,6 +356,10 @@ above. (§3.7 was corrected in RC2 to state that live sessions carry no student 
 ---
 
 ## DEC-08 — VAT and e-invoicing
+
+> **Status: OPEN.** Qualified Saudi legal/tax advice is required before the production payment-provider
+> contract/sign-off and before final checkout/invoice wording. No tax behaviour is implemented until the tax
+> position is decided.
 
 **Repository fact.** There is no VAT, tax, tax-registration, invoice, credit-note, QR-code or e-invoicing
 concept anywhere in the code (`src`), database model or client. Prices, fees and commissions are computed
@@ -398,6 +424,10 @@ legal/tax advice** and cannot be made from the repository.
 
 ## DEC-10 — Live sessions in V1
 
+> **Status: DECIDED — Option A; MEET-01 remains a launch blocker** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-10--live-sessions-in-v1). The analysis below is kept as the record of the
+> options considered.
+
 **1. Current implemented behaviour.** Browser-proven end to end with the mock meeting provider
 (`wave3b-live-session` 9/9): booking into availability slots → payment (no student fee) → both
 participants see the booking → join refused too early and for outsiders → both join inside the window →
@@ -458,6 +488,10 @@ limits, data-residency terms, whether recording is needed.
 
 ## DEC-11 — Secure paid video at launch
 
+> **Status: DECIDED — Option A; HLS/DASH and DRM V1.1+** (Product Owner, 2026-09-15). Recorded in
+> [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md#dec-11--secure-paid-video-at-launch). The analysis below is kept as the record of the
+> options considered.
+
 **1. Current implemented behaviour.** Four distinct things exist:
 
 | Content | What it is | How it is stored and served today |
@@ -487,8 +521,8 @@ at launch. C. Full DRM at launch.
 | Cost / time | lowest | medium-high | high |
 
 **4. Recommendation (not decision): A for V1.** Keep deliveries as authorized protected files; harden
-within the existing design: malware scanning (`SEC-04`), no-store caching on content responses where missing,
-the viewer watermark, and clear terms that deliveries are for the buyer's personal use. Re-evaluate B/C
+within the existing design: malware scanning (`SEC-04`), keeping the no-store/nosniff content headers (verified
+in RC2: already sent by the content endpoints and globally for `/api`), the viewer watermark, and clear terms that deliveries are for the buyer's personal use. Re-evaluate B/C
 only if a product that sells the same video to multiple students is planned (V1.1+).
 
 **5. Product impact.** Teachers deliver short videos within the 50 MB limit (longer recordings need
@@ -513,6 +547,11 @@ typical teacher recording length (to test whether 50 MB per file is enough).
 ---
 
 ## DEC-12 — Production hosting and data location
+
+> **Status: OPEN.** Product Owner's preferred direction recorded: managed PaaS, single application instance for
+> V1, managed SQL Server-compatible database, private durable object storage, managed secret store,
+> production observability. The provider and physical data region remain open pending Saudi
+> data-residency/legal advice and confirmed service availability; no Saudi region is assumed for any cloud.
 
 **1. Current architecture the repository expects.**
 
@@ -708,3 +747,69 @@ their UX and contract gates written after the decision.
 - **Ready on sign-off:** PAY-01, INF-03, INF-04, OBS-01, PAY-04a (with recommendations DEC-04 = C, DEC-12 = S1).
 - **Gate-writing can start on sign-off** (documentation, then Ready): PROD-01, FIN-02, FIN-05, FIN-06, MEET-01,
   UX-09; and, independent of decisions, FIN-01, FIN-07 and UX-01…08.
+
+---
+
+## Post-decision recalculation (2026-09-15, after DEC-01, 02, 04, 05, 06, 10, 11)
+
+Calculated by the blocker-count validation over the tables in [`V1_RELEASE_BLOCKERS.md`](./V1_RELEASE_BLOCKERS.md).
+
+| Measure | Before | After |
+|---------|--------|-------|
+| V1 blocker tickets | 50 | **44** (−7 closed decisions, +UX-09; PAY-04 → PAY-04a, PAY-04b to V1.1) |
+| Open blocking decisions | 9 | **2** (DEC-08, DEC-12) |
+| Directly blocked by an open decision | 14 | **7** — PAY-01 (contract sign-off only), SEC-04, INF-03, INF-04, INF-07, OBS-01, LEG-01 |
+| Transitively decision-dependent | 21 | **18** — FIN-02…05, PAY-01…03, PAY-04a, SEC-04, INF-03, INF-04, INF-07, OBS-01, OBS-02, DATA-01, REL-01, QA-01, LEG-01 |
+| Independent of open decisions | 20 | **24** — adds PROD-01, FIN-06, MEET-01, UX-09 |
+| Ready now | 10 | **9 + QA-02** (unchanged set; QA-02's dispute step waits for FIN-07, and it now includes the reschedule journey) |
+
+**Newly unblocked by the decisions** (no longer waiting on any owner decision): PROD-01 (DEC-01), FIN-06 (DEC-05),
+MEET-01 (DEC-10), UX-09 (created by DEC-02). FIN-02 and FIN-05 are released from DEC-04 but now wait on
+PAY-04a, which waits on PAY-01, whose contract sign-off waits on DEC-08. LEG-01 is released from DEC-05 but
+still waits on DEC-08. QA-01 no longer waits on DEC-06.
+
+**Not yet Ready despite being unblocked:** PROD-01, FIN-06 and UX-09 still need their UX (and for PROD-01/UX-09
+contract) gates written; MEET-01 needs its provider selected and its contract gate written.
+
+**Critical path now:** DEC-08 advice (for PAY-01 contract sign-off) → PAY-01 provider and payout-capability
+evaluation (M; evaluation can start now) → PAY-04a (L) → FIN-02 (M) → FIN-03 (M) → FIN-05 (M) → QA-01 (M) →
+launch. Near-critical: PAY-01 → PAY-02 (L) → PAY-03 (M) → QA-01; DEC-12 → INF-03 → DATA-01/REL-01 → QA-01.
+
+```mermaid
+flowchart LR
+  D08[DEC-08 VAT - OPEN] --> PAY01[PAY-01 provider + payout evaluation]
+  D12[DEC-12 host/region - OPEN] --> INF03[INF-03] --> DATA01[DATA-01]
+  INF03 --> REL01[REL-01]
+  D12 --> INF04[INF-04] --> REL01
+  D12 --> INF07[INF-07]
+  INF02[INF-02] --> INF07
+  D12 --> SEC04[SEC-04]
+  D12 --> OBS01[OBS-01] --> OBS02[OBS-02]
+  D08 --> LEG01[LEG-01]
+  PAY01 --> PAY02[PAY-02] --> PAY03[PAY-03]
+  FIN06[FIN-06] --> PAY03
+  PAY01 --> PAY04a[PAY-04a]
+  PAY04a --> FIN02[FIN-02] --> FIN03[FIN-03]
+  FIN01[FIN-01] --> FIN03
+  FIN02 --> FIN04[FIN-04]
+  FIN03 --> FIN05[FIN-05]
+  PAY04a --> FIN05
+  FIN01 --> UX02[UX-02]
+  UX01[UX-01] --> UX03[UX-03]
+  UX02 --> UX03
+  FIN07[FIN-07] --> QA02[QA-02]
+  PROD01[PROD-01] --> QA01[QA-01]
+  MEET01[MEET-01] --> QA01
+  UX09[UX-09] --> QA01
+  PAY03 --> QA01
+  FIN04 --> QA01
+  FIN05 --> QA01
+  UX03 --> QA01
+  QA02 --> QA01
+  DATA01 --> QA01
+  REL01 --> QA01
+  SEC04 --> QA01
+  OBS02 --> QA01
+  LEG01 --> QA01
+  QA01 --> LAUNCH((V1 launch))
+```

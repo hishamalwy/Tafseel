@@ -1,6 +1,7 @@
 # Tafseel V1 Production Readiness
 
-**Status:** the definitive launch checklist · Release Control 1, 2026-09-15, from `bec03a8`.
+**Status:** the definitive launch checklist · Release Control 1, 2026-09-15, from `bec03a8`; updated in
+Release Control 2 with the Product Owner decisions ([owner decisions](./V1_OWNER_DECISIONS.md)).
 Supersedes the July checklist in [`docs/production-checklist.md`](../production-checklist.md) (its items
 are carried into this file).
 
@@ -11,9 +12,9 @@ category — there is **no overall percentage**, because the categories are not 
 
 | Category | ✅ | Total | Ready |
 |----------|----|-------|-------|
-| Product completeness | 8 | 17 | **47%** |
-| UX readiness | 3 | 10 | **30%** |
-| Financial readiness | 3 | 9 | **33%** |
+| Product completeness | 11 | 17 | **65%** |
+| UX readiness | 3 | 11 | **27%** |
+| Financial readiness | 6 | 9 | **67%** |
 | Security | 5 | 10 | **50%** |
 | Providers | 1 | 7 | **14%** |
 | Infrastructure | 3 | 11 | **27%** |
@@ -23,7 +24,7 @@ category — there is **no overall percentage**, because the categories are not 
 | Legal / operations | 0 | 2 | **0%** |
 | Rollback / recovery | 1 | 2 | **50%** |
 
-**Launch decision:** not ready. Tafseel is **50 blocker tickets** from V1 production readiness.
+**Launch decision:** not ready. Tafseel is **44 blocker tickets** from V1 production readiness.
 
 ---
 
@@ -43,10 +44,10 @@ category — there is **no overall percentage**, because the categories are not 
 | P10 | Admin payout verification and withdrawal processing | ❌ | FIN-04, FIN-05 |
 | P11 | Admin refund | ❌ | FIN-06 |
 | P12 | Admin dispute handling complete (message parties, resolve) | ❌ | FIN-07 |
-| P13 | Catalog price boundaries governed by Admin | ⛔ | DEC-01, PROD-01 |
-| P14 | Accepted-price rule confirmed | ⛔ | DEC-02 |
-| P15 | Live sessions in or out of V1 | ⛔ | DEC-10 |
-| P16 | Protected video streaming requirement decided | ⛔ | DEC-11 |
+| P13 | Catalog price boundaries governed by Admin (V1 values decided — DEC-01) | ❌ | PROD-01 |
+| P14 | Accepted-price rule confirmed | ✅ | DEC-02 decided (Contract §3.2) |
+| P15 | Live sessions in or out of V1 | ✅ | DEC-10 decided: in V1 |
+| P16 | Protected video streaming requirement decided | ✅ | DEC-11 decided: private files in V1; streaming/DRM V1.1+ |
 | P17 | Built-but-unproven V1 actions proven in the browser (clarification reply, cancel request, cancel unpaid order, dispute) | ❌ | QA-02 |
 
 ## 2. UX readiness
@@ -63,6 +64,7 @@ category — there is **no overall percentage**, because the categories are not 
 | U8 | No duplicate paths to the same goal | ❌ | UX-05 |
 | U9 | All customer-facing screens verified in Arabic at 390px | ❌ | UX-06 |
 | U10 | No dead or misleading controls (unredeemable promo codes, disabled AI assistant) | ❌ | UX-07, UX-08 |
+| U11 | Agreed price disclosed when it differs from the listed price (DEC-02) | ❌ | UX-09 |
 
 ## 3. Financial readiness
 
@@ -71,10 +73,10 @@ category — there is **no overall percentage**, because the categories are not 
 | F1 | Escrow, double-entry ledger, idempotent payments, reconciliation implemented and tested | ✅ | `FinancialSafetyTests`, `EarningsMaturityConcurrencyTests`, `Phase7FinancialTests` (SQL Server 223/223) |
 | F2 | Earnings pending clearance until the dispute window ends; maturity worker | ✅ | `EarningsMaturityConcurrencyTests`; 3B journeys show Pending (0) |
 | F3 | Open-request order created exactly once on payment | ✅ | `OpenMarketplaceTests`, `wave3b-open-marketplace` |
-| F4 | Commercial fees confirmed | ⛔ | DEC-06 |
-| F5 | Refund policy decided | ⛔ | DEC-05 |
-| F6 | Payout mechanism decided | ⛔ | DEC-04 |
-| F7 | Money-out screens (teacher and admin) | ❌ | FIN-01…FIN-05 |
+| F4 | Commercial fees confirmed | ✅ | DEC-06 decided (Contract §3.7, §5) |
+| F5 | Refund policy decided | ✅ | DEC-05 decided: full refunds only (Contract §3.11) |
+| F6 | Payout mechanism decided | ✅ | DEC-04 decided: `IPayoutProvider` + audited manual fallback (Contract §3.10) |
+| F7 | Money-out screens (teacher and admin) and payout execution | ❌ | FIN-01…FIN-05, PAY-04a |
 | F8 | Refund operation available to Admin | ❌ | FIN-06 |
 | F9 | Provider sandbox financial scenarios passed | ❌ | PAY-03 |
 
@@ -100,8 +102,8 @@ category — there is **no overall percentage**, because the categories are not 
 | V1 | Payment provider selected and onboarded | ❌ | PAY-01 |
 | V2 | Production payment adapter | ❌ | PAY-02 |
 | V3 | Payment sandbox verification | ❌ | PAY-03 |
-| V4 | Payout execution | ⛔ | DEC-04, PAY-04 |
-| V5 | Production meeting provider (if live sessions launch) | ⛔ | DEC-10, MEET-01 |
+| V4 | Payout execution (`IPayoutProvider`, manual fallback, provider payouts if safe) | ❌ | PAY-01, PAY-04a |
+| V5 | Production meeting provider (live sessions are in V1) | ❌ | MEET-01 |
 | V6 | Email from a verified domain | ❌ | INF-06 |
 | V7 | Private object storage adapter (Azure Blob) implemented | ✅ | `AzureBlobFileStorageService`; Production requires it |
 
@@ -114,7 +116,7 @@ category — there is **no overall percentage**, because the categories are not 
 | I3 | Publish, publish validation and deploy-gate tests | ✅ | `validate-publish.ps1`; deploy gates 57/57 |
 | I4 | Docker image built and probed in CI (G-20) | ❌ | INF-01 |
 | I5 | GitHub environments, protected `main`, workflows green on GitHub | ❌ | INF-02 |
-| I6 | Production hosting target and data location decided | ⛔ | DEC-12 |
+| I6 | Production hosting provider and data region decided (direction recorded: managed PaaS, single instance, managed SQL Server-compatible database, private object storage, managed secrets, observability) | ⛔ | DEC-12 (open: data-residency/legal advice, service availability) |
 | I7 | Production SQL Server provisioned (encryption, least privilege, backups) | ❌ | INF-03 |
 | I8 | Shared durable Data Protection keys | ❌ | INF-04 |
 | I9 | Production private blob container configured | ❌ | INF-05 |
@@ -151,7 +153,7 @@ category — there is **no overall percentage**, because the categories are not 
 
 | # | Item | State | Evidence / ticket |
 |---|------|-------|-------------------|
-| L1 | VAT / e-invoicing position | ⛔ | DEC-08 |
+| L1 | VAT / e-invoicing position — qualified Saudi legal/tax advice required before provider contract and checkout/invoice wording | ⛔ | DEC-08 (open) |
 | L2 | Terms, privacy, refund, cancellation, dispute, safeguarding policies reviewed and published (AR/EN) | ❌ | LEG-01 |
 
 ## 11. Rollback / recovery

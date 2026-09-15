@@ -1,7 +1,7 @@
 # Tafseel Product Contract
 
-**Status:** authoritative · Release Control 1 (V1 freeze), 2026-09-15 · branch `release/rc1-v1-freeze`
-from `bec03a8` (Wave 3B closed).
+**Status:** authoritative · Release Control 1 (V1 freeze), 2026-09-15 · updated in Release Control 2 with
+the Product Owner decisions DEC-01, 02, 04, 05, 06, 10 and 11 ([Owner decisions](../releases/V1_OWNER_DECISIONS.md)); DEC-08 and DEC-12 remain open.
 
 This is the highest-level product and business reference for Tafseel. It describes the business
 model **as implemented** in the code, the tests and the browser journeys proven in Waves 1–3B.
@@ -92,18 +92,30 @@ subject**: title, description, price, delivery hours, included revisions, active
 For a **live session** the offering price is an **hourly** rate: a booking costs
 `price × duration ÷ 60`.
 
-> **DECISION REQUIRED (DEC-01 — pricing boundaries).** The rule is implemented, but the canonical
-> Catalog Services are created with default boundaries of **0.01–1,000,000 SAR** (asynchronous) and
-> **30–1,000,000 SAR** (live). In practice there is no range until Admin sets one, and **Admin has
-> no screen to edit a Catalog Service's policy** (API `PUT /admin/catalog/services/{id}` exists; UI
-> does not — matrix J13-03). V1 blocker: agree real ranges and give Admin a way to set them
-> (`PROD-01`).
+**V1 Catalog Service policy — DECIDED (DEC-01, 2026-09-15).** These are V1 platform guardrails owned by
+Admin; teachers price their Teacher Offerings only inside them.
 
-> **DECISION REQUIRED (DEC-02 — accepted price).** When a teacher accepts a Direct Request the
-> **final price** is checked against the Catalog Service range only; it may differ from the price
-> on the teacher's offering (proven: an offering at 100 accepted at 150) and is not bounded by the
-> student's optional budget. The student sees the accepted price before paying and can walk away.
-> Confirm this is intended.
+| Catalog Service | Minimum | Maximum | Default | Recommended | Delivery hours (min / default / recommended / max) | Revisions (default / max) |
+|-----------------|--------:|--------:|--------:|------------:|-----------------------------------------------------|---------------------------|
+| `recorded_explanation` | 50 SAR | 800 SAR | 120 SAR | 120 SAR | 12 / 48 / 48 / 336 | 2 / 5 |
+| `assignment_guidance` | 60 SAR | 1,000 SAR | 150 SAR | 150 SAR | 24 / 72 / 72 / 336 | 2 / 3 |
+| `exam_revision` | 80 SAR | 1,500 SAR | 200 SAR | 200 SAR | 24 / 72 / 72 / 240 | 1 / 3 |
+| `live_session` | 60 SAR/hour | 600 SAR/hour | 150 SAR/hour | 150 SAR/hour | — (durations 30, 60, 90, 120 min) | 0 / 0 |
+
+The delivery and revision limits satisfy the domain's hard constraints (async delivery 1–8,760 h with
+min ≤ default/recommended ≤ max; revisions 0–20 with default ≤ max; live sessions zero revisions and
+allowed durations). The recommended delivery time equals the default because none was specified
+separately. **These values are not yet applied in any environment:** today's databases still hold the
+creation defaults (0.01–1,000,000 SAR async, 30–1,000,000 SAR/hour live) and Admin has no policy editor
+(`PUT /admin/catalog/services/{id}` exists; no screen — matrix J13-03). `PROD-01` provides the editor;
+applying the values and repricing non-compliant offerings is part of launch preparation.
+
+**Accepted price — DECIDED (DEC-02, 2026-09-15).** A teacher may accept a Direct Request at a final price
+different from the listed Teacher Offering price, provided it stays inside the Admin Catalog Service
+policy, the student sees the final amount before paying, and the student is not charged until they
+explicitly proceed with payment. The student's optional budget is **guidance, not a server cap**. When the
+agreed price differs from the listed price, the request, order and checkout screens must show the listed
+price, the agreed price and the final amount payable (`UX-09`, not yet built).
 
 ### 3.3 Learning Request
 *Code: `LearningRequest`.* The student's request for work. It has a **sourcing mode**:
@@ -193,6 +205,14 @@ Rules:
   dispute window has passed since the last delivery, unless a dispute is open.
 - Either participant may cancel only before payment.
 - Extensions (asking for more time) exist in the API; there is no UI in V1 (§9).
+- **Deliveries are private order files — DECIDED (DEC-11, 2026-09-15).** V1 paid asynchronous deliveries
+  are private, authorized files for the order's participants, not a reusable streaming-video product.
+  V1 hardening: private storage; authorized content endpoints (they already send `private, no-store`,
+  `nosniff`, same-origin resource policy and inline disposition); no public or permanent storage URLs;
+  the in-app viewer watermark where applicable; malware scanning (`SEC-04`); personal-use and copyright
+  terms (`LEG-01`). An authorized participant receives the file, so **Tafseel does not claim to prevent
+  saving or screen recording**. HLS/DASH streaming and DRM are V1.1+ and only if reusable multi-buyer
+  video content is introduced.
 
 ### 3.7 Payment
 *Code: `Payment`.* One payment per payable (Order, Live Session Booking, or reserved Open Request),
@@ -210,7 +230,9 @@ escrow**. Only the mock provider exists today (§8). Worked examples:
 
 ### 3.8 Live Session Booking
 *Code: `LiveSessionBooking`.* A scheduled one-to-one call of a live-session offering. **A separate
-business entity from Order — never call it an Order.**
+business entity from Order — never call it an Order.** **Part of V1 — DECIDED (DEC-10, 2026-09-15).** The
+production meeting provider (`MEET-01`) must preserve the booking, join-window, authorization, completion,
+no-show and settlement lifecycle below; the mock provider stays forbidden in Production.
 
 - Booked into a free slot of the teacher's weekly availability (30-minute steps by default),
   30/60/90/120 minutes, price = hourly offering price × duration ÷ 60 (+ optional emergency premium,
@@ -258,18 +280,38 @@ teacher requests a withdrawal of at least 50 SAR from Available; Admin approves 
 external transfer reference) or rejects, in which case the amount returns to Available. Expected
 settlement: 3 business days.
 
-> **DECISION REQUIRED (DEC-04 — how payouts are actually paid).** The platform stores only a masked
-> destination, so an Admin cannot execute a bank transfer from the data Tafseel holds. Decide the V1
-> payout mechanism (manual bank transfer with full details held securely, or a payout provider) and
-> its compliance requirements. No teacher or Admin UI exists yet (matrix J12-02..04).
+**Payout architecture — DECIDED (DEC-04, 2026-09-15).** `IPayoutProvider` is the permanent payout
+architecture. V1 must provide: a provider-independent payout interface; an audited manual bank-transfer
+adapter as fallback; a provider/transfer reference on every completed withdrawal; reconciliation; secure
+handling of payout destination information, with **no plaintext full bank destination stored casually in
+the application database**. An automated payout adapter may replace or sit beside the manual one **without
+changing ledger semantics** (pending clearance → available → pending withdrawal → completed/returned).
+Before the manual adapter is built, `PAY-01` evaluates the marketplace/payout capabilities of suitable
+Saudi providers, at minimum Moyasar and Tap Payments; if the selected payment provider can safely support
+marketplace seller payouts in V1, the automated adapter is preferred and the audited manual fallback is kept
+(`PAY-04a`). Any other automated adapter not used in V1 is V1.1 (`PAY-04b`). Today the destination is
+stored masked, there is no transfer mechanism and no teacher or Admin UI (matrix J12-02..04).
 
 ### 3.11 Refund
 Admin refunds a confirmed payment **in full** with a mandatory reason (idempotent). Disputes resolve
 with *Refund student*, *Release teacher* or *No financial action*; the dispute path and the ledger
 decide whether money leaves escrow, pending or available balances.
 
-> **DECISION REQUIRED (DEC-05 — refund policy).** Only full refunds exist. Decide whether V1 needs
-> partial refunds and the customer-facing refund policy. No Admin refund UI exists (J14-04).
+**V1 refund policy — DECIDED (DEC-05, 2026-09-15): full monetary refunds only**, following the existing
+lifecycle rules:
+
+| Situation | V1 rule |
+|-----------|---------|
+| Unpaid order or booking cancelled | no money moved |
+| Teacher cancels a live session | full refund |
+| Teacher no-show (confirmed or auto-finalized) | full refund |
+| Student cancels a live session ≥ 24 h before start | full refund |
+| Student cancels < 24 h before start, or student no-show | no refund; escrow released to the teacher (current domain rule) |
+| Paid order, money still held, no dispute | Admin may refund in full |
+| Contested delivered work | financial resolution only through a dispute |
+| Dispute outcome | full refund to the student / release to the teacher / no financial action |
+
+Partial refunds are V1.1. No Admin refund UI exists yet (J14-04, `FIN-06`).
 
 ### 3.12 Dispute
 Opened by a participant on a paid purchase:
@@ -396,16 +438,22 @@ flowchart LR
 | Live settlement auto-finalize | 24 h | `LiveSessions:SettlementReviewHours` |
 | Emergency premium | 50% | `LiveSessions:EmergencyPremiumPercent` |
 
-> **DECISION REQUIRED (DEC-06 — fees).** Confirm the commercial values: 8% student fee on Orders and
-> 15% teacher commission on Orders and Live Session Bookings (live sessions carry no student fee).
+**Commercial fees — DECIDED (DEC-06, 2026-09-15).** Orders: student fee 8% of the base/agreed price and
+teacher commission 15% of the base/agreed price. Live sessions: no additional student fee in V1; teacher
+commission 15% of the booking total. The fee percentages snapshotted on each existing Order and Live Session
+Booking remain authoritative; historical and current records are not altered. Payment-provider fees and
+VAT are separate costs and are **not** included in these percentages. Worked examples:
+[Decision Pack DEC-06](../releases/V1_DECISION_PACK.md#dec-06--commercial-fees).
 
 > **DECISION REQUIRED (DEC-07 — emergency premium).** The booking API accepts a client-supplied
 > `emergency` flag that adds 50%, but the server defines no rule for what qualifies and the slot API
 > never marks a slot as emergency, so the client never offers it. Decide the rule, or disable the
 > premium for V1.
 
-> **DECISION REQUIRED (DEC-08 — VAT and invoicing).** The code has no VAT, tax or invoice concept.
-> Confirm the Saudi tax and e-invoicing obligations for the launch entity before real payments.
+> **DECISION REQUIRED (DEC-08 — VAT and e-invoicing) — OPEN.** The code has no VAT, tax or invoice
+> concept. **Qualified Saudi legal/tax advice is required before the production payment-provider
+> contract/sign-off and before final checkout or invoice wording.** No tax behaviour is implemented until
+> the tax position is decided.
 
 ---
 
@@ -447,11 +495,12 @@ Summary; the detailed inventory and the proposed navigation are in
 | Capability | Today | Production rule |
 |------------|-------|-----------------|
 | Payments | Mock provider + simulator (Development/Staging) | Production refuses `Payments:Provider=Mock` and the simulator; a real `IPaymentProvider` must be registered |
-| Meetings | Mock link provider | Production refuses the mock; Zoom / Google Meet / Microsoft Teams adapter must be registered |
-| Payouts | none (manual Admin processing) | DEC-04 |
+| Meetings | Mock link provider | Production refuses the mock; a real adapter (Zoom / Google Meet / Microsoft Teams are the names the startup validation expects) must preserve the live-session lifecycle (DEC-10, `MEET-01`) |
+| Payouts | none (Admin records a reference; no transfer mechanism) | `IPayoutProvider` with an audited manual bank-transfer fallback and, if safely supported, the payment provider's seller payouts (DEC-04, `PAY-04a`) |
 | Files | Local (dev) / Azure Blob private container | Production requires Azure Blob |
 | Email | Resend | verified sending domain required |
 | AI assistant | Groq, `Ai.Enabled` off outside Development | optional |
+| Hosting | staging on IIS; production host-agnostic deploy hook | **OPEN (DEC-12).** Preferred direction recorded: managed PaaS, single application instance for V1, managed SQL Server-compatible database, private durable object storage, managed secret store, production observability. Provider and physical data region are open pending Saudi data-residency/legal advice and confirmed service availability. |
 
 ---
 
@@ -467,11 +516,13 @@ Recorded so they are not rediscovered by every audit. Each has a backlog or bloc
 | Teacher setup ordering | `GET /teachers/me` returns an empty profile until "About you" is saved; the editor shows the lists after that first save | V1.1 `B11-04` (UX copy only) |
 | Docker image CI (G-20) | never built; Docker not installed locally, nothing pushed | blocker `INF-01` |
 | Credential rotation | seed/UAT password in pushed history; four staging host secrets | blockers `SEC-01`, `SEC-02` |
-| Real providers | payments, meetings, payouts not implemented | `PAY-*`, `MEET-01`, `DEC-04` |
+| Real providers | payments, meetings, payouts not implemented | `PAY-01…03`, `PAY-04a`, `MEET-01` |
 | Money-out / admin finance UX | balance rendered by the generic list; no payout profile, withdrawal, admin payout or refund screens | `FIN-*` |
 | Coupons | admin coupon list exists, toggle broken (J13-04); **no coupon field in checkout**, while the landing promo shows codes | DEC-09, `UX-07` |
 | Emergency premium | API flag only (DEC-07) | DEC-07 |
-| VAT / invoices | absent | DEC-08 |
+| VAT / invoices | absent | DEC-08 (open; legal/tax advice required) |
+| Partial refunds | not implemented; V1 is full refunds only (DEC-05) | V1.1 `B11-21` |
+| Streaming video / DRM | not implemented; V1 deliveries are private files (DEC-11) | V1.1+ `B11-22` |
 
 ---
 

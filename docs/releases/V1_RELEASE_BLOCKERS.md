@@ -22,33 +22,40 @@ exist in the contract/code, but the ticket's gate content is not yet written aga
 ## DEC — Business decisions (owner)
 
 Decisions are tickets: they block the work that depends on them. Each is closed by a written decision
-recorded in the Product Contract.
+recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md).
+
+### Open decisions
 
 | ID | Decision | Pri | Blocker | Blocks | Size | Business | UX | Contract | Completion evidence |
 |----|----------|-----|---------|--------|------|----------|----|----------|---------------------|
-| DEC-01 | V1 price boundaries (min/max SAR) per Catalog Service; today 0.01–1,000,000 async, 30–1,000,000 live | P1 | yes | PROD-01 | S | ⛔ | — | — | Table of approved ranges in Contract §3.2 |
-| DEC-02 | May a teacher accept a direct request at a price different from their offering price, and above the student's budget? | P1 | yes | (rule confirmation; may create a ticket) | S | ⛔ | — | — | Contract §3.2 updated |
-| DEC-04 | Payout mechanism: manual bank transfer (secure full bank details) or payout provider; compliance | P1 | yes | FIN-02, FIN-05, PAY-04 | S | ⛔ | — | — | Contract §3.10 updated; provider/process named |
-| DEC-05 | Refund policy: full only or partial; customer-facing refund and cancellation terms | P1 | yes | FIN-06, LEG-01 | S | ⛔ | — | — | Contract §3.11 updated |
-| DEC-06 | Confirm commercial fees: 8% student fee + 15% teacher commission | P1 | yes | QA-01 | S | ⛔ | — | — | Contract §5 confirmed; config values signed off |
-| DEC-08 | VAT and e-invoicing obligations for the launch entity | P1 | yes | PAY-01, LEG-01 (PAY-02, PAY-03 through PAY-01) | S | ⛔ | — | — | Written legal/tax position; follow-up tickets if required |
-| DEC-10 | Are live sessions enabled at launch? | P1 | yes | MEET-01, scope of QA-01 | S | ⛔ | — | — | V1_SCOPE §6 marked in or out |
-| DEC-11 | Is protected paid **video streaming** (beyond authorized file download) required at launch? | P1 | yes | possible new SEC/MEDIA tickets | S | ⛔ | — | — | V1_SCOPE §11 row confirmed |
-| DEC-12 | Production hosting target and data location (host, region, database, storage account) | P1 | yes | INF-03, INF-04, INF-07, SEC-04, OBS-01 (DATA-01, REL-01, OBS-02 transitively) | S | ⛔ | — | — | Named environment and region in `PRODUCTION_READINESS.md` |
+| DEC-08 | VAT and e-invoicing obligations for the launch entity — **qualified Saudi legal/tax advice required before the production payment-provider contract/sign-off and before final checkout/invoice wording** | P1 | yes | PAY-01 (contract sign-off), LEG-01; transitively PAY-02, PAY-03, PAY-04a, FIN-02…05 | S | ⛔ | — | — | Written legal/tax position; TAX tickets added if required |
+| DEC-12 | Production provider and physical data region. Direction recorded (managed PaaS, single instance, managed SQL Server-compatible database, private durable object storage, managed secret store, observability); provider and region open pending data-residency/legal advice and service availability | P1 | yes | INF-03, INF-04, INF-07, SEC-04, OBS-01 (DATA-01, REL-01, OBS-02 transitively) | S | ⛔ | — | — | Named provider and region in `PRODUCTION_READINESS.md` |
 | DEC-03 | Completion after the dispute window has passed credits *Available* directly (not Pending) | P2 | no | — | S | ⛔ | — | — | Contract §3.9 confirmed |
 | DEC-07 | Emergency premium: define the server rule or disable for V1 | P3 | no | B11-17 | S | ⛔ | — | — | Contract §5 updated |
 | DEC-09 | Coupons at launch? (no checkout field today) | P2 | no | B11-08 | S | ⛔ | — | — | V1_SCOPE §3 row confirmed |
+
+### Decided (closed 2026-09-15 by the Product Owner)
+
+| ID | Decision | Pri | Blocker | Result | Size | Business | UX | Contract | Completion evidence |
+|----|----------|-----|---------|--------|------|----------|----|----------|---------------------|
+| DEC-01 | Catalog Service price boundaries — Option B, V1 table in Contract §3.2 | P1 | closed | PROD-01 unblocked | S | ✅ | — | — | Contract §3.2 table |
+| DEC-02 | Direct-request accepted price — Option B; budget is guidance | P1 | closed | UX-09 created | S | ✅ | — | — | Contract §3.2 |
+| DEC-04 | Payout mechanism — Option C, `IPayoutProvider` + audited manual fallback | P1 | closed | PAY-04 split into PAY-04a (V1) / PAY-04b (V1.1); FIN-02, FIN-05 unblocked from the decision | S | ✅ | — | — | Contract §3.10 |
+| DEC-05 | Refund policy — Option A, full refunds only; partial refunds V1.1 | P1 | closed | FIN-06 unblocked; LEG-01 waits only on DEC-08 | S | ✅ | — | — | Contract §3.11 |
+| DEC-06 | Commercial fees — Option A (orders 8% + 15%; live sessions 15% only) | P1 | closed | QA-01 no longer waits on fees | S | ✅ | — | — | Contract §3.7, §5 |
+| DEC-10 | Live sessions in V1 — Option A | P1 | closed | MEET-01 stays a blocker; reschedule is in QA-02 | S | ✅ | — | — | V1_SCOPE §6 |
+| DEC-11 | Secure paid video — Option A, private authorized files; streaming/DRM V1.1+ | P1 | closed | no new blockers; SEC-04 and LEG-01 scope confirmed | S | ✅ | — | — | Contract §3.6; V1_SCOPE §11 |
 
 ## FIN — Money out and finance operations
 
 | ID | Title | Pri | Blocker | Depends on | Size | Business | UX | Contract | Completion evidence |
 |----|-------|-----|---------|------------|------|----------|----|----------|---------------------|
 | FIN-01 | **Teacher earnings screen** — available, pending clearance, next clearance date, recent credits; product wording (J12-01) | P1 | yes | — | M | ◐ | ❌ | ◐ (`GET /withdrawals/balances`, `/teachers/me/business/analytics`) | Page spec; IT balance after completion shows pending then available (existing FinancialSafety tests); journey: complete order → teacher sees pending clearance amount, Arabic phone |
-| FIN-02 | **Teacher payout profile** — submit, see verification state and rejection reason (J12-02) | P1 | yes | DEC-04 | M | ⛔ | ❌ | ◐ (`GET/PUT /withdrawals/profile`) | Auth tests (other teacher 404); journey submit → pending → verified (after FIN-04) |
+| FIN-02 | **Teacher payout profile** — submit, see verification state and rejection reason; destination information handled as PAY-04a defines (J12-02) | P1 | yes | PAY-04a | M | ◐ | ❌ | ◐ (`GET/PUT /withdrawals/profile`) | Auth tests (other teacher 404); journey submit → pending → verified (after FIN-04) |
 | FIN-03 | **Withdrawal request and history** — minimum 50 SAR, from Available only, status, rejection returns funds (J12-03) | P1 | yes | FIN-01, FIN-02 | M | ◐ | ❌ | ◐ (`POST /withdrawals`, `GET /withdrawals/mine`, `/withdrawals/policy`) | Journey: available balance → request → Admin processes (FIN-05) → completed; below-minimum and unverified refusals |
 | FIN-04 | **Admin payout-profile verification** — queue, approve/reject with reason (J12-04) | P1 | yes | FIN-02 | S | ◐ | ❌ | ◐ (`GET /admin/payout-profiles`, `POST …/{teacherId}/review`) | Auth tests (non-admin 403); journey approve and reject |
-| FIN-05 | **Admin withdrawal processing** — pending queue, approve with transfer reference, reject with reason (J12-04) | P1 | yes | FIN-03, DEC-04 | M | ⛔ | ❌ | ◐ (`GET /admin/withdrawals`, `POST /withdrawals/{id}/process`) | Ledger assertions (pending → completed / returned); double-submit safe; journey |
-| FIN-06 | **Admin refund operation** — find payment, reason, confirmation stating amount, idempotent (J14-04) | P1 | yes | DEC-05 | M | ⛔ | ❌ | ◐ (`POST /payments/{id}/refund` + Idempotency-Key) | IT refund once under replay; reconciliation unchanged-balanced; journey |
+| FIN-05 | **Admin withdrawal processing** — pending queue, execute through `IPayoutProvider` (manual fallback: approve with transfer reference), reject with reason (J12-04) | P1 | yes | FIN-03, PAY-04a | M | ◐ | ❌ | ◐ (`GET /admin/withdrawals`, `POST /withdrawals/{id}/process`) | Ledger assertions (pending → completed / returned); double-submit safe; journey |
+| FIN-06 | **Admin refund operation** — full refunds only (DEC-05); find payment, reason, confirmation stating amount, idempotent (J14-04) | P1 | yes | — | M | ✅ | ❌ | ◐ (`POST /payments/{id}/refund` + Idempotency-Key) | IT refund once under replay; reconciliation unchanged-balanced; journey |
 | FIN-07 | **Admin dispute handling complete** — message both parties, see evidence, resolve with rationale (J10-02) | P1 | yes | — | M | ◐ | ❌ | ◐ (`POST /admin/disputes/{id}/messages`, start-review, resolve) | Journey: student opens non-delivery dispute → admin messages → resolves refund → balances correct |
 | FIN-08 | Reconciliation view readable by finance (not the generic card list) | P2 | no | OBS-01 | S | ◐ | ❌ | ◐ | Screen shows the reconciliation DTO with zero-issue state |
 
@@ -56,17 +63,17 @@ recorded in the Product Contract.
 
 | ID | Title | Pri | Blocker | Depends on | Size | Business | UX | Contract | Completion evidence |
 |----|-------|-----|---------|------------|------|----------|----|----------|---------------------|
-| PROD-01 | **Admin Catalog Service policy editor** — price min/max, default/recommended price, delivery hours, revisions, durations, active; shows teachers made non-compliant (J13-03 subset) | P1 | yes | DEC-01 | M | ⛔ | ❌ | ◐ (`GET /admin/catalog/services`, `PUT /admin/catalog/services/{id}`) | IT: narrowing a range marks offerings non-compliant and refuses out-of-range acceptance; journey: Admin sets range → teacher cannot price outside |
+| PROD-01 | **Admin Catalog Service policy editor** — price min/max, default/recommended price, delivery hours, revisions, durations, active; shows teachers made non-compliant (J13-03 subset) | P1 | yes | — | M | ✅ (V1 values: Contract §3.2) | ❌ | ◐ (`GET /admin/catalog/services`, `PUT /admin/catalog/services/{id}`) | IT: narrowing a range marks offerings non-compliant and refuses out-of-range acceptance; journey: Admin sets range → teacher cannot price outside |
 
 ## PAY / MEET — Providers
 
 | ID | Title | Pri | Blocker | Depends on | Size | Business | UX | Contract | Completion evidence |
 |----|-------|-----|---------|------------|------|----------|----|----------|---------------------|
-| PAY-01 | Select the production payment provider; merchant onboarding; sandbox credentials | P1 | yes | DEC-08 | M | ◐ | — | — | Signed provider agreement; sandbox keys in secret store |
+| PAY-01 | Select the production payment provider **and evaluate marketplace/seller-payout capabilities** of suitable Saudi providers (at minimum Moyasar and Tap Payments); merchant onboarding; sandbox credentials. The evaluation can proceed now; contract/sign-off waits for DEC-08 | P1 | yes | DEC-08 (contract sign-off) | M | ◐ | — | — | Written provider and payout-capability comparison; signed agreement; sandbox keys in secret store |
 | PAY-02 | Implement the production `IPaymentProvider` — hosted checkout/redirect, signed webhook verification, refunds; Production config | P1 | yes | PAY-01 | L | ◐ | ◐ (checkout redirect copy) | ◐ (`IPaymentProvider`, `POST /payments/webhooks/{provider}`) | Adapter tests; webhook signature and replay tests; startup validation accepts the provider in Production |
 | PAY-03 | Provider sandbox financial scenarios — success, failure, duplicate webhook, refund, escrow release, dispute settlement, reconciliation clean | P1 | yes | PAY-02, FIN-06 | M | ✅ | — | ◐ | Scenario log with provider references; reconciliation zero issues |
-| PAY-04 | Payout execution — provider integration or documented manual transfer procedure with controls | P1 | yes | DEC-04 | L | ⛔ | — | ⛔ | Procedure or adapter; test payout end to end |
-| MEET-01 | Production meeting provider adapter (Zoom / Google Meet / Microsoft Teams) — per-participant links, join window | P1 | yes (if DEC-10 = in) | DEC-10 | L | ◐ | — | ◐ (`ILiveSessionLinkProvider`) | Adapter tests; Production startup accepts provider; journey joins a real sandbox meeting |
+| PAY-04a | **V1 payout port + execution adapter** — `IPayoutProvider`; automated seller-payout adapter if PAY-01 shows the selected provider safely supports it, and the audited manual bank-transfer adapter as fallback in every case; provider/transfer reference; reconciliation; destination information held by the provider/bank or encrypted with restricted, audited access — never casually in plaintext; ledger semantics unchanged | P1 | yes | PAY-01 | L | ✅ (Contract §3.10) | — | ◐ (port to design) | Adapter tests; ledger unchanged (existing finance tests green); payout reconciliation report; end-to-end payout in sandbox or manual drill |
+| MEET-01 | Production meeting provider — select the provider, then implement the adapter preserving booking, join window, authorization, completion, no-show and settlement (DEC-10) | P1 | yes | — | L | ◐ | — | ◐ (`ILiveSessionLinkProvider`) | Adapter tests; Production startup accepts provider; journey joins a real sandbox meeting |
 
 ## SEC — Security
 
@@ -115,42 +122,55 @@ headroom so ordinary V1 work cannot hit the warning.
 | UX-06 | **Arabic phone verification** of customer screens not yet phone-proven: teacher setup (profile, offerings, availability, publication), booking, checkout for sessions, disputes, messages, request/offers/opportunity | P1 | yes | — | M | ✅ | ◐ | — | Journey screenshots at 390px AR with overflow and card-containment checks |
 | UX-07 | **Hide unredeemable promo codes** on the landing page until DEC-09 | P1 | yes | — | S | ✅ | ◐ | — | Landing shows no coupon code; spec |
 | UX-08 | **Hide the brief assistant when AI is disabled** (today it is shown and answers "unavailable") | P2 | yes | — | S | ✅ | ◐ | ◐ (capability source to confirm) | Spec: hidden when disabled; visible and working when enabled |
+| UX-09 | **Agreed price disclosure** (DEC-02) — when the accepted price differs from the listed Teacher Offering price, the request, order and checkout screens show the listed price, the agreed price and the final amount payable | P1 | yes | — | S | ✅ (Contract §3.2) | ◐ (fields defined; wording and layout to write) | ◐ (source of the listed price after acceptance to confirm) | Spec for each screen; journey: offering 100 accepted at 150 shows both prices and the total before payment, Arabic phone |
 
 ## QA / LEG — Release verification and legal
 
 | ID | Title | Pri | Blocker | Depends on | Size | Business | UX | Contract | Completion evidence |
 |----|-------|-----|---------|------------|------|----------|----|----------|---------------------|
-| QA-01 | **Final staging E2E** — every V1 MUST journey on a production-like environment with sandbox providers, fresh database, Arabic phone for customer journeys | P1 | yes | PAY-03, (MEET-01), FIN-*, UX-*, INF-02, DEC-06 | M | ✅ | — | ✅ | Journey logs and screenshots; no P0/P1 open |
-| QA-02 | **Browser journeys for built-but-unproven V1 actions** — answer a clarification, cancel a request, cancel an unpaid order, open and resolve a dispute (and reschedule if DEC-10 = in) | P1 | yes | FIN-07 (dispute resolve step) | M | ✅ | — | ✅ | Journey logs; defects become new tickets |
-| LEG-01 | Terms, privacy, refund, cancellation, dispute and safeguarding policies reviewed for the launch jurisdiction and published in Arabic and English | P1 | yes | DEC-05, DEC-08 | M | ◐ | ◐ | — | Legal sign-off; policy pages updated |
+| QA-01 | **Final staging E2E** — every V1 MUST journey on a production-like environment with sandbox providers, fresh database, Arabic phone for customer journeys | P1 | yes | PAY-03, PAY-04a, MEET-01, FIN-*, UX-*, INF-02 | M | ✅ | — | ✅ | Journey logs and screenshots; no P0/P1 open |
+| QA-02 | **Browser journeys for built-but-unproven V1 actions** — answer a clarification, cancel a request, cancel an unpaid order, open and resolve a dispute, propose and answer a live-session reschedule | P1 | yes | FIN-07 (dispute resolve step) | M | ✅ | — | ✅ | Journey logs; defects become new tickets |
+| LEG-01 | Terms, privacy, refund (full refunds only — DEC-05), cancellation, dispute, safeguarding and delivery personal-use/copyright (DEC-11) policies reviewed for the launch jurisdiction and published in Arabic and English | P1 | yes | DEC-08 | M | ◐ | ◐ | — | Legal sign-off; policy pages updated |
 
 ---
 
 ## Launch count
 
+Recalculated on 2026-09-15 after the Product Owner decisions, by the blocker-count validation over the
+tables above (rows whose Blocker column is "yes").
+
 | Measure | Count | Tickets |
 |---------|-------|---------|
-| **Total V1 blocker tickets** | **50** | DEC 9 · FIN 7 · PROD 1 · PAY 4 · MEET 1 · SEC 5 · INF 7 · OBS 2 · DATA 1 · REL 1 · ENG 1 · UX 8 · QA 2 · LEG 1 |
-| Ready for implementation now | **10** (OBS-02 has its gates but waits for OBS-01) | SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, QA-02 (QA-02 except its dispute-resolution step, which waits for FIN-07) |
-| Needing a business decision | **9 decisions**, directly blocking **14** further tickets | Decisions: DEC-01, 02, 04, 05, 06, 08, 10, 11, 12 · Directly blocked: PROD-01, FIN-02, FIN-05, FIN-06, PAY-01, PAY-04, MEET-01, SEC-04, INF-03, INF-04, INF-07, OBS-01, QA-01, LEG-01 |
-| Requiring external / provider work | **11** | PAY-01, PAY-02, PAY-03, PAY-04, MEET-01, SEC-01, SEC-02, INF-02, INF-03, INF-06, LEG-01 |
-| UX-only | **8** | UX-01 … UX-08 |
+| **Total V1 blocker tickets** | **44** (was 50) | DEC 2 · FIN 7 · PROD 1 · PAY 4 · MEET 1 · SEC 5 · INF 7 · OBS 2 · DATA 1 · REL 1 · ENG 1 · UX 9 · QA 2 · LEG 1 |
+| Change from Release Control 1 | −7 decisions closed, +1 UX-09; PAY-04 replaced by PAY-04a (PAY-04b → V1.1) | |
+| Ready for implementation now | **9**, plus QA-02 except its dispute-resolution step (waits for FIN-07) | SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01 |
+| Open blocking decisions | **2** | DEC-08 (legal/tax advice), DEC-12 (provider and region) |
+| Directly blocked by an open decision | **7** | PAY-01 (contract sign-off only), SEC-04, INF-03, INF-04, INF-07, OBS-01, LEG-01 |
+| Transitively dependent on an open decision | **18** | FIN-02, FIN-03, FIN-04, FIN-05, PAY-01, PAY-02, PAY-03, PAY-04a, SEC-04, INF-03, INF-04, INF-07, OBS-01, OBS-02, DATA-01, REL-01, QA-01, LEG-01 |
+| Independent of open decisions | **24** | FIN-01, FIN-06, FIN-07, PROD-01, MEET-01, SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-01…UX-09, QA-02 |
+| Requiring external / provider work | **11** | PAY-01, PAY-02, PAY-03, PAY-04a, MEET-01, SEC-01, SEC-02, INF-02, INF-03, INF-06, LEG-01 |
+| UX-only | **9** | UX-01 … UX-09 |
 | Security / infrastructure / operations | **17** | SEC-01…05, INF-01…07, OBS-01, OBS-02, DATA-01, REL-01, ENG-01 |
 | Product engineering (money-out, catalog) | **8** | FIN-01…07, PROD-01 |
 | Verification | **2** | QA-01, QA-02 |
-| Non-blocking tickets tracked here | 7 | DEC-03, DEC-07, DEC-09, FIN-08 and OPS-01…03 below |
+| Non-blocking tickets tracked here | 7 | DEC-03, DEC-07, DEC-09, FIN-08, OPS-01…03 (+ UX-10 to triage) |
 
-The category rows overlap on purpose (an external ticket can also be security); the first row is the
-single authoritative total.
+The category rows overlap on purpose; the first row is the single authoritative total.
 
-**Tafseel is 50 tickets away from V1 production readiness** — 49 if the owner decides live sessions do
-not launch in V1 (DEC-10 = out removes MEET-01; DEC-10 itself still has to be decided).
+**Tafseel is 44 tickets away from V1 production readiness.** DEC-08 may add TAX tickets and DEC-12 may add
+STOR-01 when they are decided; the count is recalculated then.
 
-> **Release Control 2:** the nine owner decisions are analysed in
-> [`V1_DECISION_PACK.md`](./V1_DECISION_PACK.md) (options, recommendations, dependency recalculation and
-> graph) and tracked in [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md). All nine are OPEN; the count
-> above is unchanged. Decisions may add tickets (UX-09 or ACC-01, PAY-04a/b split, TAX-*, LIVE-OFF-01,
-> MEDIA-*, STOR-01) — the count is recalculated when each decision is recorded.
+### Critical path after the decisions
+
+The longest chain is now the **payout chain**:
+**DEC-08 (contract sign-off) → PAY-01 provider + payout-capability evaluation (M; evaluation can start now)
+→ PAY-04a payout port + adapter (L) → FIN-02 (M) → FIN-03 (M, also after FIN-01) → FIN-05 (M) → QA-01 (M) →
+launch.**
+Parallel near-critical chains: PAY-01 → PAY-02 (L) → PAY-03 (M, also after FIN-06) → QA-01; and DEC-12 →
+INF-03 → DATA-01 / REL-01 → QA-01.
+
+> The Release Control 2 analysis and the decision records are in [`V1_DECISION_PACK.md`](./V1_DECISION_PACK.md)
+> and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md).
 
 ### Non-blocking operations tickets (SHOULD)
 
@@ -158,15 +178,16 @@ not launch in V1 (DEC-10 = out removes MEET-01; DEC-10 itself still has to be de
 |----|-------|-----|------------|------|
 | OPS-01 | Admin attention list (disputes, withdrawals, payout profiles, stuck sessions) as the Admin home | P2 | FIN-04, FIN-05, FIN-07 | M |
 | OPS-02 | Admin review moderation detail and hide/show (J7-02) | P2 | — | S |
-| OPS-03 | Admin resolution of a stuck live session (J8-08; endpoints exist) | P2 | DEC-10 | S |
+| OPS-03 | Admin resolution of a stuck live session (J8-08; endpoints exist) | P2 | — | S |
 | UX-10 | Order delivery form accepts the server's allowed types (DOCX, PPTX, ZIP are refused by the client check today) — found in RC2, to triage | P2 | — | S |
 
 ### Suggested order (not a plan commitment)
 
-1. Owner decisions DEC-01, 04, 05, 06, 08, 10, 11, 12 (all S) and the ready security items SEC-01, SEC-02.
-2. In parallel: INF-01, INF-02, INF-05, INF-06, SEC-03, SEC-05, ENG-01, QA-02.
-3. Money out: FIN-01 → FIN-02/FIN-04 → FIN-03/FIN-05; FIN-06, FIN-07; PROD-01.
-4. UX: UX-04, UX-05, UX-07, UX-08 → UX-01, UX-02 → UX-03 → UX-06.
-5. Providers: PAY-01 → PAY-02 → PAY-03; PAY-04; MEET-01 if in scope.
-6. Production environment: INF-03, INF-04, INF-07, SEC-04, OBS-01, OBS-02, DATA-01, REL-01, LEG-01.
+1. Obtain the DEC-08 legal/tax advice and the DEC-12 data-residency advice; start the PAY-01 provider and
+   payout-capability evaluation (Moyasar and Tap Payments at minimum) and the MEET-01 provider selection now.
+2. Ready tickets: SEC-01, SEC-02 first; then SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, QA-02.
+3. Gate writing (UX and contract) for PROD-01, FIN-01, FIN-06, FIN-07, UX-09 and UX-01…08, then build them.
+4. After PAY-01: PAY-04a → FIN-02/FIN-04 → FIN-03 → FIN-05; PAY-02 → PAY-03.
+5. After DEC-12: INF-03, INF-04, INF-07, SEC-04, OBS-01, OBS-02, DATA-01, REL-01; LEG-01 after DEC-08.
+6. UX: UX-04, UX-05, UX-07, UX-08, UX-09 → UX-01, UX-02 → UX-03 → UX-06.
 7. QA-01, then launch decision.
