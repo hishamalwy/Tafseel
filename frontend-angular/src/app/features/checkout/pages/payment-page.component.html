@@ -8,8 +8,14 @@
   @if (!loading() && unavailable() && !initiated()) {
     <div class="tf-pay-state" role="alert">
       <h1>{{ t('pay_unavailable_title', 'This payment is not available') }}</h1>
-      <p class="tf-pay-lede">{{ t('pay_unavailable_body', 'The order or session could not be found.') }}</p>
-      <a [href]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
+      @if (kind === 'open-request') {
+        <p class="tf-pay-lede" data-testid="reservation-unavailable">{{ t('pay_reservation_unavailable', 'The offer is no longer held for you: the reservation ran out or was released. Review the offers and select one again.') }}</p>
+        @if (payError()) { <p class="tf-pay-note" role="alert">{{ payError() }}</p> }
+        <a [routerLink]="['/requests', payableId, 'offers']" class="tf-pay-primary-link">{{ t('pay_back_to_offers', 'Back to the offers') }}</a>
+      } @else {
+        <p class="tf-pay-lede">{{ t('pay_unavailable_body', 'The order or session could not be found.') }}</p>
+        <a [href]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
+      }
     </div>
   }
 
@@ -84,6 +90,12 @@
             <strong><tf-price [amount]="ctx.payable.total" [currency]="ctx.payable.currency" /></strong>
           </div>
 
+          @if (ctx.payable.feeAtPayment) {
+            <p class="tf-pay-note" data-testid="fee-at-payment">{{ t('pay_fee_at_payment', 'The Tafseel service fee is added to the offer price when the payment starts; the amount charged is shown on the next screen.') }}</p>
+          }
+          @if (reservationSeconds() !== null) {
+            <p class="tf-pay-note" data-testid="checkout-reservation">{{ t('pay_reservation_left', 'The offer is held for you for') }} <strong class="tf-pay-mono">{{ reservationClock() }}</strong></p>
+          }
           <p class="tf-pay-note">{{ t('pay_funds_release', 'Funds release to the teacher after you accept the delivery.') }}</p>
           <p class="tf-pay-note">{{ t('pay_secure_blurb', 'Payments are processed over a secure connection.') }}</p>
 
@@ -99,7 +111,8 @@
             <p class="tf-pay-note">{{ t('pay_provider_method_note', 'You will be taken to our payment provider.') }}</p>
           }
 
-          <button type="button" class="tf-pay-cta" (click)="pay()"
+          @if (payError()) { <p class="tf-pay-note" role="alert" data-testid="pay-error">{{ payError() }}</p> }
+          <button type="button" class="tf-pay-cta" data-testid="pay-securely" (click)="pay()"
                   [disabled]="submitting()" [class.is-busy]="submitting()">
             {{ submitting() ? t('pay_submitting', 'Starting…') : t('pay_securely', 'Pay securely') }}
           </button>

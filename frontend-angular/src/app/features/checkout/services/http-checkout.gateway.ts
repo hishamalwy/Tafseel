@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of } from 'rxjs';
-import { LiveSessionLike, OrderLike, Payable } from '../models/payable';
+import { LiveSessionLike, OfferLike, OpenRequestLike, OrderLike, Payable } from '../models/payable';
 import { BookableService, BookingDraft, Slot, toDateKey } from '../models/booking';
 import {
   BookableTeacher, BookingGateway, CreatedBooking,
@@ -71,6 +71,14 @@ export class HttpPayableGateway implements PayableGateway {
         catchError(() => of(null))
       );
   }
+
+  openRequest(learningRequestId: string): Observable<OpenRequestLike> {
+    return this.http.get<OpenRequestLike>(`/api/v1/open-marketplace/requests/${encodeURIComponent(learningRequestId)}`);
+  }
+
+  offers(learningRequestId: string): Observable<readonly OfferLike[]> {
+    return this.http.get<OfferLike[]>(`/api/v1/open-marketplace/requests/${encodeURIComponent(learningRequestId)}/offers`);
+  }
 }
 
 @Injectable()
@@ -109,12 +117,14 @@ export class HttpMockCheckoutGateway implements MockCheckoutGateway {
   session(reference: string): Observable<MockCheckoutSession> {
     return this.http
       .get<{
-        providerReference?: string; orderId?: string | null;
+        providerReference?: string; orderId?: string | null; liveSessionBookingId?: string | null; learningRequestId?: string | null;
         amount?: number | null; currency?: string | null; status?: number | string;
       }>(`/api/v1/payments/mock/simulator?ref=${encodeURIComponent(reference)}`)
       .pipe(map(dto => ({
         providerReference: dto.providerReference || reference,
         orderId: dto.orderId ?? null,
+        liveSessionBookingId: dto.liveSessionBookingId ?? null,
+        learningRequestId: dto.learningRequestId ?? null,
         amount: dto.amount ?? null,
         currency: dto.currency || 'SAR',
         confirmed: isConfirmed(dto.status)

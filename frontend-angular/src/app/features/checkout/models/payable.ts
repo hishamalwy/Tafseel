@@ -8,7 +8,7 @@
  * nineteen places, which is what the legacy version did.
  */
 
-export type PayableKind = 'order' | 'live-session';
+export type PayableKind = 'order' | 'live-session' | 'open-request';
 
 export interface PriceLine {
   /** Translation key for the label; the UI resolves it. */
@@ -31,6 +31,10 @@ export interface Payable {
   readonly agreedDeliveryAt: string | null;
   readonly revisionAllowance: number | null;
   readonly categoryCode: string | null;
+  /** Open request only: the reservation the payment must beat. */
+  readonly reservationExpiresAt: string | null;
+  /** True when the platform fee is added by the server at payment and not known here. */
+  readonly feeAtPayment: boolean;
 }
 
 /** The raw order shape, as the API returns it. */
@@ -46,6 +50,17 @@ export interface OrderLike {
   teacherId?: string | null; learningRequestId?: string | null;
   agreedDeliveryAt?: string | null; revisionAllowance?: number | null;
   categoryCode?: string | null;
+}
+
+/** A reserved open request and its selected offer, as the marketplace endpoints return them. */
+export interface OpenRequestLike {
+  id: string; title?: string | null; status?: number | null; selectedOfferId?: string | null;
+  paymentReservationExpiresAt?: string | null; currency?: string | null;
+}
+
+export interface OfferLike {
+  id: string; teacherId?: string | null; amount?: number | null; currency?: string | null;
+  deliveryHours?: number | null; includedRevisions?: number | null;
 }
 
 export interface LiveSessionLike {
@@ -80,7 +95,9 @@ export const Payable = {
       learningRequestId: order.learningRequestId ?? null,
       agreedDeliveryAt: order.agreedDeliveryAt ?? null,
       revisionAllowance: order.revisionAllowance ?? null,
-      categoryCode: order.categoryCode ?? null
+      categoryCode: order.categoryCode ?? null,
+      reservationExpiresAt: null,
+      feeAtPayment: false
     };
   },
 
@@ -105,15 +122,43 @@ export const Payable = {
       learningRequestId: null,
       agreedDeliveryAt: null,
       revisionAllowance: null,
-      categoryCode: null
+      categoryCode: null,
+      reservationExpiresAt: null,
+      feeAtPayment: false
+    };
+  },
+
+  /**
+   * A reserved open request pays for its selected offer. The order does not exist yet: the server
+   * creates it when the payment succeeds, adding the student fee to the offer amount.
+   */
+  fromOpenRequest(request: OpenRequestLike, offer: OfferLike): Payable {
+    const amount = Number(offer.amount) || 0;
+    return {
+      kind: 'open-request',
+      id: request.id,
+      currency: offer.currency || request.currency || 'SAR',
+      title: request.title || '',
+      subtitleKey: 'pay_open_request_subtitle',
+      lines: [{ labelKey: 'pay_offer_price', amount }],
+      total: amount,
+      teacherId: offer.teacherId ?? null,
+      learningRequestId: request.id,
+      agreedDeliveryAt: null,
+      revisionAllowance: offer.includedRevisions ?? null,
+      categoryCode: null,
+      reservationExpiresAt: request.paymentReservationExpiresAt ?? null,
+      feeAtPayment: true
     };
   },
 
   /** The endpoint that starts a payment for this payable. */
   paymentPath(payable: Payable): string {
-    return payable.kind === 'order'
-      ? `/api/v1/payments/orders/${encodeURIComponent(payable.id)}`
-      : `/api/v1/payments/live-sessions/${encodeURIComponent(payable.id)}`;
+    switch (payable.kind) {
+      case 'order': return `/api/v1/payments/orders/${encodeURIComponent(payable.id)}`;
+      case 'open-request': return `/api/v1/payments/open-requests/${encodeURIComponent(payable.id)}`;
+      default: return `/api/v1/payments/live-sessions/${encodeURIComponent(payable.id)}`;
+    }
   },
 
   /**

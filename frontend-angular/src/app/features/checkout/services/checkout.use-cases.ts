@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AuthFailure } from '@core/auth/models/auth-failure';
-import { GUID, Payable, mockReference } from '../models/payable';
+import { GUID, Payable, PayableKind, mockReference } from '../models/payable';
 import { PAYABLE_GATEWAY, PAYMENT_GATEWAY, PaymentInitiation, TeacherSummary } from './checkout.ports';
 
 export interface CheckoutContext {
@@ -25,11 +25,11 @@ export class LoadCheckoutContext {
   private readonly payables = inject(PAYABLE_GATEWAY);
   private readonly payments = inject(PAYMENT_GATEWAY);
 
-  async execute(kind: 'order' | 'live-session', id: string, isArabic: boolean): Promise<CheckoutContext | null> {
+  async execute(kind: PayableKind, id: string, isArabic: boolean): Promise<CheckoutContext | null> {
     if (!GUID.test(id)) return null;
 
-    const payable = kind === 'order'
-      ? await this.findOrder(id, isArabic)
+    const payable = kind === 'order' ? await this.findOrder(id, isArabic)
+      : kind === 'open-request' ? await this.findReservedRequest(id)
       : await this.findLiveSession(id);
     if (!payable) return null;
 
@@ -55,6 +55,20 @@ export class LoadCheckoutContext {
     const orders = await firstValueFrom(this.payables.myOrders());
     const match = orders.find(o => String(o.id).toLowerCase() === id.toLowerCase());
     return match ? Payable.fromOrder(match, isArabic) : null;
+  }
+
+  /**
+   * Only a request still held for its selected offer is payable. The countdown on the page is a
+   * convenience; the server decides whether the reservation still stands when payment starts.
+   */
+  private async findReservedRequest(id: string): Promise<Payable | null> {
+    const [request, offers] = await Promise.all([
+      firstValueFrom(this.payables.openRequest(id)), firstValueFrom(this.payables.offers(id))
+    ]);
+    const expires = Date.parse(request.paymentReservationExpiresAt ?? '');
+    if (request.status !== 6 || !request.selectedOfferId || Number.isNaN(expires) || expires <= Date.now()) return null;
+    const offer = offers.find(o => o.id === request.selectedOfferId);
+    return offer ? Payable.fromOpenRequest(request, offer) : null;
   }
 
   private async findLiveSession(id: string): Promise<Payable | null> {
@@ -100,6 +114,7 @@ export class InitiatePayment {
       const failure = error as AuthFailure & { reason?: string };
       const alreadyInitiated =
         (error as { code?: string })?.code === 'payment_already_initiated'
+        || (error as { error?: { code?: string } })?.error?.code === 'payment_already_initiated'
         || failure?.message?.includes('payment_already_initiated');
 
       if (alreadyInitiated && mockEnabled) {

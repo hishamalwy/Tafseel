@@ -92,8 +92,12 @@ export class PaymentSimulatorPageComponent {
   });
 
   readonly cancelLink = computed(() => {
-    const orderId = this.session()?.orderId ?? this.order()?.id ?? '';
-    return orderId ? { path: '/checkout', query: { orderId } } : { path: DEFAULT_RETURN, query: {} };
+    const session = this.session();
+    const orderId = session?.orderId ?? this.order()?.id ?? '';
+    const query: Record<string, string> = orderId ? { orderId }
+      : session?.liveSessionBookingId ? { liveSessionId: session.liveSessionBookingId }
+      : session?.learningRequestId ? { learningRequestId: session.learningRequestId } : {};
+    return Object.keys(query).length ? { path: '/checkout', query } : { path: DEFAULT_RETURN, query };
   });
 
   async load(reference: string): Promise<void> {
@@ -107,6 +111,10 @@ export class PaymentSimulatorPageComponent {
     try {
       const session = await firstValueFrom(this.mock.session(reference));
       this.session.set(session);
+      // Back to what was paid for: the order, the live session, or the request that becomes an order.
+      this.returnPath = session.orderId ? `/orders/${session.orderId}`
+        : session.liveSessionBookingId ? `/live-sessions/${session.liveSessionBookingId}`
+        : session.learningRequestId ? `/requests/${session.learningRequestId}?paid=1` : DEFAULT_RETURN;
       if (session.confirmed) this.outcome.set('confirmed');
 
       // Order context is a nicety; the simulator works without it.

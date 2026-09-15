@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { LiveSessionLike, OrderLike, Payable } from '../models/payable';
+import { LiveSessionLike, OfferLike, OpenRequestLike, OrderLike, Payable } from '../models/payable';
 
 export interface TeacherSummary {
   readonly id: string;
@@ -22,6 +22,9 @@ export interface PayableGateway {
   teacher(teacherId: string): Observable<TeacherSummary | null>;
   /** How many files the originating request carried, for the context panel. */
   requestAttachmentCount(learningRequestId: string): Observable<number | null>;
+  /** The student's open request, with its reservation. */
+  openRequest(learningRequestId: string): Observable<OpenRequestLike>;
+  offers(learningRequestId: string): Observable<readonly OfferLike[]>;
 }
 
 /** Starting and resuming a payment. */
@@ -41,6 +44,8 @@ export const PAYMENT_GATEWAY = new InjectionToken<PaymentGateway>('PaymentGatewa
 export interface MockCheckoutSession {
   readonly providerReference: string;
   readonly orderId: string | null;
+  readonly liveSessionBookingId: string | null;
+  readonly learningRequestId: string | null;
   readonly amount: number | null;
   readonly currency: string;
   readonly confirmed: boolean;

@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { problemMessage } from '@core/http/problem-message';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -9,7 +10,7 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import { CheckoutContext, InitiatePayment, LoadCheckoutContext } from '../services/checkout.use-cases';
-import { mockReference } from '../models/payable';
+import { PayableKind, mockReference } from '../models/payable';
 
 /**
  * Checkout — ported from `Tafseel-Payment.dc.html`.
@@ -22,7 +23,7 @@ import { mockReference } from '../models/payable';
 @Component({
   selector: 'tf-payment-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [WorkflowHeaderComponent, ToastComponent, PriceComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent],
   templateUrl: './payment-page.component.html',
   styleUrl: './payment-page.component.css'
 })
@@ -53,7 +54,34 @@ export class PaymentPageComponent {
     const q = this.route.snapshot.queryParamMap;
     const orderId = (q.get('orderId') ?? '').trim();
     const sessionId = (q.get('liveSessionId') ?? '').trim();
-    void this.load(orderId ? 'order' : 'live-session', orderId || sessionId);
+    const requestId = (q.get('learningRequestId') ?? '').trim();
+    this.kind = orderId ? 'order' : requestId ? 'open-request' : 'live-session';
+    this.payableId = orderId || requestId || sessionId;
+    const timer = setInterval(() => this.tick(), 1000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    void this.load(this.kind, this.payableId);
+  }
+
+  kind: PayableKind = 'order';
+  payableId = '';
+  readonly now = signal(Date.now());
+  readonly payError = signal('');
+  /** Seconds left on an open request's reservation; display only, the server decides at payment. */
+  readonly reservationSeconds = computed(() => {
+    const expires = Date.parse(this.context()?.payable.reservationExpiresAt ?? '');
+    return Number.isNaN(expires) ? null : Math.max(0, Math.floor((expires - this.now()) / 1000));
+  });
+  readonly reservationClock = computed(() => {
+    const s = this.reservationSeconds() ?? 0;
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  });
+
+  private tick(): void {
+    this.now.set(Date.now());
+    if (this.kind === 'open-request' && this.reservationSeconds() === 0 && this.context() && !this.submitting()) {
+      this.context.set(null);
+      this.unavailable.set(true);
+    }
   }
 
   t(key: string, fallback = ''): string {
@@ -74,9 +102,9 @@ export class PaymentPageComponent {
   readonly serviceName = computed(() => {
     const payable = this.context()?.payable;
     if (!payable) return '—';
-    return payable.kind === 'order'
-      ? (payable.title || this.t('pay_order_title', 'Order'))
-      : this.t(payable.subtitleKey, 'Live session');
+    return payable.kind === 'live-session'
+      ? this.t(payable.subtitleKey, 'Live session')
+      : (payable.title || this.t('pay_order_title', 'Order'));
   });
 
   readonly deliveryValue = computed(() => {
@@ -98,6 +126,7 @@ export class PaymentPageComponent {
   readonly categoryValue = computed(() => {
     const payable = this.context()?.payable;
     if (!payable) return '—';
+    if (payable.kind === 'open-request') return this.t('pay_open_request_title', 'Open request');
     if (payable.kind !== 'order') return this.t('pay_live_session_title', 'Live session');
     if (!payable.categoryCode) return '—';
     // The legacy helper fell back to the raw code when no translation existed;
@@ -145,7 +174,7 @@ export class PaymentPageComponent {
   })));
 
   // ---- actions ----
-  async load(kind: 'order' | 'live-session', id: string): Promise<void> {
+  async load(kind: PayableKind, id: string): Promise<void> {
     this.loading.set(true);
     try {
       const context = await this.loadContext.execute(kind, id, this.locale.lang() === 'ar');
@@ -168,6 +197,7 @@ export class PaymentPageComponent {
     if (!context || this.submitting()) return;
 
     this.submitting.set(true);
+    this.payError.set('');
     try {
       const outcome = await this.initiate.execute(context.payable, context.mockEnabled);
       switch (outcome.kind) {
@@ -187,8 +217,11 @@ export class PaymentPageComponent {
           this.checkoutReference.set(outcome.reference);
           return;
       }
-    } catch {
-      this.toasts.show(this.t('pay_failed', 'Payment could not start.'));
+    } catch (error) {
+      const problem = problemMessage(error, (k, f) => this.t(k, f));
+      this.payError.set(problem.text || this.t('pay_failed', 'Payment could not start.'));
+      // An open request whose reservation lapsed is no longer payable; read it again.
+      if (this.kind === 'open-request') await this.load(this.kind, this.payableId);
     } finally {
       this.submitting.set(false);
     }
