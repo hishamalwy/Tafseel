@@ -115,7 +115,8 @@ different from the listed Teacher Offering price, provided it stays inside the A
 policy, the student sees the final amount before paying, and the student is not charged until they
 explicitly proceed with payment. The student's optional budget is **guidance, not a server cap**. When the
 agreed price differs from the listed price, the request, order and checkout screens must show the listed
-price, the agreed price and the final amount payable (`UX-09`, not yet built).
+price, the agreed price and the final amount payable (`UX-09`, not yet built). Which "listed price" is shown is **open —
+`DEC-13`**: the offering price is updated in place and is not stored on the request or order today.
 
 ### 3.3 Learning Request
 *Code: `LearningRequest`.* The student's request for work. It has a **sourcing mode**:

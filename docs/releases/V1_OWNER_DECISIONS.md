@@ -15,6 +15,7 @@ Product Owner has stated it explicitly; the documents listed for it are updated 
 | DEC-10 | Live sessions in V1 | **DECIDED** | Option A — live sessions ship in V1 |
 | DEC-11 | Secure paid video at launch | **DECIDED** | Option A — private authorized files; HLS/DASH/DRM V1.1+ |
 | DEC-12 | Production hosting and data location | **OPEN** | Direction recorded; provider and region open |
+| DEC-13 | Listed price reference for the agreed-price disclosure | **OPEN** | Raised in Release Control 3 by UX-09 |
 
 All decisions were recorded as documentation and planning only; no code, configuration, database value or
 historical record was changed.
@@ -150,3 +151,26 @@ historical record was changed.
 - **Tickets blocked:** INF-03, INF-04, INF-07, SEC-04, OBS-01; transitively DATA-01, REL-01, OBS-02, QA-01. May add
   STOR-01 if the chosen object storage is not Azure Blob.
 - **Documents affected when decided:** PRODUCTION_READINESS I6 · Product Contract §8 · V1_RELEASE_BLOCKERS
+
+## DEC-13 — Listed price reference for the agreed-price disclosure
+- **Status:** **OPEN** (raised in Release Control 3, 2026-09-15)
+- **Decision:** — not decided.
+- **Context:** DEC-02 requires the request, order and checkout to show the *listed* Teacher Offering price next to the
+  agreed price. Teacher Offering prices are updated in place (`TeacherService.Configure`), and neither the Learning
+  Request nor the Order stores the price the student saw when requesting. After acceptance the only available "listed
+  price" is the offering's current price.
+- **Options:**
+  - **A. Snapshot (recommended).** Store the offering price and currency on the Direct Request at creation; expose it on
+    the request and order responses.
+    - Accurate.
+    - Needs owner authorization for a protected `Tafseel.Domain` change plus a migration.
+    - Earlier requests show no comparison.
+  - **B. Current price.** Compare with the teacher's current offering price at view time.
+    - No backend change.
+    - Misleading when the teacher edits the offering between request and payment.
+  - **C. No comparison.** Show only the proposed price and the total.
+    - No backend change.
+    - Does not meet DEC-02 as recorded.
+- **Effective V1 rule:** — (today: checkout labels the agreed price "Listed price"; UX-09 corrects the label under any option)
+- **Tickets blocked:** UX-09 (Gate 3); UX-06 disclosure rows
+- **Documents affected when decided:** Product Contract §3.2 · UX-09 · V1_RELEASE_BLOCKERS

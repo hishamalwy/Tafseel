@@ -75,7 +75,8 @@ notifications list (a bell), raw entity lists.
 ### Teacher home
 In this order:
 1. **Publication/setup blocker** while unpublished (the server's first blocker with its "Fix" link) —
-   replaces everything below until resolved.
+   replaces everything below until resolved, **except** existing work, the next session and earnings, which stay visible
+   under the blocker (refined in `UX-02`: paid work is never hidden).
 2. **Action required** — new direct requests, paid orders to start, revisions to deliver, sessions to
    settle, questions answered by students.
 3. **Opportunities** — a short list of relevant open requests (link to all).
@@ -227,4 +228,6 @@ Nested: Profile, Services, Availability, Publication, Qualifications → Setup. 
 Deferred from primary: Promotions, Coupons (`DEC-09`), Insights/Reports (V1.1), education levels and
 qualification-topic editors (V1.1), System settings (none needed).
 
-Implementation of this navigation is ticket `UX-03` (with `UX-01`, `UX-02`).
+Implementation of this navigation is ticket `UX-03` (with `UX-01`, `UX-02`). The exact labels, routes, nested
+destinations and redirects are specified in [`docs/tickets/v1/UX-03.md`](../tickets/v1/UX-03.md) (Release Control 3), which
+supersedes this section where they differ.
