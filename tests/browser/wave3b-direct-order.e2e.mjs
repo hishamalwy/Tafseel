@@ -201,6 +201,7 @@ await step('J6-04 student asks for a revision within the allowance; the teacher 
   assert.ok((await redelivered).ok(), 'redelivered');
   await attribute(t, '[data-testid=order-status]', 'data-status', 2);
   assert.equal(await t.locator('[data-testid=delivery]').count(), 2);
+  await noHorizontalOverflow(t, 'teacher order with two deliveries');
 });
 
 await step('the allowance is spent: no further revision is offered, and the server refuses one', async () => {

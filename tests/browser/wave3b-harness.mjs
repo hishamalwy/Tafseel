@@ -280,6 +280,14 @@ export const payButton = page => page.locator('[data-testid=pay-securely]:visibl
 export async function noHorizontalOverflow(page, what) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   assert.ok(overflow <= 1, `${what}: no horizontal scroll (overflow ${overflow}px)`);
+  // A card can clip what spills out of it without the page scrolling: check the cards' contents too.
+  const spilled = await page.evaluate(() => [...document.querySelectorAll('.tf-profile-editor-card')].flatMap(card => {
+    const box = card.getBoundingClientRect();
+    return [...card.querySelectorAll('li, button, a, dl')]
+      .filter(el => { const r = el.getBoundingClientRect(); return r.width && (r.left < box.left - 1 || r.right > box.right + 1); })
+      .map(el => `${el.tagName.toLowerCase()}: ${el.textContent.trim().slice(0, 40)}`);
+  }));
+  assert.deepEqual(spilled, [], `${what}: content stays inside its card`);
 }
 
 export async function shot(page, name) {
