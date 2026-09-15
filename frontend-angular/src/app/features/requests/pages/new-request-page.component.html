@@ -6,10 +6,16 @@
   }
 
   @if (missingTeacher()) {
-    <div class="tf-req-state" role="alert">
-      <h1>{{ t('req_missing_teacher_title', 'No teacher selected') }}</h1>
-      <p>{{ t('req_missing_teacher_body', 'Pick a teacher, or post to the open marketplace instead.') }}</p>
-      <a routerLink="/teachers" class="tf-button">{{ t('nav_browse', 'Browse teachers') }}</a>
+    <div class="tf-req-state" data-testid="request-modes">
+      <h1>{{ t('request_mode_title', 'How do you want to find help?') }}</h1>
+      <div class="tf-grid-2">
+        <a routerLink="/teachers" class="tf-profile-editor-card" data-testid="request-mode-direct">
+          <div><h2>{{ t('request_mode_direct', 'A specific teacher') }}</h2><p>{{ t('request_mode_direct_body', 'I already know who I want. Choose a teacher, then send them your request.') }}</p></div>
+        </a>
+        <a routerLink="/requests/new/open" class="tf-profile-editor-card" data-testid="request-mode-open">
+          <div><h2>{{ t('request_mode_open', 'An open request') }}</h2><p>{{ t('request_mode_open_body', 'Let qualified teachers send me offers. I compare them and pick one.') }}</p></div>
+        </a>
+      </div>
     </div>
   }
 
@@ -47,8 +53,8 @@
           </div>
         }
 
-        <button type="button" class="tf-button" (click)="goToRequests()">
-          {{ t('req_go_requests', 'Go to my requests') }}
+        <button type="button" class="tf-button" data-testid="open-created-request" (click)="goToRequests()">
+          {{ t('req_view_request', 'View the request') }}
         </button>
       </div>
     } @else {

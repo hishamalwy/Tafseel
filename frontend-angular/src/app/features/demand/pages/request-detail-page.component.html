@@ -1,0 +1,134 @@
+<tf-workspace-shell [role]="isTeacher() ? 'Teacher' : 'Student'" [section]="isTeacher() ? 'work' : 'requests'">
+  <a class="tf-back-link" [routerLink]="isTeacher() ? '/teacher/work' : '/student/requests'" [queryParams]="{ tab: 'requests' }">{{ t('demand_back', 'All requests') }}</a>
+
+  @if (loading() && !view()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !view()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <h1 class="tf-state-title">{{ t('demand_request_failed', 'This request could not be loaded.') }}</h1>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (view(); as v) {
+    <header class="tf-page-header" data-face="sans">
+      <div class="tf-stack">
+        <span class="tf-page-header-eyebrow">{{ isOpen() ? t('request_mode_open', 'An open request') : t('request_mode_direct', 'A specific teacher') }} · {{ isOpen() ? subjectName() : serviceName() }}</span>
+        <h1>{{ v.request.title }}</h1>
+        <p class="tf-page-header-desc">{{ t('demand_created', 'Created') }} {{ date(v.request.createdAt) }}</p>
+      </div>
+      <div class="tf-page-header-actions">
+        <span class="tf-badge" data-testid="request-status" [attr.data-status]="v.request.status" [attr.data-tone]="Demand.statusTone(v.request.status)">{{ t(Demand.statusKey(v.request.status), '') }}</span>
+      </div>
+    </header>
+
+    <div class="tf-detail-layout">
+      <div class="tf-detail-column">
+        <section class="tf-profile-editor-card" aria-labelledby="request-next-title" data-testid="request-next">
+          <div><h2 id="request-next-title">{{ t('demand_next_step', 'Next step') }}</h2></div>
+          @if (actionError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="request-error">{{ actionError() }}</div> }
+
+          @if (v.orderId) {
+            <p class="tf-muted">{{ t('demand_order_ready', 'This request is now an order.') }}</p>
+            <div class="tf-action-row"><a class="tf-button" data-testid="open-order" [routerLink]="['/orders', v.orderId]">{{ t('demand_open_order', 'Open the order') }}</a></div>
+          } @else if (isTeacher()) {
+            @if (Demand.canAccept(v.request.status)) {
+              <p class="tf-muted">{{ t('demand_teacher_review', 'Accept with your price, delivery time and revisions, ask the student a question, or decline.') }}</p>
+              <div class="tf-action-row">
+                <button type="button" class="tf-button" data-testid="accept-request" (click)="accept()" [disabled]="busy()">{{ t('td_accept', 'Accept') }}</button>
+                <button type="button" class="tf-button tf-button-ghost" data-testid="decline-request" (click)="decline()" [disabled]="busy()">{{ t('td_decline', 'Decline') }}</button>
+              </div>
+            } @else if (Demand.canDecline(v.request.status)) {
+              <p class="tf-muted">{{ t('demand_waiting_student', 'Waiting for the student’s answer.') }}</p>
+              <div class="tf-action-row"><button type="button" class="tf-button tf-button-ghost" (click)="decline()" [disabled]="busy()">{{ t('td_decline', 'Decline') }}</button></div>
+            } @else {
+              <p class="tf-muted">{{ t('demand_no_action', 'There is nothing to do on this request.') }}</p>
+            }
+          } @else if (v.open; as open) {
+            @if (Demand.isReserved(open)) {
+              <div class="tf-alert" data-kind="warning" data-testid="reservation">
+                {{ t('demand_reserved', 'You selected an offer. It is held for you until the time runs out.') }}
+                <strong class="tf-countdown" data-testid="reservation-countdown">{{ countdown() }}</strong>
+              </div>
+              <div class="tf-action-row">
+                <a class="tf-button" data-testid="pay-reserved" routerLink="/checkout" [queryParams]="{ learningRequestId: open.id }">{{ t('demand_pay_reserved', 'Pay and start the order') }}</a>
+                <a class="tf-button tf-button-ghost" [routerLink]="['/requests', open.id, 'offers']">{{ t('demand_view_offers', 'View offers') }}</a>
+              </div>
+            } @else if (Demand.canSelectOffers(open)) {
+              <p class="tf-muted" data-testid="offer-count">{{ locale.format('demand_offer_count', { n: open.offerCount ?? 0 }, '{n} offers so far') }}</p>
+              <div class="tf-action-row"><a class="tf-button" data-testid="compare-offers" [routerLink]="['/requests', open.id, 'offers']">{{ t('demand_compare_offers', 'Compare offers') }}</a></div>
+            } @else {
+              <p class="tf-muted">{{ t('demand_no_action', 'There is nothing to do on this request.') }}</p>
+            }
+          } @else if (Demand.canReplyToClarification(v.request.status)) {
+            <p class="tf-muted">{{ t('demand_answer_teacher', 'The teacher asked a question. Answer it below so they can accept.') }}</p>
+          } @else if (v.request.status === 0) {
+            <p class="tf-muted">{{ t('demand_waiting_teacher', 'The teacher is reviewing your request.') }}</p>
+          } @else {
+            <p class="tf-muted">{{ t('demand_no_action', 'There is nothing to do on this request.') }}</p>
+          }
+
+          @if (!isTeacher() && Demand.canCancel(v.request.status)) {
+            <div class="tf-action-row"><button type="button" class="tf-button tf-button-ghost" data-testid="cancel-request" (click)="cancel()" [disabled]="busy()">{{ t('demand_cancel', 'Cancel request') }}</button></div>
+          }
+        </section>
+
+        <section class="tf-profile-editor-card" aria-labelledby="request-brief-title">
+          <div><h2 id="request-brief-title">{{ t('demand_brief', 'What was asked') }}</h2></div>
+          <p class="tf-prose">{{ v.open?.requirements || v.request.description }}</p>
+          @if (v.request.attachments.length) {
+            <ul class="tf-file-list">
+              @for (file of v.request.attachments; track file.id) {
+                <li><span>{{ file.name }}</span><button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openAttachment(file)">{{ t('protected_view_action', 'View in Tafseel') }}</button></li>
+              }
+            </ul>
+          }
+        </section>
+
+        @if (!isOpen()) {
+          <section class="tf-profile-editor-card" aria-labelledby="request-thread-title">
+            <div><h2 id="request-thread-title">{{ t('demand_questions', 'Questions') }}</h2></div>
+            @if (v.request.clarifications.length) {
+              <ol class="tf-timeline" data-testid="clarifications">
+                @for (item of v.request.clarifications; track item.id) {
+                  <li><strong>{{ senderLabel(item.senderId) }}</strong><small>{{ date(item.createdAt) }}</small><span class="tf-prose">{{ item.message }}</span></li>
+                }
+              </ol>
+            } @else { <p class="tf-muted">{{ t('demand_no_questions', 'No questions yet.') }}</p> }
+            @if ((isTeacher() && Demand.canRequestClarification(v.request.status)) || (!isTeacher() && Demand.canReplyToClarification(v.request.status))) {
+              <form class="tf-form" (ngSubmit)="isTeacher() ? askClarification() : reply()" novalidate>
+                <div class="tf-field">
+                  <label for="request-message">{{ isTeacher() ? t('demand_ask_label', 'Ask the student') : t('demand_reply_label', 'Your answer') }}</label>
+                  <textarea id="request-message" name="message" rows="3" maxlength="2000" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
+                </div>
+                <div class="tf-form-actions"><button type="submit" class="tf-button tf-button-secondary" [disabled]="busy()">{{ t('demand_send', 'Send') }}</button></div>
+              </form>
+            }
+          </section>
+        }
+      </div>
+
+      <aside class="tf-detail-column">
+        <section class="tf-profile-editor-card" aria-labelledby="request-facts-title">
+          <div><h2 id="request-facts-title">{{ t('demand_details', 'Details') }}</h2></div>
+          <dl class="tf-facts">
+            @if (!isOpen()) {
+              <div><dt>{{ isTeacher() ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}</dt><dd>{{ (isTeacher() ? v.request.studentName : v.request.teacherName) || '—' }}</dd></div>
+              <div><dt>{{ t('demand_service', 'Service') }}</dt><dd>{{ serviceName() }}</dd></div>
+              <div><dt>{{ t('demand_wanted_by', 'Wanted by') }}</dt><dd>{{ date(v.request.preferredDeliveryAt) }}</dd></div>
+              <div><dt>{{ t('demand_budget', 'Budget') }}</dt><dd>@if (v.request.budget !== null) { <tf-price [amount]="v.request.budget" /> } @else { {{ t('demand_flexible', 'Flexible') }} }</dd></div>
+            } @else if (v.open; as open) {
+              <div><dt>{{ t('apply_subject', 'Subject') }}</dt><dd>{{ subjectName() }}</dd></div>
+              <div><dt>{{ t('demand_service', 'Service') }}</dt><dd>{{ Demand.localName({ name: open.serviceName, nameArabic: open.serviceNameArabic }, locale.isRtl()) }}</dd></div>
+              <div><dt>{{ t('open_request_deadline', 'Needed by') }}</dt><dd>{{ date(open.deadline) }}</dd></div>
+              <div><dt>{{ t('demand_budget', 'Budget') }}</dt><dd>@if (open.budgetMin !== null) { <tf-price [amount]="open.budgetMin" [currency]="open.currency" /> – <tf-price [amount]="open.budgetMax" [currency]="open.currency" /> } @else { {{ t('demand_flexible', 'Flexible') }} }</dd></div>
+              <div><dt>{{ t('demand_offers', 'Offers') }}</dt><dd>{{ open.offerCount ?? 0 }}</dd></div>
+            }
+          </dl>
+        </section>
+      </aside>
+    </div>
+  }
+</tf-workspace-shell>
+<tf-protected-file-viewer />
+<tf-accept-request-dialog (accepted)="onAccepted()" />
+<tf-toast />

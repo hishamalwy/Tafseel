@@ -1,0 +1,68 @@
+<tf-workspace-shell role="Student" section="requests">
+  <a class="tf-back-link" [routerLink]="['/requests', requestId]">{{ t('demand_back_request', 'Back to the request') }}</a>
+
+  @if (loading() && !view()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !view()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <h1 class="tf-state-title">{{ t('demand_offers_failed', 'The offers could not be loaded.') }}</h1>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (view(); as v) {
+    <header class="tf-page-header" data-face="sans">
+      <div class="tf-stack">
+        <span class="tf-page-header-eyebrow">{{ Demand.localName({ name: v.request.subjectName, nameArabic: v.request.subjectNameArabic }, locale.isRtl()) }}</span>
+        <h1>{{ t('demand_offers_title', 'Offers') }} · {{ v.request.title }}</h1>
+        <p class="tf-page-header-desc">{{ t('demand_offers_intro', 'Each offer is the teacher’s own terms. Selecting one holds it while you pay; the order starts only after payment.') }}</p>
+      </div>
+      <div class="tf-page-header-actions">
+        <span class="tf-badge" data-testid="request-status" [attr.data-status]="v.request.status" [attr.data-tone]="Demand.statusTone(v.request.status)">{{ t(Demand.statusKey(v.request.status), '') }}</span>
+      </div>
+    </header>
+
+    @if (notice()) { <div class="tf-alert" data-kind="warning" role="status" data-testid="offers-notice">{{ notice() }}</div> }
+    @if (error()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="offers-error">{{ error() }}</div> }
+
+    @if (reserved()) {
+      <section class="tf-profile-editor-card" aria-labelledby="reservation-title" data-testid="reservation">
+        <div><h2 id="reservation-title">{{ t('demand_reserved_title', 'Offer held for payment') }}</h2>
+          <p>{{ t('demand_reserved', 'You selected an offer. It is held for you until the time runs out.') }} <strong class="tf-countdown" data-testid="reservation-countdown">{{ countdown() }}</strong></p></div>
+        <div class="tf-action-row">
+          <a class="tf-button" data-testid="pay-reserved" routerLink="/checkout" [queryParams]="{ learningRequestId: v.request.id }">{{ t('demand_pay_reserved', 'Pay and start the order') }}</a>
+          <button type="button" class="tf-button tf-button-ghost" data-testid="release-selection" (click)="release()" [disabled]="busy()">{{ t('demand_release', 'Release selection') }}</button>
+        </div>
+      </section>
+    }
+
+    @if (offers().length) {
+      <div class="tf-card-list" data-testid="offers">
+        @for (offer of offers(); track offer.id) {
+          <article class="tf-profile-editor-card" data-testid="offer" [attr.data-offer-id]="offer.id" [attr.data-status]="offer.status"
+                   [attr.aria-current]="offer.id === v.request.selectedOfferId ? 'true' : null">
+            <div class="tf-page-header">
+              <div class="tf-stack">
+                <h2><a [routerLink]="['/teachers', offer.teacherId]">{{ teacherName(offer) }}</a></h2>
+                <p>@if (offer.rating !== null) { ★ {{ fmt.number(offer.rating, { maximumFractionDigits: 1 }) }} · {{ locale.format('demand_reviews_n', { n: offer.reviewCount }, '{n} reviews') }} } @else { {{ t('tp_no_reviews', 'No reviews yet') }} }</p>
+              </div>
+              <span class="tf-badge" [attr.data-tone]="offer.status === OFFER_STATUS.SELECTED ? 'warning' : 'neutral'">{{ t(Demand.offerStatusKey(offer.status), '') }}</span>
+            </div>
+            <dl class="tf-facts">
+              <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="offer.amount" [currency]="offer.currency" /></dd></div>
+              <div><dt>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</dt><dd>{{ offer.deliveryHours }}</dd></div>
+              <div><dt>{{ t('setup_revisions', 'Revisions') }}</dt><dd>{{ offer.includedRevisions }}</dd></div>
+              <div><dt>{{ t('demand_valid_until', 'Valid until') }}</dt><dd>{{ date(offer.validUntil) }}</dd></div>
+            </dl>
+            <p class="tf-prose">{{ offer.message }}</p>
+            @if (Demand.canSelectOffers(v.request) && offer.status === OFFER_STATUS.SUBMITTED) {
+              <div class="tf-action-row"><button type="button" class="tf-button" data-testid="select-offer" (click)="choose(offer)" [disabled]="busy()">{{ t('demand_select', 'Select offer') }}</button></div>
+            }
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="tf-state" role="status"><p class="tf-state-title">{{ t('demand_no_offers', 'No offers yet.') }}</p><p class="tf-state-body">{{ t('demand_no_offers_body', 'Qualified teachers see your request and can send offers until it is needed.') }}</p></div>
+    }
+  }
+</tf-workspace-shell>
+<tf-toast />

@@ -1,0 +1,107 @@
+<tf-workspace-shell role="Teacher" section="opportunities">
+  <a class="tf-back-link" routerLink="/teacher/opportunities">{{ t('demand_all_opportunities', 'All opportunities') }}</a>
+
+  @if (loading() && !request()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !request()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <h1 class="tf-state-title">{{ t('demand_opportunity_failed', 'This opportunity is not available to you.') }}</h1>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (request(); as r) {
+    <header class="tf-page-header" data-face="sans">
+      <div class="tf-stack">
+        <span class="tf-page-header-eyebrow">{{ Demand.localName({ name: r.subjectName, nameArabic: r.subjectNameArabic }, locale.isRtl()) }} · {{ Demand.localName({ name: r.serviceName, nameArabic: r.serviceNameArabic }, locale.isRtl()) }}</span>
+        <h1 data-testid="opportunity-title">{{ r.title }}</h1>
+        <p class="tf-page-header-desc">{{ t('open_request_deadline', 'Needed by') }} {{ date(r.deadline) }}</p>
+      </div>
+      <div class="tf-page-header-actions">
+        <span class="tf-badge" [attr.data-tone]="Demand.statusTone(r.status)">{{ t(Demand.statusKey(r.status), '') }}</span>
+      </div>
+    </header>
+
+    <div class="tf-detail-layout">
+      <div class="tf-detail-column">
+        <section class="tf-profile-editor-card" aria-labelledby="opportunity-brief-title">
+          <div><h2 id="opportunity-brief-title">{{ t('demand_brief', 'What was asked') }}</h2></div>
+          <p class="tf-prose">{{ r.requirements }}</p>
+        </section>
+
+        <section class="tf-profile-editor-card" aria-labelledby="my-offer-title" data-testid="my-offer" [attr.data-status]="myOffer()?.status ?? ''">
+          <div><h2 id="my-offer-title">{{ t('demand_my_offer', 'Your offer') }}</h2></div>
+          @if (error()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="offer-error">{{ error() }}</div> }
+          @if (reservedForMe()) { <div class="tf-alert" data-kind="success" role="status">{{ t('demand_offer_reserved_for_you', 'The student selected your offer and is paying. The order appears in your work when payment succeeds.') }}</div> }
+
+          @if (myOffer(); as mine) {
+            @if (!editing()) {
+              <dl class="tf-facts">
+                <div><dt>{{ t('apply_status_label', 'Status') }}</dt><dd>{{ t(Demand.offerStatusKey(mine.status), '') }}</dd></div>
+                <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="mine.amount" [currency]="mine.currency" /></dd></div>
+                <div><dt>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</dt><dd>{{ mine.deliveryHours }}</dd></div>
+                <div><dt>{{ t('setup_revisions', 'Revisions') }}</dt><dd>{{ mine.includedRevisions }}</dd></div>
+                <div><dt>{{ t('demand_valid_until', 'Valid until') }}</dt><dd>{{ date(mine.validUntil) }}</dd></div>
+              </dl>
+              <p class="tf-prose">{{ mine.message }}</p>
+              @if (Demand.canEditOffer(mine) && r.status === 5) {
+                <div class="tf-action-row">
+                  <button type="button" class="tf-button tf-button-secondary" data-testid="edit-offer" (click)="editing.set(true)" [disabled]="busy()">{{ t('demand_edit_offer', 'Change offer') }}</button>
+                  <button type="button" class="tf-button tf-button-ghost" data-testid="withdraw-offer" (click)="withdraw()" [disabled]="busy()">{{ t('demand_withdraw', 'Withdraw offer') }}</button>
+                </div>
+              }
+            }
+          } @else if (!showForm()) {
+            <p class="tf-muted">{{ t('demand_offers_closed', 'This request no longer takes offers.') }}</p>
+          }
+
+          @if (showForm()) {
+            <form class="tf-form" (ngSubmit)="save()" novalidate data-testid="offer-form">
+              <div class="tf-grid-2">
+                <div class="tf-field">
+                  <label for="offer-amount">{{ locale.format('setup_price_in', { currency: r.currency || 'SAR' }, 'Price ({currency})') }}</label>
+                  <input id="offer-amount" name="amount" type="number" step="0.01" min="0.01" [ngModel]="draft().amount" (ngModelChange)="set('amount', $event)" [attr.aria-invalid]="!!problem('amount')">
+                  @if (problem('amount')) { <span class="tf-field-error">{{ problem('amount') }}</span> }
+                </div>
+                <div class="tf-field">
+                  <label for="offer-hours">{{ t('setup_delivery_hours', 'Delivery (hours)') }}</label>
+                  <input id="offer-hours" name="deliveryHours" type="number" step="1" min="1" [attr.max]="limits.hoursMax" [ngModel]="draft().deliveryHours" (ngModelChange)="set('deliveryHours', $event)" [attr.aria-invalid]="!!problem('deliveryHours')">
+                  @if (problem('deliveryHours')) { <span class="tf-field-error">{{ problem('deliveryHours') }}</span> }
+                </div>
+                <div class="tf-field">
+                  <label for="offer-revisions">{{ t('setup_revisions', 'Revisions') }}</label>
+                  <input id="offer-revisions" name="includedRevisions" type="number" step="1" min="0" [attr.max]="limits.revisionsMax" [ngModel]="draft().includedRevisions" (ngModelChange)="set('includedRevisions', $event)" [attr.aria-invalid]="!!problem('includedRevisions')">
+                  @if (problem('includedRevisions')) { <span class="tf-field-error">{{ problem('includedRevisions') }}</span> }
+                </div>
+                <div class="tf-field">
+                  <label for="offer-validity">{{ t('demand_validity_hours', 'Offer valid for (hours)') }}</label>
+                  <input id="offer-validity" name="validityHours" type="number" step="1" min="1" [attr.max]="limits.validityMax" [ngModel]="draft().validityHours" (ngModelChange)="set('validityHours', $event)" [attr.aria-invalid]="!!problem('validityHours')">
+                  @if (problem('validityHours')) { <span class="tf-field-error">{{ problem('validityHours') }}</span> }
+                </div>
+              </div>
+              <div class="tf-field">
+                <label for="offer-message">{{ t('demand_offer_message', 'Message to the student') }}</label>
+                <textarea id="offer-message" name="message" rows="4" [attr.maxlength]="limits.message" [ngModel]="draft().message" (ngModelChange)="set('message', $event)" [attr.aria-invalid]="!!problem('message')"></textarea>
+                @if (problem('message')) { <span class="tf-field-error">{{ problem('message') }}</span> }
+              </div>
+              <div class="tf-form-actions">
+                <button type="submit" class="tf-button" data-testid="save-offer" [disabled]="busy()">{{ busy() ? t('common_saving', 'Saving…') : (Demand.canEditOffer(myOffer()) ? t('demand_update_offer', 'Update offer') : t('demand_send_offer', 'Send offer')) }}</button>
+                @if (editing()) { <button type="button" class="tf-button tf-button-ghost" (click)="editing.set(false)">{{ t('common_cancel', 'Cancel') }}</button> }
+              </div>
+            </form>
+          }
+        </section>
+      </div>
+      <aside class="tf-detail-column">
+        <section class="tf-profile-editor-card" aria-labelledby="opportunity-facts-title">
+          <div><h2 id="opportunity-facts-title">{{ t('demand_details', 'Details') }}</h2></div>
+          <dl class="tf-facts">
+            <div><dt>{{ t('demand_budget', 'Budget') }}</dt><dd>@if (r.budgetMin !== null) { <tf-price [amount]="r.budgetMin" [currency]="r.currency" /> – <tf-price [amount]="r.budgetMax" [currency]="r.currency" /> } @else { {{ t('demand_flexible', 'Flexible') }} }</dd></div>
+            <div><dt>{{ t('demand_published', 'Published') }}</dt><dd>{{ date(r.publishedAt) }}</dd></div>
+            <div><dt>{{ t('demand_offers', 'Offers') }}</dt><dd>{{ r.offerCount ?? 0 }}</dd></div>
+          </dl>
+        </section>
+      </aside>
+    </div>
+  }
+</tf-workspace-shell>
+<tf-toast />

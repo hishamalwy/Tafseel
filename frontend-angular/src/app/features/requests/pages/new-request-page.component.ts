@@ -345,6 +345,7 @@ export class NewRequestPageComponent {
   }
 
   async goToRequests(): Promise<void> {
-    await this.router.navigate(['/student']);
+    const created = this.created();
+    await this.router.navigate(created ? ['/requests', created.id] : ['/student/requests']);
   }
 }

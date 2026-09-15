@@ -1,0 +1,86 @@
+<tf-workspace-shell role="Student" section="requests">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('demand_eyebrow', 'Learning requests') }}</span>
+      <h1>{{ t('open_request_title', 'Post an open request') }}</h1>
+      <p class="tf-page-header-desc">{{ t('open_request_intro', 'Describe what you need. Teachers approved in the subject send you offers, and you choose one.') }}</p>
+    </div>
+  </header>
+
+  <div class="tf-grid-2 tf-request-modes" data-testid="request-modes">
+    <a class="tf-profile-editor-card" routerLink="/teachers">
+      <div><h2>{{ t('request_mode_direct', 'A specific teacher') }}</h2><p>{{ t('request_mode_direct_body', 'I already know who I want. Choose a teacher, then send them your request.') }}</p></div>
+    </a>
+    <div class="tf-profile-editor-card" aria-current="true" data-testid="request-mode-open">
+      <div><h2>{{ t('request_mode_open', 'An open request') }}</h2><p>{{ t('request_mode_open_body', 'Let qualified teachers send me offers. I compare them and pick one.') }}</p></div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <h1 class="tf-state-title">{{ t('open_request_failed', 'The request form could not be loaded.') }}</h1>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (form(); as f) {
+    <section class="tf-profile-editor-card" aria-labelledby="open-request-form-title">
+      <div><h2 id="open-request-form-title">{{ t('open_request_details', 'Your request') }}</h2></div>
+      <form class="tf-form" (ngSubmit)="submit()" novalidate data-testid="open-request-form">
+        <div class="tf-grid-2">
+          <div class="tf-field">
+            <label for="open-subject">{{ t('apply_subject', 'Subject') }}</label>
+            <select id="open-subject" name="subject" [ngModel]="draft().subjectId" (ngModelChange)="set('subjectId', $event)" [attr.aria-invalid]="!!problem('subjectId')">
+              <option value="">{{ t('common_choose', 'Choose…') }}</option>
+              @for (item of f.subjects; track item.id) { <option [value]="item.id">{{ name(item) }}</option> }
+            </select>
+            @if (problem('subjectId')) { <span class="tf-field-error">{{ problem('subjectId') }}</span> }
+          </div>
+          <div class="tf-field">
+            <label for="open-service">{{ t('open_request_service', 'Kind of help') }}</label>
+            <select id="open-service" name="service" [ngModel]="draft().serviceTypeId" (ngModelChange)="set('serviceTypeId', $event)" [attr.aria-invalid]="!!problem('serviceTypeId')">
+              <option value="">{{ t('common_choose', 'Choose…') }}</option>
+              @for (item of f.serviceTypes; track item.id) { <option [value]="item.id">{{ name(item) }}</option> }
+            </select>
+            @if (problem('serviceTypeId')) { <span class="tf-field-error">{{ problem('serviceTypeId') }}</span> }
+          </div>
+        </div>
+        <div class="tf-field">
+          <label for="open-title">{{ t('open_request_title_label', 'Title') }}</label>
+          <input id="open-title" name="title" [ngModel]="draft().title" (ngModelChange)="set('title', $event)" [attr.maxlength]="limits.title" [attr.aria-invalid]="!!problem('title')">
+          @if (problem('title')) { <span class="tf-field-error">{{ problem('title') }}</span> }
+        </div>
+        <div class="tf-field">
+          <label for="open-requirements">{{ t('open_request_requirements', 'What you need') }}</label>
+          <textarea id="open-requirements" name="requirements" rows="6" [ngModel]="draft().requirements" (ngModelChange)="set('requirements', $event)"
+                    [attr.maxlength]="limits.requirements" [attr.aria-invalid]="!!problem('requirements')"></textarea>
+          <span class="tf-field-help">{{ draft().requirements.length }}/{{ limits.requirements }}</span>
+          @if (problem('requirements')) { <span class="tf-field-error">{{ problem('requirements') }}</span> }
+        </div>
+        <div class="tf-grid-2">
+          <div class="tf-field">
+            <label for="open-deadline">{{ t('open_request_deadline', 'Needed by') }}</label>
+            <input id="open-deadline" name="deadline" type="datetime-local" [ngModel]="draft().deadline" (ngModelChange)="set('deadline', $event)" [attr.aria-invalid]="!!problem('deadline')">
+            <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zone }, 'In this device’s time zone ({zone}).') }}</span>
+            @if (problem('deadline')) { <span class="tf-field-error">{{ problem('deadline') }}</span> }
+          </div>
+          <fieldset class="tf-field">
+            <legend>{{ t('open_request_budget', 'Budget range (optional)') }}</legend>
+            <div class="tf-grid-2">
+              <input id="open-budget-min" name="budgetMin" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('open_request_budget_min', 'From')"
+                     [placeholder]="t('open_request_budget_min', 'From')" [ngModel]="draft().budgetMin" (ngModelChange)="set('budgetMin', $event)">
+              <input id="open-budget-max" name="budgetMax" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('open_request_budget_max', 'To')"
+                     [placeholder]="t('open_request_budget_max', 'To')" [ngModel]="draft().budgetMax" (ngModelChange)="set('budgetMax', $event)" [attr.aria-invalid]="!!problem('budgetMax')">
+            </div>
+            @if (problem('budgetMax')) { <span class="tf-field-error">{{ problem('budgetMax') }}</span> }
+          </fieldset>
+        </div>
+        @if (error()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="open-request-error">{{ error() }}</div> }
+        <div class="tf-form-actions">
+          <button type="submit" class="tf-button" data-testid="publish-open-request" [disabled]="busy()">{{ busy() ? t('common_saving', 'Saving…') : t('open_request_publish', 'Publish request') }}</button>
+        </div>
+      </form>
+    </section>
+  }
+</tf-workspace-shell>

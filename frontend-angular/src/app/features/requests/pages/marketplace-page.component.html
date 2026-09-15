@@ -10,7 +10,7 @@
         : t('om_student_lede', 'Describe what you need and compare the offers you receive.') }}
     </p>
     @if (side() === 'student') {
-      <a class="tf-button" routerLink="/requests/new">{{ t('om_post', 'Post a request') }}</a>
+      <a class="tf-button" routerLink="/requests/new/open">{{ t('om_post', 'Post a request') }}</a>
     }
   </header>
 
@@ -59,6 +59,8 @@
         @if (selected(); as request) {
           <header class="tf-market-detail__head">
             <h2>{{ request.title }}</h2>
+            <a class="tf-button tf-button-ghost tf-button-sm" data-testid="open-request-detail"
+               [routerLink]="side() === 'teacher' ? ['/teacher/opportunities', request.id] : ['/requests', request.id]">{{ t('dashboard_open', 'Open') }}</a>
             @if (request.deadline) {
               <p class="tf-market-muted">{{ t('om_deadline', 'Deadline') }}: {{ fmt.dateOnly(request.deadline) }}</p>
             }
