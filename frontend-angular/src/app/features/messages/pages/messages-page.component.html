@@ -1,0 +1,85 @@
+<tf-workspace-shell [role]="shellRole()" section="messages">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <h1>{{ t('messages_title', 'Messages') }}</h1>
+      <p class="tf-page-header-desc" data-testid="realtime-state" [attr.data-state]="realtime.state()">
+        {{ realtime.state() === 'live' ? t('messages_live', 'New messages appear as they arrive.') : realtime.state() === 'connecting' ? t('messages_connecting', 'Connecting…') : t('messages_polling', 'Live updates are unavailable; checking for new messages every few seconds.') }}
+      </p>
+    </div>
+  </header>
+
+  <div class="tf-messages" [attr.data-open]="!!conversationId()">
+    <section class="tf-profile-editor-card tf-inbox-panel" aria-labelledby="inbox-title">
+      <div><h2 id="inbox-title">{{ t('messages_inbox', 'Conversations') }}</h2></div>
+      @if (loadingList()) {
+        <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+      } @else if (listError()) {
+        <div class="tf-alert" data-kind="error" role="alert">{{ listError() }}</div>
+      } @else if (conversations().length) {
+        <ul class="tf-inbox" data-testid="inbox">
+          @for (item of conversations(); track item.id) {
+            <li>
+              <a [routerLink]="['/conversations', item.id]" [attr.aria-current]="item.id === conversationId() ? 'page' : null"
+                 data-testid="conversation-link" [attr.data-conversation-id]="item.id" [attr.data-unread]="item.unreadCount">
+                <strong>{{ name(item) }} @if (item.unreadCount) { <span class="tf-badge" data-tone="primary" data-testid="unread-count">{{ item.unreadCount }}</span> }</strong>
+                <small>{{ t(Messaging.scopeKey(item.scope), '') }}@if (item.latestMessage) { · {{ item.latestMessage.body }} }</small>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="tf-muted">{{ t('messages_empty', 'No conversations yet. Open an order or a session to message the other person.') }}</p>
+      }
+    </section>
+
+    <section class="tf-profile-editor-card" aria-labelledby="thread-title">
+      @if (!conversationId()) {
+        <p class="tf-muted">{{ t('messages_pick', 'Choose a conversation.') }}</p>
+      } @else {
+        <div class="tf-page-header">
+          <div class="tf-stack">
+            <a class="tf-back-link" routerLink="/messages">{{ t('messages_inbox', 'Conversations') }}</a>
+            <h2 id="thread-title">{{ current() ? name(current()!) : t('messages_conversation', 'Conversation') }}</h2>
+          </div>
+          @if (current() && Messaging.contextLink(current()!); as link) {
+            <a class="tf-button tf-button-ghost tf-button-sm" [routerLink]="link">{{ t(Messaging.scopeKey(current()!.scope), '') }}</a>
+          }
+        </div>
+
+        @if (threadError()) {
+          <div class="tf-alert" data-kind="error" role="alert" data-testid="thread-error">{{ threadError() }}</div>
+        } @else if (loadingThread() && !messages().length) {
+          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+        } @else {
+          <ol class="tf-thread" #thread data-testid="thread" aria-live="polite">
+            @for (item of messages(); track item.id) {
+              <li class="tf-bubble" data-testid="message" [attr.data-mine]="item.senderId === viewerId()" [attr.data-message-id]="item.id">
+                <p>{{ item.body }}</p>
+                @for (file of item.attachments; track file.id) {
+                  <button type="button" class="tf-button tf-button-ghost tf-button-sm" data-testid="message-attachment" (click)="openAttachment(file)">{{ file.name }}</button>
+                }
+                <small>{{ senderName(item) }} · {{ date(item.createdAt) }}</small>
+              </li>
+            } @empty {
+              <li class="tf-muted">{{ t('messages_no_messages', 'No messages yet. Say hello.') }}</li>
+            }
+          </ol>
+
+          <form class="tf-form" #composer (ngSubmit)="send(composer)" novalidate data-testid="composer">
+            <div class="tf-field">
+              <label for="message-body">{{ t('messages_write', 'Write a message') }}</label>
+              <textarea id="message-body" name="body" rows="3" [attr.maxlength]="limits.body" [ngModel]="draft()" (ngModelChange)="draft.set($event)"></textarea>
+            </div>
+            <div class="tf-field">
+              <label for="message-file">{{ t('messages_attach', 'Attach a file (optional: PDF, PNG, JPEG, DOCX, PPTX or ZIP, up to 50 MB)') }}</label>
+              <input id="message-file" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip" (change)="chooseFile($event)">
+            </div>
+            @if (sendError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="send-error">{{ sendError() }}</div> }
+            <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="send-message" [disabled]="sending()">{{ sending() ? t('common_saving', 'Saving…') : t('demand_send', 'Send') }}</button></div>
+          </form>
+        }
+      }
+    </section>
+  </div>
+</tf-workspace-shell>
+<tf-protected-file-viewer />
