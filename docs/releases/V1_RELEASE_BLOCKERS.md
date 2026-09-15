@@ -31,10 +31,10 @@ recorded in the Product Contract.
 | DEC-04 | Payout mechanism: manual bank transfer (secure full bank details) or payout provider; compliance | P1 | yes | FIN-02, FIN-05, PAY-04 | S | ⛔ | — | — | Contract §3.10 updated; provider/process named |
 | DEC-05 | Refund policy: full only or partial; customer-facing refund and cancellation terms | P1 | yes | FIN-06, LEG-01 | S | ⛔ | — | — | Contract §3.11 updated |
 | DEC-06 | Confirm commercial fees: 8% student fee + 15% teacher commission | P1 | yes | QA-01 | S | ⛔ | — | — | Contract §5 confirmed; config values signed off |
-| DEC-08 | VAT and e-invoicing obligations for the launch entity | P1 | yes | LEG-01, PAY-02 | S | ⛔ | — | — | Written legal/tax position; follow-up tickets if required |
+| DEC-08 | VAT and e-invoicing obligations for the launch entity | P1 | yes | PAY-01, LEG-01 (PAY-02, PAY-03 through PAY-01) | S | ⛔ | — | — | Written legal/tax position; follow-up tickets if required |
 | DEC-10 | Are live sessions enabled at launch? | P1 | yes | MEET-01, scope of QA-01 | S | ⛔ | — | — | V1_SCOPE §6 marked in or out |
 | DEC-11 | Is protected paid **video streaming** (beyond authorized file download) required at launch? | P1 | yes | possible new SEC/MEDIA tickets | S | ⛔ | — | — | V1_SCOPE §11 row confirmed |
-| DEC-12 | Production hosting target and data location (host, region, database, storage account) | P1 | yes | INF-03, INF-04, INF-07, DATA-01, REL-01 | S | ⛔ | — | — | Named environment and region in `PRODUCTION_READINESS.md` |
+| DEC-12 | Production hosting target and data location (host, region, database, storage account) | P1 | yes | INF-03, INF-04, INF-07, SEC-04, OBS-01 (DATA-01, REL-01, OBS-02 transitively) | S | ⛔ | — | — | Named environment and region in `PRODUCTION_READINESS.md` |
 | DEC-03 | Completion after the dispute window has passed credits *Available* directly (not Pending) | P2 | no | — | S | ⛔ | — | — | Contract §3.9 confirmed |
 | DEC-07 | Emergency premium: define the server rule or disable for V1 | P3 | no | B11-17 | S | ⛔ | — | — | Contract §5 updated |
 | DEC-09 | Coupons at launch? (no checkout field today) | P2 | no | B11-08 | S | ⛔ | — | — | V1_SCOPE §3 row confirmed |
@@ -146,6 +146,12 @@ single authoritative total.
 **Tafseel is 50 tickets away from V1 production readiness** — 49 if the owner decides live sessions do
 not launch in V1 (DEC-10 = out removes MEET-01; DEC-10 itself still has to be decided).
 
+> **Release Control 2:** the nine owner decisions are analysed in
+> [`V1_DECISION_PACK.md`](./V1_DECISION_PACK.md) (options, recommendations, dependency recalculation and
+> graph) and tracked in [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md). All nine are OPEN; the count
+> above is unchanged. Decisions may add tickets (UX-09 or ACC-01, PAY-04a/b split, TAX-*, LIVE-OFF-01,
+> MEDIA-*, STOR-01) — the count is recalculated when each decision is recorded.
+
 ### Non-blocking operations tickets (SHOULD)
 
 | ID | Title | Pri | Depends on | Size |
@@ -153,6 +159,7 @@ not launch in V1 (DEC-10 = out removes MEET-01; DEC-10 itself still has to be de
 | OPS-01 | Admin attention list (disputes, withdrawals, payout profiles, stuck sessions) as the Admin home | P2 | FIN-04, FIN-05, FIN-07 | M |
 | OPS-02 | Admin review moderation detail and hide/show (J7-02) | P2 | — | S |
 | OPS-03 | Admin resolution of a stuck live session (J8-08; endpoints exist) | P2 | DEC-10 | S |
+| UX-10 | Order delivery form accepts the server's allowed types (DOCX, PPTX, ZIP are refused by the client check today) — found in RC2, to triage | P2 | — | S |
 
 ### Suggested order (not a plan commitment)
 

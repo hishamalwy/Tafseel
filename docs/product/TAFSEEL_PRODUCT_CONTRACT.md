@@ -196,10 +196,17 @@ Rules:
 
 ### 3.7 Payment
 *Code: `Payment`.* One payment per payable (Order, Live Session Booking, or reserved Open Request),
-idempotent per payable. Amount = price + **student fee 8%** (`Fees:StudentFeePercent`); the teacher
-side carries a **15% commission** (`Fees:TeacherCommissionPercent`). Statuses: Pending → Confirmed
-(or Failed); Refunded. On confirmation the money is **held in escrow**. Only the mock provider exists
-today (§8).
+idempotent per payable. Fees are snapshotted onto the Order or Live Session Booking when it is created:
+
+| Payable | Student pays | Teacher commission |
+|---------|--------------|--------------------|
+| Order (direct or open request) | price + **8% student fee** (`Fees:StudentFeePercent`) | **15%** of the price (`Fees:TeacherCommissionPercent`) |
+| Live Session Booking | the booking total (base + any premium) — **no student fee** | **15%** of the booking total |
+
+*(Corrected in Release Control 2: an earlier version of this section applied the student fee to every
+payable.)* Statuses: Pending → Confirmed (or Failed); Refunded. On confirmation the money is **held in
+escrow**. Only the mock provider exists today (§8). Worked examples:
+[Decision Pack DEC-06](../releases/V1_DECISION_PACK.md#dec-06--commercial-fees).
 
 ### 3.8 Live Session Booking
 *Code: `LiveSessionBooking`.* A scheduled one-to-one call of a live-session offering. **A separate
@@ -389,8 +396,8 @@ flowchart LR
 | Live settlement auto-finalize | 24 h | `LiveSessions:SettlementReviewHours` |
 | Emergency premium | 50% | `LiveSessions:EmergencyPremiumPercent` |
 
-> **DECISION REQUIRED (DEC-06 — fees).** Confirm the commercial values: 8% student fee and 15%
-> teacher commission, charged together.
+> **DECISION REQUIRED (DEC-06 — fees).** Confirm the commercial values: 8% student fee on Orders and
+> 15% teacher commission on Orders and Live Session Bookings (live sessions carry no student fee).
 
 > **DECISION REQUIRED (DEC-07 — emergency premium).** The booking API accepts a client-supplied
 > `emergency` flag that adds 50%, but the server defines no rule for what qualifies and the slot API
