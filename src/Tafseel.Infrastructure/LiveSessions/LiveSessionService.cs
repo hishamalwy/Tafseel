@@ -708,12 +708,14 @@ internal sealed class LiveSessionService(
             for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
             {
                 if (date.DayOfWeek != rule.DayOfWeek) continue;
-                for (var start = rule.Start;
-                     start.AddMinutes(durationMinutes) <= rule.End;
-                     start = start.AddMinutes(step))
+                // TimeSpan, not TimeOnly: TimeOnly wraps at midnight, so a rule ending within one
+                // session of midnight never failed the condition and the loop never ended.
+                for (var start = rule.Start.ToTimeSpan();
+                     start + TimeSpan.FromMinutes(durationMinutes) <= rule.End.ToTimeSpan();
+                     start += TimeSpan.FromMinutes(step))
                 {
                     var local = DateTime.SpecifyKind(
-                        date.ToDateTime(start), DateTimeKind.Unspecified);
+                        date.ToDateTime(TimeOnly.FromTimeSpan(start)), DateTimeKind.Unspecified);
                     if (zone.IsInvalidTime(local) || zone.IsAmbiguousTime(local)) continue;
                     var startsAt = new DateTimeOffset(
                         TimeZoneInfo.ConvertTimeToUtc(local, zone), TimeSpan.Zero);
