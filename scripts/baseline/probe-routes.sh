@@ -84,6 +84,11 @@ done
 check GET "/app/Tafseel-Quality-Dashboard.dc.html?section=applications&selectedId=$G" en 302 "/en/quality/applications?selectedId=$G"
 check GET /app/Tafseel-Quality-Dashboard.dc.html en 302 /en/quality/applications
 check GET '/app/Tafseel-Teacher-Dashboard.dc.html?section=samples' ar 302 '/ar/teacher/qualifications?tab=videos'
+# Wave 3B: the demand and fulfilment screens.
+for p in /en/requests/new/open "/ar/requests/$G" "/en/requests/$G/offers" "/en/teacher/opportunities/$G" \
+         "/ar/orders/$G" "/en/live-sessions/$G" /ar/messages "/en/conversations/$G" /en/checkout /en/checkout/simulator; do
+  check GET "$p" ar 200
+done
 check GET /app/assets/brand/tafseel-mark-dark.png ar 200
 check GET /favicon.ico ar 200
 csp=$(curl -s -D - -o /dev/null "$B/en/" | tr -d '\r' | grep -i '^content-security-policy:')

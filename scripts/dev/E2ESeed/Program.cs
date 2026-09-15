@@ -17,6 +17,7 @@ using Tafseel.Infrastructure.Persistence;
 //   default (Wave 2): a student, two published teachers qualified in one subject, each with an
 //                     asynchronous service.
 //   TAFSEEL_E2E_SCENARIO=supply (Wave 3A): a quality reviewer and catalog data only.
+//   TAFSEEL_E2E_SCENARIO=fulfilment (Wave 3B): two published teachers and an unrelated student.
 //
 //   ConnectionStrings__Tafseel=...;Database=TafseelE2E...   TAFSEEL_E2E_PASSWORD=...   dotnet run
 var connection = Environment.GetEnvironmentVariable("ConnectionStrings__Tafseel")
@@ -97,6 +98,54 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "supply")
         qualificationTopicId = assignment.Id,
         explanation = new { explanation.Id, explanation.Code },
         live = new { live.Id, live.Code }
+    }));
+    return;
+}
+
+if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "fulfilment")
+{
+    // Wave 3B: the supply the demand journeys buy from, already published - the 3A journey proves
+    // that path through the UI, so here it is a prerequisite, not the thing under test. Two teachers
+    // qualified in one subject, each with the canonical recorded-explanation and live-session
+    // services and open availability every day, plus one unrelated student used only to prove
+    // refusals. The buying student registers in the UI; no request, offer, order, payment,
+    // booking, delivery, message or review exists before the journeys create it.
+    var recorded = db.ServiceCatalogItems.Single(x => x.Code == "recorded_explanation");
+    var liveType = db.ServiceCatalogItems.Single(x => x.Code == "live_session");
+    var maths = new Subject($"E2E Calculus {run}", "book", $"تفاضل وتكامل تجريبي {run}");
+    db.Add(maths);
+    var outsider = await UserAsync(Roles.Student, "outsider", "طالب آخر", "E2E Unrelated Student");
+    var teachers = new List<object>();
+    foreach (var (handle, name, englishName, headline, price) in new[]
+    {
+        ("teacher-a", "معلمة التفاضل", "Calculus Teacher A", "Patient calculus explanations", 100m),
+        ("teacher-b", "معلم التفاضل", "Calculus Teacher B", "Fast calculus explanations", 120m)
+    })
+    {
+        var teacher = await UserAsync(Roles.Teacher, handle, name, englishName);
+        var profile = new TeacherProfile(teacher.Id, now);
+        profile.Update(headline, "Qualified calculus teacher for the Tafseel fulfilment journeys.", "Saudi Arabia", "Riyadh",
+            "UTC", 15, now);
+        profile.Publish(TeacherProfileReadiness.Ready, now);
+        var explanation = new TeacherService(teacher.Id, maths.Id, recorded.Id, $"Worked calculus explanation {handle}",
+            "A recorded walk-through of your exact exercise.", price, "SAR", 48, 2, now);
+        var session = new TeacherService(teacher.Id, maths.Id, liveType.Id, $"Live calculus session {handle}",
+            "A one-to-one live session on the part you are stuck on.", 120, "SAR", 24, 0, now);
+        db.AddRange(profile, explanation, session, new TeacherSubjectQualification(teacher.Id, maths.Id, now));
+        foreach (var day in Enum.GetValues<DayOfWeek>())
+            db.Add(new TeacherAvailabilityRule(teacher.Id, day, new TimeOnly(0, 0), new TimeOnly(23, 30), "UTC", 30));
+        teachers.Add(new { teacher.Id, teacher.Email, explanationServiceId = explanation.Id, liveServiceId = session.Id });
+    }
+    await db.SaveChangesAsync();
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        run,
+        outsider = new { outsider.Id, outsider.Email },
+        teacherA = teachers[0],
+        teacherB = teachers[1],
+        subjectId = maths.Id, subjectName = maths.Name,
+        recordedCatalogId = recorded.Id,
+        liveCatalogId = liveType.Id
     }));
     return;
 }

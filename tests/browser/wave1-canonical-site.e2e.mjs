@@ -219,8 +219,9 @@ await step("J9-04 notification actions: internal only, keyboard, locale kept, ma
   const conversationCard = page.locator("article", { hasText: "New message" });
   await conversationCard.locator("[data-testid=notification-action]").focus();
   await page.keyboard.press("Enter");
-  await page.waitForURL(url => pathOf(url) === "/en/student/messages", { timeout: 15000 });
-  assert.equal(new URL(page.url()).searchParams.get("conversationId"), conversationId);
+  // Wave 3B: the conversation has its own screen; this fixture id belongs to no conversation, so it says so.
+  await page.waitForURL(url => pathOf(url) === `/en/conversations/${conversationId}`, { timeout: 15000 });
+  await page.locator("[data-testid=thread-error]").waitFor({ state: "visible", timeout: 15000 });
   await expectEventually(() => sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM Notifications WHERE UserId = '${userId}' AND Type = 'Conversation' AND ReadAt IS NOT NULL`).trim() === "1",
     "the opened notification is marked read");
   assert.equal(sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM Notifications WHERE UserId = '${userId}' AND Type = 'Order' AND ReadAt IS NOT NULL`).trim(), "0",
@@ -254,17 +255,18 @@ await step("J9-04 notification action works at phone width in Arabic", async () 
   await ctx.close();
 });
 
-await step("J9-05 server deep links land on a screen for the reader's role", async () => {
+// Wave 3B replaced the interim redirects to dashboard lists with the resources' own screens.
+await step("J9-05 server deep links land on the resource's own screen", async () => {
   const { ctx, page } = await signedIn();
   const id = randomUUID();
   const cases = [
-    [`/en/live-sessions/${id}`, "/en/student/sessions", { sessionId: id }],
-    [`/en/conversations/${id}`, "/en/student/messages", { conversationId: id }],
-    [`/en/requests/${id}`, "/en/student/requests", { tab: "requests", requestId: id }],
-    [`/en/requests/${id}/offers`, "/en/requests", { requestId: id }],
+    [`/en/live-sessions/${id}`, `/en/live-sessions/${id}`, {}],
+    [`/en/conversations/${id}`, `/en/conversations/${id}`, {}],
+    [`/en/requests/${id}`, `/en/requests/${id}`, {}],
+    [`/en/requests/${id}/offers`, `/en/requests/${id}/offers`, {}],
     [`/en/disputes/${id}`, "/en/disputes", { selectedId: id }],
-    ["/ar/messages", "/ar/student/messages", {}],
-    [`/en/app/Tafseel-Chat.dc.html`, "/en/student/messages", {}],
+    ["/ar/messages", "/ar/messages", {}],
+    [`/en/app/Tafseel-Chat.dc.html`, "/en/messages", {}],
   ];
   for (const [from, path, query] of cases) {
     await visit(page, `${BASE}${from}`);
