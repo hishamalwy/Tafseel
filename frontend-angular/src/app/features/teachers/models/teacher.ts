@@ -19,6 +19,8 @@ export interface TeacherService {
   readonly price: number | null;
   readonly currency: string;
   readonly deliveryDays: number | null;
+  /** The wire unit; a delivery under a day reads in hours, not as "1 days". */
+  readonly deliveryHours: number | null;
   readonly revisionAllowance: number | null;
   readonly canRequest: boolean;
   readonly canBook: boolean;
@@ -103,7 +105,24 @@ export const EMPTY_DISCOVERY: DiscoveryContext = {
 };
 
 export const Teacher = {
-  /** A live session, as opposed to an asynchronous deliverable. */
+  /** The label and delivery wording follow the service type the server returned, not whether it can be booked right now. */
+  isScheduled(service: TeacherService): boolean {
+    return service.requiresScheduling || String(service.serviceCatalogCode ?? '').toLowerCase() === 'live_session';
+  },
+
+  /**
+   * What a service card says about delivery. A scheduled (live) service has no delivery window:
+   * its wire value is a placeholder hour, which used to read as "1 days". Under a day reads in hours.
+   */
+  deliveryWording(service: Pick<TeacherService, 'requiresScheduling' | 'serviceCatalogCode' | 'deliveryHours' | 'deliveryDays' | 'allowedDurations'>):
+    { kind: 'duration'; minutes: readonly number[] } | { kind: 'hours'; value: number } | { kind: 'days'; value: number } | { kind: 'flexible' } {
+    if (Teacher.isScheduled(service as TeacherService)) return { kind: 'duration', minutes: service.allowedDurations };
+    if (service.deliveryHours !== null && service.deliveryHours < 24) return { kind: 'hours', value: service.deliveryHours };
+    if (service.deliveryDays) return { kind: 'days', value: service.deliveryDays };
+    return { kind: 'flexible' };
+  },
+
+  /** A live session that can be booked now, as opposed to an asynchronous deliverable. */
   isLiveService(service: TeacherService): boolean {
     return service.canBook
       && String(service.serviceCatalogCode ?? '').toLowerCase() === 'live_session';

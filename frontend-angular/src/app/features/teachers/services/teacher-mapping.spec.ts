@@ -3,7 +3,7 @@ import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { HttpTeacherGateway } from './http-teacher.gateway';
-import { Teacher } from '../models/teacher';
+import { Teacher, TeacherReview } from '../models/teacher';
 
 /**
  * The wire names, pinned.
@@ -25,6 +25,24 @@ describe('teacher wire mapping', () => {
     gateway = TestBed.inject(HttpTeacherGateway);
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(HttpClient);
+  });
+
+  it('reads a public review’s score and comment from the names the API sends (J7-01)', async () => {
+    const promise = new Promise<readonly TeacherReview[]>(resolve => gateway.reviews('t1', 50).subscribe(resolve));
+    http.expectOne('/api/v1/teachers/t1/reviews?pageSize=50').flush({
+      items: [{
+        id: 'r1', teacherId: 't1', explanationClarity: 5, subjectKnowledge: 5, communication: 4, onTimeDelivery: 5,
+        valueForMoney: 5, overallScore: 4.8, originalComment: 'Clear worked steps', recommends: true, createdAt: '2026-09-15T08:00:00Z'
+      }],
+      page: 1, pageSize: 50, totalCount: 1
+    });
+    const [review] = await promise;
+    expect(review.rating).toBe(4.8);
+    expect(review.body).toBe('Clear worked steps');
+    expect(review.createdAt).toBe('2026-09-15T08:00:00Z');
+    // The public endpoint does not disclose the student; nothing is invented in their place.
+    expect(review.studentDisplayName).toBeNull();
+    expect(review.studentDisplayNameEnglish).toBeNull();
   });
 
   it('reads the names the API actually sends', async () => {

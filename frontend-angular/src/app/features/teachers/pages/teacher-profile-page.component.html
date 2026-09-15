@@ -231,7 +231,7 @@
         } @else {
           <div class="tf-mkp-svcs">
             @for (service of services(); track service.id) {
-              <article class="tf-mkp-svc" [class.is-selected]="service.selected">
+              <article class="tf-mkp-svc" [class.is-selected]="service.selected" [attr.data-service-id]="service.id" [attr.data-live]="service.isLive">
                 <div class="tf-mkp-svc-in">
                   <span class="tf-mkp-svc-kind">
                     {{ service.isLive ? t('tp_live_session', 'Live session') : t('tp_recorded', 'Recorded') }}

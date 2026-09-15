@@ -80,23 +80,34 @@ export class TeacherProfilePageComponent {
     ...service,
     name: this.serviceName(service),
     selected: service.id === this.selectedServiceId(),
-    deliveryLabel: service.deliveryDays
-      ? `${service.deliveryDays} ${this.t('tp_days', 'days')}`
-      : this.t('tp_flexible', 'Flexible'),
+    deliveryLabel: this.deliveryLabel(service),
     revisionsLabel: Number(service.revisionAllowance) > 0
       ? `${service.revisionAllowance} ${this.t('tp_free_revisions', 'free revisions')}`
       : this.t('tp_no_revisions', 'No revisions'),
-    isLive: Teacher.isLiveService(service)
+    isLive: Teacher.isScheduled(service)
   })));
+
+  private deliveryLabel(service: TeacherService): string {
+    const wording = Teacher.deliveryWording(service);
+    switch (wording.kind) {
+      case 'duration': return wording.minutes.length
+        ? this.locale.format('tp_session_minutes', { minutes: wording.minutes.join(' / ') }, '{minutes} min session')
+        : this.t('tp_live_session', 'Live session');
+      case 'hours': return this.locale.format('tp_hours_n', { n: wording.value }, '{n} hours');
+      case 'days': return `${wording.value} ${this.t('tp_days', 'days')}`;
+      default: return this.t('tp_flexible', 'Flexible');
+    }
+  }
 
   readonly selectedService = computed(() =>
     this.services().find(s => s.selected) ?? this.services()[0] ?? null);
 
   readonly reviews = computed(() => (this.view()?.reviews ?? []).map(review => ({
     ...review,
+    // The public review API does not disclose who wrote it; only a completed, paid order can leave one.
     author: this.locale.lang() === 'ar'
-      ? (review.studentDisplayName || review.studentDisplayNameEnglish || this.t('name_unavailable', '—'))
-      : (review.studentDisplayNameEnglish || review.studentDisplayName || this.t('name_unavailable', '—')),
+      ? (review.studentDisplayName || review.studentDisplayNameEnglish || this.t('tp_verified_student', 'Verified student'))
+      : (review.studentDisplayNameEnglish || review.studentDisplayName || this.t('tp_verified_student', 'Verified student')),
     when: this.fmt.dateOnly(review.createdAt)
   })));
 

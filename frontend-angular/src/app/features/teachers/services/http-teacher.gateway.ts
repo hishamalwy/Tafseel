@@ -12,6 +12,15 @@ import {
 interface PageDto<T> { items?: T[]; page?: number; totalCount?: number; totalPages?: number }
 
 interface NamedDto { id?: string; name?: string; nameAr?: string }
+/** `PublicTeacherReviewDto`: the score and comment only - the reviewing student is not disclosed. */
+interface PublicReviewDto { id?: string; overallScore?: number; originalComment?: string; createdAt?: string }
+
+function toReview(dto: PublicReviewDto): TeacherReview {
+  return {
+    id: dto.id ?? '', rating: Number(dto.overallScore ?? 0), body: dto.originalComment ?? '', createdAt: dto.createdAt ?? '',
+    studentDisplayName: null, studentDisplayNameEnglish: null
+  };
+}
 interface CredentialDto {
   title?: string; issuer?: string; organisation?: string; organization?: string;
   field?: string; startYear?: number; endYear?: number; year?: number;
@@ -84,6 +93,7 @@ function toService(dto: Record<string, unknown>): TeacherService {
     currency: text('currency') || 'SAR',
     // Hours are the wire unit; the screens speak in days.
     deliveryDays: hours === null ? null : Math.max(1, Math.round(hours / 24)),
+    deliveryHours: hours,
     revisionAllowance: num('revisions') ?? num('defaultRevisions'),
     canRequest: dto['canRequest'] !== false,
     canBook: !!dto['canBook'],
@@ -220,9 +230,9 @@ export class HttpTeacherGateway implements TeacherGateway {
 
   reviews(teacherId: string, pageSize: number): Observable<readonly TeacherReview[]> {
     return this.http
-      .get<PageDto<TeacherReview>>(
+      .get<PageDto<PublicReviewDto>>(
         `/api/v1/teachers/${encodeURIComponent(teacherId)}/reviews?pageSize=${pageSize}`)
-      .pipe(map(page => page.items ?? []));
+      .pipe(map(page => (page.items ?? []).map(toReview)));
   }
 
   /**
