@@ -1,82 +1,162 @@
-<tf-workflow-header [crumb]="t('order_detail_title', 'Order')" />
+<tf-workspace-shell [role]="role() === 'teacher' ? 'Teacher' : 'Student'" [section]="role() === 'teacher' ? 'work' : 'requests'">
+  <a class="tf-back-link" [routerLink]="role() === 'teacher' ? '/teacher/work' : '/student/requests'" [queryParams]="{ tab: 'orders' }">{{ t('order_back', 'All orders') }}</a>
 
-<main id="main" class="tf-shell tf-order-detail">
   @switch (state()) {
     @case ('loading') {
-      <p class="tf-order-detail__state" role="status" aria-live="polite">{{ t('common_loading', 'Loading…') }}</p>
+      <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
     }
     @case ('missing') {
-      <section class="tf-order-detail__state" role="alert">
-        <h1>{{ t('order_detail_missing_title', 'This order isn’t available') }}</h1>
-        <p>{{ t('order_detail_missing_body', 'It may belong to another account, or it no longer exists.') }}</p>
-        <a class="tf-button" routerLink="/">{{ t('not_found_home', 'Go to the home page') }}</a>
-      </section>
+      <div class="tf-state" data-state="error" role="alert">
+        <h1 class="tf-state-title">{{ t('order_detail_missing_title', 'This order isn’t available') }}</h1>
+        <p class="tf-state-body">{{ t('order_detail_missing_body', 'It may belong to another account, or it no longer exists.') }}</p>
+      </div>
     }
     @case ('failed') {
-      <section class="tf-order-detail__state" role="alert">
-        <h1>{{ t('order_detail_failed', 'We couldn’t load this order.') }}</h1>
-        <button type="button" class="tf-button" (click)="load()">{{ t('common_retry', 'Retry') }}</button>
-      </section>
+      <div class="tf-state" data-state="error" role="alert">
+        <h1 class="tf-state-title">{{ t('order_detail_failed', 'We couldn’t load this order.') }}</h1>
+        <button type="button" class="tf-button tf-button-secondary" (click)="load()">{{ t('common_retry', 'Retry') }}</button>
+      </div>
     }
     @case ('ready') {
       @if (order(); as o) {
-        <header class="tf-order-detail__head">
-          <div>
+        <header class="tf-page-header" data-face="sans">
+          <div class="tf-stack">
+            <span class="tf-page-header-eyebrow">{{ (locale.lang() === 'ar' ? (o.serviceNameArabic || o.serviceNameEnglish) : (o.serviceNameEnglish || o.serviceNameArabic)) || t('order_detail_title', 'Order') }}</span>
             <h1>{{ heading() }}</h1>
-            <p class="tf-order-detail__parties">
-              {{ fmt.partyName(o, 'student') }} · {{ fmt.partyName(o, 'teacher') }}
-            </p>
+            <p class="tf-page-header-desc">{{ role() === 'teacher' ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}: {{ counterpart() }}</p>
           </div>
-          <span class="tf-badge" data-testid="order-status">{{ statusLabel() }}</span>
+          <div class="tf-page-header-actions">
+            <span class="tf-badge" data-testid="order-status" [attr.data-status]="o.status" [attr.data-payment]="o.paymentStatus">{{ statusLabel() }}</span>
+          </div>
         </header>
 
-        <dl class="tf-order-detail__facts">
-          <div><dt>{{ t('order_detail_total', 'Total') }}</dt><dd><tf-price [amount]="o.studentTotal" [currency]="o.currency" /></dd></div>
-          <div><dt>{{ t('order_detail_due', 'Agreed delivery') }}</dt><dd>{{ fmt.date(o.agreedDeliveryAt) }}</dd></div>
-          <div><dt>{{ t('order_detail_revisions', 'Revisions used') }}</dt><dd>{{ o.revisionsUsed }} / {{ o.revisionAllowance }}</dd></div>
-          <div><dt>{{ t('order_detail_created', 'Ordered') }}</dt><dd>{{ fmt.date(o.createdAt) }}</dd></div>
-        </dl>
+        <div class="tf-detail-layout">
+          <div class="tf-detail-column">
+            <section class="tf-profile-editor-card" aria-labelledby="order-next-title" data-testid="order-actions">
+              <div><h2 id="order-next-title">{{ t('demand_next_step', 'Next step') }}</h2></div>
+              @if (actionError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="order-error">{{ actionError() }}</div> }
 
-        <section class="tf-order-detail__section" [attr.aria-label]="t('delivery_files', 'Explanation files')">
-          <h2>{{ t('delivery_files', 'Explanation files') }}</h2>
-          @if (o.deliveries.length) {
-            <ul class="tf-order-detail__files">
-              @for (file of o.deliveries; track file.id) {
-                <li>
-                  <button type="button" class="tf-button tf-button-secondary" (click)="openDelivery(file)">
-                    {{ file.originalName }} · {{ t('protected_view_action', 'View in Tafseel') }}
-                  </button>
-                  @if (file.message) { <p>{{ file.message }}</p> }
-                </li>
+              @if (can('pay')) { <p class="tf-muted">{{ t('order_pay_hint', 'The teacher accepted. Pay to confirm the order; work starts after payment.') }}</p> }
+              @if (role() === 'student' && o.status === 0 && o.paymentStatus === 1) { <p class="tf-muted">{{ t('td_start_awaiting_student', 'Payment confirmed. The teacher starts work next.') }}</p> }
+              @if (can('start')) { <p class="tf-muted">{{ t('order_start_hint', 'Payment is confirmed. Start the work when you begin.') }}</p> }
+              @if (role() === 'teacher' && o.status === 0 && o.paymentStatus === 0) { <p class="tf-muted">{{ t('td_start_awaiting_payment', 'Waiting for the student’s payment to be confirmed.') }}</p> }
+              @if (role() === 'teacher' && o.status === 3) { <p class="tf-alert" data-kind="warning" data-testid="revision-requested">{{ t('order_revision_for_teacher', 'The student asked for a revision. Deliver the updated work.') }}</p> }
+              @if (role() === 'teacher' && o.status === 2) { <p class="tf-muted">{{ t('order_waiting_review', 'Delivered. Waiting for the student to accept or ask for a revision.') }}</p> }
+              @if (role() === 'student' && (o.status === 1 || o.status === 3)) { <p class="tf-muted">{{ t('order_in_progress_student', 'The teacher is working on it.') }}</p> }
+              @if (can('complete')) { <p class="tf-muted">{{ locale.format('order_delivered_hint', { n: revisionsLeft() }, 'Review the delivery, then accept it or ask for a revision ({n} left).') }}</p> }
+              @if (isCompleted()) {
+                <p class="tf-muted" data-testid="order-completed-note">{{ role() === 'teacher' ? t('order_completed_teacher', 'Completed. The earnings from this order are pending clearance before they can be withdrawn.') : t('order_completed_student', 'This order is complete.') }}</p>
+                @if (o.hasReview) { <p class="tf-muted" data-testid="review-submitted">{{ t('order_review_done', 'You reviewed this order.') }}@if (o.reviewOverallScore) { ★ {{ fmt.number(o.reviewOverallScore, { maximumFractionDigits: 1 }) }} }</p> }
               }
-            </ul>
-          } @else {
-            <p>{{ t('order_detail_no_deliveries', 'Nothing has been delivered yet.') }}</p>
-          }
-        </section>
 
-        <section class="tf-order-detail__section" [attr.aria-label]="t('order_timeline_title', 'Order timeline')">
-          <h2>{{ t('order_timeline_title', 'Order timeline') }}</h2>
-          @if (timelineFailed()) {
-            <p role="alert">{{ t('order_timeline_error', 'We couldn’t load the complete timeline.') }}</p>
-          } @else if (timeline().length) {
-            <ol class="tf-order-detail__timeline">
-              @for (event of timeline(); track event.id) {
-                <li><strong>{{ eventLabel(event) }}</strong><span>{{ actorLabel(event) }} · {{ fmt.date(event.occurredAt) }}</span></li>
+              <div class="tf-action-row">
+                @if (can('pay')) { <a class="tf-button" data-testid="pay-order" routerLink="/checkout" [queryParams]="{ orderId: o.id }">{{ t('order_pay', 'Pay now') }}</a> }
+                @if (can('start')) { <button type="button" class="tf-button" data-testid="start-order" (click)="start()" [disabled]="!!busy()">{{ t('td_start', 'Start') }}</button> }
+                @if (can('deliver')) { <button type="button" class="tf-button" data-testid="open-deliver" (click)="toggle('deliver')" [attr.aria-expanded]="panel() === 'deliver'">{{ o.status === 3 ? t('order_redeliver', 'Deliver again') : t('delivery_upload', 'Submit explanation files') }}</button> }
+                @if (can('complete')) { <button type="button" class="tf-button" data-testid="complete-order" (click)="complete()" [disabled]="!!busy()">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
+                @if (can('revision')) { <button type="button" class="tf-button tf-button-secondary" data-testid="open-revision" (click)="toggle('revision')" [attr.aria-expanded]="panel() === 'revision'">{{ t('order_ask_revision', 'Ask for a revision') }}</button> }
+                @if (can('review')) { <button type="button" class="tf-button" data-testid="open-review" (click)="toggle('review')" [attr.aria-expanded]="panel() === 'review'">{{ t('order_leave_review', 'Review the teacher') }}</button> }
+                <button type="button" class="tf-button tf-button-ghost" data-testid="open-conversation" (click)="openConversation()" [disabled]="!!busy()">{{ t('order_message', 'Message') }} {{ counterpart() }}</button>
+                @if (can('cancel')) { <button type="button" class="tf-button tf-button-ghost" data-testid="cancel-order" (click)="cancel()" [disabled]="!!busy()">{{ t('order_cancel', 'Cancel order') }}</button> }
+              </div>
+
+              @if (panel() === 'deliver' && can('deliver')) {
+                <form class="tf-form" (ngSubmit)="deliver()" novalidate data-testid="deliver-form">
+                  <div class="tf-field">
+                    <label for="deliver-files">{{ locale.format('order_delivery_files', { max: limits.files }, 'Files (up to {max}: PDF, image, audio or video)') }}</label>
+                    <input id="deliver-files" name="files" type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg" (change)="chooseFiles($event)">
+                    @if (files().length) { <span class="tf-field-help">@for (file of files(); track file.name; let last = $last) { {{ file.name }}{{ last ? '' : ', ' }} }</span> }
+                  </div>
+                  <div class="tf-field">
+                    <label for="deliver-message">{{ t('order_delivery_message', 'Note to the student (optional)') }}</label>
+                    <textarea id="deliver-message" name="message" rows="3" [attr.maxlength]="limits.message" [ngModel]="deliveryMessage()" (ngModelChange)="deliveryMessage.set($event)"></textarea>
+                  </div>
+                  @if (progress() !== null) { <progress class="tf-progress" max="100" [value]="progress()" [attr.aria-label]="t('common_uploading', 'Uploading…')"></progress> }
+                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-delivery" [disabled]="!!busy()">{{ busy() === 'deliver' ? t('common_uploading', 'Uploading…') : t('order_send_delivery', 'Send delivery') }}</button></div>
+                </form>
               }
-            </ol>
-          } @else {
-            <p>{{ t('order_timeline_empty', 'No persisted lifecycle events are available for this order.') }}</p>
-          }
-        </section>
 
-        <nav class="tf-order-detail__actions">
-          <a class="tf-button" [routerLink]="dashboardLink().path" [queryParams]="dashboardLink().query">
-            {{ t('order_detail_open_dashboard', 'Open in your dashboard') }}
-          </a>
-        </nav>
+              @if (panel() === 'revision' && can('revision')) {
+                <form class="tf-form" (ngSubmit)="requestRevision()" novalidate data-testid="revision-form">
+                  <p class="tf-muted">{{ locale.format('order_revisions_left', { n: revisionsLeft(), total: o.revisionAllowance }, '{n} of {total} revisions left.') }}</p>
+                  <div class="tf-field">
+                    <label for="revision-reason">{{ t('order_revision_reason', 'What should change?') }}</label>
+                    <textarea id="revision-reason" name="reason" rows="3" maxlength="2000" [ngModel]="revisionReason()" (ngModelChange)="revisionReason.set($event)"></textarea>
+                  </div>
+                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-revision" [disabled]="!!busy()">{{ t('order_ask_revision', 'Ask for a revision') }}</button></div>
+                </form>
+              }
+
+              @if (panel() === 'review' && can('review')) {
+                <form class="tf-form" (ngSubmit)="submitReview()" novalidate data-testid="review-form">
+                  @for (criterion of criteria; track criterion) {
+                    <div class="tf-decision-row" role="group" [attr.aria-labelledby]="'review-' + criterion">
+                      <span [id]="'review-' + criterion">{{ t('review_' + criterion, criterion) }}</span>
+                      <div class="tf-action-row">
+                        @for (star of stars; track star) {
+                          <button type="button" class="tf-button tf-button-sm" [class.tf-button-ghost]="review()[criterion] !== star" [attr.aria-pressed]="review()[criterion] === star"
+                                  [attr.data-testid]="'rate-' + criterion + '-' + star" (click)="rate(criterion, star)">{{ star }}</button>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (reviewProblems().includes('ratings')) { <p class="tf-field-error" role="alert">{{ t('order_review_ratings_required', 'Rate every item from 1 to 5.') }}</p> }
+                  <div class="tf-field">
+                    <label for="review-comment">{{ t('order_review_comment', 'Your review') }}</label>
+                    <textarea id="review-comment" name="comment" rows="4" maxlength="2000" [ngModel]="review().comment" (ngModelChange)="setReview('comment', $event)"
+                              [attr.aria-invalid]="reviewProblems().includes('comment')"></textarea>
+                    @if (reviewProblems().includes('comment')) { <span class="tf-field-error">{{ t('order_review_comment_required', 'Write a few words about the teacher.') }}</span> }
+                  </div>
+                  <label class="tf-check"><input type="checkbox" name="recommends" [checked]="review().recommends" (change)="setReview('recommends', $any($event.target).checked)"><span>{{ t('order_review_recommends', 'I recommend this teacher') }}</span></label>
+                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-review" [disabled]="!!busy()">{{ t('order_publish_review', 'Publish review') }}</button></div>
+                </form>
+              }
+            </section>
+
+            <section class="tf-profile-editor-card" aria-labelledby="order-deliveries-title">
+              <div><h2 id="order-deliveries-title">{{ t('delivery_files', 'Explanation files') }}</h2></div>
+              @if (o.deliveries.length) {
+                <ul class="tf-file-list" data-testid="deliveries">
+                  @for (file of o.deliveries; track file.id) {
+                    <li data-testid="delivery"><span>{{ file.originalName }} · {{ date(file.createdAt) }}@if (file.message) { — {{ file.message }} }</span>
+                      <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openDelivery(file)">{{ t('protected_view_action', 'View in Tafseel') }}</button></li>
+                  }
+                </ul>
+              } @else { <p class="tf-muted">{{ t('order_detail_no_deliveries', 'Nothing has been delivered yet.') }}</p> }
+            </section>
+          </div>
+
+          <aside class="tf-detail-column">
+            <section class="tf-profile-editor-card" aria-labelledby="order-facts-title">
+              <div><h2 id="order-facts-title">{{ t('demand_details', 'Details') }}</h2></div>
+              <dl class="tf-facts">
+                <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="o.price" [currency]="o.currency" /></dd></div>
+                @if (role() === 'student') { <div><dt>{{ t('order_detail_total', 'Total') }}</dt><dd><tf-price [amount]="o.studentTotal" [currency]="o.currency" /></dd></div> }
+                <div><dt>{{ t('order_payment', 'Payment') }}</dt><dd>{{ t('order_payment_' + o.paymentStatus, '') }}</dd></div>
+                <div><dt>{{ t('order_detail_due', 'Agreed delivery') }}</dt><dd>{{ date(o.agreedDeliveryAt) }}@if (o.isOverdue) { · {{ t('order_overdue', 'overdue') }} }</dd></div>
+                <div><dt>{{ t('order_detail_revisions', 'Revisions used') }}</dt><dd data-testid="revisions-used">{{ o.revisionsUsed }} / {{ o.revisionAllowance }}</dd></div>
+                <div><dt>{{ t('order_detail_created', 'Ordered') }}</dt><dd>{{ date(o.createdAt) }}</dd></div>
+              </dl>
+              @if (o.learningRequestId) { <a [routerLink]="['/requests', o.learningRequestId]">{{ t('order_view_request', 'View the original request') }}</a> }
+            </section>
+
+            <section class="tf-profile-editor-card" aria-labelledby="order-history-title">
+              <div><h2 id="order-history-title">{{ t('order_detail_history', 'History') }}</h2></div>
+              @if (timelineFailed()) {
+                <p class="tf-muted">{{ t('order_detail_history_failed', 'The history could not be loaded.') }}</p>
+              } @else if (timeline().length) {
+                <ol class="tf-timeline" data-testid="order-timeline">
+                  @for (event of timeline(); track event.id) {
+                    <li [attr.data-event]="event.eventType"><strong>{{ eventLabel(event) }}@if (event.metadata?.revisionSequence; as sequence) { #{{ sequence }} }</strong><small>{{ date(event.occurredAt) }} · {{ actorLabel(event) }}</small></li>
+                  }
+                </ol>
+              } @else { <p class="tf-muted">{{ t('order_detail_no_history', 'No history yet.') }}</p> }
+            </section>
+          </aside>
+        </div>
       }
     }
   }
-</main>
+</tf-workspace-shell>
 <tf-protected-file-viewer />
+<tf-toast />

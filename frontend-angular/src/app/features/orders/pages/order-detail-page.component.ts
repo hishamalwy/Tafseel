@@ -1,47 +1,75 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ViewChild, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
-import { firstValueFrom } from 'rxjs';
-import { SignalSessionStore } from '@core/auth/services/session.store';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom, lastValueFrom, tap } from 'rxjs';
+import { SESSION_STORE } from '@core/auth/services/auth.ports';
+import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { PriceComponent } from '@shared/components/price.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
-import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
+import { ToastComponent } from '@shared/components/toast.component';
+import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
+import { DialogService } from '@shared/services/dialog.service';
+import { ToastService } from '@shared/services/toast.service';
 import {
-  ORDER_STATUS_FALLBACK, OrderDelivery, OrderDetail, OrderTimelineEvent, orderStatusKey
+  DELIVERY_LIMITS, ORDER_STATUS_FALLBACK, Order, OrderAction, OrderDelivery, OrderDetail, OrderStatus, OrderTimelineEvent,
+  REVIEW_CRITERIA, ReviewDraft, orderStatusKey
 } from '../models/order-detail';
 import { OrderDetailGateway } from '../services/order-detail.gateway';
 
 type LoadState = 'loading' | 'ready' | 'missing' | 'failed';
+type Panel = 'deliver' | 'revision' | 'review' | null;
 
 /**
- * One order, for either of its participants: what was agreed, where it stands, the files
- * delivered, and its recorded history. This is the page every order notification links to.
- * Order actions (start, deliver, accept) stay in the dashboard for now, which this page links to.
+ * One order, for either participant (J6-06): what was agreed, where it stands, the deliveries and
+ * the recorded history, and the step the order's own state allows this viewer to take - pay,
+ * start, deliver, ask for a revision, complete, review - plus its conversation.
  */
 @Component({
   selector: 'tf-order-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PriceComponent, ProtectedFileViewerComponent, WorkflowHeaderComponent],
+  imports: [FormsModule, RouterLink, PriceComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent],
   templateUrl: './order-detail-page.component.html',
-  styleUrl: './order-detail-page.component.css'
+  styleUrl: '../../../shared/styles/workspace-detail.css'
 })
 export class OrderDetailPageComponent {
   @ViewChild(ProtectedFileViewerComponent) private readonly viewer?: ProtectedFileViewerComponent;
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly gateway = inject(OrderDetailGateway);
-  private readonly session = inject(SignalSessionStore);
+  private readonly session = inject(SESSION_STORE);
+  private readonly dialogs = inject(DialogService);
+  private readonly toasts = inject(ToastService);
   private readonly title = inject(Title);
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
+  readonly criteria = REVIEW_CRITERIA;
+  readonly stars = [1, 2, 3, 4, 5] as const;
+  readonly limits = DELIVERY_LIMITS;
 
-  readonly orderId = this.route.snapshot.paramMap.get('orderId') ?? '';
+  orderId = '';
   readonly state = signal<LoadState>('loading');
   readonly order = signal<OrderDetail | null>(null);
   readonly timeline = signal<readonly OrderTimelineEvent[]>([]);
   readonly timelineFailed = signal(false);
+  readonly panel = signal<Panel>(null);
+  readonly busy = signal<OrderAction | 'message' | ''>('');
+  readonly actionError = signal('');
+  readonly files = signal<readonly File[]>([]);
+  readonly deliveryMessage = signal('');
+  readonly progress = signal<number | null>(null);
+  readonly revisionReason = signal('');
+  readonly review = signal<ReviewDraft>(Order.emptyReview());
+  readonly reviewAttempted = signal(false);
+
+  readonly viewerId = computed(() => this.session.current()?.userId ?? '');
+  readonly role = computed(() => { const o = this.order(); return o ? Order.roleOf(o, this.viewerId()) : null; });
+  readonly actions = computed(() => { const o = this.order(); return o ? Order.actions(o, this.viewerId()) : []; });
+  readonly reviewProblems = computed(() => this.reviewAttempted() ? Order.reviewProblems(this.review()) : []);
 
   readonly heading = computed(() => {
     const order = this.order();
@@ -59,28 +87,37 @@ export class OrderDetailPageComponent {
     return this.t(key, ORDER_STATUS_FALLBACK[key]);
   });
 
-  /** The dashboard list this order belongs to for the signed-in participant. */
-  readonly dashboardLink = computed(() => {
+  readonly counterpart = computed(() => {
     const order = this.order();
-    const userId = this.session.current()?.userId;
-    return order && userId === order.teacherId
-      ? { path: '/teacher/work', query: { tab: 'orders', orderId: this.orderId } }
-      : { path: '/student/requests', query: { tab: 'orders', orderId: this.orderId } };
+    if (!order) return '';
+    return this.role() === 'teacher'
+      ? this.fmt.partyName(order, 'student')
+      : this.fmt.partyName(order, 'teacher');
   });
 
   constructor() {
-    queueMicrotask(() => this.title.setTitle(`${this.t('order_detail_title', 'Order')} — Tafseel`));
-    void this.load();
+    this.title.setTitle(`${this.t('order_detail_title', 'Order')} — Tafseel`);
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      this.orderId = params.get('orderId') ?? '';
+      this.order.set(null);
+      this.panel.set(null);
+      void this.load();
+    });
   }
 
-  t(key: string, fallback = ''): string {
-    return this.locale.t(key, fallback);
-  }
+  t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
+  can(action: OrderAction): boolean { return this.actions().includes(action); }
+  date(value: string): string { return value ? this.fmt.date(value, { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
+  revisionsLeft(): number { const o = this.order(); return o ? Order.revisionsLeft(o) : 0; }
+  eventLabel(event: OrderTimelineEvent): string { return this.t(`order_timeline_event_${event.eventType}`, event.eventType); }
+  actorLabel(event: OrderTimelineEvent): string { return this.t(`order_timeline_actor_${event.actorRole.toLowerCase()}`, event.actorRole); }
+  isCompleted(): boolean { return this.order()?.status === OrderStatus.Completed; }
 
   async load(): Promise<void> {
-    this.state.set('loading');
+    this.state.set(this.order() ? 'ready' : 'loading');
     try {
-      this.order.set(await firstValueFrom(this.gateway.order(this.orderId)));
+      const order = await firstValueFrom(this.gateway.order(this.orderId));
+      this.order.set(order);
       this.state.set('ready');
       this.title.setTitle(`${this.heading()} — Tafseel`);
     } catch (error) {
@@ -96,16 +133,133 @@ export class OrderDetailPageComponent {
     }
   }
 
-  eventLabel(event: OrderTimelineEvent): string {
-    return this.t(`order_timeline_event_${event.eventType}`, event.eventType);
-  }
-
-  actorLabel(event: OrderTimelineEvent): string {
-    const role = event.actorRole.toLowerCase();
-    return this.t(`order_timeline_actor_${role}`, event.actorRole);
-  }
-
   openDelivery(file: OrderDelivery): void {
     void this.viewer?.open(`/api/v1/orders/deliveries/${encodeURIComponent(file.id)}/content`, file.originalName, file.contentType);
+  }
+
+  toggle(panel: Exclude<Panel, null>): void {
+    this.panel.set(this.panel() === panel ? null : panel);
+    this.actionError.set('');
+  }
+
+  async start(): Promise<void> {
+    const order = this.order();
+    if (!order || !await this.dialogs.confirm({
+      body: this.t('order_start_confirm', 'Start work on this order? The agreed delivery time applies from now on.'),
+      confirmLabel: this.t('td_start', 'Start'), cancelLabel: this.t('common_cancel', 'Cancel')
+    })) return;
+    await this.run('start', () => firstValueFrom(this.gateway.start(order.id, order.version ?? '')), this.t('order_started', 'Work started.'));
+  }
+
+  chooseFiles(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.files.set(Array.from(input.files ?? []));
+    this.actionError.set('');
+  }
+
+  async deliver(): Promise<void> {
+    const order = this.order(), files = this.files();
+    if (!order || this.busy()) return;
+    const problem = Order.deliveryProblem(files);
+    if (problem) {
+      this.actionError.set(this.locale.format(`order_delivery_problem_${problem}`, { max: DELIVERY_LIMITS.files }, problem));
+      return;
+    }
+    await this.run('deliver', async () => {
+      this.progress.set(0);
+      await lastValueFrom(this.gateway.deliver(order.id, files, this.deliveryMessage().trim(), order.version ?? '').pipe(tap(event => {
+        if (event.type === HttpEventType.UploadProgress && event.total) this.progress.set(Math.round(100 * event.loaded / event.total));
+      })));
+      this.files.set([]);
+      this.deliveryMessage.set('');
+      this.panel.set(null);
+    }, this.t('order_delivered', 'Delivered. The student has been notified.'));
+    this.progress.set(null);
+  }
+
+  async requestRevision(): Promise<void> {
+    const order = this.order(), reason = this.revisionReason().trim();
+    if (!order || this.busy()) return;
+    if (!reason || reason.length > 2000) {
+      this.actionError.set(this.t('order_revision_reason_required', 'Explain what should change (up to 2000 characters).'));
+      return;
+    }
+    await this.run('revision', async () => {
+      await firstValueFrom(this.gateway.requestRevision(order.id, reason, order.version ?? ''));
+      this.revisionReason.set('');
+      this.panel.set(null);
+    }, this.t('order_revision_requested', 'Revision requested. The teacher will deliver again.'));
+  }
+
+  async complete(): Promise<void> {
+    const order = this.order();
+    if (!order || !await this.dialogs.confirm({
+      title: this.t('order_complete_title', 'Accept the delivery and complete the order?'),
+      body: this.t('order_complete_body', 'The order closes and the payment is released to the teacher’s pending earnings. You can then leave a review.'),
+      confirmLabel: this.t('sd_approve_delivery', 'Accept delivery'), cancelLabel: this.t('common_cancel', 'Cancel')
+    })) return;
+    await this.run('complete', () => firstValueFrom(this.gateway.complete(order.id, order.version ?? '')), this.t('order_completed', 'Order completed.'));
+  }
+
+  async cancel(): Promise<void> {
+    const order = this.order();
+    if (!order || !await this.dialogs.confirm({
+      body: this.t('order_cancel_body', 'Cancel this order before it is paid?'),
+      confirmLabel: this.t('order_cancel', 'Cancel order'), cancelLabel: this.t('common_back', 'Back'), destructive: true
+    })) return;
+    await this.run('cancel', () => firstValueFrom(this.gateway.cancel(order.id, order.version ?? '')), this.t('order_cancelled', 'Order cancelled.'));
+  }
+
+  rate(criterion: typeof REVIEW_CRITERIA[number], value: number): void {
+    this.review.update(r => ({ ...r, [criterion]: value }));
+  }
+
+  setReview(field: 'comment' | 'recommends', value: string | boolean): void {
+    this.review.update(r => ({ ...r, [field]: value }));
+  }
+
+  async submitReview(): Promise<void> {
+    const order = this.order();
+    if (!order || this.busy()) return;
+    this.reviewAttempted.set(true);
+    if (Order.reviewProblems(this.review()).length) return;
+    await this.run('review', async () => {
+      await firstValueFrom(this.gateway.review(order.id, this.review()));
+      this.panel.set(null);
+      this.review.set(Order.emptyReview());
+      this.reviewAttempted.set(false);
+    }, this.t('order_review_thanks', 'Thank you. Your review is published on the teacher’s profile.'));
+  }
+
+  async openConversation(): Promise<void> {
+    const order = this.order();
+    if (!order || this.busy()) return;
+    const other = this.role() === 'teacher' ? order.studentId : order.teacherId;
+    this.busy.set('message');
+    this.actionError.set('');
+    try {
+      const conversationId = await firstValueFrom(this.gateway.conversation(order.id, other));
+      await this.router.navigate(['/conversations', conversationId]);
+    } catch (error) {
+      this.actionError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
+    } finally {
+      this.busy.set('');
+    }
+  }
+
+  private async run(action: OrderAction, work: () => Promise<unknown>, done: string): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(action);
+    this.actionError.set('');
+    try {
+      await work();
+      await this.load();
+      this.toasts.show(done);
+    } catch (error) {
+      this.actionError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
+      await this.load();
+    } finally {
+      this.busy.set('');
+    }
   }
 }
