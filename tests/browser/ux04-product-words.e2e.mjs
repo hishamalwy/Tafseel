@@ -98,7 +98,8 @@ await step('the student and teacher have work in several states', async () => {
 });
 
 await step('every student list speaks product words, in Arabic and in English', async () => {
-  const sections = ['/student/overview', '/student/requests', '/student/requests?tab=orders', '/student/sessions',
+  // Home is no longer a generic dashboard section (UX-01); its own words are audited by ux01-student-home.
+  const sections = ['/student/requests', '/student/requests?tab=orders', '/student/sessions',
     '/student/saved', '/student/payments', '/student/reviews', '/student/notifications', '/student/settings'];
   for (const section of sections) {
     await audit(student, section, { arabic: true });
