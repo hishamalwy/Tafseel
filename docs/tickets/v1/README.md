@@ -1,6 +1,6 @@
 # V1 tickets — UX readiness (Release Control 3)
 
-**Status:** Release Control 3, 2026-09-15. Gates 1–3 written for the UX tickets and `FIN-01` using the
+**Status:** Release Control 3, 2026-09-15; batch A (UX-04, UX-05) built and released on 2026-09-16. Gates 1–3 written for the UX tickets and `FIN-01` using the
 [ticket template](../../engineering/templates/FEATURE_TICKET.md). Documentation only — no Gate 4 work has started.
 Board rules: [`SDLC.md`](../../engineering/SDLC.md) (Ready = Gates 1–3 complete; a `DECISION REQUIRED` keeps a ticket in
 Backlog). Blocker list: [`V1_RELEASE_BLOCKERS.md`](../../releases/V1_RELEASE_BLOCKERS.md).
@@ -10,8 +10,8 @@ Backlog). Blocker list: [`V1_RELEASE_BLOCKERS.md`](../../releases/V1_RELEASE_BLO
 | Ticket | Title | Size | 1 Business | 2 UX | 3 Contract | Board | Waits on |
 |--------|-------|------|------------|------|------------|-------|----------|
 | [FIN-01](./FIN-01.md) | Teacher earnings screen | M | ✅ | ✅ | ✅ no new contract | **Ready** | — |
-| [UX-04](./UX-04.md) | Product statuses and fields | S | ✅ | ✅ | ✅ no new contract | **Ready** | — |
-| [UX-05](./UX-05.md) | Remove duplicate marketplace paths | S | ✅ | ✅ | ✅ no new contract (one server link value fixed) | **Ready** | — |
+| [UX-04](./UX-04.md) | Product statuses and fields | S | ✅ | ✅ | ✅ no new contract | **Done** 2026-09-16 | — |
+| [UX-05](./UX-05.md) | Remove duplicate marketplace paths | S | ✅ | ✅ | ✅ no new contract (one server link value fixed) | **Done** 2026-09-16 | — |
 | [UX-07](./UX-07.md) | Hide unusable promo codes | S | ✅ | ✅ | ✅ no new contract | **Ready** | — |
 | [UX-08](./UX-08.md) | Hide AI assistant when disabled | S | ✅ | ✅ | ✅ **new** `GET /api/v1/ai/capabilities` | **Ready** | — |
 | [UX-01](./UX-01.md) | Student home: action first | M | ✅ | ✅ | ✅ no new contract | **Ready** | UX-04 (build) |
@@ -42,7 +42,7 @@ flowchart LR
 
 | Batch | Tickets | Why together / why this order |
 |-------|---------|-------------------------------|
-| **A** | UX-04 + UX-05 | Two small, independent, no contract change; UX-04 is the vocabulary every later screen uses; UX-05 removes the duplicate path before homes and navigation link to it |
+| ~~**A**~~ | ~~UX-04 + UX-05~~ | **Done 2026-09-16** ([audit](../../audits/ux04-ux05-2026-09-16/README.md)): Angular 353/353, SQL Server 224/224, strict gate 217/217/0, route probe 63/63, UX-04 journey 7/7 and UX-05 journey 6/6, Waves 1, 2, 3A and 3B green |
 | **B** | FIN-01 | One journey (teacher money view); unblocks UX-02 |
 | **C** | UX-01 | One major journey (student home) |
 | **D** | UX-02 | One major journey (teacher home) — after FIN-01 |

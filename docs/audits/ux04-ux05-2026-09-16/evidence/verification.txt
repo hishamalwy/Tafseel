@@ -1,0 +1,18 @@
+HEAD 0870a63  uncommitted: 46
+restore --locked-mode: exit 0
+format --verify-no-changes: exit 0
+build Release (incl. Angular): exit 0   0 Warning(s)  0 Error(s) 
+Tafseel.ArchitectureTests: Failed:     0, Passed:     1, Skipped:     0, Total:     1
+Tafseel.Domain.Tests: Failed:     0, Passed:   117, Skipped:     0, Total:   117
+Tafseel.Application.Tests: Failed:     0, Passed:    14, Skipped:     0, Total:    14
+integration provider-neutral: Failed:     0, Passed:   374, Skipped:     0, Total:   374
+integration SQL Server: Failed:     0, Passed:   224, Skipped:     0, Total:   224
+angular unit tests: exit 0   Test Files 39 passed (39)  Tests 353 passed (353) 
+contract gate: exit 0  API contract: 217 client call shapes, 217 route matches, 0 violations
+contract gate --strict: exit 0  Contract gate passed with 0 known violation(s) tracked for remediation.
+check-js: exit 0  JavaScript checks passed: 116 source files parse; 2 locale shells, 7 prerendered pages each; no eval; legacy runtime absent.
+ef has-pending-model-changes: exit 0  No changes have been made to the model since the last migration.
+dotnet publish: exit 0
+validate-publish.ps1: exit 0  Publish smoke validation passed.
+deploy-gates.tests.ps1: exit 0  Passed: 57  Failed: 0
+done
