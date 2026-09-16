@@ -216,6 +216,12 @@ export const routes: Routes = [
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
     loadChildren: () => import('@features/earnings/earnings.routes').then(m => m.EARNINGS_ROUTES)
   },
+  // The teacher's home is its own action-first screen (UX-02), ahead of the generic dashboard sections.
+  {
+    path: 'teacher/home',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/teacher-home/teacher-home.routes').then(m => m.TEACHER_HOME_ROUTES)
+  },
   {
     path: 'teacher/publication',
     canActivate: [authenticatedGuard, roleGuard('Teacher')],

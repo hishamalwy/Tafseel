@@ -48,7 +48,8 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
   Teacher: {
     role: 'Teacher', basePath: '/teacher', titleKey: 'td_title', title: 'Teacher workspace',
     areas: [
-      area('home', 'Home', [tab('home', 'Home', ['/teachers/me/business/home-summary', '/withdrawals/balances', '/notifications?pageSize=100'])]),
+      // Home is its own action-first screen (UX-02); the lists behind it stay in Work and Earnings.
+      area('home', 'Home', [tab('home', 'Home', [])]),
       area('work', 'Work', [tab('requests', 'Requests', ['/learning-requests/assigned?pageSize=50']), tab('orders', 'Orders', ['/orders/assigned?pageSize=50']), tab('sessions', 'Sessions', ['/live-sessions/mine?pageSize=50'])]),
       area('opportunities', 'Opportunities', [tab('opportunities', 'Opportunities', ['/open-marketplace/opportunities?pageSize=50'])]),
       area('messages', 'Messages', [tab('messages', 'Messages', ['/conversations?pageSize=50'])]),

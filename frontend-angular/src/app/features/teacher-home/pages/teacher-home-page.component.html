@@ -1,0 +1,167 @@
+<tf-workspace-shell role="Teacher" section="home">
+  @if (loading()) {
+    <div class="tf-home" data-state="loading" role="status" aria-live="polite">
+      <span class="tf-sr-only">{{ t('common_loading', 'Loading…') }}</span>
+      <p class="tf-home-greeting tf-skeleton"></p>
+      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
+      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
+    </div>
+  } @else if (error()) {
+    <div class="tf-state" data-state="error" data-testid="home-error" role="alert">
+      <p class="tf-state-title">{{ t('th_error', 'We couldn’t load your home.') }}</p>
+      <p class="tf-state-body">{{ error() }}</p>
+      <button type="button" class="tf-button" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (home(); as view) {
+    <div class="tf-home">
+      <h1 class="tf-home-greeting" data-testid="home-greeting">{{
+        locale.format('th_greeting', { firstName: firstName() }, 'Hi {firstName}') }}</h1>
+
+      @if (setup(); as card) {
+        <section class="tf-home-card tf-home-setup" data-testid="home-setup" [attr.data-ready]="card.ready || null">
+          <h2>{{ t(card.title.labelKey, card.title.fallback) }}</h2>
+          @if (card.body; as body) {
+            <p class="tf-home-supporting">{{ t(body.labelKey, body.fallback) }}</p>
+          }
+          @if (card.cta; as cta) {
+            <a class="tf-button" data-testid="home-setup-cta" [routerLink]="cta.link">{{
+              t(cta.label.labelKey, cta.label.fallback) }}</a>
+          }
+          @if (!card.ready) {
+            <p class="tf-home-steps" data-testid="home-steps-left">{{
+              locale.format('th_steps_left', { n: card.stepsLeft }, 'Steps left: {n}') }}</p>
+          }
+        </section>
+      }
+
+      @if (!applying()) {
+        @if (view.actions.length || failed().work || !setup()) {
+        <section class="tf-home-section" data-testid="home-actions" aria-labelledby="home-actions-title">
+          <h2 id="home-actions-title">{{ t('th_actions_title', 'Needs your attention') }}</h2>
+          @if (failed().work) {
+            <p class="tf-home-section-error" data-testid="home-work-error" role="status">
+              {{ t('th_section_error', 'Couldn’t load.') }}
+              <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+            </p>
+          } @else if (view.actions.length) {
+            @for (card of view.actions; track card.key; let first = $first) {
+              <article class="tf-home-card" data-testid="home-action-card" [attr.data-card]="card.key">
+                <h3>{{ card.title }}</h3>
+                @if (card.supporting) { <p class="tf-home-supporting">{{ card.supporting }}</p> }
+                @if (card.amount; as amount) {
+                  <p class="tf-home-supporting tf-home-money" data-testid="home-card-amount">{{ t('th_your_net_label', 'Your earnings') }}
+                    <tf-price [amount]="$any(amount.value)" [currency]="$any(amount.currency) ?? 'SAR'" /></p>
+                }
+                <a [class]="first && !setup() ? 'tf-button' : 'tf-button tf-button-secondary'" data-testid="home-card-cta"
+                   [routerLink]="card.link.path">{{ card.cta }}</a>
+              </article>
+            }
+            @if (view.moreActions) {
+              <a class="tf-home-more" data-testid="home-more-actions" routerLink="/teacher/work" [queryParams]="{ view: 'action' }">{{
+                locale.format('th_more_actions', { n: view.moreActions }, 'See everything that needs you ({n})') }}</a>
+            }
+          } @else {
+            <p class="tf-home-quiet" data-testid="home-nothing-needed">{{
+              t('th_nothing_needed', 'Nothing needs your attention right now.') }}</p>
+          }
+          <a class="tf-home-link" data-testid="home-see-work" routerLink="/teacher/work">{{
+            t('th_see_all_work', 'See all my work') }}</a>
+        </section>
+        }
+
+        @if (published()) {
+          <section class="tf-home-section" data-testid="home-opportunities" aria-labelledby="home-opportunities-title">
+            <h2 id="home-opportunities-title">{{ t('th_opportunities_title', 'Open requests for you') }}</h2>
+            @if (failed().opportunities) {
+              <p class="tf-home-section-error" data-testid="home-opportunities-error" role="status">
+                {{ t('th_section_error', 'Couldn’t load.') }}
+                <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+              </p>
+            } @else if (view.opportunities.length) {
+              @for (item of view.opportunities; track item.key) {
+                <article class="tf-home-card" data-testid="home-opportunity">
+                  <h3>{{ item.title }}</h3>
+                  <p class="tf-home-supporting">{{ item.supporting }}</p>
+                  <p class="tf-home-supporting">{{ item.deadline }}</p>
+                  <p class="tf-home-supporting tf-home-money" data-testid="home-opportunity-budget">
+                    @if (item.budget; as budget) {
+                      {{ t('th_budget_label', 'Budget') }}
+                      <tf-price [amount]="$any(budget.min ?? budget.max)" [currency]="$any(budget.currency) ?? 'SAR'" />
+                      @if (budget.min !== null && budget.min !== undefined && budget.max !== null && budget.max !== undefined) {
+                        <span>–</span>
+                        <tf-price [amount]="$any(budget.max)" [currency]="$any(budget.currency) ?? 'SAR'" />
+                      }
+                    } @else {
+                      {{ t('th_budget_flexible', 'Flexible budget') }}
+                    }
+                  </p>
+                  <a class="tf-button tf-button-secondary" data-testid="home-opportunity-open"
+                     [routerLink]="item.link.path">{{ item.cta }}</a>
+                </article>
+              }
+              <a class="tf-home-more" data-testid="home-see-opportunities" routerLink="/teacher/opportunities">{{
+                locale.format('th_see_all_opportunities', { n: view.opportunityCount }, 'See all ({n})') }}</a>
+            } @else {
+              <p class="tf-home-quiet" data-testid="home-no-opportunities">{{
+                t('th_no_opportunities', 'No open requests match your services right now.') }}</p>
+            }
+          </section>
+        }
+
+        @if (view.upcoming; as session) {
+          <section class="tf-home-section" data-testid="home-upcoming" aria-labelledby="home-upcoming-title">
+            <h2 id="home-upcoming-title">{{ t('th_upcoming_title', 'Your next session') }}</h2>
+            <article class="tf-home-card">
+              <div class="tf-home-card-head">
+                <h3>{{ session.title }}</h3>
+                @if (session.status; as status) {
+                  <span class="tf-badge" [attr.data-tone]="status.tone">{{ t(status.labelKey, status.fallback) }}</span>
+                }
+              </div>
+              <p class="tf-home-supporting">{{ session.supporting }}</p>
+              <a class="tf-home-link" data-testid="home-session-open" [routerLink]="session.link.path">{{ session.cta }}</a>
+            </article>
+          </section>
+        }
+
+        @if (!view.earnings.empty || failed().earnings || !setup()) {
+        <section class="tf-home-section" data-testid="home-earnings" aria-labelledby="home-earnings-title">
+          <h2 id="home-earnings-title">{{ t('th_earnings_title', 'Earnings') }}</h2>
+          <article class="tf-home-card">
+            @if (failed().earnings) {
+              <p class="tf-home-section-error" data-testid="home-earnings-error" role="status">
+                {{ t('th_section_error', 'Couldn’t load.') }}
+                <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+              </p>
+            } @else if (view.earnings.empty || !view.earnings.view) {
+              <p class="tf-home-quiet" data-testid="home-no-earnings">{{ t('earn_empty_title', 'No earnings yet') }}</p>
+            } @else {
+              <div class="tf-home-earnings">
+                <p data-testid="home-available">
+                  <span>{{ t('earn_available', 'Available to withdraw') }}</span>
+                  <strong><tf-price [amount]="view.earnings.view.available" [currency]="view.earnings.view.currency" /></strong>
+                </p>
+                <p data-testid="home-clearing">
+                  <span>{{ t('earn_clearing', 'Clearing') }}</span>
+                  <strong><tf-price [amount]="view.earnings.view.clearing" [currency]="view.earnings.view.currency" /></strong>
+                </p>
+                @if (view.earnings.view.nextClearance; as next) {
+                  @if (next.kind === 'date') {
+                    <p class="tf-home-supporting" data-testid="home-next-clearance">{{
+                      locale.format('earn_next_date', { date: date(next.at) }, 'The next amount becomes available on {date}') }}</p>
+                  } @else if (next.kind === 'soon') {
+                    <p class="tf-home-supporting" data-testid="home-next-clearance">{{
+                      t('earn_next_soon', 'Becoming available soon') }}</p>
+                  }
+                }
+              </div>
+            }
+            <a class="tf-home-link" data-testid="home-earnings-details" routerLink="/teacher/earnings">{{
+              t('th_earnings_details', 'Earnings details') }}</a>
+          </article>
+        </section>
+        }
+      }
+    </div>
+  }
+</tf-workspace-shell>
