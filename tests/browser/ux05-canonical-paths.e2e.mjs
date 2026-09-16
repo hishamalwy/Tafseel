@@ -127,7 +127,7 @@ await step('5. the payment reminder links to the reserved request, reads in Arab
   assert.equal(link, `/requests/${requestId}`, 'the reminder names the request, not the retired list');
 
   await visit(page, `${BASE}/ar/student/notifications`);
-  const action = page.locator(`[data-testid=notification-action][href^="/ar/requests/${requestId}"]`);
+  const action = page.locator(`[data-testid=notification-action][href="/ar/requests/${requestId}/"], [data-testid=notification-action][href="/ar/requests/${requestId}"]`);
   await action.waitFor({ state: 'visible', timeout: 15000 });
   const card = page.locator('article', { has: action });
   assert.match(await card.innerText(), /أكمل الدفع قبل انتهاء حجز العرض/);

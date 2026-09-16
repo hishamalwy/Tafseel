@@ -191,7 +191,7 @@ await step('UX-05 /requests forwards each role to its canonical screen and no in
   await t.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === '/en/teacher/opportunities', { timeout: 15000 });
   assert.equal(await t.locator(inline).count(), 0, 'no inline marketplace on the teacher side');
   await t.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
-  await t.waitForURL(url => new URL(String(url)).pathname === `/en/teacher/opportunities/${openRequestId}`, { timeout: 15000 });
+  await t.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === `/en/teacher/opportunities/${openRequestId}`, { timeout: 15000 });
   await t.locator('[data-testid=offer-form]').waitFor({ timeout: 15000 });
   assert.equal(await t.locator(inline).count(), 0);
 
@@ -200,7 +200,7 @@ await step('UX-05 /requests forwards each role to its canonical screen and no in
   await p.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === '/en/requests/new', { timeout: 15000 });
   await p.locator('[data-testid=request-modes]').waitFor({ timeout: 15000 });
   await p.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
-  await p.waitForURL(url => new URL(String(url)).pathname === `/en/requests/${openRequestId}`, { timeout: 15000 });
+  await p.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === `/en/requests/${openRequestId}`, { timeout: 15000 });
   await p.locator('[data-testid=request-status]').waitFor({ timeout: 15000 });
   assert.equal(await p.locator(inline).count(), 0, 'no inline marketplace on the student side');
   assert.equal(sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM TeacherOffers WHERE LearningRequestId = '${openRequestId}'`).trim(), '0', 'redirects send nothing');

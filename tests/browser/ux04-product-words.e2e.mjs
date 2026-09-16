@@ -80,6 +80,8 @@ await step('the student and teacher have work in several states', async () => {
   // A direct request, accepted so an order awaits payment; a second one still waiting for the teacher.
   const accepted = await sendDirectRequest(student, SEED.teacherA, directTitle);
   await acceptRequest(teacher, accepted, 150);
+  // The wizard is left on its "sent" screen; a full load starts the second request from the beginning.
+  await visit(student.page, `${BASE}/ar/student/overview`);
   await sendDirectRequest(student, SEED.teacherB, `${directTitle} (2)`);
   // An open request with one offer: the student sees offers, teacher A sees an opportunity they answered.
   const published = await api(studentEmail, 'POST', '/api/v1/open-marketplace/requests', {
@@ -145,11 +147,16 @@ await step('the teacher reads the same order from their own side, and their mone
   assert.deepEqual(order.badges, ['Waiting for the student’s payment'], 'the teacher waits on the student, not on "Payment required"');
   assert.ok(order.labels.includes('Your net earnings'), `net earnings named: ${order.labels}`);
 
+  // This teacher has finished no work yet, so there is no balance to show; the money words that do
+  // appear are the policy and the performance counters, and none of them is an internal term.
   const earnings = await readCards(await audit(teacherAr, '/teacher/earnings', { arabic: true }));
-  const balance = earnings.find(c => c.labels.includes('متاح للسحب'));
-  assert.ok(balance, `the balance card names what can be withdrawn: ${JSON.stringify(earnings.map(c => c.labels))}`);
-  assert.ok(balance.labels.includes('قيد الإتاحة'), 'and what is still clearing');
-  assert.doesNotMatch(balance.text, /ledger|escrow|maturity|pendingClearance/i, 'no internal money words');
+  assert.ok(earnings.some(c => c.labels.includes('صافي الأرباح')), `earnings are named: ${JSON.stringify(earnings.map(c => c.labels))}`);
+  const withdrawals = await readCards(await audit(teacherAr, '/teacher/earnings?tab=withdrawals', { arabic: true }));
+  const policy = withdrawals.find(c => c.labels.includes('الحد الأدنى للسحب'));
+  assert.ok(policy, `the withdrawal policy is in words: ${JSON.stringify(withdrawals.map(c => c.labels))}`);
+  assert.ok(policy.labels.includes('يصل عادةً خلال'), 'and says how long a transfer takes');
+  for (const card of [...earnings, ...withdrawals])
+    assert.doesNotMatch(card.text, /ledger|escrow|maturity|pendingClearance|minimumAmount/i, 'no internal money words');
   await shot(teacherAr.page, 'ux04-teacher-earnings-ar');
 });
 
