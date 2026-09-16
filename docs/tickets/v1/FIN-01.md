@@ -8,8 +8,8 @@
 | **Blocker** | yes |
 | **Size** | M |
 | **Owner** | Frontend (Angular) · Product review |
-| **Status** | Ready |
-| **Gates** | ☑ 1 Business ☑ 2 UX ☑ 3 Contract ☐ 4 Build ☐ 5 E2E/Release |
+| **Status** | **Done** (2026-09-16, `feat/fin01-teacher-earnings`) |
+| **Gates** | ☑ 1 Business ☑ 2 UX ☑ 3 Contract ☑ 4 Build ☑ 5 E2E/Release |
 
 ## Actor
 Teacher (signed in, role Teacher).
@@ -159,14 +159,14 @@ not available.
 None new. Existing API request logging covers the two reads.
 
 ## Acceptance criteria
-- [ ] AC1 Available, Clearing and (when > 0) Being transferred are shown with AR/EN labels above; no raw field names, "Currency", ids or Refresh/search controls.
-- [ ] AC2 Clearing shows «أقرب مبلغ يصبح متاحًا في {date}» when `nextClearanceAt` is in the future, «يصبح متاحًا قريبًا» when in the past, and no date line when null.
-- [ ] AC3 When `0 < available < minimumAmount`, the below-minimum helper is shown; the minimum comes from the policy response, not a constant.
-- [ ] AC4 Empty balances (or all zeros) show the empty state with "Browse open requests".
-- [ ] AC5 A failed balances call shows the error state with retry; a failed policy call still shows amounts without minimum/settlement lines.
-- [ ] AC6 The analytics counters and the statement download are not on the screen.
-- [ ] AC7 At 390px in Arabic: no horizontal scroll, amounts readable, accordion works, touch targets ≥ 44px.
-- [ ] AC8 The explanation text's day count equals Contract §3.9 (7 days).
+- [x] AC1 Available, Clearing and (when > 0) Being transferred are shown with AR/EN labels above; no raw field names, "Currency", ids or Refresh/search controls.
+- [x] AC2 Clearing shows «أقرب مبلغ يصبح متاحًا في {date}» when `nextClearanceAt` is in the future, «يصبح متاحًا قريبًا» when in the past, and no date line when null.
+- [x] AC3 When `0 < available < minimumAmount`, the below-minimum helper is shown; the minimum comes from the policy response, not a constant.
+- [x] AC4 Empty balances (or all zeros) show the empty state with "Browse open requests".
+- [x] AC5 A failed balances call shows the error state with retry; a failed policy call still shows amounts without minimum/settlement lines.
+- [x] AC6 The analytics counters and the statement download are not on the screen.
+- [x] AC7 At 390px in Arabic: no horizontal scroll, amounts readable, accordion works, touch targets ≥ 44px.
+- [x] AC8 The explanation text's day count equals Contract §3.9 (7 days).
 
 ## Tests
 | Level | Test | Proves |
@@ -188,4 +188,35 @@ None new. Existing API request logging covers the two reads.
 - None blocking. Consumed by `UX-02` (earnings summary) and followed by `FIN-03`.
 
 ## Evidence (filled at Done)
-—
+
+**Commits:** `509745d` (model, gateway, use case, page, route, locales, integration test) ·
+`b88bed6` (browser journey, UX-04 sweep update, route probe).
+
+**Built:** `/teacher/earnings` is its own screen (`features/earnings/`): Available to withdraw with the
+minimum from the policy endpoint, Clearing with the objection-period sentence and the next-availability date,
+Being transferred only when a withdrawal is in flight, and a collapsed explanation of the seven-day window.
+No withdraw button (that is `FIN-03`), no analytics, no movement list, and no ledger, escrow, maturity or
+account word. The old Earnings tabs are gone from the generic dashboard. `features/earnings/models/earnings.ts`
+is pure, so `UX-02`'s home summary can read the same authoritative model.
+
+**Tests:** Angular **369/369 in 41 files** (was 353/39): `earnings.spec.ts` (6 cases: the three amounts,
+the transferring card only above zero, date/soon/none, below-minimum from the policy, empty, unusable values)
+and `teacher-earnings-page.component.spec.ts` (10 cases: the four states, both languages, loading, balances
+failure vs policy failure, zero available, no dead button, no internal words). SQL Server **225/225** with
+`Balances_tell_the_teacher_when_the_clearing_amount_becomes_available`: after a completed order the net is
+clearing with `nextClearanceAt` = the maturity date; after the maturity worker it is available with no date;
+a student gets 403 and an anonymous caller 401 from balances and policy. Strict contract gate 215/215/0
+(no endpoint changed). Route probe 64/64.
+
+**Browser journey:** `tests/browser/fin01-teacher-earnings.e2e.mjs` — **7/7**
+([log](../../audits/fin01-2026-09-16/evidence/e2e/fin01-teacher-earnings.log)). The balance is earned through
+the real flow (request → pay → start → deliver → complete), then the Arabic phone screen shows it under
+«قيد الإتاحة» — not as withdrawable — with the date and the explanation; the empty state and the student's
+403/route refusal are proven in the same run.
+[Screenshots](../../audits/fin01-2026-09-16/evidence/e2e/screenshots/).
+Regressions: UX-04 7/7, UX-05 6/6, Wave 3B direct order 15/15.
+
+**Found while building:** the minimum sentence interpolated the amount as text, putting the Latin code
+`50 SAR` inside an Arabic sentence (now drawn by `tf-price`), and with `available = 0` the page still said
+"You can request a withdrawal of this amount" (the sentence now appears only when there is something to
+withdraw). Both fixed here; details in the [audit](../../audits/fin01-2026-09-16/README.md).

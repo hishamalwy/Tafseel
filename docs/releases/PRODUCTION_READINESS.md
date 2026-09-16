@@ -24,7 +24,7 @@ category — there is **no overall percentage**, because the categories are not 
 | Legal / operations | 0 | 2 | **0%** |
 | Rollback / recovery | 1 | 2 | **50%** |
 
-**Launch decision:** not ready. Tafseel is **42 blocker tickets** from V1 production readiness (UX-04 and UX-05 were built and released on 2026-09-16; Release Control 3 raised and
+**Launch decision:** not ready. Tafseel is **41 blocker tickets** from V1 production readiness (UX-04, UX-05 and FIN-01 were built and released on 2026-09-16; Release Control 3 raised and
 decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](../tickets/v1/README.md)).
 
 ---
@@ -41,7 +41,7 @@ decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](
 | P6 | Live session book → pay → join → completion and no-show settlement | ✅ (mock meeting) | `wave3b-live-session` 9/9 |
 | P7 | Teacher supply: apply → review → profile → offerings → availability → publish | ✅ | `wave3a-teacher-supply` 18/18 |
 | P8 | Quality review queue and decisions | ✅ | `wave3a-teacher-supply` 18/18 |
-| P9 | Teacher earnings, payout profile, withdrawals | ❌ | FIN-01, FIN-02, FIN-03 |
+| P9 | Teacher earnings, payout profile, withdrawals | ❌ | FIN-02, FIN-03 (FIN-01 earnings done 2026-09-16) |
 | P10 | Admin payout verification and withdrawal processing | ❌ | FIN-04, FIN-05 |
 | P11 | Admin refund | ❌ | FIN-06 |
 | P12 | Admin dispute handling complete (message parties, resolve) | ❌ | FIN-07 |
@@ -57,7 +57,7 @@ decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](
 |---|------|-------|-------------------|
 | U1 | Item screens use the "next step" pattern (request, offers, opportunity, order, session, messages) | ✅ | Wave 3B |
 | U2 | Primary student order flow verified in Arabic at 390px (RTL, no overflow, no spill) | ✅ | `wave3b-direct-order` |
-| U3 | Arabic/English string coverage gate | ✅ | `check:i18n` 1,054 keys |
+| U3 | Arabic/English string coverage gate | ✅ | `check:i18n` 1,067 keys |
 | U4 | Student home is action-first | ❌ | UX-01 |
 | U5 | Teacher home is action-first | ❌ | UX-02 |
 | U6 | V1 navigation (5–7 destinations per role) | ❌ | UX-03 |

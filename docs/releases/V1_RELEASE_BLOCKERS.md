@@ -8,6 +8,9 @@ checklist: [`PRODUCTION_READINESS.md`](./PRODUCTION_READINESS.md).
 
 No ticket here was started in Release Control 1.
 
+**Batch B built (2026-09-16):** `FIN-01` is **Done** — see the [FIN-01 audit](../audits/fin01-2026-09-16/README.md).
+The count below drops from 42 to 41.
+
 **Batch A built (2026-09-16):** `UX-04` and `UX-05` are **Done** — see the
 [batch audit](../audits/ux04-ux05-2026-09-16/README.md). The count below drops from 44 to 42.
 
@@ -57,7 +60,7 @@ recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISI
 
 | ID | Title | Pri | Blocker | Depends on | Size | Business | UX | Contract | Completion evidence |
 |----|-------|-----|---------|------------|------|----------|----|----------|---------------------|
-| FIN-01 | **Teacher earnings screen** — available to withdraw, clearing, next availability date, being transferred; product wording (J12-01). No movement list: no JSON API exists (statement/analytics are B11-09) — [FIN-01](../tickets/v1/FIN-01.md) | P1 | yes | — | M | ✅ | ✅ | ✅ (no new contract: `GET /withdrawals/balances`, `/withdrawals/policy`) | Page spec; IT balance after completion shows pending then available (existing FinancialSafety tests); journey: complete order → teacher sees pending clearance amount, Arabic phone |
+| FIN-01 | **Teacher earnings screen** — available to withdraw, clearing, next availability date, being transferred; product wording (J12-01). No movement list: no JSON API exists (statement/analytics are B11-09) — [FIN-01](../tickets/v1/FIN-01.md) | P1 | done 2026-09-16 | — | M | ✅ | ✅ | ✅ (no new contract: `GET /withdrawals/balances`, `/withdrawals/policy`) | Angular 369/369 (model + page specs), SQL Server 225/225 (`Balances_tell_the_teacher_…`: clearing with its date, available after maturity, 403/401), journey `fin01-teacher-earnings` 7/7 — [audit](../audits/fin01-2026-09-16/README.md) |
 | FIN-02 | **Teacher payout profile** — submit, see verification state and rejection reason; destination information handled as PAY-04a defines (J12-02) | P1 | yes | PAY-04a | M | ◐ | ❌ | ◐ (`GET/PUT /withdrawals/profile`) | Auth tests (other teacher 404); journey submit → pending → verified (after FIN-04) |
 | FIN-03 | **Withdrawal request and history** — minimum 50 SAR, from Available only, status, rejection returns funds (J12-03) | P1 | yes | FIN-01, FIN-02 | M | ◐ | ❌ | ◐ (`POST /withdrawals`, `GET /withdrawals/mine`, `/withdrawals/policy`) | Journey: available balance → request → Admin processes (FIN-05) → completed; below-minimum and unverified refusals |
 | FIN-04 | **Admin payout-profile verification** — queue, approve/reject with reason (J12-04) | P1 | yes | FIN-02 | S | ◐ | ❌ | ◐ (`GET /admin/payout-profiles`, `POST …/{teacherId}/review`) | Auth tests (non-admin 403); journey approve and reject |
@@ -148,24 +151,24 @@ tables above (rows whose Blocker column is "yes").
 
 | Measure | Count | Tickets |
 |---------|-------|---------|
-| **Total V1 blocker tickets** | **42** (50 at RC1 → 44 after RC2 → 45 with DEC-13 → 44 when it was decided → 42 with UX-04 and UX-05 done) | DEC 2 · FIN 7 · PROD 1 · PAY 4 · MEET 1 · SEC 5 · INF 7 · OBS 2 · DATA 1 · REL 1 · ENG 1 · UX 7 · QA 2 · LEG 1 |
-| Change from Release Control 1 | −7 decisions closed, +1 UX-09; PAY-04 replaced by PAY-04a (PAY-04b → V1.1); **DEC-13 raised and decided in Release Control 3 (net 0)**; UX-09 re-estimated S → M; **UX-04 and UX-05 done (−2)** | |
-| Ready for implementation now (gates complete, no open dependency) | **12**, plus QA-02 except its dispute-resolution step (waits for FIN-07) | SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, FIN-01, UX-07, UX-08 |
-| UX tickets Ready (gates complete) but waiting on other tickets (build order) | **5** | UX-01 (UX-04 ✅), UX-02 (FIN-01), UX-03 (UX-01, UX-02), UX-09 (UX-04 ✅), UX-06 (the other UX tickets) |
+| **Total V1 blocker tickets** | **41** (50 at RC1 → 44 after RC2 → 45 with DEC-13 → 44 when it was decided → 42 with UX-04 and UX-05 done → 41 with FIN-01 done) | DEC 2 · FIN 6 · PROD 1 · PAY 4 · MEET 1 · SEC 5 · INF 7 · OBS 2 · DATA 1 · REL 1 · ENG 1 · UX 7 · QA 2 · LEG 1 |
+| Change from Release Control 1 | −7 decisions closed, +1 UX-09; PAY-04 replaced by PAY-04a (PAY-04b → V1.1); **DEC-13 raised and decided in Release Control 3 (net 0)**; UX-09 re-estimated S → M; **UX-04, UX-05 and FIN-01 done (−3)** | |
+| Ready for implementation now (gates complete, no open dependency) | **11**, plus QA-02 except its dispute-resolution step (waits for FIN-07) | SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-07, UX-08 |
+| UX tickets Ready (gates complete) but waiting on other tickets (build order) | **5** | UX-01 (UX-04 ✅), UX-02 (FIN-01 ✅), UX-03 (UX-01, UX-02), UX-09 (UX-04 ✅), UX-06 (the other UX tickets) |
 | Open blocking decisions | **2** | DEC-08 (legal/tax advice), DEC-12 (provider and region) |
 | Directly blocked by an open decision | **7** | PAY-01 (contract sign-off only), SEC-04, INF-03, INF-04, INF-07, OBS-01, LEG-01 |
 | Transitively dependent on an open decision | **18** | FIN-02, FIN-03, FIN-04, FIN-05, PAY-01, PAY-02, PAY-03, PAY-04a, SEC-04, INF-03, INF-04, INF-07, OBS-01, OBS-02, DATA-01, REL-01, QA-01, LEG-01 |
-| Independent of open decisions | **22** | FIN-01, FIN-06, FIN-07, PROD-01, MEET-01, SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-01, UX-02, UX-03, UX-06, UX-07, UX-08, UX-09, QA-02 |
+| Independent of open decisions | **21** | FIN-06, FIN-07, PROD-01, MEET-01, SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-01, UX-02, UX-03, UX-06, UX-07, UX-08, UX-09, QA-02 |
 | Requiring external / provider work | **11** | PAY-01, PAY-02, PAY-03, PAY-04a, MEET-01, SEC-01, SEC-02, INF-02, INF-03, INF-06, LEG-01 |
 | UX-only | **7** | UX-01, UX-02, UX-03, UX-06, UX-07, UX-08, UX-09 (UX-04 and UX-05 are done) |
 | Security / infrastructure / operations | **17** | SEC-01…05, INF-01…07, OBS-01, OBS-02, DATA-01, REL-01, ENG-01 |
-| Product engineering (money-out, catalog) | **8** | FIN-01…07, PROD-01 |
+| Product engineering (money-out, catalog) | **7** | FIN-02…07, PROD-01 (FIN-01 done) |
 | Verification | **2** | QA-01, QA-02 |
 | Non-blocking tickets tracked here | 7 | DEC-03, DEC-07, DEC-09, FIN-08, OPS-01…03 (+ UX-10 to triage) |
 
 The category rows overlap on purpose; the first row is the single authoritative total.
 
-**Tafseel is 42 tickets away from V1 production readiness** (UX-04 and UX-05 were built and released on 2026-09-16). DEC-08 may add TAX tickets and DEC-12 may add
+**Tafseel is 41 tickets away from V1 production readiness** (UX-04, UX-05 and FIN-01 were built and released on 2026-09-16). DEC-08 may add TAX tickets and DEC-12 may add
 STOR-01 when they are decided; the count is recalculated then.
 
 ### Critical path after the decisions
@@ -197,5 +200,5 @@ INF-03 → DATA-01 / REL-01 → QA-01.
 3. Gate writing (UX and contract) for PROD-01, FIN-06, FIN-07 (FIN-01 and UX-01…09 written in Release Control 3; DEC-13 decided).
 4. After PAY-01: PAY-04a → FIN-02/FIN-04 → FIN-03 → FIN-05; PAY-02 → PAY-03.
 5. After DEC-12: INF-03, INF-04, INF-07, SEC-04, OBS-01, OBS-02, DATA-01, REL-01; LEG-01 after DEC-08.
-6. UX (Release Control 3 batches, [tickets](../tickets/v1/README.md#recommended-batches-wip-one-major-journey-or-two-small-independent-tickets)): ~~A UX-04 + UX-05~~ (done 2026-09-16) → B FIN-01 → C UX-01 → D UX-02 → E UX-03 → F UX-07 + UX-08 (can be pulled forward) → G UX-09 (DEC-13 decided; after UX-04) → H UX-06.
+6. UX (Release Control 3 batches, [tickets](../tickets/v1/README.md#recommended-batches-wip-one-major-journey-or-two-small-independent-tickets)): ~~A UX-04 + UX-05~~ → ~~B FIN-01~~ (both done 2026-09-16) → C UX-01 → D UX-02 → E UX-03 → F UX-07 + UX-08 (can be pulled forward) → G UX-09 (DEC-13 decided; after UX-04) → H UX-06.
 7. QA-01, then launch decision.
