@@ -131,8 +131,7 @@ await step('the student’s own work reads as its state, not its number', async 
 
 await step('every teacher list speaks product words, in Arabic and in English', async () => {
   const sections = ['/teacher/home', '/teacher/work', '/teacher/work?tab=orders', '/teacher/work?tab=sessions',
-    '/teacher/opportunities', '/teacher/qualifications', '/teacher/earnings', '/teacher/earnings?tab=withdrawals',
-    '/teacher/settings'];
+    '/teacher/opportunities', '/teacher/qualifications', '/teacher/settings'];
   for (const section of sections) {
     await audit(teacherAr, section, { arabic: true });
     await audit(teacher, section, { arabic: false });
@@ -147,16 +146,13 @@ await step('the teacher reads the same order from their own side, and their mone
   assert.deepEqual(order.badges, ['Waiting for the student’s payment'], 'the teacher waits on the student, not on "Payment required"');
   assert.ok(order.labels.includes('Your net earnings'), `net earnings named: ${order.labels}`);
 
-  // This teacher has finished no work yet, so there is no balance to show; the money words that do
-  // appear are the policy and the performance counters, and none of them is an internal term.
-  const earnings = await readCards(await audit(teacherAr, '/teacher/earnings', { arabic: true }));
-  assert.ok(earnings.some(c => c.labels.includes('صافي الأرباح')), `earnings are named: ${JSON.stringify(earnings.map(c => c.labels))}`);
-  const withdrawals = await readCards(await audit(teacherAr, '/teacher/earnings?tab=withdrawals', { arabic: true }));
-  const policy = withdrawals.find(c => c.labels.includes('الحد الأدنى للسحب'));
-  assert.ok(policy, `the withdrawal policy is in words: ${JSON.stringify(withdrawals.map(c => c.labels))}`);
-  assert.ok(policy.labels.includes('يصل عادةً خلال'), 'and says how long a transfer takes');
-  for (const card of [...earnings, ...withdrawals])
-    assert.doesNotMatch(card.text, /ledger|escrow|maturity|pendingClearance|minimumAmount/i, 'no internal money words');
+  // Earnings is its own screen since FIN-01, so it is not part of the generic-list sweep above; its own
+  // journey (fin01-teacher-earnings) proves it. Here we only check it speaks the same product language.
+  await visit(teacherAr.page, `${BASE}/ar/teacher/earnings`);
+  await teacherAr.page.locator('[data-testid=earnings-empty], [data-testid=earnings-available]').first().waitFor({ timeout: 20000 });
+  const money = await teacherAr.page.locator('main').innerText();
+  assert.doesNotMatch(money, /ledger|escrow|maturity|pendingClearance|minimumAmount/i, 'no internal money words');
+  assert.doesNotMatch(money, /[A-Za-z]{3,}/, 'the Arabic earnings screen carries no English product words');
   await shot(teacherAr.page, 'ux04-teacher-earnings-ar');
 });
 

@@ -78,7 +78,7 @@ for p in /app/ /app/support.js /app/js/api.js /app/js/vendor/babel.min.js /app/c
 done
 # Wave 3A: the supply screens, and old dashboard links to the sections that moved.
 for p in /en/teacher/profile /en/teacher/services /en/teacher/availability /en/teacher/publication \
-         /en/teacher/qualifications /en/quality/applications "/ar/quality/applications/$G" /en/quality/showcases; do
+         /en/teacher/qualifications /ar/teacher/earnings /en/quality/applications "/ar/quality/applications/$G" /en/quality/showcases; do
   check GET "$p" ar 200
 done
 check GET "/app/Tafseel-Quality-Dashboard.dc.html?section=applications&selectedId=$G" en 302 "/en/quality/applications?selectedId=$G"
