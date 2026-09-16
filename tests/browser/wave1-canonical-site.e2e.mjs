@@ -242,8 +242,10 @@ await step("J9-04 notification actions: internal only, keyboard, locale kept, ma
 await step("J9-04 notification action works at phone width in Arabic", async () => {
   const { ctx, page } = await signedIn({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: "ar-SA" }, "ar");
   await visit(page, `${BASE}/ar/student/notifications`);
-  const action = page.locator("article", { hasText: "Order update" }).locator("[data-testid=notification-action]");
+  // UX-04: the fixtures' English server titles are not shown in Arabic; the action is found by where it goes.
+  const action = page.locator(`[data-testid=notification-action][href*="/orders/${orderId}"]`);
   await action.waitFor({ state: "visible", timeout: 15000 });
+  assert.equal(await page.getByText("Order update").count(), 0, "no English notification title in the Arabic list");
   const box = await action.boundingBox();
   assert.ok(box && box.width <= 390 && box.height >= 44, "the action fits the screen and is a 44px target");
   await action.tap();

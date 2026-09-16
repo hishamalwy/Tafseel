@@ -8,9 +8,12 @@
  *   J1-07  profile favourite toggle: PUT then DELETE /favorite-teachers/{teacherId}
  *   J3-02  teacher profile -> request wizard -> submit: POST /learning-requests with the five keys
  *   J3-07  teacher accepts in the dialog: four terms, If-Match, Idempotency-Key -> order awaiting payment
- *   J4-05  teacher opportunity -> send offer: POST /open-marketplace/opportunities/{id}/offers
- *   J4-02  student open-request list from /learning-requests/mine
- *   J4-07  student chooses the offer: select route, If-Match + X-Offer-Version, reserved, no order, no checkout
+ *   UX-05  the retired inline marketplace (/requests) forwards to the canonical screens; its forms are gone
+ *
+ * J4-05 (send an offer), J4-02 and J4-07 (compare and choose an offer) were proven here on the Wave 2
+ * inline marketplace at /requests. UX-05 retired that page; the same calls are proven on the canonical
+ * screens by tests/browser/wave3b-open-marketplace.e2e.mjs (/teacher/opportunities/:id,
+ * /requests/:id/offers: offer POST/PUT, If-Match + X-Offer-Version, stale selection 409, reservation, no order).
  *
  * Environment:
  *   TAFSEEL_BASE_URL       default http://localhost:5312
@@ -179,54 +182,29 @@ await step('J3-07 teacher accepts in the dialog and an order awaiting payment ex
   await shot(page, 'accepted');
 });
 
-await step('J4-05 teacher opportunity -> send offer posts SubmitTeacherOffer to the opportunity route', async () => {
+await step('UX-05 /requests forwards each role to its canonical screen and no inline marketplace form remains', async () => {
   openRequestId = await publishOpenRequest();
-  const { page } = teacher;
-  await page.goto(`${BASE}/en/requests`, { waitUntil: 'networkidle' });
-  await page.locator('.tf-market-row', { hasText: openTitle }).click();
-  const form = page.locator('.tf-market-offer-form');
-  await form.waitFor({ state: 'visible', timeout: 15000 });
-  await form.locator('input[name=amount]').fill('180');
-  await form.locator('input[name=deliveryDays]').fill('2');
-  await form.locator('input[name=includedRevisions]').fill('3');
-  await form.locator('select[name=validityDays]').selectOption('14');
-  await form.locator('textarea[name=message]').fill('I can explain every exercise step by step.');
+  const inline = '.tf-market-offer-form, .tf-market-row, [data-testid=offer-reservation], [data-testid=offer-sent]';
 
-  const offered = waitForCall(page, 'POST', new RegExp(`^/api/v1/open-marketplace/opportunities/${openRequestId}/offers$`));
-  await form.locator('button[type=submit]').click();
-  const response = await offered;
-  assert.equal(response.status(), 201, await response.text());
-  assert.deepEqual(response.request().postDataJSON(),
-    { amount: 180, deliveryHours: 48, includedRevisions: 3, validityHours: 336, message: 'I can explain every exercise step by step.' });
-  await page.locator('[data-testid=offer-sent]').waitFor({ timeout: 15000 });
-  await shot(page, 'offer-sent');
-});
+  const t = teacher.page;
+  await t.goto(`${BASE}/en/requests`, { waitUntil: 'networkidle' });
+  await t.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === '/en/teacher/opportunities', { timeout: 15000 });
+  assert.equal(await t.locator(inline).count(), 0, 'no inline marketplace on the teacher side');
+  await t.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
+  await t.waitForURL(url => new URL(String(url)).pathname === `/en/teacher/opportunities/${openRequestId}`, { timeout: 15000 });
+  await t.locator('[data-testid=offer-form]').waitFor({ timeout: 15000 });
+  assert.equal(await t.locator(inline).count(), 0);
 
-await step('J4-02 + J4-07 student sees the offer and chooses it: reserved, no order, no checkout', async () => {
-  const { page } = student;
-  const listed = waitForCall(page, 'GET', /^\/api\/v1\/learning-requests\/mine$/);
-  await page.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
-  assert.equal((await listed).status(), 200);
-  assert.ok(!page.sent.some(r => r.method() === 'GET' && new URL(r.url()).pathname === '/api/v1/open-marketplace/requests'));
-
-  const offer = page.locator('[data-testid=offer]').first();
-  await offer.waitFor({ state: 'visible', timeout: 15000 });
-  assert.match(await offer.innerText(), /3 revisions included/);
-  await offer.getByRole('button', { name: /choose offer/i }).click();
-
-  const selected = waitForCall(page, 'POST', new RegExp(`^/api/v1/open-marketplace/requests/${openRequestId}/offers/[^/]+/select$`));
-  await page.locator('dialog[open]').getByRole('button', { name: /choose offer/i }).click();
-  const response = await selected;
-  const headers = await response.request().allHeaders();
-  assert.equal(response.status(), 204, await response.text());
-  assert.ok(headers['if-match'], 'If-Match (request version) sent');
-  assert.ok(headers['x-offer-version'], 'X-Offer-Version sent');
-
-  await page.locator('[data-testid=offer-reservation]').waitFor({ state: 'visible', timeout: 15000 });
-  assert.match(new URL(page.url()).pathname, /^\/en\/requests\/?$/, 'stays on the marketplace, not checkout');
-  assert.equal(sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM Orders WHERE LearningRequestId = '${openRequestId}'`).trim(), '0');
-  assert.equal(sql(`SET NOCOUNT ON; SELECT Status FROM LearningRequests WHERE Id = '${openRequestId}'`).trim(), '6');
-  await shot(page, 'offer-reserved');
+  const p = student.page;
+  await p.goto(`${BASE}/en/requests`, { waitUntil: 'networkidle' });
+  await p.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === '/en/requests/new', { timeout: 15000 });
+  await p.locator('[data-testid=request-modes]').waitFor({ timeout: 15000 });
+  await p.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
+  await p.waitForURL(url => new URL(String(url)).pathname === `/en/requests/${openRequestId}`, { timeout: 15000 });
+  await p.locator('[data-testid=request-status]').waitFor({ timeout: 15000 });
+  assert.equal(await p.locator(inline).count(), 0, 'no inline marketplace on the student side');
+  assert.equal(sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM TeacherOffers WHERE LearningRequestId = '${openRequestId}'`).trim(), '0', 'redirects send nothing');
+  await shot(p, 'requests-forwarded');
 });
 
 await step('no page error on any journey', async () => {
