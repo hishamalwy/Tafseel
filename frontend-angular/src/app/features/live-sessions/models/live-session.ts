@@ -7,6 +7,8 @@
  * These rules only decide what to offer; the server decides what happens.
  */
 
+import { Tone, Viewer, sessionStatus } from '@shared/vocabulary/status-vocabulary';
+
 export const SESSION_STATUS = {
   AWAITING_PAYMENT: 0, CONFIRMED: 1, COMPLETED: 2, CANCELLED: 3, STUDENT_NO_SHOW: 4, TEACHER_NO_SHOW: 5,
   COMPLETION_PENDING: 6, STUDENT_NO_SHOW_PENDING: 7, TEACHER_NO_SHOW_PENDING: 8
@@ -51,29 +53,18 @@ export interface LiveSession {
 export type SessionAction =
   | 'pay' | 'join' | 'reschedule' | 'respond-reschedule' | 'cancel' | 'complete' | 'no-show' | 'confirm-settlement' | 'attach';
 
-const STATUS_KEYS = [
-  'session_status_awaiting_payment', 'session_status_confirmed', 'session_status_completed', 'session_status_cancelled',
-  'session_status_student_no_show', 'session_status_teacher_no_show', 'session_status_completion_pending',
-  'session_status_student_no_show_pending', 'session_status_teacher_no_show_pending'
-] as const;
-
 export const Session = {
   roleOf(session: Pick<LiveSession, 'studentId' | 'teacherId'>, viewerId: string): 'student' | 'teacher' | null {
     return session.studentId === viewerId ? 'student' : session.teacherId === viewerId ? 'teacher' : null;
   },
 
-  statusKey(status: number): string { return STATUS_KEYS[status] ?? 'session_status_unknown'; },
-
-  statusTone(status: number): 'neutral' | 'info' | 'warning' | 'success' | 'danger' {
-    switch (status) {
-      case SESSION_STATUS.CONFIRMED: return 'info';
-      case SESSION_STATUS.AWAITING_PAYMENT: case SESSION_STATUS.COMPLETION_PENDING:
-      case SESSION_STATUS.STUDENT_NO_SHOW_PENDING: case SESSION_STATUS.TEACHER_NO_SHOW_PENDING: return 'warning';
-      case SESSION_STATUS.COMPLETED: return 'success';
-      case SESSION_STATUS.CANCELLED: case SESSION_STATUS.STUDENT_NO_SHOW: case SESSION_STATUS.TEACHER_NO_SHOW: return 'danger';
-      default: return 'neutral';
-    }
+  /** The status in the viewer's words (UX-04): a pending outcome reads differently to each side. */
+  statusKey(status: number, viewer: Viewer = 'student'): string {
+    const view = sessionStatus(status, viewer);
+    return view.labelKey === 'status_unknown' ? 'session_status_unknown' : view.labelKey;
   },
+
+  statusTone(status: number, viewer: Viewer = 'student'): Tone { return sessionStatus(status, viewer).tone; },
 
   joinOpensAt(session: Pick<LiveSession, 'startsAt'>): number { return Date.parse(session.startsAt) - JOIN_WINDOW_MINUTES * 60_000; },
   joinClosesAt(session: Pick<LiveSession, 'endsAt'>): number { return Date.parse(session.endsAt) + JOIN_WINDOW_MINUTES * 60_000; },

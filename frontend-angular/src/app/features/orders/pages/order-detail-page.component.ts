@@ -83,7 +83,7 @@ export class OrderDetailPageComponent {
   readonly statusLabel = computed(() => {
     const order = this.order();
     if (!order) return '';
-    const key = orderStatusKey(order);
+    const key = orderStatusKey(order, this.role() === 'teacher' ? 'teacher' : 'student');
     return this.t(key, ORDER_STATUS_FALLBACK[key]);
   });
 

@@ -17,23 +17,30 @@
       <span></span><tf-lang-toggle /><tf-theme-toggle />
     </header>
     <main class="tf-dashboard-content">
-      <header class="tf-dashboard-heading"><h1>{{ heading() }}</h1><button type="button" class="tf-button tf-button-secondary" (click)="reload()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button></header>
+      <header class="tf-dashboard-heading"><h1>{{ heading() }}</h1>@if (!productCards) { <button type="button" class="tf-button tf-button-secondary" (click)="reload()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button> }</header>
       @if (area().tabs.length > 1) { <nav class="tf-dashboard-tabs" [attr.aria-label]="t('dashboard_section_tabs', 'Section tabs')">@for (item of area().tabs; track item.key) { <button type="button" [class.active]="tab().key === item.key" (click)="chooseTab(item)">{{ tabLabel(item) }}</button> }</nav> }
       @if (tab().key === 'settings') {
         <section class="tf-dashboard-settings"><h2>{{ t('settings_profile', 'Profile & security') }}</h2><div class="tf-grid-2"><label class="tf-field"><span>{{ t('auth_full_name', 'Full name') }}</span><input [ngModel]="profileName()" (ngModelChange)="profileName.set($event)"></label><label class="tf-field"><span>{{ t('auth_full_name_english', 'English name') }}</span><input [ngModel]="profileNameEnglish()" (ngModelChange)="profileNameEnglish.set($event)"></label></div><div class="tf-form-actions"><button class="tf-button" type="button" (click)="saveProfile()">{{ t('common_save', 'Save') }}</button><button class="tf-button tf-button-secondary" type="button" (click)="exportData()">{{ t('settings_export_data', 'Export my data') }}</button></div></section>
       }
       @if (tab().key === 'notifications') { <button class="tf-button tf-button-secondary" type="button" (click)="markAllRead()">{{ t('notifications_mark_all', 'Mark all as read') }}</button> }
-      <label class="tf-dashboard-search"><span class="tf-sr-only">{{ t('common_search', 'Search') }}</span><input type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="t('common_search', 'Search')"></label>
+      @if (!productCards) { <label class="tf-dashboard-search"><span class="tf-sr-only">{{ t('common_search', 'Search') }}</span><input type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="t('common_search', 'Search')"></label> }
       @if (loading()) { <div class="tf-dashboard-loading" role="status">{{ t('common_loading', 'Loading…') }}<div class="tf-skeleton"></div><div class="tf-skeleton"></div></div> }
       @for (error of errors(); track error.source) { <div class="tf-alert" data-kind="error" role="alert"><strong>{{ t('dashboard_load_failed', 'This section could not be loaded.') }}</strong><button type="button" class="tf-button tf-button-secondary" (click)="reload()">{{ t('common_retry', 'Retry') }}</button></div> }
-      @if (!loading() && !rows().length && !errors().length) { <div class="tf-dashboard-empty"><h2>{{ t('common_empty_title', 'Nothing here yet') }}</h2><p>{{ t('common_empty_body', 'New activity will appear here.') }}</p></div> }
-      @if (!loading() && rows().length) {
+      @if (!loading() && !cards().length && !errors().length) { <div class="tf-dashboard-empty"><h2>{{ t('common_empty_title', 'Nothing here yet') }}</h2><p>{{ t('common_empty_body', 'New activity will appear here.') }}</p></div> }
+      @if (!loading() && cards().length) {
         <div class="tf-dashboard-grid">
-          @for (row of rows(); track row['id'] || $index) {
+          @for (item of cards(); track item.row['id'] || $index) { @let row = item.row; @let card = item.card;
             <article class="tf-dashboard-card" [class.is-focused]="isFocused(row)" [class.is-unread]="isNotification(row) && !row['readAt']" [attr.id]="isFocused(row) ? 'dashboard-item-' + row['id'] : null" [attr.tabindex]="isFocused(row) ? -1 : null" [attr.aria-current]="isFocused(row) ? 'true' : null">
-              <div class="tf-dashboard-card-head"><h2>{{ Dashboard.title(row) }}</h2>@if (row['status'] != null || row['statusName']) { <span class="tf-badge">{{ text(row['statusName'] || row['status']) }}</span> }</div>
-              @if (Dashboard.detail(row)) { <p>{{ Dashboard.detail(row) }}</p> }
-              <dl>@for (field of FIELDS; track field.key) { @if (row[field.key] != null) { <div><dt>{{ t(field.labelKey, field.fallback) }}</dt><dd>{{ text(row[field.key]) }}</dd></div> } }</dl>
+              @if (card) {
+                <div class="tf-dashboard-card-head"><h2>{{ card.title }}</h2>@for (badge of card.badges; track $index) { <span class="tf-badge" data-testid="card-status" [attr.data-tone]="badge.tone">{{ badge.text }}</span> }</div>
+                @if (card.secondary) { <p>{{ card.secondary }}</p> }
+                @if (card.body) { <p>{{ card.body }}</p> }
+                @if (card.fields.length) { <dl>@for (field of card.fields; track $index) { <div><dt>{{ field.label }}</dt><dd>{{ field.value }}</dd></div> }</dl> }
+              } @else {
+                <div class="tf-dashboard-card-head"><h2>{{ Dashboard.title(row) }}</h2>@if (row['status'] != null || row['statusName']) { <span class="tf-badge">{{ text(row['statusName'] || row['status']) }}</span> }</div>
+                @if (Dashboard.detail(row)) { <p>{{ Dashboard.detail(row) }}</p> }
+                <dl>@for (field of FIELDS; track field.key) { @if (row[field.key] != null) { <div><dt>{{ t(field.labelKey, field.fallback) }}</dt><dd>{{ text(row[field.key]) }}</dd></div> } }</dl>
+              }
               @if (filesOf(row, 'deliveries').length) {
                 <section class="tf-dashboard-files" [attr.aria-label]="t('delivery_files', 'Explanation files')">
                   <strong>{{ t('delivery_files', 'Explanation files') }}</strong>
@@ -64,7 +71,7 @@
                     <a class="tf-dashboard-card-link" data-testid="notification-action" [attr.href]="action.href" (click)="markRead(row)">{{ t('notification_open', 'View details') }}</a>
                   }
                 }
-                @if (Dashboard.detailLink(row); as link) { <a class="tf-dashboard-card-link" data-testid="row-open" [routerLink]="link">{{ t('dashboard_open', 'Open') }}</a> }
+                @if (Dashboard.detailLink(row); as link) { <a class="tf-dashboard-card-link" data-testid="row-open" [routerLink]="link">{{ card ? card.action : t('dashboard_open', 'Open') }}</a> }
                 @if (role === 'Teacher' && tab().key === 'requests') { @if (canAccept(row)) { <button type="button" data-testid="accept-request" (click)="rowAction(row, 'accept')">{{ t('td_accept', 'Accept') }}</button> } @if (canDecline(row)) { <button type="button" (click)="rowAction(row, 'decline')">{{ t('td_decline', 'Decline') }}</button> } }
                 @if (role === 'Admin' && ['users','teachers','students','reviewers'].includes(tab().key)) { <button type="button" (click)="rowAction(row, 'suspend')">{{ row['isSuspended'] ? t('admin_unsuspend', 'Unsuspend') : t('admin_suspend', 'Suspend') }}</button> }
                 @if (activeToggle(row)) { <button type="button" (click)="toggleActive(row)">{{ row['isActive'] ? t('common_disable', 'Disable') : t('common_enable', 'Enable') }}</button> }

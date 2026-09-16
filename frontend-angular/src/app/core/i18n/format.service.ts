@@ -72,6 +72,17 @@ export class FormatService {
     return this.date(value, { dateStyle: 'medium' });
   }
 
+  /** "2 hours ago" / «قبل ساعتين» within the last day; a date otherwise. */
+  relative(value: string | number | Date, now = Date.now()): string {
+    if (value == null || value === '') return '';
+    const at = new Date(value).getTime();
+    if (Number.isNaN(at)) return '';
+    const minutes = Math.round((now - at) / 60_000);
+    if (minutes < 0 || minutes >= 24 * 60) return this.dateOnly(value);
+    const words = new Intl.RelativeTimeFormat(this.intlLocale(), { numeric: 'auto' });
+    return minutes < 60 ? words.format(-minutes, 'minute') : words.format(-Math.floor(minutes / 60), 'hour');
+  }
+
   // ---- names and avatars ----
 
   userName(user: UserNameFields | null | undefined): string {

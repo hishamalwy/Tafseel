@@ -45,7 +45,7 @@
                 <h2><a [routerLink]="['/teachers', offer.teacherId]">{{ teacherName(offer) }}</a></h2>
                 <p>@if (offer.rating !== null) { ★ {{ fmt.number(offer.rating, { maximumFractionDigits: 1 }) }} · {{ locale.format('demand_reviews_n', { n: offer.reviewCount }, '{n} reviews') }} } @else { {{ t('tp_no_reviews', 'No reviews yet') }} }</p>
               </div>
-              <span class="tf-badge" [attr.data-tone]="offer.status === OFFER_STATUS.SELECTED ? 'warning' : 'neutral'">{{ t(Demand.offerStatusKey(offer.status), '') }}</span>
+              <span class="tf-badge" [attr.data-tone]="Demand.offerStatusTone(offer.status)">{{ t(Demand.offerStatusKey(offer.status), '') }}</span>
             </div>
             <dl class="tf-facts">
               <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="offer.amount" [currency]="offer.currency" /></dd></div>

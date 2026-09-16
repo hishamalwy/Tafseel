@@ -52,10 +52,6 @@
             <li><span>{{ t('pay_context_delivery', 'Delivery') }}</span><strong>{{ deliveryValue() }}</strong></li>
             <li><span>{{ t('pay_context_revisions', 'Revisions') }}</span><strong>{{ revisionsValue() }}</strong></li>
             <li><span>{{ t('pay_context_files', 'Files') }}</span><strong>{{ filesValue() }}</strong></li>
-            <li><span>{{ t('pay_order_id_label', 'Order') }}</span><strong class="tf-pay-mono">{{ shortOrderRef() }}</strong></li>
-            @if (ctx.payable.learningRequestId) {
-              <li><span>{{ t('pay_request_id_label', 'Request') }}</span><strong class="tf-pay-mono">{{ shortRequestRef() }}</strong></li>
-            }
           </ul>
 
           <div class="tf-req-context-protection">

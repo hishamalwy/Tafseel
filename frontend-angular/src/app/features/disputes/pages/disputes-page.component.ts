@@ -342,10 +342,11 @@ export class DisputesPageComponent {
     return this.c().statuses[['open', 'under-review', 'resolved'].indexOf(d.status)] ?? '';
   }
 
-  private statusTone(d: Dispute): 'ok' | 'warn' | 'info' {
-    if (d.status === 'resolved') return 'ok';
-    if (d.status === 'under-review') return 'warn';
-    return 'info';
+  /** UX-04: open waits on the parties (warning), review is Tafseel's (info), resolved is history (neutral). */
+  private statusTone(d: Dispute): 'warn' | 'info' | 'neutral' {
+    if (d.status === 'resolved') return 'neutral';
+    if (d.status === 'under-review') return 'info';
+    return 'warn';
   }
 
   private senderLabel(senderId: string, d: Dispute): string {

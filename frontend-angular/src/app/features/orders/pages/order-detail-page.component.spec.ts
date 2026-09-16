@@ -51,7 +51,8 @@ describe('OrderDetailPageComponent', () => {
   it('shows what the order is, where it stands, its files and its history', async () => {
     const { page } = await open(() => of(DELIVERED));
     expect(page.querySelector('h1')?.textContent).toContain('Calculus limits');
-    expect(testId(page, 'order-status')?.textContent?.trim()).toBe('Delivered');
+    // UX-04: the student reads the delivered order as something to review.
+    expect(testId(page, 'order-status')?.textContent?.trim()).toBe('Delivered — review it');
     expect(page.textContent).toContain('limits.pdf');
     expect(testId(page, 'revisions-used')?.textContent?.trim()).toBe('1 / 2');
     expect(page.querySelectorAll('[data-testid="order-timeline"] li')).toHaveLength(1);
@@ -87,7 +88,7 @@ describe('OrderDetailPageComponent', () => {
     TestBed.resetTestingModule();
     const paid = await open(() => of({ ...DELIVERED, status: 0, paymentStatus: 1, deliveries: [] }));
     expect(testId(paid.page, 'pay-order')).toBeNull();
-    expect(testId(paid.page, 'order-status')?.textContent?.trim()).toBe('Payment confirmed');
+    expect(testId(paid.page, 'order-status')?.textContent?.trim()).toBe('Paid — waiting for the teacher to start');
 
     TestBed.resetTestingModule();
     const teacher = await open(() => of({ ...DELIVERED, status: 0, paymentStatus: 1, deliveries: [] }), { userId: 'teacher-1' });

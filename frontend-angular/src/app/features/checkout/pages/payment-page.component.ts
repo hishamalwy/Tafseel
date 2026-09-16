@@ -159,9 +159,6 @@ export class PaymentPageComponent {
       : this.total();
   });
 
-  readonly shortOrderRef = computed(() => shortId(this.context()?.payable.id));
-  readonly shortRequestRef = computed(() => shortId(this.context()?.payable.learningRequestId));
-
   readonly mockContinueLink = computed(() => {
     const payable = this.context()?.payable;
     if (!payable || !this.context()?.canResumeMock) return null;
@@ -229,9 +226,4 @@ export class PaymentPageComponent {
 
   /** Where to send the student back to after a completed initiation. */
   readonly dashboardLink = '/student';
-}
-
-function shortId(value: string | null | undefined): string {
-  const s = String(value ?? '');
-  return s.length > 8 ? s.slice(0, 8) : s;
 }

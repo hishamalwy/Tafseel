@@ -24,6 +24,7 @@ import { LangToggleComponent } from '@shared/components/lang-toggle.component';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
 import { AcceptRequestDialogComponent } from '../components/accept-request-dialog.component';
+import { CardFormat, DashboardCardView, presentCard } from '../models/dashboard-card';
 
 interface SourceResult { readonly source: string; readonly payload: unknown; readonly error?: string }
 
@@ -71,6 +72,33 @@ export class DashboardPageComponent {
     const rows: Record<string, unknown>[] = this.results().flatMap(result =>
       Dashboard.rows(result.payload).map(row => ({ ...row, _source: result.source })));
     return q ? rows.filter(row => JSON.stringify(row).toLocaleLowerCase().includes(q)) : rows;
+  });
+  /**
+   * Students and teachers see product cards (UX-04): statuses in words, a few labelled facts, one
+   * link, and no search box or refresh button. Admin and Quality keep the operational list.
+   */
+  readonly productCards = this.role === 'Student' || this.role === 'Teacher';
+  /** Each row with its product card; rows a student or teacher should not see are left out. */
+  readonly cards = computed<readonly { row: Record<string, unknown>; card: DashboardCardView | null }[]>(() => {
+    if (!this.productCards) return this.rows().map(row => ({ row, card: null }));
+    const fmt: CardFormat = {
+      lang: this.locale.lang(),
+      t: (key, fallback) => this.t(key, fallback),
+      format: (key, values, fallback) => this.locale.format(key, values, fallback),
+      money: (value, currency) => this.fmt.money(value, typeof currency === 'string' ? currency : undefined),
+      date: value => (typeof value === 'string' || typeof value === 'number' ? this.fmt.date(value) : ''),
+      relative: value => (typeof value === 'string' || typeof value === 'number' ? this.fmt.relative(value) : '')
+    };
+    const context = {
+      viewer: this.role === 'Teacher' ? 'teacher' as const : 'student' as const,
+      viewerId: this.sessionStore.current()?.userId ?? '',
+      now: Date.now(),
+      fmt
+    };
+    return this.rows().flatMap(row => {
+      const card = presentCard(row, context);
+      return card ? [{ row, card }] : [];
+    });
   });
   readonly errors = computed(() => this.results().filter(x => x.error));
   readonly heading = computed(() => this.t(this.tab().labelKey, this.tab().fallback));

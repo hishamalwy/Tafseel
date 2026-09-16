@@ -17,7 +17,7 @@
         <p class="tf-page-header-desc">{{ t('open_request_deadline', 'Needed by') }} {{ date(r.deadline) }}</p>
       </div>
       <div class="tf-page-header-actions">
-        <span class="tf-badge" [attr.data-tone]="Demand.statusTone(r.status)">{{ t(Demand.statusKey(r.status), '') }}</span>
+        <span class="tf-badge" [attr.data-tone]="Demand.statusTone(r.status, 'teacher')">{{ t(Demand.statusKey(r.status, 'teacher'), '') }}</span>
       </div>
     </header>
 
@@ -36,7 +36,7 @@
           @if (myOffer(); as mine) {
             @if (!editing()) {
               <dl class="tf-facts">
-                <div><dt>{{ t('apply_status_label', 'Status') }}</dt><dd>{{ t(Demand.offerStatusKey(mine.status), '') }}</dd></div>
+                <div><dt>{{ t('apply_status_label', 'Status') }}</dt><dd>{{ t(Demand.offerStatusKey(mine.status, 'teacher'), '') }}</dd></div>
                 <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="mine.amount" [currency]="mine.currency" /></dd></div>
                 <div><dt>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</dt><dd>{{ mine.deliveryHours }}</dd></div>
                 <div><dt>{{ t('setup_revisions', 'Revisions') }}</dt><dd>{{ mine.includedRevisions }}</dd></div>

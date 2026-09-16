@@ -17,7 +17,7 @@
         <p class="tf-page-header-desc">{{ t('demand_created', 'Created') }} {{ date(v.request.createdAt) }}</p>
       </div>
       <div class="tf-page-header-actions">
-        <span class="tf-badge" data-testid="request-status" [attr.data-status]="v.request.status" [attr.data-tone]="Demand.statusTone(v.request.status)">{{ t(Demand.statusKey(v.request.status), '') }}</span>
+        <span class="tf-badge" data-testid="request-status" [attr.data-status]="v.request.status" [attr.data-tone]="Demand.statusTone(v.request.status, isTeacher() ? 'teacher' : 'student', v.request.offerCount)">{{ t(Demand.statusKey(v.request.status, isTeacher() ? 'teacher' : 'student'), '') }}</span>
       </div>
     </header>
 

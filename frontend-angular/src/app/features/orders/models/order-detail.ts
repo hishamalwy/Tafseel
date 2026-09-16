@@ -1,4 +1,5 @@
 import { PartyNameFields } from '@shared/models/display-name';
+import { Viewer, orderStatus } from '@shared/vocabulary/status-vocabulary';
 
 /** `OrderStatus` as the API serializes it (numeric). */
 export const enum OrderStatus { AwaitingPayment = 0, InProgress = 1, Delivered = 2, RevisionRequested = 3, Completed = 4, Cancelled = 5 }
@@ -53,7 +54,10 @@ export interface OrderTimelineEvent {
 /** English wording for each status key, used when the locale table has not loaded. */
 export const ORDER_STATUS_FALLBACK: Readonly<Record<string, string>> = {
   order_status_payment_required: 'Payment required',
-  order_status_payment_confirmed: 'Payment confirmed',
+  order_status_payment_confirmed: 'Paid — waiting for the teacher to start',
+  order_status_awaiting_student_payment: 'Waiting for the student’s payment',
+  order_status_paid_start: 'Paid — start the work',
+  order_status_delivered_review: 'Delivered — review it',
   order_status_in_progress: 'In progress',
   order_status_delivered: 'Delivered',
   order_status_revision: 'Revision requested',
@@ -66,17 +70,9 @@ export const ORDER_STATUS_FALLBACK: Readonly<Record<string, string>> = {
  * The locale key for an order's state, using the same vocabulary as the dashboards. A paid
  * order that has not started yet is the one state the API has no single field for.
  */
-export function orderStatusKey(order: Pick<OrderDetail, 'status' | 'paymentStatus'>): string {
-  switch (order.status) {
-    case OrderStatus.AwaitingPayment:
-      return order.paymentStatus === OrderPaymentStatus.Paid ? 'order_status_payment_confirmed' : 'order_status_payment_required';
-    case OrderStatus.InProgress: return 'order_status_in_progress';
-    case OrderStatus.Delivered: return 'order_status_delivered';
-    case OrderStatus.RevisionRequested: return 'order_status_revision';
-    case OrderStatus.Completed: return 'order_status_completed';
-    case OrderStatus.Cancelled: return 'order_status_cancelled';
-    default: return 'order_status_unknown';
-  }
+export function orderStatusKey(order: Pick<OrderDetail, 'status' | 'paymentStatus'>, viewer: Viewer = 'student'): string {
+  const view = orderStatus(order.status, order.paymentStatus, viewer);
+  return view.labelKey === 'status_unknown' ? 'order_status_unknown' : view.labelKey;
 }
 
 export type OrderRole = 'student' | 'teacher' | null;

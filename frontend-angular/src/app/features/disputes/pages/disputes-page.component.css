@@ -142,6 +142,7 @@
 .tf-dispute-status[data-tone='ok'] { color: var(--success); }
 .tf-dispute-status[data-tone='warn'] { color: var(--warning); }
 .tf-dispute-status[data-tone='info'] { color: var(--primary); }
+.tf-dispute-status[data-tone='neutral'] { color: var(--muted); }
 .tf-dispute-status--pill {
   block-size: 28px;
   padding-inline: 10px;

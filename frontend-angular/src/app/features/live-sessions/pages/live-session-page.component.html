@@ -22,7 +22,7 @@
         <p class="tf-page-header-desc">{{ role() === 'teacher' ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}: {{ counterpart() }}</p>
       </div>
       <div class="tf-page-header-actions">
-        <span class="tf-badge" data-testid="session-status" [attr.data-status]="b.status" [attr.data-tone]="Session.statusTone(b.status)">{{ t(Session.statusKey(b.status), '') }}</span>
+        <span class="tf-badge" data-testid="session-status" [attr.data-status]="b.status" [attr.data-tone]="Session.statusTone(b.status, role() ?? 'student')">{{ t(Session.statusKey(b.status, role() ?? 'student'), '') }}</span>
       </div>
     </header>
 

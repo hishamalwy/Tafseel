@@ -8,6 +8,8 @@
  * authority and refuses anything these rules would have allowed by mistake.
  */
 
+import { Tone, Viewer, offerStatus, requestStatus } from '@shared/vocabulary/status-vocabulary';
+
 export const REQUEST_STATUS = {
   PENDING_TEACHER_REVIEW: 0, CLARIFICATION_REQUESTED: 1, ACCEPTED: 2, DECLINED: 3, CANCELLED: 4,
   OPEN_FOR_OFFERS: 5, AWAITING_PAYMENT: 6, CONVERTED_TO_ORDER: 7, EXPIRED: 8
@@ -153,28 +155,20 @@ export interface OfferInput {
 
 export type DraftProblem = 'required' | 'too_long' | 'out_of_range' | 'in_past' | 'budget_pair' | 'budget_order';
 
-const STATUS_KEYS = [
-  'demand_status_pending', 'demand_status_clarification', 'demand_status_accepted', 'demand_status_declined',
-  'demand_status_cancelled', 'demand_status_open', 'demand_status_reserved', 'demand_status_converted', 'demand_status_expired'
-] as const;
-
-const OFFER_STATUS_KEYS = [
-  'offer_status_submitted', 'offer_status_selected', 'offer_status_accepted', 'offer_status_withdrawn',
-  'offer_status_not_selected', 'offer_status_expired'
-] as const;
-
 export const Demand = {
-  statusKey(status: number): string { return STATUS_KEYS[status] ?? 'demand_status_unknown'; },
-  offerStatusKey(status: number): string { return OFFER_STATUS_KEYS[status] ?? 'demand_status_unknown'; },
+  // Words and tones come from the shared UX-04 vocabulary, so a list and this screen agree.
+  statusKey(status: number, viewer: Viewer = 'student'): string {
+    const view = requestStatus(status, viewer);
+    return view.labelKey === 'status_unknown' ? 'demand_status_unknown' : view.labelKey;
+  },
+  offerStatusKey(status: number, viewer: Viewer = 'student'): string {
+    const view = offerStatus(status, viewer);
+    return view.labelKey === 'status_unknown' ? 'demand_status_unknown' : view.labelKey;
+  },
+  offerStatusTone(status: number, viewer: Viewer = 'student'): Tone { return offerStatus(status, viewer).tone; },
 
-  statusTone(status: number): 'neutral' | 'info' | 'warning' | 'success' | 'danger' {
-    switch (status) {
-      case REQUEST_STATUS.PENDING_TEACHER_REVIEW: case REQUEST_STATUS.OPEN_FOR_OFFERS: return 'info';
-      case REQUEST_STATUS.CLARIFICATION_REQUESTED: case REQUEST_STATUS.AWAITING_PAYMENT: return 'warning';
-      case REQUEST_STATUS.ACCEPTED: case REQUEST_STATUS.CONVERTED_TO_ORDER: return 'success';
-      case REQUEST_STATUS.DECLINED: case REQUEST_STATUS.EXPIRED: return 'danger';
-      default: return 'neutral';
-    }
+  statusTone(status: number, viewer: Viewer = 'student', offerCount: number | null = null): Tone {
+    return requestStatus(status, viewer, offerCount).tone;
   },
 
   // ---- what the student may do (LearningRequest guards) ----
