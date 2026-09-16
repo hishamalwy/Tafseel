@@ -206,6 +206,11 @@ export const routes: Routes = [
     loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.AVAILABILITY_ROUTES)
   },
   {
+    path: 'teacher/earnings',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/earnings/earnings.routes').then(m => m.EARNINGS_ROUTES)
+  },
+  {
     path: 'teacher/publication',
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
     loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.PUBLICATION_ROUTES)

@@ -1,0 +1,74 @@
+<tf-workspace-shell role="Teacher" section="earnings">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <span class="tf-page-header-eyebrow">{{ t('earn_eyebrow', 'Your money') }}</span>
+      <h1>{{ t('earn_title', 'Earnings') }}</h1>
+      <p class="tf-page-header-desc">{{ t('earn_intro', 'What you can withdraw now, what is still clearing, and when it becomes available.') }}</p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="tf-earnings" data-state="loading" role="status" aria-live="polite">
+      <span class="tf-sr-only">{{ t('common_loading', 'Loading…') }}</span>
+      <div class="tf-earnings-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
+      <div class="tf-earnings-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
+    </div>
+  } @else if (error()) {
+    <div class="tf-state" data-state="error" data-testid="earnings-error" role="alert">
+      <p class="tf-state-title">{{ t('earn_error', 'We couldn’t load your earnings.') }}</p>
+      <p class="tf-state-body">{{ error() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Try again') }}</button>
+    </div>
+  } @else if (summary(); as data) {
+    @if (data.empty) {
+      <div class="tf-state" data-state="empty" data-testid="earnings-empty">
+        <p class="tf-state-title">{{ t('earn_empty_title', 'No earnings yet') }}</p>
+        <p class="tf-state-body">{{ t('earn_empty_body', 'Your earnings appear here after your first completed work: first as “Clearing”, then “Available to withdraw”.') }}</p>
+        <a class="tf-button" routerLink="/teacher/opportunities">{{ t('earn_empty_cta', 'Browse open requests') }}</a>
+      </div>
+    } @else {
+      <div class="tf-earnings">
+        @for (balance of data.balances; track balance.currency) {
+          <section class="tf-earnings-card" data-testid="earnings-available" aria-labelledby="earnings-available-title">
+            <h2 id="earnings-available-title">{{ t('earn_available', 'Available to withdraw') }}</h2>
+            <p class="tf-earnings-amount"><tf-price [amount]="balance.available" [currency]="balance.currency" size="xl" /></p>
+            @if (minimumNote(data, balance); as note) {
+              <p class="tf-earnings-help" data-testid="earnings-minimum">{{ note.before
+                }}<tf-price [amount]="note.amount" [currency]="note.currency" />{{ note.after }}</p>
+            }
+          </section>
+
+          <section class="tf-earnings-card" data-testid="earnings-clearing" aria-labelledby="earnings-clearing-title">
+            <h2 id="earnings-clearing-title">{{ t('earn_clearing', 'Clearing') }}</h2>
+            <p class="tf-earnings-amount"><tf-price [amount]="balance.clearing" [currency]="balance.currency" size="lg" /></p>
+            <p class="tf-earnings-help">{{ t('earn_clearing_help', 'Becomes available to withdraw once the objection period ends.') }}</p>
+            @if (balance.nextClearance.kind === 'date') {
+              <p class="tf-earnings-next" data-testid="earnings-next">
+                {{ locale.format('earn_next_date', { date: date(balance.nextClearance.at) }, 'The next amount becomes available on {date}') }}
+              </p>
+            } @else if (balance.nextClearance.kind === 'soon') {
+              <p class="tf-earnings-next" data-testid="earnings-next">{{ t('earn_next_soon', 'Becoming available soon') }}</p>
+            }
+          </section>
+
+          @if (balance.showTransferring) {
+            <section class="tf-earnings-card" data-testid="earnings-transferring" aria-labelledby="earnings-transferring-title">
+              <h2 id="earnings-transferring-title">{{ t('earn_transferring', 'Being transferred') }}</h2>
+              <p class="tf-earnings-amount"><tf-price [amount]="balance.transferring" [currency]="balance.currency" size="lg" /></p>
+              @if (data.policy; as policy) {
+                <p class="tf-earnings-help">
+                  {{ locale.format('earn_transferring_help', { days: policy.expectedSettlementBusinessDays }, 'A withdrawal is being processed. It usually arrives within {days} business days.') }}
+                </p>
+              }
+            </section>
+          }
+        }
+
+        <details class="tf-earnings-why" data-testid="earnings-why">
+          <summary>{{ t('earn_why_title', 'Why isn’t it available straight away?') }}</summary>
+          <p>{{ t('earn_why_body', 'After work is completed we hold your earnings for 7 days from the last delivery or the end of the session — the period in which the student can raise an objection. If an objection is opened, the amount stays held until it is resolved; then it becomes available to withdraw.') }}</p>
+        </details>
+      </div>
+    }
+  }
+</tf-workspace-shell>

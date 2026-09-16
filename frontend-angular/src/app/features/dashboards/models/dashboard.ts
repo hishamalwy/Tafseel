@@ -58,7 +58,8 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
       area('availability', 'Availability', [tab('availability', 'Availability', [])]),
       area('publication', 'Publication', [tab('publication', 'Publication', [])]),
       area('qualifications', 'Qualifications & reviews', [tab('qualifications', 'Qualifications', ['/teachers/me/qualifications']), tab('videos', 'Videos & showcases', ['/teachers/me/profile-videos', '/teachers/me/showcases?pageSize=20']), tab('reviews', 'Reviews', ['/teachers/me'])], 'dash_qualifications_reviews'),
-      area('earnings', 'Earnings', [tab('summary', 'Summary', ['/withdrawals/balances', '/teachers/me/business/analytics']), tab('withdrawals', 'Withdrawals', ['/withdrawals/mine?page=1&pageSize=20', '/withdrawals/profile', '/withdrawals/policy'])]),
+      // Earnings is its own screen (FIN-01); the withdrawal request and payout details are FIN-02/FIN-03.
+      area('earnings', 'Earnings', [tab('earnings', 'Earnings', [])]),
       area('settings', 'Settings', [tab('settings', 'Settings', ['/notification-preferences'])])
     ]
   },

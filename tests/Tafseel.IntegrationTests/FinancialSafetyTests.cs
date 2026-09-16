@@ -309,6 +309,45 @@ public sealed class FinancialSafetyTests : IClassFixture<SqlServerTafseelApiFact
         Assert.Contains("insufficient_balance", await attempt.Content.ReadAsStringAsync());
     }
 
+    /// <summary>
+    /// FIN-01 reads these three numbers and one date to tell a teacher what they can withdraw, what is
+    /// still clearing and when it becomes available; only the teacher may read them.
+    /// </summary>
+    [Fact]
+    public async Task Balances_tell_the_teacher_when_the_clearing_amount_becomes_available()
+    {
+        var data = await SeedAsync();
+        await PayAsync(data, "fin01-balances");
+        await DeliverAsync(data);
+        await CompleteAsync(data);
+
+        var teacher = await ClientAsync(data.TeacherEmail);
+        // Signed in before the clock jump below: a token minted "a week from now" is not yet valid.
+        var student = await ClientAsync(data.StudentEmail);
+        var clearing = JsonDocument.Parse(await teacher.GetStringAsync("/api/v1/withdrawals/balances"))
+            .RootElement.EnumerateArray().Single();
+        Assert.Equal("SAR", clearing.GetProperty("currency").GetString());
+        Assert.Equal(0m, clearing.GetProperty("available").GetDecimal());
+        Assert.Equal(TeacherNet, clearing.GetProperty("pendingClearance").GetDecimal());
+        Assert.Equal(0m, clearing.GetProperty("pendingWithdrawal").GetDecimal());
+        Assert.Equal(await MaturesAtAsync(data.OrderId),
+            clearing.GetProperty("nextClearanceAt").GetDateTimeOffset());
+
+        // After the objection period the same amount is withdrawable and there is no date left to announce.
+        factory.Clock.SetUtcNow((await MaturesAtAsync(data.OrderId)).AddMinutes(1));
+        await factory.Services.GetRequiredService<EarningsMaturityWorker>().MatureDueEarningsAsync(default);
+        var available = JsonDocument.Parse(await teacher.GetStringAsync("/api/v1/withdrawals/balances"))
+            .RootElement.EnumerateArray().Single();
+        Assert.Equal(TeacherNet, available.GetProperty("available").GetDecimal());
+        Assert.Equal(0m, available.GetProperty("pendingClearance").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, available.GetProperty("nextClearanceAt").ValueKind);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.GetAsync("/api/v1/withdrawals/balances")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await student.GetAsync("/api/v1/withdrawals/policy")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await factory.CreateClient().GetAsync("/api/v1/withdrawals/balances")).StatusCode);
+    }
+
     [Fact]
     public async Task Maturity_worker_promotes_only_after_the_dispute_deadline_and_is_idempotent()
     {

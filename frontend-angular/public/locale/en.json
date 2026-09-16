@@ -3920,5 +3920,20 @@
   "card_rating_value": "{rating} ({count})",
   "card_of_total": "{done} of {total}",
   "notification_type_new_message": "You have a new message",
-  "nav_open_requests": "Open requests"
+  "nav_open_requests": "Open requests",
+  "earn_title": "Earnings",
+  "earn_eyebrow": "Your money",
+  "earn_intro": "What you can withdraw now, what is still clearing, and when it becomes available.",
+  "earn_available_help": "You can request a withdrawal of this amount. The minimum withdrawal is {min}.",
+  "earn_available_below_min": "You need at least {min} to request a withdrawal.",
+  "earn_clearing_help": "Becomes available to withdraw once the objection period ends.",
+  "earn_next_date": "The next amount becomes available on {date}",
+  "earn_next_soon": "Becoming available soon",
+  "earn_transferring_help": "A withdrawal is being processed. It usually arrives within {days} business days.",
+  "earn_why_title": "Why isn’t it available straight away?",
+  "earn_why_body": "After work is completed we hold your earnings for 7 days from the last delivery or the end of the session — the period in which the student can raise an objection. If an objection is opened, the amount stays held until it is resolved; then it becomes available to withdraw.",
+  "earn_empty_title": "No earnings yet",
+  "earn_empty_body": "Your earnings appear here after your first completed work: first as “Clearing”, then “Available to withdraw”.",
+  "earn_empty_cta": "Browse open requests",
+  "earn_error": "We couldn’t load your earnings."
 }
