@@ -59,7 +59,7 @@ decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](
 | U2 | Primary student order flow verified in Arabic at 390px (RTL, no overflow, no spill) | ✅ | `wave3b-direct-order` |
 | U3 | Arabic/English string coverage gate | ✅ | `check:i18n` 1,067 keys |
 | U4 | Student home is action-first | ✅ | Done 2026-09-16 ([UX-01](../audits/ux01-2026-09-16/README.md)) |
-| U5 | Teacher home is action-first | ❌ | UX-02 |
+| U5 | Teacher home is action-first | ✅ | Done 2026-09-16 ([UX-02](../audits/ux02-2026-09-16/README.md)) |
 | U6 | V1 navigation (5–7 destinations per role) | ❌ | UX-03 |
 | U7 | No raw statuses, ids or technical field labels in lists | ✅ | UX-04 done 2026-09-16 (`ux04-product-words` 7/7) |
 | U8 | No duplicate paths to the same goal | ✅ | UX-05 done 2026-09-16 (`ux05-canonical-paths` 6/6) |
