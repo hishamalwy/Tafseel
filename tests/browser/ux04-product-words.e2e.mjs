@@ -131,7 +131,8 @@ await step('the student’s own work reads as its state, not its number', async 
 });
 
 await step('every teacher list speaks product words, in Arabic and in English', async () => {
-  const sections = ['/teacher/home', '/teacher/work', '/teacher/work?tab=orders', '/teacher/work?tab=sessions',
+  // Home is no longer a generic dashboard section (UX-02); its own words are audited by ux02-teacher-home.
+  const sections = ['/teacher/work', '/teacher/work?tab=orders', '/teacher/work?tab=sessions',
     '/teacher/opportunities', '/teacher/qualifications', '/teacher/settings'];
   for (const section of sections) {
     await audit(teacherAr, section, { arabic: true });

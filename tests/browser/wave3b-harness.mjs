@@ -342,7 +342,8 @@ async function waitForHost() {
   throw new Error(`${BASE} did not become ready`);
 }
 
-async function outboxLink(address, marker) {
+/** The link the host wrote to the dev outbox, for journeys that register their own accounts. */
+export async function outboxLink(address, marker) {
   if (!OUTBOX) throw new Error('Set TAFSEEL_DEV_OUTBOX');
   const safe = address.replace(/[^A-Za-z0-9@._-]/g, '_');
   for (let attempt = 0; attempt < 60; attempt++) {
