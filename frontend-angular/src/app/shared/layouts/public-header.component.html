@@ -7,8 +7,8 @@
     <nav data-hide-sm class="tf-nav-track tf-public-header__nav" [attr.aria-label]="labels().primaryNav">
       <a class="tf-nav-link" routerLink="/teachers" routerLinkActive="is-current"
          [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{ labels().browse }}</a>
-      <a class="tf-nav-link" routerLink="/requests" routerLinkActive="is-current"
-         ariaCurrentWhenActive="page">{{ labels().post }}</a>
+      <a class="tf-nav-link" data-testid="header-demand-link" [routerLink]="demandLink().path" routerLinkActive="is-current"
+         ariaCurrentWhenActive="page">{{ demandLink().label }}</a>
       <a class="tf-nav-link" routerLink="/about" routerLinkActive="is-current"
          ariaCurrentWhenActive="page">{{ labels().about }}</a>
     </nav>
@@ -41,7 +41,7 @@
   <div [id]="menuId()" [attr.data-public-menu]="menuOpen() ? 'open' : 'closed'" class="tf-shell">
     <nav [attr.aria-label]="labels().menu">
       <a routerLink="/teachers" (click)="closeMenu()">{{ labels().browse }}</a>
-      <a routerLink="/requests" (click)="closeMenu()">{{ labels().post }}</a>
+      <a [routerLink]="demandLink().path" (click)="closeMenu()">{{ demandLink().label }}</a>
       <a routerLink="/about" (click)="closeMenu()">{{ labels().about }}</a>
     </nav>
     <div class="tf-public-menu-actions">

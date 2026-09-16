@@ -195,7 +195,7 @@ public static class DependencyInjection
             "صف ما تحتاجه مرة واحدة واستقبل عروضًا متنافسة من معلمين مؤهلين.",
             "", "",
             "",
-            "Try it now", "جرّبها الآن", AppRoutes.OpenRequests,
+            "Try it now", "جرّبها الآن", AppRoutes.NewRequest,
             null, 1),
         (PromotionKind.Spotlight,
             "Spotlight", "الأكثر طلبًا",

@@ -133,7 +133,7 @@ export class LandingPageComponent {
     }
     return {
       primaryLabel: copy.studentPrimary,
-      primaryLink: '/requests',
+      primaryLink: '/requests/new',
       secondaryLabel: copy.studentSecondary,
       secondaryLink: '/teachers',
       isPost: true,

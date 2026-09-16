@@ -89,6 +89,12 @@ for p in /en/requests/new/open "/ar/requests/$G" "/en/requests/$G/offers" "/en/t
          "/ar/orders/$G" "/en/live-sessions/$G" /ar/messages "/en/conversations/$G" /en/checkout /en/checkout/simulator; do
   check GET "$p" ar 200
 done
+# UX-05: the retired inline marketplace page still answers (the app forwards it by role), and so do its old links.
+for p in /en/requests "/ar/requests?requestId=$G" /en/requests/new; do
+  check GET "$p" ar 200
+done
+check GET /app/Tafseel-Open-Marketplace.dc.html en 302 /en/requests
+check GET /app/Tafseel-Request.dc.html ar 302 /ar/requests/new
 check GET /app/assets/brand/tafseel-mark-dark.png ar 200
 check GET /favicon.ico ar 200
 csp=$(curl -s -D - -o /dev/null "$B/en/" | tr -d '\r' | grep -i '^content-security-policy:')

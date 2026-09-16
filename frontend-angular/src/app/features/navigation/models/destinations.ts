@@ -27,6 +27,24 @@ export function homeDestination(roles: readonly Role[]): Destination {
   return { path: '/' };
 }
 
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * `/requests`, the retired Wave 2 marketplace page (UX-05). Each goal now has one screen: a student
+ * posts through the request-mode choice and opens a request on its own page (its offers are one
+ * step further, `/requests/:id/offers`); a teacher's marketplace is Open requests. A stored link that
+ * named a request (`?requestId=`) still opens that request for either side; a value that is not a
+ * request id is ignored rather than followed. Admin and Quality have no marketplace screen.
+ */
+export function marketplaceDestination(roles: readonly Role[], requestId: string | null): Destination {
+  const id = requestId && GUID.test(requestId) ? requestId : '';
+  if (has(roles, 'Admin') || has(roles, 'QualityReviewer')) return homeDestination(roles);
+  // Someone who is both keeps the student path, as the header does.
+  if (has(roles, 'Student')) return { path: id ? `/requests/${id}` : '/requests/new' };
+  if (has(roles, 'Teacher')) return { path: id ? `/teacher/opportunities/${id}` : '/teacher/opportunities' };
+  return homeDestination(roles);
+}
+
 /** A dispute case. The dispute centre already opens a case from `selectedId`. */
 export function disputeDestination(disputeId: string): Destination {
   return { path: '/disputes', query: { selectedId: disputeId } };

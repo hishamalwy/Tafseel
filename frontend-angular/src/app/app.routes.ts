@@ -14,7 +14,7 @@ import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards
  *   Tafseel-Landing            /
  *   Tafseel-Browse-Teachers    /teachers/
  *   Tafseel-Teacher-Profile    /teachers/:teacherId/          (was ?id=)
- *   Tafseel-Open-Marketplace   /requests/
+ *   Tafseel-Open-Marketplace   /requests/  → /requests/new (student), /teacher/opportunities (teacher)
  *   Tafseel-Request            /requests/new/
  *   Tafseel-Book-Session       /sessions/book/                (?teacherId= is a modifier)
  *   Tafseel-Auth               /auth/
@@ -99,14 +99,9 @@ export const routes: Routes = [
     canActivate: [authenticatedGuard],
     loadChildren: () => import('@features/demand/demand.routes').then(m => m.REQUEST_ROUTES)
   },
-  {
-    path: 'requests',
-    pathMatch: 'full',
-    canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('@features/requests/pages/marketplace-page.component')
-        .then(m => m.MarketplacePageComponent)
-  },
+  // The Wave 2 inline marketplace is retired (UX-05): `/requests` only forwards to the canonical
+  // screen for the reader's role, keeping a `?requestId=` from a stored link.
+  { ...link('requests', m => m.MARKETPLACE_LINK), pathMatch: 'full' },
   {
     path: 'teachers',
     pathMatch: 'full',

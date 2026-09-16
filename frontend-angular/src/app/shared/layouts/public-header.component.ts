@@ -47,6 +47,14 @@ export class PublicHeaderComponent {
     return s?.hasAvatar ? `/api/v1/users/${s.userId}/avatar` : 'assets/brand/default-avatar.svg';
   });
 
+  /**
+   * One path per goal (UX-05): a visitor or student posts a request through the request-mode
+   * choice; a teacher's marketplace is Open requests, not the student's form.
+   */
+  readonly demandLink = computed(() => this.store.roles().includes('Teacher') && !this.store.roles().includes('Student')
+    ? { path: '/teacher/opportunities', label: this.t('nav_open_requests', 'Open requests') }
+    : { path: '/requests/new', label: this.labels().post });
+
   readonly labels = computed(() => ({
     home: this.t('nav_home', 'Tafseel home'),
     primaryNav: this.t('nav_primary', 'Primary'),

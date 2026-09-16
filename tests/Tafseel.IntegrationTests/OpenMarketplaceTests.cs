@@ -192,6 +192,49 @@ public sealed class OpenMarketplaceTests(SqlServerTafseelApiFactory factory)
     }
 
     [Fact]
+    public async Task Reservation_reminder_links_to_the_request_it_is_about()
+    {
+        var original = factory.Clock.GetUtcNow();
+        try
+        {
+            var data = await SeedAsync();
+            var student = await ClientAsync(data.Student.Email);
+            var teacher = await ClientAsync(data.TeacherA.Email);
+            var published = await student.PostAsJsonAsync("/api/v1/open-marketplace/requests", new
+            {
+                subjectId = data.SubjectId,
+                serviceCatalogItemId = data.CatalogId,
+                title = "Reminder destination",
+                requirements = "The payment reminder must open this request.",
+                deadline = original.AddDays(2),
+                budgetMin = (decimal?)null,
+                budgetMax = (decimal?)null
+            });
+            published.EnsureSuccessStatusCode();
+            var request = JsonDocument.Parse(await published.Content.ReadAsStringAsync()).RootElement;
+            var requestId = request.GetProperty("id").GetGuid();
+            var offer = await OfferAsync(teacher, requestId, 150, 48, "Reminder offer");
+            var select = new HttpRequestMessage(HttpMethod.Post,
+                $"/api/v1/open-marketplace/requests/{requestId}/offers/{offer.Id}/select");
+            select.Headers.TryAddWithoutValidation("If-Match", request.GetProperty("version").GetString());
+            select.Headers.TryAddWithoutValidation("X-Offer-Version", offer.Version);
+            (await student.SendAsync(select)).EnsureSuccessStatusCode();
+
+            // Inside the last 30 minutes of the 120-minute hold the worker reminds the student.
+            factory.Clock.SetUtcNow(original.AddMinutes(100));
+            await using (var scope = factory.Services.CreateAsyncScope())
+                await scope.ServiceProvider.GetRequiredService<OpenMarketplaceReservationExpiryService>()
+                    .RunAsync(CancellationToken.None);
+
+            var page = JsonDocument.Parse(await student.GetStringAsync("/api/v1/notifications?pageSize=50")).RootElement;
+            var reminder = Assert.Single(page.GetProperty("items").EnumerateArray(),
+                x => x.GetProperty("type").GetString() == "OfferReservationReminder");
+            Assert.Equal($"/requests/{requestId}", reminder.GetProperty("link").GetString());
+        }
+        finally { factory.Clock.SetUtcNow(original); }
+    }
+
+    [Fact]
     public async Task Suspended_teacher_cannot_submit_marketplace_offer()
     {
         var data = await SeedAsync();

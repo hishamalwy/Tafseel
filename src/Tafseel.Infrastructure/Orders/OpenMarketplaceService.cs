@@ -346,7 +346,7 @@ internal sealed class OpenMarketplaceReservationExpiryService(
             await notifications.QueueAsync(item.StudentId, "OfferReservationReminder",
                 "Complete payment to keep your Offer",
                 $"Your selected Offer reservation expires in about {minutes} minutes.",
-                AppRoutes.OpenRequests,
+                AppRoutes.Request(item.Id),
                 $"request:{item.Id}:reservation-reminder:{item.PaymentReservationExpiresAt.Value.UtcTicks}", true, ct);
         }
         if (reminders.Length > 0) await db.SaveChangesAsync(ct);
