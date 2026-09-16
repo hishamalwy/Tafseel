@@ -175,6 +175,12 @@ export const routes: Routes = [
   },
   // Messages are one screen for every role.
   { path: 'student/messages', pathMatch: 'full', redirectTo: '/messages' },
+  // The student's home is its own action-first screen (UX-01), ahead of the generic dashboard sections.
+  {
+    path: 'student/overview',
+    canActivate: [authenticatedGuard, roleGuard('Student')],
+    loadChildren: () => import('@features/student-home/student-home.routes').then(m => m.STUDENT_HOME_ROUTES)
+  },
   { path: 'teacher/messages', pathMatch: 'full', redirectTo: '/messages' },
   {
     path: 'student/:section',

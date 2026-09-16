@@ -33,7 +33,8 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
   Student: {
     role: 'Student', basePath: '/student', titleKey: 'sd_title', title: 'Student dashboard',
     areas: [
-      area('overview', 'Overview', [tab('overview', 'Overview', ['/learning-requests/mine?pageSize=50', '/orders/mine?pageSize=50', '/live-sessions/mine?pageSize=50', '/notifications?pageSize=100'])]),
+      // Home is its own action-first screen (UX-01); the lists behind it stay in My learning.
+      area('overview', 'Overview', [tab('overview', 'Overview', [])]),
       area('requests', 'My learning', [tab('requests', 'Requests', ['/learning-requests/mine?pageSize=50']), tab('orders', 'Orders', ['/orders/mine?pageSize=50'])], 'dash_my_learning'),
       area('sessions', 'Sessions', [tab('sessions', 'Sessions', ['/live-sessions/mine?pageSize=50'])]),
       area('messages', 'Messages', [tab('messages', 'Messages', ['/conversations?pageSize=50'])]),
