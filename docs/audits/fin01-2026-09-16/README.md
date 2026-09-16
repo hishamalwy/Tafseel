@@ -98,7 +98,7 @@ idempotency, reconciliation and the migrations are untouched. The only backend c
 |--------|------|
 | `509745d` | The earnings model, gateway, use case, page and route; the dashboard section reduced to the screen; locale keys; the balances integration test |
 | `b88bed6` | The FIN-01 browser journey, the UX-04 sweep update and the route probe |
-| `DOCS_COMMIT` | This report and the ticket, board, blocker and readiness updates |
+| `24904ce` | This report and the ticket, board, blocker and readiness updates |
 
 ## Blocker count
 
