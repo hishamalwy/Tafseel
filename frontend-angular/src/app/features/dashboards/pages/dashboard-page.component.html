@@ -1,11 +1,7 @@
 <div class="tf-dashboard" [class.drawer-open]="drawer()">
   <aside class="tf-dashboard-sidebar" id="dashboard-sidebar">
     <a routerLink="/" class="tf-dashboard-brand"><tf-brand-mark [width]="25" [height]="34" /></a>
-    <nav [attr.aria-label]="t('dashboard_navigation', 'Dashboard navigation')">
-      @for (item of config.areas; track item.key) {
-        <button type="button" [class.active]="area().key === item.key" (click)="navigate(item)">{{ areaLabel(item) }}</button>
-      }
-    </nav>
+    <tf-workspace-nav [role]="role" (navigated)="drawer.set(false)" />
   </aside>
   @if (drawer()) { <button class="tf-dashboard-backdrop" type="button" (click)="drawer.set(false)" [attr.aria-label]="t('common_close_navigation', 'Close navigation')"></button> }
   <section class="tf-dashboard-main">
@@ -14,7 +10,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
       </button>
       <div><strong>{{ t(config.titleKey, config.title) }}</strong><small>{{ sessionStore.current()?.fullName }}</small></div>
-      <span></span><tf-lang-toggle /><tf-theme-toggle />
+      <span></span><tf-notification-bell /><tf-account-menu [role]="role" /><tf-lang-toggle /><tf-theme-toggle />
     </header>
     <main class="tf-dashboard-content">
       <header class="tf-dashboard-heading"><h1>{{ heading() }}</h1>@if (!productCards) { <button type="button" class="tf-button tf-button-secondary" (click)="reload()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button> }</header>

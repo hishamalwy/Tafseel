@@ -3,6 +3,9 @@ import { RouterLink } from '@angular/router';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { LocaleService } from '@core/i18n/locale.service';
 import { DASHBOARDS, DashboardRole } from '@features/dashboards/models/dashboard';
+import { AccountMenuComponent } from '@features/navigation/pages/account-menu.component';
+import { NotificationBellComponent } from '@features/navigation/pages/notification-bell.component';
+import { WorkspaceNavComponent } from '@features/navigation/pages/workspace-nav.component';
 import { BrandMarkComponent } from '@shared/components/brand-mark.component';
 import { LangToggleComponent } from '@shared/components/lang-toggle.component';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle.component';
@@ -16,19 +19,13 @@ import { ThemeToggleComponent } from '@shared/components/theme-toggle.component'
 @Component({
   selector: 'tf-workspace-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BrandMarkComponent, LangToggleComponent, ThemeToggleComponent],
+  imports: [RouterLink, AccountMenuComponent, BrandMarkComponent, LangToggleComponent, NotificationBellComponent,
+    ThemeToggleComponent, WorkspaceNavComponent],
   template: `
     <div class="tf-dashboard-shell" data-stack="app">
       <aside class="tf-dash-sidebar" id="workspace-navigation" [attr.data-drawer]="drawer() ? 'open' : 'closed'">
         <a routerLink="/" class="tf-dash-brand" aria-label="Tafseel"><tf-brand-mark [width]="25" [height]="34" /></a>
-        <nav class="tf-dash-nav" [attr.aria-label]="t('dashboard_navigation', 'Dashboard navigation')">
-          <div class="tf-dash-nav-group">
-            @for (area of config().areas; track area.key) {
-              <a class="tf-dash-nav-item" [routerLink]="[config().basePath, area.key]" (click)="drawer.set(false)"
-                 [attr.aria-current]="area.key === section() ? 'page' : null">{{ t(area.labelKey, area.fallback) }}</a>
-            }
-          </div>
-        </nav>
+        <tf-workspace-nav [role]="role()" (navigated)="drawer.set(false)" />
       </aside>
       <button type="button" [attr.data-drawer-overlay]="drawer() ? 'open' : 'closed'"
               (click)="drawer.set(false)" [attr.aria-label]="t('common_close_navigation', 'Close navigation')"></button>
@@ -40,8 +37,7 @@ import { ThemeToggleComponent } from '@shared/components/theme-toggle.component'
           </button>
           <span class="tf-dash-header__title">{{ t(config().titleKey, config().title) }}</span>
           <div class="tf-dash-header__actions">
-            <span class="tf-dash-header__account-name">{{ session.current()?.fullName }}</span>
-            <tf-lang-toggle /><tf-theme-toggle />
+            <tf-notification-bell /><tf-account-menu [role]="role()" /><tf-lang-toggle /><tf-theme-toggle />
           </div>
         </header>
         <main class="tf-workspace-content" id="main-content"><ng-content /></main>

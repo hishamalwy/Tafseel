@@ -176,6 +176,25 @@ export const routes: Routes = [
   // Messages are one screen for every role.
   { path: 'student/messages', pathMatch: 'full', redirectTo: '/messages' },
   // The student's home is its own action-first screen (UX-01), ahead of the generic dashboard sections.
+  // "My requests & orders" (UX-03): requests, orders and live sessions in one place.
+  {
+    path: 'student/requests',
+    canActivate: [authenticatedGuard, roleGuard('Student')],
+    loadChildren: () => import('@features/work-list/work-list.routes').then(m => m.STUDENT_WORK_ROUTES)
+  },
+  // Retired student destinations. The capability is not gone — it moved to where it belongs — so the
+  // stored links keep working (UX-03 redirect table).
+  { path: 'student/sessions', pathMatch: 'full', redirectTo: '/student/requests' },
+  { path: 'student/payments', pathMatch: 'full', redirectTo: '/student/requests' },
+  { path: 'student/reviews', pathMatch: 'full', redirectTo: '/student/requests' },
+  // Saved teachers is a filter on Find a teacher now, so the old address carries the filter with it
+  // (a string redirectTo is a path only — the query needs a UrlTree).
+  {
+    path: 'student/saved',
+    pathMatch: 'full',
+    redirectTo: () => inject(Router).createUrlTree(['/teachers'], { queryParams: { saved: '1' } })
+  },
+  { path: 'student/notifications', pathMatch: 'full', redirectTo: '/student/overview' },
   {
     path: 'student/overview',
     canActivate: [authenticatedGuard, roleGuard('Student')],
@@ -216,6 +235,16 @@ export const routes: Routes = [
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
     loadChildren: () => import('@features/earnings/earnings.routes').then(m => m.EARNINGS_ROUTES)
   },
+  // "Work" (UX-03): the teacher's assigned requests, orders and live sessions in one place.
+  {
+    path: 'teacher/work',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/work-list/work-list.routes').then(m => m.TEACHER_WORK_ROUTES)
+  },
+  // Hidden in V1: the quality team reviews showcases again in B11-05.
+  { path: 'quality/showcases', pathMatch: 'full', redirectTo: '/quality/applications' },
+  // Admin areas that V1 does not expose; the routes stay guarded, the tabs are simply not offered.
+  { path: 'admin/insights', pathMatch: 'full', redirectTo: '/admin/home' },
   // The teacher's home is its own action-first screen (UX-02), ahead of the generic dashboard sections.
   {
     path: 'teacher/home',

@@ -59,7 +59,9 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
       area('services', 'Services', [tab('catalog', 'Services & prices', [])]),
       area('availability', 'Availability', [tab('availability', 'Availability', [])]),
       area('publication', 'Publication', [tab('publication', 'Publication', [])]),
-      area('qualifications', 'Qualifications & reviews', [tab('qualifications', 'Qualifications', ['/teachers/me/qualifications']), tab('videos', 'Videos & showcases', ['/teachers/me/profile-videos', '/teachers/me/showcases?pageSize=20']), tab('reviews', 'Reviews', ['/teachers/me'])], 'dash_qualifications_reviews'),
+      // Videos & showcases are V1.1 (B11-05) and reviews are read on the public profile, so neither is
+      // a tab here any more (UX-03). Their routes and APIs are untouched.
+      area('qualifications', 'Qualifications', [tab('qualifications', 'Qualifications', ['/teachers/me/qualifications'])]),
       // Earnings is its own screen (FIN-01); the withdrawal request and payout details are FIN-02/FIN-03.
       area('earnings', 'Earnings', [tab('earnings', 'Earnings', [])]),
       area('settings', 'Settings', [tab('settings', 'Settings', ['/notification-preferences'])])
@@ -70,7 +72,6 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
     areas: [
       // The application queue and review are their own screens (features/quality).
       area('applications', 'Applications', [tab('applications', 'Applications', [])]),
-      area('showcases', 'Showcases', [tab('showcases', 'Showcases', ['/teachers/showcase-moderation?pageSize=20', '/teachers/showcase-moderation/summary'])]),
       area('account', 'Account', [tab('settings', 'Settings', ['/notification-preferences', '/notifications?pageSize=20'])])
     ]
   },
@@ -79,11 +80,13 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
     areas: [
       area('home', 'Home', [tab('home', 'Home', ['/admin/attention'])]),
       area('people', 'People', [tab('users', 'Users', ['/admin/users?page=1&pageSize=20']), tab('teachers', 'Teachers', ['/admin/users?role=Teacher&page=1&pageSize=20']), tab('students', 'Students', ['/admin/users?role=Student&page=1&pageSize=20']), tab('reviewers', 'Reviewers', ['/admin/users?role=Reviewer&page=1&pageSize=20'])]),
-      area('marketplace', 'Marketplace', [tab('services', 'Services', ['/admin/catalog/services']), tab('subjects', 'Subjects', ['/admin/catalog/subjects']), tab('topics', 'Topics', ['/admin/catalog/subjects', '/admin/catalog/topics']), tab('educationLevels', 'Education levels', ['/admin/catalog/education-levels']), tab('assignments', 'Qualification topics', ['/admin/catalog/subjects', '/admin/catalog/qualification-topics']), tab('promotions', 'Promotions', ['/admin/promotions'])]),
+      // Catalog & pricing (UX-03): V1 shows the Catalog Services and the subjects behind them. Topics,
+      // education levels and qualification-topic editors are B11-12; promotions are DEC-09/B11-08.
+      area('marketplace', 'Marketplace', [tab('services', 'Services', ['/admin/catalog/services']), tab('subjects', 'Subjects', ['/admin/catalog/subjects'])]),
       area('operations', 'Operations', [tab('requests', 'Requests', ['/admin/operations/requests?page=1&pageSize=20']), tab('orders', 'Orders', ['/admin/operations/orders?page=1&pageSize=20']), tab('sessions', 'Sessions', ['/admin/operations/sessions?page=1&pageSize=20']), tab('disputes', 'Disputes', ['/admin/disputes?page=1&pageSize=20']), tab('reviews', 'Reviews', ['/admin/reviews?page=1&pageSize=20', '/admin/reviews/summary'])]),
-      area('finance', 'Finance', [tab('payments', 'Payments', ['/admin/metrics']), tab('withdrawals', 'Withdrawals', ['/admin/withdrawals?status=0&page=1&pageSize=20']), tab('payoutProfiles', 'Payout profiles', ['/admin/payout-profiles?status=0&page=1&pageSize=20']), tab('coupons', 'Coupons', ['/admin/coupons']), tab('reconciliation', 'Reconciliation', ['/admin/finance/reconciliation'])]),
-      area('insights', 'Insights', [tab('reports', 'Reports', ['/admin/marketplace-intelligence'])]),
-      area('system', 'System', [tab('audit', 'Audit', ['/admin/audit?page=1&pageSize=20']), tab('settings', 'Settings', [])])
+      area('finance', 'Finance', [tab('payments', 'Payments', ['/admin/metrics']), tab('withdrawals', 'Withdrawals', ['/admin/withdrawals?status=0&page=1&pageSize=20']), tab('payoutProfiles', 'Payout profiles', ['/admin/payout-profiles?status=0&page=1&pageSize=20']), tab('reconciliation', 'Reconciliation', ['/admin/finance/reconciliation'])]),
+      // Audit (UX-03): the audit log is the whole area in V1; there is no platform-settings screen to show.
+      area('system', 'Audit', [tab('audit', 'Audit', ['/admin/audit?page=1&pageSize=20'])])
     ]
   }
 };
@@ -118,14 +121,14 @@ const catalogToggle = (type: string): ActiveToggle => ({
   endpoint: id => `/admin/catalog/${type}/${encodeURIComponent(id)}/active`
 });
 
+/**
+ * Only the tabs V1 actually shows (UX-03). Topics, education levels, qualification topics, promotions and
+ * coupons are not offered in navigation, so nothing here can toggle them; their endpoints are untouched and
+ * return with `B11-12` and `DEC-09`/`B11-08`.
+ */
 export const ADMIN_ACTIVE_TOGGLES: Readonly<Record<string, ActiveToggle>> = {
   services: catalogToggle('services'),
-  subjects: catalogToggle('subjects'),
-  topics: catalogToggle('topics'),
-  educationLevels: catalogToggle('education-levels'),
-  assignments: catalogToggle('qualification-topics'),
-  promotions: { listSource: '/admin/promotions', endpoint: id => `/admin/promotions/${encodeURIComponent(id)}/active` },
-  coupons: { listSource: '/admin/coupons', endpoint: id => `/admin/coupons/${encodeURIComponent(id)}/active` }
+  subjects: catalogToggle('subjects')
 };
 
 /** Query parameters a link may carry to name the item the destination should open on. */

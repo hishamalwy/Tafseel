@@ -57,18 +57,27 @@ public static class AppRoutes
 
     public const string TeacherHome = "/teacher/home";
     public const string TeacherProfileArea = "/teacher/profile";
-    public const string TeacherVideos = "/teacher/qualifications?tab=videos";
+    /// <summary>
+    /// Videos and showcases are not a tab in V1 navigation (UX-03; the capability returns with B11-05),
+    /// so a notification about one opens the qualifications screen it belongs to rather than a tab that
+    /// is no longer rendered.
+    /// </summary>
+    public const string TeacherVideos = "/teacher/qualifications";
     public const string TeacherServices = "/teacher/services";
     public const string TeacherPublication = "/teacher/publication";
     public const string TeacherEarnings = "/teacher/earnings";
     public static string TeacherReview(Guid reviewId) => $"/teacher/reviews/{reviewId}";
 
     public const string QualityApplications = "/quality/applications";
-    public const string QualityShowcases = "/quality/showcases";
+    /// <summary>
+    /// Showcase moderation is hidden in V1 navigation (UX-03; it returns with B11-05), so a reviewer's
+    /// showcase notification lands on the queue they do have rather than on a screen V1 does not show.
+    /// </summary>
+    public const string QualityShowcases = QualityApplications;
 
     /// <summary>
     /// A reviewer's notification is about one item: an application opens its review
-    /// screen; a showcase opens the moderation queue with that item highlighted.
+    /// screen; a showcase opens the queue with that item named, for when moderation returns.
     /// </summary>
     public static string QualityApplication(Guid applicationId) =>
         $"{QualityApplications}/{applicationId}";

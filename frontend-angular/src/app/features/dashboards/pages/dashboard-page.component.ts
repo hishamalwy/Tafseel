@@ -24,6 +24,9 @@ import { LangToggleComponent } from '@shared/components/lang-toggle.component';
 import { ThemeToggleComponent } from '@shared/components/theme-toggle.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
 import { AcceptRequestDialogComponent } from '../components/accept-request-dialog.component';
+import { AccountMenuComponent } from '@features/navigation/pages/account-menu.component';
+import { NotificationBellComponent } from '@features/navigation/pages/notification-bell.component';
+import { WorkspaceNavComponent } from '@features/navigation/pages/workspace-nav.component';
 import { CardFormat, DashboardCardView, presentCard } from '../models/dashboard-card';
 
 interface SourceResult { readonly source: string; readonly payload: unknown; readonly error?: string }
@@ -31,7 +34,7 @@ interface SourceResult { readonly source: string; readonly payload: unknown; rea
 @Component({
   selector: 'tf-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, ToastComponent, BrandMarkComponent, LangToggleComponent, ThemeToggleComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent],
+  imports: [FormsModule, RouterLink, ToastComponent, BrandMarkComponent, LangToggleComponent, ThemeToggleComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent, AccountMenuComponent, NotificationBellComponent, WorkspaceNavComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.css'
 })

@@ -19,7 +19,7 @@ type Editor = { readonly mode: 'create'; readonly typeId: string } | { readonly 
 /** Service types a teacher can never pick are hidden unless the teacher already has an offering in them. */
 const HIDDEN_STATES = new Set(['catalog_inactive', 'catalog_hidden', 'catalog_unavailable']);
 
-/** Services and prices (J11-07). */
+/** My services (J11-07): the teacher chooses from Tafseel's catalog and prices within its range (UX-03). */
 @Component({
   selector: 'tf-teacher-services-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,7 +70,7 @@ export class TeacherServicesPageComponent {
   });
 
   constructor() {
-    inject(Title).setTitle(`${this.t('setup_services_title', 'Services and prices')} — Tafseel`);
+    inject(Title).setTitle(`${this.t('setup_services_title', 'My services')} — Tafseel`);
     void this.refresh();
   }
 

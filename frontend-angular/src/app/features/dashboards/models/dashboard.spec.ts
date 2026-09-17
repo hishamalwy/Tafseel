@@ -57,15 +57,17 @@ describe('Dashboard route model', () => {
     const id = '3f1c6a52-4b8e-4d7a-9c3e-2a1b0c9d8e7f';
     it.each([
       ['services', '/admin/catalog/services', `/admin/catalog/services/${id}/active`],
-      ['subjects', '/admin/catalog/subjects', `/admin/catalog/subjects/${id}/active`],
-      ['topics', '/admin/catalog/topics', `/admin/catalog/topics/${id}/active`],
-      ['educationLevels', '/admin/catalog/education-levels', `/admin/catalog/education-levels/${id}/active`],
-      ['assignments', '/admin/catalog/qualification-topics', `/admin/catalog/qualification-topics/${id}/active`],
-      ['promotions', '/admin/promotions', `/admin/promotions/${id}/active`],
-      ['coupons', '/admin/coupons', `/admin/coupons/${id}/active`]
+      ['subjects', '/admin/catalog/subjects', `/admin/catalog/subjects/${id}/active`]
     ])('%s toggles through %s', (tab, source, endpoint) => {
       expect(Dashboard.activeToggle(tab, { id, _source: source })).toBe(endpoint);
     });
+
+    // UX-03 stopped offering these tabs (B11-12 catalog editors, DEC-09/B11-08 promotions and coupons).
+    // A row the admin cannot reach cannot be toggled from a screen that no longer lists it.
+    it.each(['topics', 'educationLevels', 'assignments', 'promotions', 'coupons'])(
+      'offers no toggle for %s, which V1 navigation does not show', tab => {
+        expect(Dashboard.activeToggle(tab, { id, _source: '/admin/catalog/topics' })).toBeNull();
+      });
 
     it('covers exactly the admin tabs that list toggleable rows, from a source the tab really loads', () => {
       const adminTabs = DASHBOARDS.Admin.areas.flatMap(area => area.tabs);
@@ -74,8 +76,7 @@ describe('Dashboard route model', () => {
         expect(tab, key).toBeDefined();
         expect(tab!.sources.map(s => s.split('?')[0]), key).toContain(toggle.listSource);
       }
-      expect(Object.keys(ADMIN_ACTIVE_TOGGLES).sort()).toEqual(
-        ['assignments', 'coupons', 'educationLevels', 'promotions', 'services', 'subjects', 'topics']);
+      expect(Object.keys(ADMIN_ACTIVE_TOGGLES).sort()).toEqual(['services', 'subjects']);
     });
 
     it('offers no toggle for a row the tab lists from another source, a row without an id, or a tab without toggles', () => {
