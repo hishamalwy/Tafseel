@@ -53,7 +53,7 @@ historical record was changed.
 - **Effective V1 rule:** current server behaviour, plus disclosure: when the accepted price differs from the
   listed price, request, order and checkout show the listed price, the agreed price and the final amount
   payable.
-- **Tickets unblocked / created:** **UX-09 — Agreed price disclosure** (V1 blocker; re-estimated M after DEC-13; not implemented)
+- **Tickets unblocked / created:** **UX-09 — Agreed price disclosure** (V1 blocker; re-estimated M after DEC-13; **implemented and released 2026-09-17**, [audit](../audits/ux09-2026-09-17/README.md))
 - **Documents affected:** Product Contract §3.2 · V1_SCOPE §4 · V1_RELEASE_BLOCKERS · PRODUCTION_READINESS U11
 
 ## DEC-04 — Teacher payout mechanism

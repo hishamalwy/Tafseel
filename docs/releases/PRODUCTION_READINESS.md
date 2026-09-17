@@ -13,7 +13,7 @@ category — there is **no overall percentage**, because the categories are not 
 | Category | ✅ | Total | Ready |
 |----------|----|-------|-------|
 | Product completeness | 11 | 17 | **65%** |
-| UX readiness | 5 | 11 | **45%** |
+| UX readiness | 10 | 11 | **91%** |
 | Financial readiness | 6 | 9 | **67%** |
 | Security | 5 | 10 | **50%** |
 | Providers | 1 | 7 | **14%** |
@@ -24,8 +24,8 @@ category — there is **no overall percentage**, because the categories are not 
 | Legal / operations | 0 | 2 | **0%** |
 | Rollback / recovery | 1 | 2 | **50%** |
 
-**Launch decision:** not ready. Tafseel is **41 blocker tickets** from V1 production readiness (UX-04, UX-05 and FIN-01 were built and released on 2026-09-16; Release Control 3 raised and
-decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](../tickets/v1/README.md)).
+**Launch decision:** not ready. Tafseel is **35 blocker tickets** from V1 production readiness (UX-04, UX-05, FIN-01, UX-01 and UX-02 were built and released on 2026-09-16; UX-03, UX-07,
+UX-08 and UX-09 on 2026-09-17; Release Control 3 raised and decided DEC-13; the remaining UX ticket is UX-06, in [`docs/tickets/v1/`](../tickets/v1/README.md)).
 
 ---
 
@@ -65,7 +65,7 @@ decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](
 | U8 | No duplicate paths to the same goal | ✅ | UX-05 done 2026-09-16 (`ux05-canonical-paths` 6/6) |
 | U9 | All customer-facing screens verified in Arabic at 390px | ❌ | UX-06 |
 | U10 | No dead or misleading controls (unredeemable promo codes, disabled AI assistant) | ✅ | Done 2026-09-17 ([UX-07/UX-08](../audits/ux07-ux08-2026-09-17/README.md)) |
-| U11 | Agreed price disclosed when it differs from the price at request time (DEC-02, DEC-13 snapshot) | ❌ | UX-09 (Ready) |
+| U11 | Agreed price disclosed when it differs from the price at request time (DEC-02, DEC-13 snapshot) | ✅ | Done 2026-09-17 ([UX-09](../audits/ux09-2026-09-17/README.md)) |
 
 ## 3. Financial readiness
 

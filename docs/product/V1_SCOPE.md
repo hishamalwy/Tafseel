@@ -82,7 +82,7 @@ capability exists.**
 | Capability | Matrix | State | Category |
 |------------|--------|-------|----------|
 | Participant order screen (summary, timeline, actions) | J6-06 | Proven (3B) | MUST |
-| Agreed-price disclosure when the accepted price differs from the listed price (DEC-02) | — | Missing | MUST (`UX-09`) |
+| Agreed-price disclosure when the accepted price differs from the listed price (DEC-02, DEC-13) | — | Proven (`UX-09`, 2026-09-17) | MUST |
 | Teacher starts a paid order | J6-01 | Proven (3B) | MUST |
 | Teacher delivers files with a note, upload progress | J6-02 | Proven (3B) | MUST |
 | Student opens protected delivery files | J6-03 | Proven (3B) | MUST |
