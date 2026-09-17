@@ -87,7 +87,7 @@ await step('J3-07 teacher opens the request from the work list and accepts with 
   await signIn(teacher, teacherA.Email);
   await spa(teacher, '/teacher/work?tab=requests');
   // The request's own card, not the "new request" notification that also carries its title.
-  const card = page.locator('article.tf-dashboard-card', { hasText: title }).filter({ has: page.locator('[data-testid=row-open]') });
+  const card = page.locator('article.tf-dashboard-card, article.tf-work-card', { hasText: title }).filter({ has: page.locator('[data-testid=row-open]') });
   await card.waitFor({ timeout: 20000 });
   await card.locator('[data-testid=row-open]').click();
   await page.waitForURL(url => pathOf(url) === `/en/requests/${requestId}`, { timeout: 15000 });

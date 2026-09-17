@@ -115,6 +115,10 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "fulfilment")
     var maths = new Subject($"E2E Calculus {run}", "book", $"تفاضل وتكامل تجريبي {run}");
     db.Add(maths);
     var outsider = await UserAsync(Roles.Student, "outsider", "طالب آخر", "E2E Unrelated Student");
+    // A reviewer and an admin so a journey can read their navigation. They own no data here; nothing in
+    // the fulfilment journeys depends on them, and they exercise no capability of their own.
+    var reviewer = await UserAsync(Roles.QualityReviewer, "reviewer", "مراجع الجودة", "E2E Quality Reviewer");
+    var administrator = await UserAsync(Roles.Admin, "admin", "مشرف تفصيل", "E2E Admin");
     var teachers = new List<object>();
     foreach (var (handle, name, englishName, headline, price) in new[]
     {
@@ -141,6 +145,8 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "fulfilment")
     {
         run,
         outsider = new { outsider.Id, outsider.Email },
+        reviewer = new { reviewer.Id, reviewer.Email },
+        admin = new { administrator.Id, administrator.Email },
         teacherA = teachers[0],
         teacherB = teachers[1],
         subjectId = maths.Id, subjectName = maths.Name,

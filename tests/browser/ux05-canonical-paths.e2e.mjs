@@ -126,10 +126,13 @@ await step('5. the payment reminder links to the reserved request, reads in Arab
   }
   assert.equal(link, `/requests/${requestId}`, 'the reminder names the request, not the retired list');
 
-  await visit(page, `${BASE}/ar/student/notifications`);
-  const action = page.locator(`[data-testid=notification-action][href="/ar/requests/${requestId}/"], [data-testid=notification-action][href="/ar/requests/${requestId}"]`);
+  // Notifications live in the header bell now (UX-03), not in a destination of their own.
+  await visit(page, `${BASE}/ar/student/overview`);
+  await page.locator('[data-testid=notification-bell]').click();
+  await page.locator('[data-testid=notification-panel]').waitFor({ timeout: 15000 });
+  const action = page.locator(`[data-testid=notification-row] a[href="/ar/requests/${requestId}/"], [data-testid=notification-row] a[href="/ar/requests/${requestId}"]`);
   await action.waitFor({ state: 'visible', timeout: 15000 });
-  const card = page.locator('article', { has: action });
+  const card = page.locator('[data-testid=notification-row]').filter({ hasText: 'أكمل الدفع' }).first();
   assert.match(await card.innerText(), /أكمل الدفع قبل انتهاء حجز العرض/);
   assert.equal(await page.getByText('Complete payment to keep your Offer').count(), 0, 'no English server title in Arabic');
   await shot(page, 'ux05-05-reminder');

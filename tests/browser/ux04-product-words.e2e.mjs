@@ -31,8 +31,8 @@ const LATIN_WORD = /[A-Za-z]{3,}/;
 const FORBIDDEN_LABELS = /\b(Currency|Updated|Count|statusName|createdAt|totalCount)\b|العملة|آخر تحديث/;
 
 /** What the cards on the current section actually say. */
-const readCards = page => page.evaluate(() => [...document.querySelectorAll('article.tf-dashboard-card')].map(card => ({
-  title: card.querySelector('h2')?.textContent?.trim() ?? '',
+const readCards = page => page.evaluate(() => [...document.querySelectorAll('article.tf-dashboard-card, article.tf-work-card')].map(card => ({
+  title: card.querySelector('h2, h3')?.textContent?.trim() ?? '',
   badges: [...card.querySelectorAll('.tf-badge')].map(b => b.textContent.trim()),
   labels: [...card.querySelectorAll('dt')].map(d => d.textContent.trim()),
   values: [...card.querySelectorAll('dd')].map(d => d.textContent.trim()),
@@ -40,10 +40,20 @@ const readCards = page => page.evaluate(() => [...document.querySelectorAll('art
   text: card.innerText
 })));
 
+/** What the header bell says, one line per notification. */
+async function readBell(actor, arabic) {
+  const { page } = actor;
+  await visit(page, `${BASE}/${arabic ? 'ar' : 'en'}/student/overview`);
+  await page.locator('[data-testid=notification-bell]').click();
+  await page.locator('[data-testid=notification-panel]').waitFor({ timeout: 20000 });
+  return (await page.locator('[data-testid=notification-row]').allInnerTexts()).map(line => line.replace(/\s+/g, ' ').trim());
+}
+
 async function audit(actor, path, { arabic }) {
   const { page } = actor;
   await visit(page, `${BASE}/${arabic ? 'ar' : 'en'}${path}`);
-  await page.locator('.tf-dashboard-grid, .tf-dashboard-empty, .tf-dashboard-settings').first().waitFor({ timeout: 20000 });
+  await page.locator('.tf-dashboard-grid, .tf-dashboard-empty, .tf-dashboard-settings, .tf-work-list, [data-testid=work-empty]')
+    .first().waitFor({ timeout: 20000 });
   const where = `${path} ${arabic ? 'ar' : 'en'}`;
 
   assert.equal(await page.locator('.tf-dashboard-search').count(), 0, `${where}: no search box`);
@@ -99,8 +109,7 @@ await step('the student and teacher have work in several states', async () => {
 
 await step('every student list speaks product words, in Arabic and in English', async () => {
   // Home is no longer a generic dashboard section (UX-01); its own words are audited by ux01-student-home.
-  const sections = ['/student/requests', '/student/requests?tab=orders', '/student/sessions',
-    '/student/saved', '/student/payments', '/student/reviews', '/student/notifications', '/student/settings'];
+  const sections = ['/student/requests', '/student/requests?view=action', '/student/settings'];
   for (const section of sections) {
     await audit(student, section, { arabic: true });
     await audit(studentEn, section, { arabic: false });
@@ -118,7 +127,7 @@ await step('the student’s own work reads as its state, not its number', async 
   assert.ok(open?.badges.includes('يستقبل العروض'), `open request badge: ${open?.badges}`);
   assert.equal(open.action, 'قارن العروض', 'an offer is waiting, so the card offers to compare');
 
-  const orders = await readCards(await audit(student, '/student/requests?tab=orders', { arabic: true }));
+  const orders = await readCards(await audit(student, '/student/requests', { arabic: true }));
   const order = orders.find(c => c.title === directTitle);
   assert.ok(order, 'the accepted order is listed');
   assert.deepEqual(order.badges, ['بانتظار الدفع']);
@@ -126,13 +135,13 @@ await step('the student’s own work reads as its state, not its number', async 
   assert.ok(order.labels.includes('المبلغ'), `amount is named: ${order.labels}`);
   await shot(page, 'ux04-student-requests-ar');
 
-  const english = await readCards(await audit(studentEn, '/student/requests?tab=orders', { arabic: false }));
+  const english = await readCards(await audit(studentEn, '/student/requests', { arabic: false }));
   assert.deepEqual(english.find(c => c.title === directTitle)?.badges, ['Payment required']);
 });
 
 await step('every teacher list speaks product words, in Arabic and in English', async () => {
   // Home is no longer a generic dashboard section (UX-02); its own words are audited by ux02-teacher-home.
-  const sections = ['/teacher/work', '/teacher/work?tab=orders', '/teacher/work?tab=sessions',
+  const sections = ['/teacher/work', '/teacher/work?view=action',
     '/teacher/opportunities', '/teacher/qualifications', '/teacher/settings'];
   for (const section of sections) {
     await audit(teacherAr, section, { arabic: true });
@@ -159,14 +168,15 @@ await step('the teacher reads the same order from their own side, and their mone
 });
 
 await step('a notification is Tafseel’s sentence in Arabic, and the server’s English only in English', async () => {
-  const ar = await readCards(await audit(student, '/student/notifications', { arabic: true }));
+  // Notifications are read from the header bell now (UX-03), not from a destination of their own.
+  const ar = await readBell(student, true);
   assert.ok(ar.length > 0, 'the student has notifications');
-  assert.ok(ar.some(c => c.title === 'طلبك مقبول — أكمل الدفع'), `accepted-request notification in Arabic: ${ar.map(c => c.title)}`);
-  for (const card of ar) assert.doesNotMatch(card.title, LATIN_WORD, `Arabic notification title: "${card.title}"`);
+  assert.ok(ar.some(line => line.includes('طلبك مقبول — أكمل الدفع')), `accepted-request notification in Arabic: ${ar}`);
+  for (const line of ar) assert.doesNotMatch(line, LATIN_WORD, `Arabic notification row: "${line}"`);
 
-  const en = await readCards(await audit(studentEn, '/student/notifications', { arabic: false }));
-  assert.ok(en.some(c => c.title === 'Your request was accepted — complete payment'),
-    `accepted-request notification in English: ${en.map(c => c.title)}`);
+  const en = await readBell(studentEn, false);
+  assert.ok(en.some(line => line.includes('Your request was accepted — complete payment')),
+    `accepted-request notification in English: ${en}`);
 });
 
 await step('no script errors on any page', async () => {
