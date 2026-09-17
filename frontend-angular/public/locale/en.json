@@ -4098,5 +4098,6 @@
   "price_fee": "Tafseel service fee ({percent}%)",
   "price_total_due": "Total to pay",
   "price_total_paid": "Total",
-  "price_agreed_title": "Agreed price"
+  "price_agreed_title": "Agreed price",
+  "price_nothing_charged": "Nothing is charged unless you choose to pay."
 }

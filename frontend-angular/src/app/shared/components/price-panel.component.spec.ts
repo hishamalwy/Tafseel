@@ -98,4 +98,12 @@ describe('PricePanelComponent', () => {
     expect(labels(render(order(), 'en', true)).at(-1)).toBe('Total');
     expect(labels(render(order(), 'ar', true)).at(-1)).toBe('الإجمالي');
   });
+
+  it('says nothing is taken until the student chooses to pay, and stops saying it afterwards', () => {
+    expect(render(order()).querySelector('[data-testid="price-note"]')?.textContent)
+      .toContain('Nothing is charged unless you choose to pay.');
+    expect(render(order(), 'ar').querySelector('[data-testid="price-note"]')?.textContent)
+      .toContain('لن يُخصم أي مبلغ إلا إذا اخترت الدفع.');
+    expect(render(order(), 'en', true).querySelector('[data-testid="price-note"]')).toBeNull();
+  });
 });

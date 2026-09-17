@@ -4098,5 +4098,6 @@
   "price_fee": "رسوم خدمة تفصيل ({percent}٪)",
   "price_total_due": "الإجمالي المطلوب",
   "price_total_paid": "الإجمالي",
-  "price_agreed_title": "السعر المتفق عليه"
+  "price_agreed_title": "السعر المتفق عليه",
+  "price_nothing_charged": "لن يُخصم أي مبلغ إلا إذا اخترت الدفع."
 }
