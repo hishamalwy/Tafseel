@@ -16,7 +16,7 @@ Backlog). Blocker list: [`V1_RELEASE_BLOCKERS.md`](../../releases/V1_RELEASE_BLO
 | [UX-08](./UX-08.md) | Hide AI assistant when disabled | S | ✅ | ✅ | ✅ **new** `GET /api/v1/ai/capabilities` | **Ready** | — |
 | [UX-01](./UX-01.md) | Student home: action first | M | ✅ | ✅ | ✅ no new contract | **Done 2026-09-16** | — |
 | [UX-02](./UX-02.md) | Teacher home: action first | M | ✅ | ✅ | ✅ no new contract | **Done 2026-09-16** | — |
-| [UX-03](./UX-03.md) | V1 navigation | M | ✅ | ✅ | ✅ no new contract | **Ready** | UX-01, UX-02 (+ UX-04, UX-05) |
+| [UX-03](./UX-03.md) | V1 navigation | M | ✅ | ✅ | ✅ no new contract | **Done 2026-09-17** | — |
 | [UX-06](./UX-06.md) | Arabic phone verification | M | ✅ | ✅ | — | **Ready** | the other UX tickets (screens final) |
 | [UX-09](./UX-09.md) | Agreed-price disclosure (incl. DEC-13 snapshot) | M | ✅ | ✅ | ✅ two nullable read fields on existing DTOs; migration | **Ready** | UX-04 (build) |
 
@@ -46,7 +46,7 @@ flowchart LR
 | ~~**B**~~ | ~~FIN-01~~ | **Done 2026-09-16** ([audit](../../audits/fin01-2026-09-16/README.md)): Angular 369/369, SQL Server 225/225, strict gate 215/215/0, route probe 64/64, FIN-01 journey 7/7, UX-04 7/7, UX-05 6/6, Wave 3B direct 15/15 |
 | ~~**C**~~ | ~~UX-01~~ | **Done 2026-09-16** ([audit](../../audits/ux01-2026-09-16/README.md)): Angular 389/389 in 43 files, provider-neutral 378/378, SQL Server 225/225, strict gate 218/218/0, route probe 64/64, UX-01 journey 8/8 in Arabic at 390px, UX-04 7/7, UX-05 6/6, FIN-01 7/7, Wave 3B direct 15/15 and open marketplace 9/9 |
 | ~~**D**~~ | ~~UX-02~~ | **Done 2026-09-16** ([audit](../../audits/ux02-2026-09-16/README.md)): Angular 424/424 in 46 files, provider-neutral 381/381, SQL Server 225/225, strict gate 222/222/0, route probe 64/64, UX-02 journey 9/9 in Arabic at 390px, UX-01 8/8, UX-04 7/7, UX-05 6/6, FIN-01 7/7, Wave 3B direct 15/15 and open marketplace 9/9 |
-| **E** | UX-03 | Navigation over the new homes; re-runs Wave 1–3B journeys |
+| ~~**E**~~ | ~~UX-03~~ | **Done 2026-09-17** ([audit](../../audits/ux03-2026-09-17/README.md)): Angular 461/461 in 50 files, provider-neutral 383/383, SQL Server 225/225, strict gate 213/213/0, route probe 64/64, UX-03 journey 9/9 across all four roles, UX-01 8/8, UX-02 9/9, UX-04 7/7, UX-05 6/6, FIN-01 7/7, Wave 3B direct 15/15 and open marketplace 9/9 |
 | **F** | UX-07 + UX-08 | Two small independent tickets; can be pulled forward into any gap (no dependencies) |
 | **G** | UX-09 | One vertical slice (M, protected domain + migration); after UX-04; can move ahead of E/F if the Product Owner prefers, but alone (major journey) |
 | **H** | UX-06 | Last: verifies final screens in Arabic at 390px |
