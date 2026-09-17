@@ -64,7 +64,7 @@ decided DEC-13; UX tickets now have Gates 1–3 written in [`docs/tickets/v1/`](
 | U7 | No raw statuses, ids or technical field labels in lists | ✅ | UX-04 done 2026-09-16 (`ux04-product-words` 7/7) |
 | U8 | No duplicate paths to the same goal | ✅ | UX-05 done 2026-09-16 (`ux05-canonical-paths` 6/6) |
 | U9 | All customer-facing screens verified in Arabic at 390px | ❌ | UX-06 |
-| U10 | No dead or misleading controls (unredeemable promo codes, disabled AI assistant) | ❌ | UX-07, UX-08 |
+| U10 | No dead or misleading controls (unredeemable promo codes, disabled AI assistant) | ✅ | Done 2026-09-17 ([UX-07/UX-08](../audits/ux07-ux08-2026-09-17/README.md)) |
 | U11 | Agreed price disclosed when it differs from the price at request time (DEC-02, DEC-13 snapshot) | ❌ | UX-09 (Ready) |
 
 ## 3. Financial readiness

@@ -130,8 +130,8 @@ headroom so ordinary V1 work cannot hit the warning.
 | UX-04 | **Product statuses and fields in every list** — no numeric statuses, ids or "Updated/Count"; notification-type copy (server titles are English-only) — [UX-04](../tickets/v1/UX-04.md) | P1 | done 2026-09-16 | — | S | ✅ | ✅ | ✅ (no new contract) | Spec per list; screenshot audit of each list in AR/EN |
 | UX-05 | **Remove duplicate open-marketplace paths** — retire the Wave 2 inline choose/offer on `/requests` (role redirect); header "Post a request" → `/requests/new`; teachers go to Open requests; reservation reminder links to the request — [UX-05](../tickets/v1/UX-05.md) | P1 | done 2026-09-16 | — | S | ✅ | ✅ | ✅ (no new contract) | Wave 2 journey replaced by 3B coverage; no route to the inline forms |
 | UX-06 | **Arabic phone verification** — 20-screen matrix (teacher setup, messages, requests, offers, opportunity, checkout, booking/session, disputes) × 7 assertions — [UX-06](../tickets/v1/UX-06.md) | P1 | yes | UX-01, UX-02, UX-03, UX-04, UX-05, UX-07, UX-08, UX-09 | M | ✅ | ✅ | — | Journey screenshots at 390px AR with overflow and card-containment checks |
-| UX-07 | **Hide unredeemable promo codes** — no coupon code and no Discount promotion on the landing (DEC-09 default V1.1) — [UX-07](../tickets/v1/UX-07.md) | P1 | yes | — | S | ✅ | ✅ | ✅ (no new contract) | Landing shows no coupon code; spec |
-| UX-08 | **Hide the brief assistant when AI is disabled** (today it is shown and answers "unavailable") — [UX-08](../tickets/v1/UX-08.md) | P2 | yes | — | S | ✅ | ✅ | ✅ (new read: `GET /api/v1/ai/capabilities`) | Spec: hidden when disabled; visible and working when enabled |
+| UX-07 | **Hide unredeemable promo codes** — no coupon code and no Discount promotion on the landing (DEC-09 default V1.1) — [UX-07](../tickets/v1/UX-07.md) | P1 | done 2026-09-17 | — | S | ✅ | ✅ | ✅ (no new contract) | Landing shows no coupon code; spec |
+| UX-08 | **Hide the brief assistant when AI is disabled** (today it is shown and answers "unavailable") — [UX-08](../tickets/v1/UX-08.md) | P2 | done 2026-09-17 | — | S | ✅ | ✅ | ✅ (new read: `GET /api/v1/ai/capabilities`) | Spec: hidden when disabled; visible and working when enabled |
 | UX-09 | **Agreed price disclosure** (DEC-02, DEC-13) — one vertical slice: immutable server-side listed-price snapshot on Direct Request creation, migration (nullable, no backfill), read fields on request/order DTOs, the same price panel on request detail, order detail and checkout, authorization/regression tests, browser proof — [UX-09](../tickets/v1/UX-09.md) | P1 | yes | UX-04 | M | ✅ (Contract §3.2, §3.3) | ✅ | ✅ (no new endpoint; `listedPriceAtRequest`/`listedCurrencyAtRequest` on `LearningRequestDto`, `OrderDto`) | Failing domain + integration tests first; migration reviewed on SQL Server and SQLite; journey: offering 100 → request → offering 120 → accepted at 150 → request/order/checkout show 100 and 150, fee and total from 150; offering 130 leaves 100; other user 404; historical request shows no comparison; Arabic phone |
 
 ## QA / LEG — Release verification and legal
@@ -151,16 +151,16 @@ tables above (rows whose Blocker column is "yes").
 
 | Measure | Count | Tickets |
 |---------|-------|---------|
-| **Total V1 blocker tickets** | **38** (50 at RC1 → 44 after RC2 → 45 with DEC-13 → 44 when it was decided → 42 with UX-04 and UX-05 done → 41 with FIN-01 done → 40 with UX-01 done → 39 with UX-02 done → 38 with UX-03 done) | DEC 2 · FIN 6 · PROD 1 · PAY 4 · MEET 1 · SEC 5 · INF 7 · OBS 2 · DATA 1 · REL 1 · ENG 1 · UX 4 · QA 2 · LEG 1 |
-| Change from Release Control 1 | −7 decisions closed, +1 UX-09; PAY-04 replaced by PAY-04a (PAY-04b → V1.1); **DEC-13 raised and decided in Release Control 3 (net 0)**; UX-09 re-estimated S → M; **UX-04, UX-05, FIN-01, UX-01, UX-02 and UX-03 done (−6)** | |
-| Ready for implementation now (gates complete, no open dependency) | **11**, plus QA-02 except its dispute-resolution step (waits for FIN-07) | SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-07, UX-08 |
-| UX tickets Ready (gates complete) but waiting on other tickets (build order) | **2** | UX-09 (UX-04 ✅ — ready to build), UX-06 (waits for UX-07, UX-08, UX-09) |
+| **Total V1 blocker tickets** | **36** (50 at RC1 → 44 after RC2 → 45 with DEC-13 → 44 when it was decided → 42 with UX-04 and UX-05 done → 41 with FIN-01 done → 40 with UX-01 done → 39 with UX-02 done → 38 with UX-03 done → 36 with UX-07 and UX-08 done) | DEC 2 · FIN 6 · PROD 1 · PAY 4 · MEET 1 · SEC 5 · INF 7 · OBS 2 · DATA 1 · REL 1 · ENG 1 · UX 2 · QA 2 · LEG 1 |
+| Change from Release Control 1 | −7 decisions closed, +1 UX-09; PAY-04 replaced by PAY-04a (PAY-04b → V1.1); **DEC-13 raised and decided in Release Control 3 (net 0)**; UX-09 re-estimated S → M; **UX-04, UX-05, FIN-01, UX-01, UX-02, UX-03, UX-07 and UX-08 done (−8)** | |
+| Ready for implementation now (gates complete, no open dependency) | **9**, plus QA-02 except its dispute-resolution step (waits for FIN-07) | SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01 |
+| UX tickets Ready (gates complete) but waiting on other tickets (build order) | **2** | UX-09 (UX-04 ✅ — ready to build), UX-06 (waits for UX-09) |
 | Open blocking decisions | **2** | DEC-08 (legal/tax advice), DEC-12 (provider and region) |
 | Directly blocked by an open decision | **7** | PAY-01 (contract sign-off only), SEC-04, INF-03, INF-04, INF-07, OBS-01, LEG-01 |
 | Transitively dependent on an open decision | **18** | FIN-02, FIN-03, FIN-04, FIN-05, PAY-01, PAY-02, PAY-03, PAY-04a, SEC-04, INF-03, INF-04, INF-07, OBS-01, OBS-02, DATA-01, REL-01, QA-01, LEG-01 |
-| Independent of open decisions | **18** | FIN-06, FIN-07, PROD-01, MEET-01, SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-06, UX-07, UX-08, UX-09, QA-02 |
+| Independent of open decisions | **16** | FIN-06, FIN-07, PROD-01, MEET-01, SEC-01, SEC-02, SEC-03, SEC-05, INF-01, INF-02, INF-05, INF-06, ENG-01, UX-06, UX-09, QA-02 |
 | Requiring external / provider work | **11** | PAY-01, PAY-02, PAY-03, PAY-04a, MEET-01, SEC-01, SEC-02, INF-02, INF-03, INF-06, LEG-01 |
-| UX-only | **4** | UX-06, UX-07, UX-08, UX-09 (UX-01…UX-05 are done) |
+| UX-only | **2** | UX-06, UX-09 (UX-01…UX-05, UX-07 and UX-08 are done) |
 | Security / infrastructure / operations | **17** | SEC-01…05, INF-01…07, OBS-01, OBS-02, DATA-01, REL-01, ENG-01 |
 | Product engineering (money-out, catalog) | **7** | FIN-02…07, PROD-01 (FIN-01 done) |
 | Verification | **2** | QA-01, QA-02 |
@@ -168,7 +168,7 @@ tables above (rows whose Blocker column is "yes").
 
 The category rows overlap on purpose; the first row is the single authoritative total.
 
-**Tafseel is 38 tickets away from V1 production readiness** (UX-04, UX-05, FIN-01, UX-01 and UX-02 were built and released on 2026-09-16; UX-03 on 2026-09-17). DEC-08 may add TAX tickets and DEC-12 may add
+**Tafseel is 36 tickets away from V1 production readiness** (UX-04, UX-05, FIN-01, UX-01 and UX-02 were built and released on 2026-09-16; UX-03, UX-07 and UX-08 on 2026-09-17). DEC-08 may add TAX tickets and DEC-12 may add
 STOR-01 when they are decided; the count is recalculated then.
 
 ### Critical path after the decisions
@@ -200,5 +200,5 @@ INF-03 → DATA-01 / REL-01 → QA-01.
 3. Gate writing (UX and contract) for PROD-01, FIN-06, FIN-07 (FIN-01 and UX-01…09 written in Release Control 3; DEC-13 decided).
 4. After PAY-01: PAY-04a → FIN-02/FIN-04 → FIN-03 → FIN-05; PAY-02 → PAY-03.
 5. After DEC-12: INF-03, INF-04, INF-07, SEC-04, OBS-01, OBS-02, DATA-01, REL-01; LEG-01 after DEC-08.
-6. UX (Release Control 3 batches, [tickets](../tickets/v1/README.md#recommended-batches-wip-one-major-journey-or-two-small-independent-tickets)): ~~A UX-04 + UX-05~~ → ~~B FIN-01~~ → ~~C UX-01~~ → ~~D UX-02~~ (2026-09-16) → ~~E UX-03~~ (2026-09-17) → F UX-07 + UX-08 (can be pulled forward) → G UX-09 (DEC-13 decided; after UX-04) → H UX-06.
+6. UX (Release Control 3 batches, [tickets](../tickets/v1/README.md#recommended-batches-wip-one-major-journey-or-two-small-independent-tickets)): ~~A UX-04 + UX-05~~ → ~~B FIN-01~~ → ~~C UX-01~~ → ~~D UX-02~~ (2026-09-16) → ~~E UX-03~~ → ~~F UX-07 + UX-08~~ (2026-09-17) → G UX-09 (DEC-13 decided; after UX-04) → H UX-06.
 7. QA-01, then launch decision.
