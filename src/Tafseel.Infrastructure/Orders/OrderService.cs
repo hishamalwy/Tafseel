@@ -55,6 +55,10 @@ internal sealed class OrderService(
             studentId, row.service.TeacherId, row.service.Id, input.Title, input.Description,
             input.PreferredDeliveryAt, input.Budget, clock.GetUtcNow());
         request.CaptureServiceIdentity(row.catalog);
+        // The price the student was looking at, read from the offering this server just validated — never
+        // from the request body, which carries no price (DEC-13, UX-09). Later edits to the offering cannot
+        // reach it.
+        request.CaptureListedPrice(row.service.Price, row.service.Currency);
         db.Add(request);
         await notifications.QueueAsync(row.service.TeacherId, "NewRequest", "New learning request",
             request.Title, AppRoutes.Request(request.Id), $"request:{request.Id}:created", true, ct);
@@ -549,17 +553,25 @@ internal sealed class OrderService(
         var names = await ResolveUserNamesAsync(
             items.SelectMany(x => new[] { x.StudentId, x.TeacherId }), ct);
         var requestIds = items.Select(x => x.LearningRequestId).Distinct().ToArray();
-        var titles = await db.LearningRequests.AsNoTracking()
+        // One read for the request rows these orders came from: their title, and the listed price the
+        // student saw when they sent them (DEC-13). No extra round trip per order.
+        var requests = await db.LearningRequests.AsNoTracking()
             .Where(x => requestIds.Contains(x.Id))
-            .ToDictionaryAsync(x => x.Id, x => x.Title, ct);
+            .Select(x => new { x.Id, x.Title, x.ListedPriceAtRequest, x.ListedCurrencyAtRequest })
+            .ToDictionaryAsync(x => x.Id, x => x, ct);
         var reviews = await LoadReviewStatesAsync(items.Select(x => x.Id), ct);
         var orderIds = items.Select(x => x.Id).ToArray();
         var disputed = await db.Disputes.AsNoTracking().Where(x => x.OrderId.HasValue
                 && orderIds.Contains(x.OrderId.Value))
             .Select(x => x.OrderId!.Value).ToArrayAsync(ct);
-        return new(items.Select(x => Map(
-                x, teacherView, names, titles.GetValueOrDefault(x.LearningRequestId),
-                reviews.GetValueOrDefault(x.Id), clock.GetUtcNow(), disputed.Contains(x.Id))).ToArray(),
+        return new(items.Select(x =>
+            {
+                var request = requests.GetValueOrDefault(x.LearningRequestId);
+                return Map(
+                    x, teacherView, names, request?.Title,
+                    reviews.GetValueOrDefault(x.Id), clock.GetUtcNow(), disputed.Contains(x.Id),
+                    new(request?.ListedPriceAtRequest, request?.ListedCurrencyAtRequest));
+            }).ToArray(),
             page, pageSize, count);
     }
 
@@ -575,13 +587,14 @@ internal sealed class OrderService(
     private async Task<OrderDto> MapOrderAsync(Order order, bool teacherView, CancellationToken ct)
     {
         var names = await ResolveUserNamesAsync([order.StudentId, order.TeacherId], ct);
-        var title = await db.LearningRequests.AsNoTracking()
+        var request = await db.LearningRequests.AsNoTracking()
             .Where(x => x.Id == order.LearningRequestId)
-            .Select(x => x.Title)
+            .Select(x => new { x.Title, x.ListedPriceAtRequest, x.ListedCurrencyAtRequest })
             .SingleOrDefaultAsync(ct);
         var reviews = await LoadReviewStatesAsync([order.Id], ct);
         var disputed = await db.Disputes.AsNoTracking().AnyAsync(x => x.OrderId == order.Id, ct);
-        return Map(order, teacherView, names, title, reviews.GetValueOrDefault(order.Id), clock.GetUtcNow(), disputed);
+        return Map(order, teacherView, names, request?.Title, reviews.GetValueOrDefault(order.Id), clock.GetUtcNow(),
+            disputed, new(request?.ListedPriceAtRequest, request?.ListedCurrencyAtRequest));
     }
 
     private async Task<IReadOnlyDictionary<Guid, ReviewState>> LoadReviewStatesAsync(
@@ -667,14 +680,16 @@ internal sealed class OrderService(
             x.ServiceCatalogItemId, x.CatalogCode, x.CategoryCode, x.OrderType,
             x.ServiceNameEnglish, x.ServiceNameArabic,
             x.SourcingMode, x.SelectedOfferId, x.PaymentReservationExpiresAt, offerCount,
-            outcome?.Status, outcome?.PaymentStatus);
+            outcome?.Status, outcome?.PaymentStatus,
+            x.ListedPriceAtRequest, x.ListedCurrencyAtRequest);
     private OrderDto Map(
         Order x, bool teacherView,
         IReadOnlyDictionary<string, (string FullName, string? FullNameEnglish)>? names = null,
         string? requestTitle = null,
         ReviewState review = default,
         DateTimeOffset now = default,
-        bool hasDispute = false)
+        bool hasDispute = false,
+        ListedPrice listed = default)
     {
         var hasReview = review.HasReview;
         var canSubmit = !teacherView
@@ -710,8 +725,12 @@ internal sealed class OrderService(
                 && now > x.AgreedDeliveryAt.AddHours(_lifecycle.NonDeliveryGraceHours),
             x.Extensions.OrderByDescending(e => e.CreatedAt).Select(e => new OrderExtensionDto(
                 e.Id, e.RequestedById, e.RespondedById, e.ProposedDeliveryAt,
-                e.Reason, e.Response, e.Status, e.CreatedAt)).ToArray());
+                e.Reason, e.Response, e.Status, e.CreatedAt)).ToArray(),
+            listed.Price, listed.Currency);
     }
+
+    /// <summary>The Learning Request's listed-price snapshot, read with the request title it travels beside.</summary>
+    private readonly record struct ListedPrice(decimal? Price, string? Currency);
     private static AttachmentDto Map(LearningRequestAttachment x, string? version = null) =>
         new(x.Id, x.OriginalName, x.ContentType, x.Size, x.CreatedAt, version);
     private static DeliveryDto Map(OrderDelivery x) =>

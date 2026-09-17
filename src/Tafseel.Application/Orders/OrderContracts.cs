@@ -52,7 +52,12 @@ public sealed record LearningRequestDto(
     /// direct requests, which are never offered against.</summary>
     int? OfferCount = null,
     OrderStatus? ResultOrderStatus = null,
-    OrderPaymentStatus? ResultPaymentStatus = null);
+    OrderPaymentStatus? ResultPaymentStatus = null,
+    /// <summary>The Teacher Offering price the student saw when they sent this Direct Request, and its
+    /// currency (DEC-13). Null for Open Requests and for Direct Requests created before it was captured —
+    /// those are never backfilled. It is history, not the amount owed: the Order's price is what is paid.</summary>
+    decimal? ListedPriceAtRequest = null,
+    string? ListedCurrencyAtRequest = null);
 
 public sealed record OrderDto(
     Guid Id, Guid LearningRequestId, string StudentId, string TeacherId, Guid TeacherServiceId,
@@ -75,7 +80,12 @@ public sealed record OrderDto(
     bool ReviewCanSubmit = false,
     bool IsOverdue = false,
     bool CanReportNonDelivery = false,
-    IReadOnlyCollection<OrderExtensionDto>? Extensions = null);
+    IReadOnlyCollection<OrderExtensionDto>? Extensions = null,
+    /// <summary>The listed price captured on this order's Learning Request (DEC-13), so the student can see
+    /// what they were shown beside what was agreed. Null when the request carries no snapshot. Fees and the
+    /// total are computed from <see cref="Price"/>, never from this.</summary>
+    decimal? ListedPriceAtRequest = null,
+    string? ListedCurrencyAtRequest = null);
 
 public sealed class OrderLifecycleOptions
 {
