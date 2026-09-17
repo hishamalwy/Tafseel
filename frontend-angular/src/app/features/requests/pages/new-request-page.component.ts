@@ -9,7 +9,7 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import {
-  DRAFT_VERSION, RequestDraft, RequestableService, composeDescription, preferredDeliveryAt, promptsForService,
+  DRAFT_VERSION, PROMPT_LABELS, RequestDraft, RequestableService, composeDescription, preferredDeliveryAt, promptsForService,
   todayInputValue
 } from '../models/learning-request';
 import { CreatedRequest } from '../services/request.ports';
@@ -132,6 +132,18 @@ export class NewRequestPageComponent {
   readonly promptKeys = computed(() =>
     promptsForService(this.service()?.serviceCatalogCode));
 
+  /**
+   * The question beside a brief field, in the reader's language.
+   *
+   * These used to fall back to the prompt's own key, so a student saw `whatYouTried` — an English
+   * identifier — as the label of an Arabic form (UX-06). `PROMPT_LABELS` carries English wording for every
+   * key the wizard can ask, and a spec holds the locale tables to the same list, so the key itself is no
+   * longer something a person can be shown.
+   */
+  promptLabel(key: string): string {
+    return this.t('req_prompt_' + key, PROMPT_LABELS[key] ?? '');
+  }
+
   readonly serviceName = computed(() => {
     const service = this.service();
     if (!service) return '';
@@ -160,7 +172,7 @@ export class NewRequestPageComponent {
     preferredTeachingLanguage: this.t('req_label_language', 'Preferred teaching language'),
     additionalNotes: this.t('req_label_notes', 'Additional notes'),
     prompt: Object.fromEntries(
-      this.promptKeys().map(key => [key, this.t('req_prompt_' + key, key)])),
+      this.promptKeys().map(key => [key, this.promptLabel(key)])),
     style: {
       step_by_step: this.t('req_style_step_by_step', 'Step by step'),
       concise: this.t('req_style_concise', 'Concise'),

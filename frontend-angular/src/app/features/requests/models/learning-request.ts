@@ -27,6 +27,32 @@ const PROMPTS_BY_SERVICE: Readonly<Record<string, readonly string[]>> = {
   default: ['whatYouTried', 'whereStuck']
 };
 
+/**
+ * English wording for every prompt, used when the locale table has not loaded.
+ *
+ * The prompt keys are identifiers, not copy: showing one to a student ("whatYouTried") is showing them the
+ * inside of the program, and in Arabic it is showing them English as well (UX-06). Every key in
+ * `PROMPTS_BY_SERVICE` has an entry here, and `learning-request.spec.ts` keeps the two lists together.
+ */
+export const PROMPT_LABELS: Readonly<Record<string, string>> = {
+  whatYouTried: 'What have you tried so far?',
+  whereStuck: 'Where exactly do you get stuck?',
+  deadlinePressure: 'How tight is your deadline?',
+  problemSource: 'Where is this problem from?',
+  requiredMethod: 'Is a particular method required?',
+  showStepsLevel: 'How much step-by-step detail do you want?',
+  sourceMaterial: 'What material should be summarised?',
+  lengthTarget: 'How long should it be?',
+  focusAreas: 'What should it focus on?',
+  workToReview: 'What work should be reviewed?',
+  rubric: 'What are the marking criteria, if any?',
+  feedbackDepth: 'How detailed should the feedback be?'
+};
+
+/** Every prompt key the wizard can ask, in no particular order. */
+export const ALL_PROMPT_KEYS: readonly string[] =
+  [...new Set(Object.values(PROMPTS_BY_SERVICE).flat())];
+
 export function promptsForService(serviceCode: string | null | undefined): readonly string[] {
   const code = String(serviceCode ?? '').trim().toLowerCase();
   return PROMPTS_BY_SERVICE[code] ?? PROMPTS_BY_SERVICE['default']!;
@@ -94,7 +120,12 @@ export function composeDescription(input: DescriptionInput, labels: DescriptionL
   const details = input.promptOrder
     .map(key => ({ key, value: (input.prompts[key] ?? '').trim() }))
     .filter(entry => entry.value)
-    .map(entry => `- ${labels.prompt[entry.key] ?? entry.key}: ${entry.value}`);
+    // A label the caller did not supply is left out: the teacher reads the answer, never the key it was
+    // stored under (UX-06).
+    .map(entry => {
+      const label = labels.prompt[entry.key] ?? PROMPT_LABELS[entry.key];
+      return label ? `- ${label}: ${entry.value}` : `- ${entry.value}`;
+    });
   if (details.length) sections.push(`${labels.serviceDetails}:\n${details.join('\n')}`);
 
   const topic = input.topicLabel.trim();

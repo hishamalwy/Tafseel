@@ -121,9 +121,9 @@
 
             @for (key of promptKeys(); track key) {
               <div class="tf-field">
-                <label [attr.for]="'req-prompt-' + key">{{ t('req_prompt_' + key, key) }}</label>
+                <label [attr.for]="'req-prompt-' + key">{{ promptLabel(key) }}</label>
                 <textarea [id]="'req-prompt-' + key" rows="2" maxlength="1000"
-                          [value]="prompts()[key]"
+                          [value]="prompts()[key] ?? ''"
                           (input)="setPrompt(key, $any($event.target).value)"></textarea>
               </div>
             }
