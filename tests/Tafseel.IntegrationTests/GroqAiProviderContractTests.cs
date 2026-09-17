@@ -67,6 +67,36 @@ public sealed class GroqAiProviderContractTests
         Assert.Equal(AiProviderStatus.InvalidResponse, result.Status);
     }
 
+    /// <summary>
+    /// UX-08: the capability a client is told about is exactly the condition every call already requires —
+    /// switched on, with credentials. Nothing else (endpoint, model, timeouts) can make it true.
+    /// </summary>
+    [Theory]
+    [InlineData(true, "a-key", true)]
+    [InlineData(true, null, false)]
+    [InlineData(false, "a-key", false)]
+    [InlineData(false, null, false)]
+    public void Availability_is_enabled_and_credentialled(bool enabled, string? apiKey, bool expected)
+    {
+        var previous = Environment.GetEnvironmentVariable("GROQ_API_KEY");
+        try
+        {
+            Environment.SetEnvironmentVariable("GROQ_API_KEY", apiKey);
+            var provider = new GroqAiProvider(Options.Create(new AiOptions
+            {
+                Enabled = enabled,
+                Endpoint = "https://api.groq.com/openai/v1",
+                Model = "openai/gpt-oss-120b"
+            }), NullLogger<GroqAiProvider>.Instance);
+
+            Assert.Equal(expected, provider.IsAvailable);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GROQ_API_KEY", previous);
+        }
+    }
+
     private static GroqAiProvider Provider(string endpoint)
     {
         Environment.SetEnvironmentVariable("GROQ_API_KEY", "contract-test-key");

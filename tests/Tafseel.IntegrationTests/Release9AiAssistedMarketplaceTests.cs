@@ -18,6 +18,67 @@ namespace Tafseel.IntegrationTests;
 public sealed class Release9AiAssistedMarketplaceTests(AiTafseelApiFactory factory)
     : IClassFixture<AiTafseelApiFactory>
 {
+    /// <summary>
+    /// UX-08: the client asks whether it may offer the writing helper, and is told only that.
+    /// </summary>
+    [Fact]
+    public async Task Capabilities_say_whether_the_writing_helper_can_run()
+    {
+        var client = await StudentClientAsync();
+
+        factory.Provider.IsAvailable = true;
+        var enabled = await client.GetFromJsonAsync<AiCapabilitiesDto>("/api/v1/ai/capabilities");
+        Assert.NotNull(enabled);
+        Assert.True(enabled.RequestAssistant);
+
+        factory.Provider.IsAvailable = false;
+        var disabled = await client.GetFromJsonAsync<AiCapabilitiesDto>("/api/v1/ai/capabilities");
+        Assert.NotNull(disabled);
+        Assert.False(disabled.RequestAssistant);
+    }
+
+    [Fact]
+    public async Task Capabilities_reveal_nothing_about_how_ai_is_provided()
+    {
+        factory.Provider.IsAvailable = true;
+        var client = await StudentClientAsync();
+
+        var body = await (await client.GetAsync("/api/v1/ai/capabilities")).Content.ReadAsStringAsync();
+
+        // Exactly one product fact, and no provider, model, endpoint, key or diagnostic.
+        Assert.Contains("requestAssistant", body, StringComparison.OrdinalIgnoreCase);
+        foreach (var secret in new[] { "groq", "apiKey", "api_key", "GROQ_API_KEY", "model", "endpoint", "token", "timeout" })
+            Assert.DoesNotContain(secret, body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Capabilities_are_refused_to_anyone_but_a_student()
+    {
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await factory.CreateClient().GetAsync("/api/v1/ai/capabilities")).StatusCode);
+
+        var teacher = await TeacherClientAsync();
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync("/api/v1/ai/capabilities")).StatusCode);
+    }
+
+    /// <summary>
+    /// Asking whether a button should exist must not spend the budget for using it: the capability read is
+    /// outside the `ai` rate-limit partition (10 a minute), so a wizard load can never exhaust the helper.
+    /// </summary>
+    [Fact]
+    public async Task Capability_reads_do_not_consume_the_ai_rate_limit()
+    {
+        var client = await StudentClientAsync();
+
+        for (var i = 0; i < 12; i++)
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/v1/ai/capabilities")).StatusCode);
+
+        // The assistant itself is still callable afterwards, which it would not be had the reads counted.
+        var assisted = await client.PostAsJsonAsync(
+            "/api/v1/ai/request-assistant", new { notes = "I keep failing limits and need a clear explanation" });
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, assisted.StatusCode);
+    }
+
     [Fact]
     public async Task Ai_endpoints_require_a_student()
     {
@@ -269,6 +330,15 @@ public sealed class Release9AiAssistedMarketplaceTests(AiTafseelApiFactory facto
         return client;
     }
 
+    private async Task<HttpClient> TeacherClientAsync()
+    {
+        var teacher = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Teacher);
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer", await Pass3TestData.LoginAsync(client, teacher.Email));
+        return client;
+    }
+
     private async Task<int> SubjectCountAsync()
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -382,6 +452,8 @@ public sealed class AiTafseelApiFactory : TafseelApiFactory
 
 public sealed class FakeAiProvider : IAiProvider
 {
+    /// <summary>Whether the provider could be called at all (UX-08); the real one reads its own configuration.</summary>
+    public bool IsAvailable { get; set; } = true;
     public AiProviderStatus DiscoveryStatus { get; set; } = AiProviderStatus.Success;
     public AiDiscoveryCandidate Discovery { get; set; } = new(
         "needs_clarification", null, "unknown", null, null, null, null, true,

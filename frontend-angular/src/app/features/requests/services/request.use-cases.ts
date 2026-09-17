@@ -138,6 +138,20 @@ export class AcceptFiles {
 @Injectable({ providedIn: 'root' })
 export class AssistWithBrief {
   private readonly requests = inject(REQUEST_GATEWAY);
+  /** One answer per application load, shared: the wizard must not ask this question twice. */
+  private available: Promise<boolean> | null = null;
+
+  /**
+   * Whether the writing helper may be offered at all (UX-08). The server decides; anything else — a
+   * refusal, an outage, a timeout — means the helper is not offered, because a button that is going to
+   * fail is worse than no button.
+   */
+  isAvailable(): Promise<boolean> {
+    this.available ??= firstValueFrom(this.requests.aiCapabilities())
+      .then(capabilities => capabilities.requestAssistant === true)
+      .catch(() => false);
+    return this.available;
+  }
 
   /** The API accepts 3 to 4000 characters of notes. */
   execute(notes: string): Promise<BriefSuggestion> {

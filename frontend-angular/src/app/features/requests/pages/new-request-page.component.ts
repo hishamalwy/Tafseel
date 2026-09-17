@@ -75,6 +75,11 @@ export class NewRequestPageComponent {
 
   readonly aiBusy = signal(false);
   readonly aiDraft = signal('');
+  /**
+   * Whether the server says the writing helper can actually run (UX-08). It starts false, so the button
+   * is never shown and then taken away — and stays false if the capability cannot be established.
+   */
+  readonly aiAvailable = signal(false);
   readonly draftStatus = signal('');
   readonly created = signal<CreatedRequest | null>(null);
   readonly failedFiles = signal<readonly File[]>([]);
@@ -85,6 +90,11 @@ export class NewRequestPageComponent {
   constructor() {
     queueMicrotask(() =>
       this.title.setTitle(this.t('req_breadcrumb', 'New request') + ' — Tafseel'));
+    // Asked once; the answer decides whether the helper exists on this page at all. Anything other than
+    // a clear yes — including a failure to ask — leaves it hidden.
+    void this.assist.isAvailable()
+      .then(available => this.aiAvailable.set(available))
+      .catch(() => this.aiAvailable.set(false));
 
     this.teacherId = (this.route.snapshot.queryParamMap.get('teacherId') ?? '').trim();
     if (!this.teacherId) {

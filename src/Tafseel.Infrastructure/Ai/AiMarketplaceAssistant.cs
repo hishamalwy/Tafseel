@@ -19,6 +19,12 @@ internal sealed class AiMarketplaceAssistant(
         ["find_teacher", "understand_service", "start_request", "book_live_session", "needs_clarification"];
     private static readonly HashSet<string> ServiceIntents = ["unknown", "async_request", "live_session"];
 
+    /// <summary>
+    /// The writing helper is offered only when the provider can actually be called, so a student never
+    /// presses a button that is guaranteed to answer "unavailable" (UX-08).
+    /// </summary>
+    public AiCapabilitiesDto GetCapabilities() => new(provider.IsAvailable);
+
     public async Task<AiDiscoveryResult> InterpretDiscoveryAsync(AiDiscoveryInput input, CancellationToken ct)
     {
         var text = NormalizeInput(input.Input, _options.MaxInputCharacters);

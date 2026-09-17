@@ -12,6 +12,13 @@ namespace Tafseel.Api.Controllers;
 [EnableRateLimiting("ai")]
 public sealed class AiMarketplaceController(IAiMarketplaceAssistant assistant) : ControllerBase
 {
+    /// <summary>
+    /// Whether the client may offer each AI action (UX-08). Read-only, and deliberately outside the `ai`
+    /// rate-limit partition: asking whether a button should exist must never spend the budget for using it.
+    /// </summary>
+    [HttpGet("capabilities"), DisableRateLimiting]
+    public AiCapabilitiesDto Capabilities() => assistant.GetCapabilities();
+
     [HttpPost("discovery")]
     public Task<AiDiscoveryResult> Discovery(AiDiscoveryInput input, CancellationToken ct) =>
         assistant.InterpretDiscoveryAsync(input, ct);

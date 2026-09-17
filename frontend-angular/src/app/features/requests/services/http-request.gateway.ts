@@ -6,7 +6,7 @@ import {
   DRAFT_VERSION, REQUEST_FILE_LIMITS, RequestDraft, RequestableService, draftKey
 } from '../models/learning-request';
 import {
-  BriefSuggestion, CreatedRequest, DraftStore, LearningPreferences, MarketplaceGateway,
+  AiCapabilities, BriefSuggestion, CreatedRequest, DraftStore, LearningPreferences, MarketplaceGateway,
   NewRequest, Offer, OfferTerms, OpenRequest, RequestGateway
 } from '../services/request.ports';
 
@@ -50,6 +50,15 @@ export class HttpRequestGateway implements RequestGateway {
     return this.http.post<void>(
       `/api/v1/learning-requests/${encodeURIComponent(requestId)}/attachments`, form,
       { headers: new HttpHeaders({ 'If-Match': version }) });
+  }
+
+  /**
+   * `AiCapabilitiesDto` — whether the writing helper may be offered at all (UX-08). Read once per wizard
+   * load and shared, so a page does not ask the same question from several components.
+   */
+  aiCapabilities(): Observable<AiCapabilities> {
+    return this.http.get<{ requestAssistant?: boolean }>('/api/v1/ai/capabilities')
+      .pipe(map(result => ({ requestAssistant: result?.requestAssistant === true })));
   }
 
   /** AiRequestAssistantInput(Notes) -> AiRequestAssistantResult(Status, Message, Draft). */

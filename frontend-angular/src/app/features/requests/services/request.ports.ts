@@ -97,6 +97,16 @@ export interface RequestGateway {
   attach(requestId: string, file: File, version: string): Observable<void>;
   /** AI-assisted first draft of the brief; entirely optional to the flow. */
   assist(notes: string): Observable<BriefSuggestion>;
+  /**
+   * Which AI actions the server says the client may offer (UX-08). The server decides: the client never
+   * infers availability from its environment, and a failure means "do not offer it".
+   */
+  aiCapabilities(): Observable<AiCapabilities>;
+}
+
+/** `AiCapabilitiesDto`: one boolean per product capability, nothing about how it is provided. */
+export interface AiCapabilities {
+  readonly requestAssistant: boolean;
 }
 
 /** The open marketplace: requests published for any qualified teacher to bid on. */

@@ -97,13 +97,17 @@
               <label for="req-goal">{{ t('req_goal', 'What do you want to achieve?') }}</label>
               <textarea id="req-goal" rows="4" maxlength="2000" required
                         [value]="goal()" (input)="goal.set($any($event.target).value)"></textarea>
-              <button type="button" class="tf-inline-action" (click)="askAssistant()" [disabled]="aiBusy()">
-                {{ aiBusy() ? t('req_ai_thinking', 'Thinking…') : t('req_ai_help', 'Help me write this') }}
-              </button>
+              <!-- The helper exists only when the server says it can run (UX-08); a student is never
+                   offered a button that is going to answer "unavailable". -->
+              @if (aiAvailable()) {
+                <button type="button" class="tf-inline-action" data-testid="ai-help" (click)="askAssistant()" [disabled]="aiBusy()">
+                  {{ aiBusy() ? t('req_ai_thinking', 'Thinking…') : t('req_ai_help', 'Help me write this') }}
+                </button>
+              }
             </div>
 
-            @if (aiDraft(); as draft) {
-              <div class="tf-req-ai">
+            @if (aiAvailable() && aiDraft(); as draft) {
+              <div class="tf-req-ai" data-testid="ai-draft">
                 <p class="tf-req-ai__label">{{ t('req_ai_draft', 'Suggested wording') }}</p>
                 <p class="tf-req-ai__body">{{ draft }}</p>
                 <div class="tf-req-ai__actions">

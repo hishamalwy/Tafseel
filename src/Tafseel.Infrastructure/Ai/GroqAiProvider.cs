@@ -16,6 +16,9 @@ internal sealed class GroqAiProvider : IAiProvider
     private readonly ILogger<GroqAiProvider> _logger;
     private readonly ChatClient? _client;
 
+    /// <summary>Switched on and holding credentials: exactly what every call already requires.</summary>
+    public bool IsAvailable => _client is not null;
+
     public GroqAiProvider(IOptions<AiOptions> options, ILogger<GroqAiProvider> logger)
     {
         _options = options.Value;

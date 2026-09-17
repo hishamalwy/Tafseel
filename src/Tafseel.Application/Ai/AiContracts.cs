@@ -88,6 +88,13 @@ public sealed record AiProductHelpCandidate(string Answer, bool Supported);
 
 public interface IAiProvider
 {
+    /// <summary>
+    /// Whether the provider can actually be called: the feature is switched on and its credentials are
+    /// present. Read-only, and the same condition the provider already uses before every call — it names
+    /// no provider, model, endpoint or key (UX-08).
+    /// </summary>
+    bool IsAvailable { get; }
+
     Task<AiProviderResult<AiDiscoveryCandidate>> InterpretIntentAsync(string input, CancellationToken ct);
     Task<AiProviderResult<AiRequestDraftCandidate>> AssistRequestAsync(string input, CancellationToken ct);
     Task<AiProviderResult<AiProductHelpCandidate>> AnswerProductHelpAsync(
@@ -139,8 +146,17 @@ public sealed record AiRequestAssistantResult(
 
 public sealed record AiProductHelpResult(string Status, string Answer);
 
+/// <summary>
+/// Which AI actions the client may offer (UX-08). One boolean per product capability, and nothing about
+/// how it is provided: no provider, model, endpoint, key or diagnostic.
+/// </summary>
+public sealed record AiCapabilitiesDto(bool RequestAssistant);
+
 public interface IAiMarketplaceAssistant
 {
+    /// <summary>What the client may offer: the capability, not how it is configured (UX-08).</summary>
+    AiCapabilitiesDto GetCapabilities();
+
     Task<AiDiscoveryResult> InterpretDiscoveryAsync(AiDiscoveryInput input, CancellationToken ct);
     Task<AiRequestAssistantResult> AssistRequestAsync(AiRequestAssistantInput input, CancellationToken ct);
     Task<AiProductHelpResult> AnswerProductHelpAsync(AiProductHelpInput input, CancellationToken ct);

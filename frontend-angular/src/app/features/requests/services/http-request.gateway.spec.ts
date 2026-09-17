@@ -47,6 +47,22 @@ describe('HttpRequestGateway', () => {
     await created;
   });
 
+  it('reads whether the writing helper may be offered at all (UX-08)', async () => {
+    const enabled = firstValueFrom(gateway.aiCapabilities());
+    const request = backend.expectOne('/api/v1/ai/capabilities');
+    expect(request.request.method).toBe('GET');
+    request.flush({ requestAssistant: true });
+    await expect(enabled).resolves.toEqual({ requestAssistant: true });
+  });
+
+  it('treats anything but an explicit yes as no', async () => {
+    for (const body of [{ requestAssistant: false }, {}, null]) {
+      const answer = firstValueFrom(gateway.aiCapabilities());
+      backend.expectOne('/api/v1/ai/capabilities').flush(body);
+      await expect(answer).resolves.toEqual({ requestAssistant: false });
+    }
+  });
+
   it('asks the request assistant with notes and maps a success to its suggested description (J3-04)', async () => {
     const answer = firstValueFrom(gateway.assist('I keep failing limits'));
     const request = backend.expectOne('/api/v1/ai/request-assistant');
