@@ -1291,6 +1291,15 @@
       "body": null
     },
     {
+      "route": "/api/v1/ai/capabilities",
+      "methods": [
+        "GET"
+      ],
+      "action": "AiMarketplace.Capabilities",
+      "access": "Students.CreateRequests",
+      "body": null
+    },
+    {
       "route": "/api/v1/ai/discovery",
       "methods": [
         "POST"
