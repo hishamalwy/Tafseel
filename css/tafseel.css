@@ -33,6 +33,9 @@
   unicode-range:U+20C1;
 }
 :root{
+  /* Official Saudi Riyal symbol (SAMA), the same artwork as assets/brand/saudi-riyal-symbol.svg,
+     carried inline so a price never waits on a request to render its currency. */
+  --riyal-mark:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1124.14 1256.39"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.54,70.2v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.67,70.23V66.13c-50.67,28.45-95.67,66.32-132.25,111v275.3l-190.76,40.54V223.06C466.6,251.51,421.61,289.38,385,334.06v275.27l-144.35,30.67c-20.06,44.47-33.33,92.75-38.39,143.37l182.74-38.83v175.13c-97.37,86.09-164.82,209.09-177.91,346.98h160.05c11.08-104.17,53.81-197.13,117.82-269.44v251.92c11.08-104.17,53.81-197.13,117.82-269.44V902.34l190.76-40.51v236.77c11.08-104.17,53.81-197.13,117.82-269.44v253.53h160.07c-11.08-104.17-53.81-197.13-117.82-269.44V895.8Z"/></svg>');
   color-scheme:light;
   /* ==========================================================================
      BRAND PRIMITIVES - the identity itself, taken verbatim from the Tafseel
@@ -4294,6 +4297,13 @@ html,body{max-inline-size:100%;overflow-x:clip}
   font-weight:400;
   line-height:1;
 }
+/* The mark is drawn, not typed (UX-06).
+   It used to be a glyph from the self-hosted saudi_riyal font, shown only under `html.tf-riyal-font-ok`
+   — a class nothing ever set, so every price in the product read the Latin letters "SAR", including
+   inside Arabic sentences. Waiting on a webfont would have swapped the two mid-screenshot instead.
+   The shape now comes from the same official SVG as a mask, inlined here: no network, no font, no race,
+   and it takes its colour and size from the text it sits in. Where masks are unavailable the ::before
+   keeps readable letters, localized so an Arabic page never falls back to English. */
 .tf-riyal::before,.tf-riyal-mark::before,.tf-price-currency--mark::before,.tf-mk-riyal::before{
   content:"SAR";
   font-family:var(--font-sans);
@@ -4302,15 +4312,25 @@ html,body{max-inline-size:100%;overflow-x:clip}
   letter-spacing:.02em;
   line-height:1;
 }
-html.tf-riyal-font-ok .tf-riyal::before,
-html.tf-riyal-font-ok .tf-riyal-mark::before,
-html.tf-riyal-font-ok .tf-price-currency--mark::before,
-html.tf-riyal-font-ok .tf-mk-riyal::before{
-  content:"\20C1";
-  font-family:saudi_riyal,sans-serif;
-  font-size:1em;
-  font-weight:400;
-  letter-spacing:0;
+html[lang="ar"] .tf-riyal::before,
+html[lang="ar"] .tf-riyal-mark::before,
+html[lang="ar"] .tf-price-currency--mark::before,
+html[lang="ar"] .tf-mk-riyal::before{content:"31.33"}
+@supports (mask-image:url("#r")) or (-webkit-mask-image:url("#r")){
+  .tf-riyal::before,.tf-riyal-mark::before,.tf-price-currency--mark::before,.tf-mk-riyal::before,
+  html[lang="ar"] .tf-riyal::before,
+  html[lang="ar"] .tf-riyal-mark::before,
+  html[lang="ar"] .tf-price-currency--mark::before,
+  html[lang="ar"] .tf-mk-riyal::before{
+    content:"";
+    display:inline-block;
+    inline-size:.82em;
+    block-size:.92em;
+    vertical-align:-.06em;
+    background-color:currentColor;
+    -webkit-mask:var(--riyal-mark) center/contain no-repeat;
+    mask:var(--riyal-mark) center/contain no-repeat;
+  }
 }
 .tf-price-line:has(.tf-price-md) .tf-riyal-mark,
 .tf-price-line:has(.tf-price-md) .tf-price-currency--mark{font-size:var(--market-price-md)}

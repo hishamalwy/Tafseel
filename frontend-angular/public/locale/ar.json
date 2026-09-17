@@ -4099,5 +4099,18 @@
   "price_total_due": "الإجمالي المطلوب",
   "price_total_paid": "الإجمالي",
   "price_agreed_title": "السعر المتفق عليه",
-  "price_nothing_charged": "لن يُخصم أي مبلغ إلا إذا اخترت الدفع."
+  "price_nothing_charged": "لن يُخصم أي مبلغ إلا إذا اخترت الدفع.",
+  "currency_sar": "ريال سعودي",
+  "req_prompt_whatYouTried": "ما الذي جربته حتى الآن؟",
+  "req_prompt_whereStuck": "أين تحديدًا تتوقف؟",
+  "req_prompt_deadlinePressure": "ما مدى ضيق الوقت لديك؟",
+  "req_prompt_problemSource": "من أين هذه المسألة؟",
+  "req_prompt_requiredMethod": "هل يُطلب منك أسلوب حل معيّن؟",
+  "req_prompt_showStepsLevel": "كم تريد من التفصيل في الخطوات؟",
+  "req_prompt_sourceMaterial": "ما المادة التي تريد تلخيصها؟",
+  "req_prompt_lengthTarget": "ما الطول الذي تريده؟",
+  "req_prompt_focusAreas": "ما الجوانب التي تريد التركيز عليها؟",
+  "req_prompt_workToReview": "ما العمل الذي تريد مراجعته؟",
+  "req_prompt_rubric": "ما معايير التقييم إن وُجدت؟",
+  "req_prompt_feedbackDepth": "ما عمق الملاحظات التي تريدها؟"
 }

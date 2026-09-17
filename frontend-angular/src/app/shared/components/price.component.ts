@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FormatService } from '@core/i18n/format.service';
+import { LocaleService } from '@core/i18n/locale.service';
 
 /**
  * An amount of money, rendered the way Tafseel renders money.
  *
  * SAR is drawn with the SAMA mark rather than a Unicode glyph or the letters
- * "SAR" — the glyph is missing from many fonts and lands as tofu. Every other
+ * "SAR" — the glyph is missing from many fonts and lands as tofu, so the mark is
+ * painted from the official artwork as a CSS mask and needs neither a webfont
+ * nor a request (see `--riyal-mark`). Every other
  * currency falls back to `amount CODE`. The legacy pages repeated this pair of
  * `sc-if` branches at every price on every screen; the decision belongs to the
  * amount, not to each site that shows one.
@@ -20,7 +23,7 @@ import { FormatService } from '@core/i18n/format.service';
     @if (view().isSarAmount) {
       <span class="tf-price-line" dir="ltr">
         <span class="tf-price-currency tf-price-currency--mark"
-              title="SAR" aria-label="SAR" data-i18n-skip></span>@if (size(); as scale) {
+              [title]="currencyName()" [attr.aria-label]="currencyName()" data-i18n-skip></span>@if (size(); as scale) {
           <strong [class]="'tf-price-' + scale">{{ view().amountNumber }}</strong>
         } @else {
           {{ view().amountNumber }}
@@ -34,6 +37,7 @@ import { FormatService } from '@core/i18n/format.service';
 })
 export class PriceComponent {
   private readonly fmt = inject(FormatService);
+  private readonly locale = inject(LocaleService);
 
   readonly amount = input.required<number | string | null | undefined>();
   readonly currency = input<string>('SAR');
@@ -49,4 +53,10 @@ export class PriceComponent {
 
   readonly view = computed(() =>
     this.fmt.moneyView(this.amount(), this.currency(), this.emptyText()));
+
+  /**
+   * What a screen reader says for the drawn mark. It is the only word on the price, so in Arabic it is an
+   * Arabic word — "SAR" read aloud in an Arabic sentence is the same defect as printing it (UX-06).
+   */
+  readonly currencyName = computed(() => this.locale.t('currency_sar', 'SAR'));
 }

@@ -4099,5 +4099,18 @@
   "price_total_due": "Total to pay",
   "price_total_paid": "Total",
   "price_agreed_title": "Agreed price",
-  "price_nothing_charged": "Nothing is charged unless you choose to pay."
+  "price_nothing_charged": "Nothing is charged unless you choose to pay.",
+  "currency_sar": "SAR",
+  "req_prompt_whatYouTried": "What have you tried so far?",
+  "req_prompt_whereStuck": "Where exactly do you get stuck?",
+  "req_prompt_deadlinePressure": "How tight is your deadline?",
+  "req_prompt_problemSource": "Where is this problem from?",
+  "req_prompt_requiredMethod": "Is a particular method required?",
+  "req_prompt_showStepsLevel": "How much step-by-step detail do you want?",
+  "req_prompt_sourceMaterial": "What material should be summarised?",
+  "req_prompt_lengthTarget": "How long should it be?",
+  "req_prompt_focusAreas": "What should it focus on?",
+  "req_prompt_workToReview": "What work should be reviewed?",
+  "req_prompt_rubric": "What are the marking criteria, if any?",
+  "req_prompt_feedbackDepth": "How detailed should the feedback be?"
 }
