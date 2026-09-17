@@ -517,6 +517,8 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             request.Property(x => x.Budget).HasPrecision(18, 2);
             request.Property(x => x.BudgetMin).HasPrecision(18, 2);
             request.Property(x => x.BudgetMax).HasPrecision(18, 2);
+            request.Property(x => x.ListedPriceAtRequest).HasPrecision(18, 2);
+            request.Property(x => x.ListedCurrencyAtRequest).HasMaxLength(3).IsUnicode(false);
             request.Property(x => x.AcceptanceIdempotencyKey).HasMaxLength(100);
             request.Property(x => x.RowVersion).IsRowVersion();
             request.HasIndex(x => new { x.StudentId, x.CreatedAt });
@@ -536,6 +538,13 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 table.HasCheckConstraint("CK_LearningRequests_Status", "[Status] BETWEEN 0 AND 8");
                 table.HasCheckConstraint("CK_LearningRequests_Budget", "[Budget] IS NULL OR [Budget] > 0");
                 table.HasCheckConstraint("CK_LearningRequests_BudgetRange", "([BudgetMin] IS NULL AND [BudgetMax] IS NULL) OR ([BudgetMin] >= 0 AND [BudgetMax] >= [BudgetMin])");
+                // One historical fact in two columns (DEC-13): a price without its currency means nothing,
+                // so a half-written snapshot is not a state the database will hold.
+                // Spelled out rather than relying on comparisons with NULL: a check constraint only rejects
+                // FALSE, and "[Price] > 0" against a NULL price is UNKNOWN, which would let a currency
+                // without a price through.
+                table.HasCheckConstraint("CK_LearningRequests_ListedPrice",
+                    "([ListedPriceAtRequest] IS NULL AND [ListedCurrencyAtRequest] IS NULL) OR ([ListedPriceAtRequest] IS NOT NULL AND [ListedPriceAtRequest] > 0 AND [ListedCurrencyAtRequest] IS NOT NULL)");
             });
         });
         builder.Entity<LearningRequestAttachment>(attachment =>

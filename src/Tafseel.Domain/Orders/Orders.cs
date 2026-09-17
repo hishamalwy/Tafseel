@@ -106,6 +106,17 @@ public sealed class LearningRequest
     public decimal? Budget { get; private set; }
     public decimal? BudgetMin { get; private set; }
     public decimal? BudgetMax { get; private set; }
+
+    /// <summary>
+    /// The Teacher Offering price the student saw when they sent this Direct Request, and its currency
+    /// (DEC-13, UX-09). One historical fact in two columns: both are set together or neither is. Null on
+    /// Open Requests, whose price comes from the chosen Teacher Offer, and on Direct Requests created
+    /// before this was captured — those are never backfilled, because nobody knows what was on the screen.
+    /// The agreed price of the resulting Order is separate and is what the student actually pays.
+    /// </summary>
+    public decimal? ListedPriceAtRequest { get; private set; }
+    public string? ListedCurrencyAtRequest { get; private set; }
+
     public RequestSourcingMode SourcingMode { get; private set; }
     public LearningRequestStatus Status { get; private set; }
     public Guid? SelectedOfferId { get; private set; }
@@ -130,6 +141,26 @@ public sealed class LearningRequest
         OrderType = catalog.OrderType;
         ServiceNameEnglish = catalog.Name;
         ServiceNameArabic = catalog.NameAr;
+    }
+
+    /// <summary>
+    /// Records, once, the offering price the student was looking at (DEC-13). Written by the server from the
+    /// offering it has already validated — never from anything a client sent. There is no other way in and no
+    /// way to change it afterwards, so an edit to the offering cannot rewrite what the student was shown.
+    /// </summary>
+    public void CaptureListedPrice(decimal price, string currency)
+    {
+        if (SourcingMode != RequestSourcingMode.Direct)
+            throw new DomainException("listed_price_direct_only", "Only a direct request has a listed price.");
+        if (ListedPriceAtRequest.HasValue)
+            throw new DomainException("listed_price_immutable", "The listed price snapshot is immutable.");
+        if (price is <= 0 or > 1_000_000)
+            throw new DomainException("invalid_listed_price", "The listed price is out of range.");
+        var code = (currency ?? "").Trim().ToUpperInvariant();
+        if (code.Length != 3)
+            throw new DomainException("invalid_listed_currency", "The listed currency is invalid.");
+        ListedPriceAtRequest = price;
+        ListedCurrencyAtRequest = code;
     }
 
     public void SelectOffer(string studentId, Guid offerId, DateTimeOffset now, int reservationMinutes = 120)
