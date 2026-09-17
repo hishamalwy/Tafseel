@@ -69,6 +69,30 @@ public static class DependencyInjection
             "live_session", 40)
     ];
 
+    /// <summary>
+    /// The V1 Catalog Service price, delivery and revision policy (DEC-01).
+    ///
+    /// Until now the canonical services were created without bounds, and the domain's own last-resort
+    /// defaults stood in: 0.01 SAR to 1,000,000 SAR. A teacher setting a price was told that was the policy,
+    /// which is not guidance a person can act on (UX-06). The decided table is business configuration, so it
+    /// belongs here, on the path that already guarantees the canonical services exist in every environment —
+    /// not in a screen, which must keep rendering whatever the server says the policy is.
+    /// </summary>
+    private static readonly (
+        string Code, decimal MinPrice, decimal MaxPrice, decimal DefaultPrice, decimal RecommendedPrice,
+        int? MinHours, int? DefaultHours, int? RecommendedHours, int? MaxHours,
+        int DefaultRevisions, int MaxRevisions)[] CanonicalServicePolicy =
+    [
+        ("recorded_explanation", 50m, 800m, 120m, 120m, 12, 48, 48, 336, 2, 5),
+        ("assignment_guidance", 60m, 1_000m, 150m, 150m, 24, 72, 72, 336, 2, 3),
+        ("exam_revision", 80m, 1_500m, 200m, 200m, 24, 72, 72, 240, 1, 3),
+        ("live_session", 60m, 600m, 150m, 150m, null, null, null, null, 0, 0)
+    ];
+
+    /// <summary>The bounds the domain falls back to when a service was never given any (see DEC-01).</summary>
+    private const decimal UnsetMinimumPrice = 0.01m;
+    private const decimal UnsetMaximumPrice = 1_000_000m;
+
     private static readonly (string Name, string Code)[] CanonicalLanguages =
         [("Arabic", "ar"), ("English", "en")];
 
@@ -553,6 +577,9 @@ public static class DependencyInjection
 
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
         await BackfillCanonicalServiceLocalizationAsync(db);
+        // Before the seed-is-current guard below, which returns early on every database that already
+        // has its roles and services - which is every database that needs this correction (DEC-01).
+        await ApplyCanonicalServicePolicyAsync(db);
 
         var environment = scope.ServiceProvider.GetService<IHostEnvironment>();
         var staging = environment?.IsStaging() == true;
@@ -595,6 +622,10 @@ public static class DependencyInjection
                 if (!await db.TeachingLanguages.AnyAsync(x => x.Code == language.Code))
                     db.Add(new TeachingLanguage(language.Name, language.Code));
             await db.SaveChangesAsync();
+
+            // After the services exist, so a database created in this same run gets the decided policy
+            // rather than the domain's unset-price fallback (DEC-01).
+            await ApplyCanonicalServicePolicyAsync(db);
 
             if (staging)
             {
@@ -648,6 +679,45 @@ public static class DependencyInjection
 
             await transaction.CommitAsync();
         });
+    }
+
+    /// <summary>
+    /// Puts the DEC-01 policy on the canonical services that have never been given one.
+    ///
+    /// A service whose bounds an Admin has actually configured is left exactly as it is: this only replaces
+    /// the domain's unset-price fallback, which is what made the teacher services screen offer a range of
+    /// 0.01 to 1,000,000 SAR. Idempotent, so it settles on the decided table and then stops changing
+    /// anything.
+    /// </summary>
+    private static async Task ApplyCanonicalServicePolicyAsync(TafseelDbContext db)
+    {
+        var codes = CanonicalServicePolicy.Select(x => x.Code).ToArray();
+        var services = await db.ServiceCatalogItems.Where(x => codes.Contains(x.Code)).ToArrayAsync();
+        var changed = false;
+
+        foreach (var service in services)
+        {
+            var policy = CanonicalServicePolicy.First(x => x.Code == service.Code);
+            var unset = (service.MinPrice ?? UnsetMinimumPrice) == UnsetMinimumPrice
+                && (service.MaxPrice ?? UnsetMaximumPrice) == UnsetMaximumPrice;
+            if (!unset || (service.MinPrice == policy.MinPrice && service.MaxPrice == policy.MaxPrice))
+                continue;
+
+            // Everything but the decided numbers is the service's own current configuration: this call
+            // applies a price policy, it does not re-create the service. `hasReferences: true` is the
+            // conservative reading — the order type and qualification policy are unchanged either way.
+            service.ConfigurePolicy(
+                service.CategoryCode, service.IconCode, service.OrderType, service.QualificationPolicy,
+                service.CurrencyCode,
+                policy.MinPrice, policy.DefaultPrice, policy.RecommendedPrice, policy.MaxPrice,
+                policy.MinHours, policy.DefaultHours, policy.RecommendedHours, policy.MaxHours,
+                policy.DefaultRevisions, policy.MaxRevisions,
+                service.IsPublic, service.TeacherSelectable, service.AllowedDurations, service.DisplayOrder,
+                hasReferences: true);
+            changed = true;
+        }
+
+        if (changed) await db.SaveChangesAsync();
     }
 
     private static async Task BackfillCanonicalServiceLocalizationAsync(TafseelDbContext db)
