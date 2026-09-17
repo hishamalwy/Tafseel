@@ -75,13 +75,37 @@ describe('PublishOpenRequest and ManageRequest', () => {
 
 describe('LoadRequest', () => {
   const request = (patch: object) => ({ id: 'r1', studentId: 's1', teacherId: 't1', sourcing: SOURCING.DIRECT, status: REQUEST_STATUS.PENDING_TEACHER_REVIEW, ...patch });
+  const order = (patch: object) => ({
+    id: 'order-1', learningRequestId: 'r1', price: 150, currency: 'SAR',
+    studentFeePercent: 8, studentFeeAmount: 12, studentTotal: 162, paymentStatus: 0,
+    listedPriceAtRequest: 100, listedCurrencyAtRequest: 'SAR', ...patch
+  });
 
   it('finds the order a request became among the viewer’s own orders', async () => {
-    const orders = vi.fn(() => of([{ id: 'other', learningRequestId: 'r9' }, { id: 'order-1', learningRequestId: 'r1' }]));
+    const orders = vi.fn(() => of([order({ id: 'other', learningRequestId: 'r9' }), order({})]));
     withGateway({ request: () => of(request({ status: REQUEST_STATUS.ACCEPTED }) as unknown as LearningRequest), orders });
     const view = await TestBed.inject(LoadRequest).execute('r1', 't1');
     expect(view.orderId).toBe('order-1');
     expect(orders).toHaveBeenCalledWith(true);
+  });
+
+  it('brings back that order’s money, so the request can disclose the agreed price', async () => {
+    // UX-09: the page shows what the student was quoted beside what they owe, and reads no second endpoint
+    // to do it.
+    const orders = vi.fn(() => of([order({})]));
+    withGateway({ request: () => of(request({ status: REQUEST_STATUS.ACCEPTED }) as unknown as LearningRequest), orders });
+    const view = await TestBed.inject(LoadRequest).execute('r1', 's1');
+    expect(view.order?.price).toBe(150);
+    expect(view.order?.listedPriceAtRequest).toBe(100);
+    expect(view.order?.studentTotal).toBe(162);
+    expect(orders).toHaveBeenCalledTimes(1);
+  });
+
+  it('carries no order when the request never became one', async () => {
+    withGateway({ request: () => of(request({}) as unknown as LearningRequest), orders: vi.fn(() => of([])) });
+    const view = await TestBed.inject(LoadRequest).execute('r1', 's1');
+    expect(view.order).toBeNull();
+    expect(view.orderId).toBe('');
   });
 
   it('reads the open-marketplace view only for the request’s own student', async () => {

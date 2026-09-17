@@ -2,9 +2,24 @@ import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CatalogOption, LearningRequest, Offer, OfferInput, OpenRequest, OpenRequestInput } from '../models/demand';
 
+/**
+ * The order a request became, with the money the student is asked for.
+ *
+ * The request page already reads the order list to find the id; carrying the amounts back on the same
+ * answer is what lets it disclose the agreed price (UX-09) without a second call.
+ */
 export interface OrderRef {
   readonly id: string;
   readonly learningRequestId: string;
+  readonly price: number;
+  readonly currency: string;
+  readonly studentFeePercent: number;
+  readonly studentFeeAmount: number;
+  readonly studentTotal: number;
+  readonly paymentStatus: number;
+  /** The offering price when the request was sent; null for open and pre-UX-09 requests. */
+  readonly listedPriceAtRequest: number | null;
+  readonly listedCurrencyAtRequest: string | null;
 }
 
 export interface DemandGateway {

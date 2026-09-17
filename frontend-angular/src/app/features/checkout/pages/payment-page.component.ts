@@ -8,6 +8,7 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
+import { PricePanelComponent } from '@shared/components/price-panel.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import { CheckoutContext, InitiatePayment, LoadCheckoutContext } from '../services/checkout.use-cases';
 import { PayableKind, mockReference } from '../models/payable';
@@ -23,7 +24,7 @@ import { PayableKind, mockReference } from '../models/payable';
 @Component({
   selector: 'tf-payment-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, PricePanelComponent],
   templateUrl: './payment-page.component.html',
   styleUrl: './payment-page.component.css'
 })
@@ -149,14 +150,6 @@ export class PaymentPageComponent {
     return payable
       ? this.fmt.moneyView(payable.total, payable.currency)
       : this.fmt.moneyView(null);
-  });
-
-  readonly listedPrice = computed(() => {
-    const payable = this.context()?.payable;
-    if (!payable) return this.fmt.moneyView(null);
-    return payable.kind === 'order'
-      ? this.fmt.moneyView(payable.lines[0]?.amount, payable.currency)
-      : this.total();
   });
 
   readonly mockContinueLink = computed(() => {

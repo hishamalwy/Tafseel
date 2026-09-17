@@ -10,6 +10,7 @@ import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { AcceptRequestDialogComponent } from '@features/dashboards/components/accept-request-dialog.component';
 import { PriceComponent } from '@shared/components/price.component';
+import { PricePanelComponent } from '@shared/components/price-panel.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
 import { ToastComponent } from '@shared/components/toast.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
@@ -26,7 +27,7 @@ import { DraftInvalid, LoadRequest, ManageRequest, RequestView } from '../servic
 @Component({
   selector: 'tf-request-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent],
+  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent],
   templateUrl: './request-detail-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css'
 })

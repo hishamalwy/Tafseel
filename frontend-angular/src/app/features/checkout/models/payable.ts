@@ -8,6 +8,8 @@
  * nineteen places, which is what the legacy version did.
  */
 
+import { AgreedPriceSource } from '@shared/models/agreed-price';
+
 export type PayableKind = 'order' | 'live-session' | 'open-request';
 
 export interface PriceLine {
@@ -24,6 +26,11 @@ export interface Payable {
   readonly subtitleKey: string;
   readonly lines: readonly PriceLine[];
   readonly total: number;
+  /**
+   * The order itself, when this is an order, so checkout can disclose the agreed price the same way the
+   * request and the order pages do (UX-09). Null for the payables that have no order behind them yet.
+   */
+  readonly order: AgreedPriceSource | null;
 
   readonly teacherId: string | null;
   /** Order-only context; null for a live session. */
@@ -45,6 +52,8 @@ export interface OrderLike {
   teacherDisplayName?: string | null; teacherDisplayNameEnglish?: string | null;
   studentDisplayName?: string | null; studentDisplayNameEnglish?: string | null;
   price?: number | null; studentFeeAmount?: number | null; studentTotal?: number | null;
+  studentFeePercent?: number | null;
+  listedPriceAtRequest?: number | null; listedCurrencyAtRequest?: string | null;
   requestTitle?: string | null;
   serviceNameEnglish?: string | null; serviceNameArabic?: string | null;
   teacherId?: string | null; learningRequestId?: string | null;
@@ -91,6 +100,7 @@ export const Payable = {
       subtitleKey: '',
       lines,
       total: Number(order.studentTotal) || 0,
+      order,
       teacherId: order.teacherId ?? null,
       learningRequestId: order.learningRequestId ?? null,
       agreedDeliveryAt: order.agreedDeliveryAt ?? null,
@@ -118,6 +128,7 @@ export const Payable = {
       subtitleKey: 'pay_live_session_subtitle',
       lines,
       total: Number(booking.totalPrice) || 0,
+      order: null,
       teacherId: booking.teacherId ?? null,
       learningRequestId: null,
       agreedDeliveryAt: null,
@@ -142,6 +153,7 @@ export const Payable = {
       subtitleKey: 'pay_open_request_subtitle',
       lines: [{ labelKey: 'pay_offer_price', amount }],
       total: amount,
+      order: null,
       teacherId: offer.teacherId ?? null,
       learningRequestId: request.id,
       agreedDeliveryAt: null,

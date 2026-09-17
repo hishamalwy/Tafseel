@@ -108,6 +108,13 @@
       </div>
 
       <aside class="tf-detail-column">
+        @if (!isTeacher() && v.order; as order) {
+          <section class="tf-profile-editor-card" aria-labelledby="request-price-title" data-testid="request-price">
+            <div><h2 id="request-price-title">{{ t('price_agreed_title', 'Agreed price') }}</h2></div>
+            <tf-price-panel [order]="order" [paid]="order.paymentStatus === 1" />
+          </section>
+        }
+
         <section class="tf-profile-editor-card" aria-labelledby="request-facts-title">
           <div><h2 id="request-facts-title">{{ t('demand_details', 'Details') }}</h2></div>
           <dl class="tf-facts">

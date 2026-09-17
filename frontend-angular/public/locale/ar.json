@@ -4091,5 +4091,12 @@
   "work_teacher_start": "طلبات مفتوحة",
   "nav_saved_filter": "المحفوظون",
   "nav_role_home": "الرئيسية",
-  "nav_new_request": "اطلب شرحاً"
+  "nav_new_request": "اطلب شرحاً",
+  "price_when_sent": "السعر عند إرسال الطلب",
+  "price_after_review": "السعر بعد مراجعة المعلم لطلبك",
+  "price_plain": "السعر",
+  "price_fee": "رسوم خدمة تفصيل ({percent}٪)",
+  "price_total_due": "الإجمالي المطلوب",
+  "price_total_paid": "الإجمالي",
+  "price_agreed_title": "السعر المتفق عليه"
 }

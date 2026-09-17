@@ -22,8 +22,15 @@ export interface OrderDetail extends PartyNameFields {
   readonly teacherId: string;
   readonly price: number;
   readonly currency: string;
+  readonly studentFeePercent?: number;
   readonly studentFeeAmount?: number;
   readonly studentTotal: number;
+  /**
+   * The teacher's offering price when the student sent the request (UX-09). Null on open-marketplace
+   * orders and on orders whose request predates the snapshot — history that was never invented.
+   */
+  readonly listedPriceAtRequest?: number | null;
+  readonly listedCurrencyAtRequest?: string | null;
   readonly teacherNet?: number | null;
   readonly agreedDeliveryAt: string;
   readonly revisionAllowance: number;

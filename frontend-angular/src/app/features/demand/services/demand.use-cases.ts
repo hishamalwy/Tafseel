@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   CatalogOption, Demand, LearningRequest, Offer, OfferDraft, OpenRequest, OpenRequestDraft, SOURCING
 } from '../models/demand';
-import { DEMAND_GATEWAY } from './demand.ports';
+import { DEMAND_GATEWAY, OrderRef } from './demand.ports';
 
 /** A form the page let through that the rules refuse; nothing was sent. */
 export class DraftInvalid<P> extends Error {
@@ -50,6 +50,8 @@ export interface RequestView {
   readonly open: OpenRequest | null;
   /** The order this request became, when it became one. */
   readonly orderId: string;
+  /** That order's money, so the student can be shown what was agreed beside what they were quoted. */
+  readonly order: OrderRef | null;
 }
 
 /** A request for its own student or assigned teacher, with its open-marketplace state and order. */
@@ -64,7 +66,8 @@ export class LoadRequest {
       request.sourcing === SOURCING.OPEN && isStudent ? firstValueFrom(this.gateway.openRequest(id)) : Promise.resolve(null),
       Demand.hasOrder(request.status) ? firstValueFrom(this.gateway.orders(!isStudent)) : Promise.resolve([])
     ]);
-    return { request, open, orderId: orders.find(order => order.learningRequestId === request.id)?.id ?? '' };
+    const order = orders.find(o => o.learningRequestId === request.id) ?? null;
+    return { request, open, orderId: order?.id ?? '', order };
   }
 }
 

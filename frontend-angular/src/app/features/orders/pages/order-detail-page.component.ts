@@ -10,6 +10,7 @@ import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { PriceComponent } from '@shared/components/price.component';
+import { PricePanelComponent } from '@shared/components/price-panel.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
 import { ToastComponent } from '@shared/components/toast.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
@@ -32,7 +33,7 @@ type Panel = 'deliver' | 'revision' | 'review' | null;
 @Component({
   selector: 'tf-order-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, PriceComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent],
+  imports: [FormsModule, RouterLink, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent],
   templateUrl: './order-detail-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css'
 })

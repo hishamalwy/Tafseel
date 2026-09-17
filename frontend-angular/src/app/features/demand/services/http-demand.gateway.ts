@@ -57,7 +57,16 @@ export class HttpDemandGateway implements DemandGateway {
     const source = asTeacher ? this.http.get<Json>('/api/v1/orders/assigned?page=1&pageSize=50')
       : this.http.get<Json>('/api/v1/orders/mine?page=1&pageSize=50');
     return source.pipe(map(page => ((page['items'] ?? []) as Json[])
-      .map(x => ({ id: text(x['id']), learningRequestId: text(x['learningRequestId']) }))));
+      .map(x => ({
+        id: text(x['id']), learningRequestId: text(x['learningRequestId']),
+        price: Number(x['price']) || 0, currency: text(x['currency']) || 'SAR',
+        studentFeePercent: Number(x['studentFeePercent']) || 0,
+        studentFeeAmount: Number(x['studentFeeAmount']) || 0,
+        studentTotal: Number(x['studentTotal']) || 0,
+        paymentStatus: Number(x['paymentStatus']) || 0,
+        listedPriceAtRequest: numberOrNull(x['listedPriceAtRequest']),
+        listedCurrencyAtRequest: text(x['listedCurrencyAtRequest']) || null
+      }))));
   }
 
   openRequest(id: string): Observable<OpenRequest> {

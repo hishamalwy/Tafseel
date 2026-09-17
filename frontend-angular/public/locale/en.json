@@ -4091,5 +4091,12 @@
   "work_teacher_start": "Open requests",
   "nav_saved_filter": "Saved",
   "nav_role_home": "Home",
-  "nav_new_request": "Post a request"
+  "nav_new_request": "Post a request",
+  "price_when_sent": "Price when you sent the request",
+  "price_after_review": "Price after the teacher reviewed your request",
+  "price_plain": "Price",
+  "price_fee": "Tafseel service fee ({percent}%)",
+  "price_total_due": "Total to pay",
+  "price_total_paid": "Total",
+  "price_agreed_title": "Agreed price"
 }

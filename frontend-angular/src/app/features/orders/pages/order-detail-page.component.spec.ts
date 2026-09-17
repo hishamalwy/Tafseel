@@ -150,6 +150,37 @@ describe('OrderDetailPageComponent', () => {
     expect(testId(page, 'order-actions')).toBeNull();
   });
 
+  it('tells the student the price they were quoted beside the one they owe', async () => {
+    // UX-09: the offering said 100 when the request was sent; the teacher accepted at 150.
+    const changed: OrderDetail = {
+      ...DELIVERED, price: 150, studentFeePercent: 8, studentFeeAmount: 12, studentTotal: 162,
+      listedPriceAtRequest: 100, listedCurrencyAtRequest: 'SAR'
+    };
+    const { page } = await open(() => of(changed));
+
+    const panel = testId(page, 'order-price');
+    expect(panel?.textContent).toContain('100');
+    expect(panel?.textContent).toContain('150');
+    expect(panel?.textContent).toContain('162');
+    expect(panel?.querySelector('[data-testid="price-row-listed"]')).not.toBeNull();
+    // The fee and the total belong to the agreed price, never to the one that was quoted.
+    expect(panel?.querySelector('[data-testid="price-row-fee"]')?.textContent).toContain('12');
+  });
+
+  it('makes no comparison for an order whose request carries no captured price', async () => {
+    const { page } = await open(() => of(DELIVERED));
+
+    expect(testId(page, 'order-price')?.querySelector('[data-testid="price-row-listed"]')).toBeNull();
+    expect(testId(page, 'order-price')?.querySelector('[data-testid="price-row-price"]')?.textContent).toContain('100');
+  });
+
+  it('keeps the price disclosure to the student whose money it is', async () => {
+    const { page } = await open(() => of(DELIVERED), { userId: 'teacher-1' });
+
+    expect(testId(page, 'order-price')).toBeNull();
+    expect(page.textContent).not.toContain('Total to pay');
+  });
+
   it('offers a retry when the API fails, and still shows the order if only the timeline fails', async () => {
     const failed = await open(() => throwError(() => new HttpErrorResponse({ status: 500 })));
     expect(failed.page.querySelector('[role="alert"] button')).not.toBeNull();

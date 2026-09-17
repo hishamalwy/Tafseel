@@ -226,7 +226,7 @@
           @if (service(); as svc) {
             <ul class="tf-req-context-facts">
               <li>
-                <span>{{ t('pay_context_price', 'Listed price') }}</span>
+                <span>{{ t('price_plain', 'Price') }}</span>
                 <strong><tf-price [amount]="svc.price" [currency]="svc.currency" /></strong>
               </li>
               @if (svc.deliveryDays) {

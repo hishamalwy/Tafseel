@@ -127,11 +127,17 @@
           </div>
 
           <aside class="tf-detail-column">
+            @if (role() === 'student') {
+              <section class="tf-profile-editor-card" aria-labelledby="order-price-title" data-testid="order-price">
+                <div><h2 id="order-price-title">{{ t('price_agreed_title', 'Agreed price') }}</h2></div>
+                <tf-price-panel [order]="o" [paid]="o.paymentStatus === 1" />
+              </section>
+            }
+
             <section class="tf-profile-editor-card" aria-labelledby="order-facts-title">
               <div><h2 id="order-facts-title">{{ t('demand_details', 'Details') }}</h2></div>
               <dl class="tf-facts">
-                <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="o.price" [currency]="o.currency" /></dd></div>
-                @if (role() === 'student') { <div><dt>{{ t('order_detail_total', 'Total') }}</dt><dd><tf-price [amount]="o.studentTotal" [currency]="o.currency" /></dd></div> }
+                @if (role() !== 'student') { <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="o.price" [currency]="o.currency" /></dd></div> }
                 <div><dt>{{ t('order_payment', 'Payment') }}</dt><dd>{{ t('order_payment_' + o.paymentStatus, '') }}</dd></div>
                 <div><dt>{{ t('order_detail_due', 'Agreed delivery') }}</dt><dd>{{ date(o.agreedDeliveryAt) }}@if (o.isOverdue) { · {{ t('order_overdue', 'overdue') }} }</dd></div>
                 <div><dt>{{ t('order_detail_revisions', 'Revisions used') }}</dt><dd data-testid="revisions-used">{{ o.revisionsUsed }} / {{ o.revisionAllowance }}</dd></div>

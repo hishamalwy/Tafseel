@@ -45,10 +45,6 @@
 
           <ul class="tf-req-context-facts">
             <li><span>{{ t('pay_context_category', 'Category') }}</span><strong>{{ categoryValue() }}</strong></li>
-            <li>
-              <span>{{ t('pay_context_price', 'Listed price') }}</span>
-              <strong><tf-price [amount]="ctx.payable.lines[0]?.amount" [currency]="ctx.payable.currency" /></strong>
-            </li>
             <li><span>{{ t('pay_context_delivery', 'Delivery') }}</span><strong>{{ deliveryValue() }}</strong></li>
             <li><span>{{ t('pay_context_revisions', 'Revisions') }}</span><strong>{{ revisionsValue() }}</strong></li>
             <li><span>{{ t('pay_context_files', 'Files') }}</span><strong>{{ filesValue() }}</strong></li>
@@ -72,19 +68,23 @@
             <p class="tf-pay-item-sub">{{ t(ctx.payable.subtitleKey, '') }}</p>
           }
 
-          <ul class="tf-pay-lines">
-            @for (line of ctx.payable.lines; track line.labelKey) {
-              <li class="tf-pay-line">
-                <span>{{ t(line.labelKey, '') }}</span>
-                <strong><tf-price [amount]="line.amount" [currency]="ctx.payable.currency" /></strong>
-              </li>
-            }
-          </ul>
+          @if (ctx.payable.order; as order) {
+            <tf-price-panel [order]="order" [emphasis]="true" />
+          } @else {
+            <ul class="tf-pay-lines">
+              @for (line of ctx.payable.lines; track line.labelKey) {
+                <li class="tf-pay-line">
+                  <span>{{ t(line.labelKey, '') }}</span>
+                  <strong><tf-price [amount]="line.amount" [currency]="ctx.payable.currency" /></strong>
+                </li>
+              }
+            </ul>
 
-          <div class="tf-pay-total-row">
-            <span>{{ t('req_total', 'Total') }}</span>
-            <strong><tf-price [amount]="ctx.payable.total" [currency]="ctx.payable.currency" /></strong>
-          </div>
+            <div class="tf-pay-total-row">
+              <span>{{ t('req_total', 'Total') }}</span>
+              <strong><tf-price [amount]="ctx.payable.total" [currency]="ctx.payable.currency" /></strong>
+            </div>
+          }
 
           @if (ctx.payable.feeAtPayment) {
             <p class="tf-pay-note" data-testid="fee-at-payment">{{ t('pay_fee_at_payment', 'The Tafseel service fee is added to the offer price when the payment starts; the amount charged is shown on the next screen.') }}</p>
