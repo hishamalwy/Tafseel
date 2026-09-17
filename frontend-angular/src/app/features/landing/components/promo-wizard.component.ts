@@ -56,6 +56,10 @@ export class PromoWizardComponent {
   readonly body = computed(() => this.text('body'));
   readonly highlight = computed(() => this.text('highlight'));
   readonly ctaLabel = computed(() => this.text('ctaLabel'));
+  /**
+   * The published coupon code. Not rendered in V1 (UX-07): checkout has no field to redeem it, so the
+   * template shows no code and no copy button. Kept, with `copyCode`, for when redemption ships (B11-08).
+   */
   readonly code = computed(() => this.promotion().couponCode);
 
   readonly lead = computed(() => Promotion.lead(this.promotion(), this.isArabic()));

@@ -44,15 +44,9 @@
         <h2 class="tf-promo-title" id="promo-wizard-title">{{ title() }}</h2>
         @if (body(); as text) { <p class="tf-promo-body">{{ text }}</p> }
 
-        @if (code(); as coupon) {
-          <div class="tf-promo-field">
-            <span class="tf-promo-field-label">{{ copy().promoCodeLabel }}</span>
-            <button type="button" class="tf-promo-code" (click)="copyCode()" [title]="copy().promoCopy">
-              <span class="tf-promo-code-value">{{ coupon }}</span>
-              <span class="tf-promo-code-copy">{{ copy().promoCopy }}</span>
-            </button>
-          </div>
-        }
+<!-- V1 shows no coupon code: checkout cannot redeem one, so offering it would be a promise Tafseel
+             cannot keep (UX-07). The server still publishes the code; the copy button and its label return
+             with redemption (DEC-09, B11-08). -->
 
         @if (countdown(); as units) {
           <div class="tf-promo-field">

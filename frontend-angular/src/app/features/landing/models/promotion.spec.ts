@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  Campaign, CampaignVisit, EMPTY_VISIT, Promotion
+  Campaign, CampaignVisit, EMPTY_VISIT, Promotion, V1_PROMOTIONS
 } from './promotion';
 
 const NOW = Date.parse('2026-03-01T12:00:00Z');
@@ -131,5 +131,23 @@ describe('Campaign.dialogCoolingDown', () => {
   it('stays shut when the close recorded no snapshot at all', () => {
     const state = visit({ closedAt: '2026-03-01T11:00:00Z' });
     expect(Campaign.dialogCoolingDown(state, ['a'])).toBe(true);
+  });
+});
+
+describe('UX-07 what V1 may promise', () => {
+  it('keeps only slots a visitor can act on', () => {
+    const discount = promotion({ id: 'sale', kindCode: 'discount', couponCode: 'TAFSEEL20' });
+    const feature = promotion({ id: 'feature', kindCode: 'announcement' });
+    const event = promotion({ id: 'event', kindCode: 'event' });
+    // A discount ends on a coupon code, and V1 checkout cannot redeem one.
+    expect(V1_PROMOTIONS.showable([discount, feature, event]).map(p => p.id)).toEqual(['feature', 'event']);
+    expect(V1_PROMOTIONS.showable([discount])).toEqual([]);
+    expect(V1_PROMOTIONS.showable([])).toEqual([]);
+  });
+
+  it('does not judge a promotion by whether it carries a code', () => {
+    // A non-discount slot with a code is still showable — it just never renders the code.
+    const announcement = promotion({ id: 'with-code', kindCode: 'announcement', couponCode: 'TAFSEEL20' });
+    expect(V1_PROMOTIONS.showable([announcement]).map(p => p.id)).toEqual(['with-code']);
   });
 });

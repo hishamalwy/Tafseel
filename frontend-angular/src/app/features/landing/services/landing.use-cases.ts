@@ -4,7 +4,7 @@ import { CatalogService, FeaturedSubject, FeaturedTeacher, PlatformStats } from 
 import {
   CAMPAIGN_MEMORY, JourneyOffer, LANDING_GATEWAY, STUDENT_JOURNEY_GATEWAY
 } from './landing.ports';
-import { Campaign, CampaignEvent, Promotion } from '../models/promotion';
+import { Campaign, CampaignEvent, Promotion, V1_PROMOTIONS } from '../models/promotion';
 import { StudentJourney, projectStudentJourney } from '@shared/models/student-journey';
 
 /** What one landing page load produces. Any part may be missing. */
@@ -123,8 +123,13 @@ export class LoadStudentJourney {
 export class Campaigns {
   private readonly memory = inject(CAMPAIGN_MEMORY);
 
+  /**
+   * The slot to open the visit with, or null. Discount slots are not candidates in V1: their offer is a
+   * coupon code and checkout cannot redeem one (UX-07), so showing one would promise what Tafseel cannot
+   * honour.
+   */
   primary(promotions: readonly Promotion[]): Promotion | null {
-    return Campaign.eligible(this.memory.visit(), promotions)[0] ?? null;
+    return Campaign.eligible(this.memory.visit(), V1_PROMOTIONS.showable(promotions))[0] ?? null;
   }
 
   /** True when the dialog should stay shut for the rest of this tab session. */
