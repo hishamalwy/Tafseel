@@ -38,6 +38,15 @@ export class FormatService {
     return Money.format(value, currency, this.unavailable(), this.sarLabel());
   }
 
+  /**
+   * A currency named in words, as the reader writes it: «ر.س» in Arabic, "SAR" in English. For labels such
+   * as «السعر (ر.س)» that name the currency without an amount; any other currency keeps its ISO code.
+   */
+  currencyLabel(currency: string | null | undefined): string {
+    const code = (currency ?? 'SAR').trim().toUpperCase() || 'SAR';
+    return code === 'SAR' ? this.sarLabel() : code;
+  }
+
   /** For markup that pairs the number with the SAMA riyal mark. */
   moneyView(value: unknown, currency?: string, emptyText?: string): MoneyView {
     return Money.view(value, currency, emptyText ?? this.unavailable());

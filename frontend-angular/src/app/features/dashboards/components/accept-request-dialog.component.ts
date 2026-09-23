@@ -5,6 +5,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ProblemDetailsDto } from '@core/http/api.dto';
+import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import {
   AcceptError, AcceptForm, AcceptPolicy, acceptDefaults, deliveryWindow, toAcceptBody, toLocalInput, validateAccept
@@ -102,6 +103,7 @@ export interface AcceptableRequest {
 export class AcceptRequestDialogComponent {
   private readonly gateway = inject(AcceptRequestGateway);
   private readonly locale = inject(LocaleService);
+  private readonly fmt = inject(FormatService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   /** Emitted after the server accepted; the host reloads its list. */
@@ -135,10 +137,10 @@ export class AcceptRequestDialogComponent {
 
   /**
    * The currency as the reader writes it. The catalog stores the ISO code, and printing it put "SAR" in the
-   * middle of an Arabic form (UX-06); any other currency keeps its code, which is how it is written anywhere.
+   * middle of an Arabic form (UX-06). One rule for the whole product, in FormatService.
    */
   currencyLabel(currency: string): string {
-    return currency === 'SAR' ? this.locale.t('currency_sar_short', 'SAR') : currency;
+    return this.fmt.currencyLabel(currency);
   }
 
   shown(field: AcceptError): boolean {

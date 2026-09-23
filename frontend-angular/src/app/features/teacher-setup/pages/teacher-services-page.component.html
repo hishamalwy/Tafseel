@@ -96,7 +96,7 @@
       }
       <div class="tf-grid-2">
         <div class="tf-field">
-          <label for="offer-price">{{ locale.format('setup_price_in', { currency: type.currency }, 'Price ({currency})') }}</label>
+          <label for="offer-price">{{ locale.format('setup_price_in', { currency: fmt.currencyLabel(type.currency) }, 'Price ({currency})') }}</label>
           <input id="offer-price" name="price" type="number" inputmode="decimal" step="0.01" [attr.min]="type.minPrice" [attr.max]="type.maxPrice"
                  [ngModel]="terms().price" (ngModelChange)="setTerm('price', $event)" [attr.aria-invalid]="!!problem('price', type)">
           @if (problem('price', type)) { <span class="tf-field-error">{{ problem('price', type) }}</span> }
