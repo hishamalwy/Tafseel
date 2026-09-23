@@ -42,18 +42,26 @@ const ALLOWED_LATIN = [
   // If those letters appear on an Arabic screen again, they are a defect, not an exception.
 ];
 
-/** What is visibly on the page: the main region plus any open dialog and any toast. */
+/**
+ * Fixture text a journey knows is seed data rather than copy, allowed on every screen. The E2E seed appends a
+ * random hex run id to the names it creates («تفاضل وتكامل تجريبي 61fefde3»); three of its letters in a row
+ * are the seed's, not an untranslated word.
+ */
+const FIXTURE = [];
+export function allowFixture(...patterns) { FIXTURE.push(...patterns); }
+
+/** What is visibly on the page: the main region, any open dialog, the notification panel and any toast. */
 const visibleText = page => page.evaluate(() => {
   const parts = [];
   const push = el => { if (el && el.offsetParent !== null || el?.tagName === 'DIALOG') parts.push(el.innerText || ''); };
-  document.querySelectorAll('main, dialog[open], .tf-toast').forEach(push);
+  document.querySelectorAll('main, dialog[open], [data-testid=notification-panel], .tf-toast').forEach(push);
   return parts.join('\n').replace(/\s+/g, ' ').trim();
 });
 
 /** The same text with everything a person legitimately typed removed. */
 function latinLeft(text, extraAllowed = []) {
   let rest = text;
-  for (const pattern of [...ALLOWED_LATIN, ...extraAllowed]) rest = rest.replace(pattern, ' ');
+  for (const pattern of [...ALLOWED_LATIN, ...FIXTURE, ...extraAllowed]) rest = rest.replace(pattern, ' ');
   return [...new Set(rest.match(/[A-Za-z]{3,}/g) ?? [])];
 }
 
@@ -64,8 +72,15 @@ async function checkH(page, where) {
 
 async function checkC(page, where) {
   const spilled = await page.evaluate(() => {
-    const boxes = [...document.querySelectorAll(
-      '.tf-profile-editor-card, .tf-card, .tf-dashboard-card, .tf-work-card, .tf-offer-row, dialog[open], .tf-pay-receipt, .tf-req-context, .tf-msg-bubble, .tf-home-card')];
+    // Every kind of box a customer screen draws: cards, dialogs and the checkout receipt, plus the dispute,
+    // booking and message layouts, which have their own containers rather than the shared card classes.
+    const boxes = [...document.querySelectorAll([
+      '.tf-profile-editor-card', '.tf-card', '.tf-dashboard-card', '.tf-work-card', '.tf-offer-row', 'dialog[open]',
+      '.tf-pay-receipt', '.tf-req-context', '.tf-bubble', '.tf-home-card',
+      '.tf-dispute-create', '.tf-dispute-list', '.tf-dispute-detail', '.tf-dispute-message', '.tf-dispute-evidence',
+      '.tf-book-form', '.tf-book-fieldset', '.tf-book-chosen', '#workspace-navigation[data-drawer="open"]',
+      '[data-testid=notification-panel]'
+    ].join(', '))];
     return boxes.flatMap(card => {
       const box = card.getBoundingClientRect();
       if (!box.width) return [];
