@@ -154,8 +154,7 @@ export function browserTimeZone(): string {
 
 /**
  * The zones Tafseel offers first: the Kingdom, then the Gulf and the places its teachers most often live.
- * A teacher outside them is never stranded — their saved zone and their device's zone are always in the
- * list too.
+ * Every other zone still follows — UX-06 names them in the reader's language; it does not take any away.
  */
 const NEAR_ZONES: readonly string[] = [
   'Asia/Riyadh', 'Asia/Dubai', 'Asia/Kuwait', 'Asia/Qatar', 'Asia/Bahrain', 'Asia/Muscat',
@@ -163,7 +162,10 @@ const NEAR_ZONES: readonly string[] = [
   'Asia/Istanbul', 'Europe/London', 'America/New_York'
 ];
 
-/** Zones to choose from: the near list first, then the browser's own and anything already saved. */
+/**
+ * Zones to choose from: the near list first, then anything already saved and the device's own, then every
+ * other zone the browser knows, so no teacher loses a choice they had.
+ */
 export function timeZoneChoices(...saved: readonly string[]): readonly string[] {
   let zones: string[] = [];
   try {
@@ -171,7 +173,7 @@ export function timeZoneChoices(...saved: readonly string[]): readonly string[] 
     zones = intl.supportedValuesOf?.('timeZone') ?? [];
   } catch { zones = []; }
   const near = NEAR_ZONES.filter(zone => zones.length === 0 || zones.includes(zone));
-  const all = new Set([...near, ...saved.filter(Boolean), browserTimeZone()]);
+  const all = new Set([...near, ...saved.filter(Boolean), browserTimeZone(), ...zones]);
   return [...all];
 }
 

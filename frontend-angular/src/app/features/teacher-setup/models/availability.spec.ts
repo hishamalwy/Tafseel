@@ -39,8 +39,11 @@ describe('timeZoneChoices', () => {
     expect(timeZoneChoices()[0]).toBe('Asia/Riyadh');
   });
 
-  it('is a list a phone can scroll, not every zone in the world', () => {
-    expect(timeZoneChoices().length).toBeLessThan(30);
+  it('takes no zone away: every zone the browser knows is still offered', () => {
+    const all = (Intl as unknown as { supportedValuesOf: (key: string) => string[] }).supportedValuesOf('timeZone');
+    const choices = timeZoneChoices();
+    for (const zone of all) expect(choices).toContain(zone);
+    expect(new Set(choices).size).toBe(choices.length);
   });
 
   it('never strands a teacher: their saved zone and their device’s are always offered', () => {
