@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { problemMessage } from '@core/http/problem-message';
 import { LocaleService } from '@core/i18n/locale.service';
+import ar from '../../../../public/locale/ar.json';
+import en from '../../../../public/locale/en.json';
 import { DialogService } from '@shared/services/dialog.service';
 import { Availability, RuleDraft } from './models/availability';
 import { OnboardingState, Readiness } from './models/readiness';
@@ -15,6 +17,8 @@ import { CredentialForm, ProfileForm, WeeklyRule } from './models/teacher-profil
 import { TeacherPublicationPageComponent } from './pages/teacher-publication-page.component';
 import { HttpTeacherSetupGateway, ownProfile, serviceType } from './services/http-teacher-setup.gateway';
 import { TEACHER_SETUP_GATEWAY } from './services/teacher-setup.ports';
+
+const table = (t: unknown) => t as Record<string, string>;
 import {
   FormInvalid, LoadPublication, ManageAvailability, ManageServices, SaveTeacherProfile, SetPublication
 } from './services/teacher-setup.use-cases';
@@ -183,6 +187,25 @@ describe('HttpTeacherSetupGateway', () => {
     request.flush(reply as object | null);
     return call;
   }
+
+  it('carries each teaching language’s code, so the screen can name it in the reader’s language (UX-06)', async () => {
+    // The server stores only an English name for a language ("Arabic", "English"); its code is what lets an
+    // Arabic screen say «العربية» instead of printing the English word.
+    const languages = await expectCall(firstValueFrom(gateway.languages()), 'GET', '/api/v1/languages', null, null,
+      [{ id: 'l1', name: 'Arabic', code: 'ar' }, { id: 'l2', name: 'English', code: 'en' }]);
+    expect(languages).toEqual([
+      { id: 'l1', name: 'Arabic', nameArabic: '', code: 'ar' },
+      { id: 'l2', name: 'English', nameArabic: '', code: 'en' }
+    ]);
+  });
+
+  it('has an Arabic name shipped for every language the platform seeds', () => {
+    // DependencyInjection.CanonicalLanguages seeds exactly these two.
+    for (const code of ['ar', 'en']) {
+      expect(table(ar)[`language_name_${code}`], `Arabic name for ${code}`).toMatch(/^[؀-ۿ\s]+$/);
+      expect(table(en)[`language_name_${code}`], `English name for ${code}`).toBeTruthy();
+    }
+  });
 
   it('saves the profile with exactly the UpdateTeacherProfile keys', async () => {
     const input = { headline: 'H', bio: 'B', country: 'SA', city: 'Riyadh', timeZoneId: 'Asia/Riyadh', responseTimeMinutes: 30 };

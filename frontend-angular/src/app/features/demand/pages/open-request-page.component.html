@@ -62,7 +62,7 @@
           <div class="tf-field">
             <label for="open-deadline">{{ t('open_request_deadline', 'Needed by') }}</label>
             <input id="open-deadline" name="deadline" type="datetime-local" [ngModel]="draft().deadline" (ngModelChange)="set('deadline', $event)" [attr.aria-invalid]="!!problem('deadline')">
-            <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zone }, 'In this device’s time zone ({zone}).') }}</span>
+            <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zone() }, 'In this device’s time zone ({zone}).') }}</span>
             @if (problem('deadline')) { <span class="tf-field-error">{{ problem('deadline') }}</span> }
           </div>
           <fieldset class="tf-field">

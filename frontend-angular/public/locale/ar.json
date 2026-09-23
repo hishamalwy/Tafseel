@@ -4113,5 +4113,7 @@
   "req_prompt_workToReview": "ما العمل الذي تريد مراجعته؟",
   "req_prompt_rubric": "ما معايير التقييم إن وُجدت؟",
   "req_prompt_feedbackDepth": "ما عمق الملاحظات التي تريدها؟",
+  "language_name_ar": "العربية",
+  "language_name_en": "الإنجليزية",
   "currency_sar_short": "ر.س"
 }

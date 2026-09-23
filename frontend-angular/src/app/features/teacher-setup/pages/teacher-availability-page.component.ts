@@ -11,8 +11,7 @@ import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
 import {
   Availability, DAYS_OF_WEEK, ExceptionDraft, ExceptionProblem, REASON_MAX, RuleDraft, RuleProblem, SLOT_RANGE, browserTimeZone,
-  timeZoneChoices
-} from '../models/availability';
+  timeZoneChoices, timeZoneLabel } from '../models/availability';
 import { AvailabilityException, OwnProfile, WeeklyRule } from '../models/teacher-profile';
 import { FormInvalid, LoadOwnProfile, ManageAvailability } from '../services/teacher-setup.use-cases';
 
@@ -55,6 +54,9 @@ export class TeacherAvailabilityPageComponent {
   readonly slotRange = SLOT_RANGE;
   readonly reasonMax = REASON_MAX;
   readonly deviceZone = browserTimeZone();
+
+  /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */
+  zoneLabel(zone: string): string { return timeZoneLabel(zone, this.locale.lang()); }
 
   readonly loading = signal(true);
   readonly loadError = signal('');

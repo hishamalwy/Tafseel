@@ -56,9 +56,9 @@
             <div class="tf-field">
               <label for="profile-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
               <select id="profile-zone" name="timeZoneId" [ngModel]="draft().timeZoneId" (ngModelChange)="set('timeZoneId', $event)" [attr.aria-invalid]="!!fieldError('timeZoneId')">
-                @for (zone of zones(); track zone) { <option [value]="zone">{{ zone }}</option> }
+                @for (zone of zones(); track zone) { <option [value]="zone">{{ zoneLabel(zone) }}</option> }
               </select>
-              <span class="tf-field-help">{{ locale.format('setup_browser_zone', { zone: browserZone }, 'This device is set to {zone}.') }}</span>
+              <span class="tf-field-help">{{ locale.format('setup_browser_zone', { zone: zoneLabel(browserZone) }, 'This device is set to {zone}.') }}</span>
               @if (fieldError('timeZoneId')) { <span class="tf-field-error">{{ fieldError('timeZoneId') }}</span> }
             </div>
             <div class="tf-field">

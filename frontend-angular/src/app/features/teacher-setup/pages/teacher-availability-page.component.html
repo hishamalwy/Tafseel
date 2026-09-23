@@ -20,7 +20,7 @@
     </div>
   } @else if (profile()) {
     <div class="tf-availability">
-      <p class="tf-alert" data-testid="zone-note">{{ locale.format('setup_zone_note', { profile: defaultZone(), device: deviceZone }, 'Each weekly window is kept in the time zone shown next to it. New windows start in your profile time zone ({profile}); this device is set to {device}.') }}</p>
+      <p class="tf-alert" data-testid="zone-note">{{ locale.format('setup_zone_note', { profile: zoneLabel(defaultZone()), device: zoneLabel(deviceZone) }, 'Each weekly window is kept in the time zone shown next to it. New windows start in your profile time zone ({profile}); this device is set to {device}.') }}</p>
 
       <section class="tf-profile-editor-card" aria-labelledby="weekly-title">
         <div><h2 id="weekly-title">{{ t('setup_weekly_title', 'Weekly windows') }}</h2><p>{{ t('setup_weekly_intro', 'Repeat every week. Windows on the same day cannot overlap.') }}</p></div>
@@ -30,7 +30,7 @@
               <li data-testid="rule" [attr.data-day]="item.dayOfWeek" [attr.data-start]="item.start" [attr.data-end]="item.end">
                 <strong>{{ dayName(item.dayOfWeek) }}</strong>
                 <span><time>{{ item.start }}</time>–<time>{{ item.end }}</time>@if (item.slotMinutes) { <small> · {{ locale.format('setup_slot_n', { n: item.slotMinutes }, '{n}-minute slots') }}</small> }</span>
-                <small dir="ltr">{{ item.timeZoneId }}</small>
+                <small>{{ zoneLabel(item.timeZoneId) }}</small>
                 <span class="tf-cluster">
                   <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openEdit(item)" [disabled]="!!busy()">{{ t('common_edit', 'Edit') }}</button>
                   <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="removeRule(item)" [disabled]="!!busy()" data-testid="remove-rule">{{ t('common_remove', 'Remove') }}</button>
@@ -77,7 +77,7 @@
               <div class="tf-field">
                 <label for="rule-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
                 <select id="rule-zone" name="zone" [ngModel]="rule().timeZoneId" (ngModelChange)="setRule('timeZoneId', $event)">
-                  @for (zone of zones(); track zone) { <option [value]="zone">{{ zone }}</option> }
+                  @for (zone of zones(); track zone) { <option [value]="zone">{{ zoneLabel(zone) }}</option> }
                 </select>
               </div>
             </div>
@@ -97,7 +97,7 @@
       </section>
 
       <section class="tf-profile-editor-card" aria-labelledby="exceptions-title">
-        <div><h2 id="exceptions-title">{{ t('setup_exceptions_title', 'Time off') }}</h2><p>{{ locale.format('setup_exceptions_intro', { zone: deviceZone }, 'Periods when you cannot be booked. Times are in this device’s time zone ({zone}).') }}</p></div>
+        <div><h2 id="exceptions-title">{{ t('setup_exceptions_title', 'Time off') }}</h2><p>{{ locale.format('setup_exceptions_intro', { zone: zoneLabel(deviceZone) }, 'Periods when you cannot be booked. Times are in this device’s time zone ({zone}).') }}</p></div>
         @if (exceptions().length) {
           <ul class="tf-availability-list" data-testid="exceptions">
             @for (item of exceptions(); track item.id) {

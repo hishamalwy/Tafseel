@@ -8,7 +8,7 @@ import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.compone
 import { ToastComponent } from '@shared/components/toast.component';
 import { ToastService } from '@shared/services/toast.service';
 import { CredentialListComponent } from '../components/credential-list.component';
-import { browserTimeZone, timeZoneChoices } from '../models/availability';
+import { browserTimeZone, timeZoneChoices, timeZoneLabel } from '../models/availability';
 import {
   FieldProblem, NamedItem, PROFILE_LIMITS, ProfileDraft, ProfileField, ProfileForm, localName
 } from '../models/teacher-profile';
@@ -51,6 +51,9 @@ export class TeacherProfileEditorPageComponent {
   readonly selected = signal<Record<TeachingChoice, readonly string[]>>({ languages: [], topics: [], educationLevels: [] });
   readonly zones = computed(() => timeZoneChoices(this.workspace()?.profile.timeZoneId ?? '', this.draft().timeZoneId));
   readonly browserZone = browserTimeZone();
+
+  /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */
+  zoneLabel(zone: string): string { return timeZoneLabel(zone, this.locale.lang()); }
   readonly problems = computed(() => this.attempted() ? ProfileForm.problems(this.draft()) : {});
   readonly topicGroups = computed(() => {
     const w = this.workspace();
@@ -65,7 +68,15 @@ export class TeacherProfileEditorPageComponent {
   }
 
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
-  name(item: NamedItem): string { return localName(item, this.locale.isRtl()); }
+  /**
+   * What a catalog item is called here. Teaching languages carry only an English name on the server
+   * ("Arabic", "English") but do carry their code, so the reader's own word for the language comes from the
+   * locale table rather than from an English column (UX-06).
+   */
+  name(item: NamedItem): string {
+    const byCode = item.code ? this.locale.t(`language_name_${item.code}`, '') : '';
+    return byCode || localName(item, this.locale.isRtl());
+  }
 
   fieldError(field: ProfileField): string {
     const problem: FieldProblem | undefined = this.problems()[field];

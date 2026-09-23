@@ -152,13 +152,49 @@ export function browserTimeZone(): string {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
 }
 
-/** Zones to choose from: the browser's list, plus any value already saved that it lacks. */
+/**
+ * The zones Tafseel offers first: the Kingdom, then the Gulf and the places its teachers most often live.
+ * A teacher outside them is never stranded — their saved zone and their device's zone are always in the
+ * list too.
+ */
+const NEAR_ZONES: readonly string[] = [
+  'Asia/Riyadh', 'Asia/Dubai', 'Asia/Kuwait', 'Asia/Qatar', 'Asia/Bahrain', 'Asia/Muscat',
+  'Asia/Amman', 'Asia/Beirut', 'Asia/Damascus', 'Asia/Baghdad', 'Africa/Cairo', 'Africa/Khartoum',
+  'Asia/Istanbul', 'Europe/London', 'America/New_York'
+];
+
+/** Zones to choose from: the near list first, then the browser's own and anything already saved. */
 export function timeZoneChoices(...saved: readonly string[]): readonly string[] {
   let zones: string[] = [];
   try {
     const intl = Intl as unknown as { supportedValuesOf?: (key: string) => string[] };
     zones = intl.supportedValuesOf?.('timeZone') ?? [];
   } catch { zones = []; }
-  const all = new Set([...saved.filter(Boolean), browserTimeZone(), ...zones]);
+  const near = NEAR_ZONES.filter(zone => zones.length === 0 || zones.includes(zone));
+  const all = new Set([...near, ...saved.filter(Boolean), browserTimeZone()]);
   return [...all];
+}
+
+/**
+ * What a zone is called to the person reading it (UX-06).
+ *
+ * The control used to print the IANA identifier — `Africa/Abidjan` — which is an English string from a
+ * database of time zones, not something written for a student or a teacher, and it sat in a list of four
+ * hundred of them on a phone in Arabic. `Intl` names the zone in the reader's own language; the offset
+ * follows so two zones sharing a name are still distinguishable.
+ */
+export function timeZoneLabel(zone: string, lang: string): string {
+  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  try {
+    const name = new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName: 'long' })
+      .formatToParts(new Date())
+      .find(part => part.type === 'timeZoneName')?.value;
+    const offset = new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName: 'shortOffset' })
+      .formatToParts(new Date())
+      .find(part => part.type === 'timeZoneName')?.value;
+    if (!name) return zone;
+    return offset ? `${name} (${offset})` : name;
+  } catch {
+    return zone;
+  }
 }

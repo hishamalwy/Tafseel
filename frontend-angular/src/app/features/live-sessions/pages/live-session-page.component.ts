@@ -9,6 +9,7 @@ import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { timeZoneLabel } from '@features/teacher-setup/models/availability';
 import { PriceComponent } from '@shared/components/price.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
 import { ToastComponent } from '@shared/components/toast.component';
@@ -43,6 +44,9 @@ export class LiveSessionPageComponent {
   readonly Session = Session;
   readonly STATUS = SESSION_STATUS;
   readonly zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */
+  zoneLabel(zone: string): string { return timeZoneLabel(zone || 'UTC', this.locale.lang()); }
 
   sessionId = '';
   readonly loading = signal(true);

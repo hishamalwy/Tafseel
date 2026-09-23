@@ -4113,5 +4113,7 @@
   "req_prompt_workToReview": "What work should be reviewed?",
   "req_prompt_rubric": "What are the marking criteria, if any?",
   "req_prompt_feedbackDepth": "How detailed should the feedback be?",
+  "language_name_ar": "Arabic",
+  "language_name_en": "English",
   "currency_sar_short": "SAR"
 }

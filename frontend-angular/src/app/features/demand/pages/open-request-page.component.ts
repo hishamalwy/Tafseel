@@ -4,6 +4,7 @@ import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { problemMessage } from '@core/http/problem-message';
 import { LocaleService } from '@core/i18n/locale.service';
+import { timeZoneLabel } from '@features/teacher-setup/models/availability';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { CatalogOption, Demand, DraftProblem, OPEN_REQUEST_LIMITS, OpenRequestDraft } from '../models/demand';
 import { DraftInvalid, LoadOpenRequestForm, OpenRequestForm, PublishOpenRequest } from '../services/demand.use-cases';
@@ -22,7 +23,12 @@ export class OpenRequestPageComponent {
   private readonly router = inject(Router);
   readonly locale = inject(LocaleService);
   readonly limits = OPEN_REQUEST_LIMITS;
-  readonly zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  /**
+   * The device's time zone, named in the reader's language. Printing the IANA identifier put an English
+   * string ("Asia/Riyadh", "UTC") in the middle of an Arabic sentence (UX-06).
+   */
+  readonly zone = computed(() =>
+    timeZoneLabel(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', this.locale.lang()));
 
   readonly loading = signal(true);
   readonly loadError = signal('');

@@ -67,7 +67,7 @@
               <div class="tf-field">
                 <label for="reschedule-at">{{ t('session_new_start', 'New start') }}</label>
                 <input id="reschedule-at" name="at" type="datetime-local" [ngModel]="rescheduleAt()" (ngModelChange)="rescheduleAt.set($event)">
-                <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zone }, 'In this device’s time zone ({zone}).') }}</span>
+                <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zoneLabel(zone) }, 'In this device’s time zone ({zone}).') }}</span>
               </div>
               <div class="tf-form-actions"><button type="submit" class="tf-button" [disabled]="!!busy()">{{ t('session_propose', 'Propose time') }}</button></div>
             </form>
@@ -98,8 +98,8 @@
           <dl class="tf-facts">
             <div><dt>{{ t('session_starts', 'Starts') }}</dt><dd data-testid="session-starts">{{ when(b.startsAt) }}</dd></div>
             <div><dt>{{ t('session_ends', 'Ends') }}</dt><dd>{{ when(b.endsAt) }}</dd></div>
-            <div><dt>{{ t('setup_time_zone', 'Time zone') }}</dt><dd dir="ltr">{{ zone }}</dd></div>
-            <div><dt>{{ role() === 'teacher' ? t('session_student_zone', 'Student’s zone') : t('session_teacher_zone', 'Teacher’s zone') }}</dt><dd dir="ltr">{{ role() === 'teacher' ? b.studentTimeZoneId : b.teacherTimeZoneId }}</dd></div>
+            <div><dt>{{ t('setup_time_zone', 'Time zone') }}</dt><dd>{{ zoneLabel(zone) }}</dd></div>
+            <div><dt>{{ role() === 'teacher' ? t('session_student_zone', 'Student’s zone') : t('session_teacher_zone', 'Teacher’s zone') }}</dt><dd>{{ zoneLabel(role() === 'teacher' ? b.studentTimeZoneId : b.teacherTimeZoneId) }}</dd></div>
             <div><dt>{{ t('order_detail_total', 'Total') }}</dt><dd><tf-price [amount]="b.totalPrice" [currency]="b.currency" /></dd></div>
             <div><dt>{{ t('order_payment', 'Payment') }}</dt><dd>{{ b.status === STATUS.AWAITING_PAYMENT ? t('order_payment_0', 'Pending') : b.status === STATUS.CANCELLED ? t('session_status_cancelled', 'Cancelled') : t('order_payment_1', 'Paid') }}</dd></div>
           </dl>

@@ -4,6 +4,7 @@ import { Title } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { timeZoneLabel } from '@features/teacher-setup/models/availability';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
@@ -105,6 +106,9 @@ export class BookSessionPageComponent {
     && this.service() !== null);
 
   /** Timezones offered; the detected one is always present even if unlisted. */
+  /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */
+  zoneLabel(zone: string): string { return timeZoneLabel(zone || 'UTC', this.locale.lang()); }
+
   readonly timezones = computed(() => {
     const common = [
       'Asia/Riyadh', 'Asia/Dubai', 'Asia/Kuwait', 'Asia/Qatar',

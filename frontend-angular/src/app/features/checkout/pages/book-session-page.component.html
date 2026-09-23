@@ -59,7 +59,7 @@
           <select id="book-timezone" [value]="timezone()"
                   (change)="setTimezone($any($event.target).value)">
             @for (zone of timezones(); track zone) {
-              <option [value]="zone">{{ zone }}</option>
+              <option [value]="zone">{{ zoneLabel(zone) }}</option>
             }
           </select>
         </div>

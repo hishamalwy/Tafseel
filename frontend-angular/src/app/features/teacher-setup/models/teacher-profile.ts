@@ -8,6 +8,8 @@ export interface NamedItem {
   readonly id: string;
   readonly name: string;
   readonly nameArabic: string;
+  /** Catalog code where the API has one (`ar`, `en`); the client names the item from it (UX-06). */
+  readonly code?: string;
 }
 
 /** A topic belongs to a subject. */

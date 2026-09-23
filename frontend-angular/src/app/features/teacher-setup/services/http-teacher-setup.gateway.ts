@@ -130,7 +130,7 @@ function list<T>(value: unknown, mapper: (x: Json) => T): readonly T[] {
 }
 
 function named(x: Json): NamedItem {
-  return { id: text(x['id']), name: text(x['name']), nameArabic: text(x['nameAr']) };
+  return { id: text(x['id']), name: text(x['name']), nameArabic: text(x['nameAr']), code: text(x['code']) };
 }
 
 function credential(x: Json): Credential {
