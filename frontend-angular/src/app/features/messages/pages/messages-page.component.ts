@@ -37,6 +37,9 @@ import { MessagesRealtime } from '../services/messages-realtime.service';
     .tf-bubble p { margin: 0; white-space: pre-line; }
     .tf-bubble small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
     @media (max-width: 860px) { .tf-messages { grid-template-columns: minmax(0, 1fr); } .tf-messages[data-open="true"] .tf-inbox-panel { display: none; } }
+    /* On a phone the thread must leave room for the box you type in: at 60vh the composer fell below the
+       fold, so a student opening a conversation could not see where to reply (UX-06). */
+    @media (max-width: 860px) { .tf-thread { max-height: 40vh; } }
   `
 })
 export class MessagesPageComponent {

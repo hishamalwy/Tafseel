@@ -28,7 +28,11 @@ import { LoadPublication, PublicationWorkspace, SetPublication } from '../servic
     .tf-readiness-mark { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-inline-end: 10px; border-radius: 50%;
       border: 1px solid var(--border-strong); font-size: 12px; font-weight: 800; flex: none; }
     [data-done="true"] .tf-readiness-mark { background: var(--success); border-color: var(--success); color: var(--primary-ink); }
-    .tf-readiness-list a { font-size: 13px; font-weight: 700; white-space: nowrap; }
+    /* The checklist's links are how a teacher reaches each unfinished step, so they are targets a thumb can
+       hit rather than words at the end of a line (UX-06). */
+    .tf-readiness-list a { display: inline-flex; align-items: center; justify-content: center;
+      min-block-size: var(--touch-min, 44px); min-inline-size: 64px; padding-inline: 12px; margin-block: -6px;
+      font-size: 13px; font-weight: 700; white-space: nowrap; }
   `
 })
 export class TeacherPublicationPageComponent {

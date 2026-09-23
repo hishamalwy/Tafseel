@@ -57,9 +57,11 @@
   padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-sm);
   background: var(--bg); font-size: 13px;
 }
+/* Removing an attachment is a real action on a phone, so it gets a real target (UX-06). */
 .tf-req-files button {
   border: 0; background: none; cursor: pointer; font-size: 18px; line-height: 1;
-  color: var(--muted); min-inline-size: 32px; min-block-size: 32px;
+  color: var(--muted); min-inline-size: var(--touch-min, 44px); min-block-size: var(--touch-min, 44px);
+  flex: none;
 }
 
 .tf-req-review { display: grid; gap: 10px; }

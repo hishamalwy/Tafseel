@@ -41,12 +41,15 @@ const riyalProblems = [
   design.includes("--riyal-mark:url('data:image/svg+xml") ? null : 'the inline mark artwork is missing',
   design.includes('mask:var(--riyal-mark)') ? null : 'nothing paints the mark',
   design.includes('html[lang="ar"] .tf-price-currency--mark::before') ? null
-    : 'an Arabic page has no Arabic currency fallback'
+    : 'an Arabic page has no Arabic currency fallback',
+  // UX-06: every text field and select is a 44px target; they were 42px, a thumb's width short of it.
+  /\.tf-field select\{\s*height:44px;\s*min-height:44px;/.test(design) ? null
+    : 'form fields are no longer 44px tall'
 ].filter(Boolean);
 
 if (riyalProblems.length) {
-  console.error(['css/tafseel.css riyal mark:', ...riyalProblems.map(p => `- ${p}`)].join('\n'));
+  console.error(['css/tafseel.css UX-06 guards:', ...riyalProblems.map(p => `- ${p}`)].join('\n'));
   process.exitCode = 1;
 } else {
-  console.log('Riyal mark is self-contained (no font gate, Arabic fallback present).');
+  console.log('UX-06 guards passed (riyal mark self-contained, Arabic fallback present, 44px form fields).');
 }
