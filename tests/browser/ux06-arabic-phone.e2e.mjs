@@ -63,9 +63,13 @@ await step('rows 1-4 · teacher setup: profile, services, availability, visibili
   await spa(teacher, '/teacher/services');
   await page.locator('[data-testid=service-type]').first().waitFor({ timeout: 20000 });
   // DEC-01: the policy badge quotes the decided bounds, never the domain's unset-price fallback.
-  const policy = await page.locator('[data-testid=service-type] .tf-badge').first().innerText();
-  assert.ok(!/1,000,000|0\.01/.test(policy), `the price policy still reads "${policy}"`);
-  assert.match(policy, /50/, `the recorded explanation quotes its decided minimum ("${policy}")`);
+  // Every service's price-policy badge (the one that begins «السعر»), in catalog order.
+  const policies = (await page.locator('[data-testid=service-type] .tf-badge').allInnerTexts())
+    .filter(text => text.includes('السعر'));
+  assert.equal(policies.length, 4, `four price policies are shown (${JSON.stringify(policies)})`);
+  for (const policy of policies) assert.ok(!/1,000,000|0\.01/.test(policy), `a price policy still reads "${policy}"`);
+  const bounds = policies.map(policy => (policy.match(/[\d,]+/g) ?? []).map(n => Number(n.replace(/,/g, ''))).sort((a, b) => a - b));
+  assert.deepEqual(bounds, [[50, 800], [60, 1000], [80, 1500], [60, 600]], `the decided bounds (${JSON.stringify(bounds)})`);
   await screen(page, 'row 2 teacher services', { name: 'ux06-02-teacher-services' });
 
   await spa(teacher, '/teacher/availability');
@@ -93,12 +97,23 @@ await step('shells · teacher home, earnings and the phone navigation drawer', a
   await page.locator('#workspace-navigation[data-drawer="open"]').waitFor({ timeout: 10000 });
   assert.equal(await page.locator('[data-drawer-toggle]').getAttribute('aria-expanded'), 'true', 'the toggle says it is open');
   await page.locator('#workspace-navigation [data-testid=nav-item]').first().waitFor({ timeout: 10000 });
-  const drawer = await page.locator('#workspace-navigation').boundingBox();
+  // The drawer slides in; judge where it comes to rest, not a frame of the animation.
+  let drawer = null;
+  for (let i = 0; i < 20; i++) {
+    const box = await page.locator('#workspace-navigation').boundingBox();
+    if (drawer && box && Math.abs(box.x - drawer.x) < 0.5) { drawer = box; break; }
+    drawer = box;
+    await page.waitForTimeout(100);
+  }
   assert.ok(drawer && drawer.x >= -1 && drawer.x + drawer.width <= 391, `the open drawer stays on screen (${JSON.stringify(drawer)})`);
   await screen(page, 'navigation drawer', { name: 'ux06-shell-drawer', skip: ['P', 'D'] });
-  // Closed deliberately, so no open drawer is left lying over the teacher's next screens.
-  await page.locator('[data-drawer-toggle]').click();
+  // The open drawer covers the menu button; a phone user closes it by tapping outside it, on the overlay,
+  // which must carry a name a screen reader can say.
+  const overlay = page.locator('[data-drawer-overlay="open"]');
+  assert.ok((await overlay.getAttribute('aria-label'))?.trim(), 'the overlay that closes the drawer is labelled');
+  await overlay.click({ position: { x: 40, y: 400 } });
   await page.locator('#workspace-navigation[data-drawer="closed"]').waitFor({ state: 'attached', timeout: 10000 });
+  assert.equal(await page.locator('[data-drawer-toggle]').getAttribute('aria-expanded'), 'false', 'the toggle says it is closed');
 });
 
 // ------------------------------------------------------------------ a student and a direct request
@@ -181,7 +196,11 @@ await step('row 11 · the teacher’s side: the request, a question, and the acc
   const asked = waitForCall(page, 'POST', new RegExp(`/learning-requests/${requestId}/request-clarification$`));
   await page.locator('section[aria-labelledby=request-thread-title] button[type=submit]').click();
   assert.ok((await asked).ok(), 'the question was sent');
-  await screen(page, 'row 11 after asking a question', { name: 'ux06-11d-question-sent', form: true });
+  // Once asked, the request waits on the student: Accept goes away by design and nothing is the teacher's to
+  // press, so P does not apply to this state (the matrix's "—"). Judge the page once it has settled there.
+  await page.locator('[data-testid=accept-request]').waitFor({ state: 'detached', timeout: 15000 });
+  await page.locator('[data-testid=clarifications] li').first().waitFor({ timeout: 15000 });
+  await screen(page, 'row 11 waiting for the student’s answer', { name: 'ux06-11d-question-sent', skip: ['P'] });
 });
 
 await step('row 10 · the teacher asked a question: the student’s reply box', async () => {
@@ -294,8 +313,12 @@ await step('rows 19-20 · the student opens a dispute on the delivered order; th
   assert.ok(response.ok(), `the dispute was opened (${response.status()})`);
   const disputeId = (await response.json()).id;
 
+  // The server's own deep link to the case (AppRoutes.Dispute), which forwards to it on the disputes screen.
   await visit(page, `${BASE}/ar/disputes/${disputeId}`);
   await page.locator('.tf-dispute-detail').waitFor({ timeout: 20000 });
+  assert.match(await page.locator('.tf-dispute-detail').innerText(), /الملف المسلّم لا يغطي/, 'the case shown is this one');
+  assert.match(await page.locator('[data-testid=dispute-purchase]').getAttribute('href') ?? '',
+    new RegExp(`^/ar/orders/${orderId}/?$`), 'the case links to the order it is about');
   await screen(page, 'row 20 the open case', { name: 'ux06-20-dispute-detail', form: true });
   await screen(page, 'row 19 disputes list with an open case', { skip: ['P'] });
 });

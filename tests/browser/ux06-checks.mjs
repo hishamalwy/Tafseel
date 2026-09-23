@@ -32,8 +32,8 @@ const ALLOWED_LATIN = [
   // extension. `\w` would not match Arabic, and a file called «شرح.pdf» is not English on the screen.
   /\S+\.(pdf|png|jpg|jpeg|webp|mp4|webm|mp3|wav|m4a|csv|txt|docx?)\b/gi,
   /\bTafseel\b/g,
-  /\bwebhook\b/gi,
-  /\bStaging\b/gi,
+  // "webhook" and "Staging" were once listed here and hid a real defect: checkout told every student
+  // «يصل التأكيد عبر webhook». Developer words are never an exception; the copy was rewritten instead.
   /\bCVC\b/g,
   // File formats and the applications that make them. Arabic writes these in Latin — «PDF وWord وصور» is
   // the Arabic sentence, not an untranslated one — exactly as the ticket allows for SAR.
@@ -123,6 +123,11 @@ async function checkD(page, where) {
   for (const price of prices) {
     assert.ok(!/SAR/i.test(price), `${where} [D]: a price reads "${price.trim()}"`);
   }
+  // Plain-text money too: amounts are written in Latin digits even in Arabic (SAMA writes «1,620 ر.س»), so
+  // Arabic-Indic digits against the currency mean something formatted money outside the house formatter.
+  const text = await visibleText(page);
+  const indic = text.match(/[٠-٩][٠-٩٫٬.,]*\s*‏?\s*ر\.س|ر\.س\.?\s*‏?\s*[٠-٩]/);
+  assert.equal(indic, null, `${where} [D]: money in Arabic-Indic digits ("${indic?.[0]}")`);
 }
 
 async function checkT(page, where) {
