@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LocaleService } from '@core/i18n/locale.service';
+import ar from '../../../../../public/locale/ar.json';
 import {
   AcceptPolicy, acceptDefaults, acceptPolicyFor, deliveryWindow, fromLocalInput, toAcceptBody, toLocalInput, validateAccept
 } from '../models/accept-terms';
@@ -83,12 +84,15 @@ describe('AcceptRequestGateway', () => {
 describe('AcceptRequestDialogComponent', () => {
   let accept: ReturnType<typeof vi.fn>;
 
-  async function open(policy: AcceptPolicy | null = { ...POLICY, minDeliveryHours: 1, maxDeliveryHours: 8000 }) {
+  async function open(
+    policy: AcceptPolicy | null = { ...POLICY, minDeliveryHours: 1, maxDeliveryHours: 8000 },
+    table: Record<string, string> = {}
+  ) {
     TestBed.configureTestingModule({
       imports: [AcceptRequestDialogComponent],
       providers: [
         { provide: AcceptRequestGateway, useValue: { policy: () => of(policy), accept } },
-        { provide: LocaleService, useValue: { t: (_: string, fallback: string) => fallback } }
+        { provide: LocaleService, useValue: { t: (key: string, fallback: string) => table[key] ?? fallback } }
       ]
     });
     const fixture = TestBed.createComponent(AcceptRequestDialogComponent);
@@ -104,6 +108,19 @@ describe('AcceptRequestDialogComponent', () => {
   }
 
   beforeEach(() => { accept = vi.fn(() => of({ id: 'order-1' })); });
+
+  it('writes the currency in Arabic on an Arabic screen, and still sends SAR (UX-06)', async () => {
+    const { fixture, dialog } = await open(undefined, ar as Record<string, string>);
+    const text = dialog.textContent ?? '';
+
+    expect(text).toContain('ر.س');
+    expect(text).not.toContain('SAR');
+    expect((dialog.querySelector('input[name=currency]') as HTMLInputElement).value).toBe('ر.س');
+
+    // Only the words changed: the order is still priced in SAR on the wire.
+    await fixture.componentInstance.submit();
+    expect(accept.mock.calls[0]![3]).toMatchObject({ currency: 'SAR' });
+  });
 
   it('sends the default terms once with one idempotency key and reports acceptance', async () => {
     const { fixture, dialog, emitted } = await open();

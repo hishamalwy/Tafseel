@@ -41,6 +41,21 @@ describe('Money', () => {
     expect(usd.isPlainAmount).toBe(true);
   });
 
+  it('writes SAR in the reader’s own script when it is told how (UX-06)', () => {
+    // Plain text cannot carry the drawn mark. On an Arabic screen it said "1,620 SAR" — English inside an
+    // Arabic sentence — until the formatter was given the Arabic abbreviation to use instead.
+    expect(Money.format(1620, 'SAR', '—', 'ر.س')).toBe('1,620 ر.س');
+    expect(Money.format(1620, 'SAR', '—', 'ر.س')).not.toContain('SAR');
+  });
+
+  it('never relabels a currency that is not SAR', () => {
+    expect(Money.format(1620, 'USD', '—', 'ر.س')).toBe('1,620 USD');
+  });
+
+  it('keeps Latin digits for the amount whatever the currency label', () => {
+    expect(Money.format(1620, 'SAR', '—', 'ر.س')).toMatch(/^1,620/);
+  });
+
   it('answers with the unavailable text rather than NaN', () => {
     expect(Money.format(null, 'SAR', 'n/a')).toBe('n/a');
     expect(Money.format(undefined, 'SAR', 'n/a')).toBe('n/a');

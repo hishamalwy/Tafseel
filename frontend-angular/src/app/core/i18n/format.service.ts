@@ -27,13 +27,15 @@ export class FormatService {
   private readonly isArabic = computed(() => this.locale.lang() === 'ar');
   private readonly intlLocale = computed(() => (this.isArabic() ? 'ar-SA' : 'en-US'));
   private readonly unavailable = computed(() => this.locale.t('td_unavailable', '—'));
+  /** How SAR is written where the drawn mark cannot go (UX-06). */
+  private readonly sarLabel = computed(() => this.locale.t('currency_sar_short', 'SAR'));
   private readonly nameUnavailable = computed(() => this.locale.t('name_unavailable', '—'));
 
   // ---- money ----
 
-  /** Plain text: `1,620 SAR`. Safe anywhere; never emits a currency glyph. */
+  /** Plain text: `1,620 ر.س` in Arabic, `1,620 SAR` in English. Safe anywhere; never a currency glyph. */
   money(value: unknown, currency?: string): string {
-    return Money.format(value, currency, this.unavailable());
+    return Money.format(value, currency, this.unavailable(), this.sarLabel());
   }
 
   /** For markup that pairs the number with the SAMA riyal mark. */

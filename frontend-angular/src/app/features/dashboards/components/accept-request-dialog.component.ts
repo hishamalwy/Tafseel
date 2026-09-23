@@ -40,19 +40,19 @@ export interface AcceptableRequest {
           <p role="status">{{ t('common_loading', 'Loading…') }}</p>
         } @else if (policy(); as p) {
           <label class="tf-system-dialog-field">
-            <span>{{ t('accept_price', 'Final price') }} ({{ p.currency }})</span>
+            <span>{{ t('accept_price', 'Final price') }} ({{ currencyLabel(p.currency) }})</span>
             <input id="accept-price" name="price" type="number" inputmode="decimal" required
                    [attr.min]="p.minPrice" [attr.max]="p.maxPrice" step="0.01"
                    [value]="form().price" (input)="patch({ price: $any($event.target).value })"
                    [attr.aria-invalid]="shown('price')" aria-describedby="accept-price-hint" />
             <small id="accept-price-hint" [class.tf-field-error]="shown('price')">
-              {{ t('accept_price_range', 'Between') }} {{ p.minPrice }} – {{ p.maxPrice }} {{ p.currency }}
+              {{ t('accept_price_range', 'Between') }} {{ p.minPrice }} – {{ p.maxPrice }} {{ currencyLabel(p.currency) }}
             </small>
           </label>
 
           <label class="tf-system-dialog-field">
             <span>{{ t('accept_currency', 'Currency') }}</span>
-            <input name="currency" [value]="p.currency" readonly aria-readonly="true" />
+            <input name="currency" [value]="currencyLabel(p.currency)" readonly aria-readonly="true" />
           </label>
 
           <label class="tf-system-dialog-field">
@@ -131,6 +131,14 @@ export class AcceptRequestDialogComponent {
 
   t(key: string, fallback: string): string {
     return this.locale.t(key, fallback);
+  }
+
+  /**
+   * The currency as the reader writes it. The catalog stores the ISO code, and printing it put "SAR" in the
+   * middle of an Arabic form (UX-06); any other currency keeps its code, which is how it is written anywhere.
+   */
+  currencyLabel(currency: string): string {
+    return currency === 'SAR' ? this.locale.t('currency_sar_short', 'SAR') : currency;
   }
 
   shown(field: AcceptError): boolean {

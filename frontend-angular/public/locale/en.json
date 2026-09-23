@@ -4112,5 +4112,6 @@
   "req_prompt_focusAreas": "What should it focus on?",
   "req_prompt_workToReview": "What work should be reviewed?",
   "req_prompt_rubric": "What are the marking criteria, if any?",
-  "req_prompt_feedbackDepth": "How detailed should the feedback be?"
+  "req_prompt_feedbackDepth": "How detailed should the feedback be?",
+  "currency_sar_short": "SAR"
 }

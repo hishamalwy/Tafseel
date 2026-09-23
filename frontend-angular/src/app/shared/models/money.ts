@@ -64,12 +64,15 @@ export const Money = {
    * "0 SAR" — an absent amount shown as free. `moneyView` already guarded null
    * separately; this brings the two into line rather than preserving the gap.
    */
-  format(value: unknown, currency?: string, unavailable = '—'): string {
+  format(value: unknown, currency?: string, unavailable = '—', sarLabel?: string): string {
     if (value == null || value === '') return unavailable;
     const amount = Number(value);
     if (!Number.isFinite(amount)) return unavailable;
     const parts = Money.parts(amount, currency, unavailable);
-    return parts.amount + NBSP + parts.code;
+    // Plain text cannot carry the drawn mark, so it carries the currency in the reader's own script:
+    // "SAR" printed inside an Arabic sentence is the defect UX-06 exists to remove.
+    const code = parts.isSar && sarLabel ? sarLabel : parts.code;
+    return parts.amount + NBSP + code;
   },
 
   /** What a table cell or card needs to decide between the mark and the code. */
