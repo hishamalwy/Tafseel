@@ -183,8 +183,17 @@ public sealed class CanonicalServicePolicyTests
             await using var scope = Services.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
             var rows = await db.ServiceCatalogItems.AsNoTracking().OrderBy(x => x.Code)
-                .Select(x => new { x.Code, x.MinPrice, x.MaxPrice, x.DefaultPrice, x.RecommendedPrice,
-                    x.DefaultRevisions, x.MaximumRevisions, x.AllowedDurationsCsv })
+                .Select(x => new
+                {
+                    x.Code,
+                    x.MinPrice,
+                    x.MaxPrice,
+                    x.DefaultPrice,
+                    x.RecommendedPrice,
+                    x.DefaultRevisions,
+                    x.MaximumRevisions,
+                    x.AllowedDurationsCsv
+                })
                 .ToArrayAsync();
             return string.Join('|', rows.Select(x => x.ToString()));
         }
