@@ -89,8 +89,13 @@ public static class DependencyInjection
         ("live_session", 60m, 600m, 150m, 150m, null, null, null, null, 0, 0)
     ];
 
-    /// <summary>The bounds the domain falls back to when a service was never given any (see DEC-01).</summary>
-    private const decimal UnsetMinimumPrice = 0.01m;
+    /// <summary>
+    /// The bounds the domain falls back to when a service was never given any: 0.01 SAR for an async
+    /// service, 30 SAR for a live one, and 1,000,000 SAR at the top for both. A service still carrying any
+    /// of these was never configured by anyone (DEC-01).
+    /// </summary>
+    private const decimal UnsetAsyncMinimumPrice = 0.01m;
+    private const decimal UnsetLiveMinimumPrice = 30m;
     private const decimal UnsetMaximumPrice = 1_000_000m;
 
     private static readonly (string Name, string Code)[] CanonicalLanguages =
@@ -698,8 +703,12 @@ public static class DependencyInjection
         foreach (var service in services)
         {
             var policy = CanonicalServicePolicy.First(x => x.Code == service.Code);
-            var unset = (service.MinPrice ?? UnsetMinimumPrice) == UnsetMinimumPrice
-                && (service.MaxPrice ?? UnsetMaximumPrice) == UnsetMaximumPrice;
+            var fallbackMinimum = service.OrderType == ServiceOrderTypes.LiveSession
+                ? UnsetLiveMinimumPrice : UnsetAsyncMinimumPrice;
+            // Either bound still at its fallback means nobody chose this policy: the live services arrive
+            // with a minimum of 30 and a maximum of 1,000,000, which is half a fallback, not a decision.
+            var unset = (service.MinPrice ?? fallbackMinimum) == fallbackMinimum
+                || (service.MaxPrice ?? UnsetMaximumPrice) == UnsetMaximumPrice;
             if (!unset || (service.MinPrice == policy.MinPrice && service.MaxPrice == policy.MaxPrice))
                 continue;
 
