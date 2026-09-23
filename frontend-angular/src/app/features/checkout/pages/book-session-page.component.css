@@ -60,7 +60,8 @@
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-  min-block-size: 40px;
+  /* Choosing a duration and a time is the whole of booking on a phone; each is a 44px target (UX-06). */
+  min-block-size: var(--touch-min, 44px);
 }
 .tf-book-chip.is-selected,
 .tf-book-slot.is-selected {

@@ -33,3 +33,7 @@
 
 /* A screen that could not load has no header, so its state title is the page heading. */
 h1.tf-state-title { margin: 0; }
+
+/* A card whose heading is a link — an offer's teacher, opening their profile — is tapped through that heading,
+   so it gets a whole target rather than a line of text (UX-06: 23px before). */
+.tf-profile-editor-card h2 > a { display: inline-flex; align-items: center; min-block-size: var(--touch-min, 44px); }
