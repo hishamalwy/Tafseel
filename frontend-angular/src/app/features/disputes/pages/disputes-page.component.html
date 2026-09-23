@@ -99,6 +99,9 @@
         <header class="tf-dispute-detail__head">
           <div>
             <p class="tf-dispute-detail__target">{{ d.target }}</p>
+            @if (d.purchase; as purchase) {
+              <a class="tf-button tf-button-ghost tf-button-sm" data-testid="dispute-purchase" [routerLink]="purchase.path">{{ purchase.label }}</a>
+            }
             <h2>{{ d.reason }}</h2>
             @if (d.actionDue) {
               <p class="tf-dispute-due" [class.is-overdue]="d.overdue">{{ d.actionDue }}</p>

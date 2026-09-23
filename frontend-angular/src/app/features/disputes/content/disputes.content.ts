@@ -40,6 +40,9 @@ export interface DisputeCopy {
   readonly statuses: readonly string[];
   readonly order: string;
   readonly session: string;
+  /** The link from a case to the purchase it is about (UX-06: the case no longer names it by id). */
+  readonly viewOrder: string;
+  readonly viewSession: string;
   readonly until: string;
   readonly with: string;
   readonly noEligibleTitle: string;
@@ -93,6 +96,8 @@ export const DISPUTE_COPY: Readonly<Record<"ar" | "en", DisputeCopy>> = {
     ],
     "order": "Order",
     "session": "Live session",
+    "viewOrder": "View the order",
+    "viewSession": "View the session",
     "until": "Eligible until",
     "with": "with",
     "noEligibleTitle": "No purchase is eligible right now",
@@ -144,6 +149,8 @@ export const DISPUTE_COPY: Readonly<Record<"ar" | "en", DisputeCopy>> = {
     ],
     "order": "طلب",
     "session": "جلسة مباشرة",
+    "viewOrder": "عرض الطلب",
+    "viewSession": "عرض الجلسة",
     "until": "متاح حتى",
     "with": "مع",
     "noEligibleTitle": "لا توجد عملية مؤهلة الآن",

@@ -45,10 +45,14 @@
 }
 .tf-dispute-create h2 { font-size: 18px; margin-block-end: 6px; }
 .tf-dispute-create__intro { color: var(--text-2); font-size: 13px; margin-block-end: 14px; }
-.tf-dispute-create__form { display: grid; gap: 12px; }
+/* Grid items default to min-width:auto, so a select sized to its longest option widened the whole form past
+   its card on a phone (UX-06). Fields fill the card and never push it. */
+.tf-dispute-create__form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .tf-dispute-create__form label { font-size: 13px; font-weight: 800; }
 .tf-dispute-create__actions { display: flex; justify-content: flex-end; gap: 10px; }
 
+.tf-dispute-page select,
+.tf-dispute-page textarea { inline-size: 100%; max-inline-size: 100%; min-inline-size: 0; box-sizing: border-box; }
 .tf-dispute-page select {
   block-size: 46px;
   padding-inline: 12px;

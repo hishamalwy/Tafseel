@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { Dispute, DisputeResolution, EligiblePurchase } from '@features/disputes/models/dispute';
 import {
@@ -8,6 +8,7 @@ import {
   PostCaseMessage, ResolveDispute, StartDisputeReview, UploadEvidence
 } from '@features/disputes/services/dispute.use-cases';
 import { DISPUTE_COPY } from '@features/disputes/content/disputes.content';
+import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { SignalSessionStore } from '@core/auth/services/session.store';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
@@ -28,7 +29,7 @@ import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.compone
 @Component({
   selector: 'tf-disputes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, WorkflowHeaderComponent],
+  imports: [FormsModule, RouterLink, WorkflowHeaderComponent],
   templateUrl: './disputes-page.component.html',
   styleUrl: './disputes-page.component.css'
 })
@@ -46,6 +47,7 @@ export class DisputesPageComponent {
   private readonly router = inject(Router);
   private readonly title = inject(Title);
   readonly locale = inject(LocaleService);
+  private readonly fmt = inject(FormatService);
 
   readonly c = computed(() => DISPUTE_COPY[this.locale.lang()]);
 
@@ -130,6 +132,7 @@ export class DisputesPageComponent {
     const decision = d.decisions[0] ?? null;
     return {
       target: this.subjectLabel(d),
+      purchase: this.purchaseLink(d),
       reason: d.reason,
       status: this.statusLabel(d),
       statusTone: this.statusTone(d),
@@ -335,7 +338,18 @@ export class DisputesPageComponent {
   // ---- labels ----
   private subjectLabel(d: Dispute): string {
     const kind = d.orderId ? this.c().order : this.c().session;
-    return `${kind} · ${Dispute.subjectId(d).slice(0, 8)}`;
+    // Operations staff work cases by reference. A student or teacher is never shown an id: it named their
+    // case «طلب · 3bdd12ab», the inside of the database in place of a name (UX-06). The row already carries
+    // the date the case was opened, and the case links to the purchase itself.
+    return this.isAdmin() ? `${kind} · ${Dispute.subjectId(d).slice(0, 8)}` : kind;
+  }
+
+  /** Where the purchase a case is about can be opened, for its own student or teacher. */
+  private purchaseLink(d: Dispute): { path: readonly string[]; label: string } | null {
+    if (this.isAdmin()) return null;
+    if (d.orderId) return { path: ['/orders', d.orderId], label: this.c().viewOrder };
+    if (d.liveSessionBookingId) return { path: ['/live-sessions', d.liveSessionBookingId], label: this.c().viewSession };
+    return null;
   }
 
   private statusLabel(d: Dispute): string {
@@ -359,9 +373,9 @@ export class DisputesPageComponent {
   private eligibleLabel(p: EligiblePurchase): string {
     const ar = this.locale.lang() === 'ar';
     const title = ar ? (p.titleArabic || p.title) : (p.title || p.titleArabic);
-    const money = new Intl.NumberFormat(ar ? 'ar-SA' : 'en-US', {
-      style: 'currency', currency: p.currency || 'SAR'
-    }).format(p.amount);
+    // Through the house formatter, like every other price: Latin digits, and «ر.س» rather than Intl's own
+    // currency sign. Intl in ar-SA wrote this amount as «٨٥٣٫٢٠ ر.س.‏» on a phone (UX-06).
+    const money = this.fmt.money(p.amount, p.currency || 'SAR');
     const other = p.otherPartyName
       ? ` · ${this.c().with} ${ar ? p.otherPartyName : (p.otherPartyNameEnglish || p.otherPartyName)}`
       : '';
