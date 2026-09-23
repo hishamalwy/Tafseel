@@ -705,10 +705,11 @@ public static class DependencyInjection
             var policy = CanonicalServicePolicy.First(x => x.Code == service.Code);
             var fallbackMinimum = service.OrderType == ServiceOrderTypes.LiveSession
                 ? UnsetLiveMinimumPrice : UnsetAsyncMinimumPrice;
-            // Either bound still at its fallback means nobody chose this policy: the live services arrive
-            // with a minimum of 30 and a maximum of 1,000,000, which is half a fallback, not a decision.
+            // Both bounds still at their fallbacks means nobody chose this policy. The fallback minimum
+            // depends on the order type: a live service arrives at 30, not 0.01, which is why the first
+            // pass missed it. One bound moved means an Admin touched it, and that is left alone.
             var unset = (service.MinPrice ?? fallbackMinimum) == fallbackMinimum
-                || (service.MaxPrice ?? UnsetMaximumPrice) == UnsetMaximumPrice;
+                && (service.MaxPrice ?? UnsetMaximumPrice) == UnsetMaximumPrice;
             if (!unset || (service.MinPrice == policy.MinPrice && service.MaxPrice == policy.MaxPrice))
                 continue;
 
