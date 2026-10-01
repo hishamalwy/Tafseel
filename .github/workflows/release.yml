@@ -60,7 +60,7 @@ jobs:
           Jwt__SigningKey: release-only-signing-key-with-at-least-32-characters
           Resend__ApiToken: release-token
           Payments__WebhookSecret: release-webhook-secret-with-at-least-32-characters
-      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+      - uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
         with:
           path: artifacts/release/publish
           format: spdx-json
@@ -83,7 +83,7 @@ jobs:
           path: |
             artifacts/tafseel-${{ env.VERSION }}.tar.gz
             artifacts/release
-      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
         with:
           tag_name: ${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
