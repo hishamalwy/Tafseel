@@ -76,11 +76,12 @@ async function setFinance(admin, email, assigned) {
   assert.ok((await saved).ok(), 'role change saved');
 }
 
-await step('Admin: home, People, give and take back the Finance role', async () => {
+await step('Admin: home, People, help queue, give and take back the Finance role', async () => {
   const admin = await actor();
   await signIn(admin, 'admin@gmail.com');
   await screen(admin, '/admin/home');
   await screen(admin, '/admin/people');
+  await screen(admin, '/admin/help');
   await setFinance(admin, 'quality@gmail.com', true);
   await setFinance(admin, 'quality@gmail.com', false);
   await admin.context.close();

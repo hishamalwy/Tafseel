@@ -67,7 +67,7 @@ type Panel = '' | 'payout' | 'withdraw';
     .tf-earnings-sum > .is-total { margin-block-start: var(--space-1); padding-block-start: var(--space-2); border-block-start: 1px solid var(--border-strong); }
     .tf-earnings-sum > .is-total dt { color: var(--text); font-weight: 700; }
     .tf-earnings-sum > .is-total dd { font-weight: 800; font-size: 16px; }
-    .tf-earnings-signed { unicode-bidi: isolate; }
+    .tf-earnings-signed { display: inline-flex; align-items: baseline; gap: 2px; unicode-bidi: isolate; white-space: nowrap; }
 
     .tf-earnings-list, .tf-earnings-history { display: grid; gap: var(--space-3); margin: var(--space-1) 0 0; padding: 0; list-style: none; }
     .tf-earnings-item { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--r-sm); }
