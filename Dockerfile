@@ -25,7 +25,7 @@ ARG REVISION=unknown
 RUN dotnet publish src/Tafseel.Api/Tafseel.Api.csproj -c Release --no-restore -o /out -p:BuildWebClient=false \
     -p:Version=${VERSION} -p:InformationalVersion=${VERSION}+${REVISION}
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:2f202e1169ec507bdc07007cf68c14d0ff3a098110b17c460a60185e1f36a9d1 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:2d584d8147faddb0d678c5748d47953e5b8e18621ed4fb7049a91381d9d7746f AS runtime
 ARG VERSION=0.0.0
 ARG REVISION=unknown
 ARG BUILD_DATE=unknown
