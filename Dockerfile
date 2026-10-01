@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # The site is the Angular client. The SDK image has no Node, so the client is built in its own
 # stage and handed to the publish step, which is told not to build it again.
-FROM node:22-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 AS webclient
+FROM node:26-bookworm-slim@sha256:662933cf47f013bc8e4beb31a6116448427a82057ba7c42c97e4c5ba766504c2 AS webclient
 WORKDIR /src
 COPY assets/ assets/
 COPY css/ css/
