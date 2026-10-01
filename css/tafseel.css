@@ -9215,7 +9215,7 @@ main .tf-dashboard-content > .tf-dashboard-empty p{margin:0;font-size:14px;color
   .tf-table[data-phone="cards"] > * > tr > td:nth-child(n){display:grid;grid-template-columns:minmax(96px,34%) minmax(0,1fr);gap:var(--space-3);align-items:baseline;
     padding:0;border:0;font-size:14px;overflow-wrap:break-word}
   .tf-table[data-phone="cards"] td[data-label]::before{content:attr(data-label);color:var(--text-2);font-size:12px;font-weight:700}
-  .tf-table[data-phone="cards"] td:not([data-label]){grid-template-columns:minmax(0,1fr)}
+  .tf-table[data-phone="cards"] > * > tr > td:not([data-label]):nth-child(n){grid-template-columns:minmax(0,1fr)}
   .tf-table[data-phone="cards"] td:empty{display:none}
   .tf-table[data-phone="cards"] .tf-table__actions,.tf-table[data-phone="cards"] td.tf-table__actions{padding-block-start:var(--space-2);border-block-start:1px solid var(--border)}
   .tf-table[data-phone="cards"] .tf-table__actions > *{justify-content:stretch}
