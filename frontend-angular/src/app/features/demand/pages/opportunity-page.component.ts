@@ -9,9 +9,10 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { PriceComponent } from '@shared/components/price.component';
 import { ToastComponent } from '@shared/components/toast.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
+import { durationChoices } from '@shared/models/duration';
 import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
-import { Demand, DraftProblem, OFFER_LIMITS, OFFER_STATUS, OfferDraft, OpenRequest, REQUEST_STATUS } from '../models/demand';
+import { Demand, DraftProblem, MyOffer, OFFER_LIMITS, OFFER_STATUS, OfferDraft, OfferTerms, OpenRequest, REQUEST_STATUS, myOfferOutcome } from '../models/demand';
 import { DraftInvalid, LoadOpportunity, ManageOffer } from '../services/demand.use-cases';
 
 /**
@@ -47,7 +48,15 @@ export class OpportunityPageComponent {
   readonly attempted = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
-  readonly problems = computed(() => this.attempted() ? Demand.offerProblems(this.draft()) : {});
+  readonly terms = signal<OfferTerms | null>(null);
+  /** The teacher's offer on a request they can no longer open, to say what happened (UX-82). */
+  readonly pastOffer = signal<MyOffer | null>(null);
+  readonly problems = computed(() => this.attempted() ? Demand.offerProblems(this.draft(), this.terms()) : {});
+  readonly deliveryChoices = computed(() => durationChoices(this.terms()?.minDeliveryHours ?? 1,
+    this.terms()?.maxDeliveryHours ?? OFFER_LIMITS.hoursMax, this.draft().deliveryHours));
+  readonly validityChoices = computed(() => durationChoices(1, OFFER_LIMITS.validityMax, this.draft().validityHours));
+  readonly revisionChoices = computed(() => Array.from({ length: (this.terms()?.maxRevisions ?? OFFER_LIMITS.revisionsMax) + 1 }, (_, i) => i));
+  readonly outcome = computed(() => { const o = this.pastOffer(); return o ? myOfferOutcome(o) : null; });
   readonly myOffer = computed(() => this.request()?.myOffer ?? null);
   readonly reservedForMe = computed(() => {
     const r = this.request();
@@ -72,6 +81,12 @@ export class OpportunityPageComponent {
 
   problem(field: keyof OfferDraft): string {
     const problem: DraftProblem | undefined = this.problems()[field];
+    if (problem === 'price_range') {
+      const terms = this.terms(), currency = this.request()?.currency ?? 'SAR';
+      return this.locale.format('demand_problem_price_range',
+        { min: this.fmt.money(terms?.minPrice ?? 0, currency), max: this.fmt.money(terms?.maxPrice ?? 0, currency) },
+        'Enter a price between {min} and {max}.');
+    }
     return problem ? this.locale.format(`demand_problem_${problem}`, { max: OFFER_LIMITS.message }, problem) : '';
   }
 
@@ -80,18 +95,31 @@ export class OpportunityPageComponent {
   }
 
   async refresh(): Promise<void> {
+    // Moving to another one while this load is in flight must not let its late answer paint the other.
+    const requestId = this.requestId;
     this.loading.set(true);
     this.loadError.set('');
     try {
-      const request = await this.load.execute(this.requestId);
+      const request = await this.load.execute(requestId);
+      if (requestId !== this.requestId) return;
+      // The service's limits are read before the form appears: arriving later, they reset the form under a
+      // teacher who had already started typing (found in the Round 3 browser run).
+      const terms = await this.load.terms(request.serviceTypeId);
+      if (requestId !== this.requestId) return;
+      this.terms.set(terms);
       this.request.set(request);
+      this.pastOffer.set(null);
       this.editing.set(false);
-      this.draft.set(request.myOffer ? Demand.offerDraft(request.myOffer, Date.now()) : Demand.emptyOffer());
+      const draft = request.myOffer ? Demand.offerDraft(request.myOffer, Date.now()) : Demand.emptyOffer();
+      this.draft.set(terms && !request.myOffer ? Demand.fitOffer(draft, terms) : draft);
       this.attempted.set(false);
     } catch (error) {
+      if (requestId !== this.requestId) return;
       this.loadError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
+      const past = await this.load.pastOffer(requestId);
+      if (requestId === this.requestId) this.pastOffer.set(past);
     } finally {
-      this.loading.set(false);
+      if (requestId === this.requestId) this.loading.set(false);
     }
   }
 
@@ -99,7 +127,7 @@ export class OpportunityPageComponent {
     if (this.busy()) return;
     this.attempted.set(true);
     this.error.set('');
-    if (Object.keys(Demand.offerProblems(this.draft())).length) return;
+    if (Object.keys(Demand.offerProblems(this.draft(), this.terms())).length) return;
     this.busy.set(true);
     try {
       const updating = Demand.canEditOffer(this.myOffer());
@@ -109,7 +137,10 @@ export class OpportunityPageComponent {
     } catch (error) {
       if (!(error instanceof DraftInvalid)) {
         this.error.set(problemMessage(error, (k, f) => this.t(k, f)).text);
+        // Read the request again (it may have closed), but keep what the teacher typed so they can correct it.
+        const typed = this.draft();
         await this.refresh();
+        this.draft.set(typed);
       }
     } finally {
       this.busy.set(false);

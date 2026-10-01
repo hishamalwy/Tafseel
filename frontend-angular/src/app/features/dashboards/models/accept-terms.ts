@@ -24,6 +24,8 @@ export interface AcceptForm {
   readonly price: string;
   readonly deliveryLocal: string;
   readonly revisions: string;
+  /** Why the price differs from the one the student saw; required only then (DEC-UX-03). */
+  readonly reason?: string;
 }
 
 /** AcceptLearningRequest, as sent. */
@@ -32,9 +34,15 @@ export interface AcceptBody {
   readonly currency: string;
   readonly agreedDeliveryAt: string;
   readonly revisionAllowance: number;
+  readonly priceChangeReason?: string;
 }
 
-export type AcceptError = 'price' | 'delivery' | 'revisions';
+export type AcceptError = 'price' | 'delivery' | 'revisions' | 'reason';
+
+/** The student saw a price; a different agreed price needs the teacher's words. */
+export function priceDiffers(form: AcceptForm, listedPrice: number | null | undefined): boolean {
+  return listedPrice != null && form.price.trim() !== '' && Number(form.price) !== listedPrice;
+}
 
 /**
  * The API measures delivery from when it processes the acceptance, a little after the form is
@@ -102,7 +110,7 @@ export function deliveryWindow(policy: AcceptPolicy, now: Date): [Date, Date] {
   ];
 }
 
-export function validateAccept(form: AcceptForm, policy: AcceptPolicy, now: Date): AcceptError[] {
+export function validateAccept(form: AcceptForm, policy: AcceptPolicy, now: Date, listedPrice?: number | null): AcceptError[] {
   const errors: AcceptError[] = [];
   const price = Number(form.price);
   if (!form.price.trim() || !Number.isFinite(price) || price < policy.minPrice || price > policy.maxPrice
@@ -114,17 +122,19 @@ export function validateAccept(form: AcceptForm, policy: AcceptPolicy, now: Date
   if (!delivery || delivery < earliest || delivery > latest) errors.push('delivery');
   const revisions = Number(form.revisions);
   if (!/^\d+$/.test(form.revisions) || revisions > policy.maxRevisions) errors.push('revisions');
+  if (priceDiffers(form, listedPrice) && !(form.reason ?? '').trim()) errors.push('reason');
   return errors;
 }
 
 /** The request body. Call only after validateAccept returned no errors. */
-export function toAcceptBody(form: AcceptForm, policy: AcceptPolicy): AcceptBody {
-  return {
+export function toAcceptBody(form: AcceptForm, policy: AcceptPolicy, listedPrice?: number | null): AcceptBody {
+  const body: AcceptBody = {
     finalPrice: Number(form.price),
     currency: policy.currency,
     agreedDeliveryAt: fromLocalInput(form.deliveryLocal)!.toISOString(),
     revisionAllowance: Number(form.revisions)
   };
+  return priceDiffers(form, listedPrice) ? { ...body, priceChangeReason: (form.reason ?? '').trim() } : body;
 }
 
 export function toLocalInput(date: Date): string {

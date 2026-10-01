@@ -31,6 +31,8 @@ export interface OrderDetail extends PartyNameFields {
    */
   readonly listedPriceAtRequest?: number | null;
   readonly listedCurrencyAtRequest?: string | null;
+  /** The teacher's reason for a price that differs from the listed one (DEC-UX-03). */
+  readonly priceChangeReason?: string | null;
   readonly teacherNet?: number | null;
   readonly agreedDeliveryAt: string;
   readonly revisionAllowance: number;
@@ -55,7 +57,7 @@ export interface OrderTimelineEvent {
   readonly eventType: string;
   readonly occurredAt: string;
   readonly actorRole: string;
-  readonly metadata?: { readonly revisionSequence?: number | null; readonly originalName?: string | null } | null;
+  readonly metadata?: { readonly revisionSequence?: number | null; readonly originalName?: string | null; readonly note?: string | null } | null;
 }
 
 /** English wording for each status key, used when the locale table has not loaded. */

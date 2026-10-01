@@ -139,9 +139,9 @@ describe('UX-07 what V1 may promise', () => {
     const discount = promotion({ id: 'sale', kindCode: 'discount', couponCode: 'TAFSEEL20' });
     const feature = promotion({ id: 'feature', kindCode: 'announcement' });
     const event = promotion({ id: 'event', kindCode: 'event' });
-    // A discount ends on a coupon code, and V1 checkout cannot redeem one.
-    expect(V1_PROMOTIONS.showable([discount, feature, event]).map(p => p.id)).toEqual(['feature', 'event']);
-    expect(V1_PROMOTIONS.showable([discount])).toEqual([]);
+    expect(V1_PROMOTIONS.showable([discount, feature, event]).map(p => p.id)).toEqual(['sale', 'feature', 'event']);
+    expect(V1_PROMOTIONS.showable([discount])).toEqual([discount]);
+    expect(V1_PROMOTIONS.showable([promotion({ kindCode: 'discount', couponCode: '' })])).toEqual([]);
     expect(V1_PROMOTIONS.showable([])).toEqual([]);
   });
 

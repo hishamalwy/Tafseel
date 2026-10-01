@@ -47,6 +47,15 @@ Probe ready before sending traffic. If ready fails after deploy, keep previous r
 2. Confirm signature header (`X-Mock-Signature` only for Mock; Production PSP uses `X-Payment-Signature` until a provider-specific header is documented).
 3. Check idempotent webhook table for duplicate event IDs (safe retries).
 
+### Ready degraded — background-workers
+
+`/health/ready` stays 200 but its `background-workers` entry is Degraded when a worker has not completed a pass for two of its intervals (order-auto-release, earnings-maturity and live-session-settlement every 5 min; reservation-expiry every 1 min; dispute-sla every 15 min). The same condition logs `Worker {Worker} has failed {Failures} passes in a row` at Error after three failures, and the `Tafseel.Workers` meter exposes `tafseel.worker.runs` and `tafseel.worker.seconds_since_success`. Alert on either.
+
+1. Read the Warning logged on each failed pass (`... scan failed`) for the exception; the worker name is in the Error line.
+2. Database or lock errors: check blocking queries and the `ready` database check first; the worker retries on its own next tick.
+3. A stalled earnings-maturity or order-auto-release means teachers are not being paid and orders are not completing; nothing is lost (each pass recomputes from persisted state), but fix it the same day.
+4. The worker recovers by itself once a pass succeeds (`Worker {Worker} recovered after ...`); no restart is needed unless the process is wedged.
+
 ### Live-session join failures
 
 1. Confirm booking is within join window and caller is a participant (domain rules unchanged).

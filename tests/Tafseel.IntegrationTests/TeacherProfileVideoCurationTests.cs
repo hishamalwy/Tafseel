@@ -18,16 +18,19 @@ public sealed class TeacherProfileVideoCurationTests(SqlServerTafseelApiFactory 
     : IClassFixture<SqlServerTafseelApiFactory>
 {
     [Fact]
-    public async Task Teacher_can_hide_and_show_approved_qualification_sample_on_profile()
+    public async Task An_application_video_is_never_curated_onto_the_profile_it_goes_through_the_intro_video()
     {
+        // PRODUCT-P1: the seed marks the video visible (legacy data); the public profile still shows nothing.
         var seeded = await SeedPublishedTeacherWithQualificationSampleAsync();
         using var teacher = await ClientForAsync(seeded.Email);
+
+        var publicProfile = await factory.CreateClient()
+            .GetFromJsonAsync<JsonElement>($"/api/v1/teachers/{seeded.TeacherId}");
+        Assert.Empty(publicProfile.GetProperty("samples").EnumerateArray());
 
         var videos = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos");
         var video = Assert.Single(videos.EnumerateArray(), x =>
             x.GetProperty("sourceCode").GetString() == "qualification_sample");
-        Assert.True(video.GetProperty("isCurationEligible").GetBoolean());
-        Assert.True(video.GetProperty("isProfileVisible").GetBoolean());
 
         var hide = new HttpRequestMessage(
             HttpMethod.Put, $"/api/v1/teachers/me/profile-videos/{video.GetProperty("id").GetGuid()}/visibility")
@@ -37,23 +40,16 @@ public sealed class TeacherProfileVideoCurationTests(SqlServerTafseelApiFactory 
         hide.Headers.TryAddWithoutValidation("If-Match", video.GetProperty("version").GetString());
         Assert.Equal(HttpStatusCode.OK, (await teacher.SendAsync(hide)).StatusCode);
 
-        var publicAfterHide = await factory.CreateClient()
-            .GetFromJsonAsync<JsonElement>($"/api/v1/teachers/{seeded.TeacherId}");
-        Assert.Empty(publicAfterHide.GetProperty("samples").EnumerateArray());
-
-        var hidden = await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos");
-        var hiddenVideo = Assert.Single(hidden.EnumerateArray());
+        var hiddenVideo = Assert.Single((await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos")).EnumerateArray());
         var show = new HttpRequestMessage(
             HttpMethod.Put, $"/api/v1/teachers/me/profile-videos/{hiddenVideo.GetProperty("id").GetGuid()}/visibility")
         {
             Content = JsonContent.Create(new { visible = true })
         };
         show.Headers.TryAddWithoutValidation("If-Match", hiddenVideo.GetProperty("version").GetString());
-        Assert.Equal(HttpStatusCode.OK, (await teacher.SendAsync(show)).StatusCode);
-
-        var publicAfterShow = await factory.CreateClient()
-            .GetFromJsonAsync<JsonElement>($"/api/v1/teachers/{seeded.TeacherId}");
-        Assert.Single(publicAfterShow.GetProperty("samples").EnumerateArray());
+        var shown = await teacher.SendAsync(show);
+        Assert.Equal(HttpStatusCode.BadRequest, shown.StatusCode);
+        Assert.Equal("use_intro_video", await CodeAsync(shown));
     }
 
     [Fact]
@@ -147,54 +143,21 @@ public sealed class TeacherProfileVideoCurationTests(SqlServerTafseelApiFactory 
     }
 
     [Fact]
-    public async Task Setting_featured_is_atomic_and_at_most_one()
+    public async Task An_application_video_cannot_be_featured_on_the_profile()
     {
         var seeded = await SeedPublishedTeacherWithQualificationSampleAsync();
-        Guid secondId;
-        await using (var scope = factory.Services.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-            var storage = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
-            var stored = await storage.StorePrivateVideoAsync(
-                new MemoryStream(ValidMp4()), "second.mp4", "video/mp4", ValidMp4().Length, default);
-            var second = TeacherTeachingSample.FromQualificationDemo(
-                seeded.TeacherId, seeded.SubjectId, "Second sample", stored.StorageKey, 90,
-                Guid.NewGuid(), Guid.NewGuid(), seeded.TopicId, seeded.QualityId, factory.Clock.GetUtcNow());
-            second.SetProfileDisplayOrder(1, factory.Clock.GetUtcNow());
-            db.TeacherTeachingSamples.Add(second);
-            secondId = second.Id;
-            await db.SaveChangesAsync();
-        }
-
         using var teacher = await ClientForAsync(seeded.Email);
-        var videos = (await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos"))
-            .EnumerateArray().Where(x => x.GetProperty("isCurationEligible").GetBoolean()).ToArray();
-        Assert.True(videos.Length >= 2);
-
-        async Task FeatureAsync(Guid id)
+        var current = (await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos"))
+            .EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == seeded.SampleId);
+        var request = new HttpRequestMessage(
+            HttpMethod.Put, $"/api/v1/teachers/me/profile-videos/{seeded.SampleId}/featured")
         {
-            var current = (await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos"))
-                .EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == id);
-            if (current.GetProperty("isProfileFeatured").GetBoolean())
-                return;
-            var request = new HttpRequestMessage(
-                HttpMethod.Put, $"/api/v1/teachers/me/profile-videos/{id}/featured")
-            {
-                Content = JsonContent.Create(new { featured = true })
-            };
-            request.Headers.TryAddWithoutValidation("If-Match", current.GetProperty("version").GetString());
-            var response = await teacher.SendAsync(request);
-            Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
-        }
-
-        await FeatureAsync(seeded.SampleId);
-        await FeatureAsync(secondId);
-
-        videos = (await teacher.GetFromJsonAsync<JsonElement>("/api/v1/teachers/me/profile-videos"))
-            .EnumerateArray().ToArray();
-        Assert.Equal(1, videos.Count(x => x.GetProperty("isProfileFeatured").GetBoolean()));
-        Assert.True(videos.Single(x => x.GetProperty("id").GetGuid() == secondId)
-            .GetProperty("isProfileFeatured").GetBoolean());
+            Content = JsonContent.Create(new { featured = true })
+        };
+        request.Headers.TryAddWithoutValidation("If-Match", current.GetProperty("version").GetString());
+        var response = await teacher.SendAsync(request);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("use_intro_video", await CodeAsync(response));
     }
 
     private async Task<Seeded> SeedPublishedTeacherWithQualificationSampleAsync()

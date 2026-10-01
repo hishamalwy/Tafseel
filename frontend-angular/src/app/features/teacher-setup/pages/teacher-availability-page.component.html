@@ -10,6 +10,8 @@
     </div>
   </header>
 
+  <tf-setup-progress current="availability" />
+
   @if (loading() && !profile()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
   } @else if (loadError() && !profile()) {
@@ -29,7 +31,7 @@
             @for (item of rules(); track item.id) {
               <li data-testid="rule" [attr.data-day]="item.dayOfWeek" [attr.data-start]="item.start" [attr.data-end]="item.end">
                 <strong>{{ dayName(item.dayOfWeek) }}</strong>
-                <span><time>{{ item.start }}</time>–<time>{{ item.end }}</time>@if (item.slotMinutes) { <small> · {{ locale.format('setup_slot_n', { n: item.slotMinutes }, '{n}-minute slots') }}</small> }</span>
+                <span><bdi dir="ltr"><time>{{ item.start }}</time>–<time>{{ item.end }}</time></bdi>@if (item.slotMinutes) { <small> · {{ locale.format('setup_slot_n', { n: item.slotMinutes }, '{n}-minute slots') }}</small> }</span>
                 <small>{{ zoneLabel(item.timeZoneId) }}</small>
                 <span class="tf-cluster">
                   <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openEdit(item)" [disabled]="!!busy()">{{ t('common_edit', 'Edit') }}</button>
@@ -62,27 +64,27 @@
             <div class="tf-availability-grid">
               <div class="tf-field">
                 <label for="rule-start">{{ t('setup_rule_start', 'From') }}</label>
-                <input id="rule-start" name="start" type="time" step="900" [ngModel]="rule().start" (ngModelChange)="setRule('start', $event)" [attr.aria-invalid]="ruleProblems().length > 0">
+                <input id="rule-start" name="start" type="time" step="900" [ngModel]="rule().start" (ngModelChange)="setRule('start', $event)" [attr.aria-invalid]="ruleProblems().includes('time_required')" [attr.aria-describedby]="ruleProblems().length ? 'rule-problems' : null">
               </div>
               <div class="tf-field">
                 <label for="rule-end">{{ t('setup_rule_end', 'Until') }}</label>
-                <input id="rule-end" name="end" type="time" step="900" [ngModel]="rule().end" (ngModelChange)="setRule('end', $event)" [attr.aria-invalid]="ruleProblems().includes('end_before_start')">
+                <input id="rule-end" name="end" type="time" step="900" [ngModel]="rule().end" (ngModelChange)="setRule('end', $event)" [attr.aria-invalid]="ruleProblems().includes('time_required') || ruleProblems().includes('end_before_start')" [attr.aria-describedby]="ruleProblems().length ? 'rule-problems' : null">
               </div>
               <div class="tf-field">
                 <label for="rule-slot">{{ t('setup_rule_slot', 'Session length') }}</label>
-                <select id="rule-slot" name="slot" [ngModel]="rule().slotMinutes" (ngModelChange)="setRule('slotMinutes', $event)">
+                <select id="rule-slot" name="slot" [ngModel]="rule().slotMinutes" (ngModelChange)="setRule('slotMinutes', $event)" [attr.aria-invalid]="ruleProblems().includes('slot_out_of_range') || ruleProblems().includes('slot_longer_than_window')" [attr.aria-describedby]="ruleProblems().length ? 'rule-problems' : null">
                   @for (slot of slots; track slot) { <option [ngValue]="slot">{{ locale.format('setup_minutes_n', { n: slot }, '{n} min') }}</option> }
                 </select>
               </div>
               <div class="tf-field">
                 <label for="rule-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
-                <select id="rule-zone" name="zone" [ngModel]="rule().timeZoneId" (ngModelChange)="setRule('timeZoneId', $event)">
+                <select id="rule-zone" name="zone" [ngModel]="rule().timeZoneId" (ngModelChange)="setRule('timeZoneId', $event)" [attr.aria-invalid]="ruleProblems().includes('zone_required')" [attr.aria-describedby]="ruleProblems().length ? 'rule-problems' : null">
                   @for (zone of zones(); track zone) { <option [value]="zone">{{ zoneLabel(zone) }}</option> }
                 </select>
               </div>
             </div>
             @if (ruleProblems().length) {
-              <ul class="tf-field-error" role="alert" data-testid="rule-problems">@for (problem of ruleProblems(); track problem) { <li [attr.data-problem]="problem">{{ ruleProblem(problem) }}</li> }</ul>
+              <ul id="rule-problems" class="tf-field-error" role="alert" data-testid="rule-problems">@for (problem of ruleProblems(); track problem) { <li [attr.data-problem]="problem">{{ ruleProblem(problem) }}</li> }</ul>
             }
             @if (ruleError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="rule-error">{{ ruleError() }}</div> }
             <div class="tf-form-actions">
@@ -116,19 +118,19 @@
           <div class="tf-grid-2">
             <div class="tf-field">
               <label for="exception-start">{{ t('setup_exception_start', 'Starts') }}</label>
-              <input id="exception-start" name="startsAt" type="datetime-local" [ngModel]="exception().startsAt" (ngModelChange)="setException('startsAt', $event)" [attr.aria-invalid]="exceptionProblems().includes('time_required')">
+              <input id="exception-start" name="startsAt" type="datetime-local" [ngModel]="exception().startsAt" (ngModelChange)="setException('startsAt', $event)" [attr.aria-invalid]="exceptionProblems().includes('time_required')" [attr.aria-describedby]="exceptionProblems().length ? 'exception-problems' : null">
             </div>
             <div class="tf-field">
               <label for="exception-end">{{ t('setup_exception_end', 'Ends') }}</label>
-              <input id="exception-end" name="endsAt" type="datetime-local" [ngModel]="exception().endsAt" (ngModelChange)="setException('endsAt', $event)" [attr.aria-invalid]="exceptionProblems().includes('end_before_start')">
+              <input id="exception-end" name="endsAt" type="datetime-local" [ngModel]="exception().endsAt" (ngModelChange)="setException('endsAt', $event)" [attr.aria-invalid]="exceptionProblems().includes('time_required') || exceptionProblems().includes('end_before_start')" [attr.aria-describedby]="exceptionProblems().length ? 'exception-problems' : null">
             </div>
           </div>
           <div class="tf-field">
             <label for="exception-reason">{{ t('setup_exception_reason', 'Note (optional)') }}</label>
-            <input id="exception-reason" name="reason" [attr.maxlength]="reasonMax" [ngModel]="exception().reason" (ngModelChange)="setException('reason', $event)">
+            <input id="exception-reason" name="reason" [attr.maxlength]="reasonMax" [ngModel]="exception().reason" (ngModelChange)="setException('reason', $event)" [attr.aria-invalid]="exceptionProblems().includes('reason_too_long')" [attr.aria-describedby]="exceptionProblems().length ? 'exception-problems' : null">
           </div>
           @if (exceptionProblems().length) {
-            <ul class="tf-field-error" role="alert" data-testid="exception-problems">@for (problem of exceptionProblems(); track problem) { <li [attr.data-problem]="problem">{{ exceptionProblem(problem) }}</li> }</ul>
+            <ul id="exception-problems" class="tf-field-error" role="alert" data-testid="exception-problems">@for (problem of exceptionProblems(); track problem) { <li [attr.data-problem]="problem">{{ exceptionProblem(problem) }}</li> }</ul>
           }
           @if (exceptionError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="exception-error">{{ exceptionError() }}</div> }
           <div class="tf-form-actions"><button type="submit" class="tf-button tf-button-secondary" data-testid="add-exception" [disabled]="!!busy()">{{ busy() === 'exception' ? t('common_saving', 'Saving…') : t('setup_exception_add', 'Add time off') }}</button></div>

@@ -89,15 +89,26 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
         Assert.Single(withdrawals, x => x.StatusCode == HttpStatusCode.BadRequest);
         var approved = withdrawals.Single(x => x.StatusCode == HttpStatusCode.OK);
         var withdrawal = JsonDocument.Parse(await approved.Content.ReadAsStringAsync()).RootElement;
-        var process = await SendAsync(admin, HttpMethod.Post,
-            $"/api/v1/withdrawals/{withdrawal.GetProperty("id").GetGuid()}/process",
-            new { approve = true, providerReference = "bank-transfer-1" },
-            withdrawal.GetProperty("version").GetString()!, "process-1");
+        // DEC-04: a transfer is recorded in two steps — initiation, then the bank's evidence — never a bare reference.
+        var withdrawalId = withdrawal.GetProperty("id").GetGuid();
+        var initiated = await SendAsync(admin, HttpMethod.Post, $"/api/v1/withdrawals/{withdrawalId}/transfer-initiation",
+            null, withdrawal.GetProperty("version").GetString()!, "initiate-1");
+        initiated.EnsureSuccessStatusCode();
+        var afterInitiation = JsonDocument.Parse(await initiated.Content.ReadAsStringAsync()).RootElement;
+        var evidence = new
+        {
+            bankReference = "FT24BANK0001",
+            sourceInstitution = "Tafseel operating account",
+            transferredAt = factory.Clock.GetUtcNow(),
+            amount = 60m,
+            currency = "SAR",
+            confirmedAgainstBankRecord = true
+        };
+        var process = await SendAsync(admin, HttpMethod.Post, $"/api/v1/withdrawals/{withdrawalId}/transfer-confirmation",
+            evidence, afterInitiation.GetProperty("version").GetString()!, "confirm-1");
         process.EnsureSuccessStatusCode();
-        var replay = await SendAsync(admin, HttpMethod.Post,
-            $"/api/v1/withdrawals/{withdrawal.GetProperty("id").GetGuid()}/process",
-            new { approve = true, providerReference = "bank-transfer-1" },
-            withdrawal.GetProperty("version").GetString()!, "process-1");
+        var replay = await SendAsync(admin, HttpMethod.Post, $"/api/v1/withdrawals/{withdrawalId}/transfer-confirmation",
+            evidence, afterInitiation.GetProperty("version").GetString()!, "confirm-1");
         replay.EnsureSuccessStatusCode();
 
         var reconciliation = JsonDocument.Parse(
@@ -296,8 +307,9 @@ public sealed class Phase7FinancialTests(SqlServerTafseelApiFactory factory)
         {
             legalName = "Verified Teacher",
             countryCode = "SA",
-            payoutMethod = "Bank transfer",
-            destinationLabel = "IBAN •••• 1234",
+            payoutMethod = "bank_transfer",
+            bankName = "Test Bank",
+            iban = "SA0380000000608010167519",
             identityLast4 = "1234"
         });
         submitted.EnsureSuccessStatusCode();

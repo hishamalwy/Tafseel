@@ -17,7 +17,12 @@ internal sealed class PromotionService(TafseelDbContext db, TimeProvider clock) 
                 && (x.EndsAt == null || x.EndsAt > now))
             .OrderBy(x => x.DisplayOrder).ThenByDescending(x => x.CreatedAt)
             .ToListAsync(ct);
-        return items.Select(MapPublic).ToArray();
+        var activeCodes = await db.Coupons.AsNoTracking()
+            .Where(x => x.IsActive && (x.ExpiresAt == null || x.ExpiresAt > now))
+            .Select(x => x.Code).ToArrayAsync(ct);
+        var usable = activeCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return items.Where(x => x.Kind != PromotionKind.Discount || usable.Contains(x.CouponCode))
+            .Select(MapPublic).ToArray();
     }
 
     public async Task<IReadOnlyCollection<AdminPromotionDto>> ListAsync(CancellationToken ct)

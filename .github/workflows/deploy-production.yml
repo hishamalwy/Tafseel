@@ -30,10 +30,21 @@ jobs:
       Email__ConfirmationUrl: ${{ vars.EMAIL_CONFIRMATION_URL }}
       Email__PasswordResetUrl: ${{ vars.EMAIL_PASSWORD_RESET_URL }}
       Email__AppBaseUrl: ${{ vars.EMAIL_APP_BASE_URL }}
+      AllowedHosts: ${{ vars.ALLOWED_HOSTS }}
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: ${{ vars.FORWARDED_HEADERS_ENABLED }}
       Payments__Provider: ${{ vars.PAYMENTS_PROVIDER }}
       Payments__WebhookSecret: ${{ secrets.PAYMENTS_WEBHOOK_SECRET }}
       LiveSessions__Provider: ${{ vars.LIVE_SESSIONS_PROVIDER }}
       FileStorage__Provider: ${{ vars.FILE_STORAGE_PROVIDER }}
+      FileStorage__AzureBlob__ConnectionString: ${{ secrets.AZURE_BLOB_CONNECTION_STRING }}
+      MalwareScanning__Mode: ClamAv
+      MalwareScanning__ClamAv__Host: ${{ vars.CLAMAV_HOST }}
+      PayoutDestinations__ActiveKeyId: ${{ vars.PAYOUT_DESTINATIONS_ACTIVE_KEY_ID }}
+      PAYOUT_DESTINATIONS_ACTIVE_KEY: ${{ secrets.PAYOUT_DESTINATIONS_ACTIVE_KEY }}
+      JaaS__AppId: ${{ vars.JAAS_APP_ID }}
+      JaaS__KeyId: ${{ vars.JAAS_KEY_ID }}
+      JaaS__PrivateKeyPem: ${{ secrets.JAAS_PRIVATE_KEY_PEM }}
+      Provisioning__BootstrapAdminEmail: ${{ vars.BOOTSTRAP_ADMIN_EMAIL }}
       DataProtection__KeysPath: ${{ vars.DATA_PROTECTION_KEYS_PATH }}
       Cors__AllowedOrigins__0: ${{ vars.CORS_ORIGIN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,13 +78,23 @@ jobs:
           echo "DEPLOY_IMAGE=$image" >> "$GITHUB_ENV"
       - name: Validate production configuration
         shell: pwsh
-        run: ./scripts/ci/check-production-config.ps1
+        run: |
+          # The vault key is addressed by its id, which is itself configuration.
+          [Environment]::SetEnvironmentVariable("PayoutDestinations__Keys__$env:PayoutDestinations__ActiveKeyId", $env:PAYOUT_DESTINATIONS_ACTIVE_KEY)
+          ./scripts/ci/check-production-config.ps1
       - name: Apply approved idempotent migration separately
         run: |
           test -n "$BACKUP_EVIDENCE_ID" || { echo "Backup evidence is required"; exit 1; }
           docker run --rm -v "$PWD/release/tafseel-idempotent.sql:/work/migration.sql:ro" \
             -e SQLCMDPASSWORD="$SQL_PASSWORD" mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04 \
-            /opt/mssql-tools18/bin/sqlcmd -C -b -S "$SQL_SERVER" -d "$SQL_DATABASE" -U "$SQL_USERNAME" -i /work/migration.sql
+            /opt/mssql-tools18/bin/sqlcmd -C -b -I -S "$SQL_SERVER" -d "$SQL_DATABASE" -U "$SQL_USERNAME" -i /work/migration.sql
+      - name: Provision reference data and the first Admin
+        # Roles, canonical services with the DEC-01 policy, teaching languages; promotes BOOTSTRAP_ADMIN_EMAIL only
+        # while the environment has no Admin. Idempotent. Needs only the database and JWT settings.
+        run: |
+          docker run --rm -e ASPNETCORE_ENVIRONMENT=Production \
+            -e ConnectionStrings__Tafseel -e Jwt__SigningKey -e Provisioning__BootstrapAdminEmail \
+            "$DEPLOY_IMAGE" provision
       - name: Deploy immutable image
         run: |
           curl --fail --silent --show-error --retry 2 -X POST "$DEPLOY_HOOK_URL" \

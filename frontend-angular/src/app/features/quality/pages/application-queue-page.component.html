@@ -13,10 +13,10 @@
   @if (queue()?.summary; as summary) {
     <dl class="tf-stat-grid" data-testid="queue-summary">
       <div class="tf-stat-tile"><dt>{{ t('quality_summary_actionable', 'Need action') }}</dt><dd>{{ summary.actionable }}</dd></div>
-      <div class="tf-stat-tile"><dt>{{ t('apply_status_submitted', 'Submitted') }}</dt><dd>{{ summary.submitted }}</dd></div>
-      <div class="tf-stat-tile"><dt>{{ t('apply_status_under_review', 'Under review') }}</dt><dd>{{ summary.underReview }}</dd></div>
-      <div class="tf-stat-tile"><dt>{{ t('apply_status_changes', 'Changes requested') }}</dt><dd>{{ summary.changesRequested }}</dd></div>
-      <div class="tf-stat-tile"><dt>{{ t('quality_summary_additional', 'Additional subjects') }}</dt><dd>{{ summary.additionalActionable }}</dd></div>
+      @if (summary.submitted) { <div class="tf-stat-tile"><dt>{{ t('apply_status_submitted', 'Submitted') }}</dt><dd>{{ summary.submitted }}</dd></div> }
+      @if (summary.underReview) { <div class="tf-stat-tile"><dt>{{ t('apply_status_under_review', 'Under review') }}</dt><dd>{{ summary.underReview }}</dd></div> }
+      @if (summary.changesRequested) { <div class="tf-stat-tile"><dt>{{ t('apply_status_changes', 'Changes requested') }}</dt><dd>{{ summary.changesRequested }}</dd></div> }
+      @if (summary.additionalActionable) { <div class="tf-stat-tile"><dt>{{ t('quality_summary_additional', 'Additional subjects') }}</dt><dd>{{ summary.additionalActionable }}</dd></div> }
     </dl>
   }
 

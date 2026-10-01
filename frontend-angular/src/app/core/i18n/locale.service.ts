@@ -66,12 +66,27 @@ export class LocaleService {
       this.t(key, fallback));
   }
 
+  /**
+   * Each language is its own bundle under its own prefix (/ar/..., /en/...), so
+   * switching language is switching address: the same page, the other prefix.
+   * Changing only the strings in place left an Arabic page sitting at /en/, and
+   * every link, reload and share from it came back in English. Without a prefix
+   * (`ng serve`) there is only one bundle, and the switch stays in place.
+   */
   set(lang: Lang): void {
+    this.prefs.write(STORAGE_KEY, lang);
+    const prefixed = this.urlLocale();
+    const location = this.document.defaultView?.location;
+    if (prefixed && prefixed !== lang && location) {
+      const rest = location.pathname.replace(/^\/(ar|en)(?=\/|$)/i, '');
+      location.assign(`/${lang}${rest || '/'}${location.search}${location.hash}`);
+      return;
+    }
     this.current.set(lang);
   }
 
   toggle(): void {
-    this.current.update(l => (l === 'ar' ? 'en' : 'ar'));
+    this.set(this.current() === 'ar' ? 'en' : 'ar');
   }
 
   async load(lang: Lang): Promise<void> {
@@ -86,6 +101,13 @@ export class LocaleService {
     }
   }
 
+  /** The language the address is under, or null where there is no prefix. */
+  private urlLocale(): Lang | null {
+    if (!this.isBrowser) return null;
+    const first = this.document.defaultView?.location.pathname.split('/')[1]?.toLowerCase();
+    return first === 'ar' || first === 'en' ? first : null;
+  }
+
   private initial(): Lang {
     // On the server there is no stored preference, and falling back to English
     // would make the Arabic prerender emit English pages — the exact opposite of
@@ -93,6 +115,10 @@ export class LocaleService {
     // right answer there.
     if (!this.isBrowser) return this.buildLocale.toLowerCase().startsWith('ar') ? 'ar' : 'en';
 
+    // The address names the language when it has a prefix, and it wins over a
+    // stored choice: a shared /en/ link opens in English for everyone.
+    const prefixed = this.urlLocale();
+    if (prefixed) return prefixed;
     const stored = this.prefs.read(STORAGE_KEY);
     if (stored === 'ar' || stored === 'en') return stored;
     // No stored choice: follow the locale this bundle was built for, so a visitor

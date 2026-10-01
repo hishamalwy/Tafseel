@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict';
 import {
   BASE, SEED, acceptRequest, attribute, context, finish, noHorizontalOverflow, pathOf, payInSimulator,
-  registerStudent, sendDirectRequest, shot, signIn, spa, sql, start, step, visit, waitForCall, waitUntil
+  registerStudent, sendDirectRequest, shot, signIn, spa, sql, start, step, visit, waitForCall, waitUntil, pickSlot
 } from './wave3b-harness.mjs';
 
 const stamp = Date.now();
@@ -135,7 +135,7 @@ await step('4. once the teacher accepts, paying is the first thing on the home',
   // What the card names is what the student pays — the total with the platform fee, not the agreed price.
   const studentTotal = Number(sql(`SELECT StudentTotal FROM Orders WHERE Id = '${orderId}'`));
   assert.ok(studentTotal > PRICE, `the total carries the fee (${studentTotal} > ${PRICE})`);
-  const shown = studentTotal.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const shown = studentTotal.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(studentTotal) ? 0 : 2 });
   const amount = first.locator('[data-testid=home-card-amount]');
   const money = (await amount.innerText()).replace(/\s+/g, ' ').trim();
   assert.match(money, new RegExp(`المبلغ[^\\d]*${escape(shown)}$`), `the amount is named (${JSON.stringify(money)})`);
@@ -179,14 +179,19 @@ await step('6. a booked session becomes the next session, one tap from its own s
   await page.locator('#book-session-title').fill(sessionTitle);
   await page.locator('#book-topic').fill('مسائل المعدلات المرتبطة: السلّم والخزان المخروطي.');
   // A later slot, so the session is genuinely upcoming rather than one the student can already join.
-  const slot = page.locator('button.tf-book-slot').nth(6);
-  await slot.waitFor({ timeout: 20000 });
-  await slot.click();
+  await pickSlot(page, 6);
   const created = waitForCall(page, 'POST', /^\/api\/v1\/live-sessions$/);
   await page.locator('button.tf-book-confirm').click();
   const booked = await created;
   assert.equal(booked.status(), 201, 'booked');
   sessionId = (await booked.json()).id;
+  await page.waitForURL(url => pathOf(url) === `/ar/live-sessions/${sessionId}`, { timeout: 20000 });
+  await attribute(page, '[data-testid=session-status]', 'data-status', 9);
+  await visit(teacher.page, `${BASE}/en/live-sessions/${sessionId}`);
+  await teacher.page.locator('[data-testid=accept-session-request]').click();
+  await attribute(teacher.page, '[data-testid=session-status]', 'data-status', 0);
+  await visit(page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await page.locator('[data-testid=pay-session]').click();
   await page.waitForURL(url => pathOf(url) === '/ar/checkout', { timeout: 20000 });
   await payInSimulator(page, new RegExp(`^/(ar|en)/live-sessions/${sessionId}$`));
   await attribute(page, '[data-testid=session-status]', 'data-status', 1);
@@ -219,6 +224,17 @@ await step('7. the whole home stays Arabic, inside the phone, and free of machin
   }
   await noHorizontalOverflow(page, 'student home, full');
   await shot(page, 'ux01-home-full-ar');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await noHorizontalOverflow(page, 'student home, desktop');
+  const paidCard = home.current().first();
+  const badgeBox = await paidCard.locator('.tf-badge').boundingBox();
+  const details = paidCard.locator('[data-testid=home-card-open]');
+  const detailsBox = await details.boundingBox();
+  assert.ok(badgeBox && detailsBox && Math.abs(badgeBox.x - detailsBox.x) >= 24,
+    'the payment status and details button occupy separate parts of the card');
+  assert.notEqual(await details.evaluate(node => getComputedStyle(node).borderStyle), 'none',
+    'details reads as a button');
+  await shot(page, 'ux01-home-full-ar-desktop');
 
   // Home is the student's own: it is not reachable by a teacher, and not a dashboard section.
   await visit(teacher.page, `${BASE}/en/student/overview`);

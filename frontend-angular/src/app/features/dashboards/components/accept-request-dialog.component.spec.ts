@@ -79,6 +79,19 @@ describe('AcceptRequestGateway', () => {
     request.flush({ id: 'order-1', status: 0 });
     await sent;
   });
+
+  it('sends the teacher’s reason when the price differs from the listed one (DEC-UX-03)', async () => {
+    TestBed.configureTestingModule({ providers: [AcceptRequestGateway, provideHttpClient(), provideHttpClientTesting()] });
+    const gateway = TestBed.inject(AcceptRequestGateway);
+    const backend = TestBed.inject(HttpTestingController);
+    const body = { finalPrice: 120, currency: 'SAR', agreedDeliveryAt: '2030-01-13T09:00:00.000Z', revisionAllowance: 2, priceChangeReason: 'Extra example.' };
+
+    const sent = firstValueFrom(gateway.accept('r1', 'v', 'key-2', body));
+    const request = backend.expectOne('/api/v1/learning-requests/r1/accept');
+    expect(request.request.body).toEqual(body);
+    request.flush({ id: 'order-2', status: 0 });
+    await sent;
+  });
 });
 
 describe('AcceptRequestDialogComponent', () => {
@@ -92,7 +105,12 @@ describe('AcceptRequestDialogComponent', () => {
       imports: [AcceptRequestDialogComponent],
       providers: [
         { provide: AcceptRequestGateway, useValue: { policy: () => of(policy), accept } },
-        { provide: LocaleService, useValue: { t: (key: string, fallback: string) => table[key] ?? fallback } }
+        { provide: LocaleService, useValue: {
+          t: (key: string, fallback: string) => table[key] ?? fallback,
+          format: (key: string, values: Record<string, string | number>, fallback: string) =>
+            Object.entries(values).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, String(value)), table[key] ?? fallback),
+          lang: () => (table === ar ? 'ar' : 'en')
+        } }
       ]
     });
     const fixture = TestBed.createComponent(AcceptRequestDialogComponent);
@@ -113,9 +131,10 @@ describe('AcceptRequestDialogComponent', () => {
     const { fixture, dialog } = await open(undefined, ar as Record<string, string>);
     const text = dialog.textContent ?? '';
 
-    expect(text).toContain('ر.س');
+    expect(text).toContain('\u20C1');
     expect(text).not.toContain('SAR');
-    expect((dialog.querySelector('input[name=currency]') as HTMLInputElement).value).toBe('ر.س');
+    // The currency is named in the price label; a read-only box repeating it was one more thing to read.
+    expect(dialog.querySelector('input[name=currency]')).toBeNull();
 
     // Only the words changed: the order is still priced in SAR on the wire.
     await fixture.componentInstance.submit();

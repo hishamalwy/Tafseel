@@ -145,7 +145,8 @@ public sealed record TeacherProfileDto(
     IReadOnlyCollection<Guid>? VerifiedSubjectIds = null,
     string? FullNameEnglish = null,
     bool HasAvatar = false,
-    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null);
+    IReadOnlyCollection<TeacherTrustBadgeDto>? TrustBadges = null,
+    PublicIntroVideoDto? IntroVideo = null);
 
 public sealed record NamedItemDto(Guid Id, string Name, string? NameAr);
 public sealed record UpdateTeacherProfile(
@@ -426,9 +427,13 @@ public sealed record CredentialInput(
 public sealed record CredentialDto(
     Guid Id, string Title, string Organization, DateOnly? From, DateOnly? To);
 
+public sealed record PublicTeacherLink(string TeacherId, DateTimeOffset UpdatedAt);
+
 public interface IMarketplaceService
 {
     Task<PagedResult<TeacherCardDto>> SearchAsync(TeacherSearch query, CancellationToken ct);
+    /// <summary>Every teacher the public Browse shows, for the sitemap; same eligibility rule as Browse.</summary>
+    Task<IReadOnlyCollection<PublicTeacherLink>> GetPublicTeacherLinksAsync(CancellationToken ct);
     Task<TeacherComparisonResultDto> CompareAsync(
         string[] ids, Guid? subjectId, Guid? serviceTypeId, CancellationToken ct);
     Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct);

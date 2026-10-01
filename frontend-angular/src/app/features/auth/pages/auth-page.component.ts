@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthFailure } from '@core/auth/models/auth-failure';
 import { EmailAddress } from '@shared/models/email-address';
@@ -10,6 +11,7 @@ import {
   ConfirmEmail, RequestPasswordReset, ResendConfirmation, ResetPassword
 } from '@core/auth/services/recover-password.use-case';
 import { ResolveLandingRoute } from '@core/auth/services/resolve-landing-route.use-case';
+import { PendingReturnStore } from '@core/auth/services/pending-return.store';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/theme/theme.service';
 import { safeReturnUrl } from '@core/auth/guards/auth.guards';
@@ -54,16 +56,27 @@ export class AuthPageComponent {
   private readonly confirmEmailUseCase = inject(ConfirmEmail);
   private readonly resendConfirmationUseCase = inject(ResendConfirmation);
   private readonly landing = inject(ResolveLandingRoute);
+  private readonly pendingReturn = inject(PendingReturnStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly title = inject(Title);
   readonly locale = inject(LocaleService);
   readonly theme = inject(ThemeService);
 
-  readonly policyVersion = '2026-08-12';
 
   readonly mode = signal<Mode>('login');
   readonly role = signal<RoleChoice>('student');
   readonly toast = signal('');
+  /** Stays on the login form after a confirmation link, where a toast would be gone before it is read. */
+  readonly notice = signal('');
+
+  /**
+   * Arriving from "Request this service" or "Book" lands here with ?return=. Someone who has never
+   * been here reads "Welcome back" otherwise, with nothing saying an account is what stands between
+   * them and the request they started.
+   */
+  readonly fromAction = computed(() =>
+    /^\/(requests\/new|sessions\/book|teach\/apply)/.test(safeReturnUrl(this.route.snapshot.queryParamMap.get('return')) ?? ''));
 
   // --- login ---
   readonly email = signal('');
@@ -113,6 +126,9 @@ export class AuthPageComponent {
     // cannot say which flow this is - only ?mode= can. Confirmation used to be
     // handled by the legacy page; without this branch a confirmation link would
     // be read as a reset and offer to change a password nobody asked about.
+    // After a password change or an account deletion the person lands here signed out; say why.
+    if (q.get('notice') === 'password-changed')
+      this.notice.set(this.t('auth_password_changed', 'Your password was changed. Sign in with the new password.'));
     if (token && emailParam && q.get('mode') === 'confirm') {
       this.email.set(emailParam);
       void this.confirmAddress(emailParam, token);
@@ -125,6 +141,11 @@ export class AuthPageComponent {
     }
     const roleParam = q.get('role');
     if (roleParam === 'teacher' || roleParam === 'student') this.role.set(roleParam);
+    effect(() => {
+      const key = this.mode() === 'register' ? 'auth_signup' : this.mode() === 'reset' ? 'auth_reset_h' : 'auth_login';
+      const fallback = this.mode() === 'register' ? 'Sign up' : this.mode() === 'reset' ? 'Choose a new password' : 'Log in';
+      this.title.setTitle(`${this.t(key, fallback)} — ${this.locale.lang() === 'ar' ? 'تفصيل' : 'Tafseel'}`);
+    });
   }
 
   t(key: string, fallback = ''): string {
@@ -232,9 +253,10 @@ export class AuthPageComponent {
       const session = await this.logIn.execute({
         email: this.email(),
         password: this.password(),
+        rememberMe: this.remember(),
         ...(this.needsMfa() && this.mfaCode().trim() ? { mfaCode: this.mfaCode().trim() } : {})
       });
-      const requested = safeReturnUrl(this.route.snapshot.queryParamMap.get('return'));
+      const requested = safeReturnUrl(this.route.snapshot.queryParamMap.get('return')) ?? this.pendingReturn.take();
       await this.router.navigateByUrl(await this.landing.execute(session.roles, requested));
     } catch (error) {
       const failure = error as AuthFailure;
@@ -258,6 +280,7 @@ export class AuthPageComponent {
     this.regError.set('');
 
     try {
+      this.pendingReturn.remember(this.route.snapshot.queryParamMap.get('return'));
       await this.registerAccount.execute({
         email: this.regEmail(),
         password: this.regPassword(),
@@ -291,7 +314,7 @@ export class AuthPageComponent {
   private async confirmAddress(email: string, token: string): Promise<void> {
     try {
       await this.confirmEmailUseCase.execute(email, token);
-      this.flash(this.t('auth_email_confirmed', 'Your email is confirmed. You can log in now.'));
+      this.notice.set(this.t('auth_email_confirmed', 'Your email is confirmed. You can log in now.'));
     } catch {
       this.loginError.set(this.t(
         'auth_confirm_link_invalid',
@@ -388,6 +411,8 @@ export class AuthPageComponent {
         return this.t('auth_session_expired', 'Your session ended. Please log in again.');
       case 'offline':
         return this.t('auth_offline', 'Could not reach Tafseel. Check your connection.');
+      case 'rate-limited':
+        return this.t('auth_rate_limited', 'Too many attempts. Please wait a minute and try again.');
       case 'server-fault':
         return this.t('auth_server_error', 'Tafseel is having trouble. Try again in a moment.');
       default:

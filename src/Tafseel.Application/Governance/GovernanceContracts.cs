@@ -110,7 +110,8 @@ public sealed record AdminAttentionDto(
     int StuckPayments,
     bool ReconciliationBalanced,
     int ReconciliationAnomalies,
-    AdminPlatformSummaryDto Platform);
+    AdminPlatformSummaryDto Platform,
+    int OpenSupportCases = 0);
 
 /// <summary>Non-actionable platform context shown under the attention queues on Admin Home.</summary>
 public sealed record AdminPlatformSummaryDto(
@@ -120,7 +121,8 @@ public sealed record AdminPlatformSummaryDto(
 public sealed record PopularSubjectMetric(Guid SubjectId, string Name, int Services, int Orders);
 public sealed record AuditDto(
     Guid Id, string ActorId, string Action, string EntityType, string EntityId,
-    string Summary, string CorrelationId, DateTimeOffset CreatedAt);
+    string Summary, string CorrelationId, DateTimeOffset CreatedAt,
+    string? ActorName = null, string? ActorNameEnglish = null);
 public sealed record AdminOperationItemDto(
     Guid Id, string Title, string StudentName, string TeacherName, int Status,
     DateTimeOffset CreatedAt, DateTimeOffset ScheduledAt, decimal? Amount, string Currency,
@@ -147,6 +149,9 @@ public interface IGovernanceService
     Task<IReadOnlyCollection<EligibleDisputeTargetDto>> GetEligibleDisputeTargetsAsync(
         string userId, CancellationToken ct);
     Task<PagedResult<DisputeDto>> GetDisputesAsync(string userId, bool admin, int page, int pageSize, string? filter, CancellationToken ct);
+    /// <summary>The staff list, searchable by dispute, order or session id and by either party's name or e-mail.</summary>
+    Task<PagedResult<DisputeDto>> GetDisputesAsync(
+        string userId, bool admin, int page, int pageSize, string? filter, string? search, CancellationToken ct);
     Task<DisputeDto> GetDisputeAsync(string userId, Guid id, bool admin, CancellationToken ct);
     Task AddDisputeMessageAsync(string userId, Guid id, AddDisputeMessage input, string version, CancellationToken ct);
     Task AddAdminDisputeMessageAsync(string adminId, Guid id, AddDisputeMessage input, string version, CancellationToken ct);

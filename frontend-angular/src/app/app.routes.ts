@@ -201,6 +201,8 @@ export const routes: Routes = [
     loadChildren: () => import('@features/student-home/student-home.routes').then(m => m.STUDENT_HOME_ROUTES)
   },
   { path: 'teacher/messages', pathMatch: 'full', redirectTo: '/messages' },
+  // PRODUCT-P1: account settings live on /account for every role.
+  { path: 'student/settings', pathMatch: 'full', redirectTo: '/account' },
   {
     path: 'student/:section',
     canActivate: [authenticatedGuard, roleGuard('Student')],
@@ -208,6 +210,11 @@ export const routes: Routes = [
     loadComponent: () => import('@features/dashboards/pages/dashboard-page.component').then(m => m.DashboardPageComponent)
   },
   { path: 'student', pathMatch: 'full', redirectTo: 'student/overview' },
+  {
+    path: 'teacher/offers',
+    canActivate: [authenticatedGuard, roleGuard('Teacher')],
+    loadChildren: () => import('@features/demand/demand.routes').then(m => m.MY_OFFERS_ROUTES)
+  },
   {
     path: 'teacher/opportunities/:requestId',
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
@@ -256,6 +263,8 @@ export const routes: Routes = [
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
     loadChildren: () => import('@features/teacher-setup/teacher-setup.routes').then(m => m.PUBLICATION_ROUTES)
   },
+  // PRODUCT-P1: account settings live on /account for every role.
+  { path: 'teacher/settings', pathMatch: 'full', redirectTo: '/account' },
   {
     path: 'teacher/:section',
     canActivate: [authenticatedGuard, roleGuard('Teacher')],
@@ -284,6 +293,8 @@ export const routes: Routes = [
       return router.createUrlTree(selectedId ? ['/quality/applications', selectedId] : ['/quality/applications']);
     }
   },
+  // PRODUCT-P1: account settings live on /account for every role.
+  { path: 'quality/account', pathMatch: 'full', redirectTo: '/account' },
   {
     path: 'quality/:section',
     canActivate: [authenticatedGuard, roleGuard('QualityReviewer')],
@@ -291,6 +302,67 @@ export const routes: Routes = [
     loadComponent: () => import('@features/dashboards/pages/dashboard-page.component').then(m => m.DashboardPageComponent)
   },
   { path: 'quality', pathMatch: 'full', redirectTo: 'quality/applications' },
+  // Catalog & pricing is its own screen: subjects, qualification topics and the service price policy are
+  // created and edited here (J13-03, PROD-01, OPS-04), which the generic list could not do.
+  {
+    path: 'admin/marketplace',
+    canActivate: [authenticatedGuard, roleGuard('Admin')],
+    loadChildren: () => import('@features/admin/admin.routes').then(m => m.CATALOG_ROUTES)
+  },
+  { path: 'admin/marketing', pathMatch: 'full', redirectTo: 'admin/marketing/coupons' },
+  {
+    path: 'admin/marketing/:tab',
+    canActivate: [authenticatedGuard, roleGuard('Admin')],
+    loadChildren: () => import('@features/admin-marketing/admin-marketing.routes').then(m => m.ADMIN_MARKETING_ROUTES)
+  },
+  // PRODUCT-P1: one account page for every role (name, photo, password, devices, notifications, data, deletion).
+  {
+    path: 'account',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('@features/account/pages/account-settings-page.component').then(m => m.AccountSettingsPageComponent)
+  },
+  // Help and abuse reports outside paid purchases. Signed-out people can report an account-access problem.
+  {
+    path: 'help/account-access',
+    loadComponent: () => import('@features/support/pages/account-access-page.component').then(m => m.AccountAccessPageComponent)
+  },
+  {
+    path: 'help',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('@features/support/pages/help-page.component').then(m => m.HelpPageComponent)
+  },
+  {
+    path: 'help/cases/:id',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('@features/support/pages/help-case-page.component').then(m => m.HelpCasePageComponent)
+  },
+  {
+    path: 'admin/help',
+    canActivate: [authenticatedGuard, roleGuard('Admin')],
+    loadComponent: () => import('@features/support/pages/admin-help-queue-page.component').then(m => m.AdminHelpQueuePageComponent)
+  },
+  {
+    path: 'admin/help/:id',
+    canActivate: [authenticatedGuard, roleGuard('Admin')],
+    loadComponent: () => import('@features/support/pages/admin-help-case-page.component').then(m => m.AdminHelpCasePageComponent)
+  },
+  // The Finance workspace (money duties only). Finance staff live here; Admin reaches it as owner access.
+  { path: 'admin/finance', pathMatch: 'full', redirectTo: 'finance/home' },
+  { path: 'finance', pathMatch: 'full', redirectTo: 'finance/home' },
+  { path: 'finance/home', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-home-page.component').then(m => m.FinanceHomePageComponent) },
+  { path: 'finance/payments', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-payments-page.component').then(m => m.FinancePaymentsPageComponent) },
+  { path: 'finance/payments/:id', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-payment-page.component').then(m => m.FinancePaymentPageComponent) },
+  { path: 'finance/withdrawals', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-withdrawals-page.component').then(m => m.FinanceWithdrawalsPageComponent) },
+  { path: 'finance/payout-profiles', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-payout-profiles-page.component').then(m => m.FinancePayoutProfilesPageComponent) },
+  { path: 'finance/reconciliation', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-reconciliation-page.component').then(m => m.FinanceReconciliationPageComponent) },
+  { path: 'finance/audit', canActivate: [authenticatedGuard, roleGuard('Finance', 'Admin')],
+    loadComponent: () => import('@features/finance/pages/finance-audit-page.component').then(m => m.FinanceAuditPageComponent) },
   {
     path: 'admin/:section',
     canActivate: [authenticatedGuard, roleGuard('Admin')],
@@ -313,12 +385,12 @@ export const routes: Routes = [
   },
   {
     path: 'conversations/:conversationId',
-    canActivate: [authenticatedGuard],
+    canActivate: [authenticatedGuard, roleGuard('Student', 'Teacher')],
     loadChildren: () => import('@features/messages/messages.routes').then(m => m.MESSAGES_ROUTES)
   },
   {
     path: 'messages',
-    canActivate: [authenticatedGuard],
+    canActivate: [authenticatedGuard, roleGuard('Student', 'Teacher')],
     loadChildren: () => import('@features/messages/messages.routes').then(m => m.MESSAGES_ROUTES)
   },
   link('disputes/:disputeId', m => m.DISPUTE_LINK),

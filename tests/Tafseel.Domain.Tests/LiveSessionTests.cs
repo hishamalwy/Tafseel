@@ -7,6 +7,36 @@ public sealed class LiveSessionTests
 {
     private static readonly DateTimeOffset Now = new(2026, 7, 26, 12, 0, 0, TimeSpan.Zero);
 
+    [Fact]
+    public void New_live_session_request_cannot_be_paid_before_teacher_approval()
+    {
+        var booking = Booking(60);
+        Assert.Equal(9, (int)booking.Status);
+        Assert.Throws<DomainException>(() => booking.ConfirmPayment("payment", Now.AddMinutes(1)));
+    }
+
+    [Fact]
+    public void Only_teacher_can_accept_and_declined_or_expired_requests_cannot_be_paid()
+    {
+        var booking = Booking(60);
+        Assert.Throws<DomainException>(() => booking.RespondToRequest("student", true, Now));
+        Assert.Throws<DomainException>(() => booking.RespondToRequest("outsider", true, Now));
+        Assert.Throws<DomainException>(() => booking.RespondToRequest("teacher", true, booking.StartsAt));
+        booking.RespondToRequest("teacher", false, Now);
+        Assert.Equal(LiveSessionStatus.Declined, booking.Status);
+        Assert.Throws<DomainException>(() => booking.RespondToRequest("teacher", true, Now));
+        Assert.Throws<DomainException>(() => booking.ConfirmPayment("payment", Now));
+    }
+
+    [Fact]
+    public void Student_can_cancel_pending_request_but_teacher_uses_decline()
+    {
+        var booking = Booking(60);
+        Assert.Throws<DomainException>(() => booking.Cancel("teacher", Now));
+        booking.Cancel("student", Now);
+        Assert.Equal(LiveSessionStatus.Cancelled, booking.Status);
+    }
+
     [Theory]
     [InlineData(30)]
     [InlineData(60)]
@@ -44,6 +74,7 @@ public sealed class LiveSessionTests
     {
         var booking = Booking(60);
         var originalStart = booking.StartsAt;
+        booking.RespondToRequest("teacher", true, Now);
         booking.ConfirmPayment("payment", Now.AddMinutes(1));
 
         // A reschedule is a proposal the other participant answers; it never changes status.
@@ -79,6 +110,7 @@ public sealed class LiveSessionTests
         // No-show is claimed by one party after the 15-minute grace period and settles when
         // the other party confirms it.
         var booking = Booking(30);
+        booking.RespondToRequest("teacher", true, Now);
         booking.ConfirmPayment("payment", Now.AddMinutes(1));
         Assert.Throws<DomainException>(() => booking.MarkStudentNoShow("teacher", Now.AddMinutes(2)));
         Assert.Throws<DomainException>(() => booking.MarkStudentNoShow("teacher", booking.EndsAt.AddMinutes(14)));
@@ -90,6 +122,7 @@ public sealed class LiveSessionTests
         Assert.Equal(LiveSessionStatus.StudentNoShow, booking.Status);
 
         var teacherNoShow = Booking(30);
+        teacherNoShow.RespondToRequest("teacher", true, Now);
         teacherNoShow.ConfirmPayment("payment", Now.AddMinutes(1));
         Assert.Throws<DomainException>(() => teacherNoShow.MarkTeacherNoShow("student", teacherNoShow.EndsAt.AddMinutes(1)));
         teacherNoShow.MarkTeacherNoShow("student", teacherNoShow.EndsAt.AddMinutes(15));
@@ -101,6 +134,7 @@ public sealed class LiveSessionTests
         // Completion is requested by the teacher once the session has ended and, if the student
         // stays silent, finalized by the settlement pass.
         var completed = Booking(30);
+        completed.RespondToRequest("teacher", true, Now);
         completed.ConfirmPayment("payment", Now.AddMinutes(1));
         Assert.Throws<DomainException>(() => completed.RequestCompletion("teacher", completed.EndsAt.AddMinutes(-1)));
         Assert.Throws<DomainException>(() => completed.RequestCompletion("student", completed.EndsAt));

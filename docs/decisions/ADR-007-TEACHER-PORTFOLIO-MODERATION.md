@@ -25,10 +25,10 @@ Repository evidence:
 - [Teacher application domain](../../src/Tafseel.Domain/TeacherApplications/TeacherApplication.cs)
 - [Teacher application service](../../src/Tafseel.Infrastructure/TeacherApplications/TeacherApplicationService.cs)
 - [Local file storage](../../src/Tafseel.Infrastructure/Files/LocalFileStorageService.cs)
-- [Teacher Dashboard](../../Tafseel-Teacher-Dashboard.dc.html)
-- [Quality Dashboard](../../Tafseel-Quality-Dashboard.dc.html)
-- [Admin Dashboard](../../Tafseel-Admin-Dashboard.dc.html)
-- [Public Teacher Profile](../../Tafseel-Teacher-Profile.dc.html)
+- Teacher Dashboard
+- Quality Dashboard
+- Admin Dashboard
+- Public Teacher Profile
 - [Marketplace integration tests](../../tests/Tafseel.IntegrationTests/Phase4MarketplaceTests.cs)
 - [Teacher application flow tests](../../tests/Tafseel.IntegrationTests/TeacherApplicationFlowTests.cs)
 

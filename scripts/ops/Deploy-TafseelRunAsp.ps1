@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory = $true)][string]$PublishDirectory,
   [string]$SiteRoot = "D:\Sites\site84355\wwwroot",
   [string]$BackupRoot = "D:\Sites\site84355\releases",
-  [string]$HealthUrl = "http://tafseel.runasp.net/health/ready"
+  [string]$HealthUrl = "https://tafseel.runasp.net/health/ready"
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,8 +31,8 @@ if ($backupBase.StartsWith($site + '\', [StringComparison]::OrdinalIgnoreCase)) 
 foreach ($required in @('Tafseel.Api.dll', 'web.config', 'webclient\ar\index.csr.html', 'webclient\en\index.csr.html')) {
   if (-not (Test-Path -LiteralPath (Join-Path $publish $required))) { throw "Publish output is missing $required." }
 }
-if (-not (Test-Path -LiteralPath (Join-Path $site 'appsettings.Staging.Host.json'))) {
-  throw "The server-owned appsettings.Staging.Host.json is missing; deployment stopped."
+if (-not (Test-Path -LiteralPath (Join-Path $site 'appsettings.PreProduction.Host.json'))) {
+  throw "The server-owned appsettings.PreProduction.Host.json is missing; deployment stopped."
 }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'

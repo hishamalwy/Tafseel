@@ -30,7 +30,7 @@
           <p>{{ t('demand_reserved', 'You selected an offer. It is held for you until the time runs out.') }} <strong class="tf-countdown" data-testid="reservation-countdown">{{ countdown() }}</strong></p></div>
         <div class="tf-action-row">
           <a class="tf-button" data-testid="pay-reserved" routerLink="/checkout" [queryParams]="{ learningRequestId: v.request.id }">{{ t('demand_pay_reserved', 'Pay and start the order') }}</a>
-          <button type="button" class="tf-button tf-button-ghost" data-testid="release-selection" (click)="release()" [disabled]="busy()">{{ t('demand_release', 'Release selection') }}</button>
+          <button type="button" class="tf-button tf-button-ghost" data-testid="release-selection" (click)="release()" [disabled]="busy()">{{ t('demand_release', 'Choose a different offer') }}</button>
         </div>
       </section>
     }
@@ -43,13 +43,13 @@
             <div class="tf-page-header">
               <div class="tf-stack">
                 <h2><a [routerLink]="['/teachers', offer.teacherId]">{{ teacherName(offer) }}</a></h2>
-                <p>@if (offer.rating !== null) { ★ {{ fmt.number(offer.rating, { maximumFractionDigits: 1 }) }} · {{ locale.format('demand_reviews_n', { n: offer.reviewCount }, '{n} reviews') }} } @else { {{ t('tp_no_reviews', 'No reviews yet') }} }</p>
+                <p>@if (offer.rating !== null && offer.reviewCount > 0) { ★ {{ fmt.number(offer.rating, { maximumFractionDigits: 1 }) }} · {{ locale.format('demand_reviews_n', { n: offer.reviewCount }, '{n} reviews') }} } @else { {{ t('tp_no_reviews', 'No reviews yet') }} }</p>
               </div>
               <span class="tf-badge" [attr.data-tone]="Demand.offerStatusTone(offer.status)">{{ t(Demand.offerStatusKey(offer.status), '') }}</span>
             </div>
             <dl class="tf-facts">
               <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="offer.amount" [currency]="offer.currency" /></dd></div>
-              <div><dt>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</dt><dd>{{ offer.deliveryHours }}</dd></div>
+              <div><dt>{{ t('setup_delivery_time', 'Delivery time') }}</dt><dd>{{ fmt.duration(offer.deliveryHours) }}</dd></div>
               <div><dt>{{ t('setup_revisions', 'Revisions') }}</dt><dd>{{ offer.includedRevisions }}</dd></div>
               <div><dt>{{ t('demand_valid_until', 'Valid until') }}</dt><dd>{{ date(offer.validUntil) }}</dd></div>
             </dl>

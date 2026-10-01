@@ -1,23 +1,136 @@
 /*
- * Checkout styling: the handful of inline `style="…"` attributes the legacy
- * page carried, at the same values. Everything structural already lives in
- * css/tafseel.css under the tf-pay-* names.
+ * Checkout. Structure lives in css/tafseel.css under the tf-pay-* names; this is the page's own
+ * composition and its motion. One authored moment per arrival: the progress track fills to
+ * "Payment", the receipt settles, and a coupon lands as a ticket that strikes the old total.
  */
 
-:host { display: block; }
+:host { display: block; --pay-ease: cubic-bezier(.16, 1, .3, 1); }
 
 .tf-pay-page { padding-block: 32px 96px; }
+
+/* ---- journey hero ---- */
+.tf-pay-journey {
+  position: relative;
+  display: grid;
+  gap: 28px;
+  overflow: hidden;
+  padding: clamp(22px, 4vw, 48px);
+  margin-block-end: clamp(20px, 3vw, 40px);
+  border-radius: var(--r-xl);
+  color: var(--brand-bone);
+  background: radial-gradient(circle at 88% 18%, color-mix(in oklab, var(--brand-violet) 46%, transparent), transparent 32%),
+    linear-gradient(135deg, var(--brand-ink), color-mix(in oklab, var(--brand-ink) 78%, var(--brand-violet)));
+  isolation: isolate;
+}
+.tf-pay-journey::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: -70px;
+  inset-block-end: -150px;
+  inline-size: 360px;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in oklab, var(--brand-bone) 30%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 44px color-mix(in oklab, var(--brand-bone) 4%, transparent),
+    0 0 0 88px color-mix(in oklab, var(--brand-bone) 3%, transparent);
+  pointer-events: none;
+  z-index: -1;
+  animation: tf-pay-rings 1.2s var(--pay-ease) both;
+}
+.tf-pay-journey__copy { max-inline-size: 56ch; animation: tf-pay-arrive .6s var(--pay-ease) both; }
+.tf-pay-journey h1 { margin: 0; color: inherit; font-family: var(--font-display); font-size: clamp(27px, 4vw, 52px); line-height: 1.13; text-wrap: balance; }
+.tf-pay-journey p { margin: 10px 0 0; color: color-mix(in oklab, var(--brand-bone) 82%, transparent); line-height: 1.6; text-wrap: pretty; }
+
+/* The three steps sit on one track; the lit part of it runs from "Request" to "Payment". */
+.tf-pay-journey__steps { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-inline-size: 440px; margin: 0; padding: 0; list-style: none; }
+.tf-pay-journey__steps::before, .tf-pay-journey__steps::after { content: ''; position: absolute; inset-block-start: 14px; block-size: 2px; border-radius: 2px; }
+.tf-pay-journey__steps::before { inset-inline: 16.667%; background: color-mix(in oklab, var(--brand-bone) 22%, transparent); }
+.tf-pay-journey__steps::after { inset-inline-start: 16.667%; inline-size: 33.333%; background: var(--brand-lime); transform-origin: left center; animation: tf-pay-track .7s .25s var(--pay-ease) both; }
+:host-context([dir='rtl']) .tf-pay-journey__steps::after { transform-origin: right center; }
+.tf-pay-journey__steps li { position: relative; z-index: 1; display: grid; justify-items: center; gap: 8px; color: color-mix(in oklab, var(--brand-bone) 70%, transparent); font-size: 13px; font-weight: 700; text-align: center; }
+.tf-pay-journey__steps li > span { display: grid; place-items: center; inline-size: 30px; block-size: 30px; border: 1px solid color-mix(in oklab, var(--brand-bone) 45%, transparent); border-radius: 50%; background: var(--brand-ink); font-variant-numeric: tabular-nums; }
+.tf-pay-journey__steps [data-state='done'] > span { border-color: var(--brand-bone); background: var(--brand-bone); color: var(--brand-ink); }
+.tf-pay-journey__steps [data-state='done'] svg { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.tf-pay-journey__steps [data-state='done'] path { stroke-dasharray: 100; animation: tf-pay-draw .4s .1s var(--pay-ease) both; }
+.tf-pay-journey__steps [aria-current='step'] { color: var(--brand-lime); }
+.tf-pay-journey__steps [aria-current='step'] > span { border-color: var(--brand-lime); background: var(--brand-lime); color: var(--brand-ink); animation: tf-pay-ping 1.6s .9s ease-out 2 both; }
+
+/* ---- receipt ---- */
+.tf-pay-receipt { padding: clamp(20px, 3vw, 38px); border: 1px solid var(--border); border-radius: var(--r-xl); background: var(--surface); box-shadow: 0 22px 60px color-mix(in oklab, var(--brand-ink) 7%, transparent); animation: tf-pay-arrive .6s .12s var(--pay-ease) both; }
+.tf-pay-layout > .tf-req-context { animation: tf-pay-arrive .6s .06s var(--pay-ease) both; }
+.tf-pay-receipt__title { margin: 0 0 6px; font-family: var(--font-display); font-size: clamp(22px, 2.8vw, 30px); line-height: 1.2; color: var(--text); }
+.tf-pay-receipt .tf-pay-lede { margin-block-end: 22px; }
+.tf-pay-receipt .tf-pay-item-title { margin-block-end: 18px; }
 
 .tf-pay-teacher-copy { min-inline-size: 0; }
 .tf-pay-teacher-copy .tf-req-context-teacher { margin: 0; }
 .tf-pay-teacher-copy .tf-req-context-meta { margin: 4px 0 0; }
+.tf-pay-badge { margin-block: 12px 14px; }
 
-.tf-pay-badge { margin-block-start: 12px; }
+/* The one payment method in this environment, shown as chosen - a disabled radio read as "unavailable". */
+.tf-pay-method[data-selected='true'] { padding: 14px 16px; border: 1px solid var(--primary); border-radius: var(--r-md); background: var(--surface-selected); }
+.tf-pay-method__check { flex: none; inline-size: 22px; block-size: 22px; margin-block-start: 1px; fill: var(--primary); stroke: var(--primary-ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tf-pay-method__check circle { stroke: none; }
+
+/* ---- the pay action ---- */
+.tf-pay-page .tf-pay-cta, .tf-pay-mobile-cta button { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; isolation: isolate; }
+.tf-pay-page .tf-pay-cta { block-size: 54px; font-size: 16px; }
+.tf-pay-page .tf-pay-cta::after, .tf-pay-mobile-cta button::after {
+  content: ''; position: absolute; inset-block: 0; inset-inline-start: -60%; inline-size: 45%; z-index: -1;
+  background: linear-gradient(100deg, transparent, color-mix(in oklab, var(--primary-ink) 28%, transparent), transparent);
+  transform: skewX(-18deg); animation: tf-pay-sheen 1.1s 1.2s ease-in-out both; pointer-events: none;
+}
+.tf-pay-page .tf-pay-cta:hover:not(:disabled)::after, .tf-pay-mobile-cta button:hover:not(:disabled)::after { animation: tf-pay-sheen .8s ease-in-out; }
+.tf-pay-lock { inline-size: 18px; block-size: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tf-pay-page .tf-pay-cta, .tf-pay-page .tf-pay-primary-link, .tf-pay-mobile-cta button { transition: transform .2s var(--pay-ease), box-shadow .2s ease, background-color .2s ease; }
+.tf-pay-page .tf-pay-cta:hover:not(:disabled), .tf-pay-page .tf-pay-primary-link:hover { transform: translateY(-2px); box-shadow: 0 12px 28px color-mix(in oklab, var(--primary) 24%, transparent); }
+.tf-pay-page .tf-pay-cta:active:not(:disabled), .tf-pay-mobile-cta button:active:not(:disabled) { transform: scale(.98); }
+.tf-pay-page .tf-pay-cta:focus-visible, .tf-pay-page .tf-pay-primary-link:focus-visible, .tf-pay-mobile-cta button:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.tf-pay-cta.is-busy, .tf-pay-mobile-cta button.is-busy { opacity: .75; cursor: wait; }
+.is-busy .tf-pay-lock { border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%; stroke: none; animation: tf-pay-spin .7s linear infinite; }
+.is-busy .tf-pay-lock * { display: none; }
 .tf-pay-resume { margin-block-start: 10px; }
-.tf-pay-protection-foot { margin-block-start: 18px; margin-block-end: 0; }
+.tf-pay-protection-foot { margin-block: 18px 0; }
 
-.tf-pay-method input[type='radio'] { margin-block-start: 3px; }
+/* ---- the phone's sticky total ---- */
+.tf-pay-mobile-cta { animation: tf-pay-bar .5s .5s var(--pay-ease) both; }
+.tf-pay-bar__sum { display: grid; gap: 1px; min-inline-size: 0; }
+.tf-pay-mobile-cta-inner .tf-pay-bar__label { color: var(--text-2); font-size: 12px; font-weight: 600; }
+.tf-pay-bar__amounts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.tf-pay-bar__amount { font-family: var(--font-display); font-size: 21px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; animation: tf-pay-amount .5s var(--pay-ease) both; }
+.tf-pay-bar__was { color: var(--text-2); font-size: 13px; }
+.tf-pay-mobile-cta .tf-pay-mobile-cta-inner button { block-size: 50px; padding-inline: 22px; box-shadow: 0 10px 24px color-mix(in oklab, var(--primary) 26%, transparent); }
 
-/* The legacy page set opacity and cursor inline off the submitting flag. */
-.tf-pay-cta.is-busy,
-.tf-pay-mobile-cta button.is-busy { opacity: .65; cursor: wait; }
+@keyframes tf-pay-arrive { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes tf-pay-rings { from { opacity: 0; transform: scale(.8) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes tf-pay-track { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes tf-pay-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes tf-pay-ping { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand-lime) 55%, transparent); } 100% { box-shadow: 0 0 0 12px color-mix(in oklab, var(--brand-lime) 0%, transparent); } }
+@keyframes tf-pay-sheen { from { inset-inline-start: -60%; } to { inset-inline-start: 120%; } }
+@keyframes tf-pay-spin { to { transform: rotate(360deg); } }
+@keyframes tf-pay-bar { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes tf-pay-amount { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+
+@media (max-width: 959px) {
+  .tf-pay-journey { margin-inline: -8px; }
+  /* The sticky bar carries the action on a phone; one pay button on screen, not two. */
+  .tf-pay-receipt > .tf-pay-cta { display: none; }
+}
+@media (max-width: 560px) {
+  .tf-pay-page { padding-block-start: 16px; }
+  .tf-pay-journey { gap: 22px; padding: 22px 20px 20px; }
+  .tf-pay-journey p { font-size: 14px; }
+  .tf-pay-journey__steps li { font-size: 12px; }
+  .tf-pay-receipt { padding: 20px; }
+  .tf-pay-layout { gap: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-pay-journey::after, .tf-pay-journey__copy, .tf-pay-receipt, .tf-pay-layout > .tf-req-context, .tf-pay-journey__steps::after,
+  .tf-pay-journey__steps span, .tf-pay-journey__steps path,  .tf-pay-mobile-cta,
+  .tf-pay-bar__amount { animation: none; }
+  .tf-pay-page .tf-pay-cta::after, .tf-pay-mobile-cta button::after { display: none; }
+  .tf-pay-page .tf-pay-cta, .tf-pay-page .tf-pay-primary-link, .tf-pay-mobile-cta button { transition: none; }
+  .is-busy .tf-pay-lock { animation-duration: 1.6s; }
+}
+
+.tf-pay-retry-note { margin: 0 0 12px; padding: 10px 12px; font-size: 14px; line-height: 1.6; background: var(--surface-2); border-radius: var(--r-sm); }

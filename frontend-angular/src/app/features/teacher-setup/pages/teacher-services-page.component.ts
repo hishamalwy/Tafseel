@@ -7,11 +7,13 @@ import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
+import { durationChoices } from '@shared/models/duration';
 import { ToastComponent } from '@shared/components/toast.component';
 import { ToastService } from '@shared/services/toast.service';
 import { APPROACH_MAX, OfferTerms, Offering, ServiceOffer, ServiceSubject, ServiceType, TermsField } from '../models/service-offer';
 import { NamedItem, localName } from '../models/teacher-profile';
 import { FormInvalid, LoadServicesWorkspace, ManageServices, ServicesWorkspace } from '../services/teacher-setup.use-cases';
+import { SetupProgressComponent } from '../components/setup-progress.component';
 
 /** Which form is open: adding to a service type, or editing one offering. */
 type Editor = { readonly mode: 'create'; readonly typeId: string } | { readonly mode: 'edit'; readonly offeringId: string; readonly typeId: string };
@@ -23,7 +25,7 @@ const HIDDEN_STATES = new Set(['catalog_inactive', 'catalog_hidden', 'catalog_un
 @Component({
   selector: 'tf-teacher-services-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, NgTemplateOutlet, RouterLink, WorkspaceShellComponent, ToastComponent],
+  imports: [FormsModule, NgTemplateOutlet, RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent],
   templateUrl: './teacher-services-page.component.html',
   styles: `
     .tf-services { display: grid; gap: 18px; }
@@ -89,7 +91,7 @@ export class TeacherServicesPageComponent {
     if (!problem) return '';
     if (problem === 'out_of_range') {
       if (field === 'price') return this.locale.format('setup_price_range', { min: this.money(type.minPrice, type.currency), max: this.money(type.maxPrice, type.currency) }, 'Choose a price from {min} to {max}.');
-      if (field === 'deliveryHours') return this.locale.format('setup_delivery_range', { min: type.minDeliveryHours ?? 1, max: type.maxDeliveryHours ?? 8760 }, 'Choose between {min} and {max} hours.');
+      if (field === 'deliveryHours') return this.locale.format('setup_delivery_range', { min: this.fmt.duration(type.minDeliveryHours ?? 1), max: this.fmt.duration(type.maxDeliveryHours ?? 8760) }, 'Choose between {min} and {max}.');
       if (field === 'revisions') return this.locale.format('setup_revisions_range', { max: type.maxRevisions }, 'Choose between 0 and {max} revisions.');
     }
     return this.locale.format(`setup_problem_${problem}`, { max: APPROACH_MAX }, problem);
@@ -119,6 +121,15 @@ export class TeacherServicesPageComponent {
   }
 
   close(): void { this.editor.set(null); this.formError.set(''); }
+
+  /** Delivery lengths a person reads ("2 days"), inside what the service allows; the saved value is always listed. */
+  deliveryChoices(type: ServiceType): number[] {
+    return durationChoices(type.minDeliveryHours ?? 1, type.maxDeliveryHours ?? 8760, this.terms().deliveryHours);
+  }
+
+  revisionChoices(type: ServiceType): number[] {
+    return Array.from({ length: Math.max(0, type.maxRevisions) + 1 }, (_, i) => i);
+  }
 
   setTerm(field: TermsField, value: unknown): void {
     this.terms.update(t => ({

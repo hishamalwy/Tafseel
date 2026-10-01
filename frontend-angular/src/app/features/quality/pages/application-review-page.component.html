@@ -1,5 +1,5 @@
 <tf-workspace-shell role="QualityReviewer" section="applications">
-  <a class="tf-review-back" routerLink="/quality/applications">← {{ t('quality_back_to_queue', 'All applications') }}</a>
+  <a class="tf-review-back" routerLink="/quality/applications"><svg viewBox="0 0 24 24" aria-hidden="true" [style.transform]="locale.isRtl() ? 'rotate(180deg)' : null"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg> {{ t('quality_back_to_queue', 'All applications') }}</a>
 
   @if (loading() && !review()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
@@ -78,6 +78,38 @@
               <p class="tf-cluster">@for (q of r.application.activeQualifications; track q.subjectId) { <span class="tf-badge" data-tone="success">{{ Review.subjectName(q, locale.isRtl()) }}</span> }</p></div>
           }
         </section>
+
+        @if (r.qualification; as q) {
+          <section class="tf-profile-editor-card" aria-labelledby="review-qualification-title" data-testid="review-qualification" [attr.data-active]="q.isActive">
+            <div><h2 id="review-qualification-title">{{ t('quality_qualification', 'Qualification in this subject') }}</h2></div>
+            @if (q.isActive) {
+              <dl class="tf-review-facts">
+                <div><dt>{{ t('quality_qualification_since', 'Qualified since') }}</dt><dd>{{ date(q.approvedAt) }}</dd></div>
+                <div><dt>{{ t('quality_qualification_services', 'Active services') }}</dt><dd>{{ q.activeServices }}</dd></div>
+              </dl>
+              @if (!revokeOpen()) {
+                <div><button type="button" class="tf-button tf-button-secondary" data-testid="revoke-open" (click)="revokeOpen.set(true)">{{ t('quality_revoke', 'Withdraw qualification') }}</button></div>
+              } @else {
+                <form class="tf-form" (ngSubmit)="withdrawQualification()" novalidate>
+                  <div class="tf-field">
+                    <label for="revoke-reason">{{ t('quality_revoke_reason', 'Reason, as the teacher will read it') }}</label>
+                    <textarea id="revoke-reason" name="reason" rows="4" [attr.maxlength]="reasonLimits.max" data-testid="revoke-reason"
+                              [ngModel]="revokeReason()" (ngModelChange)="revokeReason.set($event)" aria-describedby="revoke-reason-hint"></textarea>
+                    <small id="revoke-reason-hint" class="tf-muted">{{ t('quality_revoke_hint', 'The teacher receives this by notification and e-mail. It is also kept in the audit log.') }}</small>
+                  </div>
+                  @if (revokeError()) { <p class="tf-field-error" role="alert">{{ revokeError() }}</p> }
+                  <div class="tf-form-actions">
+                    <button type="submit" class="tf-button tf-button-danger" data-testid="revoke-submit" [disabled]="revoking()">{{ revoking() ? t('common_saving', 'Saving…') : t('quality_revoke', 'Withdraw qualification') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost" (click)="revokeOpen.set(false); revokeError.set('')">{{ t('common_cancel', 'Cancel') }}</button>
+                  </div>
+                </form>
+              }
+            } @else {
+              <p class="tf-alert" data-kind="warning" data-testid="qualification-revoked">{{ locale.format('quality_qualification_revoked', { when: date(q.revokedAt ?? ''), who: q.revokedByName || '—' }, 'Withdrawn {when} by {who}.') }}</p>
+              @if (q.reason) { <p class="tf-review-instructions">{{ q.reason }}</p> }
+            }
+          </section>
+        }
 
         <section class="tf-profile-editor-card" aria-labelledby="review-history-title">
           <div><h2 id="review-history-title">{{ t('quality_history', 'History') }}</h2></div>

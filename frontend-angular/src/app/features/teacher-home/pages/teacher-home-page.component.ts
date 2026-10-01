@@ -26,27 +26,56 @@ import { LoadTeacherHome, TeacherHomeData } from '../services/teacher-home.use-c
   imports: [PriceComponent, RouterLink, WorkspaceShellComponent],
   templateUrl: './teacher-home-page.component.html',
   styles: `
-    .tf-home { display: grid; gap: 20px; max-width: 680px; }
-    .tf-home-greeting { margin: 0; font-size: 20px; font-weight: 800; }
-    .tf-home-greeting.tf-skeleton { height: 24px; max-width: 220px; }
-    .tf-home-section { display: grid; gap: 10px; }
-    .tf-home-section h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-2); }
-    .tf-home-card { display: grid; gap: 8px; padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
-    .tf-home-card h3 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.4; }
+    /* The teacher's desk: today's work in the main column, the schedule and the money in a narrow rail beside
+       it, so earnings never lead the teaching. */
+    .tf-home { display: grid; gap: 32px 32px; align-items: start; max-inline-size: 1160px; margin-inline: auto; }
+    @media (min-width: 1100px) {
+      .tf-home { grid-template-columns: minmax(0, 1fr) minmax(300px, 348px); }
+      .tf-home-rail { position: sticky; inset-block-start: calc(var(--shell-header-height, 64px) + 24px); }
+      .tf-home > .tf-home-hero, .tf-home > .tf-home-setup { grid-column: 1 / -1; }
+    }
+    .tf-home-hero { display: grid; gap: 8px; }
+    .tf-home-main, .tf-home-rail { display: grid; gap: 32px; align-content: start; min-inline-size: 0; }
+    .tf-home-main:empty, .tf-home-rail:empty { display: none; }
+    .tf-home-greeting { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 2.6vw, 36px); line-height: 1.16;
+      letter-spacing: -.028em; font-weight: var(--weight-heavy); text-wrap: balance; }
+    .tf-home-date { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .tf-home-greeting.tf-skeleton { height: 36px; max-width: 240px; }
+    .tf-home-section { display: grid; gap: 12px; align-content: start; }
+    .tf-home-section h2 { margin: 0 0 2px; font-size: var(--type-section-title-size); font-weight: 800; letter-spacing: -.012em; color: var(--text); }
+    .tf-home-card { display: grid; gap: 8px; padding: 18px 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
+    [data-testid='home-actions'] .tf-home-card:first-of-type { border-color: color-mix(in oklab, var(--primary) 34%, var(--border));
+      background: color-mix(in oklab, var(--primary-soft) 55%, var(--surface)); }
+    :host-context(html[data-theme='dark']) [data-testid='home-actions'] .tf-home-card:first-of-type {
+      border-color: color-mix(in oklab, var(--brand-lime) 34%, var(--border)); background: color-mix(in oklab, var(--brand-lime) 7%, var(--surface)); }
+    .tf-home-card h3 { margin: 0; font-size: 16px; font-weight: 750; line-height: 1.4; text-wrap: pretty; }
     .tf-home-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .tf-home-setup { border-color: var(--border-strong); border-inline-start: 3px solid var(--brand); }
-    .tf-home-setup h2 { margin: 0; font-size: 18px; font-weight: 800; line-height: 1.4; color: var(--text-1); }
+    .tf-home-setup { padding: 24px 26px; border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+      background: color-mix(in oklab, var(--primary-soft) 40%, var(--surface)); }
+    .tf-home-setup h2 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.35; letter-spacing: -.012em; }
     .tf-home-steps { margin: 0; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
-    .tf-home-supporting { margin: 0; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+    .tf-home-supporting { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-2); font-variant-numeric: tabular-nums; }
     /* .tf-price-line is a flex box, so a label and its amount need a row of their own to share. */
     .tf-home-money { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
-    .tf-home-card .tf-button, .tf-home-card .tf-button-secondary { justify-self: start; min-height: 44px; display: inline-flex; align-items: center; }
-    .tf-home-link, .tf-home-more { font-size: 13px; font-weight: 700; justify-self: start; min-height: 44px; display: inline-flex; align-items: center; }
-    .tf-home-quiet { margin: 0; font-size: 14px; color: var(--text-2); }
-    .tf-home-earnings { display: grid; gap: 6px; }
+    .tf-home-card .tf-button, .tf-home-card .tf-button-secondary { justify-self: start; min-height: 44px; margin-block-start: 4px; }
+    .tf-home-link, .tf-home-more { font-size: 14px; font-weight: 700; justify-self: start; min-height: 44px; display: inline-flex;
+      align-items: center; color: var(--primary); text-decoration: none; }
+    .tf-home-link:hover, .tf-home-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .tf-home-quiet { margin: 0; padding: 16px 20px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg);
+      font-size: 14px; line-height: 1.55; color: var(--text-2); }
+    .tf-home-quiet + .tf-home-quiet { border-style: solid; background: var(--surface); }
+    /* The money card: one figure leads, the rest is quiet. */
+    .tf-home-earnings { display: grid; gap: 10px; }
     .tf-home-earnings p { margin: 0; display: flex; gap: 8px; align-items: baseline; justify-content: space-between; font-size: 14px; }
     .tf-home-earnings span { color: var(--text-2); }
-    .tf-home-earnings strong { font-weight: 800; }
+    .tf-home-earnings strong { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .tf-home-earnings [data-testid='home-available'] { flex-direction: column; align-items: flex-start; gap: 2px;
+      padding-block-end: 12px; border-block-end: 1px solid var(--border); }
+    .tf-home-earnings [data-testid='home-available'] strong { font-size: 28px; letter-spacing: -.02em; }
+    [data-testid='home-upcoming'] .tf-home-card { border-color: color-mix(in oklab, var(--accent) 36%, var(--border));
+      background: color-mix(in oklab, var(--accent-soft) 45%, var(--surface)); }
+    .tf-home-card .tf-home-quiet { padding: 0; border: 0; background: none; }
+    .tf-home[data-state='loading'] { grid-template-columns: minmax(0, 1fr); }
     .tf-home-section-error { margin: 0; font-size: 13px; color: var(--text-2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   `
 })
@@ -61,7 +90,14 @@ export class TeacherHomePageComponent {
   private readonly data = signal<TeacherHomeData | null>(null);
   private readonly now = signal(Date.now());
 
-  readonly firstName = computed(() => (this.session.current()?.fullName ?? '').trim().split(/\s+/)[0] ?? '');
+  /** Today in the reader's language, under the greeting. */
+  readonly today = computed(() => this.fmt.date(Date.now(), { weekday: 'long', day: 'numeric', month: 'long' }));
+  /** The greeting uses the name written in the page's language when the person gave one (UX-89). */
+  readonly firstName = computed(() => {
+    const session = this.session.current();
+    const name = this.locale.lang() === 'en' ? session?.fullNameEnglish || session?.fullName : session?.fullName || session?.fullNameEnglish;
+    return (name ?? '').trim().split(/\s+/)[0] ?? '';
+  });
   readonly failed = computed(() => this.data()?.failed ?? { work: false, opportunities: false, earnings: false });
 
   /** The one thing stopping students finding this teacher, or null when they can. */
@@ -116,7 +152,7 @@ export class TeacherHomePageComponent {
     const at = new Date(value).getTime();
     if (Number.isNaN(at)) return '';
     const minutes = Math.round((at - this.now()) / 60_000);
-    const words = new Intl.RelativeTimeFormat(this.locale.lang() === 'ar' ? 'ar-SA' : 'en-US', { numeric: 'auto' });
+    const words = new Intl.RelativeTimeFormat(this.locale.lang() === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { numeric: 'auto' });
     if (minutes < 60) return words.format(Math.max(1, minutes), 'minute');
     if (minutes < 24 * 60) return words.format(Math.round(minutes / 60), 'hour');
     return words.format(Math.round(minutes / (24 * 60)), 'day');

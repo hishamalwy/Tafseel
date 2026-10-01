@@ -27,6 +27,8 @@ export interface TeachGateway {
   qualifications(): Observable<readonly QualificationCard[]>;
   /** Qualification topics for one subject; empty for no subject. */
   topics(subjectId: string): Observable<readonly QualificationTopic[]>;
+  /** Subjects that have at least one active qualification topic, i.e. that accept applications. */
+  openSubjectIds(): Observable<ReadonlySet<string>>;
 
   setTeachingLanguages(languageIds: readonly string[]): Observable<void>;
   create(draft: ApplicationDraft): Observable<TeacherApplication>;

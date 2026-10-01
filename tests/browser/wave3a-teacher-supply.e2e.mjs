@@ -72,7 +72,7 @@ const teacher = await context();
 await step('J2 teacher registers in /auth, confirms from the outbox and signs in', async () => {
   const { page } = teacher;
   await visit(page, `${BASE}/en/auth`);
-  await page.getByRole('tab', { name: /sign up|create account|register/i }).click();
+  await page.locator('.tf-auth-tabs button').nth(1).click();
   await page.getByRole('button', { name: /as Teacher/ }).click();
   await page.locator('#reg-fullname').fill(teacherName);
   await page.locator('#reg-email').fill(teacherEmail);
@@ -89,7 +89,7 @@ await step('J2 teacher registers in /auth, confirms from the outbox and signs in
 
   const link = await outboxLink(teacherEmail, 'mode=confirm');
   await visit(page, link);
-  await page.locator('.tf-toast').waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('.tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
 
   await page.locator('#login-email').fill(teacherEmail);
   await page.locator('#login-password').fill(teacherPassword);
@@ -308,13 +308,13 @@ await step('J11-06 teacher completes the profile: core fields, topics, certifica
   await page.locator('#profile-country').fill('Saudi Arabia');
   await page.locator('#profile-city').fill('Riyadh');
   await page.locator('#profile-zone').selectOption(TIME_ZONE);
-  await page.locator('#profile-response').fill('30');
+  await page.locator('#profile-response').evaluate(s => { s.value = [...s.options].find(o => o.dataset.value === '60').value; s.dispatchEvent(new Event('change', { bubbles: true })); });
   const saved = waitForCall(page, 'PUT', /^\/api\/v1\/teachers\/me$/);
   await page.locator('[data-testid=save-profile]').click();
   const response = await saved;
   assert.equal(response.status(), 204);
   assert.deepEqual(JSON.parse(response.request().postData()), {
-    headline, bio, country: 'Saudi Arabia', city: 'Riyadh', timeZoneId: TIME_ZONE, responseTimeMinutes: 30
+    headline, bio, country: 'Saudi Arabia', city: 'Riyadh', timeZoneId: TIME_ZONE, responseTimeMinutes: 60
   });
   await page.getByText('Your profile has everything publication needs.').waitFor({ timeout: 15000 });
 
@@ -359,8 +359,8 @@ await step('J11-07 teacher creates services at valid prices; only the approved s
   page.off('request', count);
 
   await explanation.locator('#offer-price').fill('150');
-  await explanation.locator('#offer-delivery').fill('24');
-  await explanation.locator('#offer-revisions').fill('2');
+  await explanation.locator('#offer-delivery').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '24');
+  await explanation.locator('#offer-revisions').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '2');
   await explanation.locator('#offer-approach-en').fill('Step-by-step worked solutions.');
   const created = waitForCall(page, 'POST', /^\/api\/v1\/teachers\/me\/services$/);
   await explanation.locator('[data-testid=save-offering]').click();
@@ -403,7 +403,15 @@ await step('J11-09 a live service without availability is reported as the only b
 await step('J11-08 weekly windows: multiple days, invalid and overlapping ranges, update, delete', async () => {
   const { page } = teacher;
   await page.locator('[data-testid=zone-note]').waitFor({ timeout: 15000 });
-  assert.match(await page.locator('[data-testid=zone-note]').innerText(), new RegExp(TIME_ZONE.replace('/', '\\/')));
+  // UX-06: the note names the profile's zone the way a person reads it («Arabian Standard Time»), no longer
+  // as its IANA id. Still this exact zone; the value sent to the server is still the id (asserted below).
+  const note = await page.locator('[data-testid=zone-note]').innerText();
+  // UX-75 then led with the city people look for («Riyadh (GMT+3)»), falling back to the zone's long name.
+  const zoneName = new Intl.DateTimeFormat('en-US', { timeZone: TIME_ZONE, timeZoneName: 'long' })
+    .formatToParts(new Date()).find(part => part.type === 'timeZoneName').value;
+  const city = TIME_ZONE.split('/').pop().replace(/_/g, ' ');
+  assert.ok(note.includes(city) || note.includes(zoneName), `the note names ${TIME_ZONE} as "${city}" or "${zoneName}" (${note})`);
+  assert.ok(!note.includes(TIME_ZONE), `the note no longer prints the IANA id (${note})`);
 
   await page.locator('[data-testid=add-rule]').click();
   await page.locator('[data-testid=day-0]').check();
@@ -522,6 +530,135 @@ await step('Visitor finds the teacher in /teachers and the profile shows the new
   await visitor.ctx.close();
 });
 
+await step('PRODUCT-P1 second subject: changes requested, resubmitted, approved, sold and discoverable', async () => {
+  const { page: t } = teacher;
+  const secondId = await applyFor(t, SEED.secondSubjectId, `?mode=additional&subjectId=${SEED.secondSubjectId}`);
+  const { page } = reviewer;
+  // Changes requested on the added subject: the teacher's first subject keeps selling meanwhile.
+  await spa(page, `/quality/applications/${secondId}`);
+  await page.locator('[data-testid=start-review]').click();
+  await page.locator('[data-testid=decision-form]').waitFor({ timeout: 15000 });
+  for (let criterion = 0; criterion < 9; criterion++) await page.locator(`[data-testid=score-${criterion}-3]`).click();
+  await page.locator('[data-testid=decision-1]').check();
+  await page.locator('#decision-comment').fill('Label the phases on the diagram.');
+  let decided = waitForCall(page, 'POST', /\/decision$/);
+  await page.locator('[data-testid=record-decision]').click();
+  await page.locator('.tf-system-dialog button', { hasText: 'Record decision' }).click();
+  assert.equal((await decided).status(), 204);
+  const physicsServices = (await api(t, 'GET', '/api/v1/teachers/me')).body.services.filter(x => x.subjectId === SEED.subjectId && x.isActive);
+  assert.ok(physicsServices.length > 0, 'the first subject stays on sale while the second is in review');
+
+  await spa(t, `/teach/apply?mode=additional&subjectId=${SEED.secondSubjectId}`);
+  await t.locator('[data-testid=reviewer-feedback]', { hasText: 'Label the phases on the diagram.' }).waitFor({ timeout: 15000 });
+  const resubmitted = waitForCall(t, 'POST', /\/submit$/);
+  await t.getByRole('button', { name: 'Submit for review' }).click();
+  assert.equal((await resubmitted).status(), 204);
+
+  await spa(page, `/quality/applications/${secondId}`);
+  await page.locator('[data-testid=review-status][data-status="1"]').waitFor({ timeout: 15000 });
+  await page.locator('[data-testid=start-review]').click();
+  await page.locator('[data-testid=decision-form]').waitFor({ timeout: 15000 });
+  for (let criterion = 0; criterion < 9; criterion++) await page.locator(`[data-testid=score-${criterion}-4]`).click();
+  await page.locator('[data-testid=decision-0]').check();
+  decided = waitForCall(page, 'POST', /\/decision$/);
+  await page.locator('[data-testid=record-decision]').click();
+  await page.locator('.tf-system-dialog button', { hasText: 'Record decision' }).click();
+  assert.equal((await decided).status(), 204);
+  await page.locator('[data-testid=review-status][data-status="4"]').waitFor({ timeout: 15000 });
+  // The reviewer now sees the qualification this approval granted, with the control to withdraw it later.
+  await page.locator('[data-testid=review-qualification][data-active=true] [data-testid=revoke-open]').waitFor();
+  await shot(page, '14a-second-subject-approved');
+
+  const status = await api(t, 'GET', '/api/v1/teachers/onboarding-status');
+  assert.deepEqual([...status.body.approvedSubjectIds].sort(), [SEED.subjectId, SEED.secondSubjectId].sort());
+  const created = await api(t, 'POST', '/api/v1/teachers/me/services', serviceBody(SEED.secondSubjectId, SEED.explanation.Id, 120));
+  assert.ok(created.status === 200 || created.status === 201, `second-subject service created (${created.status})`);
+
+  const visitor = await context();
+  await visit(visitor.page, `${BASE}/en/teachers?subjectId=${SEED.secondSubjectId}`);
+  await visitor.page.getByText(teacherName).first().waitFor({ timeout: 20000 });
+  await shot(visitor.page, '14b-second-subject-discoverable');
+  await visitor.ctx.close();
+});
+
+await step('PRODUCT-P1 intro video: the application video is shown only after the teacher agrees', async () => {
+  const { page } = teacher;
+  const visitor = await context();
+  const introPath = `/api/v1/teachers/${teacherId}/intro-video/content`;
+  const profileIntro = async () => (await (await fetch(`${BASE}/api/v1/teachers/${teacherId}`)).json()).introVideo;
+  // Approval kept the demo private: the published profile has no video at all.
+  assert.equal(await profileIntro(), null, 'no intro video before the teacher chooses one');
+  assert.equal((await fetch(`${BASE}${introPath}`)).status, 404);
+
+  await spa(page, '/teacher/publication');
+  const card = page.locator('[data-testid=public-video]');
+  await card.waitFor({ timeout: 15000 });
+  await card.locator('[data-testid=intro-application] input[type=radio]').first().check();
+  const use = card.locator('[data-testid=intro-use-application]');
+  assert.equal(await use.isDisabled(), true, 'showing it needs the consent tick');
+  await card.locator('[data-testid=intro-consent]').check();
+  const consented = waitForCall(page, 'POST', /^\/api\/v1\/teachers\/me\/intro-video\/from-application$/);
+  await use.click();
+  const response = await consented;
+  assert.equal(response.status(), 200);
+  assert.equal(JSON.parse(response.request().postData()).consent, true);
+  await card.locator('[data-testid=intro-current][data-public=true]').waitFor();
+  await shot(page, '15a-intro-application-shown');
+
+  const shown = await profileIntro();
+  assert.ok(shown?.contentUrl, 'the public profile carries the chosen intro');
+  assert.equal((await fetch(`${BASE}${shown.contentUrl}`)).status, 200);
+  await visit(visitor.page, `${BASE}/en/teachers/${teacherId}`);
+  await visitor.page.locator('video').first().waitFor({ timeout: 20000 });
+  assert.match(await visitor.page.evaluate(() => document.body.innerText), /Introduction video/);
+  await shot(visitor.page, '15b-profile-with-intro');
+
+  // Hiding withdraws the consent; the profile shows no video and nothing plays.
+  await card.locator('[data-testid=intro-hide]').click();
+  const hidden = waitForCall(page, 'PUT', /^\/api\/v1\/teachers\/me\/intro-video\/visibility$/);
+  await page.locator('.tf-system-dialog[open] button[value=confirm]').click();
+  assert.equal((await hidden).status(), 200);
+  await card.locator('[data-testid=intro-current][data-public=false]').waitFor();
+  assert.equal(await profileIntro(), null);
+  assert.equal((await fetch(`${BASE}${introPath}`)).status, 404);
+  await visitor.ctx.close();
+});
+
+await step('PRODUCT-P1 intro video: upload, preview, show, replace and remove the teacher’s own video', async () => {
+  const { page } = teacher;
+  const card = page.locator('[data-testid=public-video]');
+  const uploaded = waitForCall(page, 'POST', /^\/api\/v1\/teachers\/me\/intro-video$/);
+  await card.locator('[data-testid=intro-file]').setInputFiles(demoFile());
+  assert.equal((await uploaded).status(), 200);
+  // A new upload starts hidden until the teacher has watched it.
+  await card.locator('[data-testid=intro-current][data-public=false]', { hasText: 'Your upload:' }).waitFor();
+  const preview = waitForCall(page, 'GET', new RegExp(`^/api/v1/teachers/${teacherId}/intro-video/content$`));
+  await card.locator('[data-testid=intro-watch]').click();
+  assert.equal((await preview).status(), 200);
+  await card.locator('[data-testid=intro-preview]').waitFor();
+
+  const shown = waitForCall(page, 'PUT', /^\/api\/v1\/teachers\/me\/intro-video\/visibility$/);
+  await card.locator('[data-testid=intro-show]').click();
+  assert.equal((await shown).status(), 200);
+  await card.locator('[data-testid=intro-current][data-public=true]').waitFor();
+  assert.equal((await fetch(`${BASE}/api/v1/teachers/${teacherId}/intro-video/content`)).status, 200);
+
+  const replaced = waitForCall(page, 'POST', /^\/api\/v1\/teachers\/me\/intro-video$/);
+  await card.locator('[data-testid=intro-file]').setInputFiles(demoFile());
+  const replaceResponse = await replaced;
+  assert.equal(replaceResponse.status(), 200);
+  assert.ok(replaceResponse.request().headers()['if-match'], 'replacing sends the version the teacher saw');
+  await card.locator('[data-testid=intro-current][data-public=false]').waitFor();
+  await shot(page, '15c-intro-own-upload');
+
+  await card.locator('[data-testid=intro-remove]').click();
+  const removed = waitForCall(page, 'DELETE', /^\/api\/v1\/teachers\/me\/intro-video$/);
+  await page.locator('.tf-system-dialog[open] button[value=confirm]').click();
+  assert.equal((await removed).status(), 200);
+  await card.locator('[data-testid=intro-current]').waitFor({ state: 'detached' });
+  assert.equal((await fetch(`${BASE}/api/v1/teachers/${teacherId}`).then(r => r.json())).introVideo, null);
+});
+
 await step('Arabic and phone width: the publication screen renders in RTL at 390px', async () => {
   const phone = await context({ viewport: { width: 390, height: 844 }, locale: 'ar-SA' });
   const { page } = phone;
@@ -536,6 +673,10 @@ await step('Arabic and phone width: the publication screen renders in RTL at 390
   assert.equal(await page.evaluate(() => document.documentElement.dir), 'rtl');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no horizontal scroll');
   assert.match(await page.locator('[data-testid=publication-state] h2').innerText(), /ملفك منشور/);
+  const intro = page.locator('[data-testid=public-video]');
+  await intro.waitFor();
+  assert.match(await intro.innerText(), /فيديو تعريفي/);
+  assert.doesNotMatch(await intro.innerText(), /[A-Za-z]{4,} [A-Za-z]{4,}/, 'no English sentences in the Arabic intro card');
   await shot(page, '16-publication-ar-phone');
   await phone.ctx.close();
 });

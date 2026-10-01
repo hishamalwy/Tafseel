@@ -50,7 +50,8 @@ public sealed class TeacherApplicationsController(ITeacherApplicationService app
     }
 
     [Authorize(Policy = Permissions.TeachersApply), EnableRateLimiting("upload")]
-    [RequestSizeLimit(250 * 1024 * 1024), HttpPost("{id:guid}/demo")]
+    [RequestSizeLimit(250 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 250 * 1024 * 1024)]
+    [HttpPost("{id:guid}/demo")]
     public async Task<IActionResult> UploadDemo(
         Guid id,
         IFormFile file,

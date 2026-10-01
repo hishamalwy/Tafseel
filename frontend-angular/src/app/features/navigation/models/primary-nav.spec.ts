@@ -52,8 +52,8 @@ describe('UX-03 primary navigation', () => {
   it('gives quality two destinations and admin six areas', () => {
     expect(labels('QualityReviewer', 'en')).toEqual(['Applications', 'Account']);
     expect(labels('QualityReviewer', 'ar')).toEqual(['طلبات الانضمام', 'حسابي']);
-    expect(labels('Admin', 'en')).toEqual(['Attention', 'People', 'Catalog & pricing', 'Operations', 'Finance', 'Audit']);
-    expect(labels('Admin', 'ar')).toEqual(['يحتاج انتباهك', 'المستخدمون', 'الخدمات والأسعار', 'العمليات', 'المالية', 'سجل التدقيق']);
+    expect(labels('Admin', 'en')).toEqual(['Attention', 'People', 'Catalog & marketing', 'Operations', 'Finance', 'Audit']);
+    expect(labels('Admin', 'ar')).toEqual(['يحتاج انتباهك', 'المستخدمون', 'الخدمات والعروض', 'العمليات', 'المالية', 'سجل التدقيق']);
   });
 
   it('does not make a primary destination out of something that belongs elsewhere', () => {
@@ -130,6 +130,7 @@ describe('UX-03 primary navigation', () => {
     expect(activeKey('QualityReviewer', '/quality/account')).toBe('account');
     expect(activeKey('Admin', '/admin/operations?tab=sessions')).toBe('operations');
     expect(activeKey('Admin', '/admin/home')).toBe('attention');
+    expect(activeKey('Admin', '/admin/marketing/coupons')).toBe('catalog');
     expect(activeKey('Admin', '/admin/system')).toBe('audit');
   });
 

@@ -20,13 +20,13 @@ Repository evidence:
 - [Learning Request contracts](../../src/Tafseel.Application/Orders/OrderContracts.cs)
 - [Learning Request entity](../../src/Tafseel.Domain/Orders/Orders.cs)
 - [TeachingLanguage catalog](../../src/Tafseel.Domain/Catalog/Catalog.cs)
-- [Guided request helpers](../../js/guided-request.js)
-- [Request page](../../Tafseel-Request.dc.html)
-- [Student Dashboard](../../Tafseel-Student-Dashboard.dc.html)
-- [Teacher Dashboard](../../Tafseel-Teacher-Dashboard.dc.html)
+- Guided request helpers
+- Request page
+- Student Dashboard
+- Teacher Dashboard
 - [ADR-008](./ADR-008-STUDENT-REQUEST-ASSISTANT.md)
-- [Guided Request UX report](../features/LIMITED_GUIDED_REQUEST_UX_REPORT.md)
-- [Phase 0–1 audit](../audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md)
+- Guided Request UX report
+- Phase 0–1 audit
 
 ## Existing Preference Behavior
 

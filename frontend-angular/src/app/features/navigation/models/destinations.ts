@@ -21,6 +21,7 @@ const has = (roles: readonly Role[], role: Role) => roles.includes(role);
 /** The workspace a signed-in user lands on when a link has no screen for their role. */
 export function homeDestination(roles: readonly Role[]): Destination {
   if (has(roles, 'Admin')) return { path: '/admin/home' };
+  if (has(roles, 'Finance')) return { path: '/finance/home' };
   if (has(roles, 'QualityReviewer')) return { path: '/quality/applications' };
   if (has(roles, 'Teacher')) return { path: '/teacher/home' };
   if (has(roles, 'Student')) return { path: '/student/overview' };
@@ -38,7 +39,7 @@ const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export function marketplaceDestination(roles: readonly Role[], requestId: string | null): Destination {
   const id = requestId && GUID.test(requestId) ? requestId : '';
-  if (has(roles, 'Admin') || has(roles, 'QualityReviewer')) return homeDestination(roles);
+  if (has(roles, 'Admin') || has(roles, 'Finance') || has(roles, 'QualityReviewer')) return homeDestination(roles);
   // Someone who is both keeps the student path, as the header does.
   if (has(roles, 'Student')) return { path: id ? `/requests/${id}` : '/requests/new' };
   if (has(roles, 'Teacher')) return { path: id ? `/teacher/opportunities/${id}` : '/teacher/opportunities' };

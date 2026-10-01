@@ -32,4 +32,4 @@ export interface ProblemDetailsDto {
   errors?: Record<string, string[]>;
 }
 
-export const KNOWN_ROLES: readonly Role[] = ['Admin', 'QualityReviewer', 'Teacher', 'Student'];
+export const KNOWN_ROLES: readonly Role[] = ['Admin', 'Finance', 'QualityReviewer', 'Teacher', 'Student'];

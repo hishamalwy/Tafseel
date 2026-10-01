@@ -11,7 +11,9 @@ import { DISPUTE_COPY } from '@features/disputes/content/disputes.content';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { SignalSessionStore } from '@core/auth/services/session.store';
+import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
 /**
  * The Dispute Center — ported from `Tafseel-Disputes.dc.html`.
@@ -29,7 +31,7 @@ import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.compone
 @Component({
   selector: 'tf-disputes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkflowHeaderComponent],
+  imports: [FormsModule, RouterLink, WorkflowHeaderComponent, SkipLinkComponent, FilePickerComponent],
   templateUrl: './disputes-page.component.html',
   styleUrl: './disputes-page.component.css'
 })
@@ -121,6 +123,10 @@ export class DisputesPageComponent {
     label: this.eligibleLabel(p)
   })));
 
+  readonly reviewing = signal(false);
+  readonly received = signal(false);
+  readonly chosenLabel = computed(() => this.eligibleOptions().find(o => o.value === this.targetKey())?.label ?? '');
+
   readonly selectedEligibility = computed(() => {
     const chosen = this.eligible().find(p => `${p.type}:${p.id}` === this.targetKey());
     return chosen ? `${this.c().until} ${this.dateTime(chosen.eligibleUntil)}` : '';
@@ -136,9 +142,12 @@ export class DisputesPageComponent {
       reason: d.reason,
       status: this.statusLabel(d),
       statusTone: this.statusTone(d),
+      // Whose action: the date is Tafseel's own promise (a first response while open, a decision once in review).
       actionDue: d.actionDueAt
-        ? (this.locale.lang() === 'ar' ? 'موعد الإجراء: ' : 'Action due: ') + this.dateTime(d.actionDueAt)
+        ? this.locale.format(d.status === 'open' ? 'dispute_due_open' : 'dispute_due_review', { date: this.dateTime(d.actionDueAt) },
+            d.status === 'open' ? 'Tafseel will respond by {date}.' : 'Tafseel’s decision is expected by {date}.')
         : '',
+      next: this.isAdmin() ? '' : this.nextStep(d),
       overdue: Dispute.isOverdue(d),
       messages: d.messages.map(m => ({
         sender: this.senderLabel(m.senderId, d),
@@ -162,8 +171,18 @@ export class DisputesPageComponent {
     };
   });
 
+  /** What the person is waiting for, so an open report never reads as silence. */
+  private nextStep(d: Dispute): string {
+    if (d.status === 'resolved') return this.locale.t('dispute_next_resolved', 'Tafseel has decided. The decision and its reason are below; any refund or payment follows it automatically.');
+    if (d.status === 'under-review') return this.locale.t('dispute_next_review', 'Tafseel’s team is reviewing the messages and files. You do not need to do anything unless they ask you here.');
+    const mine = !d.openedById || d.openedById === this.userId();
+    return mine
+      ? this.locale.t('dispute_next_open_mine', 'Tafseel has your report and the other person has been told. Add any files that help. You do not need to do anything else; we will e-mail you when there is news.')
+      : this.locale.t('dispute_next_open_other', 'The other person reported a problem with this purchase. Reply here and add any files that show your side. Tafseel’s team will decide.');
+  }
+
   readonly messageFieldLabel = computed(() => this.isAdmin()
-    ? (this.locale.lang() === 'ar' ? 'طلب معلومات من الطرفين' : 'Request information from both parties')
+    ? this.locale.t('dispute_reviewer_question', 'Ask the student and the teacher (both read it and can reply)')
     : this.c().addMessage);
 
   // ---- actions ----
@@ -214,7 +233,17 @@ export class DisputesPageComponent {
   async create(event: Event): Promise<void> {
     event.preventDefault();
     const [type, id] = this.targetKey().split(':');
-    if (!type || !id || !this.createReason().trim()) return;
+    if (!type || !id || !this.createReason().trim()) {
+      this.createError.set(this.c().missing);
+      this.reviewing.set(false);
+      return;
+    }
+    // UX-87: the first press reads the report back; only the second one sends it.
+    if (!this.reviewing()) {
+      this.createError.set('');
+      this.reviewing.set(true);
+      return;
+    }
 
     this.busy.set(true);
     this.createError.set('');
@@ -225,6 +254,8 @@ export class DisputesPageComponent {
       });
       this.createReason.set('');
       this.targetKey.set('');
+      this.reviewing.set(false);
+      this.received.set(true);
       await this.select(created.id, 1);
     } catch (e) {
       this.createError.set(this.describe(e));
@@ -239,7 +270,7 @@ export class DisputesPageComponent {
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.postMessage.execute(d, this.messageBody());
+      await this.postMessage.execute(d, this.messageBody(), this.isAdmin());
       await this.load(d.id);
     } catch (e) {
       this.error.set(this.describe(e));
@@ -247,11 +278,8 @@ export class DisputesPageComponent {
     }
   }
 
-  async attach(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    // Cleared immediately so choosing the same file twice still fires a change.
-    input.value = '';
+  async attach(files: readonly File[]): Promise<void> {
+    const file = files[0];
     const d = this.selected();
     if (!file || !d) return;
 
@@ -262,7 +290,9 @@ export class DisputesPageComponent {
       await this.load(d.id);
     } catch (e) {
       this.error.set(
-        (e as Error)?.message === 'unacceptable-evidence' ? this.c().fileHint : this.describe(e));
+        (e as Error)?.message === 'unacceptable-evidence'
+          ? this.locale.format('dispute_file_refused', { hint: this.c().fileHint }, 'That file cannot be added. {hint}')
+          : this.describe(e));
       this.busy.set(false);
     }
   }
@@ -363,18 +393,22 @@ export class DisputesPageComponent {
     return 'warn';
   }
 
+  /** The reviewer reads who wrote by role; a party reads "you", "the other person" or Tafseel's reviewer. */
   private senderLabel(senderId: string, d: Dispute): string {
     if (senderId === this.userId()) return this.c().you;
-    if (this.isAdmin()) return senderId.slice(0, 8);
+    if (this.isAdmin()) {
+      if (senderId === d.studentId) return this.locale.t('dispute_sender_student', 'Student');
+      if (senderId === d.teacherId) return this.locale.t('dispute_sender_teacher', 'Teacher');
+      return this.locale.t('dispute_sender_reviewer', 'Tafseel reviewer');
+    }
     if (senderId === d.studentId || senderId === d.teacherId) return this.c().other;
-    return this.locale.lang() === 'ar' ? 'فريق العمليات' : 'Operations team';
+    return this.locale.t('dispute_sender_reviewer', 'Tafseel reviewer');
   }
 
   private eligibleLabel(p: EligiblePurchase): string {
     const ar = this.locale.lang() === 'ar';
     const title = ar ? (p.titleArabic || p.title) : (p.title || p.titleArabic);
-    // Through the house formatter, like every other price: Latin digits, and «ر.س» rather than Intl's own
-    // currency sign. Intl in ar-SA wrote this amount as «٨٥٣٫٢٠ ر.س.‏» on a phone (UX-06).
+    // Through the house formatter: Latin digits and the official riyal mark (UX-06).
     const money = this.fmt.money(p.amount, p.currency || 'SAR');
     const other = p.otherPartyName
       ? ` · ${this.c().with} ${ar ? p.otherPartyName : (p.otherPartyNameEnglish || p.otherPartyName)}`
@@ -384,7 +418,7 @@ export class DisputesPageComponent {
 
   private dateTime(value: string): string {
     if (!value) return '';
-    return new Intl.DateTimeFormat(this.locale.lang() === 'ar' ? 'ar-SA' : 'en-GB', {
+    return new Intl.DateTimeFormat(this.locale.lang() === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB', {
       dateStyle: 'medium', timeStyle: 'short'
     }).format(new Date(value));
   }

@@ -49,6 +49,11 @@
   background: var(--surface);
 }
 
+.tf-compare-card dl { display: grid; gap: 8px; margin: 8px 0; }
+.tf-compare-card dl div { display: flex; justify-content: space-between; gap: 12px; }
+.tf-compare-card dt { color: var(--text-2); }
+.tf-compare-card dd { margin: 0; font-weight: 700; text-align: end; overflow-wrap: anywhere; }
+
 @media (max-width: 600px) {
   .tf-compare-tray { flex-wrap: wrap; inset-inline: 8px; }
 }

@@ -83,7 +83,15 @@ internal sealed class MarketplaceService(
                     && db.Subjects.Any(subject => subject.Id == q.SubjectId && subject.IsActive
                         && (subject.Name.Contains(term) || subject.NameAr.Contains(term))))
                 || offers.Any(offer => offer.Service.TeacherId == x.Profile.TeacherId
-                    && (offer.Catalog.Name.Contains(term) || offer.Catalog.NameAr.Contains(term))));
+                    && (offer.Catalog.Name.Contains(term) || offer.Catalog.NameAr.Contains(term)))
+                || db.TeacherTopics.Any(teacherTopic => teacherTopic.TeacherId == x.Profile.TeacherId
+                    && db.Topics.Any(topic => topic.Id == teacherTopic.TopicId && topic.IsActive
+                        && (topic.Name.Contains(term) || topic.NameAr.Contains(term))
+                        && db.TeacherSubjectQualifications.Any(qualification =>
+                            qualification.TeacherId == x.Profile.TeacherId
+                            && qualification.SubjectId == topic.SubjectId
+                            && qualification.Status == TeacherQualificationStatus.Approved
+                            && qualification.RevokedAt == null))));
         }
         if (input.SubjectId.HasValue)
             query = query.Where(x => db.TeacherSubjectQualifications.Any(q =>
@@ -370,6 +378,13 @@ internal sealed class MarketplaceService(
         return new(ids.Length, ids.Length - compared.Length, compared);
     }
 
+    public async Task<IReadOnlyCollection<PublicTeacherLink>> GetPublicTeacherLinksAsync(CancellationToken ct) =>
+        await TeacherPublicQueries.BrowsableTeachers(db)
+            .OrderBy(x => x.Profile.TeacherId)
+            .Select(x => new PublicTeacherLink(x.Profile.TeacherId, x.Profile.UpdatedAt))
+            .Take(50_000)
+            .ToArrayAsync(ct);
+
     public async Task<TeacherProfileDto> GetPublicProfileAsync(string teacherId, CancellationToken ct)
     {
         if (!await TeacherPublicQueries.IsBrowsableAsync(db, teacherId, ct))
@@ -653,14 +668,12 @@ internal sealed class MarketplaceService(
             throw new DomainException(
                 "direct_sample_publication_forbidden",
                 "Teacher Showcases require Quality approval and cannot be published directly.");
-        if (!published)
-            throw new DomainException(
-                "qualification_sample_locked",
-                "An approved qualification demo remains public while its subject qualification is active.");
-        await RequireActiveQualificationAsync(teacherId, sample.SubjectId, ct);
-        sample.Publish(clock.GetUtcNow());
-        await db.SaveChangesAsync(ct);
+        // PRODUCT-P1: an application video reaches the public profile only as the introduction video, with consent.
+        throw UseIntroVideo();
     }
+
+    private static DomainException UseIntroVideo() => new(
+        "use_intro_video", "An application video is shown only as your introduction video, after you agree to show it.");
 
     public async Task<SampleFile> OpenSampleAsync(string? requesterId, Guid id, CancellationToken ct)
     {
@@ -858,6 +871,8 @@ internal sealed class MarketplaceService(
         await LockTeacherProfileVideosAsync(teacherId, ct);
         var sample = await OwnedCurationSampleAsync(teacherId, id, ct);
         ApplyVersionToSample(sample, version);
+        if (visible && sample.SourceType == TeachingSampleSourceType.QualificationGenerated)
+            throw UseIntroVideo();
         var now = clock.GetUtcNow();
         if (visible)
         {
@@ -898,6 +913,8 @@ internal sealed class MarketplaceService(
         await LockTeacherProfileVideosAsync(teacherId, ct);
         var sample = await OwnedCurationSampleAsync(teacherId, id, ct);
         ApplyVersionToSample(sample, version);
+        if (featured && sample.SourceType == TeachingSampleSourceType.QualificationGenerated)
+            throw UseIntroVideo();
         var now = clock.GetUtcNow();
         if (featured)
         {
@@ -1520,6 +1537,11 @@ internal sealed class MarketplaceService(
             sampleRows = available.Take(_showcaseOptions.MaxPublicPerTeacher).ToArray();
         }
         var samples = sampleRows.Select(Map).ToArray();
+        PublicIntroVideoDto? introVideo = null;
+        if (publicOnly && await TeacherPublicQueries.PublicIntroVideos(db)
+                .SingleOrDefaultAsync(x => x.TeacherId == teacherId, ct) is { } intro
+            && await files.PrivateFileExistsAsync(intro.StorageKey, ct))
+            introVideo = new($"/api/v1/teachers/{teacherId}/intro-video/content", intro.ContentType, intro.DurationSeconds);
         var rules = publicOnly
             ? []
             : (await db.TeacherAvailabilityRules.AsNoTracking()
@@ -1564,7 +1586,7 @@ internal sealed class MarketplaceService(
             publicOnly ? [] : blockers,
             publicOnly || (profile.IsPublished && eligible),
             subjects.Select(x => x.Id).ToArray(), user.FullNameEnglish, user.HasAvatar,
-            TrustBadges(qualifiedOnTafseel));
+            TrustBadges(qualifiedOnTafseel), introVideo);
     }
 
     private static TeacherProfileDto EmptyProfile(string teacherId, string name) =>
@@ -1679,7 +1701,9 @@ internal sealed class MarketplaceService(
     private async Task<bool> IsPublicSampleAsync(
         TeacherTeachingSample sample, string? storageKey, CancellationToken ct)
     {
-        if (!sample.IsPublished || storageKey is null || !sample.IsProfileVisible)
+        // Application videos are private; the public plays one only through the introduction video.
+        if (!sample.IsPublished || storageKey is null || !sample.IsProfileVisible
+            || sample.SourceType == TeachingSampleSourceType.QualificationGenerated)
             return false;
         if (sample.SourceType == TeachingSampleSourceType.TeacherShowcase
             && (!ShowcasesEnabled || sample.ModerationStatus != ShowcaseModerationStatus.Approved

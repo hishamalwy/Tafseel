@@ -11,9 +11,10 @@ import en from '../../../../../public/locale/en.json';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { SignalSessionStore } from '@core/auth/services/session.store';
 import { LocaleService } from '@core/i18n/locale.service';
-import { Balance, WithdrawalPolicy } from '../models/earnings';
+import { Balance, EarningsStatement, WithdrawalPolicy } from '../models/earnings';
 import { EARNINGS_GATEWAY } from '../services/earnings.ports';
-import { LoadEarnings } from '../services/earnings.use-cases';
+import { LoadEarnings, LoadPayouts, LoadStatement, RequestWithdrawal, SavePayoutDetails } from '../services/earnings.use-cases';
+import { PayoutProfile, Withdrawal } from '../models/payouts';
 import { TeacherEarningsPageComponent } from './teacher-earnings-page.component';
 
 const POLICY: WithdrawalPolicy = { minimumAmount: 50, currency: 'SAR', expectedSettlementBusinessDays: 3 };
@@ -24,6 +25,9 @@ interface Options {
   readonly balances?: () => Observable<readonly Balance[]>;
   readonly policy?: () => Observable<WithdrawalPolicy>;
   readonly lang?: 'ar' | 'en';
+  readonly profile?: PayoutProfile | null;
+  readonly withdrawals?: readonly Withdrawal[];
+  readonly statement?: () => Observable<EarningsStatement>;
 }
 
 /** The page with a fake gateway and the real locale tables, so the words asserted are the shipped ones. */
@@ -43,10 +47,15 @@ async function open(options: Options = {}) {
     providers: [
       provideHttpClient(), provideHttpClientTesting(),
       provideRouter([{ path: 'teacher/earnings', component: TeacherEarningsPageComponent }, { path: '**', children: [] }]),
-      LoadEarnings,
+      LoadEarnings, LoadPayouts, LoadStatement, SavePayoutDetails, RequestWithdrawal,
       { provide: EARNINGS_GATEWAY, useValue: {
         balances: options.balances ?? (() => of<readonly Balance[]>([balance({ available: 200, pendingClearance: 127.5 })])),
-        policy: options.policy ?? (() => of(POLICY))
+        policy: options.policy ?? (() => of(POLICY)),
+        statement: options.statement ?? (() => of<EarningsStatement>({ totals: [], items: [], totalItems: 0 })),
+        payoutProfile: () => of(options.profile ?? null),
+        withdrawals: () => of(options.withdrawals ?? []),
+        savePayoutProfile: () => of(options.profile ?? null),
+        requestWithdrawal: () => of(null)
       } },
       { provide: LocaleService, useValue: locale },
       { provide: SignalSessionStore, useValue: { current: signal({ userId: 'teacher-1', fullName: 'نورة' }), roles: signal(['Teacher']) } },
@@ -69,16 +78,17 @@ describe('FIN-01 TeacherEarningsPageComponent', () => {
     expect(textOf(page, 'earnings-available')).toContain('Available to withdraw');
     expect(textOf(page, 'earnings-available')).toContain('200');
     expect(textOf(page, 'earnings-minimum')).toMatch(/The minimum withdrawal is\s*50/);
-    // FIN-03 owns requesting a withdrawal; until it exists the page offers no button that cannot work.
-    expect(page.querySelectorAll('main button, main [role=button]').length).toBe(0);
+    // Without approved payout details the only action is to add them; nothing offers a withdrawal that cannot work.
+    const actions = Array.from(page.querySelectorAll('main button')).map(b => b.textContent?.trim());
+    expect(actions).toContain('Set up payout details');
     expect(page.textContent).not.toContain('Request withdrawal');
   });
 
   it('says what clearing money is waiting for, and when the next amount arrives', async () => {
     const page = await open({ balances: () => of([balance({ available: 0, pendingClearance: 127.5, nextClearanceAt: '2126-09-23T10:00:00Z' })]) });
-    expect(textOf(page, 'earnings-clearing')).toContain('Clearing');
+    expect(textOf(page, 'earnings-clearing')).toContain('Becoming available');
     expect(textOf(page, 'earnings-clearing')).toContain('127.5');
-    expect(textOf(page, 'earnings-clearing')).toContain('Becomes available to withdraw once the objection period ends.');
+    expect(textOf(page, 'earnings-clearing')).toContain('Then it moves to “Available to withdraw now” by itself.');
     expect(textOf(page, 'earnings-next')).toMatch(/The next amount becomes available on .+/);
     expect(textOf(page, 'earnings-why')).toContain('7 days');
   });
@@ -94,7 +104,7 @@ describe('FIN-01 TeacherEarningsPageComponent', () => {
     const quiet = await open({ balances: () => of([balance({ available: 200 })]) });
     expect(testId(quiet, 'earnings-transferring')).toBeNull();
     const moving = await open({ balances: () => of([balance({ available: 10, pendingWithdrawal: 60 })]) });
-    expect(textOf(moving, 'earnings-transferring')).toContain('Being transferred');
+    expect(textOf(moving, 'earnings-transferring')).toContain('Being sent to your bank');
     expect(textOf(moving, 'earnings-transferring')).toContain('within 3 business days');
   });
 
@@ -147,8 +157,8 @@ describe('FIN-01 TeacherEarningsPageComponent', () => {
   it('reads in Arabic, with no ledger, maturity or escrow words in either language', async () => {
     const page = await open({ lang: 'ar', balances: () => of([balance({ available: 200, pendingClearance: 127.5, pendingWithdrawal: 60, nextClearanceAt: '2126-09-23T10:00:00Z' })]) });
     expect(textOf(page, 'earnings-available')).toContain('متاح للسحب');
-    expect(textOf(page, 'earnings-clearing')).toContain('قيد الإتاحة');
-    expect(textOf(page, 'earnings-clearing')).toContain('يصبح متاحًا للسحب بعد انتهاء فترة الاعتراض.');
+    expect(textOf(page, 'earnings-clearing')).toContain('أرباح ستُتاح قريبًا');
+    expect(textOf(page, 'earnings-clearing')).toContain('ثم تنتقل تلقائيًا إلى «متاح للسحب الآن»');
     expect(textOf(page, 'earnings-transferring')).toContain('قيد التحويل');
     expect(textOf(page, 'earnings-why')).toContain('لماذا لا يُتاح المبلغ فورًا؟');
     expect(textOf(page, 'earnings-why')).toContain('7 أيام');
@@ -157,5 +167,106 @@ describe('FIN-01 TeacherEarningsPageComponent', () => {
       expect(main.toLowerCase()).not.toContain(word.toLowerCase());
     // The Arabic page shows no English product words at all (names and the SAR mark aside).
     expect(main.replace(/نورة/g, '')).not.toMatch(/[A-Za-z]{3,}/);
+  });
+});
+
+
+/** FIN-02/03 (UX audit P0, UX-81): the teacher always has the next step towards being paid. */
+describe('TeacherEarningsPageComponent — payouts', () => {
+  const verified: PayoutProfile = { legalName: 'Noura', countryCode: 'SA', payoutMethod: 'bank_transfer', destinationLabel: 'Al Rajhi ••••1234',
+    identityLast4: '9876', state: 'verified', rejectionReason: null, submittedAt: '2026-09-01T00:00:00Z', reenrollmentRequired: false };
+
+  it('asks for payout details first when there are none', async () => {
+    const page = await open();
+    expect(page.querySelector('[data-testid=payout-missing]')).not.toBeNull();
+    expect(page.querySelector('[data-testid=withdraw-open]')).toBeNull();
+  });
+
+  it('says the details are being checked while they are pending, and offers no withdrawal yet', async () => {
+    const page = await open({ profile: { ...verified, state: 'pending' } });
+    expect(page.querySelector('[data-testid=payout-pending]')?.textContent).toContain('Al Rajhi ••••1234');
+    expect(page.querySelector('[data-testid=withdraw-open]')).toBeNull();
+  });
+
+  it('offers a withdrawal once the details are approved, and lists past withdrawals in words', async () => {
+    const page = await open({ profile: verified, withdrawals: [{ id: 'w1', amount: 120, currency: 'SAR', state: 'requested', status: 0,
+      destinationLabel: 'Al Rajhi ••••1234', rejectionReason: null, createdAt: '2026-09-20T10:00:00Z', updatedAt: null,
+      transferInitiatedAt: null, transferredAt: null, bankReference: null }] });
+    expect(page.querySelector('[data-testid=withdraw-open]')).not.toBeNull();
+    const row = page.querySelector('[data-testid=withdrawal-row]')?.textContent ?? '';
+    expect(row).toContain('Requested — being transferred');
+    expect(row).not.toMatch(/Pending|status/);
+  });
+});
+
+
+/** Finance transparency: where every riyal of the balance came from, in the server's numbers. */
+describe('TeacherEarningsPageComponent — statement', () => {
+  const verified: PayoutProfile = { legalName: 'Noura', countryCode: 'SA', payoutMethod: 'bank_transfer', destinationLabel: 'Demo Bank ••••7519',
+    identityLast4: '9876', state: 'verified', rejectionReason: null, submittedAt: '2026-09-01T00:00:00Z', reenrollmentRequired: false };
+  const transferred: Withdrawal = { id: 'w1', amount: 60, currency: 'SAR', state: 'transferred', status: 1, destinationLabel: 'Demo Bank ••••7519',
+    rejectionReason: null, createdAt: '2026-09-28T10:00:00Z', updatedAt: null, transferInitiatedAt: '2026-09-29T10:00:00Z',
+    transferredAt: '2026-09-30T10:00:00Z', bankReference: 'BANKREF-001' };
+  // The seeded PreProduction scenario: 120 order, 15% = 18 commission, 102 earned, 60 transferred, 42 left.
+  const statement = (over: Partial<EarningsStatement['totals'][number]> = {}): EarningsStatement => ({
+    totals: [{ currency: 'SAR', earned: 102, available: 42, clearing: 0, inTransfer: 0, transferred: 60, transferredCount: 1, addsUp: true, ...over }],
+    items: [{ kind: 'order', referenceId: 'o1', title: 'Calculus homework', earnedAt: '2026-09-17T10:00:00Z', price: 120,
+      commissionPercent: 15, commission: 18, adjustment: 0, net: 102, currency: 'SAR', state: 'available', availableAt: null }],
+    totalItems: 1
+  });
+  const seeded = (lang: 'ar' | 'en' = 'en', over: Partial<EarningsStatement['totals'][number]> = {}) => open({
+    lang, profile: verified, withdrawals: [transferred], statement: () => of(statement(over)),
+    balances: () => of([balance({ available: 42 })])
+  });
+
+  it('answers "why 42 after receiving 60" on the page itself', async () => {
+    const page = await seeded();
+    expect(textOf(page, 'earnings-available')).toContain('42');
+    expect(textOf(page, 'earnings-transferred')).toContain('Already transferred to you');
+    expect(textOf(page, 'earnings-transferred')).toContain('60');
+    expect(textOf(page, 'earnings-transferred')).toContain('no longer part of your balance');
+    const sum = textOf(page, 'earnings-explained');
+    expect(sum).toMatch(/You have earned 102 .* in total/);
+    expect(sum).toMatch(/60 .* of it is already in your bank\./);
+    expect(sum).toMatch(/That leaves 42 .* to withdraw now\./);
+  });
+
+  it('breaks each earning into price, commission and net exactly as the server sent them', async () => {
+    const row = textOf(await seeded(), 'earning-row');
+    expect(row).toContain('Calculus homework');
+    expect(row).toMatch(/Order price\s*120/);
+    expect(row).toMatch(/Tafseel commission \(15%\)\s*−\s*18/);
+    expect(row).toMatch(/Your earning\s*102/);
+    expect(row).toContain('In your balance');
+  });
+
+  it('shows a completed withdrawal as history with its dates, destination and bank reference', async () => {
+    const row = textOf(await seeded(), 'withdrawal-row');
+    expect(row).toContain('Transferred');
+    expect(row).toContain('Demo Bank ••••7519');
+    expect(row).toContain('BANKREF-001');
+    expect(row).toMatch(/Requested.*Transferred/);
+  });
+
+  it('does not show a sum the server could not reconcile', async () => {
+    const page = await seeded('en', { addsUp: false });
+    expect(testId(page, 'earnings-explained')).toBeNull();
+    expect(testId(page, 'earning-row')).not.toBeNull();
+  });
+
+  it('keeps the balances when the statement cannot be read', async () => {
+    const page = await open({ statement: () => throwError(() => new HttpErrorResponse({ status: 500 })) });
+    expect(textOf(page, 'earnings-available')).toContain('200');
+    expect(testId(page, 'earnings-explained')).toBeNull();
+    expect(testId(page, 'earnings-error')).toBeNull();
+  });
+
+  it('reads naturally in Arabic', async () => {
+    const page = await seeded('ar');
+    expect(textOf(page, 'earnings-available')).toContain('متاح للسحب الآن');
+    expect(textOf(page, 'earnings-transferred')).toContain('حُوِّل إليك سابقًا');
+    expect(textOf(page, 'earnings-explained')).toContain('فيتبقى لك');
+    expect(textOf(page, 'earning-row')).toContain('عمولة تفصيل (15٪)');
+    expect(textOf(page, 'earning-row')).toContain('ربحك');
   });
 });

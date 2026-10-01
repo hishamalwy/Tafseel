@@ -1,4 +1,0 @@
-{
-  "description": "Client/server API contract violations present on 2026-09-14, each tracked by a row in docs/audits/baseline-2026-09-14/REMEDIATION_MATRIX.md. scripts/ci/check-api-contract.mjs fails on any violation not listed here and on any listed violation that no longer occurs. Remove an entry in the same change that fixes it.",
-  "violations": []
-}

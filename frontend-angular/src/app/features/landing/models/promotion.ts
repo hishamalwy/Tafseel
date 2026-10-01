@@ -115,17 +115,13 @@ export const Promotion = {
 } as const;
 
 /**
- * What V1 may promise (UX-07).
- *
- * A discount slot ends on a coupon code, and V1 checkout has no field to redeem one (`DEC-09`, `B11-08`):
- * the offer itself is unredeemable, not only the code. So a discount promotion is not shown at all, and no
- * promotion renders its code. The server keeps publishing both — nothing is removed, and coupons return
- * with their redemption screen.
+ * A discount slot needs a redeemable code. The server suppresses inactive or expired codes;
+ * the client also refuses a discount that arrived without a code.
  */
 export const V1_PROMOTIONS = {
   /** Only slots a visitor can actually act on. */
   showable(promotions: readonly Promotion[]): readonly Promotion[] {
-    return promotions.filter(promotion => Promotion.kind(promotion) !== 'discount');
+    return promotions.filter(promotion => Promotion.kind(promotion) !== 'discount' || !!promotion.couponCode);
   }
 } as const;
 

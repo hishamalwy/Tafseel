@@ -74,11 +74,16 @@ export class OffersPageComponent {
   countdown(): string { return Demand.countdown(this.secondsLeft()); }
 
   async refresh(): Promise<void> {
+    // Moving to another one while this load is in flight must not let its late answer paint the other.
+    const requestId = this.requestId;
     this.loading.set(true);
     this.loadError.set('');
-    try { this.view.set(await this.load.execute(this.requestId)); }
-    catch (error) { this.loadError.set(problemMessage(error, (k, f) => this.t(k, f)).text); }
-    finally { this.loading.set(false); }
+    try {
+      const view = await this.load.execute(requestId);
+      if (requestId === this.requestId) this.view.set(view);
+    }
+    catch (error) { if (requestId === this.requestId) this.loadError.set(problemMessage(error, (k, f) => this.t(k, f)).text); }
+    finally { if (requestId === this.requestId) this.loading.set(false); }
   }
 
   async choose(offer: Offer): Promise<void> {
@@ -112,8 +117,9 @@ export class OffersPageComponent {
   async release(): Promise<void> {
     const view = this.view();
     if (!view || this.busy() || !await this.dialogs.confirm({
-      body: this.t('demand_release_body', 'Release the selected offer and choose again?'),
-      confirmLabel: this.t('demand_release', 'Release selection'), cancelLabel: this.t('common_cancel', 'Cancel')
+      title: this.t('demand_release_title', 'Choose a different offer?'),
+      body: this.t('demand_release_body', 'The offer you picked will no longer be held for you, and you can choose any offer again. You have not paid, so nothing is charged.'),
+      confirmLabel: this.t('demand_release', 'Choose a different offer'), cancelLabel: this.t('common_cancel', 'Cancel')
     })) return;
     this.busy.set(true);
     this.error.set('');

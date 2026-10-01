@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title description">
+  <title id="title">Default Tafseel student avatar</title>
+  <desc id="description">A student wearing a graduation cap, on the Tafseel lime.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E6FF7A" />
+      <stop offset="1" stop-color="#C4E83A" />
+    </linearGradient>
+  </defs>
+  <!-- Full bleed: the frames around it are rounded squares and circles, and both crop a square cleanly. -->
+  <rect width="256" height="256" fill="url(#canvas)" />
+  <!-- The student. -->
+  <circle cx="128" cy="134" r="34" fill="#131218" />
+  <path d="M54 256c0-56 33-86 74-86s74 30 74 86Z" fill="#131218" />
+  <!-- The cap: the band sits on the head, the board above it, the tassel hanging off one corner. -->
+  <path d="M90 92v20c0 9 17 17 38 17s38-8 38-17V92l-38 15Z" fill="#3A279F" />
+  <path d="M128 52l70 28-70 28-70-28Z" fill="#5036D8" />
+  <path d="M128 80l56 8v34" fill="none" stroke="#F8F4E8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="184" cy="126" r="7" fill="#F8F4E8" />
+</svg>

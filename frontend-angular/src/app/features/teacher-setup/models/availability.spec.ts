@@ -29,6 +29,15 @@ describe('timeZoneLabel', () => {
     expect(label).toMatch(/GMT\+3|Arabian/);
   });
 
+  it('leads with the city, so zones that share a name can be told apart and Cairo can be found', () => {
+    const gulf = ['Asia/Riyadh', 'Asia/Kuwait', 'Asia/Qatar'].map(zone => timeZoneLabel(zone, 'ar'));
+    expect(new Set(gulf).size).toBe(3);
+    expect(timeZoneLabel('Asia/Riyadh', 'ar')).toContain('الرياض');
+    expect(timeZoneLabel('Africa/Cairo', 'ar')).toContain('القاهرة');
+    expect(timeZoneLabel('Africa/Cairo', 'en')).toMatch(/^Cairo \(GMT\+\d/);
+    expect(timeZoneLabel('America/Los_Angeles', 'en')).toMatch(/^Los Angeles/);
+  });
+
   it('falls back to the identifier only for something Intl does not know', () => {
     expect(timeZoneLabel('Not/AZone', 'ar')).toBe('Not/AZone');
   });

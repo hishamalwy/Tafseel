@@ -10,6 +10,7 @@ import {
 } from '@features/disputes/services/dispute.ports';
 
 interface DisputeDto {
+  openedById?: string | null;
   id: string; status: number; reason: string; createdAt: string;
   orderId?: string | null; liveSessionBookingId?: string | null;
   studentId?: string; teacherId?: string; version?: string; actionDueAt?: string | null;
@@ -29,6 +30,7 @@ function toDispute(dto: DisputeDto): Dispute {
     liveSessionBookingId: dto.liveSessionBookingId ?? null,
     studentId: dto.studentId ?? '',
     teacherId: dto.teacherId ?? '',
+    openedById: dto.openedById ?? null,
     version: dto.version ?? '',
     actionDueAt: dto.actionDueAt ?? null,
     messages: dto.messages ?? [],
@@ -90,6 +92,12 @@ export class HttpDisputeGateway implements DisputeGateway {
   postMessage(id: string, body: string, version: string): Observable<void> {
     return this.http.post<void>(
       `/api/v1/disputes/${encodeURIComponent(id)}/messages`, { body },
+      { headers: concurrency(version) });
+  }
+
+  postReviewerMessage(id: string, body: string, version: string): Observable<void> {
+    return this.http.post<void>(
+      `/api/v1/admin/disputes/${encodeURIComponent(id)}/messages`, { body },
       { headers: concurrency(version) });
   }
 

@@ -1,3 +1,0 @@
-{
-  "error": "page.waitForFunction: Timeout 25000ms exceeded.\n    at gotoBudget (C:\\Users\\asus\\Desktop\\Tafseel\\tests\\browser\\release7-final-acceptance-cert.mjs:59:14)\n    at async main (C:\\Users\\asus\\Desktop\\Tafseel\\tests\\browser\\release7-final-acceptance-cert.mjs:111:5)"
-}

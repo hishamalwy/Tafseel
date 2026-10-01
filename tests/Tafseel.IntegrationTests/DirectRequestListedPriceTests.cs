@@ -241,7 +241,45 @@ public sealed class DirectRequestListedPriceTests(SqlServerTafseelApiFactory fac
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
     }
 
+    [Fact]
+    public async Task A_price_different_from_the_listed_one_needs_the_teacher_s_reason_and_the_student_sees_it()
+    {
+        var data = await SeedAsync(listedPrice: 100m);
+        var student = await ClientForAsync(data.Student.Email);
+        var teacher = await ClientForAsync(data.Teacher.Email);
+        var created = await student.PostAsJsonAsync("/api/v1/learning-requests", new
+        {
+            teacherServiceId = data.ServiceId,
+            title = "Explain integration by parts",
+            description = "Twelve long exercises from chapter 7.",
+            preferredDeliveryAt = DateTimeOffset.UtcNow.AddDays(3),
+            budget = (decimal?)null
+        });
+        created.EnsureSuccessStatusCode();
+        var requestId = JsonDocument.Parse(await created.Content.ReadAsStringAsync()).RootElement.GetProperty("id").GetGuid();
+
+        // DEC-UX-03: a different price with no reason is refused, with a code the UI can word.
+        var refused = await SendAcceptAsync(teacher, requestId, 130m, reason: null);
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("price_change_reason_required", await refused.Content.ReadAsStringAsync());
+
+        var accepted = await SendAcceptAsync(teacher, requestId, 130m, "Twelve long exercises instead of one.");
+        accepted.EnsureSuccessStatusCode();
+        var order = JsonDocument.Parse(await accepted.Content.ReadAsStringAsync()).RootElement;
+        var seen = await ReadOrderAsync(student, order.GetProperty("id").GetGuid());
+        Assert.Equal("Twelve long exercises instead of one.", seen.GetProperty("priceChangeReason").GetString());
+        Assert.Equal(100m, seen.GetProperty("listedPriceAtRequest").GetDecimal());
+        Assert.Equal(130m, seen.GetProperty("price").GetDecimal());
+    }
+
     private static async Task<JsonElement> AcceptAsync(HttpClient teacher, Guid requestId, decimal price)
+    {
+        var response = await SendAcceptAsync(teacher, requestId, price, "The request needs more work than listed.");
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+    }
+
+    private static async Task<HttpResponseMessage> SendAcceptAsync(HttpClient teacher, Guid requestId, decimal price, string? reason)
     {
         var current = await ReadRequestAsync(teacher, requestId);
         var accept = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/learning-requests/{requestId}/accept")
@@ -251,14 +289,13 @@ public sealed class DirectRequestListedPriceTests(SqlServerTafseelApiFactory fac
                 finalPrice = price,
                 currency = "SAR",
                 agreedDeliveryAt = DateTimeOffset.UtcNow.AddDays(3),
-                revisionAllowance = 1
+                revisionAllowance = 1,
+                priceChangeReason = reason
             })
         };
         accept.Headers.TryAddWithoutValidation("If-Match", current.GetProperty("version").GetString());
         accept.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString("N"));
-        var response = await teacher.SendAsync(accept);
-        response.EnsureSuccessStatusCode();
-        return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        return await teacher.SendAsync(accept);
     }
 
     /// <summary>The teacher edits their own offering, through the screen they would use.</summary>

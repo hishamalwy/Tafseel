@@ -1,6 +1,7 @@
+<tf-skip-link />
 <tf-workflow-header [crumb]="t('pay_breadcrumb', 'Payment')" />
 
-<main class="tf-shell tf-pay-main tf-pay-page">
+<main id="main" class="tf-shell tf-pay-main tf-pay-page">
   @if (loading()) {
     <div class="tf-pay-state" role="status">{{ t('pay_loading', 'Loading your payment…') }}</div>
   }
@@ -14,13 +15,45 @@
         <a [routerLink]="['/requests', payableId, 'offers']" class="tf-pay-primary-link">{{ t('pay_back_to_offers', 'Back to the offers') }}</a>
       } @else {
         <p class="tf-pay-lede">{{ t('pay_unavailable_body', 'The order or session could not be found.') }}</p>
-        <a [href]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
+        <a [routerLink]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
       }
+    </div>
+  }
+
+  @if (alreadyPaid()) {
+    <div class="tf-pay-state tf-pay-success" role="status" data-testid="pay-already-paid">
+      <div class="tf-pay-seal" aria-hidden="true">
+        <svg viewBox="0 0 80 80">
+          <g class="tf-pay-seal__rays"><path d="M40 3v6M40 71v6M3 40h6M71 40h6M13.8 13.8l4.3 4.3M61.9 61.9l4.3 4.3M13.8 66.2l4.3-4.3M61.9 18.1l4.3-4.3" /></g>
+          <circle class="tf-pay-seal__disc" cx="40" cy="40" r="25" />
+          <circle class="tf-pay-seal__ring" cx="40" cy="40" r="25" pathLength="100" />
+          <path class="tf-pay-seal__mark" d="M29.5 40.5l7 7L51 33" pathLength="100" />
+        </svg>
+      </div>
+      <h1>{{ t('pay_already_paid_title', 'This is already paid') }}</h1>
+      <p class="tf-pay-lede">{{ t('pay_already_paid_body', 'Your payment was confirmed and is held securely by Tafseel. There is nothing more to pay.') }}</p>
+      <div class="tf-req-success-actions">
+        <a [routerLink]="purchaseLink()" class="tf-pay-primary-link">{{ kind === 'live-session'
+          ? t('pay_open_session', 'Open the session') : t('pay_open_order', 'Open the order') }}</a>
+      </div>
     </div>
   }
 
   @if (showCheckout()) {
     @if (context(); as ctx) {
+      <header class="tf-pay-journey" aria-labelledby="pay-journey-title">
+        <div class="tf-pay-journey__copy">
+          <h1 id="pay-journey-title">{{ t('pay_complete', 'Complete your payment') }}</h1>
+          <p>{{ ctx.payable.kind === 'live-session'
+            ? t('pay_held_securely_session', 'Held securely by Tafseel until the session has taken place.')
+            : t('pay_held_securely', 'Funds are held securely until delivery.') }}</p>
+        </div>
+        <ol class="tf-pay-journey__steps" [attr.aria-label]="t('pay_progress_aria', 'Your progress')">
+          <li data-state="done"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6.5 12.5 3.6 3.6L17.5 8.5" pathLength="100" /></svg></span>{{ t('pay_progress_request', 'Request') }}</li>
+          <li aria-current="step"><span aria-hidden="true">2</span>{{ t('pay_progress_payment', 'Payment') }}</li>
+          <li><span aria-hidden="true">3</span>{{ t('pay_progress_start', 'Start') }}</li>
+        </ol>
+      </header>
       <div class="tf-pay-layout">
         <aside class="tf-req-context" [attr.aria-label]="t('pay_context_aria', 'What you are paying for')">
           <p class="tf-req-context-eyebrow">{{ t('pay_context_eyebrow', 'Your purchase') }}</p>
@@ -41,29 +74,43 @@
             </div>
           }
 
-          <p class="tf-req-context-service">{{ serviceName() }}</p>
-
-          <ul class="tf-req-context-facts">
-            <li><span>{{ t('pay_context_category', 'Category') }}</span><strong>{{ categoryValue() }}</strong></li>
-            <li><span>{{ t('pay_context_delivery', 'Delivery') }}</span><strong>{{ deliveryValue() }}</strong></li>
-            <li><span>{{ t('pay_context_revisions', 'Revisions') }}</span><strong>{{ revisionsValue() }}</strong></li>
-            <li><span>{{ t('pay_context_files', 'Files') }}</span><strong>{{ filesValue() }}</strong></li>
-          </ul>
+          @if (ctx.payable.session; as session) {
+            <!-- A booking is paid for a time, not a delivery: the day, the hours and the zone, on the page that takes the money. -->
+            <ul class="tf-req-context-facts" data-testid="checkout-session-time">
+              <li><span>{{ t('pay_context_category', 'Category') }}</span><strong>{{ categoryValue() }}</strong></li>
+              <li><span>{{ t('pay_session_day', 'Day') }}</span><strong>{{ sessionDay(session) }}</strong></li>
+              <li><span>{{ t('pay_session_time', 'Time') }}</span><strong>{{ sessionHours(session) }}</strong></li>
+              @if (session.timeZoneId) {
+                <li><span>{{ t('pay_session_zone', 'Time zone') }}</span><strong>{{ zoneLabel(session.timeZoneId) }}</strong></li>
+              }
+            </ul>
+          } @else {
+            <ul class="tf-req-context-facts">
+              <li><span>{{ t('pay_context_category', 'Category') }}</span><strong>{{ categoryValue() }}</strong></li>
+              @if (deliveryValue()) { <li><span>{{ t('pay_context_delivery', 'Delivery') }}</span><strong>{{ deliveryValue() }}</strong></li> }
+              <li><span>{{ t('pay_context_revisions', 'Revisions') }}</span><strong>{{ revisionsValue() }}</strong></li>
+              @if (filesValue()) { <li><span>{{ t('pay_context_files', 'Files') }}</span><strong>{{ filesValue() }}</strong></li> }
+            </ul>
+          }
 
           <div class="tf-req-context-protection">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
-            <span>{{ t('req_protected_payment', 'Protected payment') }}</span>
+            <span>{{ ctx.payable.kind === 'live-session' ? t('pay_protected_session', 'Tafseel holds your payment until the session has taken place. If something goes wrong, you can report a problem.') : t('req_protected_payment', 'Protected payment') }}</span>
           </div>
           <div class="tf-req-context-pay">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-            <span>{{ t('pay_after_pay_note', 'Work starts once payment is confirmed.') }}</span>
+            <span>{{ ctx.payable.kind === 'live-session'
+              ? t('pay_after_pay_note_session', 'After payment the session is confirmed. Open it from “My requests & orders”; the Join button works from 15 minutes before it starts.')
+              : t('pay_after_pay_note', 'Work starts once payment is confirmed.') }}</span>
           </div>
         </aside>
 
-        <div class="tf-pay-receipt">
-          <h1>{{ t('pay_complete', 'Complete your payment') }}</h1>
-          <p class="tf-pay-lede">{{ t('pay_held_securely', 'Funds are held securely until delivery.') }}</p>
-          <p class="tf-pay-item-title">{{ ctx.payable.title }}</p>
+        <div class="tf-pay-receipt" [attr.data-discounted]="couponQuote() ? '' : null">
+          <h2 class="tf-pay-receipt__title">{{ t('pay_review_title', 'Review your total') }}</h2>
+          <p class="tf-pay-lede">{{ t('pay_review_lede', 'Everything in one place before you confirm.') }}</p>
+          @if (ctx.payable.title !== serviceName()) {
+            <p class="tf-pay-item-title">{{ ctx.payable.title }}</p>
+          }
           @if (ctx.payable.subtitleKey) {
             <p class="tf-pay-item-sub">{{ t(ctx.payable.subtitleKey, '') }}</p>
           }
@@ -73,50 +120,90 @@
           } @else {
             <ul class="tf-pay-lines">
               @for (line of ctx.payable.lines; track line.labelKey) {
-                <li class="tf-pay-line">
+                <li class="tf-pay-line" [attr.data-testid]="line.labelKey === 'pay_platform_fee' ? 'checkout-platform-fee' : null">
                   <span>{{ t(line.labelKey, '') }}</span>
                   <strong><tf-price [amount]="line.amount" [currency]="ctx.payable.currency" /></strong>
                 </li>
               }
             </ul>
 
-            <div class="tf-pay-total-row">
+            <div class="tf-pay-total-row" data-testid="checkout-total">
               <span>{{ t('req_total', 'Total') }}</span>
               <strong><tf-price [amount]="ctx.payable.total" [currency]="ctx.payable.currency" /></strong>
             </div>
           }
 
-          @if (ctx.payable.feeAtPayment) {
-            <p class="tf-pay-note" data-testid="fee-at-payment">{{ t('pay_fee_at_payment', 'The Tafseel service fee is added to the offer price when the payment starts; the amount charged is shown on the next screen.') }}</p>
+          @if (!ctx.canResumeMock) {
+            <div class="tf-pay-coupon">
+              <label for="pay-coupon-code">{{ t('pay_coupon_label', 'Have a discount code?') }}</label>
+              <div class="tf-pay-coupon__entry">
+                <input id="pay-coupon-code" data-testid="checkout-coupon" type="text" autocomplete="off"
+                       [value]="couponInput()" (input)="changeCoupon($any($event.target).value)"
+                       [attr.aria-invalid]="couponError() ? 'true' : null" maxlength="40"
+                       [placeholder]="t('pay_coupon_ph', 'Example: WELCOME20')" />
+                <button type="button" class="tf-pay-coupon__apply" data-testid="apply-coupon"
+                        (click)="applyCoupon()" [disabled]="couponBusy() || !couponInput().trim()">{{
+                  couponBusy() ? t('pay_coupon_checking', 'Checking…') : t('pay_coupon_apply', 'Apply') }}</button>
+              </div>
+              @if (couponError()) { <p class="tf-pay-coupon__error" role="alert">{{ couponError() }}</p> }
+              @if (couponQuote(); as quote) {
+                <div class="tf-pay-ticket" role="status" data-testid="coupon-quote">
+                  <div class="tf-pay-ticket__stub">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 12.2V5.5a2 2 0 0 1 2-2h6.7l8.3 8.3a2 2 0 0 1 0 2.8l-5.9 5.9a2 2 0 0 1-2.8 0Z" /><circle cx="8" cy="8" r="1.4" /></svg>
+                    <span>{{ t('pay_coupon_applied', 'Coupon applied') }}</span>
+                    <strong dir="ltr">{{ quote.code }}</strong>
+                  </div>
+                  <dl class="tf-pay-ticket__sums">
+                    <div><dt>{{ t('pay_coupon_discount', 'Discount') }}</dt><dd class="tf-pay-ticket__off" dir="ltr"><span aria-hidden="true">−</span><tf-price [amount]="quote.discountAmount" [currency]="quote.currency" /></dd></div>
+                    <div class="tf-pay-ticket__total"><dt>{{ t('req_total', 'Total') }}</dt><dd data-testid="coupon-total"><tf-price [amount]="quote.chargeAmount" [currency]="quote.currency" size="md" /></dd></div>
+                  </dl>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="tf-pay-note">{{ t('pay_coupon_after_start', 'This checkout has already started. Resume it to keep the original total.') }}</p>
           }
+
           @if (reservationSeconds() !== null) {
-            <p class="tf-pay-note" data-testid="checkout-reservation">{{ t('pay_reservation_left', 'The offer is held for you for') }} <strong class="tf-pay-mono">{{ reservationClock() }}</strong></p>
+            <p class="tf-pay-hold" data-testid="checkout-reservation" [attr.data-urgent]="(reservationSeconds() ?? 0) < 60 ? '' : null">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 1.5M9.5 2.5h5" /></svg>
+              <span>{{ t('pay_reservation_left', 'The offer is held for you for') }}</span>
+              <strong class="tf-pay-mono">{{ reservationClock() }}</strong>
+            </p>
           }
-          <p class="tf-pay-note">{{ t('pay_funds_release', 'Funds release to the teacher after you accept the delivery.') }}</p>
-          <p class="tf-pay-note">{{ t('pay_secure_blurb', 'Payments are processed over a secure connection.') }}</p>
+          <ul class="tf-pay-assure">
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
+              <span>{{ t('pay_secure_blurb', 'Payments are processed over a secure connection.') }}</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
+              <span>{{ t('pay_funds_release', 'Funds release to the teacher after you accept the delivery.') }}</span>
+            </li>
+          </ul>
 
           @if (ctx.mockEnabled) {
-            <label class="tf-pay-method">
-              <input type="radio" checked disabled />
+            <div class="tf-pay-method" data-selected="true">
+              <svg class="tf-pay-method__check" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.2 2.4 2.4 4.6-4.9" /></svg>
               <span>
                 <strong>{{ t('pay_method_mock', 'Simulated payment') }}</strong>
                 <span>{{ t('pay_method_mock_hint', 'This environment uses the payment simulator.') }}</span>
               </span>
-            </label>
+            </div>
           } @else {
             <p class="tf-pay-note">{{ t('pay_provider_method_note', 'You will be taken to our payment provider.') }}</p>
           }
 
+          @if (ctx.canResumeMock) {
+            <!-- UX-33: after an attempt that did not finish there is one thing to do, and it says so. -->
+            <p class="tf-pay-retry-note" role="status" data-testid="pay-retry-note">{{ t('pay_retry_note', 'Your last payment attempt did not finish, so no money was taken. Press “Try payment again” — the total stays the same.') }}</p>
+          }
           @if (payError()) { <p class="tf-pay-note" role="alert" data-testid="pay-error">{{ payError() }}</p> }
           <button type="button" class="tf-pay-cta" data-testid="pay-securely" (click)="pay()"
                   [disabled]="submitting()" [class.is-busy]="submitting()">
-            {{ submitting() ? t('pay_submitting', 'Starting…') : t('pay_securely', 'Pay securely') }}
+            <svg class="tf-pay-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
+            <span>{{ submitting() ? t('pay_submitting', 'Starting…') : ctx.canResumeMock ? t('pay_try_again', 'Try payment again') : t('pay_securely', 'Pay securely') }}</span>
           </button>
-
-          @if (mockContinueLink(); as ref) {
-            <a class="tf-pay-secondary-link tf-pay-resume"
-               [href]="'/checkout/simulator/?ref=' + ref">{{ t('pay_resume_checkout', 'Resume checkout') }}</a>
-          }
 
           <div class="tf-req-context-protection tf-pay-protection-foot">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 5 3.2 8.4 7 9.8 3.8-1.4 7-4.8 7-9.8V6l-7-3Z" /><path d="m9.5 12 2 2 3.5-4" /></svg>
@@ -128,12 +215,20 @@
       <!-- Sticky total + action on narrow screens, where the receipt scrolls away. -->
       <div class="tf-pay-mobile-cta">
         <div class="tf-pay-mobile-cta-inner">
-          <div>
-            <strong><tf-price [amount]="ctx.payable.total" [currency]="ctx.payable.currency" /></strong>
-            <span>{{ t('pay_held_securely2', 'Held securely') }}</span>
+          <div class="tf-pay-bar__sum">
+            <span class="tf-pay-bar__label">{{ t('req_total', 'Total') }}</span>
+            <div class="tf-pay-bar__amounts">
+              @for (amount of [amountToPay()]; track amount) {
+                <b class="tf-pay-bar__amount"><tf-price [amount]="amount" [currency]="ctx.payable.currency" /></b>
+              }
+              @if (couponQuote()) {
+                <s class="tf-pay-bar__was"><tf-price [amount]="ctx.payable.total" [currency]="ctx.payable.currency" /></s>
+              }
+            </div>
           </div>
           <button type="button" (click)="pay()" [disabled]="submitting()" [class.is-busy]="submitting()">
-            {{ submitting() ? t('pay_submitting', 'Starting…') : t('pay_securely', 'Pay securely') }}
+            <svg class="tf-pay-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
+            <span>{{ submitting() ? t('pay_submitting', 'Starting…') : ctx.canResumeMock ? t('pay_try_again', 'Try payment again') : t('pay_securely', 'Pay securely') }}</span>
           </button>
         </div>
       </div>
@@ -142,7 +237,14 @@
 
   @if (initiated()) {
     <div class="tf-pay-state tf-pay-success">
-      <div class="tf-check-draw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
+      <!-- Started, not confirmed: the provider has not answered yet, so the seal waits instead of ticking. -->
+      <div class="tf-pay-seal" data-tone="pending" aria-hidden="true">
+        <svg viewBox="0 0 80 80">
+          <circle class="tf-pay-seal__disc" cx="40" cy="40" r="25" />
+          <circle class="tf-pay-seal__ring" cx="40" cy="40" r="25" pathLength="100" />
+          <path class="tf-pay-seal__mark" d="M40 28v13l8.5 5.5" pathLength="100" />
+        </svg>
+      </div>
       <h1>{{ t('pay_initiated', 'Payment started') }}</h1>
       <p class="tf-pay-note">
         {{ t('pay_checkout_ref', 'Checkout reference') }}
@@ -157,7 +259,7 @@
       </ol>
 
       <div class="tf-req-success-actions">
-        <a [href]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
+        <a [routerLink]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
       </div>
     </div>
   }

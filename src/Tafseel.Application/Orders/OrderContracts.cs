@@ -16,7 +16,9 @@ public sealed record AcceptLearningRequest(
     [param: Required, RegularExpression("^[A-Za-z]{3}$")] string Currency,
     DateTimeOffset AgreedDeliveryAt,
     [param: Range(0, 20)] int RevisionAllowance,
-    [param: Range(1, 8760)] int? DeliveryHours = null);
+    [param: Range(1, 8760)] int? DeliveryHours = null,
+    /// <summary>Required when <see cref="FinalPrice"/> differs from the price the student saw (DEC-UX-03).</summary>
+    [param: StringLength(500)] string? PriceChangeReason = null);
 
 public sealed record MessageInput(
     [param: Required, NotWhiteSpace, StringLength(2000)] string Message);
@@ -85,7 +87,9 @@ public sealed record OrderDto(
     /// what they were shown beside what was agreed. Null when the request carries no snapshot. Fees and the
     /// total are computed from <see cref="Price"/>, never from this.</summary>
     decimal? ListedPriceAtRequest = null,
-    string? ListedCurrencyAtRequest = null);
+    string? ListedCurrencyAtRequest = null,
+    /// <summary>The teacher's reason for a price that differs from the listed one, shown before payment.</summary>
+    string? PriceChangeReason = null);
 
 public sealed class OrderLifecycleOptions
 {
@@ -96,7 +100,7 @@ public sealed record DeliveryDto(
     Guid Id, string OriginalName, string ContentType, long Size, string Message, DateTimeOffset CreatedAt);
 public sealed record DeliveryUpload(Stream Stream, string FileName, string ContentType, long Size);
 
-public sealed record OrderTimelineMetadataDto(int? RevisionSequence = null, string? OriginalName = null);
+public sealed record OrderTimelineMetadataDto(int? RevisionSequence = null, string? OriginalName = null, string? Note = null);
 public sealed record OrderTimelineEventDto(
     string Id, string EventType, DateTimeOffset OccurredAt, string ActorRole,
     OrderTimelineMetadataDto? Metadata = null);

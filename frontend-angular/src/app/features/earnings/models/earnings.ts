@@ -94,3 +94,55 @@ export const Earnings = {
     };
   }
 } as const;
+
+/**
+ * `GET /withdrawals/earnings`: where the balance came from. Every number is the server's — the price and
+ * commission snapshotted on each purchase (DEC-06), the net the ledger credited, and the withdrawals Finance
+ * recorded as transferred. Nothing here recomputes a commission; the page only lays the amounts out.
+ */
+export type EarningState = 'clearing' | 'available' | 'refunded';
+
+export interface EarningItem {
+  readonly kind: 'order' | 'live_session';
+  readonly referenceId: string;
+  readonly title: string;
+  readonly earnedAt: string;
+  readonly price: number;
+  readonly commissionPercent: number;
+  readonly commission: number;
+  /** Non-zero only when a discount reduced the teacher's share; shown as its own line. */
+  readonly adjustment: number;
+  readonly net: number;
+  readonly currency: string;
+  readonly state: EarningState;
+  readonly availableAt: string | null;
+}
+
+export interface EarningsTotals {
+  readonly currency: string;
+  readonly earned: number;
+  readonly available: number;
+  readonly clearing: number;
+  readonly inTransfer: number;
+  readonly transferred: number;
+  readonly transferredCount: number;
+  /** The server checked `earned = available + clearing + inTransfer + transferred`; the sum is shown only then. */
+  readonly addsUp: boolean;
+}
+
+export interface EarningsStatement {
+  readonly totals: readonly EarningsTotals[];
+  readonly items: readonly EarningItem[];
+  readonly totalItems: number;
+}
+
+export const Statement = {
+  totalsFor(statement: EarningsStatement | null, currency: string): EarningsTotals | null {
+    return statement?.totals.find(t => t.currency === currency) ?? null;
+  },
+
+  /** The "how it adds up" lines are worth showing once something was earned and the server says they sum. */
+  explains(totals: EarningsTotals | null): totals is EarningsTotals {
+    return !!totals && totals.addsUp && totals.earned > 0;
+  }
+} as const;

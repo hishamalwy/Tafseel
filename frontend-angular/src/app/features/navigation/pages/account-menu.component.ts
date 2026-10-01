@@ -33,8 +33,13 @@ import { DashboardRole } from '@features/dashboards/models/dashboard';
             <a role="menuitem" data-testid="account-public-profile" [routerLink]="['/teachers', id]" (click)="open.set(false)">{{
               t('nav_public_profile', 'View my public profile') }}</a>
           }
-          <button type="button" role="menuitem" data-testid="account-sign-out" (click)="signOut()">{{
-            t('nav_sign_out', 'Sign out') }}</button>
+          <!-- Help and reports: everyone can reach it. A paid purchase is sent on to its dispute from there. -->
+          <a role="menuitem" data-testid="account-report-problem" routerLink="/help" (click)="open.set(false)">{{
+            t('nav_help_reports', 'Help and reports') }}</a>
+          <button type="button" class="tf-account-sign-out" role="menuitem" data-testid="account-sign-out" (click)="signOut()">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4m4-4H9" /></svg>
+            <span>{{ t('nav_sign_out', 'Sign out') }}</span>
+          </button>
         </div>
       }
     </div>
@@ -49,6 +54,10 @@ import { DashboardRole } from '@features/dashboards/models/dashboard';
       border: 0; border-radius: var(--r-sm); background: none; text-align: start; text-decoration: none; color: inherit;
       font: inherit; cursor: pointer; }
     .tf-account-menu a:hover, .tf-account-menu button:hover { background: var(--surface-2, rgba(0,0,0,.04)); }
+    .tf-account-menu .tf-account-sign-out { gap: 10px; margin-block-start: 6px; border-block-start: 1px solid var(--border); border-radius: 0 0 var(--r-sm) var(--r-sm); color: var(--danger); font-weight: 750; }
+    .tf-account-sign-out svg { inline-size: 20px; block-size: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .tf-account-menu .tf-account-sign-out:hover { background: var(--danger-soft); }
+    .tf-account-menu .tf-account-sign-out:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
   `
 })
 export class AccountMenuComponent {
@@ -62,15 +71,8 @@ export class AccountMenuComponent {
 
   readonly open = signal(false);
 
-  /** Quality reviewers keep their account section; admins have no settings screen of their own in V1. */
-  readonly settingsPath = computed(() => {
-    switch (this.role()) {
-      case 'Student': return '/student/settings';
-      case 'Teacher': return '/teacher/settings';
-      case 'QualityReviewer': return '/quality/account';
-      default: return '';
-    }
-  });
+  /** PRODUCT-P1: every role, Admin and Finance included, manages their own account on one page. */
+  readonly settingsPath = computed(() => '/account');
 
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
 

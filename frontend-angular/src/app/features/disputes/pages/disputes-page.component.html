@@ -1,6 +1,7 @@
+<tf-skip-link />
 <tf-workflow-header [crumb]="c().center" />
 
-<main class="tf-shell tf-dispute-page">
+<main id="main" class="tf-shell tf-dispute-page">
   <div class="tf-dispute-mast">
     <div>
       <p class="tf-dispute-eyebrow">{{ c().trust }}</p>
@@ -12,6 +13,10 @@
     </button>
   </div>
 
+  @if (received()) {
+    <p class="tf-alert" data-kind="success" role="status" data-testid="dispute-received">{{ c().received }}</p>
+  }
+
   @if (canOpenCase()) {
     <section class="tf-dispute-create">
       <h2>{{ c().create }}</h2>
@@ -19,7 +24,7 @@
       <form class="tf-dispute-create__form" (ngSubmit)="create($event)">
         <label for="dispute-target">{{ c().purchase }}</label>
         <select id="dispute-target" required
-                [value]="targetKey()" (change)="targetKey.set($any($event.target).value)">
+                [value]="targetKey()" (change)="targetKey.set($any($event.target).value); reviewing.set(false)">
           <option value="">{{ c().choose }}</option>
           @for (option of eligibleOptions(); track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
@@ -32,15 +37,30 @@
         <label for="dispute-reason">{{ c().reasonLabel }}</label>
         <textarea id="dispute-reason" rows="4" maxlength="2000" required
                   [placeholder]="c().reason"
-                  [value]="createReason()" (input)="createReason.set($any($event.target).value)"></textarea>
+                  [value]="createReason()" (input)="createReason.set($any($event.target).value); reviewing.set(false)"></textarea>
         <p class="tf-dispute-hint">{{ c().reasonHint }}</p>
 
         @if (createError(); as message) {
           <p role="alert" class="tf-dispute-error-text">{{ message }}</p>
         }
-        <div class="tf-dispute-create__actions">
-          <button type="submit" class="tf-button" [disabled]="busy()">{{ c().submit }}</button>
-        </div>
+        @if (reviewing()) {
+          <div class="tf-dispute-review" data-testid="dispute-review" role="region" aria-labelledby="dispute-review-title">
+            <h3 id="dispute-review-title">{{ c().reviewTitle }}</h3>
+            <dl>
+              <dt>{{ c().purchase }}</dt><dd data-testid="dispute-review-purchase">{{ chosenLabel() }}</dd>
+              <dt>{{ c().reasonLabel }}</dt><dd class="tf-prose" data-testid="dispute-review-reason">{{ createReason().trim() }}</dd>
+            </dl>
+            <p class="tf-dispute-hint">{{ c().reviewBody }}</p>
+            <div class="tf-dispute-create__actions">
+              <button type="submit" class="tf-button" data-testid="dispute-send" [disabled]="busy()">{{ c().submit }}</button>
+              <button type="button" class="tf-button tf-button-ghost" (click)="reviewing.set(false)" [disabled]="busy()">{{ c().reviewEdit }}</button>
+            </div>
+          </div>
+        } @else {
+          <div class="tf-dispute-create__actions">
+            <button type="submit" class="tf-button" data-testid="dispute-review-open" [disabled]="busy()">{{ c().review }}</button>
+          </div>
+        }
       </form>
     </section>
   }
@@ -106,6 +126,9 @@
             @if (d.actionDue) {
               <p class="tf-dispute-due" [class.is-overdue]="d.overdue">{{ d.actionDue }}</p>
             }
+            @if (d.next) {
+              <p class="tf-dispute-next" data-testid="dispute-next">{{ d.next }}</p>
+            }
           </div>
           <span class="tf-dispute-status tf-dispute-status--pill" [attr.data-tone]="d.statusTone">{{ d.status }}</span>
         </header>
@@ -115,7 +138,7 @@
             <h3>{{ c().conversation }}</h3>
             <div class="tf-dispute-messages">
               @for (m of d.messages; track m.date) {
-                <div class="tf-dispute-message" [class.is-mine]="m.mine">
+                <div class="tf-dispute-message" [class.is-mine]="m.mine" data-testid="dispute-message">
                   <strong>{{ m.sender }}</strong>
                   <p>{{ m.body }}</p>
                   <time>{{ m.date }}</time>
@@ -150,22 +173,20 @@
           @if (d.canParticipate) {
             <form class="tf-dispute-reply" (ngSubmit)="send($event)">
               <label for="case-message">{{ messageFieldLabel() }}</label>
-              <textarea id="case-message" rows="3" maxlength="2000" required
+              <textarea id="case-message" rows="3" maxlength="2000" required data-testid="dispute-message-body"
                         [value]="messageBody()" (input)="messageBody.set($any($event.target).value)"></textarea>
-              <div class="tf-dispute-reply__actions">
-                @if (d.canUploadEvidence) {
-                  <label class="tf-button tf-dispute-attach">
-                    {{ c().addEvidence }}
-                    <input type="file" accept="image/jpeg,image/png,application/pdf,text/plain"
-                           (change)="attach($event)" hidden />
-                  </label>
-                }
-                <button type="submit" class="tf-button" [disabled]="busy()">{{ c().send }}</button>
-              </div>
               @if (d.canUploadEvidence) {
-                <p class="tf-dispute-hint">{{ c().fileHint }}</p>
+                <tf-file-picker [compact]="true" [removable]="false" [busy]="busy()" [title]="c().addEvidence" [hint]="c().fileHint"
+                                accept="image/jpeg,image/png,application/pdf,text/plain" (picked)="attach($event)" />
               }
+              <div class="tf-dispute-reply__actions">
+                <button type="submit" class="tf-button" [disabled]="busy()" data-testid="dispute-message-send">{{ c().send }}</button>
+              </div>
             </form>
+          }
+
+          @if (d.adminActions && !d.canParticipate) {
+            <p class="tf-dispute-muted" data-testid="dispute-ask-after-review">{{ locale.t('dispute_reviewer_question_hint', 'Start the review to ask the student and the teacher questions here.') }}</p>
           }
 
           @if (d.showResolvedHint) {
@@ -182,12 +203,14 @@
               }
               @if (d.canResolve) {
                 <form class="tf-dispute-resolve" (ngSubmit)="resolve($event)">
-                  <select [value]="resolution()" (change)="onResolutionChange($any($event.target).value)">
+                  <label for="dispute-resolution">{{ c().decision }}</label>
+                  <select id="dispute-resolution" [value]="resolution()" (change)="onResolutionChange($any($event.target).value)">
                     <option value="refund-student">{{ c().refund }}</option>
                     <option value="release-teacher">{{ c().release }}</option>
                     <option value="no-action">{{ c().none }}</option>
                   </select>
-                  <textarea rows="3" maxlength="2000" required [placeholder]="c().rationale"
+                  <label for="dispute-rationale">{{ c().rationale }}</label>
+                  <textarea id="dispute-rationale" rows="3" maxlength="2000" required [placeholder]="c().rationale"
                             [value]="rationale()" (input)="rationale.set($any($event.target).value)"></textarea>
                   <button type="submit" class="tf-button" [disabled]="busy()">{{ c().resolve }}</button>
                 </form>

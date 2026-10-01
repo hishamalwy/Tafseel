@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 import { QUALITY_REVIEW_GATEWAY } from './services/quality-review.ports';
 import { HttpQualityReviewGateway } from './services/http-quality-review.gateway';
 import {
-  DecideApplication, LoadApplicationReview, LoadReviewQueue, OpenApplicationDemo, StartApplicationReview
+  DecideApplication, LoadApplicationReview, LoadReviewQueue, OpenApplicationDemo, RevokeQualification, StartApplicationReview
 } from './services/quality-review.use-cases';
 
 /**
@@ -24,6 +24,6 @@ export const QUEUE_ROUTES: Routes = [{
 
 export const REVIEW_ROUTES: Routes = [{
   path: '',
-  providers: [...providers, LoadApplicationReview, StartApplicationReview, DecideApplication, OpenApplicationDemo],
+  providers: [...providers, LoadApplicationReview, StartApplicationReview, DecideApplication, OpenApplicationDemo, RevokeQualification],
   loadComponent: () => import('./pages/application-review-page.component').then(m => m.ApplicationReviewPageComponent)
 }];

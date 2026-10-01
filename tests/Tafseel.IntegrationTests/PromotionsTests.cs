@@ -16,6 +16,17 @@ public sealed class PromotionsTests(SqlServerTafseelApiFactory factory)
     public async Task Admin_publishes_a_promotion_and_the_public_landing_feed_serves_it()
     {
         using var client = await AdminClientAsync();
+        var couponCode = "PROMO" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var coupon = await client.PostAsJsonAsync("/api/v1/admin/coupons", new
+        {
+            name = "Promotion test coupon",
+            code = couponCode,
+            discountType = 0,
+            discountValue = 20,
+            expiresAt = (DateTimeOffset?)null
+        });
+        Assert.Equal(HttpStatusCode.Created, coupon.StatusCode);
+        var couponId = (await coupon.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var created = await client.PostAsJsonAsync("/api/v1/admin/promotions", new
         {
@@ -28,7 +39,7 @@ public sealed class PromotionsTests(SqlServerTafseelApiFactory factory)
             bodyAr = "خصم حصري على أول طلب.",
             highlightEn = "20%",
             highlightAr = "20%",
-            couponCode = "TAFSEEL20",
+            couponCode,
             ctaLabelEn = "Claim the offer",
             ctaLabelAr = "استفد من العرض",
             ctaHref = "/teachers",
@@ -57,8 +68,15 @@ public sealed class PromotionsTests(SqlServerTafseelApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         var feed = await live.Content.ReadFromJsonAsync<JsonElement>();
         var served = feed.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == id);
-        Assert.Equal("TAFSEEL20", served.GetProperty("couponCode").GetString());
+        Assert.Equal(couponCode, served.GetProperty("couponCode").GetString());
         Assert.Equal("خصم 20% على أول طلب لك", served.GetProperty("titleAr").GetString());
+
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.PatchAsJsonAsync($"/api/v1/admin/coupons/{couponId}/active", new { isActive = false })).StatusCode);
+        var withoutCoupon = await anonymous.GetFromJsonAsync<JsonElement>("/api/v1/promotions");
+        Assert.DoesNotContain(withoutCoupon.EnumerateArray(), x => x.GetProperty("id").GetGuid() == id);
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.PatchAsJsonAsync($"/api/v1/admin/coupons/{couponId}/active", new { isActive = true })).StatusCode);
 
         // Deactivating removes it from the public feed but keeps it in the admin list.
         Assert.Equal(HttpStatusCode.NoContent,
@@ -115,6 +133,7 @@ public sealed class PromotionsTests(SqlServerTafseelApiFactory factory)
         Assert.True(stats.GetProperty("students").GetInt32() >= 0);
         Assert.True(stats.GetProperty("teachers").GetInt32() >= 0);
         Assert.True(stats.GetProperty("subjects").GetInt32() >= 0);
+        Assert.True(stats.GetProperty("completedSessions").GetInt32() >= 0);
     }
 
     private static object Input(

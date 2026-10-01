@@ -41,6 +41,19 @@ export class LoadApplicationReview {
   }
 }
 
+/**
+ * Withdrawing a subject qualification (PRODUCT-P1). The server pauses the subject's services, stops any reused
+ * application video, writes the audit entry and tells the teacher the reason exactly as written here.
+ */
+@Injectable()
+export class RevokeQualification {
+  private readonly gateway = inject(QUALITY_REVIEW_GATEWAY);
+
+  execute(qualificationId: string, reason: string): Promise<void> {
+    return firstValueFrom(this.gateway.revokeQualification(qualificationId, reason.trim()));
+  }
+}
+
 /** Taking a submitted application: it becomes under review and assigned to this reviewer. */
 @Injectable()
 export class StartApplicationReview {

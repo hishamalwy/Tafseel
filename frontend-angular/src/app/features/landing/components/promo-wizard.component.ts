@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import {
-  ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal,
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, output, signal,
   viewChild, effect, afterNextRender
 } from '@angular/core';
 import { ReducedMotion } from '@core/a11y/reduced-motion.service';
@@ -8,6 +8,7 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { FormatService } from '@core/i18n/format.service';
 import { Promotion } from '../models/promotion';
 import { landingCopy } from '../content/landing.copy';
+import { containModalFocus } from '@shared/utils/modal-focus';
 
 /** How long the exit transition runs; must match the CSS. */
 const LEAVE_MS = 180;
@@ -29,13 +30,14 @@ const LEAVE_MS = 180;
   selector: 'tf-promo-wizard',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './promo-wizard.component.html',
-  styles: `:host { display: contents; }`,
-  host: { '(document:keydown.escape)': 'close()' }
+  styles: `:host { display: contents; }`
 })
 export class PromoWizardComponent {
   private readonly locale = inject(LocaleService);
   private readonly document = inject(DOCUMENT);
   private readonly motion = inject(ReducedMotion);
+  private readonly destroyRef = inject(DestroyRef);
+  private releaseFocus?: () => void;
   readonly fmt = inject(FormatService);
 
   readonly promotion = input.required<Promotion>();
@@ -56,10 +58,7 @@ export class PromoWizardComponent {
   readonly body = computed(() => this.text('body'));
   readonly highlight = computed(() => this.text('highlight'));
   readonly ctaLabel = computed(() => this.text('ctaLabel'));
-  /**
-   * The published coupon code. Not rendered in V1 (UX-07): checkout has no field to redeem it, so the
-   * template shows no code and no copy button. Kept, with `copyCode`, for when redemption ships (B11-08).
-   */
+  /** A published code is visible and copyable when checkout can redeem it. */
   readonly code = computed(() => this.promotion().couponCode);
 
   readonly lead = computed(() => Promotion.lead(this.promotion(), this.isArabic()));
@@ -103,7 +102,8 @@ export class PromoWizardComponent {
     : 'animation:tf-promo-step-a .4s var(--ease-out) both');
 
   constructor() {
-    afterNextRender(() => this.dialog().nativeElement.focus());
+    afterNextRender(() => { this.releaseFocus = containModalFocus(this.dialog().nativeElement, this.document, () => this.close()); });
+    this.destroyRef.onDestroy(() => this.releaseFocus?.());
 
     effect(onCleanup => {
       // The page behind must not scroll under an open dialog.

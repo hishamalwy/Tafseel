@@ -7,7 +7,7 @@ const session = (patch: Partial<LiveSession> = {}): LiveSession => ({
   id: 'b1', studentId: 's', teacherId: 't', title: 'Revision', notes: '', startsAt: '2026-09-20T10:00:00Z', endsAt: '2026-09-20T10:30:00Z',
   studentTimeZoneId: 'UTC', teacherTimeZoneId: 'UTC', totalPrice: 120, currency: 'SAR', cancellationWindowHours: 24,
   status: SESSION_STATUS.CONFIRMED, attachments: [], version: 'v', studentName: '', teacherName: '', serviceName: '', serviceNameArabic: '',
-  proposedStartsAt: '', rescheduleRequestedById: '', outcomeReviewDeadline: '', rescheduleCount: 0, ...patch
+  proposedStartsAt: '', rescheduleRequestedById: '', outcomeReviewDeadline: '', rescheduleCount: 0, hasReview: false, ...patch
 });
 
 describe('Session.actions', () => {
@@ -36,6 +36,10 @@ describe('Session.actions', () => {
 
   it('asks the other party to confirm each pending settlement', () => {
     const at = START + 60 * MIN;
+    // The student reviews a completed session once; the teacher never reviews.
+    expect(Session.actions(session({ status: SESSION_STATUS.COMPLETED }), 's', at)).toContain('review');
+    expect(Session.actions(session({ status: SESSION_STATUS.COMPLETED, hasReview: true }), 's', at)).not.toContain('review');
+    expect(Session.actions(session({ status: SESSION_STATUS.COMPLETED }), 't', at)).not.toContain('review');
     expect(Session.actions(session({ status: SESSION_STATUS.COMPLETION_PENDING }), 's', at)).toContain('confirm-settlement');
     expect(Session.actions(session({ status: SESSION_STATUS.COMPLETION_PENDING }), 't', at)).not.toContain('confirm-settlement');
     expect(Session.actions(session({ status: SESSION_STATUS.STUDENT_NO_SHOW_PENDING }), 's', at)).toContain('confirm-settlement');
@@ -77,5 +81,15 @@ describe('Session timing and refunds', () => {
 
   it('sends a reschedule as wall-clock time with seconds and its zone', () => {
     expect(Session.rescheduleInput('2026-09-21T10:00', 'Egypt Standard Time')).toEqual({ localStart: '2026-09-21T10:00:00', timeZoneId: 'Egypt Standard Time' });
+  });
+});
+
+describe('Session actions in the join window (DEC-UX-08)', () => {
+  it('offers cancel and another time before the window, and neither once the session is starting', () => {
+    expect(Session.actions(session(), 's', START - 60 * MIN)).toEqual(expect.arrayContaining(['cancel', 'reschedule']));
+    const starting = Session.actions(session(), 's', START - 10 * MIN);
+    expect(starting).toContain('join');
+    expect(starting).not.toContain('cancel');
+    expect(starting).not.toContain('reschedule');
   });
 });

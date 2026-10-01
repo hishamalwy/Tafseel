@@ -429,6 +429,8 @@ public sealed class Order
     public decimal StudentTotal { get; private set; }
     public decimal TeacherNet { get; private set; }
     public DateTimeOffset AgreedDeliveryAt { get; private set; }
+    /// <summary>Why the agreed price differs from the listed one, in the teacher's words (DEC-UX-03).</summary>
+    public string? PriceChangeReason { get; private set; }
     public int? CommittedDeliveryHours { get; private set; }
     public int RevisionAllowance { get; private set; }
     public int RevisionsUsed { get; private set; }
@@ -439,6 +441,17 @@ public sealed class Order
     public DateTimeOffset UpdatedAt { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
     public IReadOnlyCollection<OrderStatusHistory> History => _history;
+
+    /// <summary>Records the teacher's reason while the order still awaits payment; it never changes money.</summary>
+    public void RecordPriceChangeReason(string? reason)
+    {
+        var trimmed = reason?.Trim();
+        if (trimmed is { Length: > 500 })
+            throw new DomainException("price_change_reason_too_long", "The reason for the price must be 500 characters or fewer.");
+        if (Status != OrderStatus.AwaitingPayment || PaymentStatus != OrderPaymentStatus.Pending)
+            throw new DomainException("invalid_order_transition", "The price reason can only be set before payment.");
+        PriceChangeReason = string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
     public IReadOnlyCollection<OrderDelivery> Deliveries => _deliveries;
     public IReadOnlyCollection<RevisionRequest> Revisions => _revisions;
     public IReadOnlyCollection<OrderExtensionRequest> Extensions => _extensions;

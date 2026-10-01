@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Tafseel.Domain.Finance;
 using Tafseel.Domain.LiveSessions;
 using Tafseel.Domain.Orders;
@@ -10,6 +10,9 @@ public sealed record PaymentDto(
     Guid Id, Guid? OrderId, Guid? LiveSessionBookingId, Guid? LearningRequestId, decimal Amount, string Currency, string Provider,
     string ProviderReference, PaymentStatus Status, DateTimeOffset CreatedAt);
 public sealed record PaymentInitiationDto(PaymentDto Payment, string CheckoutReference);
+public sealed record OpenRequestPaymentQuoteDto(
+    decimal OfferAmount, decimal StudentFeePercent, decimal StudentFeeAmount,
+    decimal Total, string Currency, DateTimeOffset ReservationExpiresAt);
 public sealed record MockWebhookEvent(
     [param: Required, StringLength(200)] string EventId,
     [param: Required, StringLength(200)] string ProviderReference,
@@ -24,32 +27,52 @@ public sealed record AdminRefundRequest(
 public sealed record RequestWithdrawal(
     [param: Range(typeof(decimal), "0.01", "1000000")] decimal Amount,
     [param: Required, RegularExpression("^[A-Za-z]{3}$")] string Currency);
+/// <summary>A teacher's withdrawal. The destination is masked; the full destination never appears here.</summary>
 public sealed record WithdrawalDto(
     Guid Id, decimal Amount, string Currency, WithdrawalStatus Status,
     string? ProviderReference, DateTimeOffset CreatedAt, string Version,
     string? PayoutMethod = null, string? DestinationLabel = null, string? RejectionReason = null,
-    DateTimeOffset? UpdatedAt = null);
+    DateTimeOffset? UpdatedAt = null, DateTimeOffset? TransferInitiatedAt = null, DateTimeOffset? TransferredAt = null);
+/// <summary>
+/// Admin list row. Masked like every list; <see cref="HasDestinationSnapshot"/> is false for withdrawals
+/// requested before the payout loop, which can only be rejected (the teacher then re-enters their details).
+/// </summary>
 public sealed record AdminWithdrawalDto(
     Guid Id, string TeacherId, decimal Amount, string Currency, WithdrawalStatus Status,
     string? ProviderReference, DateTimeOffset CreatedAt, string Version,
     string? TeacherDisplayName = null, string? TeacherDisplayNameEnglish = null,
     string? PayoutMethod = null, string? DestinationLabel = null, string? RejectionReason = null,
-    DateTimeOffset? UpdatedAt = null);
+    DateTimeOffset? UpdatedAt = null, bool HasDestinationSnapshot = false, string? InitiationReference = null,
+    DateTimeOffset? TransferInitiatedAt = null, DateTimeOffset? TransferredAt = null);
+/// <summary>
+/// Rejects a withdrawal (funds return to Available). <c>Approve = true</c> is refused: a transfer is recorded
+/// only through initiation and bank evidence. After initiation the operator must also confirm that no money
+/// was sent.
+/// </summary>
 public sealed record ProcessWithdrawal(
     bool Approve,
     [param: StringLength(200)] string? ProviderReference,
-    [param: StringLength(500)] string? RejectionReason = null);
+    [param: StringLength(500)] string? RejectionReason = null,
+    bool ConfirmNoTransferSent = false);
+/// <summary>
+/// Full bank-transfer details, sent once over HTTPS in the body. The IBAN is sealed by the payout destination
+/// vault before it is stored; no read model returns it. Only <c>bank_transfer</c> is accepted in V1.
+/// </summary>
 public sealed record SubmitPayoutProfile(
     [param: Required, StringLength(150)] string LegalName,
     [param: Required, RegularExpression("^[A-Za-z]{2}$")] string CountryCode,
     [param: Required, StringLength(30)] string PayoutMethod,
-    [param: Required, StringLength(100)] string DestinationLabel,
+    [param: Required, StringLength(80)] string BankName,
+    [param: Required, StringLength(42, MinimumLength = 15)] string Iban,
     [param: Required, RegularExpression("^[A-Za-z0-9]{4}$")] string IdentityLast4);
 public sealed record ReviewPayoutProfile(bool Approve, [param: StringLength(500)] string? RejectionReason);
+/// <param name="TransferReady">Verified and holding a full, sealed destination a transfer can be made to.</param>
+/// <param name="ReenrollmentRequired">Saved before full destinations were collected: the teacher must enter
+/// the bank details again before any withdrawal.</param>
 public sealed record PayoutProfileDto(string TeacherId, string LegalName, string CountryCode,
     string PayoutMethod, string DestinationLabel, string IdentityLast4,
     PayoutVerificationStatus Status, string? RejectionReason, DateTimeOffset SubmittedAt,
-    DateTimeOffset? ReviewedAt, string Version);
+    DateTimeOffset? ReviewedAt, string Version, bool TransferReady = false, bool ReenrollmentRequired = false);
 /// <param name="Available">Withdrawable now.</param>
 /// <param name="PendingWithdrawal">Reserved by a withdrawal request that is awaiting payout.</param>
 /// <param name="PendingClearance">Earned but still inside its dispute-refund exposure window; not withdrawable.</param>
@@ -130,6 +153,8 @@ public interface IFinancialService
         string studentId, Guid liveSessionBookingId, string idempotencyKey, string? couponCode, CancellationToken ct);
     Task<PaymentInitiationDto> InitiateOpenRequestPaymentAsync(
         string studentId, Guid learningRequestId, string idempotencyKey, string? couponCode, CancellationToken ct);
+    Task<OpenRequestPaymentQuoteDto> QuoteOpenRequestPaymentAsync(
+        string studentId, Guid learningRequestId, CancellationToken ct);
     Task ProcessWebhookAsync(ReadOnlyMemory<byte> payload, string signature, CancellationToken ct);
     Task<PaymentDto> GetPaymentAsync(string userId, Guid paymentId, CancellationToken ct);
     Task<RefundDto> RefundAsync(
@@ -138,6 +163,13 @@ public interface IFinancialService
         string teacherId, RequestWithdrawal input, string idempotencyKey, CancellationToken ct);
     Task<WithdrawalDto> ProcessWithdrawalAsync(
         string adminId, Guid id, ProcessWithdrawal input, string version, string idempotencyKey, CancellationToken ct);
+    /// <summary>Audited, on-demand transfer instruction (full destination). Never cached, never listed.</summary>
+    Task<WithdrawalTransferInstructionDto> GetWithdrawalTransferInstructionAsync(
+        string adminId, Guid id, CancellationToken ct);
+    Task<AdminWithdrawalDto> InitiateWithdrawalTransferAsync(
+        string adminId, Guid id, string version, string idempotencyKey, CancellationToken ct);
+    Task<AdminWithdrawalDto> ConfirmWithdrawalTransferAsync(
+        string adminId, Guid id, ConfirmWithdrawalTransfer input, string version, string idempotencyKey, CancellationToken ct);
     Task<IReadOnlyCollection<BalanceDto>> GetBalancesAsync(string teacherId, CancellationToken ct);
     WithdrawalPolicyDto GetWithdrawalPolicy();
     Task<PagedResult<WithdrawalDto>> GetMyWithdrawalsAsync(

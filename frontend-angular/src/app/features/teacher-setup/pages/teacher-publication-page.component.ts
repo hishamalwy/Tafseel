@@ -9,6 +9,8 @@ import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
 import { Blocker, Readiness } from '../models/readiness';
 import { LoadPublication, PublicationWorkspace, SetPublication } from '../services/teacher-setup.use-cases';
+import { SetupProgressComponent } from '../components/setup-progress.component';
+import { PublicVideoComponent } from '../components/public-video.component';
 
 /**
  * Publication readiness (J11-09): the server's blockers, each linked to the screen that
@@ -17,7 +19,7 @@ import { LoadPublication, PublicationWorkspace, SetPublication } from '../servic
 @Component({
   selector: 'tf-teacher-publication-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkspaceShellComponent, ToastComponent],
+  imports: [RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent, PublicVideoComponent],
   templateUrl: './teacher-publication-page.component.html',
   styles: `
     .tf-readiness { display: grid; gap: 18px; max-width: 860px; }

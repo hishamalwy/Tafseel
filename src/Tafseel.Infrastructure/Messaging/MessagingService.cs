@@ -405,6 +405,22 @@ internal sealed class NotificationService(
         new(x.Id, x.Type, x.Title, x.Body, x.Link, x.CreatedAt, x.ReadAt);
 }
 
+/// <summary>
+/// PRODUCT-P1 (notification completeness). A person's preferences switch off only the optional notices: chat
+/// messages, reviews and reminders of something already announced. Everything else is transactional — money,
+/// orders, sessions, disputes, refunds, withdrawals, qualifications, help cases, account and safety — and always
+/// reaches the bell, and the e-mail when the sender asks for one. Nobody can silence being told their money moved.
+/// </summary>
+public static class NotificationCategories
+{
+    public static readonly IReadOnlySet<string> OptionalTypes = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "NewMessage", "Review", "ReviewSubmitted", "SessionReminder", "OfferReservationReminder"
+    };
+
+    public static bool IsOptional(string type) => OptionalTypes.Contains(type);
+}
+
 internal sealed class NotificationWriter(TafseelDbContext db, TimeProvider clock)
 {
     public async Task<bool> QueueAsync(string userId, string type, string title, string body,
@@ -417,12 +433,14 @@ internal sealed class NotificationWriter(TafseelDbContext db, TimeProvider clock
             return false;
         var preference = await db.UserNotificationPreferences.AsNoTracking()
             .SingleOrDefaultAsync(x => x.UserId == userId, ct);
-        if (preference is { InAppEnabled: false } && (!email || !preference.EmailEnabled)) return false;
-        var inAppVisible = preference?.InAppEnabled != false;
+        // Preferences apply to optional notices only; a transactional one is always delivered.
+        var optional = NotificationCategories.IsOptional(type);
+        if (optional && preference is { InAppEnabled: false } && (!email || !preference.EmailEnabled)) return false;
+        var inAppVisible = !optional || preference?.InAppEnabled != false;
         var notification = new Notification(
             userId, type, title, body, link, deduplicationKey, clock.GetUtcNow(), inAppVisible);
         db.Add(notification);
-        if (email && preference?.EmailEnabled != false)
+        if (email && (!optional || preference?.EmailEnabled != false))
             db.Add(new NotificationOutbox(notification.Id, deduplicationKey, clock.GetUtcNow()));
         return true;
     }
@@ -509,21 +527,28 @@ internal sealed class NotificationOutboxWorker(
                     x => x.Id == item.NotificationId, ct);
                 var email = await db.Users.AsNoTracking().Where(x => x.Id == notification.UserId)
                     .Select(x => x.Email).SingleAsync(ct);
+                // The reader's language (saved at sign-up); accounts from before it was saved read Arabic, as before.
+                var lang = UserLanguage.Normalize(await db.UserClaims.AsNoTracking()
+                    .Where(x => x.UserId == notification.UserId && x.ClaimType == UserLanguage.ClaimType)
+                    .Select(x => x.ClaimValue).FirstOrDefaultAsync(ct));
+                var title = NotificationEmailCopy.Text(notification.Title, lang);
+                var body = NotificationEmailCopy.Text(notification.Body, lang);
                 if (!string.IsNullOrWhiteSpace(email))
                 {
                     var ctaUrl = string.IsNullOrWhiteSpace(notification.Link)
                         ? null
                         : EmailLinks.Absolute(emailOptions.Value.AppBaseUrl, notification.Link);
                     var html = EmailTemplate.Render(
-                        preheader: notification.Body,
-                        kicker: "إشعار جديد",
-                        heading: notification.Title,
-                        paragraphs: [notification.Body],
+                        preheader: body,
+                        kicker: NotificationEmailCopy.Kicker(lang),
+                        heading: title,
+                        paragraphs: [body],
                         appBaseUrl: emailOptions.Value.AppBaseUrl,
                         accent: EmailAccent.Activity,
-                        ctaText: ctaUrl is null ? null : "عرض التفاصيل ←",
-                        ctaUrl: ctaUrl);
-                    await sender.SendAsync(email, notification.Title, html, ct);
+                        ctaText: ctaUrl is null ? null : NotificationEmailCopy.Cta(lang),
+                        ctaUrl: ctaUrl,
+                        lang: lang);
+                    await sender.SendAsync(email, title, html, ct);
                 }
                 item.Sent();
                 await db.SaveChangesAsync(ct);

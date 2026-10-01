@@ -15,9 +15,9 @@ type Translate = (key: string, fallback: string) => string;
 
 /**
  * The API answers a refusal with a reason and often a stable `code`. A translated
- * `err_<code>` wins; otherwise the server's own sentence is shown, because an accurate
- * English reason beats a localised non-answer; the generic line is kept for failures
- * that carry neither, such as a dropped connection.
+ * `err_<code>` wins (check:i18n requires one for every code the server can raise). The
+ * server's own sentences are English, so only an English reader is shown them when no
+ * code matched; an Arabic reader gets the generic Arabic line instead of a foreign one.
  */
 export function problemMessage(error: unknown, t: Translate): ProblemMessage {
   const response = error instanceof HttpErrorResponse ? error : null;
@@ -32,11 +32,16 @@ export function problemMessage(error: unknown, t: Translate): ProblemMessage {
   const offline = response?.status === 0;
   const text = translated
     || (offline ? t('common_offline', 'Could not reach Tafseel. Check your connection and try again.') : '')
-    || body.detail
-    || Object.values(fields)[0]
-    || body.title
+    // Pressing again after a failure is exactly what a worried person does; say to wait, not "something went wrong".
+    || (response?.status === 429 ? t('auth_rate_limited', 'Too many attempts. Please wait a minute and try again.') : '')
+    || (readsServerLanguage() ? body.detail || Object.values(fields)[0] || body.title : '')
     || t('unexpected_error', 'Something went wrong.');
   return { status: response?.status ?? 0, code, text, fields };
+}
+
+/** The server writes its reasons in English; the page's language is on <html lang>. */
+function readsServerLanguage(): boolean {
+  return (globalThis.document?.documentElement.getAttribute('lang') ?? 'en') !== 'ar';
 }
 
 /** `$.Rules[2].End`, `Price` and `input.price` all name the field `rules` / `price`. */

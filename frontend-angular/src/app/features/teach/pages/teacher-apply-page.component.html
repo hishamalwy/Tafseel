@@ -1,11 +1,13 @@
-<tf-workflow-header [crumb]="t('apply_title', 'Teacher qualification')" />
-<main class="tf-workflow tf-apply-page">
+<tf-skip-link />
+<tf-workflow-header [crumb]="t('apply_title', 'Teacher qualification')" role="Teacher" />
+<main id="main" class="tf-workflow tf-apply-page">
+  <a class="tf-back-link" routerLink="/teacher/home" data-testid="apply-back-home">{{ t('apply_back_home', 'My teacher home') }}</a>
   <section class="tf-panel" aria-labelledby="apply-title">
     <h1 id="apply-title">{{ t('apply_title', 'Teacher qualification') }}</h1>
     <p class="tf-muted">{{ t('apply_intro', 'Choose one subject-specific demo topic. Approval applies only to that subject.') }}</p>
-    <ol class="tf-apply-steps" aria-label="Application progress">
+    <ol class="tf-apply-steps" [attr.aria-label]="t('apply_progress', 'Application progress')">
       @for (item of steps; track item; let index = $index) {
-        <li><button type="button" [attr.data-state]="states()[item]" (click)="visit(item)">{{ index + 1 }}. {{ t('apply_step_label_' + item, item) }}</button></li>
+        <li><button type="button" [attr.data-state]="states()[item]" [attr.aria-current]="step() === item ? 'step' : null" [disabled]="!reachable(item)" (click)="visit(item)">{{ index + 1 }}. {{ t('apply_step_label_' + item, item) }}</button></li>
       }
     </ol>
     @if (loading()) { <div class="tf-apply-skeleton" role="status">{{ t('apply_loading', 'Loading application…') }}<div class="tf-skeleton"></div><div class="tf-skeleton"></div></div> }
@@ -14,13 +16,16 @@
         <div class="tf-apply-apps">
           @for (application of ws.applications; track application.id) {
             <button type="button" class="tf-apply-app" [class.is-active]="application.id === current()?.id" (click)="select(application)">
-              <span><strong>{{ application.subjectName || t('apply_subject', 'Subject') }}</strong><small>{{ application.city }}</small></span>
+              <span><strong>{{ appSubject(application) || t('apply_subject', 'Subject') }}</strong><small>{{ application.city }}</small></span>
               <span class="tf-apply-status" [attr.data-kind]="statusKind(application.status)">{{ statusName(application.status) }}</span>
             </button>
           }
         </div>
       }
       @if (step() === 'details') {
+        @if (!hasOpenSubject() && !current()) {
+          <p class="tf-alert" data-kind="info" role="status">{{ t('apply_no_other_subject', 'There are no other subjects open for applications right now.') }}</p>
+        }
         <form class="tf-form" (ngSubmit)="save()">
           <div class="tf-grid-2">
             <div class="tf-field"><label for="apply-subject">{{ t('apply_subject', 'Subject') }}</label><select id="apply-subject" name="subject" [ngModel]="subjectId()" (ngModelChange)="changeSubject($event)" required>@for (item of selectedSubjects(); track item.id) { <option [value]="item.id" [disabled]="item.disabled">{{ label(item) }}{{ item.reason ? ' — ' + t(item.reason, '') : '' }}</option> }</select></div>
@@ -28,28 +33,47 @@
             <div class="tf-field"><label for="apply-city">{{ t('apply_city', 'City') }}</label><input id="apply-city" name="city" [ngModel]="city()" (ngModelChange)="city.set($event)" maxlength="150" required></div>
             <div class="tf-field"><label for="apply-years">{{ t('apply_years', 'Years of experience') }}</label><input id="apply-years" name="years" type="number" [ngModel]="years()" (ngModelChange)="years.set($event)" min="0" max="80" required></div>
           </div>
-          <fieldset><legend>{{ t('apply_languages', 'Teaching languages') }}</legend><div class="tf-chip-row">@for (language of ws.languages; track language.id) { <label class="tf-lang-chip"><input type="checkbox" [checked]="checked(language.id)" (change)="toggleLanguage(language.id, $any($event.target).checked)"><span>{{ language.name }}</span></label> }</div></fieldset>
-          <button class="tf-button" type="submit" [disabled]="busy()">{{ busy() ? t('apply_saving', 'Saving…') : t('apply_save_continue', 'Save and continue') }}</button>
+          <fieldset><legend>{{ t('apply_languages', 'Teaching languages') }}</legend><div class="tf-chip-row">@for (language of ws.languages; track language.id) { <label class="tf-lang-chip"><input type="checkbox" [checked]="checked(language.id)" (change)="toggleLanguage(language.id, $any($event.target).checked)"><span>{{ languageName(language) }}</span></label> }</div></fieldset>
+          @if (missingDetails(); as missing) {
+            <p class="tf-alert" data-kind="warning" role="alert" data-testid="apply-missing">{{ missing }}</p>
+          }
+          <button class="tf-button" type="submit" [disabled]="busy() || !subjectId() || (!current() && !hasOpenSubject())">{{ busy() ? t('apply_saving', 'Saving…') : t('apply_save_continue', 'Save and continue') }}</button>
         </form>
       }
       @if (step() === 'demo') {
         <section class="tf-apply-panel">
           <h2>{{ t('apply_demo_title', 'Teaching demo') }}</h2>
           @if (current()?.status === 3 && current()?.publicFeedback) {
-            <div class="tf-alert" data-kind="warning" role="status" data-testid="reviewer-feedback"><strong>{{ t('apply_changes_requested_title', 'The quality team asked for changes') }}</strong><p>{{ current()?.publicFeedback }}</p><p>{{ t('apply_changes_requested_body', 'Update your demo if needed, then submit again.') }}</p></div>
+            <div class="tf-alert" data-kind="warning" role="status" data-testid="reviewer-feedback"><strong>{{ t('apply_changes_requested_title', 'The quality team asked for changes') }}</strong><p>{{ current()?.publicFeedback }}</p><p>{{ t('apply_changes_requested_body', 'Update your demo if needed, then submit again.') }}</p>@if (current()?.demoUploaded) { <p>{{ t('apply_changes_old_video', 'The video you sent before is still attached. If the reviewer asked for a new video, choose it below and press “Upload demo” before you submit again. Your written details are kept.') }}</p> }</div>
           }
           @if (topic(); as assignment) {
-            <article class="tf-assignment"><h2>{{ topicLabel(assignment) }}</h2><p>{{ Assignment.instructions(assignment, locale.isRtl()) }}</p><p>{{ t('apply_duration_required', 'Required duration') }}: {{ durationText(duration().min) }}–{{ durationText(duration().max) }}</p>
+            <article class="tf-assignment"><h2>{{ topicLabel(assignment) }}</h2><p>{{ Assignment.instructions(assignment, locale.isRtl()) }}</p><p>{{ locale.format('apply_duration_required', { range: durationText(duration().min) + '–' + durationText(duration().max) }, 'Required duration: {range}') }}</p>
               @if (assignment.resources.length) { <ul>@for (resource of assignment.resources; track resource.url) { <li><span>{{ Assignment.resourceName(resource, locale.isRtl()) }}</span>@if (resource.isFile) { <button type="button" (click)="openResource(resource)">{{ t('apply_preview', 'Preview') }}</button><button type="button" (click)="openResource(resource, true)">{{ t('apply_download', 'Download') }}</button> } @else { <a [href]="Assignment.safeUrl(resource.url, '/')" target="_blank" rel="noopener">{{ t('apply_open_reference', 'Open') }}</a> }</li> }</ul> }
             </article>
           }
-          <label class="tf-upload-drop"><input type="file" accept=".mp4,.webm,video/mp4,video/webm" (change)="chooseFile($event)"><span>{{ t('apply_demo_pick', 'Drop your teaching demo here, or browse') }}</span></label>
-          @if (demoFile(); as file) { <p>{{ file.name }} · {{ fileSize(file) }} @if (demoSeconds() != null) { · {{ durationText(demoSeconds()!) }} }</p> }
+          <p class="tf-apply-demo-about" data-testid="demo-about">{{ t('apply_demo_about', 'Tafseel’s quality team watches this video to decide on this subject. It stays private: students only see it if you later choose to show it on your profile. MP4 or WebM, up to 250 MB. You can replace it as often as you like until you submit.') }}</p>
+          <label class="tf-upload-drop" [class.is-dragover]="draggingDemo()" (dragover)="dragDemo($event)" (dragleave)="draggingDemo.set(false)" (drop)="dropDemo($event)">
+            <input type="file" accept=".mp4,.webm,video/mp4,video/webm" (change)="chooseFile($event)" [disabled]="busy()">
+            <span class="tf-upload-drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
+            <span class="tf-upload-drop-copy"><strong class="tf-upload-drop-title">{{ t('apply_demo_pick', 'Drop your teaching demo here, or browse') }}</strong><small class="tf-upload-drop-hint">MP4 · WebM</small></span>
+            <span class="tf-upload-drop-cta">{{ t(demoFile() ? 'apply_demo_replace_file' : 'apply_demo_browse', 'Browse files') }}</span>
+          </label>
+          @if (demoFile(); as file) {
+            <div class="tf-upload-file" [attr.data-status]="demoError() ? 'error' : busy() ? 'uploading' : null" role="status">
+              <div class="tf-upload-file-main"><span class="tf-upload-file-kind">VIDEO</span><strong>{{ file.name }}</strong><span class="tf-upload-file-size">{{ fileSize(file) }}@if (demoSeconds() != null) { · {{ durationText(demoSeconds()!) }} }</span></div>
+              @if (busy()) { <span class="tf-upload-file-status">{{ t('apply_demo_uploading', 'Uploading…') }}</span><span class="tf-upload-file-bar"><span></span></span> }
+              @if (!busy()) { <button type="button" class="tf-upload-file-remove" (click)="removeDemoFile()">{{ t('apply_demo_remove_file', 'Remove') }}</button> }
+            </div>
+          } @else if (current()?.demoUploaded) {
+            <p class="tf-apply-demo-done" role="status" data-testid="demo-received">{{ t('apply_demo_received', 'Your video was received. To send a different one, choose it above and press “Upload demo” again.') }}</p>
+          }
+          @if (demoError()) { <p class="tf-upload-file-error" role="alert">{{ demoError() }}</p> }
           <div class="tf-form-actions"><button class="tf-button" type="button" (click)="upload()" [disabled]="busy() || !demoFile()">{{ t('apply_upload_demo', 'Upload demo') }}</button><button class="tf-button tf-button-secondary" type="button" (click)="submit()" [disabled]="busy() || !current()?.demoUploaded">{{ t('apply_submit_review', 'Submit for review') }}</button></div>
+          <p class="tf-muted tf-apply-submit-about">{{ t('apply_submit_about', 'Submitting sends your details and video to Tafseel’s quality team. You cannot change them while they review. We e-mail you their decision, and you can always check it on this page.') }}</p>
         </section>
       }
       @if (step() === 'review' && current(); as application) {
-        <section class="tf-apply-review"><span class="tf-apply-status" [attr.data-kind]="statusKind(application.status)">{{ statusName(application.status) }}</span><h2>{{ t(application.status === 4 ? 'apply_review_approved_title' : application.status === 5 ? 'apply_review_rejected_title' : 'apply_review_pending_title', 'Application status') }}</h2><p>{{ application.publicFeedback || t('apply_review_pending_body', 'The quality team is reviewing your application.') }}</p><button type="button" class="tf-button tf-button-secondary" (click)="startAnother()">{{ t('apply_start_new', 'Start another application') }}</button></section>
+        <section class="tf-apply-review"><span class="tf-apply-status" [attr.data-kind]="statusKind(application.status)">{{ statusName(application.status) }}</span><h2>{{ application.status === 4 ? t('apply_review_approved_title', 'Approved') : application.status === 5 ? t('apply_review_rejected_title', 'Not approved') : t('apply_review_pending_title', 'Waiting for the quality team') }}</h2><p>{{ (application.status === 1 || application.status === 2) ? t('apply_review_pending_body', 'The quality team is reviewing your application.') : (application.publicFeedback || t('apply_review_pending_body', 'The quality team is reviewing your application.')) }}</p>@if (hasOpenSubject()) { <button type="button" class="tf-button tf-button-secondary" (click)="startAnother()">{{ t('apply_start_new', 'Start another application') }}</button> } @else { <p class="tf-muted">{{ t('apply_no_other_subject', 'There are no other subjects open for applications right now.') }}</p> }</section>
       }
     }
   </section>

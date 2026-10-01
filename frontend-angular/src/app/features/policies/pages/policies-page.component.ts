@@ -6,7 +6,8 @@ import { map } from 'rxjs';
 import { PolicyId, POLICY_ORDER } from '@features/policies/models/policy';
 import { StaticPolicyRepository } from '@features/policies/services/static-policy.repository';
 import { LocaleService } from '@core/i18n/locale.service';
-import { ThemeService } from '@core/theme/theme.service';
+import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
 /**
  * The policy documents — ported from `Tafseel-Policies.dc.html`.
@@ -20,7 +21,7 @@ import { ThemeService } from '@core/theme/theme.service';
 @Component({
   selector: 'tf-policies-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, SkipLinkComponent, WorkflowHeaderComponent],
   templateUrl: './policies-page.component.html'
 })
 export class PoliciesPageComponent {
@@ -29,7 +30,6 @@ export class PoliciesPageComponent {
   private readonly router = inject(Router);
   private readonly title = inject(Title);
   readonly locale = inject(LocaleService);
-  readonly theme = inject(ThemeService);
 
   private readonly requested = toSignal(
     this.route.paramMap.pipe(map(p => p.get('policy'))),
@@ -49,9 +49,6 @@ export class PoliciesPageComponent {
   readonly nav = computed(() =>
     this.policies().map(p => ({ id: p.id, label: p.title, current: p.id === this.activeId() })));
 
-  readonly langLabel = computed(() => (this.locale.lang() === 'ar' ? 'English' : 'العربية'));
-  readonly themeLabel = computed(() =>
-    this.locale.lang() === 'ar' ? 'تبديل المظهر' : 'Toggle theme');
 
   constructor() {
     // Keeps the tab title in step with both the document and the language, the

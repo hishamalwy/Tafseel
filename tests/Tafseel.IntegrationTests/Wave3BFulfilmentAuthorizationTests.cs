@@ -172,6 +172,7 @@ public sealed class Wave3BFulfilmentAuthorizationTests(SqlServerTafseelApiFactor
         // Nothing is payable before a selection, and no order exists.
         var early = await InitiateAsync(student, $"/api/v1/payments/open-requests/{requestId}", "wave3b-open-early");
         Assert.False(early.IsSuccessStatusCode);
+        Assert.False((await student.GetAsync($"/api/v1/payments/open-requests/{requestId}/quote")).IsSuccessStatusCode);
 
         (await SelectAsync(student, requestId, offerId, requestVersion, offerVersion)).EnsureSuccessStatusCode();
 
@@ -180,6 +181,12 @@ public sealed class Wave3BFulfilmentAuthorizationTests(SqlServerTafseelApiFactor
             .RootElement.GetProperty("version").GetString()!;
         Assert.False((await SendAsync(teacherA, HttpMethod.Put, $"/api/v1/open-marketplace/offers/{offerId}", edit, selectedVersion)).IsSuccessStatusCode);
         Assert.False((await SendAsync(teacherA, HttpMethod.Post, $"/api/v1/open-marketplace/offers/{offerId}/withdraw", null, selectedVersion)).IsSuccessStatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await student.GetAsync($"/api/v1/payments/open-requests/{requestId}/quote")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await outsiderStudent.GetAsync(
+            $"/api/v1/payments/open-requests/{requestId}/quote")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await teacherA.GetAsync(
+            $"/api/v1/payments/open-requests/{requestId}/quote")).StatusCode);
 
         var outsiderPayment = await InitiateAsync(outsiderStudent, $"/api/v1/payments/open-requests/{requestId}", "wave3b-open-outsider");
         Assert.True(outsiderPayment.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden,
@@ -217,8 +224,8 @@ public sealed class Wave3BFulfilmentAuthorizationTests(SqlServerTafseelApiFactor
             $"/api/v1/live-sessions/teachers/{data.Teacher.Id}/slots?from={data.LocalDate:yyyy-MM-dd}" +
             "&days=1&durationMinutes=30&studentTimeZoneId=UTC")).RootElement.EnumerateArray().ToArray();
         Assert.True(slots.Length >= 2);
-        var completedId = await BookAndPayAsync(studentA, data.ServiceId, slots[0].GetProperty("startsAt").GetDateTimeOffset());
-        var noShowId = await BookAndPayAsync(studentB, data.ServiceId, slots[1].GetProperty("startsAt").GetDateTimeOffset());
+        var completedId = await BookAndPayAsync(studentA, teacher, data.ServiceId, slots[0].GetProperty("startsAt").GetDateTimeOffset());
+        var noShowId = await BookAndPayAsync(studentB, teacher, data.ServiceId, slots[1].GetProperty("startsAt").GetDateTimeOffset());
 
         // Before the end, the teacher cannot claim completion.
         factory.Clock.SetUtcNow(slots[0].GetProperty("startsAt").GetDateTimeOffset().AddMinutes(20));
@@ -257,7 +264,7 @@ public sealed class Wave3BFulfilmentAuthorizationTests(SqlServerTafseelApiFactor
         Assert.Equal(LiveSessionStatus.TeacherNoShow, await SessionStatusAsync(noShowId));
     }
 
-    private async Task<Guid> BookAndPayAsync(HttpClient student, Guid serviceId, DateTimeOffset start)
+    private async Task<Guid> BookAndPayAsync(HttpClient student, HttpClient teacher, Guid serviceId, DateTimeOffset start)
     {
         var booked = await student.PostAsJsonAsync("/api/v1/live-sessions", new
         {
@@ -271,6 +278,8 @@ public sealed class Wave3BFulfilmentAuthorizationTests(SqlServerTafseelApiFactor
         });
         booked.EnsureSuccessStatusCode();
         var id = JsonDocument.Parse(await booked.Content.ReadAsStringAsync()).RootElement.GetProperty("id").GetGuid();
+        (await SendAsync(teacher, HttpMethod.Post, $"/api/v1/live-sessions/{id}/request/respond",
+            new { accept = true }, await SessionVersionAsync(id))).EnsureSuccessStatusCode();
         await PayAsync(student, $"/api/v1/payments/live-sessions/{id}", "wave3b-session-" + id);
         Assert.Equal(LiveSessionStatus.Confirmed, await SessionStatusAsync(id));
         return id;

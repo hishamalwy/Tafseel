@@ -78,10 +78,23 @@ export function sortItems(rows: readonly Row[], viewer: 'student' | 'teacher', n
   return [...rows].sort((a, b) => rank(a) - rank(b) || when(b) - when(a));
 }
 
+/**
+ * A request that became an order is the order from then on. Listing both showed the same job twice —
+ * "Accepted — order created" next to the order itself — and left people unsure which one to open.
+ * The request stays reachable from the order ("View the original request").
+ */
+export function withoutConvertedRequests(rows: readonly Row[]): readonly Row[] {
+  const ordered = new Set(rows
+    .filter(row => String(row['_source'] ?? '').startsWith('/orders') && row['learningRequestId'])
+    .map(row => String(row['learningRequestId'])));
+  return rows.filter(row => !(String(row['_source'] ?? '').startsWith('/learning-requests')
+    && (row['status'] === 2 || row['status'] === 7) && ordered.has(String(row['id']))));
+}
+
 export function filterItems(
   rows: readonly Row[], chip: Chip, viewer: 'student' | 'teacher', now = Date.now()
 ): readonly Row[] {
-  const sorted = sortItems(rows, viewer, now);
+  const sorted = sortItems(withoutConvertedRequests(rows), viewer, now);
   return chip === 'all' ? sorted : sorted.filter(row => chipOf(row, viewer, now) === chip);
 }
 

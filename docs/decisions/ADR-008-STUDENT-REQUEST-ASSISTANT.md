@@ -16,16 +16,16 @@ Repository evidence:
 - [Order contracts](../../src/Tafseel.Application/Orders/OrderContracts.cs)
 - [Order service](../../src/Tafseel.Infrastructure/Orders/OrderService.cs)
 - [Learning Requests controller](../../src/Tafseel.Api/Controllers/OrdersController.cs)
-- [Request page](../../Tafseel-Request.dc.html)
-- [Student Dashboard](../../Tafseel-Student-Dashboard.dc.html)
-- [Teacher Profile](../../Tafseel-Teacher-Profile.dc.html)
-- [Teacher Dashboard](../../Tafseel-Teacher-Dashboard.dc.html)
+- Request page
+- Student Dashboard
+- Teacher Profile
+- Teacher Dashboard
 - [Marketplace service mapping](../../src/Tafseel.Infrastructure/Marketplace/MarketplaceService.cs)
 - [Private file storage](../../src/Tafseel.Infrastructure/Files/LocalFileStorageService.cs)
-- [Localization keys](../../js/locales.js)
-- [Phase 5 report](../features/phase-5-report.md)
+- Localization keys
+- Phase 5 report
 - [Phase 5 order tests](../../tests/Tafseel.IntegrationTests/Phase5OrderTests.cs)
-- [Phase 0–1 audit](../audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md)
+- Phase 0–1 audit
 
 ## Existing Request Flow
 

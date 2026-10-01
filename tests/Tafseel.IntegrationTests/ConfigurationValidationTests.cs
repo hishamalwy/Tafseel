@@ -145,6 +145,71 @@ public sealed class ConfigurationValidationTests
             () => services.GetRequiredService<IOptions<LiveSessionOptions>>().Value);
     }
 
+    [Fact]
+    public void Jaas_requires_server_signing_credentials()
+    {
+        using var services = Provider("LiveSessions:Provider", "JaaS", Environments.Production);
+        Assert.Throws<OptionsValidationException>(
+            () => services.GetRequiredService<IOptions<JaasOptions>>().Value);
+    }
+
+    // L-50: one pre-signed token is the same identity for every participant and is bound to no room or window.
+    [Fact]
+    public void Production_jaas_refuses_a_shared_static_token()
+    {
+        const string token = "eyJhbGciOiJSUzI1NiJ9.eyJyb29tIjoiKiJ9.c2lnbmF0dXJl";
+        using var sandbox = Provider("JaaS:StaticJwt", token, Environments.Staging, Jaas);
+        Assert.NotNull(sandbox.GetRequiredService<IOptions<JaasOptions>>().Value);
+
+        using var production = Provider("JaaS:StaticJwt", token, Environments.Production, Jaas);
+        var error = Assert.Throws<OptionsValidationException>(
+            () => production.GetRequiredService<IOptions<JaasOptions>>().Value);
+        Assert.Contains("per-participant", error.Message);
+    }
+
+    // PreProduction closure: the hosted rehearsal signs per participant like Production; a pasted token expired there.
+    [Fact]
+    public void PreProduction_jaas_refuses_a_static_token_and_the_sample_key()
+    {
+        const string token = "eyJhbGciOiJSUzI1NiJ9.eyJyb29tIjoiKiJ9.c2lnbmF0dXJl";
+        using var staticToken = Provider("JaaS:StaticJwt", token, "PreProduction", Jaas);
+        Assert.Contains("per-participant", Assert.Throws<OptionsValidationException>(
+            () => staticToken.GetRequiredService<IOptions<JaasOptions>>().Value).Message);
+
+        using var key = System.Security.Cryptography.RSA.Create(2048);
+        var path = Path.Combine(Path.GetTempPath(), $"tafseel-jaas-{Guid.NewGuid():N}.pem");
+        File.WriteAllText(path, key.ExportRSAPrivateKeyPem());
+        try
+        {
+            var signed = new Dictionary<string, string?>(Jaas)
+            {
+                ["JaaS:KeyId"] = "vpaas-magic-cookie-test/own-key",
+                ["JaaS:PrivateKeyPath"] = path
+            };
+            using var own = Provider("JaaS:StaticJwt", "", "PreProduction", signed);
+            Assert.NotNull(own.GetRequiredService<IOptions<JaasOptions>>().Value);
+
+            signed["JaaS:KeyId"] = "vpaas-magic-cookie-test/1afb6e-SAMPLE_APP";
+            using var sample = Provider("JaaS:StaticJwt", "", "PreProduction", signed);
+            Assert.Throws<OptionsValidationException>(() => sample.GetRequiredService<IOptions<JaasOptions>>().Value);
+
+            signed["JaaS:KeyId"] = "vpaas-magic-cookie-test/own-key";
+            signed["JaaS:PrivateKeyPath"] = path + ".missing";
+            using var missing = Provider("JaaS:StaticJwt", "", "PreProduction", signed);
+            Assert.Throws<OptionsValidationException>(() => missing.GetRequiredService<IOptions<JaasOptions>>().Value);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private static readonly Dictionary<string, string?> Jaas = new()
+    {
+        ["LiveSessions:Provider"] = "JaaS",
+        ["JaaS:AppId"] = "vpaas-magic-cookie-test"
+    };
+
     [Theory]
     [InlineData("Payments:WebhookSecret", "short")]
     [InlineData("Payments:Provider", "Unknown")]
@@ -207,7 +272,8 @@ public sealed class ConfigurationValidationTests
     private static ServiceProvider Provider(
         string changedKey,
         string changedValue,
-        string environment = "Development")
+        string environment = "Development",
+        IReadOnlyDictionary<string, string?>? alsoChanged = null)
     {
         var values = new Dictionary<string, string?>
         {
@@ -234,6 +300,8 @@ public sealed class ConfigurationValidationTests
             ["Disputes:WindowDays"] = "7",
             ["Orders:NonDeliveryGraceHours"] = "24"
         };
+        foreach (var (key, value) in alsoChanged ?? new Dictionary<string, string?>())
+            values[key] = value;
         values[changedKey] = changedValue;
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
         var collection = new ServiceCollection();

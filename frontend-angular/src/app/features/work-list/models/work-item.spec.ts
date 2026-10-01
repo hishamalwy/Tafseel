@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Row, chipFrom, chipOf, filterItems, sortItems } from './work-item';
+import { Row, chipFrom, chipOf, filterItems, sortItems, withoutConvertedRequests } from './work-item';
 
 const NOW = Date.parse('2026-09-16T12:00:00Z');
 const iso = (minutes: number) => new Date(NOW + minutes * 60_000).toISOString();
@@ -89,5 +89,17 @@ describe('UX-03 one list of everything', () => {
     expect(chipFrom('whatever')).toBe('all');
     expect(chipFrom(null)).toBe('all');
     expect(chipFrom(undefined)).toBe('all');
+  });
+});
+
+describe('withoutConvertedRequests', () => {
+  it('lists an accepted request once, as its order, and keeps requests that have no order yet', () => {
+    const rows = [
+      { _source: '/learning-requests/mine', id: 'r1', status: 2 },
+      { _source: '/orders/mine', id: 'o1', learningRequestId: 'r1', status: 1 },
+      { _source: '/learning-requests/mine', id: 'r2', status: 0 },
+      { _source: '/learning-requests/mine', id: 'r3', status: 2 }
+    ];
+    expect(withoutConvertedRequests(rows).map(r => r['id'])).toEqual(['o1', 'r2', 'r3']);
   });
 });

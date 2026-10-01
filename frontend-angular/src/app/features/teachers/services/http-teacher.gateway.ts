@@ -5,7 +5,7 @@ import {
   Credential, Teacher, TeacherReview, TeacherSample, TeacherService, TrustBadge
 } from '../models/teacher';
 import {
-  AvailabilityState, AvailabilitySummary, CatalogGateway, CatalogItem, Catalogs,
+  AvailabilityState, AvailabilitySummary, CatalogGateway, Catalogs,
   FavouritesGateway, TeacherGateway, TeacherPage, TeacherQuery
 } from '../services/teacher.ports';
 
@@ -40,10 +40,13 @@ interface TeacherDto {
   certifications?: CredentialDto[];
   experience?: CredentialDto[];
   country?: string; city?: string; responseTimeMinutes?: number | null;
-  startingPrice?: number | null; currency?: string;
+  startingPrice?: number | null; currency?: string; startingCurrency?: string;
+  sampleCount?: number;
   services?: Record<string, unknown>[];
+  contextOffer?: Record<string, unknown> | null;
   trustBadges?: TrustBadge[];
   samples?: Record<string, unknown>[];
+  introVideo?: { contentUrl?: string; contentType?: string; durationSeconds?: number | null } | null;
   isVerified?: boolean; verified?: boolean;
 }
 
@@ -84,9 +87,9 @@ function toService(dto: Record<string, unknown>): TeacherService {
     id: text('id'),
     subjectId: (dto['subjectId'] as string) ?? null,
     serviceCatalogItemId: (dto['serviceCatalogItemId'] as string) ?? null,
-    serviceCatalogCode: text('serviceCatalogCode'),
-    serviceNameEnglish: text('nameEn') || text('title'),
-    serviceNameArabic: text('nameAr') || text('title'),
+    serviceCatalogCode: text('serviceCatalogCode') || text('serviceCode'),
+    serviceNameEnglish: text('nameEn') || text('serviceName') || text('title'),
+    serviceNameArabic: text('nameAr') || text('serviceNameAr') || text('title'),
     descriptionEnglish: text('descriptionEn') || text('description'),
     descriptionArabic: text('descriptionAr') || text('description'),
     price: num('price') ?? num('defaultPrice'),
@@ -100,6 +103,15 @@ function toService(dto: Record<string, unknown>): TeacherService {
     requiresScheduling: !!dto['requiresScheduling'],
     allowedDurations: (dto['allowedDurations'] as number[]) ?? []
   };
+}
+
+function introSample(intro: TeacherDto['introVideo']): TeacherSample[] {
+  if (!intro?.contentUrl) return [];
+  return [{
+    id: 'intro', title: '', mediaUrl: intro.contentUrl, description: '',
+    durationSeconds: typeof intro.durationSeconds === 'number' ? intro.durationSeconds : null,
+    trustCode: 'intro', contentType: intro.contentType ?? '', subjectId: null
+  }];
 }
 
 function toSample(dto: Record<string, unknown>): TeacherSample {
@@ -152,10 +164,12 @@ function toTeacher(dto: TeacherDto): Teacher {
     city: dto.city ?? '',
     responseTimeMinutes: dto.responseTimeMinutes ?? null,
     startingPrice: dto.startingPrice ?? null,
-    currency: dto.currency ?? 'SAR',
-    services: (dto.services ?? []).map(toService),
+    currency: dto.startingCurrency ?? dto.currency ?? 'SAR',
+    sampleCount: dto.sampleCount ?? 0,
+    services: (dto.services ?? (dto.contextOffer ? [dto.contextOffer] : [])).map(toService),
     trustBadges: dto.trustBadges ?? [],
-    samples: (dto.samples ?? []).map(toSample),
+    // PRODUCT-P1: the teacher's one chosen introduction video leads; nothing else of theirs is shown by default.
+    samples: [...introSample(dto.introVideo), ...(dto.samples ?? []).map(toSample)],
     isVerified: !!(dto.isVerified ?? dto.verified)
   };
 }
@@ -191,16 +205,17 @@ function toParams(query: TeacherQuery): string {
     if (value === undefined || value === null || value === '' || value === false) return;
     params.set(key, String(value));
   };
-  put('q', query.q);
+  put('search', query.q);
   put('subjectId', query.subjectId);
   put('topicId', query.topicId);
-  put('serviceId', query.serviceId);
+  put('serviceTypeId', query.serviceId);
   put('educationLevelId', query.educationLevelId);
   put('availableOn', query.availableOn);
-  put('minRating', query.minRating);
-  put('maxPrice', query.maxPrice);
+  put('minimumRating', query.minRating);
+  put('maximumPrice', query.maxPrice);
   put('verifiedOnly', query.verifiedOnly);
-  put('sort', query.sort);
+  put('sort', query.sort === 'rating' ? 'highest-rated'
+    : query.sort === 'price' ? 'lowest-price' : query.sort || 'name');
   put('page', query.page);
   put('pageSize', query.pageSize);
   for (const id of query.languageIds ?? []) params.append('languageIds', id);
@@ -254,10 +269,10 @@ export class HttpTeacherGateway implements TeacherGateway {
 
   compare(teacherIds: readonly string[]): Observable<readonly Teacher[]> {
     const params = new URLSearchParams();
-    for (const id of teacherIds) params.append('teacherIds', id);
+    for (const id of teacherIds) params.append('ids', id);
     return this.http
-      .get<PageDto<TeacherDto>>(`/api/v1/teachers/compare?${params}`)
-      .pipe(map(page => (page.items ?? []).map(toTeacher)));
+      .get<{ teachers: TeacherDto[] }>(`/api/v1/teachers/compare?${params}`)
+      .pipe(map(result => result.teachers.map(toTeacher)));
   }
 }
 
@@ -271,8 +286,13 @@ export class HttpCatalogGateway implements CatalogGateway {
    */
   all(): Observable<Catalogs> {
     const list = (path: string) => this.http
-      .get<CatalogItem[] | PageDto<CatalogItem>>(path)
-      .pipe(map(result => (Array.isArray(result) ? result : (result.items ?? [])) as CatalogItem[]));
+      .get<(NamedDto & { nameEnglish?: string; nameArabic?: string })[]
+        | PageDto<NamedDto & { nameEnglish?: string; nameArabic?: string }>>(path)
+      .pipe(map(result => (Array.isArray(result) ? result : (result.items ?? [])).map(item => ({
+        id: item.id ?? '',
+        nameEnglish: item.nameEnglish || item.name || '',
+        nameArabic: item.nameArabic || item.nameAr || item.name || ''
+      }))));
 
     return forkJoin({
       subjects: list('/api/v1/subjects'),

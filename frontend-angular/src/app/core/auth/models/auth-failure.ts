@@ -18,6 +18,7 @@ export type AuthFailureReason =
   | 'reset-link-invalid'
   | 'confirmation-not-sent'
   | 'offline'
+  | 'rate-limited'
   | 'server-fault'
   | 'unknown';
 

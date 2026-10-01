@@ -15,17 +15,17 @@ Repository evidence:
 - [ADR-001](./ADR-001-VERIFIED-TEACHER-DERIVATION.md)
 - [ADR-006](./ADR-006-TEACHER-AVAILABILITY-AND-CAPACITY.md)
 - [ADR-007](./ADR-007-TEACHER-PORTFOLIO-MODERATION.md)
-- [F-002 report](../fixes/F002_TEACHER_METRICS_INTEGRITY_REPORT.md)
+- F-002 report
 - [TeacherSubjectQualification](../../src/Tafseel.Domain/TeacherApplications/TeacherApplication.cs)
 - [TeacherReview / Governance](../../src/Tafseel.Domain/Governance/Governance.cs)
 - [Orders and deliveries](../../src/Tafseel.Domain/Orders/Orders.cs)
 - [Live sessions](../../src/Tafseel.Domain/LiveSessions/LiveSessions.cs)
 - [Marketplace contracts](../../src/Tafseel.Application/Marketplace/MarketplaceContracts.cs)
 - [MarketplaceService](../../src/Tafseel.Infrastructure/Marketplace/MarketplaceService.cs)
-- [Browse Teachers](../../Tafseel-Browse-Teachers.dc.html)
-- [Teacher Profile](../../Tafseel-Teacher-Profile.dc.html)
-- [Phase 0–1 audit](../audits/TAFSEEL_PHASE_0_1_AUDIT_REPORT.md)
-- [PROJECT_STATUS](../PROJECT_STATUS.md)
+- Browse Teachers
+- Teacher Profile
+- Phase 0–1 audit
+- PROJECT_STATUS
 
 ## Phase A — Evidence Inventory
 

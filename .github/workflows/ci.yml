@@ -45,7 +45,9 @@ jobs:
         id: integration
         run: dotnet test tests/Tafseel.IntegrationTests -c Release --no-build --filter "Category!=SqlServer" --collect "XPlat Code Coverage" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration
       - name: API contract (Angular client against the API snapshot)
-        run: node scripts/ci/check-api-contract.mjs
+        run: node scripts/ci/check-api-contract.mjs --strict
+      - name: Production fail-closed structure
+        run: node scripts/ci/check-production-infrastructure.mjs
       - name: JavaScript syntax
         run: node scripts/ci/check-js.mjs
       - name: Staging deploy gate script tests
@@ -109,6 +111,78 @@ jobs:
           name: sql-test-results-${{ github.run_id }}
           path: TestResults
           if-no-files-found: error
+  frontend-unit:
+    name: frontend-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+      - name: Install the client
+        working-directory: frontend-angular
+        run: npm ci
+      # pretest runs check:i18n and check:styles (component budget, UX-06 and skip-link guards) first.
+      - name: Angular unit tests
+        working-directory: frontend-angular
+        run: npm test -- --watch=false
+  browser-journeys:
+    # SDLC Gate 5: every business journey in tests/browser/*.e2e.mjs, against a published build in
+    # Development (dev outbox, mock payment simulator), each on its own fresh database.
+    name: browser-journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\""
+          --health-interval 10s --health-timeout 5s --health-retries 20
+    env:
+      TAFSEEL_E2E_SQL_SERVER: localhost,1433
+      TAFSEEL_E2E_SQL_USER: sa
+      SQLCMDPASSWORD: ${{ secrets.CI_SQL_PASSWORD }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+      - run: test -n "$SQLCMDPASSWORD" || { echo 'CI_SQL_PASSWORD is required'; exit 1; }
+      - name: sqlcmd on the runner
+        run: |
+          if command -v sqlcmd >/dev/null; then sqlcmd -? | head -n 2
+          elif [ -x /opt/mssql-tools18/bin/sqlcmd ]; then /opt/mssql-tools18/bin/sqlcmd -? | head -n 2
+          else echo 'The journeys read the database through sqlcmd, which this runner image does not have.'; exit 1; fi
+      - run: dotnet restore Tafseel.sln --locked-mode
+      - name: Publish the host (builds the Angular client)
+        run: dotnet publish src/Tafseel.Api/Tafseel.Api.csproj -c Release --no-restore -o artifacts/e2e-publish
+      - name: Build the seeder
+        run: dotnet restore scripts/dev/E2ESeed --locked-mode && dotnet build scripts/dev/E2ESeed -c Release --no-restore
+      - name: Install Playwright
+        working-directory: tests/browser
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Browser journeys
+        run: >-
+          node scripts/ci/run-browser-journeys.mjs
+          --publish=artifacts/e2e-publish
+          --seed=scripts/dev/E2ESeed/bin/Release/net8.0/E2ESeed.dll
+          --artifacts=TestResults/browser-journeys
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: ${{ always() }}
+        with:
+          name: browser-journeys-${{ github.run_id }}
+          path: TestResults/browser-journeys
+          if-no-files-found: warn
   publish:
     name: publish-smoke
     runs-on: ubuntu-latest

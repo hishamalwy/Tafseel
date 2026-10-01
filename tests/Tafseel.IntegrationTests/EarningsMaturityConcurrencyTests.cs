@@ -565,8 +565,9 @@ public sealed class EarningsMaturityConcurrencyTests : IClassFixture<SqlServerTa
         {
             legalName = "Verified Teacher",
             countryCode = "SA",
-            payoutMethod = "Bank transfer",
-            destinationLabel = "IBAN •••• 1234",
+            payoutMethod = "bank_transfer",
+            bankName = "Test Bank",
+            iban = "SA0380000000608010167519",
             identityLast4 = "1234"
         });
         submitted.EnsureSuccessStatusCode();

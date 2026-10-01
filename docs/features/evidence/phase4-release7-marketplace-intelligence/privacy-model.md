@@ -1,3 +1,0 @@
-# Privacy model
-
-No raw query, email, phone, address, token, message, request body, delivery note, moderation note, attachment, payment secret, arbitrary URL, or metadata JSON is accepted or stored. Admin receives aggregates only. Anonymous identity is a random sessionStorage UUID: no fingerprint and no cross-session advertising identity. Retention duration remains a Class B Privacy/Governance Decision Required before Production; engineering does not silently invent it. Canonical transactional records remain Class A under existing policy. See [final-acceptance/retention-governance.md](./final-acceptance/retention-governance.md).

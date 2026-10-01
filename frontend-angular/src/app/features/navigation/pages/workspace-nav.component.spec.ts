@@ -124,7 +124,7 @@ describe('UX-03 workspace navigation', () => {
     const quality = await open({ role: 'QualityReviewer', url: '/quality/applications' });
     expect(labels(quality.page)).toEqual(['Applications', 'Account']);
     const admin = await open({ role: 'Admin', url: '/admin/home' });
-    expect(labels(admin.page)).toEqual(['Attention', 'People', 'Catalog & pricing', 'Operations', 'Finance', 'Audit']);
+    expect(labels(admin.page)).toEqual(['Attention', 'People', 'Catalog & marketing', 'Operations', 'Finance', 'Audit']);
     // Hidden V1.1 areas are nowhere in the navigation.
     for (const gone of ['/admin/insights', '/quality/showcases'])
       expect(admin.page.innerHTML + quality.page.innerHTML).not.toContain(gone);
@@ -165,6 +165,22 @@ describe('UX-03 workspace navigation', () => {
     expect(row?.querySelector('button')).not.toBeNull();
   });
 
+  it('still follows a link stored before the move to Angular, through the host redirect', async () => {
+    const { page, read } = await open({ latest: () => of([notification({
+      id: 'legacy-1', link: '/app/Tafseel-Student-Dashboard.dc.html?section=payments'
+    })]) });
+    (testId(page, 'notification-bell') as HTMLButtonElement).click();
+    await new Promise(resolve => setTimeout(resolve));
+    const link = testId(page, 'notification-row')?.querySelector('a') as HTMLAnchorElement | null;
+
+    // Relative to the locale's <base href>, so /en/app/... reaches LegacyLinks on the host.
+    expect(link?.getAttribute('href')).toBe('app/Tafseel-Student-Dashboard.dc.html?section=payments');
+    link?.addEventListener('click', event => event.preventDefault());
+    link?.click();
+    await new Promise(resolve => setTimeout(resolve));
+    expect(read).toContain('legacy-1');
+  });
+
   it('says so when notifications cannot be read, and shows an empty state otherwise', async () => {
     const failed = await open({ latest: () => throwError(() => new HttpErrorResponse({ status: 500 })) });
     (testId(failed.page, 'notification-bell') as HTMLButtonElement).click();
@@ -183,7 +199,7 @@ describe('UX-03 workspace navigation', () => {
     expect(testId(page, 'account-menu')).toBeNull();
     (testId(page, 'account-menu-toggle') as HTMLButtonElement).click();
     await new Promise(resolve => setTimeout(resolve));
-    expect(testId(page, 'account-settings')?.getAttribute('href')).toBe('/student/settings');
+    expect(testId(page, 'account-settings')?.getAttribute('href')).toBe('/account');
     expect(testId(page, 'account-sign-out')).not.toBeNull();
     expect(testId(page, 'account-public-profile')).toBeNull();
   });
@@ -193,6 +209,6 @@ describe('UX-03 workspace navigation', () => {
     (testId(page, 'account-menu-toggle') as HTMLButtonElement).click();
     await new Promise(resolve => setTimeout(resolve));
     expect(testId(page, 'account-public-profile')?.getAttribute('href')).toBe('/teachers/user-1');
-    expect(testId(page, 'account-settings')?.getAttribute('href')).toBe('/teacher/settings');
+    expect(testId(page, 'account-settings')?.getAttribute('href')).toBe('/account');
   });
 });

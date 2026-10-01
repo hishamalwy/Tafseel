@@ -36,7 +36,8 @@ export class HttpSessionGateway implements SessionGateway {
     const body = {
       email: credentials.email,
       password: credentials.password,
-      ...(credentials.mfaCode ? { code: credentials.mfaCode } : {})
+      ...(credentials.mfaCode ? { code: credentials.mfaCode } : {}),
+      rememberMe: credentials.rememberMe ?? true
     };
     return this.http
       .post<SessionDto>('/api/v1/auth/login', body, { withCredentials: true })

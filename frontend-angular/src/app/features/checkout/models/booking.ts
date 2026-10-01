@@ -15,6 +15,7 @@ export interface BookableService {
   readonly allowedDurations: readonly number[];
   readonly canBook: boolean;
   readonly serviceCatalogCode: string;
+  /** The hourly rate: a booking costs `basePrice × minutes ÷ 60` (contract §3.8). */
   readonly basePrice: number | null;
   readonly emergencyPremiumAmount: number | null;
 }
@@ -93,6 +94,9 @@ export const Booking = {
     const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' });
     const dayDate = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' });
     const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    // What the button says: the clock people use (3:00 PM, ٣:٠٠ م). "15:00" read as three o'clock, and the
+    // night slots right after midnight ("03:00") were easy to take for afternoon ones.
+    const shown = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' });
 
     const byDay = new Map<string, Slot[]>();
     for (const slot of slots) {
@@ -116,12 +120,12 @@ export const Booking = {
           const local = parseLocalWallClock(slot.studentLocalStart)!;
           return {
             key: `${key}T${time.format(local)}`,
-            label: time.format(local),
+            label: shown.format(local),
             localStart: slot.studentLocalStart,
             emergency: !!slot.emergency
           };
         })
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => a.localStart.localeCompare(b.localStart));
 
       return { key, weekday: weekday.format(day), date: dayDate.format(day), slots: daySlots };
     });

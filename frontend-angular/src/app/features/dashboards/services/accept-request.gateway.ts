@@ -26,7 +26,9 @@ export class AcceptRequestGateway {
         finalPrice: body.finalPrice,
         currency: body.currency,
         agreedDeliveryAt: body.agreedDeliveryAt,
-        revisionAllowance: body.revisionAllowance
+        revisionAllowance: body.revisionAllowance,
+        // DEC-UX-03: only when the price differs from the listed one; the server refuses a change without it.
+        ...(body.priceChangeReason ? { priceChangeReason: body.priceChangeReason } : {})
       },
       { headers: new HttpHeaders({ 'If-Match': version, 'Idempotency-Key': idempotencyKey }) });
   }

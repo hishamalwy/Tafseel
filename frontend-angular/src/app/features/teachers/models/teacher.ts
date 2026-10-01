@@ -87,6 +87,8 @@ export interface Teacher {
    */
   readonly startingPrice: number | null;
   readonly currency: string;
+  /** Available on the comparison endpoint, which does not return completed-order counts. */
+  readonly sampleCount?: number;
   readonly services: readonly TeacherService[];
   readonly trustBadges: readonly TrustBadge[];
   readonly samples: readonly TeacherSample[];

@@ -48,6 +48,17 @@
   border-radius: var(--r-sm);
 }
 
+.tf-auth-success {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--success);
+  background: var(--success-soft);
+  border-radius: var(--r-sm);
+}
+
 .tf-auth-note {
   margin-block-end: 16px;
   padding: 10px 12px;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tafseel is an ASP.NET Core 8 educational marketplace with an EF Core/SQL Server backend and a DC/HTML frontend containing embedded React components. The repository uses a layered solution and keeps business transitions outside controllers.
+Tafseel is an ASP.NET Core 8 educational marketplace with an EF Core/SQL Server backend and an Angular client (`frontend-angular/`) served by the same host. The repository uses a layered solution and keeps business transitions outside controllers.
 
 ## Projects
 
@@ -56,6 +56,23 @@ EF Core 8 targets SQL Server. `TafseelDbContext` contains Identity, catalog, qua
 ## Frontend
 
 The frontend is the Angular client in `frontend-angular/`, built by `Tafseel.Api.csproj` into `webclient/{ar,en}` and served by `Program.cs`: `/` negotiates `/ar/` or `/en/`, prerendered pages are real files, and every other client path gets that locale's shell. The design system (`css/tafseel.css`, `assets/`) is copied into the build. Links the server writes into notifications and emails come from `AppRoutes` and are locale-free. The retired `.dc.html` pages are gone; their `/app/*` addresses redirect to the matching Angular route (`Routing/LegacyLinks.cs`).
+
+## Quality targets
+
+> **DRAFT — owner to confirm** (2026-09-23 audit, F-ARCH-1). Values marked `PROPOSED` are starting
+> points sized for one application instance (the DEC-12 direction), not measurements. Confirm or
+> change them in [`V1_OWNER_DECISIONS.md`](../releases/V1_OWNER_DECISIONS.md); INF-03 (backups) and
+> REL-01 (recovery drills) are judged against them.
+
+| Dimension | Target | Basis |
+|---|---|---|
+| 12-month scale ceiling | `PROPOSED` 5,000 registered students, 300 published teachers, 200 paid orders/day at peak | One instance plus one managed SQL database; revisit at 70 % of any figure |
+| API latency | `PROPOSED` p95 ≤ 500 ms for reads and ≤ 1 s for payment initiation, excluding the provider's hosted checkout | Every money path runs Serializable with an app lock; this bounds lock hold time |
+| Availability | `PROPOSED` 99.5 % per calendar month (≈ 3.6 h downtime), single instance accepted for V1 | DEC-12: single application instance |
+| RPO (SQL database) | `PROPOSED` ≤ 15 minutes | Requires managed point-in-time restore; the ledger is the system of record for money |
+| RTO (application and database) | `PROPOSED` ≤ 4 hours | Restore to a new database, repoint the connection string (BACKUP_AND_RESTORE.md) |
+| RPO/RTO (blob storage) | `PROPOSED` ≤ 24 h / ≤ 4 h | Deliveries and evidence; soft delete plus versioning on the container |
+| Background workers | Degraded on `/health/ready` after two missed intervals | `WorkerHeartbeats` (RUNBOOK: "Ready degraded — background-workers") |
 
 ## Deployment
 

@@ -10,7 +10,7 @@ namespace Tafseel.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/teachers")]
-public sealed class MarketplaceController(IMarketplaceService marketplace) : ControllerBase
+public sealed class MarketplaceController(IMarketplaceService marketplace, IIntroVideoService introVideos) : ControllerBase
 {
     [AllowAnonymous, HttpGet]
     public Task<Application.Common.PagedResult<TeacherCardDto>> Search(
@@ -34,6 +34,45 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
         Response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
         return File(file.Content, file.ContentType, enableRangeProcessing: true);
     }
+
+    /// <summary>The teacher's one public introduction video. Anyone may play it while it is shown; the teacher always may.</summary>
+    [AllowAnonymous, HttpGet("{teacherId}/intro-video/content")]
+    public async Task<IActionResult> IntroVideoContent(string teacherId, CancellationToken ct)
+    {
+        var file = await introVideos.OpenAsync(User.FindFirstValue("sub"), teacherId, ct);
+        Response.Headers.ContentDisposition = "inline";
+        Response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
+        Response.Headers.CacheControl = "private, no-store";
+        return File(file.Content, file.ContentType, enableRangeProcessing: true);
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpGet("me/intro-video")]
+    public Task<IntroVideoDto> MyIntroVideo(CancellationToken ct) => introVideos.GetOwnAsync(UserId(), ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), EnableRateLimiting("upload")]
+    [RequestSizeLimit(250 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 250 * 1024 * 1024)]
+    [HttpPost("me/intro-video")]
+    public async Task<IntroVideoDto> UploadIntroVideo(
+        IFormFile file, [FromHeader(Name = "If-Match")] string? version, CancellationToken ct)
+    {
+        await using var stream = file.OpenReadStream();
+        return await introVideos.UploadAsync(UserId(), stream, file.FileName, file.ContentType ?? "", file.Length, version, ct);
+    }
+
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpPost("me/intro-video/from-application")]
+    public Task<IntroVideoDto> UseApplicationVideo(
+        UseApplicationVideoInput input, [FromHeader(Name = "If-Match")] string? version, CancellationToken ct) =>
+        introVideos.UseApplicationVideoAsync(UserId(), input, version, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpPut("me/intro-video/visibility")]
+    public Task<IntroVideoDto> SetIntroVideoVisibility(
+        IntroVideoVisibilityInput input, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        introVideos.SetVisibilityAsync(UserId(), input.Visible, version, ct);
+
+    [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpDelete("me/intro-video")]
+    public Task<IntroVideoDto> RemoveIntroVideo(
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
+        introVideos.RemoveAsync(UserId(), version, ct);
 
     [Authorize(Policy = Permissions.TeachersManageOwnProfile), HttpGet("me")]
     public Task<TeacherProfileDto> Mine(CancellationToken ct) =>
@@ -110,7 +149,8 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
     }
 
     [Authorize(Policy = Permissions.TeachersManageOwnServices), EnableRateLimiting("upload")]
-    [RequestSizeLimit(250 * 1024 * 1024), HttpPost("me/samples")]
+    [RequestSizeLimit(250 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 250 * 1024 * 1024)]
+    [HttpPost("me/samples")]
     public async Task<IActionResult> AddSample(
         IFormFile file,
         [FromForm] Guid subjectId,
@@ -156,7 +196,8 @@ public sealed class MarketplaceController(IMarketplaceService marketplace) : Con
         marketplace.UpdateShowcaseDraftAsync(UserId(), id, input, version, ct);
 
     [Authorize(Policy = Permissions.TeachersManageOwnShowcases), EnableRateLimiting("upload")]
-    [RequestSizeLimit(250 * 1024 * 1024), HttpPost("me/showcases/{id:guid}/video")]
+    [RequestSizeLimit(250 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 250 * 1024 * 1024)]
+    [HttpPost("me/showcases/{id:guid}/video")]
     public async Task<TeacherShowcaseDto> UploadShowcaseVideo(
         Guid id, IFormFile file,
         [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)

@@ -11,6 +11,10 @@ public sealed class EmailOptions
     public string PasswordResetUrl { get; init; } = "http://localhost:4200/auth";
     public string ConfirmationUrl { get; init; } = "http://localhost:4200/auth";
     public string AppBaseUrl { get; init; } = "http://localhost:5500";
+    /// <summary>Resend (real mail) or Outbox (HTML files under App_Data/dev-outbox). Production requires Resend.</summary>
+    public string Delivery { get; init; } = "Resend";
+    /// <summary>Addresses that never receive mail (the seeded demo accounts outside Production).</summary>
+    public string[] SuppressedRecipients { get; init; } = [];
 }
 
 internal sealed class ResendEmailSender(IResend resend, IOptions<EmailOptions> options) : IEmailSender

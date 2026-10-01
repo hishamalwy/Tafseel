@@ -17,8 +17,9 @@ namespace Tafseel.Api.Controllers;
 [EnableRateLimiting("payment")]
 public sealed class MockPaymentSimulatorController(IMockPaymentSimulator simulator) : ControllerBase
 {
+    // Read on every page by the test-mode strip: it must never spend the payment budget a checkout needs.
     [HttpGet("capabilities")]
-    [AllowAnonymous]
+    [AllowAnonymous, DisableRateLimiting]
     public PaymentCapabilitiesDto Capabilities() => simulator.GetCapabilities();
 
     [Authorize(Policy = Permissions.PaymentsViewOwn)]

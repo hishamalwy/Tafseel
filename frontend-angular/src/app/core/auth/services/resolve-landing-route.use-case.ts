@@ -6,9 +6,10 @@ import { TEACHER_LIFECYCLE_GATEWAY } from './auth.ports';
 /** Home surface per role, in one place rather than scattered across guards. */
 const HOME_BY_ROLE: Readonly<Record<Role, string>> = {
   Admin: '/admin',
+  Finance: '/finance',
   QualityReviewer: '/quality',
   Teacher: '/teacher',
-  Student: '/'
+  Student: '/student'
 };
 
 /**

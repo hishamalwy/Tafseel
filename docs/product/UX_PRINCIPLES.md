@@ -36,8 +36,16 @@ home screen.
    "not available to you".
 9. **Mobile first for customer journeys.** Student and teacher journeys are verified at 390px; no
    horizontal scroll; no content spilling out of its container; touch targets ≥ 44px.
+   *As applied in UX-06:* a checkbox or radio is measured by the label a finger presses, not its box; a
+   link inside a running sentence is not a target of its own; and a long form may keep its main action
+   after its fields, provided every such action can be scrolled onto the screen and is 44px tall.
 10. **RTL first.** Arabic is verified before English: layout direction, arrows, numbers, mixed-script
     names, date and currency order.
+    *As applied in UX-06:* amounts are always written in Latin digits (SAMA writes «1,620»), with the
+    riyal mark drawn beside them, or «ر.س» where only text can go — never the letters "SAR" on an Arabic
+    screen. Dates, times, percentages and time-zone offsets inside Arabic text follow the Arabic locale.
+    File formats (PDF, PNG, Word) stay in Latin, as Arabic writes them; developer words (webhook,
+    staging, API) are code words under rule 4, never copy.
 
 ## 3. Saudi-first usability
 

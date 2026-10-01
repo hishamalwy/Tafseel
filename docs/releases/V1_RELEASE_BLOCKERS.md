@@ -4,15 +4,19 @@
 the current product and V1 production readiness. Every ticket follows
 [`SDLC.md`](../engineering/SDLC.md) and the [ticket template](../engineering/templates/FEATURE_TICKET.md).
 Scope: [`V1_SCOPE.md`](../product/V1_SCOPE.md) · rules: [Product Contract](../product/TAFSEEL_PRODUCT_CONTRACT.md) ·
-checklist: [`PRODUCTION_READINESS.md`](./PRODUCTION_READINESS.md).
+checklist: [`PRODUCTION_READINESS.md`](GO_LIVE_CHECKLIST.md).
 
 No ticket here was started in Release Control 1.
 
-**Batch B built (2026-09-16):** `FIN-01` is **Done** — see the [FIN-01 audit](../audits/fin01-2026-09-16/README.md).
+**Launch readiness (2026-09-30):** this register predates the product-completeness pass (FIN-02…07, PROD-01, SEC-04 and
+SEC-05 are built in the current tree). For launch, use [PRODUCTION_LAUNCH_READINESS.md](PRODUCTION_LAUNCH_READINESS.md)
+and [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md); the provider, infrastructure, legal and decision tickets below still apply.
+
+**Batch B built (2026-09-16):** `FIN-01` is **Done** — see the FIN-01 audit.
 The count below drops from 42 to 41.
 
 **Batch A built (2026-09-16):** `UX-04` and `UX-05` are **Done** — see the
-[batch audit](../audits/ux04-ux05-2026-09-16/README.md). The count below drops from 44 to 42.
+batch audit. The count below drops from 44 to 42.
 
 **Release Control 3 (2026-09-15):** Gates 1–3 written for `FIN-01` and `UX-01`…`UX-09` as ticket files in
 [`docs/tickets/v1/`](../tickets/v1/README.md); `DEC-13` raised by UX-09 and **decided the same day (Option A)**; UX-09 expanded into one vertical slice (M). Documentation only.
@@ -41,7 +45,6 @@ recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISI
 | DEC-12 | Production provider and physical data region. Direction recorded (managed PaaS, single instance, managed SQL Server-compatible database, private durable object storage, managed secret store, observability); provider and region open pending data-residency/legal advice and service availability | P1 | yes | INF-03, INF-04, INF-07, SEC-04, OBS-01 (DATA-01, REL-01, OBS-02 transitively) | S | ⛔ | — | — | Named provider and region in `PRODUCTION_READINESS.md` |
 | DEC-03 | Completion after the dispute window has passed credits *Available* directly (not Pending) | P2 | no | — | S | ⛔ | — | — | Contract §3.9 confirmed |
 | DEC-07 | Emergency premium: define the server rule or disable for V1 | P3 | no | B11-17 | S | ⛔ | — | — | Contract §5 updated |
-| DEC-09 | Coupons at launch? (no checkout field today) | P2 | no | B11-08 | S | ⛔ | — | — | V1_SCOPE §3 row confirmed |
 
 ### Decided (closed 2026-09-15 by the Product Owner)
 
@@ -55,12 +58,13 @@ recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISI
 | DEC-10 | Live sessions in V1 — Option A | P1 | closed | MEET-01 stays a blocker; reschedule is in QA-02 | S | ✅ | — | — | V1_SCOPE §6 |
 | DEC-11 | Secure paid video — Option A, private authorized files; streaming/DRM V1.1+ | P1 | closed | no new blockers; SEC-04 and LEG-01 scope confirmed | S | ✅ | — | — | Contract §3.6; V1_SCOPE §11 |
 | DEC-13 | Listed price reference for the agreed-price disclosure — Option A — immutable server-side snapshot of the Teacher Offering price (and currency) on every new Direct Request at creation; no backfill; UX-09 implements it (raised and decided in Release Control 3) | P1 | closed | UX-09 Gate 3 complete; no separate snapshot ticket | S | ✅ | — | — | Contract §3.2, §3.3; UX-09 |
+| DEC-14 | Live session approval before payment; pending requests do not reserve a slot | P1 | closed | J8-01 approval journey and QA-02 proof | S | ✅ | ◐ | ◐ | Contract §3.8; approval and payment authorization tests |
 
 ## FIN — Money out and finance operations
 
 | ID | Title | Pri | Blocker | Depends on | Size | Business | UX | Contract | Completion evidence |
 |----|-------|-----|---------|------------|------|----------|----|----------|---------------------|
-| FIN-01 | **Teacher earnings screen** — available to withdraw, clearing, next availability date, being transferred; product wording (J12-01). No movement list: no JSON API exists (statement/analytics are B11-09) — [FIN-01](../tickets/v1/FIN-01.md) | P1 | done 2026-09-16 | — | M | ✅ | ✅ | ✅ (no new contract: `GET /withdrawals/balances`, `/withdrawals/policy`) | Angular 369/369 (model + page specs), SQL Server 225/225 (`Balances_tell_the_teacher_…`: clearing with its date, available after maturity, 403/401), journey `fin01-teacher-earnings` 7/7 — [audit](../audits/fin01-2026-09-16/README.md) |
+| FIN-01 | **Teacher earnings screen** — available to withdraw, clearing, next availability date, being transferred; product wording (J12-01). No movement list: no JSON API exists (statement/analytics are B11-09) — [FIN-01](../tickets/v1/FIN-01.md) | P1 | done 2026-09-16 | — | M | ✅ | ✅ | ✅ (no new contract: `GET /withdrawals/balances`, `/withdrawals/policy`) | Angular 369/369 (model + page specs), SQL Server 225/225 (`Balances_tell_the_teacher_…`: clearing with its date, available after maturity, 403/401), journey `fin01-teacher-earnings` 7/7 — audit |
 | FIN-02 | **Teacher payout profile** — submit, see verification state and rejection reason; destination information handled as PAY-04a defines (J12-02) | P1 | yes | PAY-04a | M | ◐ | ❌ | ◐ (`GET/PUT /withdrawals/profile`) | Auth tests (other teacher 404); journey submit → pending → verified (after FIN-04) |
 | FIN-03 | **Withdrawal request and history** — minimum 50 SAR, from Available only, status, rejection returns funds (J12-03) | P1 | yes | FIN-01, FIN-02 | M | ◐ | ❌ | ◐ (`POST /withdrawals`, `GET /withdrawals/mine`, `/withdrawals/policy`) | Journey: available balance → request → Admin processes (FIN-05) → completed; below-minimum and unverified refusals |
 | FIN-04 | **Admin payout-profile verification** — queue, approve/reject with reason (J12-04) | P1 | yes | FIN-02 | S | ◐ | ❌ | ◐ (`GET /admin/payout-profiles`, `POST …/{teacherId}/review`) | Auth tests (non-admin 403); journey approve and reject |
@@ -83,7 +87,7 @@ recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISI
 | PAY-02 | Implement the production `IPaymentProvider` — hosted checkout/redirect, signed webhook verification, refunds; Production config | P1 | yes | PAY-01 | L | ◐ | ◐ (checkout redirect copy) | ◐ (`IPaymentProvider`, `POST /payments/webhooks/{provider}`) | Adapter tests; webhook signature and replay tests; startup validation accepts the provider in Production |
 | PAY-03 | Provider sandbox financial scenarios — success, failure, duplicate webhook, refund, escrow release, dispute settlement, reconciliation clean | P1 | yes | PAY-02, FIN-06 | M | ✅ | — | ◐ | Scenario log with provider references; reconciliation zero issues |
 | PAY-04a | **V1 payout port + execution adapter** — `IPayoutProvider`; automated seller-payout adapter if PAY-01 shows the selected provider safely supports it, and the audited manual bank-transfer adapter as fallback in every case; provider/transfer reference; reconciliation; destination information held by the provider/bank or encrypted with restricted, audited access — never casually in plaintext; ledger semantics unchanged | P1 | yes | PAY-01 | L | ✅ (Contract §3.10) | — | ◐ (port to design) | Adapter tests; ledger unchanged (existing finance tests green); payout reconciliation report; end-to-end payout in sandbox or manual drill |
-| MEET-01 | Production meeting provider — select the provider, then implement the adapter preserving booking, join window, authorization, completion, no-show and settlement (DEC-10) | P1 | yes | — | L | ◐ | — | ◐ (`ILiveSessionLinkProvider`) | Adapter tests; Production startup accepts provider; journey joins a real sandbox meeting |
+| MEET-01 | Production meeting provider — JaaS adapter preserving booking, join window, authorization, completion, no-show and settlement (DEC-10) | P1 | yes | — | L | ◐ | — | ◐ (JaaS adapter; sandbox call pending) | Adapter tests; Production startup accepts provider; journey joins a real sandbox meeting |
 
 ## SEC — Security
 
@@ -92,7 +96,7 @@ recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISI
 | SEC-01 | **Rotate exposed credentials** — seed/UAT password in pushed history: new secret, reset every account that used it in every database, revoke sessions, delete local copies (Wave 1 report, Step 10) | P0 | yes | — | S | ✅ | — | — | Owner confirmation per database; old password fails sign-in |
 | SEC-02 | Rotate the four staging host secrets (H-S1) and redeploy staging | P0 | yes | — | S | ✅ | — | — | Staging starts with new secrets; old values invalid |
 | SEC-03 | Production secrets only in the secret store / GitHub protected environment (JWT, DB, storage, email, payment, webhook, meeting) | P1 | yes | — | S | ✅ | — | — | Environment secret inventory; startup validation refuses placeholders |
-| SEC-04 | **Malware scanning** for every user upload (request attachments, deliveries, message and session files, demos) before download is allowed | P1 | yes | DEC-12 | M | ◐ | ◐ (pending-scan state) | ◐ | IT: infected test file quarantined and never served; clean file served |
+| SEC-04 | **Malware scanning** for every user upload (request attachments, deliveries, message and session files, demos) before download is allowed | P1 | yes | DEC-12 | M | ◐ | ◐ (pending-scan state) | ◐ | IT: infected test file quarantined and never served; clean file served. **2026-09-30: built** — scan before store, fail-safe, `MalwareScanningTests`; only the ClamAV host (DEC-12) remains |
 | SEC-05 | Authorization sweep of V1 endpoints with Student, Teacher, Quality, Admin, **suspended** and anonymous accounts | P1 | yes | — | M | ✅ | — | ✅ | Integration test matrix green; suspended user refused everywhere |
 
 ## INF / OBS / DATA / REL / ENG — Infrastructure and operations
@@ -130,7 +134,7 @@ headroom so ordinary V1 work cannot hit the warning.
 | UX-04 | **Product statuses and fields in every list** — no numeric statuses, ids or "Updated/Count"; notification-type copy (server titles are English-only) — [UX-04](../tickets/v1/UX-04.md) | P1 | done 2026-09-16 | — | S | ✅ | ✅ | ✅ (no new contract) | Spec per list; screenshot audit of each list in AR/EN |
 | UX-05 | **Remove duplicate open-marketplace paths** — retire the Wave 2 inline choose/offer on `/requests` (role redirect); header "Post a request" → `/requests/new`; teachers go to Open requests; reservation reminder links to the request — [UX-05](../tickets/v1/UX-05.md) | P1 | done 2026-09-16 | — | S | ✅ | ✅ | ✅ (no new contract) | Wave 2 journey replaced by 3B coverage; no route to the inline forms |
 | UX-06 | **Arabic phone verification** — 20-screen matrix (teacher setup, messages, requests, offers, opportunity, checkout, booking/session, disputes) × 7 assertions — [UX-06](../tickets/v1/UX-06.md) | P1 | yes | UX-01, UX-02, UX-03, UX-04, UX-05, UX-07, UX-08, UX-09 | M | ✅ | ✅ | — | Journey screenshots at 390px AR with overflow and card-containment checks |
-| UX-07 | **Hide unredeemable promo codes** — no coupon code and no Discount promotion on the landing (DEC-09 default V1.1) — [UX-07](../tickets/v1/UX-07.md) | P1 | done 2026-09-17 | — | S | ✅ | ✅ | ✅ (no new contract) | Landing shows no coupon code; spec |
+| UX-07 | **Hide unredeemable promo codes** — Discount promotions appear only while their coupon is active and unexpired (DEC-15) — [UX-07](../tickets/v1/UX-07.md) | P1 | done 2026-09-27 | MARKETING-01 | S | ✅ | ✅ | ✅ | Public feed filter, admin/browser proof |
 | UX-08 | **Hide the brief assistant when AI is disabled** (today it is shown and answers "unavailable") — [UX-08](../tickets/v1/UX-08.md) | P2 | done 2026-09-17 | — | S | ✅ | ✅ | ✅ (new read: `GET /api/v1/ai/capabilities`) | Spec: hidden when disabled; visible and working when enabled |
 | UX-09 | **Agreed price disclosure** (DEC-02, DEC-13) — one vertical slice: immutable server-side listed-price snapshot on Direct Request creation, migration (nullable, no backfill), read fields on request/order DTOs, the same price panel on request detail, order detail and checkout, authorization/regression tests, browser proof — [UX-09](../tickets/v1/UX-09.md) | P1 | done 2026-09-17 | UX-04 | M | ✅ (Contract §3.2, §3.3) | ✅ | ✅ (no new endpoint; `listedPriceAtRequest`/`listedCurrencyAtRequest` on `LearningRequestDto`, `OrderDto`) | Failing domain + integration tests first; migration reviewed on SQL Server and SQLite; journey: offering 100 → request → offering 120 → accepted at 150 → request/order/checkout show 100 and 150, fee and total from 150; offering 130 leaves 100; other user 404; historical request shows no comparison; Arabic phone |
 
@@ -164,7 +168,7 @@ tables above (rows whose Blocker column is "yes").
 | Security / infrastructure / operations | **17** | SEC-01…05, INF-01…07, OBS-01, OBS-02, DATA-01, REL-01, ENG-01 |
 | Product engineering (money-out, catalog) | **7** | FIN-02…07, PROD-01 (FIN-01 done) |
 | Verification | **2** | QA-01, QA-02 |
-| Non-blocking tickets tracked here | 7 | DEC-03, DEC-07, DEC-09, FIN-08, OPS-01…03 (+ UX-10 to triage) |
+| Non-blocking tickets tracked here | 6 | DEC-03, DEC-07, FIN-08, OPS-01…03 (+ UX-10 to triage) |
 
 The category rows overlap on purpose; the first row is the single authoritative total.
 
@@ -180,8 +184,46 @@ launch.**
 Parallel near-critical chains: PAY-01 → PAY-02 (L) → PAY-03 (M, also after FIN-06) → QA-01; and DEC-12 →
 INF-03 → DATA-01 / REL-01 → QA-01.
 
-> The Release Control 2 analysis and the decision records are in [`V1_DECISION_PACK.md`](./V1_DECISION_PACK.md)
+> The Release Control 2 analysis and the decision records are in `V1_DECISION_PACK.md`
 > and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISIONS.md).
+
+### Launch plan
+
+> **DRAFT — owner to confirm** (2026-09-23 audit, F-ROAD-1). The arithmetic below uses only this
+> file's own size ceilings; the window is a `PROPOSED` band, not a commitment.
+
+**Capacity.** One developer (git history: one author). The legend's ceilings are S ≤ 2 days, M ≤ 5
+days, L > 5 days (counted as 10 here).
+
+| Blocking tickets (Blocker = yes) | Count | Developer-days, upper bound |
+|---|---|---|
+| S (excluding the owner decisions DEC-08, DEC-12) | 9 | 18 |
+| M | 22 | 110 |
+| L (PAY-02, PAY-04a, MEET-01) | 3 | 30 |
+| **Total** | **34 + 2 decisions** | **≈ 158 days ≈ 32 weeks serial** |
+
+The payout chain above is ≈ 35 developer-days (7 weeks) once DEC-08 and PAY-01 allow it, but with one
+developer the **total, not the chain, sets the date**. Several M tickets are mostly waiting or
+external work (PAY-01 onboarding, LEG-01 legal review, INF-03 provisioning, DEC-12 advice), so the
+realistic figure is lower; the gap between 7 and 32 weeks is what a second developer or cuts buy.
+
+**Window.** `PROPOSED`: pick the launch window when DEC-08 and PAY-01 close, as the first date at
+which the remaining developer-days fit; re-plan at every Release Control. Cut order when it slips:
+see [V1_SCOPE › Success](../product/V1_SCOPE.md#success).
+
+**Readiness gates, scheduled as tasks.** Each must be ticked with evidence before QA-01 starts.
+
+| Gate | Ticket(s) | Due | Pass criterion |
+|---|---|---|---|
+| Credentials rotated | SEC-01, SEC-02 | `PROPOSED` first week | Old values rejected on every host |
+| Observability live | OBS-01, OBS-02 | before QA-01 | Test alert received; `background-workers` Degraded raises an alert |
+| Rollback and restore drilled | REL-01, DATA-01 | before QA-01 | Drill log with timings against the RPO/RTO in SYSTEM_ARCHITECTURE › Quality targets |
+| Runbooks reviewed | OBS-01 | before QA-01 | RUNBOOK.md incidents walked by the on-call owner |
+| Policies published | LEG-01 | before QA-01 | Terms, privacy, refund in Arabic and English, reviewed for the launch jurisdiction |
+| Launch decision | QA-01 | end | All MUST journeys green on staging with sandbox providers |
+
+**Retrospective.** After every Release Control and 30 days after launch: record what moved, the
+actual developer-days per size, and the M1–M4 baselines from V1_SCOPE › Success.
 
 ### Non-blocking operations tickets (SHOULD)
 

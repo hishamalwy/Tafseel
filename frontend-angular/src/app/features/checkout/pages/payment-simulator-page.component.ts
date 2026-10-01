@@ -11,6 +11,7 @@ import { PriceComponent } from '@shared/components/price.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import { MOCK_CHECKOUT_GATEWAY, MockCheckoutSession, PAYABLE_GATEWAY } from '../services/checkout.ports';
 import { OrderLike } from '../models/payable';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
 const AUTO_RETURN_SECONDS = 8;
 const DEFAULT_RETURN = '/student';
@@ -29,7 +30,7 @@ const DEFAULT_RETURN = '/student';
 @Component({
   selector: 'tf-payment-simulator-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, SkipLinkComponent],
   templateUrl: './payment-simulator-page.component.html',
   styleUrl: './payment-simulator-page.component.css'
 })
@@ -51,6 +52,8 @@ export class PaymentSimulatorPageComponent {
   readonly order = signal<OrderLike | null>(null);
   readonly outcome = signal<'confirmed' | 'failed' | null>(null);
   readonly countdown = signal(0);
+  /** The return bar drains over exactly the countdown it stands for. */
+  readonly autoReturnSeconds = AUTO_RETURN_SECONDS;
   private returnPath = DEFAULT_RETURN;
   private timer: ReturnType<typeof setInterval> | undefined;
 

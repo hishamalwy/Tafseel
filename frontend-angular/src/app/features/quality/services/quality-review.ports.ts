@@ -10,6 +10,7 @@ export interface QualityReviewGateway {
   review(applicationId: string): Observable<ApplicationReview>;
   startReview(applicationId: string, priority: ReviewPriority, version: string): Observable<void>;
   decide(applicationId: string, decision: DecisionRequest, version: string): Observable<void>;
+  revokeQualification(qualificationId: string, reason: string): Observable<void>;
   /** The authorized content endpoint for the teaching demo, relative to the site. */
   demoPath(applicationId: string): string;
 }

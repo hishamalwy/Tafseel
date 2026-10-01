@@ -20,6 +20,7 @@ using Tafseel.Domain.Messaging;
 using Tafseel.Domain.Orders;
 using Tafseel.Domain.TeacherApplications;
 using Tafseel.Infrastructure.Email;
+using Tafseel.Infrastructure.Messaging;
 using Tafseel.Infrastructure.Persistence;
 
 namespace Tafseel.Infrastructure.Identity;
@@ -36,6 +37,10 @@ internal sealed class AuthenticationService(
 {
     private readonly JwtOptions _options = options.Value;
 
+    /// <summary>A hash of a random throwaway password, verified against when there is no real one to check.</summary>
+    private static readonly Lazy<string> DummyPasswordHash = new(() =>
+        new PasswordHasher<ApplicationUser>().HashPassword(new ApplicationUser { FullName = "" }, Guid.NewGuid().ToString("N")));
+
     public async Task<RegistrationResult> RegisterAsync(
         RegisterCommand command,
         CancellationToken cancellationToken)
@@ -48,14 +53,9 @@ internal sealed class AuthenticationService(
             return new(false, AuthenticationError.InvalidRole);
         }
 
-        if (await users.FindByEmailAsync(command.Email) is not null)
-        {
-            logger.LogInformation("Registration denied with outcome {Outcome}", "existing_account");
-            return new(false, AuthenticationError.DuplicateEmail);
-        }
-
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var user = new ApplicationUser
+        // Validate before looking up the email: an invalid password must have the same answer
+        // whether or not that address already belongs to an account.
+        var candidate = new ApplicationUser
         {
             UserName = command.Email.Trim(),
             Email = command.Email.Trim(),
@@ -63,6 +63,27 @@ internal sealed class AuthenticationService(
             AcceptedPolicyVersion = PolicyVersions.Current,
             PoliciesAcceptedAt = clock.GetUtcNow()
         };
+        var passwordErrors = new List<string>();
+        foreach (var validator in users.PasswordValidators)
+        {
+            var validation = await validator.ValidateAsync(users, candidate, command.Password);
+            if (!validation.Succeeded)
+                passwordErrors.AddRange(validation.Errors.Select(error => error.Description));
+        }
+        if (passwordErrors.Count > 0)
+            return new(false, AuthenticationError.RegistrationFailed, passwordErrors);
+
+        if (await users.FindByEmailAsync(command.Email) is { } existing)
+        {
+            // Answer exactly as for a new account, so the endpoint cannot be used to learn which
+            // emails are registered; the owner hears about it by email instead.
+            logger.LogInformation("Registration denied with outcome {Outcome}", "existing_account");
+            await NotifyExistingAccountAsync(existing, command.Lang, cancellationToken);
+            return new(true);
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var user = candidate;
         var created = await users.CreateAsync(user, command.Password);
         if (!created.Succeeded)
         {
@@ -89,6 +110,11 @@ internal sealed class AuthenticationService(
             return new(false, AuthenticationError.RoleAssignmentFailed);
         }
 
+        // The language they signed up in, so later e-mails (notifications) speak it too. A user claim needs no schema.
+        var language = await users.AddClaimAsync(user, new Claim(UserLanguage.ClaimType, UserLanguage.Normalize(command.Lang)));
+        if (!language.Succeeded)
+            logger.LogWarning("Registration could not record the language for user {UserId}", user.Id);
+
         await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Registration completed for user {UserId} with role {Role}", user.Id, command.Role);
         if (!await SendConfirmationAsync(user, command.Lang, cancellationToken))
@@ -104,6 +130,9 @@ internal sealed class AuthenticationService(
         var user = await users.FindByEmailAsync(command.Email);
         if (user is null || await users.IsLockedOutAsync(user))
         {
+            // Spend the same PBKDF2 work a real check costs, so response time does not tell an
+            // unknown or locked email apart from a wrong password.
+            users.PasswordHasher.VerifyHashedPassword(user ?? new ApplicationUser { FullName = "" }, DummyPasswordHash.Value, command.Password);
             if (user is not null)
                 logger.LogWarning("Login denied for locked user {UserId}", user.Id);
             else
@@ -116,7 +145,9 @@ internal sealed class AuthenticationService(
             logger.LogInformation("Login denied for user {UserId} with outcome {Outcome}", user.Id, "invalid_credentials");
             return new(null, AuthenticationError.InvalidCredentials);
         }
-        await users.ResetAccessFailedCountAsync(user);
+        // The failed-attempt counter is cleared only once every factor has passed (below). Clearing
+        // it here, on the password alone, let a wrong authenticator code cost nothing: the next
+        // right password wiped the count, so lockout never fired against a guessed second factor.
         if (user.IsSuspended)
         {
             logger.LogWarning("Suspended user login denied for user {UserId}", user.Id);
@@ -139,11 +170,13 @@ internal sealed class AuthenticationService(
             if (!validCode)
             {
                 await users.AccessFailedAsync(user);
+                logger.LogInformation("Login denied for user {UserId} with outcome {Outcome}", user.Id, "invalid_mfa_code");
                 return new(null, AuthenticationError.InvalidMfaCode);
             }
         }
 
-        return await IssueAsync(user, null, cancellationToken);
+        await users.ResetAccessFailedCountAsync(user);
+        return await IssueAsync(user, null, command.RememberMe, cancellationToken);
     }
 
     public async Task<AuthenticationResult> RefreshAsync(
@@ -181,7 +214,7 @@ internal sealed class AuthenticationService(
         stored.RevokedAt = now;
         try
         {
-            var result = await IssueAsync(stored.User, stored, cancellationToken);
+            var result = await IssueAsync(stored.User, stored, stored.Persistent, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             logger.LogInformation(
                 "Refresh token rotated for user {UserId}, family {TokenFamilyId}, at {Timestamp}",
@@ -388,7 +421,7 @@ internal sealed class AuthenticationService(
             (x.StudentId == userId || x.TeacherId == userId) && x.Status != DisputeStatus.Resolved,
             cancellationToken);
         var hasPendingWithdrawal = await db.WithdrawalRequests.AnyAsync(x =>
-            x.TeacherId == userId && x.Status == WithdrawalStatus.Pending, cancellationToken);
+            x.TeacherId == userId && (x.Status == WithdrawalStatus.Pending || x.Status == WithdrawalStatus.TransferInitiated), cancellationToken);
         var accountIds = await db.LedgerAccounts.AsNoTracking()
             .Where(x => x.OwnerId == userId).Select(x => x.Id).ToArrayAsync(cancellationToken);
         var credits = accountIds.Length == 0 ? 0 : await db.LedgerEntries
@@ -551,6 +584,21 @@ internal sealed class AuthenticationService(
             throw new ValidationException(string.Join("; ", result.Errors.Select(x => x.Description)));
 
         return MapCurrent(user, await users.GetRolesAsync(user));
+    }
+
+    public async Task<bool> SetLanguageAsync(string userId, string lang, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+            return false;
+        var value = UserLanguage.Normalize(lang);
+        var existing = (await users.GetClaimsAsync(user)).Where(x => x.Type == UserLanguage.ClaimType).ToArray();
+        if (existing.Length == 1 && existing[0].Value == value)
+            return true;
+        if (existing.Length > 0)
+            await users.RemoveClaimsAsync(user, existing);
+        var added = await users.AddClaimAsync(user, new Claim(UserLanguage.ClaimType, value));
+        return added.Succeeded;
     }
 
     public async Task<CurrentUser?> SetAvatarAsync(
@@ -753,6 +801,62 @@ internal sealed class AuthenticationService(
         return new(true);
     }
 
+    /// <summary>
+    /// Someone tried to register an email that already has an account. An unconfirmed owner gets
+    /// the confirmation again (with the usual two-minute spacing); a confirmed owner gets a notice
+    /// pointing to sign-in and password reset. A suspended account hears nothing.
+    /// </summary>
+    private async Task NotifyExistingAccountAsync(ApplicationUser user, string lang, CancellationToken cancellationToken)
+    {
+        if (user.IsSuspended)
+            return;
+        if (!await users.IsEmailConfirmedAsync(user))
+        {
+            if (user.EmailConfirmationSentAt <= clock.GetUtcNow().AddMinutes(-2))
+                await SendConfirmationAsync(user, lang, cancellationToken);
+            return;
+        }
+
+        var isEnglish = lang == "en";
+        var signIn = $"{emailOptions.Value.AppBaseUrl.TrimEnd('/')}/{(isEnglish ? "en" : "ar")}/auth";
+        try
+        {
+            var html = EmailTemplate.Render(
+                preheader: isEnglish ? "This email already has a Tafseel account" : "هذا الإيميل عنده حساب في تفصيل من قبل",
+                kicker: isEnglish ? "Account already exists" : "الحساب موجود",
+                heading: isEnglish ? "You already have an account" : "عندك حساب من قبل",
+                paragraphs: isEnglish
+                    ?
+                    [
+                        $"Someone just tried to create a new Tafseel account with ⁦{user.Email}⁩, an address that is already registered.",
+                        "If that was you, sign in instead. Forgot the password? Use \"Forgot password?\" on the sign-in page."
+                    ]
+                    :
+                    [
+                        $"أحد حاول الحين يسوي حساب جديد في تفصيل بالإيميل ⁦{user.Email}⁩، وهذا الإيميل مسجّل عندنا من قبل.",
+                        "إذا كنت أنت، سجّل دخول بدل ما تسوي حساب جديد. نسيت كلمة السر؟ اضغط \"نسيت كلمة السر؟\" في صفحة الدخول."
+                    ],
+                appBaseUrl: emailOptions.Value.AppBaseUrl,
+                accent: EmailAccent.Authority,
+                ctaText: isEnglish ? "Sign in →" : "تسجيل الدخول ←",
+                ctaUrl: signIn,
+                notice: isEnglish
+                    ? "If this wasn't you, you can ignore this email — nothing about your account changed."
+                    : "إذا ما كنت أنت، تجاهل الرسالة — ما تغيّر شي في حسابك.",
+                lang: lang);
+            await email.SendAsync(
+                user.Email!,
+                isEnglish ? "You already have a Tafseel account" : "عندك حساب في تفصيل من قبل",
+                html,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError("Existing-account notice delivery failed for user {UserId}: {FailureType}",
+                user.Id, exception.GetType().Name);
+        }
+    }
+
     private async Task<bool> SendConfirmationAsync(
         ApplicationUser user,
         string lang,
@@ -852,6 +956,7 @@ internal sealed class AuthenticationService(
     private async Task<AuthenticationResult> IssueAsync(
         ApplicationUser user,
         RefreshToken? rotatedToken,
+        bool persistent,
         CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
@@ -883,7 +988,10 @@ internal sealed class AuthenticationService(
             FamilyId = rotatedToken?.FamilyId ?? Guid.NewGuid().ToString(),
             UserId = user.Id,
             CreatedAt = now,
-            ExpiresAt = now.AddDays(_options.RefreshTokenDays)
+            ExpiresAt = persistent
+                ? now.AddDays(_options.RefreshTokenDays)
+                : now.AddHours(_options.SessionRefreshHours),
+            Persistent = persistent
         };
         if (rotatedToken is not null)
             rotatedToken.ReplacedByTokenHash = storedRefreshToken.TokenHash;
@@ -893,7 +1001,7 @@ internal sealed class AuthenticationService(
         return new(new(
             user.Id, user.Email!, user.FullName, user.FullNameEnglish, roles.ToArray(),
             accessToken, expires, rawRefreshToken, storedRefreshToken.ExpiresAt, user.HasAvatar,
-            user.TwoFactorEnabled));
+            user.TwoFactorEnabled, persistent));
     }
 
     private static string Hash(string token) =>

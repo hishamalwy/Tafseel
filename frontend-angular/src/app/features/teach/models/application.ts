@@ -182,7 +182,9 @@ export const Application = {
     subjects: readonly CatalogSubject[],
     applications: readonly TeacherApplication[],
     lifecycle: OnboardingLifecycle | null,
-    qualifications: readonly QualificationCard[]
+    qualifications: readonly QualificationCard[],
+    /** Subjects with an active qualification topic; unknown (null) leaves every subject open. */
+    openSubjectIds: ReadonlySet<string> | null = null
   ): readonly SelectableSubject[] {
     const approved = new Set<string>(lifecycle?.approvedSubjectIds ?? []);
     for (const card of qualifications) if (card.state === 0) approved.add(card.subjectId);
@@ -193,6 +195,7 @@ export const Application = {
     return subjects.map(subject => {
       const reason = approved.has(subject.id) ? 'apply_subject_already_qualified'
         : inFlight.has(subject.id) ? 'apply_subject_application_active'
+        : openSubjectIds && !openSubjectIds.has(subject.id) ? 'apply_subject_not_open'
         : '';
       return { ...subject, disabled: !!reason, reason };
     });

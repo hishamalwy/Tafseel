@@ -71,6 +71,19 @@ describe('PublishOpenRequest and ManageRequest', () => {
     await manage.reply(request, '  Chapter four only. ');
     expect(replyToClarification).toHaveBeenCalledWith('r1', 'Chapter four only.', 'v1');
   });
+
+  it('sends the files the teacher asked for before the answer, each against the latest version (UX-24)', async () => {
+    const calls: string[] = [];
+    let version = 1;
+    const attach = vi.fn((_id: string, file: File, v: string) => { calls.push(`attach ${file.name} ${v}`); version++; return of(undefined); });
+    const request = vi.fn(() => of({ id: 'r1', version: `v${version}` }));
+    const replyToClarification = vi.fn((_id: string, _m: string, v: string) => { calls.push(`reply ${v}`); return of(undefined); });
+    withGateway({ attach, request, replyToClarification } as unknown as Partial<DemandGateway>);
+    const manage = TestBed.inject(ManageRequest);
+    const files = [new File(['a'], 'page1.png', { type: 'image/png' }), new File(['b'], 'page2.png', { type: 'image/png' })];
+    await manage.reply({ id: 'r1', version: 'v1' } as Parameters<ManageRequest['reply']>[0], 'Here they are.', files);
+    expect(calls).toEqual(['attach page1.png v1', 'attach page2.png v2', 'reply v3']);
+  });
 });
 
 describe('LoadRequest', () => {

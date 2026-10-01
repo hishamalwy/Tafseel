@@ -2,27 +2,30 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
+import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { timeZoneLabel } from '@features/teacher-setup/models/availability';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
+import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import { BOOKING_GATEWAY, BookableTeacher } from '../services/checkout.ports';
 import { BookableService, Booking, Slot, toLocalIsoString } from '../models/booking';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
 /**
  * Book a live session — ported from `Tafseel-Book-Session.dc.html`.
  *
  * Pick a duration, a timezone, and a slot from the coming week, then confirm.
- * Confirming creates the booking and hands off to checkout; the optional
- * attachment is uploaded after, and a failure there does not undo the booking.
+ * Confirming sends the teacher a request. Payment opens only after acceptance.
+ * The optional attachment is uploaded after creating the request.
  */
 @Component({
   selector: 'tf-book-session-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, SkipLinkComponent, FilePickerComponent],
   templateUrl: './book-session-page.component.html',
   styleUrl: './book-session-page.component.css'
 })
@@ -37,6 +40,7 @@ export class BookSessionPageComponent {
 
   readonly loading = signal(true);
   readonly slotsLoading = signal(false);
+  readonly slotsError = signal(false);
   readonly confirming = signal(false);
   readonly missingTeacher = signal(false);
   readonly noBookableService = signal(false);
@@ -54,9 +58,12 @@ export class BookSessionPageComponent {
   readonly timezone = signal(Booking.detectTimeZone());
   readonly selectedSlot = signal<{ key: string; localStart: string; label: string } | null>(null);
   readonly attachment = signal<File | null>(null);
+  readonly attempted = signal(false);
+  readonly formError = signal('');
 
   private teacherId = '';
   private preferredServiceId = '';
+  private slotsLoadId = 0;
 
   constructor() {
     queueMicrotask(() =>
@@ -86,24 +93,48 @@ export class BookSessionPageComponent {
   readonly durations = computed(() => Booking.durationsFor(this.service()));
 
   readonly week = computed(() =>
-    Booking.week(this.slots(), this.locale.lang() === 'ar' ? 'ar-SA' : 'en-US'));
+    Booking.week(this.slots(), this.locale.lang() === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US'));
 
   readonly hasAnySlot = computed(() => this.week().some(day => day.slots.length > 0));
+
+  /**
+   * One day's times at a time. Seven columns of every half hour made a 6,000px wall on a phone with
+   * nothing to tell one day from the next; the day strip says which days are open and how much.
+   */
+  readonly chosenDay = signal('');
+  readonly activeDay = computed(() => {
+    const week = this.week();
+    return week.find(day => day.key === this.chosenDay() && day.slots.length)
+      ?? week.find(day => day.slots.length) ?? null;
+  });
+  readonly selectedDayKey = computed(() => this.selectedSlot()?.key.slice(0, 10) ?? '');
+  readonly selectedDayText = computed(() => {
+    const day = this.week().find(d => d.key === this.selectedDayKey());
+    return day ? `${day.weekday} ${day.date}` : '';
+  });
+  /** The active day's times under the part of the day they fall in, by the student's wall clock. */
+  readonly dayParts = computed(() => {
+    const day = this.activeDay();
+    if (!day) return [];
+    const parts = [
+      { key: 'night', labelKey: 'book_part_night', fallback: 'Night', from: 0, to: 5 },
+      { key: 'morning', labelKey: 'book_part_morning', fallback: 'Morning', from: 5, to: 12 },
+      { key: 'afternoon', labelKey: 'book_part_afternoon', fallback: 'Afternoon', from: 12, to: 17 },
+      { key: 'evening', labelKey: 'book_part_evening', fallback: 'Evening', from: 17, to: 24 }
+    ];
+    const hour = (localStart: string) => Number(/T(\d{2})/.exec(localStart)?.[1] ?? 0);
+    return parts
+      .map(part => ({ ...part, slots: day.slots.filter(s => hour(s.localStart) >= part.from && hour(s.localStart) < part.to) }))
+      .filter(part => part.slots.length);
+  });
 
   readonly total = computed(() => {
     const service = this.service();
     if (!service) return null;
-    const base = Number(service.basePrice) || 0;
+    const base = Math.round((Number(service.basePrice) || 0) * this.duration() / 60 * 100) / 100;
     const premium = this.emergency() ? (Number(service.emergencyPremiumAmount) || 0) : 0;
     return { amount: base + premium, currency: service.currency || 'SAR' };
   });
-
-  readonly canConfirm = computed(() =>
-    !this.confirming()
-    && this.sessionTitle().trim().length > 0
-    && this.topic().trim().length > 0
-    && this.selectedSlot() !== null
-    && this.service() !== null);
 
   /** Timezones offered; the detected one is always present even if unlisted. */
   /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */
@@ -150,18 +181,23 @@ export class BookSessionPageComponent {
     const service = this.service();
     if (!service) return;
 
+    const loadId = ++this.slotsLoadId;
     this.slotsLoading.set(true);
+    this.slotsError.set(false);
     // Any change to duration or timezone invalidates the chosen slot.
     this.selectedSlot.set(null);
     try {
       const slots = await firstValueFrom(this.bookings.slots(
         this.teacherId, service.id, this.duration(), this.timezone(), 7));
-      this.slots.set(slots);
+      if (loadId === this.slotsLoadId) this.slots.set(slots);
     } catch {
-      this.slots.set([]);
-      this.toasts.show(this.t('book_slots_failed', 'Could not load slots.'));
+      if (loadId === this.slotsLoadId) {
+        this.slots.set([]);
+        this.slotsError.set(true);
+        this.toasts.show(this.t('book_slots_failed', 'Could not load slots.'));
+      }
     } finally {
-      this.slotsLoading.set(false);
+      if (loadId === this.slotsLoadId) this.slotsLoading.set(false);
     }
   }
 
@@ -181,22 +217,24 @@ export class BookSessionPageComponent {
   selectSlot(slot: { key: string; localStart: string; label: string; emergency: boolean }): void {
     this.selectedSlot.set({ key: slot.key, localStart: slot.localStart, label: slot.label });
     this.emergency.set(slot.emergency);
-  }
-
-  onFile(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.attachment.set(input.files?.[0] ?? null);
+    this.formError.set('');
   }
 
   async confirm(): Promise<void> {
+    if (this.confirming()) return;
+    this.attempted.set(true);
+    this.formError.set('');
+    if (!this.sessionTitle().trim() || !this.topic().trim()) {
+      this.formError.set(this.t('book_add_title_topic', 'Add a session title and topic first.'));
+      const missing = !this.sessionTitle().trim() ? 'book-session-title' : 'book-topic';
+      globalThis.document?.getElementById(missing)?.focus();
+      return;
+    }
     const service = this.service();
     const slot = this.selectedSlot();
     if (!service || !slot) {
-      this.toasts.show(this.t('book_pick_slot', 'Pick a time slot first.'));
-      return;
-    }
-    if (!this.sessionTitle().trim() || !this.topic().trim()) {
-      this.toasts.show(this.t('book_add_title_topic', 'Add a title and a topic.'));
+      this.formError.set(this.t('book_pick_slot', 'Pick an available time slot to continue.'));
+      globalThis.document?.getElementById('book-slots-title')?.scrollIntoView({ block: 'center' });
       return;
     }
 
@@ -214,17 +252,28 @@ export class BookSessionPageComponent {
       }));
 
       const file = this.attachment();
+      let attachmentFailed = false;
       if (file && booking.version) {
         try {
           await firstValueFrom(this.bookings.attach(booking.id, file, booking.version));
         } catch {
-          // The booking stands; the attachment can be added later.
+          attachmentFailed = true;
         }
+      } else if (file) {
+        attachmentFailed = true;
       }
 
-      await this.router.navigate(['/checkout'], { queryParams: { liveSessionId: booking.id } });
-    } catch {
-      this.toasts.show(this.t('book_failed', 'Could not book the session.'));
+      await this.router.navigate(['/live-sessions', booking.id]);
+      if (attachmentFailed) {
+        this.toasts.show(this.t('book_attachment_failed',
+          'The time request was sent, but your file did not upload. Add it from the session page.'));
+      }
+    } catch (error) {
+      const problem = problemMessage(error, (k, f) => this.t(k, f));
+      this.formError.set(problem.text || this.t('book_failed', 'Could not send the request.'));
+      if (problem.code === 'slot_unavailable' || problem.code === 'session_conflict') {
+        await this.loadSlots();
+      }
       this.confirming.set(false);
     }
   }

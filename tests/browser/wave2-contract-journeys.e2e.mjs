@@ -28,11 +28,11 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
+import { execSql } from './lib/sql.mjs';
 
 const BASE = (process.env.TAFSEEL_BASE_URL ?? 'http://localhost:5312').replace(/\/$/, '');
 const SEED = JSON.parse(readFileSync(required('TAFSEEL_E2E_SEED'), 'utf8'));
 const PASSWORD = required('TAFSEEL_E2E_PASSWORD');
-const SQL_SERVER = process.env.TAFSEEL_E2E_SQL_SERVER ?? '(localdb)\\MSSQLLocalDB';
 const DATABASE = required('TAFSEEL_E2E_DATABASE');
 if (!/^TafseelE2E/i.test(DATABASE)) throw new Error('TAFSEEL_E2E_DATABASE must be a throwaway TafseelE2E* database');
 const SHOTS = process.env.TAFSEEL_SHOT_DIR;
@@ -141,14 +141,21 @@ await step('J3-02 teacher profile -> request wizard -> submit posts CreateLearni
 await step('J3-07 teacher accepts in the dialog and an order awaiting payment exists', async () => {
   const { page } = teacher;
   await page.goto(`${BASE}/en/teacher/work?tab=requests`, { waitUntil: 'networkidle' });
-  const card = page.locator('article', { hasText: requestTitle });
+  // UX-03 made the work list a list of cards that open each request, with acceptance on the request's own
+  // screen; this journey predates it. The card is found and opened the way wave3b-direct-order does, and the
+  // dialog below is the same dialog, held to the same assertions.
+  const card = page.locator('article.tf-dashboard-card, article.tf-work-card', { hasText: requestTitle })
+    .filter({ has: page.locator('[data-testid=row-open]') });
   await card.waitFor({ state: 'visible', timeout: 15000 });
-  await card.locator('[data-testid=accept-request]').click();
+  await card.locator('[data-testid=row-open]').click();
+  await page.waitForURL(/\/en\/requests\/[0-9a-f-]{36}\/?$/, { timeout: 15000 });
+  const acceptButton = page.locator('[data-testid=accept-request]');
+  await acceptButton.click();
 
   const dialog = page.locator('[data-testid=accept-dialog]');
   await dialog.locator('#accept-price').waitFor({ state: 'visible', timeout: 15000 });
   assert.equal(await dialog.locator('#accept-price').inputValue(), '100');
-  assert.equal(await dialog.locator('input[name=currency]').inputValue(), 'SAR');
+  // UX-06 removed the editable currency field: the currency is the service's, named in the price label.
   await shot(page, 'accept-dialog');
 
   // Cancel first: nothing is sent.
@@ -157,7 +164,7 @@ await step('J3-07 teacher accepts in the dialog and an order awaiting payment ex
   await page.waitForFunction(() => !document.querySelector('[data-testid=accept-dialog]')?.hasAttribute('open'));
   assert.equal(page.sent.filter(r => /\/accept$/.test(r.url())).length, before, 'cancel sends nothing');
 
-  await card.locator('[data-testid=accept-request]').click();
+  await acceptButton.click();
   await dialog.locator('#accept-price').waitFor({ state: 'visible', timeout: 15000 });
   // Outside the catalog's price range (the seeded catalog allows 0.01 to 1,000,000).
   await dialog.locator('#accept-price').fill('0');
@@ -166,12 +173,15 @@ await step('J3-07 teacher accepts in the dialog and an order awaiting payment ex
   assert.equal(page.sent.filter(r => /\/accept$/.test(r.url())).length, before, 'invalid terms send nothing');
 
   await dialog.locator('#accept-price').fill('110');
+  // DEC-UX-03: a price different from the listed one needs the teacher's reason, shown to the student.
+  if (await dialog.locator('#accept-reason').isVisible()) await dialog.locator('#accept-reason').fill('The request needs extra exercises.');
   const accepted = waitForCall(page, 'POST', /^\/api\/v1\/learning-requests\/[^/]+\/accept$/);
   await dialog.locator('button[type=submit]').click();
   const response = await accepted;
   const request = response.request();
   assert.equal(response.status(), 200, await response.text());
-  assert.deepEqual(Object.keys(request.postDataJSON()).sort(), ['agreedDeliveryAt', 'currency', 'finalPrice', 'revisionAllowance']);
+  assert.deepEqual(Object.keys(request.postDataJSON()).filter(k => k !== 'priceChangeReason').sort(), ['agreedDeliveryAt', 'currency', 'finalPrice', 'revisionAllowance']);
+  assert.equal(request.postDataJSON().currency, 'SAR', 'the service currency is sent');
   const headers = await request.allHeaders();
   assert.ok(headers['if-match'], 'If-Match sent');
   assert.match(headers['idempotency-key'] ?? '', /^[0-9a-f-]{36}$/);
@@ -251,8 +261,5 @@ async function publishOpenRequest() {
 }
 
 function sql(query) {
-  const candidates = ['C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/sqlcmd.exe',
-    'C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/180/Tools/Binn/sqlcmd.exe'];
-  const sqlcmd = candidates.find(existsSync) ?? 'sqlcmd';
-  return execFileSync(sqlcmd, ['-S', SQL_SERVER, '-d', DATABASE, '-E', '-b', '-h', '-1', '-W', '-Q', query], { encoding: 'utf8' });
+  return execSql(DATABASE, query);
 }

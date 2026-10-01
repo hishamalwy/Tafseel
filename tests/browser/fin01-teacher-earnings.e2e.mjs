@@ -88,12 +88,12 @@ await step('3. the teacher reads it in Arabic on a phone: clearing, why, and whe
   const { page } = teacher;
   await visit(page, `${BASE}/ar/teacher/earnings`);
   await earnings.clearing().waitFor({ timeout: 20000 });
-  const amount = Number(teacherNet).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const amount = Number(teacherNet).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(Number(Number(teacherNet))) ? 0 : 2 });
 
   const clearing = (await earnings.clearing().innerText()).replace(/\s+/g, ' ');
-  assert.match(clearing, /قيد الإتاحة/);
+  assert.match(clearing, /في الطريق إليك/);
   assert.ok(clearing.includes(amount), `the clearing card shows ${amount} (${clearing})`);
-  assert.match(clearing, /يصبح متاحًا للسحب بعد انتهاء فترة الاعتراض\./);
+  assert.match(clearing, /ثم تنتقل تلقائيًا إلى «متاح للسحب»/);
 
   const available = (await earnings.available().innerText()).replace(/\s+/g, ' ');
   assert.match(available, /متاح للسحب/);
@@ -117,8 +117,9 @@ await step('4. nothing offers a withdrawal yet, and no internal money words appe
   const main = await page.locator('main').innerText();
   for (const word of ['ledger', 'escrow', 'maturity', 'pendingClearance', 'pendingWithdrawal', 'TeacherPending', 'account'])
     assert.ok(!main.toLowerCase().includes(word.toLowerCase()), `no "${word}" on the earnings screen`);
-  assert.equal(await page.locator('main button, main [role=button], main input, main form').count(), 0,
-    'no withdrawal form or dead button (FIN-03 owns that)');
+  // FIN-02/03 exist now: the only action is adding payout details; nothing offers money that is not available.
+  assert.equal(await page.locator('[data-testid=withdraw-open]').count(), 0, 'no withdrawal before payout details and cleared money');
+  assert.equal(await page.locator('[data-testid=payout-open]').count(), 1, 'payout details can be added');
   // The earnings screen is not the old entity list.
   assert.equal(await page.locator('.tf-dashboard-search, .tf-dashboard-grid').count(), 0);
   assert.ok(!main.match(/[A-Za-z]{3,}/), `the Arabic screen carries no English product words (${main.slice(0, 120)})`);

@@ -64,6 +64,7 @@ await step('J3-02 student sends the direct request and lands on its own screen',
   await page.locator('#req-title').fill(title);
   await next.click();
   await page.locator('#req-goal').fill('Walk me through every chain-rule exercise in chapter three, with the reasoning for each step.');
+  await page.locator('#req-files').setInputFiles(file('chapter-three.pdf', pdf('source worksheet')));
   await next.click();
   const due = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
   await page.locator('#req-delivery').fill(due);
@@ -91,10 +92,13 @@ await step('J3-07 teacher opens the request from the work list and accepts with 
   await card.waitFor({ timeout: 20000 });
   await card.locator('[data-testid=row-open]').click();
   await page.waitForURL(url => pathOf(url) === `/en/requests/${requestId}`, { timeout: 15000 });
+  await page.getByText('chapter-three.pdf').waitFor({ timeout: 15000 });
   await page.locator('[data-testid=accept-request]').click();
   const dialog = page.locator('[data-testid=accept-dialog]');
   await dialog.locator('#accept-price').waitFor({ state: 'visible', timeout: 15000 });
   await dialog.locator('#accept-price').fill('150');
+  // DEC-UX-03: a price different from the listed one needs the teacher's reason, shown to the student.
+  if (await dialog.locator('#accept-reason').isVisible()) await dialog.locator('#accept-reason').fill('يحتاج الطلب تمارين إضافية.');
   await dialog.locator('#accept-revisions').selectOption('1');
   const accepted = waitForCall(page, 'POST', new RegExp(`^/api/v1/learning-requests/${requestId}/accept$`));
   await dialog.locator('button[type=submit]').click();
@@ -121,13 +125,39 @@ await step('J5-01 student pays the accepted order from its screen in the mock si
   await page.waitForURL(url => pathOf(url) === '/ar/checkout', { timeout: 15000 });
   await payButton(page).waitFor({ timeout: 15000 });
   await noHorizontalOverflow(page, 'checkout');
+  const couponCode = `DIRECT${Date.now().toString().slice(-7)}`;
+  const coupon = await api(SEED.admin.Email, 'POST', '/api/v1/admin/coupons', {
+    name: 'Direct checkout journey', code: couponCode, discountType: 1,
+    discountValue: 10, expiresAt: null
+  });
+  assert.equal(coupon.status, 201, JSON.stringify(coupon.body));
+  await page.locator('[data-testid=checkout-coupon]').fill(couponCode);
+  await page.locator('[data-testid=apply-coupon]').click();
+  await page.locator('[data-testid=coupon-quote]').waitFor();
+  assert.match(await page.locator('[data-testid=coupon-total]').innerText(), /152/);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shot(page, 'direct-03-checkout-coupon-ar-phone');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shot(page, 'direct-03-checkout-coupon-ar-desktop');
+  await page.setViewportSize({ width: 390, height: 844 });
   await payInSimulator(page, new RegExp(`^/ar/orders/${orderId}$`), async () => {
     // Initiated, not yet confirmed: the payment is pending and the order is unchanged.
     assert.equal(sql(`SELECT Status FROM Payments WHERE OrderId = '${orderId}'`), '0', 'payment Pending while the simulator is open');
     assert.equal(sql(`SELECT CONCAT(Status, ':', PaymentStatus) FROM Orders WHERE Id = '${orderId}'`), '0:0');
     await noHorizontalOverflow(page, 'simulator');
+  }, async () => {
+    await page.locator('[data-testid=payment-confirmed] .tf-pay-secondary-link').click();
+    await page.locator('tf-toast .tf-toast').waitFor({ state: 'hidden', timeout: 5000 });
+    await noHorizontalOverflow(page, 'payment confirmation');
+    await shot(page, 'direct-04-payment-confirmed-ar-phone');
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await shot(page, 'direct-04-payment-confirmed-ar-desktop');
+    await page.setViewportSize({ width: 390, height: 844 });
   });
   assert.equal(sql(`SELECT CONCAT(Status, ':', Amount) FROM Payments WHERE OrderId = '${orderId}'`).split(':')[0], '1', 'payment Confirmed');
+  assert.equal(sql(`SELECT Amount FROM Payments WHERE OrderId = '${orderId}'`), '152.00');
+  assert.equal(sql(`SELECT DiscountAmount FROM CouponRedemptions WHERE OrderId = '${orderId}'`), '10.00');
   await attribute(page, '[data-testid=order-status]', 'data-payment', 1);
   await attribute(page, '[data-testid=order-status]', 'data-status', 0);
   assert.equal(sql(`SELECT CONCAT(Status, ':', PaymentStatus) FROM Orders WHERE Id = '${orderId}'`), '0:1', 'paid, still awaiting the teacher');

@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { Money } from './money';
-import { DisplayName, initialsAvatar } from './display-name';
+import { DisplayName } from './display-name';
 
 /**
  * These two rules are the ones a rewrite loses quietly, so they are pinned:
- * SAR never renders as a Unicode glyph, and amounts never use Arabic-Indic
+ * SAR renders as the official U+20C1 mark, and amounts never use Arabic-Indic
  * digits even when the interface is Arabic.
  */
 describe('Money', () => {
-  it('writes the ISO code, never a currency symbol', () => {
-    expect(Money.format(1620, 'SAR')).toBe('1,620 SAR');
+  it('writes the official riyal mark, never a tofu glyph or ISO letters', () => {
+    expect(Money.format(1620, 'SAR')).toBe('1,620 \u20C1');
     expect(Money.format(1620, 'USD')).toBe('1,620 USD');
     expect(Money.format(1620, 'SAR')).not.toContain('﷼');
+    expect(Money.format(1620, 'SAR')).not.toContain('SAR');
   });
 
   it('uses Latin digits regardless of interface language', () => {
@@ -21,7 +22,7 @@ describe('Money', () => {
 
   it('drops the decimals on whole amounts and keeps two otherwise', () => {
     expect(Money.parts(1620, 'SAR').amount).toBe('1,620');
-    expect(Money.parts(1620.5, 'SAR').amount).toBe('1,620.5');
+    expect(Money.parts(1620.5, 'SAR').amount).toBe('1,620.50');
     expect(Money.parts(1620.55, 'SAR').amount).toBe('1,620.55');
   });
 
@@ -41,19 +42,17 @@ describe('Money', () => {
     expect(usd.isPlainAmount).toBe(true);
   });
 
-  it('writes SAR in the reader’s own script when it is told how (UX-06)', () => {
-    // Plain text cannot carry the drawn mark. On an Arabic screen it said "1,620 SAR" — English inside an
-    // Arabic sentence — until the formatter was given the Arabic abbreviation to use instead.
-    expect(Money.format(1620, 'SAR', '—', 'ر.س')).toBe('1,620 ر.س');
-    expect(Money.format(1620, 'SAR', '—', 'ر.س')).not.toContain('SAR');
+  it('uses a caller-supplied SAR label when one is given', () => {
+    expect(Money.format(1620, 'SAR', '—', '\u20C1')).toBe('1,620 \u20C1');
+    expect(Money.format(1620, 'SAR', '—', '\u20C1')).not.toContain('SAR');
   });
 
   it('never relabels a currency that is not SAR', () => {
-    expect(Money.format(1620, 'USD', '—', 'ر.س')).toBe('1,620 USD');
+    expect(Money.format(1620, 'USD', '—', '\u20C1')).toBe('1,620 USD');
   });
 
   it('keeps Latin digits for the amount whatever the currency label', () => {
-    expect(Money.format(1620, 'SAR', '—', 'ر.س')).toMatch(/^1,620/);
+    expect(Money.format(1620, 'SAR', '—', '\u20C1')).toMatch(/^1,620/);
   });
 
   it('answers with the unavailable text rather than NaN', () => {
@@ -64,7 +63,7 @@ describe('Money', () => {
   });
 
   it('handles zero as a real amount, not as missing', () => {
-    expect(Money.format(0, 'SAR')).toBe('0 SAR');
+    expect(Money.format(0, 'SAR')).toBe('0 \u20C1');
     expect(Money.view(0, 'SAR').amountNumber).toBe('0');
   });
 });
@@ -97,29 +96,5 @@ describe('DisplayName', () => {
   it('accepts either fullName or name on a user', () => {
     expect(DisplayName.ofUser({ name: 'Noor' }, false, '—')).toBe('Noor');
     expect(DisplayName.ofUser({ fullName: 'Noor' }, false, '—')).toBe('Noor');
-  });
-});
-
-describe('initialsAvatar', () => {
-  it('is deterministic for the same person', () => {
-    expect(initialsAvatar('Noor Al Otaibi', 'u-1')).toBe(initialsAvatar('Noor Al Otaibi', 'u-1'));
-  });
-
-  it('distinguishes different people', () => {
-    expect(initialsAvatar('Noor', 'u-1')).not.toBe(initialsAvatar('Noor', 'u-2'));
-  });
-
-  it('takes two initials and survives one-word and empty names', () => {
-    expect(decodeURIComponent(initialsAvatar('Noor Al Otaibi', 'x'))).toContain('>NA<');
-    expect(decodeURIComponent(initialsAvatar('Noor', 'x'))).toContain('>N<');
-    expect(decodeURIComponent(initialsAvatar('', 'x'))).toContain('>?<');
-  });
-
-  it('works on Arabic names', () => {
-    expect(decodeURIComponent(initialsAvatar('نور العتيبي', 'x'))).toContain('نا');
-  });
-
-  it('escapes characters that would break the SVG', () => {
-    expect(decodeURIComponent(initialsAvatar('<script> &', 'x'))).not.toContain('<script>');
   });
 });

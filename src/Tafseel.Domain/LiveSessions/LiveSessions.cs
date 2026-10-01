@@ -13,7 +13,9 @@ public enum LiveSessionStatus
     TeacherNoShow,
     CompletionPending,
     StudentNoShowPending,
-    TeacherNoShowPending
+    TeacherNoShowPending,
+    AwaitingTeacherApproval,
+    Declined
 }
 
 public sealed class LiveSessionBooking
@@ -58,9 +60,9 @@ public sealed class LiveSessionBooking
         TeacherNet = TotalPrice - TeacherCommissionAmount;
         CancellationWindowHours = cancellationWindowHours;
         JoinKey = Required(joinKey, 100);
-        Status = LiveSessionStatus.AwaitingPayment;
+        Status = LiveSessionStatus.AwaitingTeacherApproval;
         CreatedAt = UpdatedAt = now;
-        _history.Add(new(Id, null, Status, "Booked", studentId, now));
+        _history.Add(new(Id, null, Status, "Requested", studentId, now));
     }
 
     public Guid Id { get; private set; }
@@ -120,6 +122,15 @@ public sealed class LiveSessionBooking
         Transition(LiveSessionStatus.Confirmed, "PaymentConfirmed", actorId, now);
     }
 
+    public void RespondToRequest(string teacherId, bool accept, DateTimeOffset now)
+    {
+        RequireTeacher(teacherId);
+        if (Status != LiveSessionStatus.AwaitingTeacherApproval || accept && now >= StartsAt)
+            throw InvalidTransition();
+        Transition(accept ? LiveSessionStatus.AwaitingPayment : LiveSessionStatus.Declined,
+            accept ? "RequestAccepted" : "RequestDeclined", teacherId, now);
+    }
+
     public void RequestReschedule(string actorId, DateTimeOffset startsAt, DateTimeOffset endsAt, DateTimeOffset now)
     {
         RequireParticipant(actorId);
@@ -156,7 +167,8 @@ public sealed class LiveSessionBooking
     public void Cancel(string actorId, DateTimeOffset now)
     {
         RequireParticipant(actorId);
-        if (Status is not (LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Confirmed))
+        if (Status is not (LiveSessionStatus.AwaitingTeacherApproval or LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Confirmed)
+            || Status == LiveSessionStatus.AwaitingTeacherApproval && actorId != StudentId)
             throw InvalidTransition();
         Transition(LiveSessionStatus.Cancelled, "Cancelled", actorId, now);
     }
@@ -231,7 +243,8 @@ public sealed class LiveSessionBooking
             return;
         }
         if (Status is LiveSessionStatus.Completed or LiveSessionStatus.StudentNoShow) return;
-        if (Status is LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Cancelled)
+        if (Status is LiveSessionStatus.AwaitingTeacherApproval or LiveSessionStatus.Declined
+            or LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Cancelled)
             throw InvalidTransition();
         Transition(LiveSessionStatus.Completed, "DisputeReleased", actorId, now);
     }
@@ -246,7 +259,7 @@ public sealed class LiveSessionBooking
     public void AddAttachment(string actorId, string storageKey, string originalName, string contentType, long size, DateTimeOffset now)
     {
         RequireParticipant(actorId);
-        if (Status is not (LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Confirmed))
+        if (Status is not (LiveSessionStatus.AwaitingTeacherApproval or LiveSessionStatus.AwaitingPayment or LiveSessionStatus.Confirmed))
             throw InvalidTransition();
         _attachments.Add(new(Id, actorId, storageKey, originalName, contentType, size, now));
         UpdatedAt = now;

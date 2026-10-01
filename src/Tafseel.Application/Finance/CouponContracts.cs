@@ -48,3 +48,8 @@ public interface ICouponService
     Task<(Domain.Finance.Coupon? Coupon, decimal Discount, decimal Charge)> ResolveForPaymentAsync(
         string? code, decimal baseAmount, string currency, DateTimeOffset now, CancellationToken ct);
 }
+
+public interface ICouponCheckoutQuoteService
+{
+    Task<CouponQuoteDto> QuoteAsync(string studentId, string kind, Guid id, string code, CancellationToken ct);
+}

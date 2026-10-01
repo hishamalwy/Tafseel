@@ -19,7 +19,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 6v5c0 4.6 2.9 8.4 7 10 4.1-1.6 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /></svg>
           <span style="color:var(--mk-ink-2)">{{ t('tp_protected_payment', 'Protected payment') }}</span>
         </span>
-        <span style="color:var(--mk-violet)">
+        <span style="color:var(--mk-primary)">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7.5 12 3 3 6-7" /></svg>
           <span style="color:var(--mk-ink-2)">{{ t('trust_badge_qualified_on_tafseel', 'Qualified on Tafseel') }}</span>
         </span>
@@ -71,7 +71,7 @@
         <button type="button" class="tf-mkb-sheet-btn" aria-controls="browse-filter-sheet"
                 [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" /></svg>
-          <span>{{ t('browse_more_filters', 'More filters') }}</span><b>{{ activeFilterCount() }}</b>
+          <span>{{ t('browse_more_filters', 'More filters') }}</span>@if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
         </button>
       </div>
 
@@ -79,7 +79,7 @@
         <button type="button" class="tf-mkb-sheet-btn" aria-controls="browse-filter-sheet"
                 [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" /></svg>
-          <span>{{ t('browse_filters', 'Filters') }}</span><b>{{ activeFilterCount() }}</b>
+          <span>{{ t('browse_filters', 'Filters') }}</span>@if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
         </button>
         <label class="tf-sr-only" for="sort-mobile">{{ t('browse_sort', 'Sort') }}</label>
         <select class="tf-mk-select" id="sort-mobile" [attr.aria-label]="t('browse_sort', 'Sort')"
@@ -142,8 +142,9 @@
     <div class="tf-mkb-bar">
       <div class="tf-mkb-bar-left">
         <p class="tf-mkb-count">
-          <span>{{ fmt.number(totalCount()) }}</span>
-          <span>{{ t('browse_matches', 'teachers match your filters') }}</span>
+          <!-- UX-04: no "0 teachers match" while the list is still being read. -->
+          @if (loading()) { <span>{{ t('browse_loading', 'Loading teachers…') }}</span> }
+          @else { <span>{{ fmt.number(totalCount()) }}</span>&ngsp;<span>{{ t('browse_matches', 'teachers match your filters') }}</span> }
         </p>
       </div>
       <div class="tf-mkb-sort">
@@ -184,7 +185,7 @@
     } @else {
       <div class="tf-mkb-grid">
         @for (card of cards(); track card.id) {
-          <article class="tf-mkb-card">
+          <article class="tf-mkb-card" [class.is-live]="card.isLive" [class.is-async]="!card.isLive">
             <div class="tf-mkb-strip">
               <span class="tf-mkb-dot" aria-hidden="true"></span>
               <span>{{ card.serviceName || card.subject }}</span>
@@ -199,6 +200,7 @@
                           [attr.aria-label]="t('tp_save', 'Save')" [attr.title]="t('tp_save', 'Save')">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
                          [attr.fill]="card.isFavourite ? 'currentColor' : 'none'"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+                    <span class="tf-mkb-tool-label" aria-hidden="true">{{ card.isFavourite ? t('tp_saved', 'Saved') : t('browse_save_short', 'Save') }}</span>
                   </button>
                 }
                 <button type="button" (click)="toggleCompare(card.id)"
@@ -206,6 +208,7 @@
                         [disabled]="!card.isCompared && compareFull()"
                         [attr.aria-label]="t('browse_compare', 'Compare')" [attr.title]="t('browse_compare', 'Compare')">
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h7M4 12h7M4 18h7M17 4v16m0-16-3 3m3-3 3 3" /></svg>
+                  <span class="tf-mkb-tool-label" aria-hidden="true">{{ t('browse_compare', 'Compare') }}</span>
                 </button>
               </span>
             </div>
@@ -247,14 +250,14 @@
               <dl class="tf-mkb-facts">
                 <dt>{{ t('browse_fact_subject', 'Subject') }}</dt>
                 <dd>{{ card.subjectsLabel || '—' }}</dd>
-                @if (card.deliveryDays) {
-                  <dt>{{ t('browse_fact_delivery', 'Delivery') }}</dt>
-                  <dd>{{ card.deliveryDays }} {{ t('tp_days', 'days') }}</dd>
+                @if (card.deliveryLabel) {
+                  <dt>{{ card.isLive ? t('browse_fact_format', 'Format') : t('browse_fact_delivery', 'Delivery') }}</dt>
+                  <dd>{{ card.deliveryLabel }}</dd>
                 } @else if (card.responseTimeMinutes) {
                   <dt>{{ t('browse_fact_response', 'Responds in') }}</dt>
                   <dd>{{ fmt.number(card.responseTimeMinutes) }} {{ t('common_minutes', 'min') }}</dd>
                 } @else {
-                  <dt>{{ t('tp_completed', 'Completed') }}</dt>
+                  <dt>{{ t('browse_completed_label', 'Completed') }}</dt>
                   <dd>{{ fmt.number(card.completedOrders) }}</dd>
                 }
               </dl>
@@ -265,10 +268,14 @@
                 <div class="tf-mk-price-block">
                   <span class="tf-mk-label">{{ t('common_from', 'From') }}</span>
                   <tf-price size="lg" [amount]="card.fromAmount" [currency]="card.fromCurrency" />
+                  <!-- UX-06: every price says what it buys. -->
+                  <span class="tf-mkp-per-hour">{{ card.isLive ? t('tp_per_hour', 'per hour') : t('tp_per_request', 'per request') }}</span>
                 </div>
               }
-              <a class="tf-mkb-profile-link" [routerLink]="['/teachers', card.id]">
-                {{ t('browse_view_profile', 'View profile') }}
+              <a class="tf-mkb-profile-link tf-mk-btn tf-mk-btn--primary"
+                 [routerLink]="card.primaryService ? (card.isLive ? '/sessions/book' : '/requests/new') : '/teachers/' + card.id"
+                 [queryParams]="card.primaryService ? { teacherId: card.id, teacherServiceId: card.primaryService.id } : null">
+                {{ card.isLive ? t('tp_book_live', 'Request a live session') : t('tp_request', 'Request this service') }}
               </a>
             </div>
           </article>
@@ -291,7 +298,7 @@
 
   @if (compareIds().length) {
     <div class="tf-compare-tray" role="region" [attr.aria-label]="t('browse_compare', 'Compare')">
-      <span>{{ compareIds().length }} / 4</span>
+      <span>{{ compareIds().length }} / {{ compareLimit }}</span>
       <button type="button" class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--sm" (click)="openComparison()">
         {{ t('browse_compare_open', 'Compare selected') }}
       </button>
@@ -302,7 +309,7 @@
   }
 
   @if (comparison(); as rows) {
-    <div class="tf-compare-panel" role="dialog" aria-modal="true"
+    <div #compareDialog class="tf-compare-panel" role="dialog" aria-modal="true" tabindex="-1"
          [attr.aria-label]="t('browse_compare', 'Compare')">
       <div class="tf-compare-head">
         <h2>{{ t('browse_compare', 'Compare') }}</h2>
@@ -314,8 +321,12 @@
         @for (row of rows; track row.id) {
           <article class="tf-compare-card">
             <strong>{{ fmt.userName(row) }}</strong>
-            <span>{{ row.rating ? fmt.number(row.rating, { maximumFractionDigits: 1 }) : '—' }}</span>
-            <span>{{ fmt.number(row.completedOrders) }} {{ t('tp_completed', 'completed') }}</span>
+            <dl>
+              <div><dt>{{ t('browse_fact_subject', 'Subject') }}</dt><dd>{{ row.subjects.join(locale.isRtl() ? '، ' : ', ') || '—' }}</dd></div>
+              <div><dt>{{ t('browse_from', 'From') }}</dt><dd>@if (row.startingPrice !== null) { <tf-price [amount]="row.startingPrice" [currency]="row.currency" /> } @else { — }</dd></div>
+              <div><dt>{{ t('tp_top_rated', 'Student rating') }}</dt><dd>{{ row.rating ? fmt.number(row.rating, { maximumFractionDigits: 1 }) : t('browse_no_public_reviews', 'No public reviews yet') }}</dd></div>
+              <div><dt>{{ t('compare_field_samples', 'Teaching samples') }}</dt><dd>{{ fmt.number(row.sampleCount ?? 0) }}</dd></div>
+            </dl>
             <a [routerLink]="['/teachers', row.id]">{{ t('browse_view_profile', 'View profile') }}</a>
           </article>
         }

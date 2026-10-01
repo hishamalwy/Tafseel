@@ -71,11 +71,11 @@ export function requestStatus(status: unknown, viewer: Viewer = 'student', offer
   switch (status) {
     case 0: return student
       ? { labelKey: 'demand_status_pending', fallback: 'Waiting for the teacher', tone: 'info' }
-      : { labelKey: 'demand_status_pending', fallback: 'Waiting for the teacher', tone: 'warning', action: ACTIONS.reviewRequest };
+      : { labelKey: 'demand_status_pending_teacher', fallback: 'New request — waiting for your answer', tone: 'warning', action: ACTIONS.reviewRequest };
     case 1: return student
       ? { labelKey: 'demand_status_clarification', fallback: 'Teacher asked a question', tone: 'warning', action: ACTIONS.answerTeacher }
-      : { labelKey: 'demand_status_clarification', fallback: 'Teacher asked a question', tone: 'info' };
-    case 2: return view('demand_status_accepted', 'Accepted — order created', 'success', student ? ACTIONS.payNow : undefined);
+      : { labelKey: 'demand_status_clarification_teacher', fallback: 'You asked a question — waiting for the student', tone: 'info' };
+    case 2: return view('demand_status_accepted', 'Accepted — order created', 'success', student ? ACTIONS.openOrder : undefined);
     case 3: return view('demand_status_declined', 'Declined', 'danger', student ? ACTIONS.findAnotherTeacher : undefined);
     case 4: return view('demand_status_cancelled', 'Cancelled', 'neutral');
     case 5: {
@@ -87,7 +87,7 @@ export function requestStatus(status: unknown, viewer: Viewer = 'student', offer
     }
     case 6: return student
       ? { labelKey: 'demand_status_reserved', fallback: 'Offer held for payment', tone: 'warning', action: ACTIONS.payNow }
-      : { labelKey: 'demand_status_reserved', fallback: 'Offer held for payment', tone: 'info' };
+      : { labelKey: 'demand_status_reserved_teacher', fallback: 'Your offer was chosen — waiting for payment', tone: 'info' };
     case 7: return { labelKey: 'demand_status_converted', fallback: 'Became an order', tone: 'success', action: ACTIONS.openOrder };
     case 8: return view('demand_status_expired', 'Expired', 'danger', student ? ACTIONS.postNewRequest : undefined);
     default: return UNKNOWN;
@@ -125,9 +125,9 @@ export function orderStatus(status: unknown, paymentStatus: unknown, viewer: Vie
       : { labelKey: 'order_status_in_progress', fallback: 'In progress', tone: flags.isOverdue ? 'warning' : 'info', action: ACTIONS.deliverWork };
     case 2: return student
       ? { labelKey: 'order_status_delivered_review', fallback: 'Delivered — review it', tone: 'warning', action: ACTIONS.reviewDelivery }
-      : { labelKey: 'order_status_delivered', fallback: 'Delivered', tone: 'info' };
+      : { labelKey: 'order_status_delivered_teacher', fallback: 'Delivered — waiting for the student', tone: 'info' };
     case 3: return student
-      ? { labelKey: 'order_status_revision', fallback: 'Revision requested', tone: 'info' }
+      ? { labelKey: 'order_status_revision_student', fallback: 'You asked for changes — waiting for the teacher', tone: 'info' }
       : { labelKey: 'order_status_revision', fallback: 'Revision requested', tone: 'warning', action: ACTIONS.deliverRevision };
     case 4: return view('order_status_completed', 'Completed', 'success',
       student && flags.reviewCanSubmit && !flags.hasReview ? ACTIONS.writeReview : undefined);
@@ -169,7 +169,7 @@ export function sessionStatus(status: unknown, viewer: Viewer = 'student', timin
   switch (status) {
     case 0: return student
       ? { labelKey: 'session_status_awaiting_payment', fallback: 'Payment required', tone: 'warning', action: ACTIONS.payNow }
-      : { labelKey: 'session_status_awaiting_payment', fallback: 'Payment required', tone: 'info' };
+      : { labelKey: 'session_status_awaiting_payment_teacher', fallback: 'Accepted — waiting for the student’s payment', tone: 'info' };
     case 1: {
       const base = { labelKey: 'session_status_confirmed', fallback: 'Confirmed', tone: 'info' as Tone };
       const now = timing.now, starts = Date.parse(String(timing.startsAt ?? '')), ends = Date.parse(String(timing.endsAt ?? ''));
@@ -192,6 +192,10 @@ export function sessionStatus(status: unknown, viewer: Viewer = 'student', timin
     case 8: return student
       ? { labelKey: 'session_status_teacher_no_show_pending_student', fallback: 'Waiting for the teacher', tone: 'info' }
       : { labelKey: 'session_status_teacher_no_show_pending_teacher', fallback: 'The student reported you absent', tone: 'warning', action: ACTIONS.reviewReport };
+    case 9: return student
+      ? view('session_status_awaiting_teacher_student', 'Waiting for the teacher to answer', 'info')
+      : view('session_status_awaiting_teacher_teacher', 'New session request', 'warning');
+    case 10: return view('session_status_declined', 'Declined', 'neutral');
     default: return UNKNOWN;
   }
 }
@@ -247,6 +251,8 @@ export function withdrawalStatus(status: unknown): StatusView {
     case 0: return { labelKey: 'withdrawal_status_pending', fallback: 'Processing', tone: 'info' };
     case 1: return { labelKey: 'withdrawal_status_completed', fallback: 'Transferred', tone: 'success' };
     case 2: return { labelKey: 'withdrawal_status_rejected', fallback: 'Rejected — returned to your balance', tone: 'danger' };
+    // The finance team started the bank transfer; the money has not been confirmed as sent yet.
+    case 3: return { labelKey: 'withdrawal_status_transfer_started', fallback: 'Transfer started', tone: 'info' };
     default: return UNKNOWN;
   }
 }
@@ -332,8 +338,27 @@ const NOTIFICATION_COPY: Readonly<Record<string, Label>> = {
   ApplicationSubmitted: { labelKey: 'notification_type_application', fallback: 'Update on your teaching application' },
   ApplicationUnderReview: { labelKey: 'notification_type_application', fallback: 'Update on your teaching application' },
   ApplicationDecision: { labelKey: 'notification_type_application', fallback: 'Update on your teaching application' },
+  QualificationRevoked: { labelKey: 'notification_type_qualification_revoked', fallback: 'A subject qualification was withdrawn' },
+  SessionRequest: { labelKey: 'notification_type_session_request', fallback: 'A student asked for a live session' },
+  SessionRequestAccepted: { labelKey: 'notification_type_session_request_accepted', fallback: 'Your teacher accepted the session time' },
+  SessionRequestDeclined: { labelKey: 'notification_type_session_request_declined', fallback: 'Your teacher could not take that session time' },
+  Support: { labelKey: 'notification_type_support', fallback: 'Update on your help report' },
+  RequestCancelled: { labelKey: 'notification_type_request_cancelled', fallback: 'A student cancelled a request' },
+  OrderCancelled: { labelKey: 'notification_type_order_cancelled', fallback: 'An unpaid order was cancelled' },
+  PaymentFailed: { labelKey: 'notification_type_payment_failed', fallback: 'Your payment did not go through' },
+  AccountStatus: { labelKey: 'notification_type_account_status', fallback: 'Your account changed' },
+
   ProfilePublished: { labelKey: 'notification_type_profile_published', fallback: 'Your profile is now visible to students' },
   ProfileUnpublished: { labelKey: 'notification_type_profile_unpublished', fallback: 'Your profile is no longer visible to students' }
+};
+
+/** Staff queues: the bell names the work waiting, never the English server title (UX-04). */
+const STAFF_NOTIFICATION_COPY: Readonly<Record<string, Label>> = {
+  FinanceQueue: { labelKey: 'notification_type_finance_queue', fallback: 'Money work is waiting for you' },
+  DisputeAdmin: { labelKey: 'notification_type_dispute_admin', fallback: 'A problem report needs your decision' },
+  DisputeSla: { labelKey: 'notification_type_dispute_sla', fallback: 'A problem report is close to its deadline' },
+  ReviewModeration: { labelKey: 'notification_type_review_moderation', fallback: 'A review needs moderation' },
+  SessionOutcomeAdminReview: { labelKey: 'notification_type_session_outcome_admin', fallback: 'A session outcome needs your decision' }
 };
 
 const SHOWCASE_COPY: Label = { labelKey: 'notification_type_showcase', fallback: 'Update on your teaching samples' };
@@ -346,6 +371,7 @@ export const STUDENT_TEACHER_NOTIFICATION_TYPES = Object.keys(NOTIFICATION_COPY)
 export function notificationCopy(type: unknown): Label | null {
   if (typeof type !== 'string') return null;
   if (type in NOTIFICATION_COPY) return NOTIFICATION_COPY[type];
+  if (type in STAFF_NOTIFICATION_COPY) return STAFF_NOTIFICATION_COPY[type];
   if (/^Showcase[A-Z]/.test(type) && type !== 'ShowcaseSubmitted') return SHOWCASE_COPY;
   return null;
 }

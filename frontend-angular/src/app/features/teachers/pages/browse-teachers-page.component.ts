@@ -1,22 +1,26 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { countText } from '@core/i18n/count-text';
 import { SignalSessionStore } from '@core/auth/services/session.store';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
 import { PublicHeaderComponent } from '@shared/layouts/public-header.component';
 import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
-import { Teacher } from '../models/teacher';
+import { Teacher, TeacherService } from '../models/teacher';
 import { CatalogItem, Catalogs, TeacherQuery } from '../services/teacher.ports';
 import {
   CompareTeachers, LoadCatalogs, SearchTeachers, TEACHERS_PAGE_SIZE, ToggleFavouriteTeacher
 } from '../services/teacher.use-cases';
 import { FAVOURITES_GATEWAY } from '../services/teacher.ports';
 import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { containModalFocus } from '@shared/utils/modal-focus';
 
 /**
  * Browse teachers — ported from `Tafseel-Browse-Teachers.dc.html`.
@@ -45,6 +49,11 @@ export class BrowseTeachersPageComponent {
   private readonly router = inject(Router);
   private readonly title = inject(Title);
   private readonly toasts = inject(ToastService);
+  private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly compareDialog = viewChild<ElementRef<HTMLElement>>('compareDialog');
+  private releaseComparisonFocus: (() => void) | undefined;
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
 
@@ -62,6 +71,7 @@ export class BrowseTeachersPageComponent {
   readonly favouriteIds = signal<readonly string[]>([]);
   readonly favouriteBusy = signal('');
   readonly compareIds = signal<readonly string[]>([]);
+  readonly compareLimit = CompareTeachers.MAX;
   readonly comparison = signal<readonly Teacher[] | null>(null);
   readonly filtersOpen = signal(false);
 
@@ -71,6 +81,7 @@ export class BrowseTeachersPageComponent {
   readonly isStudent = computed(() => this.store.roles().includes('Student'));
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.releaseComparisonFocus?.());
     queueMicrotask(() =>
       this.title.setTitle(this.t('browse_title', 'Find your teacher') + ' — Tafseel'));
 
@@ -81,8 +92,22 @@ export class BrowseTeachersPageComponent {
     return this.locale.t(key, fallback);
   }
 
+  private deliveryLabel(service: TeacherService): string {
+    const wording = Teacher.deliveryWording(service);
+    switch (wording.kind) {
+      // Search results do not carry the allowed lengths; say what the service is rather than nothing.
+      case 'duration': return wording.minutes.length
+        ? this.locale.format('tp_session_minutes', { minutes: wording.minutes.join(' / ') }, '{minutes} min session')
+        : this.t('browse_live_video_call', 'One-to-one video call');
+      case 'hours': return countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_hours', wording.value, '1 hour', '{n} hours');
+      case 'days': return countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_days', wording.value, '1 day', '{n} days');
+      default: return '';
+    }
+  }
+
   // ---- derived ----
-  readonly query = computed<TeacherQuery>(() => this.fromUrl());
+  readonly query = signal<TeacherQuery>(this.fromUrl());
+  private loadSequence = 0;
 
   readonly cards = computed(() => this.teachers().map(teacher => {
     const name = this.fmt.userName(teacher);
@@ -101,14 +126,18 @@ export class BrowseTeachersPageComponent {
       id: teacher.id,
       name,
       serviceName,
+      primaryService: service ?? null,
+      isLive: service ? Teacher.isLiveService(service) : false,
       subject: teacher.subjects[0] ?? '',
       subjectsLabel: teacher.subjects.join(ar ? '، ' : ', '),
       responseTimeMinutes: teacher.responseTimeMinutes,
       country: teacher.country,
       languagesLabel: teacher.languages.join(ar ? '، ' : ', '),
       deliveryDays: service?.deliveryDays ?? null,
+      // Same words as the profile: a live session has a length, not a delivery ("Delivery 1 days").
+      deliveryLabel: service ? this.deliveryLabel(service) : '',
       completedOrders: teacher.completedOrders,
-      avatar: this.fmt.avatarUrl(teacher.id, teacher.hasAvatar, null, name),
+      avatar: this.fmt.avatarUrl(teacher.id, teacher.hasAvatar, null, 'teacher'),
       headline: this.locale.lang() === 'ar'
         ? (teacher.headline || teacher.headlineEnglish)
         : (teacher.headlineEnglish || teacher.headline),
@@ -150,33 +179,35 @@ export class BrowseTeachersPageComponent {
 
   // ---- loading ----
   private async init(): Promise<void> {
-    this.draft.set(this.fromUrl());
     // Catalogs and the first page are independent; neither should wait.
     void this.loadCatalogs.execute().then(catalogs => this.catalogs.set(catalogs));
     void this.loadFavourites();
-    await this.load();
-
-    // Re-run whenever the URL changes, which is how filters and paging apply.
-    this.route.queryParamMap.subscribe(() => {
-      this.draft.set(this.fromUrl());
+    // URL changes are the source of truth, including the first load and Back.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      const query = this.fromUrl();
+      this.query.set(query);
+      this.draft.set(query);
       void this.load();
     });
   }
 
   async load(): Promise<void> {
+    const sequence = ++this.loadSequence;
     this.loading.set(true);
     this.error.set(false);
     try {
       const result = await this.search.execute(this.query());
+      if (sequence !== this.loadSequence) return;
       this.teachers.set(result.items);
       this.page.set(result.page);
       this.totalCount.set(result.totalCount);
       this.totalPages.set(result.totalPages);
     } catch {
+      if (sequence !== this.loadSequence) return;
       this.teachers.set([]);
       this.error.set(true);
     } finally {
-      this.loading.set(false);
+      if (sequence === this.loadSequence) this.loading.set(false);
     }
   }
 
@@ -239,7 +270,7 @@ export class BrowseTeachersPageComponent {
       return;
     }
     if (current.length >= CompareTeachers.MAX) {
-      this.toasts.show(this.t('browse_compare_full', 'You can compare up to four teachers.'));
+      this.toasts.show(this.t('browse_compare_full', 'You can compare up to three teachers.'));
       return;
     }
     this.compareIds.set([...current, teacherId]);
@@ -252,12 +283,18 @@ export class BrowseTeachersPageComponent {
     }
     try {
       this.comparison.set(await this.compareTeachers.execute(this.compareIds()));
+      afterNextRender(() => {
+        if (this.comparison() && this.compareDialog())
+          this.releaseComparisonFocus = containModalFocus(this.compareDialog()!.nativeElement, this.document, () => this.closeComparison());
+      }, { injector: this.injector });
     } catch {
       this.toasts.show(this.t('browse_compare_failed', 'Could not compare.'));
     }
   }
 
   closeComparison(): void {
+    this.releaseComparisonFocus?.();
+    this.releaseComparisonFocus = undefined;
     this.comparison.set(null);
   }
 

@@ -28,10 +28,10 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { chromium } from "@playwright/test";
+import { execSql } from "./lib/sql.mjs";
 
 const BASE = (process.env.TAFSEEL_BASE_URL ?? "http://localhost:5311").replace(/\/$/, "");
 const OUTBOX = required("TAFSEEL_DEV_OUTBOX");
-const SQL_SERVER = process.env.TAFSEEL_E2E_SQL_SERVER ?? "(localdb)\\MSSQLLocalDB";
 const DATABASE = required("TAFSEEL_E2E_DATABASE");
 const SHOTS = process.env.TAFSEEL_SHOT_DIR;
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
@@ -110,7 +110,21 @@ for (const [acceptLanguage, locale] of [["en-US", "en"], ["ar-SA", "ar"]]) {
     assert.equal(await page.evaluate(() => document.querySelector("base")?.getAttribute("href")), `/${locale}/`);
     await noCspViolations(page);
     assert.deepEqual(page.consoleErrors, [], "no script errors or failed requests");
+    await page.waitForTimeout(900);
+    if (await page.locator("[data-promo-wizard]").isVisible())
+      await page.locator(".tf-promo-wizard-close").click();
     await shot(page, `landing-${locale}`);
+    if (locale === "ar") {
+      await page.setViewportSize({ width: 2048, height: 960 });
+      const story = page.locator(".tf-product-story");
+      const box = await story.boundingBox();
+      assert.ok(box && box.width >= 1536, "the story uses at least three quarters of a wide screen");
+      assert.ok(Math.abs(box.x - (2048 - box.x - box.width)) < 12, "the story is centered in RTL");
+      if (SHOTS) {
+        await page.locator(".tf-orbs").screenshot({ path: join(SHOTS, "landing-community-ar-wide.png") });
+        await page.locator(".tf-landing-how").screenshot({ path: join(SHOTS, "landing-story-ar-wide.png") });
+      }
+    }
     await ctx.close();
   });
 }
@@ -139,7 +153,7 @@ await step("J2-02 confirmation link from the dev outbox confirms the address in 
   assert.equal(url.pathname, "/auth");
   await visit(page, link);
   assert.match(pathOf(page.url()), /^\/(ar|en)\/auth$/);
-  await page.locator(".tf-toast").waitFor({ state: "visible", timeout: 15000 });
+  await page.locator(".tf-auth-success, .tf-toast").first().waitFor({ state: "visible", timeout: 15000 });
   assert.equal(await page.locator(".tf-auth-alert[role=alert]").count(), 0, "no invalid-link alert");
   await shot(page, "confirm-email");
   userId = sql(`SET NOCOUNT ON; SELECT Id FROM AspNetUsers WHERE Email = '${email}' AND EmailConfirmed = 1`).trim();
@@ -198,6 +212,7 @@ const signedIn = async (options, lang = "en") => {
   return { ctx, page };
 };
 
+// UX-03 moved notifications from /student/notifications into the header bell; J9-04 is proven there now.
 await step("J9-04 notification actions: internal only, keyboard, locale kept, marked read without blocking", async () => {
   assert.ok(userId, "needs the confirmed user from J2-02");
   insertNotification("Conversation", "New message", `/conversations/${conversationId}`);
@@ -206,18 +221,22 @@ await step("J9-04 notification actions: internal only, keyboard, locale kept, ma
   insertNotification("Hostile", "Should offer no link", "https://evil.example/phish");
 
   const { ctx, page } = await signedIn();
-  await visit(page, `${BASE}/en/student/notifications`);
-  const actions = page.locator("[data-testid=notification-action]");
-  await actions.first().waitFor({ state: "visible", timeout: 15000 });
-  assert.equal(await actions.count(), 3, "three followable links; the external one offers none");
-  assert.equal(await page.locator("article.is-unread").count(), 4, "every unread notification is marked, link or not");
-  assert.ok((await page.locator("article", { hasText: "New message" }).innerText()).includes("Wave 1 E2E fixture"), "the body is shown");
-  for (const href of await actions.evaluateAll(links => links.map(a => a.getAttribute("href"))))
-    assert.ok(href && !/^[a-z]+:|^\/\//i.test(href), `action href stays on this site: ${href}`);
+  const openBell = async () => {
+    await visit(page, `${BASE}/en/student/overview`);
+    await page.locator("[data-testid=notification-bell]").click();
+    await page.locator("[data-testid=notification-row]").first().waitFor({ state: "visible", timeout: 15000 });
+  };
+  await openBell();
+  const rows = page.locator("[data-testid=notification-row]");
+  assert.equal(await page.locator("[data-testid=notification-row].is-unread").count(), 4, "every unread notification is marked, link or not");
+  const links = rows.locator("a");
+  assert.equal(await links.count(), 3, "three followable links; the external one offers none");
+  assert.equal(await rows.locator("button").count(), 1, "the external link is a plain row that goes nowhere");
+  for (const href of await links.evaluateAll(anchors => anchors.map(a => a.getAttribute("href"))))
+    assert.ok(href && !/^[a-z]+:|^\/\//i.test(href), `notification href stays on this site: ${href}`);
   await shot(page, "notifications-en");
 
-  const conversationCard = page.locator("article", { hasText: "New message" });
-  await conversationCard.locator("[data-testid=notification-action]").focus();
+  await rows.locator(`a[href*="/conversations/${conversationId}"]`).focus();
   await page.keyboard.press("Enter");
   // Wave 3B: the conversation has its own screen; this fixture id belongs to no conversation, so it says so.
   await page.waitForURL(url => pathOf(url) === `/en/conversations/${conversationId}`, { timeout: 15000 });
@@ -227,12 +246,14 @@ await step("J9-04 notification actions: internal only, keyboard, locale kept, ma
   assert.equal(sql(`SET NOCOUNT ON; SELECT COUNT(*) FROM Notifications WHERE UserId = '${userId}' AND Type = 'Order' AND ReadAt IS NOT NULL`).trim(), "0",
     "opening one notification does not mark the others read");
 
-  await visit(page, `${BASE}/en/student/notifications`);
-  await page.locator("article", { hasText: "Stored before the move" }).locator("[data-testid=notification-action]").click();
-  await page.waitForURL(url => pathOf(url) === "/en/student/payments", { timeout: 15000 });
+  // A link stored before the move: the host's LegacyLinks sends section=payments to Payments, which
+  // UX-03 folded into "My requests & orders".
+  await openBell();
+  await rows.locator('a[href*="Tafseel-Student-Dashboard.dc.html"]').click();
+  await page.waitForURL(url => pathOf(url) === "/en/student/requests", { timeout: 15000 });
 
-  await visit(page, `${BASE}/en/student/notifications`);
-  await page.locator("article", { hasText: "Order update" }).locator("[data-testid=notification-action]").click();
+  await openBell();
+  await rows.locator(`a[href*="/orders/${orderId}"]`).click();
   await page.waitForURL(url => pathOf(url) === `/en/orders/${orderId}`, { timeout: 15000 });
   await page.locator("[role=alert] h1").waitFor({ state: "visible", timeout: 15000 });
   await shot(page, "order-unavailable-en");
@@ -241,9 +262,10 @@ await step("J9-04 notification actions: internal only, keyboard, locale kept, ma
 
 await step("J9-04 notification action works at phone width in Arabic", async () => {
   const { ctx, page } = await signedIn({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: "ar-SA" }, "ar");
-  await visit(page, `${BASE}/ar/student/notifications`);
+  await visit(page, `${BASE}/ar/student/overview`);
+  await page.locator("[data-testid=notification-bell]").tap();
   // UX-04: the fixtures' English server titles are not shown in Arabic; the action is found by where it goes.
-  const action = page.locator(`[data-testid=notification-action][href*="/orders/${orderId}"]`);
+  const action = page.locator(`[data-testid=notification-row] a[href*="/orders/${orderId}"]`);
   await action.waitFor({ state: "visible", timeout: 15000 });
   assert.equal(await page.getByText("Order update").count(), 0, "no English notification title in the Arabic list");
   const box = await action.boundingBox();
@@ -328,13 +350,7 @@ function required(name) {
 }
 
 function sql(query) {
-  return execFileSync(sqlcmd(), ["-S", SQL_SERVER, "-d", DATABASE, "-E", "-b", "-h", "-1", "-W", "-Q", query], { encoding: "utf8" });
-}
-
-function sqlcmd() {
-  const candidates = ["C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/sqlcmd.exe",
-    "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/180/Tools/Binn/sqlcmd.exe"];
-  return candidates.find(existsSync) ?? "sqlcmd";
+  return execSql(DATABASE, query);
 }
 
 function insertNotification(type, title, link) {

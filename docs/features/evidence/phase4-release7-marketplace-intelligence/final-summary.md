@@ -1,3 +1,0 @@
-# Final summary
-
-Release 7 implementation is complete and automated backend regression is green. First closure pass: **CONDITIONALLY VERIFIED** — no published live Teacher fixture for Profile/full-funnel browser proof at that cert time, and analytics retention needs a business/privacy decision. **Final Acceptance Closure (2026-08-08): VERIFIED & CLOSED.** Historical Conditional wording above is preserved. Retention duration remains Class B (not invented). Release 8 must not treat these aggregates as ranking permission. See [final-acceptance/final-summary.md](./final-acceptance/final-summary.md).

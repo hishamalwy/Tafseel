@@ -3,7 +3,8 @@ import { Routes } from '@angular/router';
 import { DEMAND_GATEWAY } from './services/demand.ports';
 import { HttpDemandGateway } from './services/http-demand.gateway';
 import {
-  LoadOffers, LoadOpenRequestForm, LoadOpportunity, LoadRequest, ManageOffer, ManageRequest, PublishOpenRequest, SelectOffer
+  LoadMyOffers, LoadOffers, LoadOpenRequestForm, LoadOpportunity, LoadRequest, ManageOffer, ManageRequest, OpenRequestDrafts,
+  PublishOpenRequest, SelectOffer
 } from './services/demand.use-cases';
 
 /**
@@ -15,7 +16,7 @@ const providers: Provider[] = [HttpDemandGateway, { provide: DEMAND_GATEWAY, use
 
 export const OPEN_REQUEST_ROUTES: Routes = [{
   path: '',
-  providers: [...providers, LoadOpenRequestForm, PublishOpenRequest],
+  providers: [...providers, LoadOpenRequestForm, PublishOpenRequest, OpenRequestDrafts],
   loadComponent: () => import('./pages/open-request-page.component').then(m => m.OpenRequestPageComponent)
 }];
 
@@ -29,6 +30,12 @@ export const OFFERS_ROUTES: Routes = [{
   path: '',
   providers: [...providers, LoadOffers, SelectOffer],
   loadComponent: () => import('./pages/offers-page.component').then(m => m.OffersPageComponent)
+}];
+
+export const MY_OFFERS_ROUTES: Routes = [{
+  path: '',
+  providers: [...providers, LoadMyOffers],
+  loadComponent: () => import('./pages/my-offers-page.component').then(m => m.MyOffersPageComponent)
 }];
 
 export const OPPORTUNITY_ROUTES: Routes = [{

@@ -25,7 +25,7 @@ function configure(overrides: {
     byId: () => of(CASE),
     eligiblePurchases: () => of([]),
     open: () => of(CASE),
-    postMessage: () => of(undefined),
+    postMessage: () => of(undefined), postReviewerMessage: () => of(undefined),
     uploadEvidence: () => of(undefined),
     downloadEvidence: () => of(undefined),
     ...overrides.gateway

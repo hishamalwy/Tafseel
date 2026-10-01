@@ -20,6 +20,8 @@ export interface Credentials {
   readonly password: string;
   /** Supplied only after the API has answered `mfa-required`. */
   readonly mfaCode?: string;
+  /** False keeps the sign-in to this browser session; omitted means remembered. */
+  readonly rememberMe?: boolean;
 }
 
 export interface Registration {

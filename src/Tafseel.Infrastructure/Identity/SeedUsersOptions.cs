@@ -1,8 +1,9 @@
 namespace Tafseel.Infrastructure.Identity;
 
 /// <summary>
-/// Opt-in Development-only demo user seeding. Never applies in Staging or Production;
-/// see ADR-012 and <see cref="DependencyInjection.InitializeIdentityAsync"/>.
+/// The demo-account seed password (docs/ENVIRONMENTS.md). Development startup seeds only when <see cref="Enabled"/>;
+/// Staging and PreProduction seed through the explicit `seed` command; Production never seeds demo accounts.
+/// The password comes from User Secrets or the SeedUsers__Password setting and is never logged.
 /// </summary>
 public sealed class SeedUsersOptions
 {

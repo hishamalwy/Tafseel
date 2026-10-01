@@ -20,6 +20,15 @@ export const SOURCING = { DIRECT: 0, OPEN: 1 } as const;
 export const OFFER_STATUS = { SUBMITTED: 0, SELECTED: 1, ACCEPTED: 2, WITHDRAWN: 3, NOT_SELECTED: 4, EXPIRED: 5 } as const;
 
 export const OPEN_REQUEST_LIMITS = { title: 200, requirements: 5000, budget: 1_000_000 } as const;
+
+/** What an open request may carry, checked here first and again (with a virus scan) by the server. */
+export const OPEN_REQUEST_FILE_LIMITS = {
+  maxFiles: 5,
+  maxBytes: 25 * 1024 * 1024,
+  extensions: ['.pdf', '.jpg', '.jpeg', '.png', '.txt', '.docx', '.pptx']
+} as const;
+
+export type FileRefusal = 'wrong-type' | 'too-large' | 'too-many';
 export const OFFER_LIMITS = { amountMin: 0.01, amountMax: 1_000_000, hoursMax: 8760, revisionsMax: 20, validityMax: 720, message: 2000 } as const;
 
 export interface Attachment {
@@ -38,6 +47,8 @@ export interface Clarification {
 
 /** `GET /learning-requests/{id}`: the request as its student or assigned teacher sees it. */
 export interface LearningRequest {
+  /** The listed price the student saw when sending a direct request (DEC-13); null otherwise. */
+  readonly listedPriceAtRequest?: number | null;
   readonly id: string;
   readonly studentId: string;
   readonly teacherId: string;
@@ -134,6 +145,16 @@ export interface OpenRequestInput {
   readonly deadline: string;
   readonly budgetMin: number | null;
   readonly budgetMax: number | null;
+  /** The upload-first draft whose clean files move onto the request. */
+  readonly draftId?: string | null;
+}
+
+/** The student's saved upload-first draft (`OpenRequestDraftDto`): what they typed and the files already checked. */
+export interface SavedOpenDraft {
+  readonly id: string;
+  readonly fields: OpenRequestDraft;
+  readonly attachments: readonly Attachment[];
+  readonly maxAttachments: number;
 }
 
 export interface OfferDraft {
@@ -153,7 +174,20 @@ export interface OfferInput {
   readonly message: string;
 }
 
-export type DraftProblem = 'required' | 'too_long' | 'out_of_range' | 'in_past' | 'budget_pair' | 'budget_order';
+export type DraftProblem = 'required' | 'too_long' | 'out_of_range' | 'in_past' | 'budget_pair' | 'budget_order' | 'price_range';
+
+/**
+ * What Tafseel allows for the request's kind of service (the catalog's policy, as the teacher's own services
+ * endpoint reports it). The server checks the same rules; knowing them here lets the form say
+ * "Enter a price between 50 and 400" instead of a bare "out of range" after sending.
+ */
+export interface OfferTerms {
+  readonly minPrice: number;
+  readonly maxPrice: number;
+  readonly minDeliveryHours: number;
+  readonly maxDeliveryHours: number;
+  readonly maxRevisions: number;
+}
 
 export const Demand = {
   // Words and tones come from the shared UX-04 vocabulary, so a list and this screen agree.
@@ -236,12 +270,37 @@ export const Demand = {
     return problems;
   },
 
-  openInput(draft: OpenRequestDraft): OpenRequestInput {
+  openInput(draft: OpenRequestDraft, draftId: string | null = null): OpenRequestInput {
     return {
       subjectId: draft.subjectId, serviceCatalogItemId: draft.serviceTypeId,
       title: draft.title.trim(), requirements: draft.requirements.trim(),
-      deadline: new Date(draft.deadline).toISOString(), budgetMin: draft.budgetMin, budgetMax: draft.budgetMax
+      deadline: new Date(draft.deadline).toISOString(), budgetMin: draft.budgetMin, budgetMax: draft.budgetMax,
+      ...(draftId ? { draftId } : {})
     };
+  },
+
+  /** Why a chosen file cannot be attached before it is even sent, or null. */
+  fileRefusal(file: Pick<File, 'name' | 'size'>, attachedCount: number): FileRefusal | null {
+    if (attachedCount >= OPEN_REQUEST_FILE_LIMITS.maxFiles) return 'too-many';
+    const dot = file.name.lastIndexOf('.');
+    const extension = dot >= 0 ? file.name.slice(dot).toLowerCase() : '';
+    if (!(OPEN_REQUEST_FILE_LIMITS.extensions as readonly string[]).includes(extension)) return 'wrong-type';
+    if (file.size <= 0 || file.size > OPEN_REQUEST_FILE_LIMITS.maxBytes) return 'too-large';
+    return null;
+  },
+
+  /** An ISO instant as the `datetime-local` value it is in this browser's zone; '' when absent. */
+  localInputValue(iso: string | null | undefined): string {
+    const time = iso ? Date.parse(iso) : NaN;
+    if (Number.isNaN(time)) return '';
+    const local = new Date(time - new Date(time).getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+  },
+
+  /** True when nothing worth keeping has been typed. */
+  isBlank(draft: OpenRequestDraft): boolean {
+    return !draft.subjectId && !draft.serviceTypeId && !draft.title.trim() && !draft.requirements.trim()
+      && !draft.deadline && draft.budgetMin === null && draft.budgetMax === null;
   },
 
   emptyOffer(): OfferDraft {
@@ -258,7 +317,7 @@ export const Demand = {
   },
 
   /** `SubmitTeacherOffer`, checked before sending. */
-  offerProblems(draft: OfferDraft): Partial<Record<keyof OfferDraft, DraftProblem>> {
+  offerProblems(draft: OfferDraft, terms: OfferTerms | null = null): Partial<Record<keyof OfferDraft, DraftProblem>> {
     const problems: Partial<Record<keyof OfferDraft, DraftProblem>> = {};
     const range = (value: number | null, min: number, max: number, integer: boolean): DraftProblem | null =>
       value === null || !Number.isFinite(value) ? 'required'
@@ -266,15 +325,23 @@ export const Demand = {
     const amount = range(draft.amount, OFFER_LIMITS.amountMin, OFFER_LIMITS.amountMax, false)
       ?? (!/^\d+(\.\d{1,2})?$/.test(String(draft.amount)) ? 'out_of_range' : null);
     if (amount) problems.amount = amount;
-    const hours = range(draft.deliveryHours, 1, OFFER_LIMITS.hoursMax, true);
+    else if (terms && (draft.amount! < terms.minPrice || draft.amount! > terms.maxPrice)) problems.amount = 'price_range';
+    const hours = range(draft.deliveryHours, terms?.minDeliveryHours ?? 1, terms?.maxDeliveryHours ?? OFFER_LIMITS.hoursMax, true);
     if (hours) problems.deliveryHours = hours;
-    const revisions = range(draft.includedRevisions, 0, OFFER_LIMITS.revisionsMax, true);
+    const revisions = range(draft.includedRevisions, 0, terms?.maxRevisions ?? OFFER_LIMITS.revisionsMax, true);
     if (revisions) problems.includedRevisions = revisions;
     const validity = range(draft.validityHours, 1, OFFER_LIMITS.validityMax, true);
     if (validity) problems.validityHours = validity;
     if (!draft.message.trim()) problems.message = 'required';
     else if (draft.message.trim().length > OFFER_LIMITS.message) problems.message = 'too_long';
     return problems;
+  },
+
+  /** A new offer's starting values, moved inside what the service allows. */
+  fitOffer(draft: OfferDraft, terms: OfferTerms): OfferDraft {
+    const clamp = (v: number | null, min: number, max: number) => v === null ? v : Math.min(max, Math.max(min, v));
+    return { ...draft, deliveryHours: clamp(draft.deliveryHours, terms.minDeliveryHours, terms.maxDeliveryHours),
+      includedRevisions: clamp(draft.includedRevisions, 0, terms.maxRevisions) };
   },
 
   offerInput(draft: OfferDraft): OfferInput {
@@ -288,3 +355,86 @@ export const Demand = {
     return (rtl ? item.nameArabic : '') || item.name || item.nameArabic;
   }
 } as const;
+
+/**
+ * The files a student may add while a request is still being discussed (UX-24). The server's upload rules
+ * are the same as when the request was written; the list is kept here because features do not import each
+ * other's models.
+ */
+export const REPLY_FILE_LIMITS = {
+  maxFiles: 5,
+  maxBytes: 25 * 1024 * 1024,
+  acceptedTypes: [
+    'image/jpeg', 'image/png', 'application/pdf', 'text/plain',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ] as readonly string[]
+} as const;
+
+export function replyFileProblem(file: { size: number; type: string }, existingCount: number): 'too-large' | 'wrong-type' | 'too-many' | null {
+  if (existingCount >= REPLY_FILE_LIMITS.maxFiles) return 'too-many';
+  if (file.size > REPLY_FILE_LIMITS.maxBytes) return 'too-large';
+  return REPLY_FILE_LIMITS.acceptedTypes.includes(file.type) ? null : 'wrong-type';
+}
+
+/** One of the teacher's own offers and what became of its request (DEC-UX-05, UX-82). */
+export interface MyOffer {
+  readonly id: string;
+  readonly requestId: string;
+  readonly requestTitle: string;
+  readonly subjectName: string;
+  readonly subjectNameArabic: string | null;
+  readonly serviceName: string;
+  readonly serviceNameArabic: string | null;
+  readonly amount: number;
+  readonly currency: string;
+  readonly deliveryHours: number;
+  readonly status: number;
+  readonly requestStatus: number;
+  readonly anotherTeacherChosen: boolean;
+  readonly orderId: string | null;
+  readonly updatedAt: string;
+}
+
+export interface MyOfferOutcome {
+  readonly key: string;
+  readonly fallback: string;
+  readonly tone: Tone;
+  /** Where the teacher goes next from this offer, if anywhere. */
+  readonly link: { readonly path: string; readonly key: string; readonly fallback: string } | null;
+}
+
+/**
+ * What happened to an offer, in the words a teacher would use. "Not chosen" alone reads like a verdict on
+ * the teacher; the plain fact is that the student picked someone else, and that is what the list says.
+ */
+export function myOfferOutcome(offer: MyOffer): MyOfferOutcome {
+  const open = { path: `/teacher/opportunities/${offer.requestId}`, key: 'my_offers_open', fallback: 'Open request' };
+  if (offer.orderId) {
+    return { key: 'my_offers_became_order', fallback: 'You were chosen. It is now an order.', tone: 'success',
+      link: { path: `/orders/${offer.orderId}`, key: 'my_offers_open_order', fallback: 'Open the order' } };
+  }
+  if (offer.anotherTeacherChosen) {
+    return { key: 'my_offers_other_teacher', fallback: 'Another teacher was selected for this request.', tone: 'neutral', link: null };
+  }
+  if (offer.status === OFFER_STATUS.SELECTED) {
+    return { key: 'my_offers_selected', fallback: 'The student chose you and is paying.', tone: 'warning', link: open };
+  }
+  if (offer.status === OFFER_STATUS.WITHDRAWN) {
+    return offer.requestStatus === REQUEST_STATUS.OPEN_FOR_OFFERS
+      ? { key: 'my_offers_withdrawn_open', fallback: 'You withdrew this offer. The request is still open.', tone: 'neutral',
+          link: { ...open, key: 'my_offers_send_again', fallback: 'Send an offer again' } }
+      : { key: 'my_offers_withdrawn', fallback: 'You withdrew this offer.', tone: 'neutral', link: null };
+  }
+  if (offer.requestStatus === REQUEST_STATUS.CANCELLED) {
+    return { key: 'my_offers_request_closed', fallback: 'The student closed this request.', tone: 'neutral', link: null };
+  }
+  if (offer.status === OFFER_STATUS.EXPIRED || offer.requestStatus === REQUEST_STATUS.EXPIRED) {
+    return { key: 'my_offers_expired', fallback: 'This offer ran out of time.', tone: 'neutral', link: null };
+  }
+  if (offer.requestStatus === REQUEST_STATUS.AWAITING_PAYMENT) {
+    return { key: 'my_offers_other_paying', fallback: 'The student chose another offer and is paying. If that payment does not go through, your offer is still in.', tone: 'neutral', link: null };
+  }
+  return { key: 'my_offers_waiting', fallback: 'Waiting for the student to choose.', tone: 'info',
+    link: { ...open, key: 'my_offers_change', fallback: 'See or change my offer' } };
+}

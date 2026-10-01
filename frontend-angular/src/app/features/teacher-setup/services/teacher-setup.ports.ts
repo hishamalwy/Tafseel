@@ -1,7 +1,8 @@
+import { HttpEvent } from '@angular/common/http';
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ExceptionInput, RuleInput } from '../models/availability';
-import { OnboardingState } from '../models/readiness';
+import { IntroVideo, OnboardingState } from '../models/readiness';
 import { ServiceInput, ServiceType } from '../models/service-offer';
 import {
   AvailabilityException, Credential, CredentialDraft, CredentialKind, NamedItem, OwnProfile, ProfileInput, TopicItem,
@@ -33,6 +34,12 @@ export interface TeacherSetupGateway {
   removeException(id: string): Observable<void>;
 
   onboarding(): Observable<OnboardingState>;
+  introVideo(): Observable<IntroVideo>;
+  /** Multipart upload with progress events; the last event carries the saved intro video. */
+  uploadIntroVideo(file: File, version: string | null): Observable<HttpEvent<unknown>>;
+  useApplicationVideo(sampleId: string, version: string | null): Observable<IntroVideo>;
+  setIntroVisible(visible: boolean, version: string): Observable<IntroVideo>;
+  removeIntroVideo(version: string): Observable<IntroVideo>;
   setPublished(published: boolean): Observable<void>;
 }
 

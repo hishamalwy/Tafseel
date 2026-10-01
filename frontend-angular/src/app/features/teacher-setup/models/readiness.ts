@@ -18,7 +18,40 @@ export interface OnboardingState {
   readonly readyForPublication: boolean;
   readonly blockingReasons: readonly string[];
   readonly missingRequirements: readonly string[];
+  /** The teacher's latest application, whose demo the teacher may preview before choosing to show it. */
+  readonly applicationId?: string | undefined;
 }
+
+/** A video recorded for an approved application. Private review material until the teacher consents to show it. */
+export interface ApplicationVideo {
+  readonly sampleId: string;
+  readonly subjectName: string;
+  readonly subjectNameAr: string | null;
+  readonly title: string;
+  /** The assignment's Arabic title; empty when the catalogue has none (the English title is then not shown in Arabic). */
+  readonly titleAr: string;
+  readonly durationSeconds: number | null;
+  readonly inUse: boolean;
+}
+
+/**
+ * The one public introduction video (PRODUCT-P1). The profile shows no video, or exactly this one while it is shown.
+ * `source` is null when the teacher has none.
+ */
+export interface IntroVideo {
+  readonly source: 'upload' | 'application' | null;
+  readonly isPublic: boolean;
+  readonly fileName: string | null;
+  readonly consentedAt: string | null;
+  readonly version: string | null;
+  readonly applicationVideos: readonly ApplicationVideo[];
+  /** The exact sentence the teacher agrees to before an application video is shown. */
+  readonly consentStatement: string;
+}
+
+export const NO_INTRO_VIDEO: IntroVideo = {
+  source: null, isPublic: false, fileName: null, consentedAt: null, version: null, applicationVideos: [], consentStatement: ''
+};
 
 export interface Blocker {
   readonly code: string;
@@ -82,7 +115,7 @@ export const Readiness = {
       { key: 'profile', done: state.profileComplete, link: '/teacher/profile' },
       { key: 'service', done: !state.blockingReasons.includes('active_service_required'), link: '/teacher/services' },
       { key: 'availability', done: state.hasAvailability, link: '/teacher/availability' },
-      { key: 'sample', done: state.hasPublicSample, link: '/teacher/qualifications', query: { tab: 'videos' } }
+      { key: 'sample', done: state.hasPublicSample, link: '/teacher/publication' }
     ];
   }
 } as const;

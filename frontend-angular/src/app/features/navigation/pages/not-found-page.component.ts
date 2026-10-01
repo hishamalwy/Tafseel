@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { LocaleService } from '@core/i18n/locale.service';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
 /**
  * Any address the app does not know. It says so, keeps the reader in their language, and
@@ -12,8 +13,9 @@ import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.compone
 @Component({
   selector: 'tf-not-found-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, SkipLinkComponent],
   template: `
+    <tf-skip-link />
     <tf-workflow-header />
     <main id="main" class="tf-shell tf-not-found" data-testid="not-found">
       <p class="tf-not-found__code" aria-hidden="true">404</p>

@@ -22,7 +22,11 @@ jobs:
           cache: true
           cache-dependency-path: '**/packages.lock.json'
       - run: dotnet tool restore && dotnet restore Tafseel.sln --locked-mode
-      - run: dotnet list Tafseel.sln package --vulnerable --include-transitive
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+      - name: Dependency vulnerability gate
+        run: node scripts/ci/check-vulnerable-packages.mjs --min=high
       - run: dotnet list Tafseel.sln package --deprecated
       - name: Outdated dependency report
         continue-on-error: true

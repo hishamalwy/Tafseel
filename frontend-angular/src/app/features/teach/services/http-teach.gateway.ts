@@ -40,6 +40,11 @@ export class HttpTeachGateway implements TeachGateway {
       .pipe(map(rows => rows.map(topic)));
   }
 
+  openSubjectIds(): Observable<ReadonlySet<string>> {
+    return this.http.get<Json[]>('/api/v1/topics?qualificationOnly=true')
+      .pipe(map(rows => new Set(rows.map(row => String(row['parentId'] ?? '')).filter(Boolean))));
+  }
+
   setTeachingLanguages(languageIds: readonly string[]): Observable<void> {
     return this.http.put<void>('/api/v1/teachers/me/languages', { ids: languageIds });
   }

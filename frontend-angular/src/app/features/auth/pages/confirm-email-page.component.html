@@ -32,6 +32,17 @@
         <p>{{ help() }}</p>
       </div>
 
+      @if (email()) {
+        <button type="button" class="tf-button tf-confirm-email-login" (click)="resend()" [disabled]="resending()">
+          {{ t('auth_resend_confirmation', 'Resend confirmation email') }}
+        </button>
+        @if (resendStatus() === 'sent') {
+          <p role="status">{{ t('auth_confirmation_resent', 'If that account exists, a confirmation email is on its way.') }}</p>
+        } @else if (resendStatus() === 'failed') {
+          <p role="alert">{{ t('confirm_email_resend_failed', 'Could not send the email. Please try again.') }}</p>
+        }
+      }
+
       <a class="tf-button tf-confirm-email-login" routerLink="/auth" [queryParams]="loginQuery()">{{ loginLabel() }}</a>
     </section>
   </div>

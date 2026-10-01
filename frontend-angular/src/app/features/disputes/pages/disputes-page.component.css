@@ -205,19 +205,17 @@
 .tf-dispute-timeline time { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
 .tf-dispute-evidence { display: flex; gap: 8px; flex-wrap: wrap; }
-.tf-dispute-file,
-.tf-dispute-attach {
+.tf-dispute-file {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
 }
 .tf-dispute-file { padding: 8px 10px; font-size: 12px; }
-.tf-dispute-attach { cursor: pointer; }
 
 .tf-dispute-reply { display: grid; gap: 10px; }
 .tf-dispute-reply label { font-size: 13px; font-weight: 700; }
 .tf-dispute-reply textarea { background: var(--bg); padding: 11px; }
-.tf-dispute-reply__actions { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tf-dispute-reply__actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 
 .tf-dispute-closed {
   padding: 12px;
@@ -234,3 +232,10 @@
 
 .tf-dispute-final { padding: 14px; border-radius: var(--r-md); background: var(--success-soft); }
 .tf-dispute-final p { margin-block-start: 6px; line-height: 1.6; }
+
+.tf-dispute-next { margin: 8px 0 0; padding: 10px 12px; font-size: 14px; line-height: 1.6; color: var(--text-2); background: var(--surface-2); border-radius: var(--r-sm); }
+.tf-dispute-review { border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px 16px; display: grid; gap: 8px; background: var(--surface-2, transparent); }
+.tf-dispute-review h3 { margin: 0; font-size: 16px; }
+.tf-dispute-review dl { margin: 0; display: grid; gap: 4px; }
+.tf-dispute-review dt { font-size: 13px; color: var(--text-2); }
+.tf-dispute-review dd { margin: 0 0 6px; white-space: pre-wrap; }

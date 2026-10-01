@@ -33,13 +33,15 @@ Run the checks:
 dotnet test Tafseel.sln
 ```
 
-CI/CD uses locked dependencies and focused GitHub Actions workflows. Start with [the CI/CD overview](docs/cicd-overview.md), [environment setup](docs/cicd-secrets-and-environments.md), and [branch protection](docs/branch-protection.md).
+Environments (Development, Staging, PreProduction, Production), their databases, the canonical seed and the safe reset are in [docs/ENVIRONMENTS.md](docs/ENVIRONMENTS.md). The documentation map is [docs/README.md](docs/README.md).
+
+CI/CD uses locked dependencies and focused GitHub Actions workflows. Start with [the CI/CD overview](docs/engineering/cicd-overview.md), [environment setup](docs/engineering/cicd-secrets-and-environments.md), and [branch protection](docs/engineering/branch-protection.md).
 
 Swagger is available at `/swagger` in Development. Health endpoints are `/health/live` and `/health/ready`.
 
 Replace `Email:From` with an address on a verified Resend domain before production. `onboarding@resend.dev` is for initial testing only.
 Set `Email:ConfirmationUrl` and `Email:PasswordResetUrl` to trusted HTTPS frontend routes in production.
 
-Production startup deliberately fails while mock payment or live-session providers are selected. Complete [the production checklist](docs/production-checklist.md) before deployment.
+Production startup deliberately fails while mock payment or live-session providers are selected. Complete [the go-live checklist](docs/releases/GO_LIVE_CHECKLIST.md) before deployment.
 
 Never reuse a credential pasted into chat, logs, tickets, or source control. Revoke it in Resend, review email/activity logs, create a replacement with the minimum required access, and store it only in User Secrets locally or the deployment secret manager.

@@ -116,5 +116,20 @@ describe('UX-08 the writing helper appears only when it works', () => {
     // No empty action row is left where the button was.
     for (const field of [...page.querySelectorAll('.tf-field')])
       expect(field.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+    expect([...page.querySelectorAll<HTMLTextAreaElement>('textarea[id^="req-prompt-"]')]
+      .map(input => input.value)).toEqual(['', '']);
+  });
+});
+
+describe('A sent request is no longer a draft', () => {
+  it('does not save the brief again after the request was created', async () => {
+    const { component } = await render();
+    const save = TestBed.inject(SaveRequestDraft).execute as ReturnType<typeof vi.fn>;
+    component.created.set({ id: 'r1' } as never);
+    save.mockClear();
+    component.goal.set('Changed after sending');
+    TestBed.tick();
+    await new Promise(resolve => setTimeout(resolve, 600));
+    expect(save).not.toHaveBeenCalled();
   });
 });

@@ -102,6 +102,8 @@ const COPY = {
   delivery: L('sh_delivery_due', 'Delivery {when}'),
   startsIn: L('sh_starts_in', 'Starts {relative}'),
   open: L('dashboard_open', 'Open'),
+  viewRequest: L('sh_view_request', 'View request'),
+  viewOrder: L('sh_view_order', 'View order'),
   sessionDetails: L('sh_session_details', 'Session details')
 } as const satisfies Record<string, Label>;
 
@@ -172,6 +174,14 @@ export function composeStudentHome(input: HomeInput): StudentHome {
         cta: text(sessionStatus(0, 'student').action ?? COPY.open),
         link: { path: ['/checkout'], query: { liveSessionId: id } }
       }, deadlineOf(starts));
+      continue;
+    }
+    if (status === 9) {
+      inProgress(session, {
+        key: `${id}:requested`, title: titleOf(session, serviceOf(session)),
+        supporting: `${teacherOf(session)} · ${fmt.dateTime(session['startsAt'])}`,
+        cta: text(COPY.sessionDetails), link
+      }, sessionStatus(9, 'student'));
       continue;
     }
     const proposedBySomeoneElse = !!session['proposedStartsAt']
@@ -258,7 +268,7 @@ export function composeStudentHome(input: HomeInput): StudentHome {
         supporting: status === 1 && order['agreedDeliveryAt']
           ? `${teacherOf(order)} · ${fill(COPY.delivery, { when: fmt.dateTime(order['agreedDeliveryAt']) })}`
           : teacherOf(order),
-        cta: text(COPY.open), link
+        cta: text(COPY.viewOrder), link
       }, view);
       if (request) hidden.add(request);
     }
@@ -305,7 +315,7 @@ export function composeStudentHome(input: HomeInput): StudentHome {
       inProgress(request, {
         key: `${id}:current`, title,
         supporting: request['sourcingMode'] === 1 ? serviceOf(request) : teacherOf(request),
-        cta: text(COPY.open), link
+        cta: text(COPY.viewRequest), link
       }, requestStatus(status, 'student', offers));
     }
   }

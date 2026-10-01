@@ -38,8 +38,18 @@ export class HttpQualityReviewGateway implements QualityReviewGateway {
     return this.http.get<Json>(`/api/v1/teacher-applications/${encodeURIComponent(applicationId)}`).pipe(map(x => ({
       application: application(x['application'] ?? {}),
       history: (x['history'] ?? []).map(historyItem),
-      reviews: (x['reviews'] ?? []).map(reviewRecord)
+      reviews: (x['reviews'] ?? []).map(reviewRecord),
+      qualification: x['qualification'] ? {
+        id: text(x['qualification']['id']), isActive: !!x['qualification']['isActive'],
+        approvedAt: text(x['qualification']['approvedAt']), revokedAt: text(x['qualification']['revokedAt']) || null,
+        reason: text(x['qualification']['revocationReason']), revokedByName: text(x['qualification']['revokedByName']),
+        activeServices: Number(x['qualification']['activeServices'] ?? 0)
+      } : null
     })));
+  }
+
+  revokeQualification(qualificationId: string, reason: string): Observable<void> {
+    return this.http.post<void>(`/api/v1/teacher-qualifications/${encodeURIComponent(qualificationId)}/revoke`, { reason });
   }
 
   startReview(applicationId: string, priority: ReviewPriority, version: string): Observable<void> {

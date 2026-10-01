@@ -22,8 +22,8 @@ This ADR produces an implementation-ready production media architecture. It does
 Governing sources:
 
 - [ADR-007](./ADR-007-TEACHER-PORTFOLIO-MODERATION.md)
-- [Showcase MVP report](../features/TEACHER_SHOWCASE_MVP_REPORT.md)
-- [File storage notes](../file-storage.md)
+- Showcase MVP report
+- File storage notes
 - [Local adapter](../../src/Tafseel.Infrastructure/Files/LocalFileStorageService.cs)
 - [Showcase options / DI gates](../../src/Tafseel.Infrastructure/DependencyInjection.cs)
 - [Marketplace service](../../src/Tafseel.Infrastructure/Marketplace/MarketplaceService.cs)

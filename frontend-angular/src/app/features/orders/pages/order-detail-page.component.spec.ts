@@ -4,7 +4,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { SignalSessionStore } from '@core/auth/services/session.store';
@@ -48,6 +48,21 @@ async function open(order: () => Observable<OrderDetail>, options: Options = {})
 const testId = (page: HTMLElement, id: string) => page.querySelector(`[data-testid="${id}"]`);
 
 describe('OrderDetailPageComponent', () => {
+  it('keeps showing the order the reader moved to when the previous order answers late', async () => {
+    const late = new Subject<OrderDetail>();
+    const other: OrderDetail = { ...DELIVERED, id: 'o2', requestTitle: 'Geometry proofs' };
+    const { page, harness } = await open(() => late);
+    (TestBed.inject(OrderDetailGateway) as unknown as { order: (id: string) => Observable<OrderDetail> }).order =
+      id => id === 'o2' ? of(other) : late;
+    await harness.navigateByUrl('/orders/o2');
+    await new Promise(resolve => setTimeout(resolve));
+    late.next(DELIVERED);
+    late.complete();
+    await new Promise(resolve => setTimeout(resolve));
+    harness.detectChanges();
+    expect(page.querySelector('h1')?.textContent).toContain('Geometry proofs');
+  });
+
   it('shows what the order is, where it stands, its files and its history', async () => {
     const { page } = await open(() => of(DELIVERED));
     expect(page.querySelector('h1')?.textContent).toContain('Calculus limits');

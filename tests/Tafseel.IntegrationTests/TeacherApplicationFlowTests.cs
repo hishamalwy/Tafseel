@@ -86,9 +86,33 @@ public sealed class TeacherApplicationFlowTests(SqlServerTafseelApiFactory facto
         Assert.Equal(submission.Id, sample.SourceDemoSubmissionId);
         Assert.Equal(submission.StorageKey, sample.StorageKey);
         Assert.True(sample.IsPublished);
+        // DEC-UX-01: the qualification demo is review material. Approval keeps it off the public profile
+        // until the teacher explicitly chooses to show it.
+        Assert.False(sample.IsProfileVisible);
         var hide = await teacher.PutAsJsonAsync(
             $"/api/v1/teachers/me/samples/{sample.Id}/publication", new { published = false });
         Assert.Equal(HttpStatusCode.BadRequest, hide.StatusCode);
+
+        // PRODUCT-P1: the reviewer reads the qualification on the application and can withdraw it, with a reason.
+        var detail = await reviewer.GetFromJsonAsync<JsonElement>($"/api/v1/teacher-applications/{applicationId}");
+        var granted = detail.GetProperty("qualification");
+        Assert.Equal(qualification.Id, granted.GetProperty("id").GetGuid());
+        Assert.True(granted.GetProperty("isActive").GetBoolean());
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.PostAsJsonAsync(
+            $"/api/v1/teacher-qualifications/{qualification.Id}/revoke", new { reason = "Teachers cannot do this." })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await reviewer.PostAsJsonAsync(
+            $"/api/v1/teacher-qualifications/{qualification.Id}/revoke", new { reason = "short" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await reviewer.PostAsJsonAsync(
+            $"/api/v1/teacher-qualifications/{qualification.Id}/revoke",
+            new { reason = "The demo reused another teacher's recorded lesson." })).StatusCode);
+        var afterRevoke = (await reviewer.GetFromJsonAsync<JsonElement>($"/api/v1/teacher-applications/{applicationId}"))
+            .GetProperty("qualification");
+        Assert.False(afterRevoke.GetProperty("isActive").GetBoolean());
+        Assert.Equal("The demo reused another teacher's recorded lesson.", afterRevoke.GetProperty("revocationReason").GetString());
+        await using var after = factory.Services.CreateAsyncScope();
+        var afterDb = after.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        Assert.True(afterDb.AuditLogEntries.Any(x => x.Action == "QualificationRevoked" && x.EntityId == qualification.Id.ToString()));
+        Assert.True(afterDb.Notifications.Any(x => x.Type == "QualificationRevoked" && x.Body == "The demo reused another teacher's recorded lesson."));
     }
 
     private async Task<(Guid SubjectId, Guid QualificationTopicId)> SeedCatalogAndReviewer()

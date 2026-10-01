@@ -86,6 +86,8 @@ export interface TeacherHome {
   readonly opportunityCount: number;
   readonly upcoming: HomeCard | null;
   readonly earnings: EarningsLines;
+  /** Accepted work and sessions the student has not paid for yet: nothing for the teacher to do, but not nothing (UX-27). */
+  readonly waitingOnStudents: number;
 }
 
 /** Join-window minutes either side of a live session (`LiveSessionOptions`). */
@@ -108,6 +110,8 @@ const COPY = {
   answered: L('th_t7_title', 'The student answered your question'),
   newRequest: L('th_t8_title', 'New request from {student}'),
   newTime: L('th_t9_title', 'The student proposed a new time'),
+  sessionRequest: L('session_status_awaiting_teacher_teacher', 'New session request'),
+  reviewSessionRequest: L('th_review_session_request', 'Review session request'),
   student: L('th_student', 'A student'),
   untitled: L('card_untitled_request', 'Untitled request'),
   withUntil: L('th_with_until', 'With {student} · ends {time}'),
@@ -139,9 +143,12 @@ export function composeTeacherHome(input: HomeInput): TeacherHome {
   const studentOf = (row: Row): string =>
     (fmt.lang === 'en' ? str(row['studentDisplayNameEnglish']) || str(row['studentDisplayName'])
       : str(row['studentDisplayName']) || str(row['studentDisplayNameEnglish'])) || text(COPY.student);
-  const serviceOf = (row: Row): string => (fmt.lang === 'ar'
-    ? str(row['serviceNameArabic']) || str(row['serviceNameEnglish'])
-    : str(row['serviceNameEnglish']) || str(row['serviceNameArabic']));
+  // Orders name the English service `serviceNameEnglish`; open requests name it `serviceName` (UX-89: the English
+  // screen used to fall back to the Arabic name on every open-request card).
+  const serviceOf = (row: Row): string => {
+    const english = str(row['serviceNameEnglish']) || str(row['serviceName']);
+    return fmt.lang === 'ar' ? str(row['serviceNameArabic']) || english : english || str(row['serviceNameArabic']);
+  };
   const titleOf = (row: Row, ...fallbacks: unknown[]): string =>
     str(row['title']) || str(row['requestTitle']) || fallbacks.map(str).find(Boolean) || text(COPY.untitled);
 
@@ -169,6 +176,14 @@ export function composeTeacherHome(input: HomeInput): TeacherHome {
         supporting: fill(COPY.withUntil, { student: studentOf(session), time: fmt.time(session['endsAt']) }),
         cta: text(sessionStatus(1, 'teacher', timing).action ?? ACTIONS.joinSession), link
       }, deadlineOf(ends));
+      continue;
+    }
+    if (status === 9) {
+      action(8, session, {
+        key: `${id}:request`, title: text(COPY.sessionRequest),
+        supporting: `${studentOf(session)} · ${fmt.dateTime(session['startsAt'])}`,
+        cta: text(COPY.reviewSessionRequest), link
+      }, deadlineOf(starts));
       continue;
     }
     if (status === 8) {
@@ -299,6 +314,8 @@ export function composeTeacherHome(input: HomeInput): TeacherHome {
     opportunities,
     opportunityCount: Math.max(input.opportunityCount, opportunities.length),
     upcoming: upcoming?.card ?? null,
-    earnings: { view, empty: summary.empty }
+    earnings: { view, empty: summary.empty },
+    waitingOnStudents: input.orders.filter(row => Number(row['status']) === 0).length
+      + input.sessions.filter(row => Number(row['status']) === 0 && str(row['teacherId']) === input.viewerId).length
   };
 }

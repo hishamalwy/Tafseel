@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { problemMessage } from '@core/http/problem-message';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
@@ -11,7 +12,10 @@ import { PriceComponent } from '@shared/components/price.component';
 import { PricePanelComponent } from '@shared/components/price-panel.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import { CheckoutContext, InitiatePayment, LoadCheckoutContext } from '../services/checkout.use-cases';
+import { CouponCheckoutQuote, PAYMENT_GATEWAY } from '../services/checkout.ports';
 import { PayableKind, mockReference } from '../models/payable';
+import { timeZoneLabel } from '@features/teacher-setup/models/availability';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
 /**
  * Checkout — ported from `Tafseel-Payment.dc.html`.
@@ -24,13 +28,14 @@ import { PayableKind, mockReference } from '../models/payable';
 @Component({
   selector: 'tf-payment-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, PricePanelComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, PricePanelComponent, SkipLinkComponent],
   templateUrl: './payment-page.component.html',
   styleUrl: './payment-page.component.css'
 })
 export class PaymentPageComponent {
   private readonly loadContext = inject(LoadCheckoutContext);
   private readonly initiate = inject(InitiatePayment);
+  private readonly payments = inject(PAYMENT_GATEWAY);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
@@ -44,10 +49,20 @@ export class PaymentPageComponent {
   readonly submitting = signal(false);
   readonly context = signal<CheckoutContext | null>(null);
   readonly checkoutReference = signal('');
+  readonly couponInput = signal('');
+  readonly couponQuote = signal<CouponCheckoutQuote | null>(null);
+  readonly couponBusy = signal(false);
+  readonly couponError = signal('');
+  readonly amountToPay = computed(() => this.couponQuote()?.chargeAmount ?? this.context()?.payable.total ?? 0);
 
   readonly initiated = computed(() => this.checkoutReference() !== '');
+  /** Reopened after the payment was confirmed (a stored link, Back, a second tab): nothing left to pay. */
+  readonly alreadyPaid = computed(() => !this.loading() && !!this.context()?.payable.alreadyPaid);
   readonly showCheckout = computed(() =>
-    !this.loading() && !this.unavailable() && !this.initiated() && this.context() !== null);
+    !this.loading() && !this.unavailable() && !this.initiated() && !this.alreadyPaid() && this.context() !== null);
+  /** Where the paid purchase lives. */
+  readonly purchaseLink = computed(() => this.kind === 'live-session'
+    ? ['/live-sessions', this.payableId] : ['/orders', this.payableId]);
 
   constructor() {
     queueMicrotask(() => this.title.setTitle(this.t('pay_breadcrumb', 'Payment') + ' — Tafseel'));
@@ -97,7 +112,7 @@ export class PaymentPageComponent {
 
   readonly teacherAvatar = computed(() => {
     const teacher = this.context()?.teacher;
-    return this.fmt.avatarUrl(teacher?.id, !!teacher?.hasAvatar, null, this.teacherName());
+    return this.fmt.avatarUrl(teacher?.id, !!teacher?.hasAvatar, null, 'teacher');
   });
 
   readonly serviceName = computed(() => {
@@ -108,9 +123,24 @@ export class PaymentPageComponent {
       : (payable.title || this.t('pay_order_title', 'Order'));
   });
 
+  /** "Mon, Sep 28" and "3:00 – 4:00 AM" in the student's zone, as the booking page showed them. */
+  sessionDay(session: { startsAt: string; timeZoneId: string }): string {
+    return this.fmt.date(session.startsAt, { weekday: 'long', day: 'numeric', month: 'long', ...(session.timeZoneId ? { timeZone: session.timeZoneId } : {}) });
+  }
+
+  sessionHours(session: { startsAt: string; endsAt: string; timeZoneId: string }): string {
+    const zone = session.timeZoneId ? { timeZone: session.timeZoneId } : {};
+    const time = (iso: string) => this.fmt.date(iso, { hour: 'numeric', minute: '2-digit', ...zone });
+    return `${time(session.startsAt)} – ${time(session.endsAt)}`;
+  }
+
+  zoneLabel(zone: string): string { return timeZoneLabel(zone, this.locale.lang()); }
+
   readonly deliveryValue = computed(() => {
     const payable = this.context()?.payable;
-    return payable?.agreedDeliveryAt ? this.fmt.dateOnly(payable.agreedDeliveryAt) : '—';
+    if (payable?.agreedDeliveryAt) return this.fmt.dateOnly(payable.agreedDeliveryAt);
+    // UX-86: an open request has no date yet, only the offer's time; say that instead of a dash.
+    return payable?.deliveryHours ? this.locale.format('pay_delivery_after', { time: this.fmt.duration(payable.deliveryHours) }, 'Within {time} after you pay') : '';
   });
 
   readonly revisionsValue = computed(() => {
@@ -121,7 +151,8 @@ export class PaymentPageComponent {
 
   readonly filesValue = computed(() => {
     const count = this.context()?.attachmentCount;
-    return count == null ? '—' : String(count);
+    // UX-86: no row for files that were never part of this purchase.
+    return count ? this.fmt.number(count) : '';
   });
 
   readonly categoryValue = computed(() => {
@@ -158,6 +189,30 @@ export class PaymentPageComponent {
     return mockReference(payable.id);
   });
 
+  changeCoupon(value: string): void {
+    this.couponInput.set(value);
+    this.couponQuote.set(null);
+    this.couponError.set('');
+  }
+
+  async applyCoupon(): Promise<void> {
+    const payable = this.context()?.payable;
+    const code = this.couponInput().trim();
+    if (!payable || !code || this.couponBusy()) return;
+    this.couponBusy.set(true);
+    this.couponError.set('');
+    try {
+      const quote = await firstValueFrom(this.payments.quoteCoupon(payable, code));
+      if (this.couponInput().trim() === code) this.couponQuote.set(quote);
+    } catch (error) {
+      this.couponQuote.set(null);
+      this.couponError.set(problemMessage(error, (k, f) => this.t(k, f)).text
+        || this.t('pay_coupon_invalid', 'This coupon could not be applied.'));
+    } finally {
+      this.couponBusy.set(false);
+    }
+  }
+
   readonly nextSteps = computed(() => [1, 2, 3, 4].map(n => ({
     n: String(n),
     text: this.t(`pay_next_${n}`, '')
@@ -185,11 +240,17 @@ export class PaymentPageComponent {
   async pay(): Promise<void> {
     const context = this.context();
     if (!context || this.submitting()) return;
+    const code = this.couponInput().trim();
+    if (code && (!this.couponQuote() || this.couponBusy())) {
+      this.couponError.set(this.t('pay_coupon_apply_first', 'Apply the code to review your updated total first.'));
+      return;
+    }
 
     this.submitting.set(true);
     this.payError.set('');
     try {
-      const outcome = await this.initiate.execute(context.payable, context.mockEnabled);
+      const outcome = await this.initiate.execute(context.payable, context.mockEnabled,
+        this.couponQuote()?.code ?? null);
       switch (outcome.kind) {
         case 'redirect':
           this.document.location.href = outcome.url;

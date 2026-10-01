@@ -18,7 +18,7 @@ const app = (change: Partial<ReviewApplication> = {}): ReviewApplication => ({
   ...application({ id: ID, teacherId: 't1', status: APPLICATION_STATUS.UNDER_REVIEW, assignedReviewerId: 'rev-1', version: 'AAAAAAAAB9E=' }),
   ...change
 });
-const review = (change: Partial<ReviewApplication> = {}): ApplicationReview => ({ application: app(change), history: [], reviews: [] });
+const review = (change: Partial<ReviewApplication> = {}): ApplicationReview => ({ application: app(change), history: [], reviews: [], qualification: null });
 const complete = (change: Partial<DecisionDraft> = {}): DecisionDraft =>
   ({ ...Review.emptyDraft(), decision: REVIEW_DECISION.APPROVE, scores: EVALUATION_CRITERIA.map(() => 4), ...change });
 
@@ -115,6 +115,23 @@ describe('HttpQualityReviewGateway', () => {
     expect(Object.keys(request.request.body).sort()).toEqual(['comment', 'decision', 'internalNotes', 'scores']);
     expect(request.request.body.scores).toHaveLength(9);
     expect(request.request.headers.get('If-Match')).toBe('v2');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    await sent;
+  });
+
+  it('reads the subject qualification and withdraws it with the reason as written', async () => {
+    const detail = firstValueFrom(gateway.review(ID));
+    backend.expectOne(`/api/v1/teacher-applications/${ID}`).flush({
+      application: { id: ID, status: 3, version: 'v1' }, history: [], reviews: [],
+      qualification: { id: 'q1', isActive: true, approvedAt: '2030-01-03T00:00:00Z', revokedAt: null, revocationReason: null, revokedByName: null, activeServices: 2 }
+    });
+    expect((await detail).qualification).toEqual({
+      id: 'q1', isActive: true, approvedAt: '2030-01-03T00:00:00Z', revokedAt: null, reason: '', revokedByName: '', activeServices: 2
+    });
+    const sent = firstValueFrom(gateway.revokeQualification('q1', 'Copied demo material.'));
+    const request = backend.expectOne('/api/v1/teacher-qualifications/q1/revoke');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ reason: 'Copied demo material.' });
     request.flush(null, { status: 204, statusText: 'No Content' });
     await sent;
   });

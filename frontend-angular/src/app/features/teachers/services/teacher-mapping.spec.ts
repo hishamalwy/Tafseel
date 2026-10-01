@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { HttpTeacherGateway } from './http-teacher.gateway';
+import { HttpCatalogGateway, HttpTeacherGateway } from './http-teacher.gateway';
 import { Teacher, TeacherReview } from '../models/teacher';
 
 /**
@@ -20,7 +20,7 @@ describe('teacher wire mapping', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [HttpTeacherGateway, provideHttpClient(), provideHttpClientTesting()]
+      providers: [HttpTeacherGateway, HttpCatalogGateway, provideHttpClient(), provideHttpClientTesting()]
     });
     gateway = TestBed.inject(HttpTeacherGateway);
     http = TestBed.inject(HttpTestingController);
@@ -102,5 +102,55 @@ describe('teacher wire mapping', () => {
     // Browse sends plain strings where the profile sends objects.
     expect(teacher.subjects).toEqual(['Physics']);
     expect(teacher.languages).toEqual(['Arabic']);
+  });
+
+  it('uses the API filter names and keeps the primary offer for the card CTA', async () => {
+    const promise = new Promise<Teacher>(resolve => gateway.search({
+      q: 'physics', serviceId: 'catalog-1', minRating: 4, maxPrice: 200, sort: 'rating'
+    }).subscribe(page => resolve(page.items[0])));
+    const request = http.expectOne(req => req.url.startsWith('/api/v1/teachers?'));
+    const params = new URL(request.request.url, 'http://localhost').searchParams;
+    expect(params.get('search')).toBe('physics');
+    expect(params.get('serviceTypeId')).toBe('catalog-1');
+    expect(params.get('minimumRating')).toBe('4');
+    expect(params.get('maximumPrice')).toBe('200');
+    expect(params.get('sort')).toBe('highest-rated');
+    request.flush({ items: [{ teacherId: 't1', startingPrice: 120, contextOffer: {
+      id: 'svc-1', subjectId: 'sub-1', serviceCatalogItemId: 'catalog-1', serviceCode: 'recorded_explanation',
+      serviceName: 'Recorded explanation', serviceNameAr: 'شرح مسجل', price: 120, currency: 'SAR',
+      deliveryHours: 48, revisions: 2, canRequest: true, canBook: false, requiresScheduling: false
+    } }], page: 1, totalCount: 1 });
+    const teacher = await promise;
+    expect(teacher.services[0]).toMatchObject({
+      id: 'svc-1', serviceNameEnglish: 'Recorded explanation', serviceNameArabic: 'شرح مسجل',
+      canRequest: true, price: 120
+    });
+  });
+
+  it('maps catalog names into labels the dropdowns can display', async () => {
+    const promise = new Promise<{ subjects: readonly { nameArabic: string }[] }>(resolve =>
+      TestBed.inject(HttpCatalogGateway).all().subscribe(resolve));
+    for (const path of ['subjects', 'topics', 'services', 'education-levels', 'languages']) {
+      http.expectOne(`/api/v1/${path}`).flush([{ id: path, name: 'Physics', nameAr: 'الفيزياء' }]);
+    }
+    expect((await promise).subjects[0].nameArabic).toBe('الفيزياء');
+  });
+
+  it('uses the comparison endpoint’s ids and teachers shape', async () => {
+    const promise = new Promise<readonly Teacher[]>(resolve => gateway.compare(['t1', 't2']).subscribe(resolve));
+    http.expectOne('/api/v1/teachers/compare?ids=t1&ids=t2').flush({
+      requestedCount: 2,
+      unavailableCount: 0,
+      teachers: [{
+        teacherId: 't1', fullName: 'Teacher A', startingPrice: 125, startingCurrency: 'SAR',
+        sampleCount: 2, subjects: [{ id: 's1', name: 'Mathematics', nameAr: 'الرياضيات' }]
+      }, { teacherId: 't2', fullName: 'Teacher B', sampleCount: 0 }]
+    });
+    const teachers = await promise;
+    expect(teachers.map(teacher => teacher.id)).toEqual(['t1', 't2']);
+    expect(teachers[0].subjects).toEqual(['Mathematics']);
+    expect(teachers[0].startingPrice).toBe(125);
+    expect(teachers[0].currency).toBe('SAR');
+    expect(teachers[0].sampleCount).toBe(2);
   });
 });

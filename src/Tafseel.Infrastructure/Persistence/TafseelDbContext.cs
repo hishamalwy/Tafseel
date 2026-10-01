@@ -43,6 +43,8 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<MarketplaceInteractionEvent> MarketplaceInteractionEvents => Set<MarketplaceInteractionEvent>();
     public DbSet<LearningRequest> LearningRequests => Set<LearningRequest>();
     public DbSet<LearningRequestAttachment> LearningRequestAttachments => Set<LearningRequestAttachment>();
+    public DbSet<OpenRequestDraft> OpenRequestDrafts => Set<OpenRequestDraft>();
+    public DbSet<OpenRequestDraftAttachment> OpenRequestDraftAttachments => Set<OpenRequestDraftAttachment>();
     public DbSet<TeacherOffer> TeacherOffers => Set<TeacherOffer>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderDelivery> OrderDeliveries => Set<OrderDelivery>();
@@ -62,7 +64,15 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     public DbSet<WithdrawalRequest> WithdrawalRequests => Set<WithdrawalRequest>();
     public DbSet<TeacherEarningMaturity> TeacherEarningMaturities => Set<TeacherEarningMaturity>();
     public DbSet<TeacherPayoutProfile> TeacherPayoutProfiles => Set<TeacherPayoutProfile>();
+    public DbSet<PayoutTransferEvidence> PayoutTransferEvidences => Set<PayoutTransferEvidence>();
     public DbSet<FinancialAuditRecord> FinancialAuditRecords => Set<FinancialAuditRecord>();
+    public DbSet<ReconciliationException> ReconciliationExceptions => Set<ReconciliationException>();
+    public DbSet<TeacherIntroVideo> TeacherIntroVideos => Set<TeacherIntroVideo>();
+    public DbSet<TeacherVideoConsent> TeacherVideoConsents => Set<TeacherVideoConsent>();
+    public DbSet<SupportCase> SupportCases => Set<SupportCase>();
+    public DbSet<SupportCaseMessage> SupportCaseMessages => Set<SupportCaseMessage>();
+    public DbSet<SupportCaseAttachment> SupportCaseAttachments => Set<SupportCaseAttachment>();
+    public DbSet<Tafseel.Infrastructure.Files.FileScanRecord> FileScanRecords => Set<Tafseel.Infrastructure.Files.FileScanRecord>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageAttachment> MessageAttachments => Set<MessageAttachment>();
@@ -552,6 +562,26 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             attachment.Property(x => x.Id).ValueGeneratedNever();
             ConfigurePrivateFile(attachment);
         });
+        // Upload-first open requests: one private draft per student, never visible to teachers. Its files move to
+        // the LearningRequest on publish; deleting a draft removes its attachment rows (the service deletes the bytes).
+        builder.Entity<OpenRequestDraft>(draft =>
+        {
+            draft.Property(x => x.Id).ValueGeneratedNever();
+            draft.Property(x => x.StudentId).HasMaxLength(450);
+            draft.Property(x => x.Title).HasMaxLength(200);
+            draft.Property(x => x.Requirements).HasMaxLength(5000);
+            draft.Property(x => x.BudgetMin).HasPrecision(18, 2);
+            draft.Property(x => x.BudgetMax).HasPrecision(18, 2);
+            draft.HasIndex(x => x.StudentId).IsUnique();
+            draft.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
+            draft.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.DraftId).OnDelete(DeleteBehavior.Cascade);
+            draft.Navigation(x => x.Attachments).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+        builder.Entity<OpenRequestDraftAttachment>(attachment =>
+        {
+            attachment.Property(x => x.Id).ValueGeneratedNever();
+            ConfigurePrivateFile(attachment);
+        });
         builder.Entity<RequestClarification>(item =>
         {
             item.Property(x => x.Id).ValueGeneratedNever();
@@ -605,6 +635,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             order.Property(x => x.OrderType).HasMaxLength(50).IsUnicode(false);
             order.Property(x => x.ServiceNameEnglish).HasMaxLength(200);
             order.Property(x => x.ServiceNameArabic).HasMaxLength(200);
+            order.Property(x => x.PriceChangeReason).HasMaxLength(500);
             foreach (var property in new[]
                      {
                          nameof(Order.Price), nameof(Order.StudentFeeAmount), nameof(Order.TeacherCommissionAmount),
@@ -717,7 +748,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             booking.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_LiveSessionBookings_Range", "[EndsAt] > [StartsAt]");
-                table.HasCheckConstraint("CK_LiveSessionBookings_Status", "[Status] BETWEEN 0 AND 8");
+                table.HasCheckConstraint("CK_LiveSessionBookings_Status", "[Status] BETWEEN 0 AND 10");
                 table.HasCheckConstraint("CK_LiveSessionBookings_RescheduleRequest",
                     "([RescheduleRequestedAt] IS NULL AND [RescheduleRequestedById] IS NULL AND [ProposedStartsAt] IS NULL AND [ProposedEndsAt] IS NULL) OR " +
                     "([RescheduleRequestedAt] IS NOT NULL AND [RescheduleRequestedById] IS NOT NULL AND [ProposedStartsAt] IS NOT NULL AND [ProposedEndsAt] > [ProposedStartsAt])");
@@ -741,8 +772,8 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             history.Property(x => x.ActorId).HasMaxLength(450);
             history.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_LiveSessionHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 8");
-                table.HasCheckConstraint("CK_LiveSessionHistory_Next", "[NextStatus] BETWEEN 0 AND 8");
+                table.HasCheckConstraint("CK_LiveSessionHistory_Previous", "[PreviousStatus] IS NULL OR [PreviousStatus] BETWEEN 0 AND 10");
+                table.HasCheckConstraint("CK_LiveSessionHistory_Next", "[NextStatus] BETWEEN 0 AND 10");
             });
         });
 
@@ -751,6 +782,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             payment.Property(x => x.Id).ValueGeneratedNever();
             payment.Property(x => x.StudentId).HasMaxLength(450);
             payment.Property(x => x.Amount).HasPrecision(18, 2);
+            payment.Property(x => x.PendingCouponDiscount).HasPrecision(18, 2);
             payment.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
             payment.Property(x => x.Provider).HasMaxLength(50);
             payment.Property(x => x.ProviderReference).HasMaxLength(200);
@@ -767,10 +799,15 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
                 .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             payment.HasOne<LearningRequest>().WithMany().HasForeignKey(x => x.LearningRequestId)
                 .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            payment.HasOne<Coupon>().WithMany().HasForeignKey(x => x.PendingCouponId)
+                .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
             payment.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
             payment.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_Payments_Amount", "[Amount] > 0");
+                table.HasCheckConstraint("CK_Payments_PendingCoupon",
+                    "([PendingCouponId] IS NULL AND [PendingCouponDiscount] IS NULL) OR " +
+                    "([PendingCouponId] IS NOT NULL AND [PendingCouponDiscount] > 0)");
                 table.HasCheckConstraint("CK_Payments_Status", "[Status] BETWEEN 0 AND 3");
                 table.HasCheckConstraint("CK_Payments_Currency", "[Currency] LIKE '___' AND [Currency] NOT LIKE '____%'");
                 table.HasCheckConstraint("CK_Payments_Target",
@@ -942,16 +979,161 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             withdrawal.Property(x => x.ProviderReference).HasMaxLength(200);
             withdrawal.Property(x => x.PayoutMethod).HasMaxLength(30);
             withdrawal.Property(x => x.DestinationLabel).HasMaxLength(100);
+            withdrawal.Property(x => x.DestinationKeyId).HasMaxLength(32).IsUnicode(false);
+            withdrawal.Property(x => x.DestinationCiphertext).HasMaxLength(2048);
+            withdrawal.Property(x => x.DestinationVerifiedBy).HasMaxLength(450);
+            withdrawal.Property(x => x.PayoutProvider).HasMaxLength(50).IsUnicode(false);
+            withdrawal.Property(x => x.InitiationReference).HasMaxLength(64).IsUnicode(false);
+            withdrawal.Property(x => x.TransferInitiatedBy).HasMaxLength(450);
+            withdrawal.Property(x => x.InitiationIdempotencyKey).HasMaxLength(100);
             withdrawal.Property(x => x.RejectionReason).HasMaxLength(500);
             withdrawal.Property(x => x.RowVersion).IsRowVersion();
             withdrawal.HasIndex(x => new { x.TeacherId, x.IdempotencyKey }).IsUnique();
             withdrawal.HasIndex(x => new { x.Status, x.CreatedAt });
+            withdrawal.HasIndex(x => x.InitiationReference).IsUnique().HasFilter("[InitiationReference] IS NOT NULL");
             withdrawal.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
             withdrawal.ToTable(table =>
             {
                 table.HasCheckConstraint("CK_Withdrawals_Amount", "[Amount] > 0");
-                table.HasCheckConstraint("CK_Withdrawals_Status", "[Status] BETWEEN 0 AND 2");
+                // 3 = TransferInitiated (PRODUCT-P0 payout loop); 0-2 keep their original meaning.
+                table.HasCheckConstraint("CK_Withdrawals_Status", "[Status] BETWEEN 0 AND 3");
+                table.HasCheckConstraint("CK_Withdrawals_Destination",
+                    "([DestinationKeyId] IS NULL AND [DestinationCiphertext] IS NULL) OR " +
+                    "([DestinationKeyId] IS NOT NULL AND [DestinationCiphertext] IS NOT NULL)");
+                // Initiated means a sealed destination, an initiator, a time and a reference exist.
+                table.HasCheckConstraint("CK_Withdrawals_Initiated",
+                    "[Status] <> 3 OR ([DestinationCiphertext] IS NOT NULL AND [TransferInitiatedAt] IS NOT NULL " +
+                    "AND [TransferInitiatedBy] IS NOT NULL AND [InitiationReference] IS NOT NULL)");
+                // A transfer started in Tafseel can only complete with the bank's reference and transfer time.
+                table.HasCheckConstraint("CK_Withdrawals_TransferEvidence",
+                    "[Status] <> 1 OR [TransferInitiatedAt] IS NULL OR ([ProviderReference] IS NOT NULL AND [TransferredAt] IS NOT NULL)");
             });
+        });
+        builder.Entity<PayoutTransferEvidence>(evidence =>
+        {
+            evidence.ToTable("PayoutTransferEvidence", table =>
+            {
+                table.HasCheckConstraint("CK_PayoutTransferEvidence_Amount", "[Amount] > 0");
+                table.HasCheckConstraint("CK_PayoutTransferEvidence_Kind", "[Kind] = 'ManualAttestation'");
+            });
+            evidence.Property(x => x.Id).ValueGeneratedNever();
+            evidence.Property(x => x.Kind).HasMaxLength(30).IsUnicode(false);
+            evidence.Property(x => x.RecordedBy).HasMaxLength(450);
+            evidence.Property(x => x.SourceInstitution).HasMaxLength(100);
+            evidence.Property(x => x.BankReference).HasMaxLength(64).IsUnicode(false);
+            evidence.Property(x => x.Amount).HasPrecision(18, 2);
+            evidence.Property(x => x.Currency).HasMaxLength(3).IsUnicode(false);
+            evidence.Property(x => x.Attestation).HasMaxLength(50).IsUnicode(false);
+            evidence.Property(x => x.IdempotencyKey).HasMaxLength(100);
+            // One evidence record per withdrawal, and one bank reference proves one transfer.
+            evidence.HasIndex(x => x.WithdrawalId).IsUnique();
+            evidence.HasIndex(x => x.BankReference).IsUnique();
+            evidence.HasOne<WithdrawalRequest>().WithMany().HasForeignKey(x => x.WithdrawalId).OnDelete(DeleteBehavior.Restrict);
+            evidence.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RecordedBy).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<Tafseel.Infrastructure.Files.FileScanRecord>(scan =>
+        {
+            scan.ToTable("FileScanRecords", table =>
+                table.HasCheckConstraint("CK_FileScanRecords_Status", "[Status] BETWEEN 0 AND 2"));
+            scan.Property(x => x.Id).ValueGeneratedNever();
+            scan.Property(x => x.StorageKey).HasMaxLength(300);
+            scan.Property(x => x.Category).HasMaxLength(60);
+            scan.Property(x => x.Engine).HasMaxLength(40);
+            scan.Property(x => x.Signature).HasMaxLength(200);
+            // One verdict per stored file; downloads look it up by key.
+            scan.HasIndex(x => x.StorageKey).IsUnique();
+        });
+        builder.Entity<TeacherIntroVideo>(item =>
+        {
+            item.ToTable("TeacherIntroVideos", table =>
+            {
+                table.HasCheckConstraint("CK_TeacherIntroVideos_Source", "[Source] BETWEEN 0 AND 1");
+                // A reused application video always carries the consent that allowed it.
+                table.HasCheckConstraint("CK_TeacherIntroVideos_Consent",
+                    "[Source] = 0 OR ([ConsentId] IS NOT NULL AND [SourceSampleId] IS NOT NULL AND [SourceSubjectId] IS NOT NULL)");
+            });
+            item.Property(x => x.Id).ValueGeneratedNever();
+            item.Property(x => x.TeacherId).HasMaxLength(450);
+            item.HasIndex(x => x.TeacherId).IsUnique();
+            item.Property(x => x.StorageKey).HasMaxLength(500);
+            item.Property(x => x.FileName).HasMaxLength(255);
+            item.Property(x => x.ContentType).HasMaxLength(100);
+            item.Property(x => x.RowVersion).IsRowVersion();
+            item.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<TeacherVideoConsent>(item =>
+        {
+            item.ToTable("TeacherVideoConsents");
+            item.Property(x => x.Id).ValueGeneratedNever();
+            item.Property(x => x.TeacherId).HasMaxLength(450);
+            item.Property(x => x.StorageKey).HasMaxLength(500);
+            item.Property(x => x.Statement).HasMaxLength(500);
+            item.HasIndex(x => new { x.TeacherId, x.GrantedAt });
+            item.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<SupportCase>(item =>
+        {
+            item.ToTable("SupportCases", table =>
+            {
+                table.HasCheckConstraint("CK_SupportCases_Status", "[Status] BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_SupportCases_Category", "[Category] BETWEEN 0 AND 4");
+                // A report comes from an account, or (account access only) from an e-mail address.
+                table.HasCheckConstraint("CK_SupportCases_Reporter",
+                    "[ReporterId] IS NOT NULL OR ([ContactEmail] IS NOT NULL AND [Category] = 0)");
+            });
+            item.Property(x => x.Id).ValueGeneratedNever();
+            item.Property(x => x.Reference).HasMaxLength(20).IsUnicode(false);
+            item.Property(x => x.ReporterId).HasMaxLength(450);
+            item.Property(x => x.ContactEmail).HasMaxLength(256);
+            item.Property(x => x.ContactName).HasMaxLength(150);
+            item.Property(x => x.Description).HasMaxLength(4000);
+            item.Property(x => x.RelatedReference).HasMaxLength(200);
+            item.Property(x => x.OwnerId).HasMaxLength(450);
+            item.Property(x => x.Outcome).HasMaxLength(2000);
+            item.Property(x => x.ResolvedBy).HasMaxLength(450);
+            item.Property(x => x.RowVersion).IsRowVersion();
+            item.HasIndex(x => x.Reference).IsUnique();
+            item.HasIndex(x => new { x.Status, x.CreatedAt });
+            item.HasIndex(x => new { x.ReporterId, x.UpdatedAt });
+            item.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ReporterId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+            item.HasMany(x => x.Messages).WithOne().HasForeignKey(x => x.SupportCaseId).OnDelete(DeleteBehavior.Cascade);
+            item.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.SupportCaseId).OnDelete(DeleteBehavior.Cascade);
+            item.Navigation(x => x.Messages).UsePropertyAccessMode(PropertyAccessMode.Field);
+            item.Navigation(x => x.Attachments).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+        builder.Entity<SupportCaseMessage>(message =>
+        {
+            message.Property(x => x.Id).ValueGeneratedNever();
+            message.Property(x => x.AuthorId).HasMaxLength(450);
+            message.Property(x => x.Body).HasMaxLength(4000);
+            message.HasIndex(x => new { x.SupportCaseId, x.CreatedAt });
+        });
+        builder.Entity<SupportCaseAttachment>(attachment =>
+        {
+            attachment.Property(x => x.Id).ValueGeneratedNever();
+            attachment.Property(x => x.UploaderId).HasMaxLength(450);
+            attachment.Property(x => x.StorageKey).HasMaxLength(300);
+            attachment.Property(x => x.OriginalName).HasMaxLength(255);
+            attachment.Property(x => x.ContentType).HasMaxLength(100);
+        });
+        builder.Entity<ReconciliationException>(item =>
+        {
+            item.ToTable("ReconciliationExceptions", table =>
+                table.HasCheckConstraint("CK_ReconciliationExceptions_Status", "[Status] BETWEEN 0 AND 2"));
+            item.Property(x => x.Id).ValueGeneratedNever();
+            item.Property(x => x.Fingerprint).HasMaxLength(200).IsUnicode(false);
+            item.Property(x => x.Kind).HasMaxLength(60).IsUnicode(false);
+            item.Property(x => x.Difference).HasPrecision(18, 2);
+            item.Property(x => x.ResolvedDifference).HasPrecision(18, 2);
+            item.Property(x => x.Detail).HasMaxLength(500);
+            item.Property(x => x.AcknowledgedBy).HasMaxLength(450);
+            item.Property(x => x.AcknowledgementNote).HasMaxLength(1000);
+            item.Property(x => x.ResolvedBy).HasMaxLength(450);
+            item.Property(x => x.ResolutionNote).HasMaxLength(1000);
+            item.Property(x => x.RowVersion).IsRowVersion();
+            // One case per anomaly, found again on every scan rather than duplicated.
+            item.HasIndex(x => x.Fingerprint).IsUnique();
+            item.HasIndex(x => new { x.Status, x.LastDetectedAt });
         });
         builder.Entity<TeacherPayoutProfile>(profile =>
         {
@@ -962,13 +1144,21 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
             profile.Property(x => x.PayoutMethod).HasMaxLength(30);
             profile.Property(x => x.DestinationLabel).HasMaxLength(100);
             profile.Property(x => x.IdentityLast4).HasMaxLength(4).IsUnicode(false);
+            profile.Property(x => x.DestinationKeyId).HasMaxLength(32).IsUnicode(false);
+            profile.Property(x => x.DestinationCiphertext).HasMaxLength(2048);
             profile.Property(x => x.RejectionReason).HasMaxLength(500);
             profile.Property(x => x.ReviewedBy).HasMaxLength(450);
             profile.Property(x => x.RowVersion).IsRowVersion();
             profile.HasIndex(x => new { x.Status, x.SubmittedAt });
             profile.HasOne<ApplicationUser>().WithOne().HasForeignKey<TeacherPayoutProfile>(x => x.TeacherId)
                 .OnDelete(DeleteBehavior.Cascade);
-            profile.ToTable(table => table.HasCheckConstraint("CK_PayoutProfiles_Status", "[Status] BETWEEN 0 AND 2"));
+            profile.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_PayoutProfiles_Status", "[Status] BETWEEN 0 AND 2");
+                table.HasCheckConstraint("CK_PayoutProfiles_Destination",
+                    "([DestinationKeyId] IS NULL AND [DestinationCiphertext] IS NULL) OR " +
+                    "([DestinationKeyId] IS NOT NULL AND [DestinationCiphertext] IS NOT NULL)");
+            });
         });
         builder.Entity<TeacherEarningMaturity>(maturity =>
         {

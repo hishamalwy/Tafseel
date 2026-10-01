@@ -24,7 +24,7 @@
 
 ## Disaster recovery checklist
 
-- [ ] RPO / RTO targets agreed with product owner
+- [ ] RPO / RTO targets agreed with product owner — proposed in [SYSTEM_ARCHITECTURE.md › Quality targets](../architecture/SYSTEM_ARCHITECTURE.md#quality-targets), awaiting confirmation
 - [ ] Secondary region decision documented (active/active not required for MVP)
 - [ ] DNS / Front Door failover owner named
 - [ ] Communication template for status page / stakeholders

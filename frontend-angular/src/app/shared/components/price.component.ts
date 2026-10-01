@@ -5,10 +5,8 @@ import { LocaleService } from '@core/i18n/locale.service';
 /**
  * An amount of money, rendered the way Tafseel renders money.
  *
- * SAR is drawn with the SAMA mark rather than a Unicode glyph or the letters
- * "SAR" — the glyph is missing from many fonts and lands as tofu, so the mark is
- * painted from the official artwork as a CSS mask and needs neither a webfont
- * nor a request (see `--riyal-mark`). Every other
+ * SAR is drawn with the official SAMA mark (U+20C1) via the self-hosted
+ * `saudi_riyal` face — the same glyph in Arabic and English. Every other
  * currency falls back to `amount CODE`. The legacy pages repeated this pair of
  * `sc-if` branches at every price on every screen; the decision belongs to the
  * amount, not to each site that shows one.

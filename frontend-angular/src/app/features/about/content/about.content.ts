@@ -50,7 +50,7 @@ export const ABOUT_COPY: Readonly<Record<"ar" | "en", AboutCopy>> = {
       {
         "num": "02",
         "title": "Qualified before they can accept anything",
-        "body": "Identity, credentials and a recorded teaching demo are reviewed before a teacher can take a single request. Being approved for one subject is not approval for another."
+        "body": "Tafseel's quality team watches a recorded teaching demo and reads the teacher's stated experience before they can take a single request. Being approved for one subject is not approval for another."
       },
       {
         "num": "03",
@@ -101,7 +101,7 @@ export const ABOUT_COPY: Readonly<Record<"ar" | "en", AboutCopy>> = {
       {
         "num": "٠٢",
         "title": "التأهيل قبل قبول أي طلب",
-        "body": "تُراجَع الهوية والمؤهلات ونموذج شرح مسجَّل قبل أن يقبل المعلّم طلبًا واحدًا. واعتماده في مادة لا يعني اعتماده في غيرها."
+        "body": "يشاهد فريق الجودة في تفصيل نموذج شرح مسجَّلًا ويقرأ الخبرة التي يذكرها المعلّم قبل أن يقبل طلبًا واحدًا. واعتماده في مادة لا يعني اعتماده في غيرها."
       },
       {
         "num": "٠٣",

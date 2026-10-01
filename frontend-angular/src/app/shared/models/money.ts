@@ -1,3 +1,6 @@
+/** Official SAMA riyal sign (U+20C1). The self-hosted `saudi_riyal` face draws it. */
+export const RIYAL_MARK = '\u20C1';
+
 /**
  * Money formatting, ported from `Tafseel.money` / `moneyView` / `moneyParts`.
  *
@@ -7,10 +10,9 @@
  *  - **Amounts always use Latin digits**, even in Arabic. SAMA writes `⃁ 1,620`,
  *    not Arabic-Indic numerals, so the formatter is pinned to `en-US` regardless
  *    of interface language.
- *  - **SAR never renders through `Intl`'s currency glyph.** The Unicode riyal
- *    sign is missing from many fonts and lands as tofu, so the amount and the
- *    mark are kept apart: plain-text callers get the ISO code, and UI callers
- *    pair `amountNumber` with the SAMA symbol element themselves.
+ *  - **SAR renders as the official riyal mark**, never through `Intl`'s currency
+ *    glyph and never as the letters "SAR" or «ر.س». The self-hosted face covers
+ *    U+20C1 so the same sign works in Arabic, English, and plain text.
  */
 
 export interface MoneyParts {
@@ -23,7 +25,7 @@ export interface MoneyParts {
 }
 
 export interface MoneyView {
-  /** Safe in any plain-text context — amount plus ISO code, never a glyph. */
+  /** Safe in any plain-text context — amount plus the official mark for SAR. */
   readonly amount: string;
   /** The number alone, for pairing with the SAMA mark in markup. */
   readonly amountNumber: string;
@@ -48,7 +50,8 @@ export const Money = {
       formatted = new Intl.NumberFormat('en-US', {
         // Whole amounts read as 1,620 rather than 1,620.00.
         maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-        minimumFractionDigits: 0
+        // UX-35: a fraction always has two digits (140.40, not 140.4), as money is written everywhere else.
+        minimumFractionDigits: Number.isInteger(amount) ? 0 : 2
       }).format(amount);
     } catch {
       formatted = String(amount);
@@ -57,7 +60,7 @@ export const Money = {
   },
 
   /**
-   * Plain text: `1,620 SAR`. Never a currency symbol.
+   * Plain text: `1,620 ⃁`. The official mark, never "SAR" or a tofu glyph.
    *
    * Deviation from `Tafseel.money`, deliberate: the legacy version tested only
    * `Number.isFinite`, and `Number(null)` is `0`, so a missing price rendered as
@@ -69,9 +72,7 @@ export const Money = {
     const amount = Number(value);
     if (!Number.isFinite(amount)) return unavailable;
     const parts = Money.parts(amount, currency, unavailable);
-    // Plain text cannot carry the drawn mark, so it carries the currency in the reader's own script:
-    // "SAR" printed inside an Arabic sentence is the defect UX-06 exists to remove.
-    const code = parts.isSar && sarLabel ? sarLabel : parts.code;
+    const code = parts.isSar ? (sarLabel || RIYAL_MARK) : parts.code;
     return parts.amount + NBSP + code;
   },
 

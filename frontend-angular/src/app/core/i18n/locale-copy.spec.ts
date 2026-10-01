@@ -27,7 +27,8 @@ describe('checkout copy', () => {
   it('keeps Arabic checkout copy free of Latin words other than product and format names', () => {
     const latin = Object.entries(tables.ar)
       .filter(([key]) => key.startsWith('pay_'))
-      .flatMap(([key, text]) => (text.match(/[A-Za-z]{3,}/g) ?? [])
+      // {placeholders} are replaced before anyone reads them.
+      .flatMap(([key, text]) => (text.replace(/\{\w+\}/g, '').match(/[A-Za-z]{3,}/g) ?? [])
         .filter(word => !/^(Tafseel|CVC|PDF|WELCOME\d*|mada|Apple|Pay|STC)$/i.test(word))
         .map(word => `${key}: ${word}`));
 

@@ -2,8 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
-  Attachment, CatalogOption, Clarification, LearningRequest, Offer, OfferInput, OpenRequest, OpenRequestInput
-} from '../models/demand';
+  Attachment, CatalogOption, Clarification, Demand, LearningRequest, Offer, OfferInput, OpenRequest, OpenRequestDraft, OpenRequestInput, MyOffer, OfferTerms, SavedOpenDraft } from '../models/demand';
 import { DemandGateway, OrderRef } from './demand.ports';
 
 type Json = Record<string, any>;
@@ -26,8 +25,35 @@ export class HttpDemandGateway implements DemandGateway {
   publish(input: OpenRequestInput): Observable<OpenRequest> {
     return this.http.post<Json>('/api/v1/open-marketplace/requests', {
       subjectId: input.subjectId, serviceCatalogItemId: input.serviceCatalogItemId, title: input.title,
-      requirements: input.requirements, deadline: input.deadline, budgetMin: input.budgetMin, budgetMax: input.budgetMax
+      requirements: input.requirements, deadline: input.deadline, budgetMin: input.budgetMin, budgetMax: input.budgetMax,
+      ...(input.draftId ? { draftId: input.draftId } : {})
     }).pipe(map(openRequest));
+  }
+
+  currentDraft(): Observable<SavedOpenDraft | null> {
+    return this.http.get<Json>('/api/v1/open-marketplace/drafts/current', { observe: 'response' })
+      .pipe(map(response => response.status === 204 || !response.body ? null : savedDraft(response.body)));
+  }
+
+  saveDraft(fields: OpenRequestDraft): Observable<SavedOpenDraft> {
+    const deadline = fields.deadline ? Date.parse(fields.deadline) : NaN;
+    return this.http.put<Json>('/api/v1/open-marketplace/drafts/current', {
+      subjectId: fields.subjectId || null, serviceCatalogItemId: fields.serviceTypeId || null,
+      title: fields.title, requirements: fields.requirements,
+      deadline: Number.isNaN(deadline) ? null : new Date(deadline).toISOString(),
+      budgetMin: fields.budgetMin, budgetMax: fields.budgetMax
+    }).pipe(map(savedDraft));
+  }
+
+  uploadDraftFile(file: File): Observable<SavedOpenDraft> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    return this.http.post<Json>('/api/v1/open-marketplace/drafts/current/attachments', body).pipe(map(savedDraft));
+  }
+
+  removeDraftFile(attachmentId: string): Observable<SavedOpenDraft> {
+    return this.http.delete<Json>(`/api/v1/open-marketplace/drafts/current/attachments/${encodeURIComponent(attachmentId)}`)
+      .pipe(map(savedDraft));
   }
 
   request(id: string): Observable<LearningRequest> {
@@ -40,6 +66,13 @@ export class HttpDemandGateway implements DemandGateway {
 
   replyToClarification(id: string, message: string, version: string): Observable<void> {
     return this.http.post<void>(`/api/v1/learning-requests/${encodeURIComponent(id)}/reply-clarification`, { message },
+      { headers: ifMatch(version) });
+  }
+
+  attach(id: string, file: File, version: string): Observable<void> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<void>(`/api/v1/learning-requests/${encodeURIComponent(id)}/attachments`, form,
       { headers: ifMatch(version) });
   }
 
@@ -65,7 +98,41 @@ export class HttpDemandGateway implements DemandGateway {
         studentTotal: Number(x['studentTotal']) || 0,
         paymentStatus: Number(x['paymentStatus']) || 0,
         listedPriceAtRequest: numberOrNull(x['listedPriceAtRequest']),
-        listedCurrencyAtRequest: text(x['listedCurrencyAtRequest']) || null
+        listedCurrencyAtRequest: text(x['listedCurrencyAtRequest']) || null,
+        priceChangeReason: text(x['priceChangeReason']) || null
+      }))));
+  }
+
+  offerTerms(serviceTypeId: string): Observable<OfferTerms | null> {
+    return this.http.get<Json[]>('/api/v1/teachers/me/marketplace-services').pipe(map(rows => {
+      const x = (rows ?? []).find(row => text(row['id']) === serviceTypeId);
+      if (!x) return null;
+      const minDelivery = Math.max(1, Number(x['minimumDeliveryHours']) || 1);
+      return {
+        minPrice: Math.max(0.01, Number(x['minimumPrice']) || 0.01),
+        maxPrice: Number(x['maximumPrice']) || 1_000_000,
+        minDeliveryHours: minDelivery,
+        maxDeliveryHours: Math.max(minDelivery, Number(x['maximumDeliveryHours']) || 8760),
+        maxRevisions: Math.max(0, Number(x['maximumRevisions'] ?? 20))
+      };
+    }));
+  }
+
+  teacherReplyMinutes(teacherId: string): Observable<number | null> {
+    return this.http.get<Json>(`/api/v1/teachers/${encodeURIComponent(teacherId)}`).pipe(
+      map(x => { const n = Number(x['responseTimeMinutes']); return Number.isFinite(n) && n > 0 ? n : null; }));
+  }
+
+  myOffers(): Observable<readonly MyOffer[]> {
+    return this.http.get<Json>('/api/v1/open-marketplace/offers/mine?page=1&pageSize=50').pipe(
+      map(page => ((page['items'] ?? []) as Json[]).map(x => ({
+        id: text(x['id']), requestId: text(x['learningRequestId']), requestTitle: text(x['requestTitle']),
+        subjectName: text(x['subjectName']), subjectNameArabic: text(x['subjectNameArabic']) || null,
+        serviceName: text(x['serviceName']), serviceNameArabic: text(x['serviceNameArabic']) || null,
+        amount: Number(x['amount']) || 0, currency: text(x['currency']) || 'SAR',
+        deliveryHours: Number(x['deliveryHours']) || 0, status: Number(x['status'] ?? -1),
+        requestStatus: Number(x['requestStatus'] ?? -1), anotherTeacherChosen: x['anotherTeacherChosen'] === true,
+        orderId: text(x['orderId']) || null, updatedAt: text(x['updatedAt'])
       }))));
   }
 
@@ -133,17 +200,34 @@ function attachment(x: Json): Attachment {
   return { id: text(x['id']), name: text(x['originalName']), contentType: text(x['contentType']), size: Number(x['size'] ?? 0) };
 }
 
+function savedDraft(x: Json): SavedOpenDraft {
+  const amount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null;
+  return {
+    id: text(x['id']),
+    fields: {
+      subjectId: text(x['subjectId']), serviceTypeId: text(x['serviceCatalogItemId']),
+      title: text(x['title']), requirements: text(x['requirements']),
+      deadline: Demand.localInputValue(text(x['deadline']) || null),
+      budgetMin: amount(x['budgetMin']), budgetMax: amount(x['budgetMax'])
+    },
+    attachments: Array.isArray(x['attachments']) ? (x['attachments'] as Json[]).map(attachment) : [],
+    maxAttachments: typeof x['maxAttachments'] === 'number' ? x['maxAttachments'] as number : 5
+  };
+}
+
 function clarification(x: Json): Clarification {
   return { id: text(x['id']), senderId: text(x['senderId']), message: text(x['message']), createdAt: text(x['createdAt']) };
 }
 
 export function learningRequest(x: Json): LearningRequest {
   return {
+    listedPriceAtRequest: numberOrNull(x['listedPriceAtRequest']),
     id: text(x['id']), studentId: text(x['studentId']), teacherId: text(x['teacherId']), teacherServiceId: text(x['teacherServiceId']),
     title: text(x['title']), description: text(x['description']), preferredDeliveryAt: text(x['preferredDeliveryAt']),
     budget: numberOrNull(x['budget']), status: Number(x['status'] ?? -1), sourcing: Number(x['sourcingMode'] ?? 0),
     createdAt: text(x['createdAt']), attachments: (x['attachments'] ?? []).map(attachment),
-    clarifications: (x['clarifications'] ?? []).map(clarification), version: text(x['version']),
+    // Oldest first, like any conversation: the server lists newest first, which put each answer above its question.
+    clarifications: [...(x['clarifications'] ?? []).map(clarification)].sort((p, q) => p.createdAt.localeCompare(q.createdAt)), version: text(x['version']),
     studentName: text(x['studentDisplayName']), teacherName: text(x['teacherDisplayName']),
     serviceName: text(x['serviceNameEnglish']), serviceNameArabic: text(x['serviceNameArabic']),
     selectedOfferId: text(x['selectedOfferId']), reservationExpiresAt: text(x['paymentReservationExpiresAt']),

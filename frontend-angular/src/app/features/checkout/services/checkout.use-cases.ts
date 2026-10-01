@@ -68,13 +68,17 @@ export class LoadCheckoutContext {
     const expires = Date.parse(request.paymentReservationExpiresAt ?? '');
     if (request.status !== 6 || !request.selectedOfferId || Number.isNaN(expires) || expires <= Date.now()) return null;
     const offer = offers.find(o => o.id === request.selectedOfferId);
-    return offer ? Payable.fromOpenRequest(request, offer) : null;
+    if (!offer) return null;
+    const quote = await firstValueFrom(this.payables.openRequestQuote(id));
+    return Payable.fromOpenRequest(request, offer, quote);
   }
 
   private async findLiveSession(id: string): Promise<Payable | null> {
     const bookings = await firstValueFrom(this.payables.myLiveSessions());
     const match = bookings.find(b => String(b.id).toLowerCase() === id.toLowerCase());
-    return match ? Payable.fromLiveSession(match) : null;
+    // An unanswered request is not a checkout. The teacher must accept first.
+    return match && match.status !== 9 && match.status !== 10 && match.status !== 3
+      ? Payable.fromLiveSession(match) : null;
   }
 
   private async optional<T>(run: () => Promise<T>, fallback: T): Promise<T> {
@@ -101,10 +105,10 @@ export type PaymentOutcome =
 export class InitiatePayment {
   private readonly payments = inject(PAYMENT_GATEWAY);
 
-  async execute(payable: Payable, mockEnabled: boolean): Promise<PaymentOutcome> {
+  async execute(payable: Payable, mockEnabled: boolean, couponCode: string | null = null): Promise<PaymentOutcome> {
     try {
       const result: PaymentInitiation = await firstValueFrom(
-        this.payments.initiate(payable, Payable.idempotencyKey(payable)));
+        this.payments.initiate(payable, Payable.idempotencyKey(payable), couponCode));
 
       const reference = (result.checkoutReference ?? '').trim();
       if (/^(\/|https?:)/i.test(reference)) return { kind: 'redirect', url: reference };

@@ -85,5 +85,15 @@ public static class AppRoutes
         $"{QualityShowcases}?selectedId={sampleId}";
 
     public const string AdminHome = "/admin/home";
+
+    /// <summary>Help and abuse reports (outside paid purchases): the reporter's own cases and the Admin queue.</summary>
+    public const string Help = "/help";
+    public const string HelpAccountAccess = "/help/account-access";
+    public static string HelpCase(Guid caseId) => $"/help/cases/{caseId}";
+    public const string AdminHelp = "/admin/help";
+    public const string Account = "/account";
+    public const string FinanceWithdrawals = "/finance/withdrawals";
+    public const string FinancePayoutProfiles = "/finance/payout-profiles";
+    public static string AdminHelpCase(Guid caseId) => $"/admin/help/{caseId}";
     public const string AdminSessions = "/admin/operations?tab=sessions";
 }

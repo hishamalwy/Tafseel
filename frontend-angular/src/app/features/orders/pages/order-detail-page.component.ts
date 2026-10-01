@@ -13,6 +13,7 @@ import { PriceComponent } from '@shared/components/price.component';
 import { PricePanelComponent } from '@shared/components/price-panel.component';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
 import { ToastComponent } from '@shared/components/toast.component';
+import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
@@ -33,7 +34,7 @@ type Panel = 'deliver' | 'revision' | 'review' | null;
 @Component({
   selector: 'tf-order-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent],
+  imports: [FormsModule, RouterLink, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent, FilePickerComponent],
   templateUrl: './order-detail-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css'
 })
@@ -55,11 +56,21 @@ export class OrderDetailPageComponent {
   orderId = '';
   readonly state = signal<LoadState>('loading');
   readonly order = signal<OrderDetail | null>(null);
+  /** With several deliveries (after a revision), the newest is marked so the student reviews the right one (UX-41). */
+  readonly latestDeliveryId = computed(() => {
+    const deliveries = this.order()?.deliveries ?? [];
+    return deliveries.length > 1 ? [...deliveries].sort((x, y) => Date.parse(y.createdAt) - Date.parse(x.createdAt))[0]?.id ?? '' : '';
+  });
   readonly timeline = signal<readonly OrderTimelineEvent[]>([]);
   readonly timelineFailed = signal(false);
+  /** What the student asked to change in their latest revision request. */
+  readonly latestRevisionNote = computed(() => [...this.timeline()].reverse()
+    .find(event => event.eventType === 'revision_requested' && event.metadata?.note)?.metadata?.note ?? '');
   readonly panel = signal<Panel>(null);
   readonly busy = signal<OrderAction | 'message' | ''>('');
   readonly actionError = signal('');
+  /** A delivery that cannot be sent is explained at the file picker, where it is fixed (UX-38). */
+  readonly deliveryError = signal('');
   readonly files = signal<readonly File[]>([]);
   readonly deliveryMessage = signal('');
   readonly progress = signal<number | null>(null);
@@ -115,19 +126,25 @@ export class OrderDetailPageComponent {
   isCompleted(): boolean { return this.order()?.status === OrderStatus.Completed; }
 
   async load(): Promise<void> {
+    // Moving to another one while this load is in flight must not let its late answer paint the other.
+    const orderId = this.orderId;
     this.state.set(this.order() ? 'ready' : 'loading');
     try {
-      const order = await firstValueFrom(this.gateway.order(this.orderId));
+      const order = await firstValueFrom(this.gateway.order(orderId));
+      if (orderId !== this.orderId) return;
       this.order.set(order);
       this.state.set('ready');
       this.title.setTitle(`${this.heading()} — Tafseel`);
     } catch (error) {
+      if (orderId !== this.orderId) return;
       const status = error instanceof HttpErrorResponse ? error.status : 0;
       this.state.set(status === 404 || status === 403 || status === 400 ? 'missing' : 'failed');
       return;
     }
     try {
-      this.timeline.set(await firstValueFrom(this.gateway.timeline(this.orderId)));
+      const timeline = await firstValueFrom(this.gateway.timeline(orderId));
+      if (orderId !== this.orderId) return;
+      this.timeline.set(timeline);
       this.timelineFailed.set(false);
     } catch {
       this.timelineFailed.set(true);
@@ -152,18 +169,21 @@ export class OrderDetailPageComponent {
     await this.run('start', () => firstValueFrom(this.gateway.start(order.id, order.version ?? '')), this.t('order_started', 'Work started.'));
   }
 
-  chooseFiles(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.files.set(Array.from(input.files ?? []));
+  /** A second choice adds to the first; Remove takes one away. */
+  pickFiles(chosen: readonly File[]): void {
+    this.files.update(files => [...files, ...chosen]);
     this.actionError.set('');
+    this.deliveryError.set('');
   }
+
+  removeFile(index: number): void { this.files.update(files => files.filter((_, i) => i !== index)); }
 
   async deliver(): Promise<void> {
     const order = this.order(), files = this.files();
     if (!order || this.busy()) return;
     const problem = Order.deliveryProblem(files);
     if (problem) {
-      this.actionError.set(this.locale.format(`order_delivery_problem_${problem}`, { max: DELIVERY_LIMITS.files }, problem));
+      this.deliveryError.set(this.locale.format(`order_delivery_problem_${problem}`, { max: DELIVERY_LIMITS.files, size: DELIVERY_LIMITS.bytes / 1048576 }, problem));
       return;
     }
     await this.run('deliver', async () => {

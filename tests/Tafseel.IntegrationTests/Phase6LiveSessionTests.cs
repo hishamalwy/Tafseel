@@ -41,25 +41,30 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         var bookings = await Task.WhenAll(
             BookAsync(first, data.ServiceId, pacificLocal, "Pacific Standard Time", emergency: true),
             BookAsync(second, data.ServiceId, pacificLocal, "Pacific Standard Time", emergency: true));
-        Assert.Single(bookings, x => x.StatusCode == HttpStatusCode.Created);
-        Assert.Single(bookings, x => x.StatusCode == HttpStatusCode.Conflict);
-        var winnerIndex = bookings[0].StatusCode == HttpStatusCode.Created ? 0 : 1;
-        var winner = winnerIndex == 0 ? first : second;
-        var winnerJson = JsonDocument.Parse(await bookings[winnerIndex].Content.ReadAsStringAsync()).RootElement;
+        Assert.All(bookings, x => Assert.Equal(HttpStatusCode.Created, x.StatusCode));
+        var teacher = await ClientForAsync(data.Teacher.Email);
+        var winner = first;
+        var winnerJson = JsonDocument.Parse(await bookings[0].Content.ReadAsStringAsync()).RootElement;
         var winnerId = winnerJson.GetProperty("id").GetGuid();
+        var otherJson = JsonDocument.Parse(await bookings[1].Content.ReadAsStringAsync()).RootElement;
+        var otherId = otherJson.GetProperty("id").GetGuid();
         Assert.Equal(50m, winnerJson.GetProperty("emergencyPremiumPercent").GetDecimal());
+        (await RespondAsync(teacher, winnerId, true, await VersionAsync(winnerId))).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await RespondAsync(teacher, otherId, true, await VersionAsync(otherId))).StatusCode);
 
         var adjacentLocal = slots[1].GetProperty("studentLocalStart").GetDateTime();
         var adjacent = await BookAsync(third, data.ServiceId, adjacentLocal, "Pacific Standard Time", emergency: false);
         adjacent.EnsureSuccessStatusCode();
         var adjacentJson = JsonDocument.Parse(await adjacent.Content.ReadAsStringAsync()).RootElement;
         var adjacentId = adjacentJson.GetProperty("id").GetGuid();
-        var adjacentVersion = adjacentJson.GetProperty("version").GetString()!;
+        (await RespondAsync(teacher, adjacentId, true, await VersionAsync(adjacentId))).EnsureSuccessStatusCode();
+        var adjacentVersion = await VersionAsync(adjacentId);
 
         var conflict = await SendAsync(winner, HttpMethod.Post,
             $"/api/v1/live-sessions/{winnerId}/reschedule",
             new { localStart = adjacentLocal, timeZoneId = "Pacific Standard Time" },
-            winnerJson.GetProperty("version").GetString()!);
+            await VersionAsync(winnerId));
         Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
 
         var cancellations = await Task.WhenAll(
@@ -90,6 +95,7 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         var version = json.GetProperty("version").GetString()!;
 
         Assert.Equal(HttpStatusCode.BadRequest, (await student.GetAsync($"/api/v1/live-sessions/{id}/join")).StatusCode);
+        (await RespondAsync(teacher, id, true, version)).EnsureSuccessStatusCode();
         await ConfirmAsync(id);
         Assert.Equal(HttpStatusCode.BadRequest, (await student.GetAsync($"/api/v1/live-sessions/{id}/join")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync($"/api/v1/live-sessions/{id}/join")).StatusCode);
@@ -128,6 +134,125 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         Assert.Equal(LiveSessionStatus.StudentNoShowPending,
             await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().LiveSessionBookings
                 .Where(x => x.Id == id).Select(x => x.Status).SingleAsync());
+    }
+
+    // PreProduction closure: JaaS signs each participant's token on the server with the account's RSA key, read
+    // from a file outside the site. Only the two participants get one, only for this room, only in the window.
+    [Fact]
+    public async Task Jaas_join_signs_each_participant_for_one_room_and_never_returns_the_key()
+    {
+        using var key = System.Security.Cryptography.RSA.Create(2048);
+        var pem = key.ExportRSAPrivateKeyPem();
+        var keyFile = Path.Combine(Path.GetTempPath(), $"tafseel-jaas-{Guid.NewGuid():N}.pem");
+        await File.WriteAllTextAsync(keyFile, pem);
+        const string appId = "vpaas-magic-cookie-tafseeltest";
+        try
+        {
+            await using var jaas = factory.WithWebHostBuilder(builder =>
+            {
+                builder.UseSetting("LiveSessions:Provider", "JaaS");
+                builder.UseSetting("JaaS:AppId", appId);
+                builder.UseSetting("JaaS:KeyId", appId + "/tafseel-test-key");
+                builder.UseSetting("JaaS:PrivateKeyPem", "");
+                builder.UseSetting("JaaS:PrivateKeyPath", keyFile);
+                builder.UseSetting("JaaS:StaticJwt", "");
+            });
+            var data = await SeedAsync();
+            var student = await ClientForAsync(data.FirstStudent.Email, jaas);
+            var outsider = await ClientForAsync(data.SecondStudent.Email, jaas);
+            var teacher = await ClientForAsync(data.Teacher.Email, jaas);
+            var localDate = data.LocalDate.ToString("yyyy-MM-dd");
+            var slots = JsonDocument.Parse(await jaas.CreateClient().GetStringAsync(
+                $"/api/v1/live-sessions/teachers/{data.Teacher.Id}/slots?from={localDate}" +
+                "&days=1&durationMinutes=30&studentTimeZoneId=UTC")).RootElement.EnumerateArray().ToArray();
+            var start = slots[0].GetProperty("startsAt").GetDateTimeOffset();
+            var otherStart = slots[^1].GetProperty("startsAt").GetDateTimeOffset();
+
+            async Task<Guid> ConfirmedAsync(DateTimeOffset at)
+            {
+                var booked = await BookAsync(student, data.ServiceId,
+                    DateTime.SpecifyKind(at.UtcDateTime, DateTimeKind.Unspecified), "UTC", emergency: false);
+                booked.EnsureSuccessStatusCode();
+                var json = JsonDocument.Parse(await booked.Content.ReadAsStringAsync()).RootElement;
+                var bookingId = json.GetProperty("id").GetGuid();
+                (await RespondAsync(teacher, bookingId, true, json.GetProperty("version").GetString()!)).EnsureSuccessStatusCode();
+                await ConfirmAsync(bookingId);
+                return bookingId;
+            }
+
+            var id = await ConfirmedAsync(start);
+            var cancelledId = await ConfirmedAsync(otherStart);
+            // Cancelled after it was confirmed (the refund path is covered elsewhere; this booking was never charged).
+            await using (var scope = factory.Services.CreateAsyncScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+                var booking = await db.LiveSessionBookings.SingleAsync(x => x.Id == cancelledId);
+                booking.Cancel(data.Teacher.Id, factory.Clock.GetUtcNow());
+                await db.SaveChangesAsync();
+                Assert.Equal(LiveSessionStatus.Cancelled, booking.Status);
+            }
+
+            factory.Clock.SetUtcNow(start.AddMinutes(-10));
+            var studentJoin = await student.GetAsync($"/api/v1/live-sessions/{id}/join");
+            var teacherJoin = await teacher.GetAsync($"/api/v1/live-sessions/{id}/join");
+            studentJoin.EnsureSuccessStatusCode();
+            teacherJoin.EnsureSuccessStatusCode();
+            var studentBody = await studentJoin.Content.ReadAsStringAsync();
+            var teacherBody = await teacherJoin.Content.ReadAsStringAsync();
+            foreach (var body in new[] { studentBody, teacherBody })
+            {
+                Assert.DoesNotContain("PRIVATE KEY", body);
+                Assert.DoesNotContain(pem.Split('\n')[1].Trim(), body);
+                Assert.DoesNotContain(keyFile, body);
+            }
+
+            var studentLink = JsonDocument.Parse(studentBody).RootElement;
+            var teacherLink = JsonDocument.Parse(teacherBody).RootElement;
+            var room = studentLink.GetProperty("roomName").GetString()!;
+            Assert.Equal(room, teacherLink.GetProperty("roomName").GetString());
+            Assert.StartsWith(appId + "/tafseel", room);
+            Assert.Equal($"https://8x8.vc/{room}", studentLink.GetProperty("url").GetString());
+            Claims(studentLink.GetProperty("jwt").GetString()!, data.FirstStudent.Id, moderator: false);
+            Claims(teacherLink.GetProperty("jwt").GetString()!, data.Teacher.Id, moderator: true);
+
+            Assert.Equal(HttpStatusCode.NotFound, (await outsider.GetAsync($"/api/v1/live-sessions/{id}/join")).StatusCode);
+            var cancelled = await student.GetAsync($"/api/v1/live-sessions/{cancelledId}/join");
+            Assert.Equal(HttpStatusCode.BadRequest, cancelled.StatusCode);
+            Assert.Equal("session_not_confirmed", await CodeAsync(cancelled));
+
+            factory.Clock.SetUtcNow(start.AddMinutes(-16));
+            var early = await student.GetAsync($"/api/v1/live-sessions/{id}/join");
+            Assert.Equal("join_window_closed", await CodeAsync(early));
+            factory.Clock.SetUtcNow(start.AddMinutes(30 + 16));
+            var late = await teacher.GetAsync($"/api/v1/live-sessions/{id}/join");
+            Assert.Equal("join_window_closed", await CodeAsync(late));
+
+            void Claims(string token, string userId, bool moderator)
+            {
+                var parts = token.Split('.');
+                Assert.Equal(3, parts.Length);
+                Assert.True(key.VerifyData(Encoding.UTF8.GetBytes(parts[0] + "." + parts[1]), Base64Url(parts[2]),
+                    System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1));
+                using var header = JsonDocument.Parse(Base64Url(parts[0]));
+                using var payload = JsonDocument.Parse(Base64Url(parts[1]));
+                Assert.Equal("RS256", header.RootElement.GetProperty("alg").GetString());
+                Assert.Equal(appId + "/tafseel-test-key", header.RootElement.GetProperty("kid").GetString());
+                Assert.Equal("jitsi", payload.RootElement.GetProperty("aud").GetString());
+                Assert.Equal(appId, payload.RootElement.GetProperty("sub").GetString());
+                Assert.Equal(room.Split('/')[1], payload.RootElement.GetProperty("room").GetString());
+                Assert.Equal(start.AddMinutes(30 + 15).ToUnixTimeSeconds(), payload.RootElement.GetProperty("exp").GetInt64());
+                var user = payload.RootElement.GetProperty("context").GetProperty("user");
+                Assert.Equal(userId, user.GetProperty("id").GetString());
+                Assert.Equal(moderator, user.GetProperty("moderator").GetBoolean());
+            }
+        }
+        finally
+        {
+            File.Delete(keyFile);
+        }
+
+        static byte[] Base64Url(string value) => Convert.FromBase64String(
+            value.Replace('-', '+').Replace('_', '/').PadRight((value.Length + 3) / 4 * 4, '='));
     }
 
     [Fact]
@@ -201,9 +326,10 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         return new(first, second, third, teacher, service.Id, localDate);
     }
 
-    private async Task<HttpClient> ClientForAsync(string email)
+    private async Task<HttpClient> ClientForAsync(string email,
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>? host = null)
     {
-        var client = factory.CreateClient();
+        var client = (host ?? factory).CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", await Pass3TestData.LoginAsync(client, email));
         return client;
@@ -230,6 +356,11 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
         request.Headers.TryAddWithoutValidation("If-Match", version);
         return await client.SendAsync(request);
     }
+
+    private static Task<HttpResponseMessage> RespondAsync(
+        HttpClient client, Guid id, bool accept, string version) =>
+        SendAsync(client, HttpMethod.Post, $"/api/v1/live-sessions/{id}/request/respond",
+            new { accept }, version);
 
     private static async Task<HttpResponseMessage> UploadAsync(HttpClient client, Guid id, string version)
     {
@@ -270,6 +401,21 @@ public sealed class Phase6LiveSessionTests(SqlServerTafseelApiFactory factory)
             DateTime.SpecifyKind(start.UtcDateTime, DateTimeKind.Unspecified), "UTC", emergency: false);
         booked.EnsureSuccessStatusCode();
         var bookingId = JsonDocument.Parse(await booked.Content.ReadAsStringAsync()).RootElement.GetProperty("id").GetGuid();
+
+        var blocked = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/payments/live-sessions/{bookingId}");
+        blocked.Headers.TryAddWithoutValidation("Idempotency-Key", "live-blocked-" + bookingId);
+        var blockedResponse = await student.SendAsync(blocked);
+        Assert.Equal(HttpStatusCode.BadRequest, blockedResponse.StatusCode);
+        Assert.Equal("payment_not_allowed", await CodeAsync(blockedResponse));
+        var teacher = await ClientForAsync(data.Teacher.Email);
+        var outsider = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Teacher);
+        var outsiderTeacher = await ClientForAsync(outsider.Email);
+        var version = await VersionAsync(bookingId);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await RespondAsync(student, bookingId, true, version)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await RespondAsync(outsiderTeacher, bookingId, true, version)).StatusCode);
+        (await RespondAsync(teacher, bookingId, true, await VersionAsync(bookingId))).EnsureSuccessStatusCode();
 
         var initiate = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/payments/live-sessions/{bookingId}");
         initiate.Headers.TryAddWithoutValidation("Idempotency-Key", "live-pay-" + bookingId);

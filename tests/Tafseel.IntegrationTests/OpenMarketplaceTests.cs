@@ -108,6 +108,17 @@ public sealed class OpenMarketplaceTests(SqlServerTafseelApiFactory factory)
         Assert.DoesNotContain(competitorOpportunities.EnumerateArray(),
             x => x.GetProperty("id").GetGuid() == requestId);
 
+        var quoteResponse = await student.GetAsync($"/api/v1/payments/open-requests/{requestId}/quote");
+        quoteResponse.EnsureSuccessStatusCode();
+        var quote = JsonDocument.Parse(await quoteResponse.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(120m, quote.GetProperty("offerAmount").GetDecimal());
+        Assert.Equal(8m, quote.GetProperty("studentFeePercent").GetDecimal());
+        Assert.Equal(9.60m, quote.GetProperty("studentFeeAmount").GetDecimal());
+        Assert.Equal(129.60m, quote.GetProperty("total").GetDecimal());
+        Assert.Equal("SAR", quote.GetProperty("currency").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, (await teacherA.GetAsync(
+            $"/api/v1/payments/open-requests/{requestId}/quote")).StatusCode);
+
         var initiate = new HttpRequestMessage(HttpMethod.Post,
             $"/api/v1/payments/open-requests/{requestId}");
         initiate.Headers.TryAddWithoutValidation("Idempotency-Key", "open-market-payment");
@@ -116,6 +127,7 @@ public sealed class OpenMarketplaceTests(SqlServerTafseelApiFactory factory)
         initiated.EnsureSuccessStatusCode();
         var payment = JsonDocument.Parse(await initiated.Content.ReadAsStringAsync())
             .RootElement.GetProperty("payment");
+        Assert.Equal(quote.GetProperty("total").GetDecimal(), payment.GetProperty("amount").GetDecimal());
         await ConfirmAsync(student, payment, requestId);
         await ConfirmAsync(student, payment, requestId);
 
@@ -136,6 +148,19 @@ public sealed class OpenMarketplaceTests(SqlServerTafseelApiFactory factory)
             (await db.TeacherOffers.AsNoTracking().SingleAsync(x => x.Id == offerB.Id)).Status);
         Assert.Equal(HttpStatusCode.NotFound, (await teacherB.GetAsync(
             $"/api/v1/learning-requests/attachments/{attachmentId}/content")).StatusCode);
+
+        // DEC-UX-05: each teacher keeps an understandable history of their own offers after the request closes.
+        var historyB = JsonDocument.Parse(await teacherB.GetStringAsync("/api/v1/open-marketplace/offers/mine"))
+            .RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("learningRequestId").GetGuid() == requestId);
+        Assert.True(historyB.GetProperty("anotherTeacherChosen").GetBoolean());
+        Assert.Equal((int)TeacherOfferStatus.NotSelected, historyB.GetProperty("status").GetInt32());
+        Assert.Equal(JsonValueKind.Null, historyB.GetProperty("orderId").ValueKind);
+        Assert.False(string.IsNullOrWhiteSpace(historyB.GetProperty("requestTitle").GetString()));
+        var historyA = JsonDocument.Parse(await teacherA.GetStringAsync("/api/v1/open-marketplace/offers/mine"))
+            .RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("learningRequestId").GetGuid() == requestId);
+        Assert.False(historyA.GetProperty("anotherTeacherChosen").GetBoolean());
+        Assert.Equal(order.Id, historyA.GetProperty("orderId").GetGuid());
+        Assert.DoesNotContain(data.TeacherA.Id, JsonDocument.Parse(await teacherB.GetStringAsync("/api/v1/open-marketplace/offers/mine")).RootElement.GetRawText());
     }
 
     [Fact]

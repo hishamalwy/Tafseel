@@ -100,3 +100,35 @@ frontend-angular/out-tsc/
 # sources are css/tafseel.css and assets/.
 frontend-angular/src/generated/
 frontend-angular/public/assets/
+
+# Generated test, audit and run output (never versioned)
+/tmp/
+/tmp-*
+/tmp-*.mjs
+/uploads/
+/App_Data/
+**/out/screenshots/
+**/screenshots/
+**/evidence/
+*.trace.zip
+traces/
+**/journeys*/
+*.har
+*.png.diff
+browser-output/
+audit-output/
+docs/audits/
+docs/reports/
+docs/prompts/
+# Stray build output from tools that mangle an absolute path into a folder name
+**/Users*AppData*/
+
+# Local environment overrides and seed secrets
+appsettings.*.Local.json
+**/appsettings.*.Host.json
+*.pubxml.user
+.env.local
+# Signing keys and hosting credentials never enter the repository (JaaS private key, Web Deploy profiles)
+*.pem
+*.key
+*.publishSettings

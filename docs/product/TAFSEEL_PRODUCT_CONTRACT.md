@@ -15,9 +15,9 @@ through Gate 1 of [`SDLC.md`](../engineering/SDLC.md).
 
 Related: [V1 scope](./V1_SCOPE.md) · [V1.1 backlog](./V1_1_BACKLOG.md) ·
 [UX principles](./UX_PRINCIPLES.md) · [SDLC](../engineering/SDLC.md) ·
-[Production readiness](../releases/PRODUCTION_READINESS.md) ·
+[Production readiness](../releases/GO_LIVE_CHECKLIST.md) ·
 [Release blockers](../releases/V1_RELEASE_BLOCKERS.md) ·
-[Remediation matrix](../audits/baseline-2026-09-14/REMEDIATION_MATRIX.md)
+Remediation matrix
 
 ---
 
@@ -40,10 +40,13 @@ accepted, keeps it withdrawable only after a dispute window, and takes a fee on 
 | **Student** | request a specific teacher, publish an open request, compare and select offers, pay, message, receive deliveries, ask for revisions, complete, review, book and attend live sessions, open disputes | see other students' data, see a teacher's unpublished data, change agreed terms |
 | **Teacher** | apply per subject with a demo; once approved: profile, offerings within Admin rules, availability, publication, handle direct requests, send offers on open requests, start and deliver orders, run live sessions, message, see earnings, request withdrawals | sell a subject they are not approved in, create or change a Catalog Service or its price boundaries, review their own application, confirm their own completion or no-show claim |
 | **Quality Reviewer** | work the application queue, watch the demo, start a review, decide (approve / request changes / reject), moderate showcases | review their own application (`self_review_forbidden`), change catalog or money |
-| **Admin** | catalog and policy governance, users (suspend), operations lists, disputes, reviews moderation, refunds, payout-profile verification and withdrawal processing, reconciliation, audit | suspend themselves, remove the last Admin |
+| **Finance** | payment lookup and full refunds, payout-detail verification, withdrawals (transfer details, start, bank evidence, reject/cancel), reconciliation cases, financial audit | reach Admin screens or APIs, handle their own purchase, payout profile, withdrawal or refund |
+| **Admin** | catalog and policy governance, people (roles, suspension), operations lookup, disputes (including questions to both parties), review moderation, the help and abuse queue, audit; every Finance duty as owner access | suspend themselves, remove their own Admin role, remove the last Admin, handle their own purchase, dispute or help case |
 
 One account may hold several roles (for example Teacher and Quality Reviewer); every rule is
-enforced per action, not per account.
+enforced per action, not per account. There is no Support role in V1: named Admins own help cases
+(`Support.Cases.Manage`), so a Support role can be split off later without changing the case model.
+The full permission table is [ROLES_AND_PERMISSIONS.md](ROLES_AND_PERMISSIONS.md).
 
 ---
 
@@ -239,7 +242,7 @@ idempotent per payable. Fees are snapshotted onto the Order or Live Session Book
 *(Corrected in Release Control 2: an earlier version of this section applied the student fee to every
 payable.)* Statuses: Pending → Confirmed (or Failed); Refunded. On confirmation the money is **held in
 escrow**. Only the mock provider exists today (§8). Worked examples:
-[Decision Pack DEC-06](../releases/V1_DECISION_PACK.md#dec-06--commercial-fees).
+Decision Pack DEC-06.
 
 ### 3.8 Live Session Booking
 *Code: `LiveSessionBooking`.* A scheduled one-to-one call of a live-session offering. **A separate
@@ -250,11 +253,14 @@ no-show and settlement lifecycle below; the mock provider stays forbidden in Pro
 - Booked into a free slot of the teacher's weekly availability (30-minute steps by default),
   30/60/90/120 minutes, price = hourly offering price × duration ÷ 60 (+ optional emergency premium,
   see DEC-07).
-- Statuses: Awaiting payment → Confirmed → (Completion pending → Completed) or
+- A student requests a slot; the selected teacher accepts or declines. A pending request does not reserve
+  the slot. Acceptance rechecks availability, cannot occur after the requested start, and reserves the slot
+  for payment. Only then may the student pay. The student may cancel a pending request.
+- Statuses: Awaiting teacher approval → Awaiting payment (or Declined / Cancelled) → Confirmed → (Completion pending → Completed) or
   (Student no-show pending → Student no-show) or (Teacher no-show pending → Teacher no-show);
   Cancelled.
 - **Join** is allowed to both participants from 15 minutes before the start to 15 minutes after the
-  end (`join_window_closed` otherwise); the room link comes from the meeting provider (mock today).
+  end (`join_window_closed` otherwise); the room link comes from the configured meeting provider.
 - **Settlement is mutual:** after the end the teacher asks to complete; after the 15-minute grace the
   teacher may report a student no-show or the student a teacher no-show; **the other party confirms**;
   if nobody confirms, the server finalizes the claim 24 hours (`SettlementReviewHours`) after the
@@ -287,11 +293,14 @@ disputed. Promotion to Available is done by the earnings-maturity worker from th
 > goes to Pending Clearance". Confirm.
 
 ### 3.10 Withdrawal and payout profile
-A teacher submits a **payout profile** (legal name, country, payout method, a **masked** destination
-label, last four identity characters). Admin verifies or rejects it. With a verified profile the
-teacher requests a withdrawal of at least 50 SAR from Available; Admin approves (recording the
-external transfer reference) or rejects, in which case the amount returns to Available. Expected
-settlement: 3 business days.
+A teacher submits a **payout profile** (legal name, country, IBAN). The IBAN is sealed (AES-GCM) with a key
+held outside the database; the teacher and lists see it masked, and the full destination is revealed only
+through an audited Finance/Admin action, never cached. Finance verifies or rejects the profile. With a verified
+profile the teacher requests a withdrawal of at least 50 SAR from Available. Finance reads the transfer details,
+marks the transfer **started**, and completes it **only with bank evidence** (the bank's reference); or rejects it
+with a reason, returning the amount to Available. A started transfer is cancelled only by stating that no money
+was sent. Expected settlement: 3 business days. Two-person approval (maker-checker) is post-launch; the V1 control
+is the self-processing guards, evidence-only completion and the financial audit of every step.
 
 **Payout architecture — DECIDED (DEC-04, 2026-09-15).** `IPayoutProvider` is the permanent payout
 architecture. V1 must provide: a provider-independent payout interface; an audited manual bank-transfer
@@ -302,8 +311,8 @@ changing ledger semantics** (pending clearance → available → pending withdra
 Before the manual adapter is built, `PAY-01` evaluates the marketplace/payout capabilities of suitable
 Saudi providers, at minimum Moyasar and Tap Payments; if the selected payment provider can safely support
 marketplace seller payouts in V1, the automated adapter is preferred and the audited manual fallback is kept
-(`PAY-04a`). Any other automated adapter not used in V1 is V1.1 (`PAY-04b`). Today the destination is
-stored masked, there is no transfer mechanism and no teacher or Admin UI (matrix J12-02..04).
+(`PAY-04a`). Any other automated adapter not used in V1 is V1.1 (`PAY-04b`). Built: the manual bank-transfer
+adapter behind `IPayoutProvider`, the sealed destination vault, and the teacher and Finance screens.
 
 ### 3.11 Refund
 Admin refunds a confirmed payment **in full** with a mandatory reason (idempotent). Disputes resolve
@@ -341,7 +350,7 @@ review and resolves with a rationale. An open dispute stops automatic completion
 - A student may review a **Completed and paid Order** once (`duplicate_review` otherwise), with five
   1–5 ratings (explanation clarity, subject knowledge, communication, on-time delivery, value for
   money), a required comment (≤ 2,000) and "would recommend".
-- A student may review a **Completed live session** once (API only in V1 — §9).
+- A student may review a **Completed live session** once, from the session page.
 - The overall score is the mean of the five; the teacher's public rating is the mean of visible
   reviews. Reviews are visible immediately; Admin can hide one (moderation) which removes it from the
   public rating. The public review shows score and comment, **not the student's identity**.
@@ -409,8 +418,11 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A[Student opens a teacher profile] --> B[Books a slot and duration]
-  B --> C[Booking: payment required] --> D[Student pays] --> E[Confirmed]
+  A[Student opens a teacher profile] --> B[Requests a slot and duration]
+  B --> P[Awaiting teacher approval]
+  P -- teacher accepts; slot still free --> C[Booking: payment required]
+  P -- teacher declines --> N[Declined]
+  C --> D[Student pays] --> E[Confirmed]
   E -- before start --> R[Reschedule proposed → other party answers] --> E
   E -- cancel --> X[Cancelled<br/>refund per rule]
   E --> F[Join window: 15 min before → 15 min after]
@@ -456,7 +468,7 @@ teacher commission 15% of the base/agreed price. Live sessions: no additional st
 commission 15% of the booking total. The fee percentages snapshotted on each existing Order and Live Session
 Booking remain authoritative; historical and current records are not altered. Payment-provider fees and
 VAT are separate costs and are **not** included in these percentages. Worked examples:
-[Decision Pack DEC-06](../releases/V1_DECISION_PACK.md#dec-06--commercial-fees).
+Decision Pack DEC-06.
 
 > **DECISION REQUIRED (DEC-07 — emergency premium).** The booking API accepts a client-supplied
 > `emergency` flag that adds 50%, but the server defines no rule for what qualifies and the slot API
@@ -500,6 +512,31 @@ Summary; the detailed inventory and the proposed navigation are in
   only through authorized content endpoints; storage keys and container URLs are never exposed.
 - The strict API contract gate (`scripts/ci/check-api-contract.mjs --strict`) is a permanent,
   zero-violation gate.
+- **Self-processing guards.** Nobody handles their own payout profile, withdrawal, refund of a purchase they
+  bought or taught, dispute, help case or application review; the server refuses.
+- **Uploads are scanned before they are stored.** An infected file is refused and recorded; if the scanner is
+  unreachable the upload is refused (never accepted unscanned). Production requires a real engine (ClamAV).
+- **Account self-service** is one `/account` page for every role: name, photo, password, signed-in devices
+  (including "sign out all other devices"), notifications, learning preferences, data export and deletion
+  (refused while work or money is open).
+
+## 7a. Notifications, help and public video
+
+- **Mandatory vs optional notifications.** Chat messages, reviews and reminders are optional (two switches: in
+  the bell, by email). Everything about payments, orders, sessions, disputes, refunds, earnings, applications,
+  reports and account security is always delivered.
+- **Help and abuse intake.** Signed-in people open help cases (`/help`); signed-out people can report
+  account-access problems. Cases carry a reference, owner, status and outcome; reporters never see staff names;
+  outsiders get 404. Problems with a paid purchase stay disputes.
+- **Public introduction video.** A teacher's public profile shows no video or exactly one they chose, with a
+  recorded consent (who, which file, the sentence, when). Consent is withdrawn when the video is hidden, removed,
+  replaced, or the subject is revoked. Application demo videos are never public.
+- **Qualification withdrawal.** A Quality Reviewer can withdraw one subject qualification with a reason
+  (10–2000 characters); it is audited and the teacher is told why. A teacher can apply again.
+- **Open-request drafts (upload first).** A student can start an open request from a file: the file is scanned
+  and attached to the student's own draft before any other field is asked. The draft keeps its fields and clean
+  files across leaving and refreshing, is visible only to that student, and its files move to the request when it
+  is published. A draft is never shown to teachers.
 
 ---
 
@@ -507,31 +544,28 @@ Summary; the detailed inventory and the proposed navigation are in
 
 | Capability | Today | Production rule |
 |------------|-------|-----------------|
-| Payments | Mock provider + simulator (Development/Staging) | Production refuses `Payments:Provider=Mock` and the simulator; a real `IPaymentProvider` must be registered |
-| Meetings | Mock link provider | Production refuses the mock; a real adapter (Zoom / Google Meet / Microsoft Teams are the names the startup validation expects) must preserve the live-session lifecycle (DEC-10, `MEET-01`) |
-| Payouts | none (Admin records a reference; no transfer mechanism) | `IPayoutProvider` with an audited manual bank-transfer fallback and, if safely supported, the payment provider's seller payouts (DEC-04, `PAY-04a`) |
+| Payments | Mock provider + simulator (Development, Staging, PreProduction; the UI marks test mode) | Production refuses `Payments:Provider=Mock` and the simulator; a real `IPaymentProvider` must be registered |
+| Meetings | Mock link provider in development; JaaS adapter available | Production refuses the mock; JaaS requires a configured AppID, key ID and private signing key, and must preserve the live-session lifecycle (DEC-10, `MEET-01`) |
+| Payouts | manual bank-transfer adapter with sealed destinations and bank evidence | `IPayoutProvider` with an audited manual bank-transfer fallback and, if safely supported, the payment provider's seller payouts (DEC-04, `PAY-04a`) |
 | Files | Local (dev) / Azure Blob private container | Production requires Azure Blob |
 | Email | Resend | verified sending domain required |
 | AI assistant | Groq, `Ai.Enabled` off outside Development | optional |
-| Hosting | staging on IIS; production host-agnostic deploy hook | **OPEN (DEC-12).** Preferred direction recorded: managed PaaS, single application instance for V1, managed SQL Server-compatible database, private durable object storage, managed secret store, production observability. Provider and physical data region are open pending Saudi data-residency/legal advice and confirmed service availability. |
+| Hosting | PreProduction on IIS (tafseel.runasp.net, see [ENVIRONMENTS.md](../ENVIRONMENTS.md)); production host-agnostic deploy hook | **OPEN (DEC-12).** Preferred direction recorded: managed PaaS, single application instance for V1, managed SQL Server-compatible database, private durable object storage, managed secret store, production observability. Provider and physical data region are open pending Saudi data-residency/legal advice and confirmed service availability. |
 
 ---
 
-## 9. Known intentional gaps (confirmed 2026-09-15)
+## 9. Known intentional gaps
 
 Recorded so they are not rediscovered by every audit. Each has a backlog or blocker entry.
 
 | Gap | Current state (verified) | Tracked |
 |-----|--------------------------|---------|
-| Qualification revoke UI | `POST /teacher-qualifications/{id}/revoke` needs a qualification id; no read endpoint returns one (`OperationalQualifiedSubjectDto` carries the subject id only) | V1.1 `B11-01` |
-| Live-session review | `POST /live-sessions/{bookingId}/review` works; no UI | V1.1 `B11-02` |
 | Order extensions | API exists; UI intentionally not built | V1.1 `B11-03` |
 | Teacher setup ordering | `GET /teachers/me` returns an empty profile until "About you" is saved; the editor shows the lists after that first save | V1.1 `B11-04` (UX copy only) |
 | Docker image CI (G-20) | never built; Docker not installed locally, nothing pushed | blocker `INF-01` |
 | Credential rotation | seed/UAT password in pushed history; four staging host secrets | blockers `SEC-01`, `SEC-02` |
 | Real providers | payments, meetings, payouts not implemented | `PAY-01…03`, `PAY-04a`, `MEET-01` |
-| Money-out / admin finance UX | balance rendered by the generic list; no payout profile, withdrawal, admin payout or refund screens | `FIN-*` |
-| Coupons | admin coupon list exists, toggle broken (J13-04); **no coupon field in checkout**, while the landing promo shows codes | DEC-09, `UX-07` |
+| Coupons | DEC-15 supersedes the DEC-09 deferral: Admin creates and manages codes and promotions; students see a server quote before coupon payment for direct Orders, approved Live Sessions and selected Open Request Offers. The server rejects invalid, expired or mismatched retry codes. An Open Request payment records its coupon terms until the webhook converts it to an Order and creates the redemption. Published admin and direct-order browser journeys passed. | DEC-15, `MARKETING-01` |
 | Emergency premium | API flag only (DEC-07) | DEC-07 |
 | VAT / invoices | absent | DEC-08 (open; legal/tax advice required) |
 | Partial refunds | not implemented; V1 is full refunds only (DEC-05) | V1.1 `B11-21` |

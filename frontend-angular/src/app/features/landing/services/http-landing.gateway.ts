@@ -38,7 +38,7 @@ interface PromotionDto {
   endsAt?: string;
 }
 
-interface StatsDto { students?: number; teachers?: number; subjects?: number }
+interface StatsDto { students?: number; teachers?: number; subjects?: number; completedSessions?: number }
 
 function toPromotion(dto: PromotionDto): Promotion {
   return {
@@ -133,7 +133,8 @@ export class HttpLandingGateway implements LandingGateway {
       .pipe(map(dto => dto ? {
         students: Number.isFinite(dto.students) ? Number(dto.students) : null,
         teachers: Number.isFinite(dto.teachers) ? Number(dto.teachers) : null,
-        subjects: Number.isFinite(dto.subjects) ? Number(dto.subjects) : null
+        subjects: Number.isFinite(dto.subjects) ? Number(dto.subjects) : null,
+        completedSessions: Number.isFinite(dto.completedSessions) ? Number(dto.completedSessions) : null
       } : null));
   }
 }

@@ -3,16 +3,19 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { countText } from '@core/i18n/count-text';
 import { SignalSessionStore } from '@core/auth/services/session.store';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
+import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import {
-  DRAFT_VERSION, PROMPT_LABELS, RequestDraft, RequestableService, composeDescription, preferredDeliveryAt, promptsForService,
-  todayInputValue
+  DRAFT_VERSION, FileRejection, PROMPT_LABELS, REQUEST_FILE_LIMITS, RequestDraft, RequestableService, composeDescription,
+  preferredDeliveryAt, promptsForService, todayInputValue
 } from '../models/learning-request';
 import { CreatedRequest } from '../services/request.ports';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 import {
   AcceptFiles, AssistWithBrief, OpenRequestWizard, SaveRequestDraft,
   SubmitLearningRequest, WizardContext
@@ -34,7 +37,7 @@ const DRAFT_DEBOUNCE_MS = 450;
 @Component({
   selector: 'tf-new-request-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent],
+  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, SkipLinkComponent, FilePickerComponent],
   templateUrl: './new-request-page.component.html',
   styleUrl: './new-request-page.component.css'
 })
@@ -82,6 +85,7 @@ export class NewRequestPageComponent {
   readonly aiAvailable = signal(false);
   readonly draftStatus = signal('');
   readonly created = signal<CreatedRequest | null>(null);
+  readonly fileError = signal('');
   readonly failedFiles = signal<readonly File[]>([]);
 
   private teacherId = '';
@@ -107,9 +111,12 @@ export class NewRequestPageComponent {
     // Persist as the brief changes, debounced so typing is not a write per key.
     effect(() => {
       const snapshot = this.draftSnapshot();
-      if (this.loading() || !this.teacherId) return;
+      // Once sent, the request is no longer a draft: a save still waiting would bring it back as the next
+      // request's starting point (found in the Round 3 UAT: the second request opened at "Review" with the first).
+      if (this.loading() || !this.teacherId || this.created() || this.submitting()) return;
       if (this.draftTimer) clearTimeout(this.draftTimer);
       this.draftTimer = setTimeout(() => {
+        if (this.created() || this.submitting()) return;
         this.saveDraft.execute(this.studentId(), this.teacherId, snapshot);
         this.draftStatus.set(this.t('req_draft_saved', 'Draft saved'));
       }, DRAFT_DEBOUNCE_MS);
@@ -144,6 +151,10 @@ export class NewRequestPageComponent {
     return this.t('req_prompt_' + key, PROMPT_LABELS[key] ?? '');
   }
 
+  promptValue(key: string): string {
+    return this.prompts()[key] || '';
+  }
+
   readonly serviceName = computed(() => {
     const service = this.service();
     if (!service) return '';
@@ -151,6 +162,35 @@ export class NewRequestPageComponent {
       ? (service.serviceNameArabic || service.serviceNameEnglish)
       : (service.serviceNameEnglish || service.serviceNameArabic);
   });
+
+  /** The teacher's name in the reader's language, as the profile they came from showed it. */
+  readonly teacherName = computed(() => {
+    const ctx = this.context();
+    if (!ctx) return '';
+    return this.locale.lang() === 'ar'
+      ? (ctx.teacherName || ctx.teacherNameEnglish || '')
+      : (ctx.teacherNameEnglish || ctx.teacherName || '');
+  });
+
+  /**
+   * Why "Next" cannot be pressed yet. A disabled button on its own says nothing to someone who skipped the
+   * labels; this names the one thing still missing on the step they are on.
+   */
+  readonly missingHint = computed(() => {
+    if (this.canAdvance()) return '';
+    switch (this.step()) {
+      case 1: return this.t('req_missing_title', 'Add a short title to continue.');
+      case 2: return this.t('req_missing_goal', 'Write what you want to achieve to continue.');
+      case 3: return this.deliveryAt() === null
+        ? this.t('req_missing_date', 'Choose the day you need it by to continue.')
+        : this.t('req_missing_budget', 'Enter your budget, or tick “Flexible”, to continue.');
+      default: return this.t('req_missing_terms', 'Tick the box to agree to the Terms, then send your request.');
+    }
+  });
+
+  days(n: number): string {
+    return countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_days', n, '1 day', '{n} days');
+  }
 
   readonly stepLabel = computed(() =>
     `${this.t('req_step', 'Step')} ${this.step()} / ${STEPS}`);
@@ -185,7 +225,7 @@ export class NewRequestPageComponent {
     switch (this.step()) {
       case 1: return this.service() !== null && this.requestTitle().trim().length > 0;
       case 2: return this.goal().trim().length > 0;
-      case 3: return this.deliveryAt() !== null && (this.flexibleBudget() || Number(this.budget()) > 0);
+      case 3: return this.deliveryAt() !== null && (this.flexibleBudget() || this.service()?.price != null || Number(this.budget()) > 0);
       default: return this.agreed();
     }
   });
@@ -197,7 +237,7 @@ export class NewRequestPageComponent {
   readonly canSubmit = computed(() =>
     !this.submitting() && this.agreed()
     && this.deliveryAt() !== null
-    && (this.flexibleBudget() || Number(this.budget()) > 0)
+    && (this.flexibleBudget() || this.service()?.price != null || Number(this.budget()) > 0)
     && this.service() !== null
     && this.requestTitle().trim().length > 0
     && this.goal().trim().length > 0);
@@ -276,21 +316,31 @@ export class NewRequestPageComponent {
     if (this.step() > 1) this.step.set(this.step() - 1);
   }
 
-  onFiles(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const incoming = Array.from(input.files ?? []);
-    input.value = '';
-    if (!incoming.length) return;
+  readonly fileLimits = REQUEST_FILE_LIMITS;
+  readonly fileAccept = ['.pdf', '.jpg', '.jpeg', '.png', '.txt', '.docx', '.pptx', ...REQUEST_FILE_LIMITS.acceptedTypes].join(',');
 
+  addFiles(incoming: readonly File[]): void {
     const { accepted, rejected } = this.acceptFiles.execute(incoming, this.files());
     if (accepted.length) this.files.update(current => [...current, ...accepted]);
-    for (const rejection of rejected) {
-      this.toasts.show(`${rejection.file.name}: ${this.t('req_file_' + rejection.reason, rejection.reason)}`);
+    // UX-21: a refused file is explained under the picker and stays there, not in a toast that disappears.
+    this.fileError.set(rejected.map(({ file, reason }) => this.rejection(file.name, reason)).join(' '));
+  }
+
+  /** Why a file was not added, in words: the reason codes are not copy, and used to reach the toast as-is. */
+  private rejection(name: string, reason: FileRejection): string {
+    switch (reason) {
+      case 'too-large':
+        return this.locale.format('req_file_rejected_large', { name, max: REQUEST_FILE_LIMITS.maxBytes / 1_048_576 }, '{name} is larger than {max} MB.');
+      case 'wrong-type':
+        return this.locale.format('req_file_type_invalid', { name }, '{name} is not an allowed file type.');
+      case 'too-many':
+        return this.locale.format('req_file_limit', { n: REQUEST_FILE_LIMITS.maxFiles }, 'You can attach up to {n} files.');
     }
   }
 
   removeFile(index: number): void {
     this.files.update(current => current.filter((_, i) => i !== index));
+    this.fileError.set('');
   }
 
   async askAssistant(): Promise<void> {
@@ -330,6 +380,7 @@ export class NewRequestPageComponent {
     if (!service || !deliveryAt || !this.canSubmit()) return;
 
     this.submitting.set(true);
+    if (this.draftTimer) clearTimeout(this.draftTimer);
     try {
       const outcome = await this.submitRequest.execute({
         teacherId: this.teacherId,
@@ -337,7 +388,7 @@ export class NewRequestPageComponent {
         title: this.requestTitle().trim(),
         description: this.description(),
         preferredDeliveryAt: deliveryAt,
-        budget: this.flexibleBudget() ? null : Number(this.budget()) || null
+        budget: this.flexibleBudget() || service.price != null ? null : Number(this.budget()) || null
       }, this.files(), this.studentId());
 
       this.created.set(outcome.request);

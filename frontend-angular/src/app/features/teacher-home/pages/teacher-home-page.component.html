@@ -14,8 +14,11 @@
     </div>
   } @else if (home(); as view) {
     <div class="tf-home">
-      <h1 class="tf-home-greeting" data-testid="home-greeting">{{
-        locale.format('th_greeting', { firstName: firstName() }, 'Hi {firstName}') }}</h1>
+      <header class="tf-home-hero">
+        <h1 class="tf-home-greeting" data-testid="home-greeting">{{
+          locale.format('th_greeting', { firstName: firstName() }, 'Hi {firstName}') }}</h1>
+        <p class="tf-home-date">{{ today() }}</p>
+      </header>
 
       @if (setup(); as card) {
         <section class="tf-home-card tf-home-setup" data-testid="home-setup" [attr.data-ready]="card.ready || null">
@@ -35,6 +38,7 @@
       }
 
       @if (!applying()) {
+        <div class="tf-home-main">
         @if (view.actions.length || failed().work || !setup()) {
         <section class="tf-home-section" data-testid="home-actions" aria-labelledby="home-actions-title">
           <h2 id="home-actions-title">{{ t('th_actions_title', 'Needs your attention') }}</h2>
@@ -63,6 +67,10 @@
           } @else {
             <p class="tf-home-quiet" data-testid="home-nothing-needed">{{
               t('th_nothing_needed', 'Nothing needs your attention right now.') }}</p>
+            @if (view.waitingOnStudents) {
+              <p class="tf-home-quiet" data-testid="home-waiting-students">{{ locale.format('th_waiting_students', { n: view.waitingOnStudents },
+                'Waiting for students to pay: {n}. You will be told when payment arrives; there is nothing to do until then.') }}</p>
+            }
           }
           <a class="tf-home-link" data-testid="home-see-work" routerLink="/teacher/work">{{
             t('th_see_all_work', 'See all my work') }}</a>
@@ -108,6 +116,8 @@
           </section>
         }
 
+        </div>
+        <div class="tf-home-rail">
         @if (view.upcoming; as session) {
           <section class="tf-home-section" data-testid="home-upcoming" aria-labelledby="home-upcoming-title">
             <h2 id="home-upcoming-title">{{ t('th_upcoming_title', 'Your next session') }}</h2>
@@ -161,6 +171,7 @@
           </article>
         </section>
         }
+        </div>
       }
     </div>
   }

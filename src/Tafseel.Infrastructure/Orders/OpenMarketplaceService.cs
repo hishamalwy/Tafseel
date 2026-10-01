@@ -34,6 +34,16 @@ internal sealed class OpenMarketplaceService(
             studentId, subject.Id, input.Title, input.Requirements, input.Deadline,
             input.BudgetMin, input.BudgetMax, clock.GetUtcNow());
         request.CaptureServiceIdentity(catalog);
+        if (input.DraftId is { } draftId)
+        {
+            // Upload first: the student's own draft hands its already-scanned files to the request, and goes.
+            var draft = await db.OpenRequestDrafts.Include(x => x.Attachments)
+                .SingleOrDefaultAsync(x => x.Id == draftId && x.StudentId == studentId, ct)
+                ?? throw new DomainException("draft_not_found", "The draft was not found.");
+            foreach (var file in draft.Attachments.OrderBy(x => x.CreatedAt))
+                request.AddAttachment(studentId, file.StorageKey, file.OriginalName, file.ContentType, file.Size, clock.GetUtcNow());
+            db.Remove(draft);
+        }
         db.Add(request);
         await db.SaveChangesAsync(ct);
         return Map(request, subject.Name, subject.NameAr, catalog.Name, catalog.NameAr, 0);
@@ -68,6 +78,42 @@ internal sealed class OpenMarketplaceService(
             var service = services[x.ServiceCatalogItemId!.Value];
             return Map(x, subject.Name, subject.NameAr, service.Name, service.NameAr,
                 counts.GetValueOrDefault(x.Id), myOffers.GetValueOrDefault(x.Id) is { } offer ? MapOwnOffer(offer) : null);
+        }).ToArray(), page, pageSize, total);
+    }
+
+    public async Task<PagedResult<TeacherOfferHistoryDto>> GetMyOffersAsync(
+        string teacherId, int page, int pageSize, CancellationToken ct)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var query = db.TeacherOffers.AsNoTracking().Where(x => x.TeacherId == teacherId);
+        var total = await query.CountAsync(ct);
+        var offers = await query.OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
+        var requestIds = offers.Select(x => x.LearningRequestId).Distinct().ToArray();
+        var requests = await db.LearningRequests.AsNoTracking().Where(x => requestIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.Title, x.SubjectId, x.ServiceCatalogItemId, x.Status, x.SelectedOfferId })
+            .ToDictionaryAsync(x => x.Id, ct);
+        var subjectIds = requests.Values.Select(x => x.SubjectId).OfType<Guid>().Distinct().ToArray();
+        var serviceIds = requests.Values.Select(x => x.ServiceCatalogItemId).OfType<Guid>().Distinct().ToArray();
+        var subjects = await db.Subjects.AsNoTracking().Where(x => subjectIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
+        var services = await db.ServiceCatalogItems.AsNoTracking().Where(x => serviceIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
+        var orders = await db.Orders.AsNoTracking()
+            .Where(x => requestIds.Contains(x.LearningRequestId) && x.TeacherId == teacherId)
+            .Select(x => new { x.Id, x.LearningRequestId }).ToDictionaryAsync(x => x.LearningRequestId, x => x.Id, ct);
+        return new(offers.Select(offer =>
+        {
+            var request = requests[offer.LearningRequestId];
+            var subject = request.SubjectId is { } subjectId ? subjects.GetValueOrDefault(subjectId) : null;
+            var service = request.ServiceCatalogItemId is { } serviceId ? services.GetValueOrDefault(serviceId) : null;
+            var someoneElse = offer.Status == TeacherOfferStatus.NotSelected
+                || request.Status == LearningRequestStatus.ConvertedToOrder && !orders.ContainsKey(request.Id);
+            return new TeacherOfferHistoryDto(
+                offer.Id, request.Id, request.Title,
+                subject?.Name ?? "", subject?.NameAr, service?.Name ?? "", service?.NameAr,
+                offer.Amount, offer.Currency, offer.DeliveryHours, offer.Status, request.Status, someoneElse,
+                orders.TryGetValue(request.Id, out var orderId) ? orderId : null,
+                offer.CreatedAt, offer.UpdatedAt, offer.ValidUntil);
         }).ToArray(), page, pageSize, total);
     }
 

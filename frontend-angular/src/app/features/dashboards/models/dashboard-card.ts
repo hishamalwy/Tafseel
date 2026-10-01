@@ -20,7 +20,7 @@ export interface CardFormat {
   readonly lang: 'ar' | 'en';
   t(key: string, fallback: string): string;
   format(key: string, values: Readonly<Record<string, string | number>>, fallback: string): string;
-  /** Plain-text money: `150 SAR`. */
+  /** Plain-text money: `150 ⃁`. */
   money(value: unknown, currency?: unknown): string;
   /** Date and time in the viewer's zone. */
   date(value: unknown): string;

@@ -16,7 +16,8 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
-import { Attachment, Demand, SOURCING } from '../models/demand';
+import { FilePickerComponent } from '@shared/components/file-picker.component';
+import { Attachment, Demand, REPLY_FILE_LIMITS, SOURCING, replyFileProblem } from '../models/demand';
 import { DraftInvalid, LoadRequest, ManageRequest, RequestView } from '../services/demand.use-cases';
 
 /**
@@ -27,7 +28,7 @@ import { DraftInvalid, LoadRequest, ManageRequest, RequestView } from '../servic
 @Component({
   selector: 'tf-request-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent],
+  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, AcceptRequestDialogComponent, FilePickerComponent],
   templateUrl: './request-detail-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css'
 })
@@ -53,6 +54,10 @@ export class RequestDetailPageComponent {
   readonly busy = signal(false);
   readonly actionError = signal('');
   readonly message = signal('');
+  /** Files the student adds to their answer; sent before the answer itself. */
+  readonly replyFiles = signal<readonly File[]>([]);
+  readonly fileLimits = REPLY_FILE_LIMITS;
+  readonly fileAccept = REPLY_FILE_LIMITS.acceptedTypes.join(',');
   readonly now = signal(Date.now());
 
   readonly viewerId = computed(() => this.session.current()?.userId ?? '');
@@ -92,10 +97,14 @@ export class RequestDetailPageComponent {
   }
 
   async refresh(): Promise<void> {
+    // The request this load is for: moving to another request while an earlier load (say, the reload
+    // after an acceptance) is still in flight must not let that late answer paint the other request.
+    const requestId = this.requestId;
     this.loading.set(true);
     this.loadError.set('');
     try {
-      const view = await this.load.execute(this.requestId, this.viewerId());
+      const view = await this.load.execute(requestId, this.viewerId());
+      if (requestId !== this.requestId) return;
       // Arriving from a completed payment: the order it created is where the student continues.
       if (view.orderId && this.route.snapshot.queryParamMap.get('paid') === '1') {
         await this.router.navigate(['/orders', view.orderId], { replaceUrl: true });
@@ -104,6 +113,7 @@ export class RequestDetailPageComponent {
       this.view.set(view);
       this.title.setTitle(`${view.request.title} — Tafseel`);
     } catch (error) {
+      if (requestId !== this.requestId) return;
       // A teacher opening an open request they were not assigned sees it as an opportunity.
       const roles = this.session.current()?.roles ?? [];
       if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 400) && roles.includes('Teacher')) {
@@ -112,7 +122,7 @@ export class RequestDetailPageComponent {
       }
       this.loadError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
     } finally {
-      this.loading.set(false);
+      if (requestId === this.requestId) this.loading.set(false);
     }
   }
 
@@ -133,7 +143,25 @@ export class RequestDetailPageComponent {
   async reply(): Promise<void> {
     const view = this.view();
     if (!view) return;
-    await this.act(() => this.manage.reply(view.request, this.message()), this.t('demand_reply_sent', 'Reply sent.'), true);
+    await this.act(() => this.manage.reply(view.request, this.message(), this.replyFiles()), this.t('demand_reply_sent', 'Reply sent.'), true);
+  }
+
+  addReplyFiles(incoming: readonly File[], existing: number): void {
+    const kept = [...this.replyFiles()];
+    for (const file of incoming) {
+      const reason = replyFileProblem(file, existing + kept.length);
+      if (!reason) { kept.push(file); continue; }
+      this.toasts.show(reason === 'too-large'
+        ? this.locale.format('req_file_rejected_large', { name: file.name, max: REPLY_FILE_LIMITS.maxBytes / 1_048_576 }, '{name} is larger than {max} MB.')
+        : reason === 'wrong-type'
+          ? this.locale.format('req_file_type_invalid', { name: file.name }, '{name} is not an allowed file type.')
+          : this.locale.format('req_file_limit', { n: REPLY_FILE_LIMITS.maxFiles }, 'You can attach up to {n} files.'));
+    }
+    this.replyFiles.set(kept);
+  }
+
+  removeReplyFile(index: number): void {
+    this.replyFiles.update(current => current.filter((_, i) => i !== index));
   }
 
   async askClarification(): Promise<void> {
@@ -155,7 +183,8 @@ export class RequestDetailPageComponent {
     if (!view) return;
     await this.acceptDialog?.open({
       id: view.request.id, version: view.request.version, title: view.request.title,
-      teacherServiceId: view.request.teacherServiceId, preferredDeliveryAt: view.request.preferredDeliveryAt || null
+      teacherServiceId: view.request.teacherServiceId, preferredDeliveryAt: view.request.preferredDeliveryAt || null,
+      listedPrice: view.request.listedPriceAtRequest ?? null
     });
   }
 
@@ -177,7 +206,7 @@ export class RequestDetailPageComponent {
     this.actionError.set('');
     try {
       await work();
-      if (clearMessage) this.message.set('');
+      if (clearMessage) { this.message.set(''); this.replyFiles.set([]); }
       await this.refresh();
       this.toasts.show(done);
     } catch (error) {

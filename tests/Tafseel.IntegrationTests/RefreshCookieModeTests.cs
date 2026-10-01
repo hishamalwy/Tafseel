@@ -33,6 +33,69 @@ public sealed class SecureRefreshCookieModeTests(TafseelApiFactory factory)
         RefreshCookieFlow.AssertHostCookieContract(cookie);
         RefreshCookieFlow.AssertExpired(cookie);
     }
+
+    // PRODUCT-P1: "sign out all other devices" ends every other sign-in and keeps this one.
+    [Fact]
+    public async Task Signing_out_other_devices_keeps_this_one_and_ends_the_rest()
+    {
+        using var phone = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        using var laptop = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var email = await RefreshCookieFlow.RegisterAndConfirmAsync(factory, phone, "other-devices");
+        Assert.Equal(HttpStatusCode.OK, (await RefreshCookieFlow.LoginAsync(phone, email)).StatusCode);
+        var login = await RefreshCookieFlow.LoginAsync(laptop, email);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var token = (await login.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("accessToken").GetString();
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/sessions/sign-out-others");
+        request.Headers.Authorization = new("Bearer", token);
+        var response = await laptop.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True((await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("signedOut").GetInt32() >= 1);
+
+        Assert.Equal(HttpStatusCode.OK, (await laptop.PostAsync("/api/v1/auth/refresh", null)).StatusCode);
+        Assert.NotEqual(HttpStatusCode.OK, (await phone.PostAsync("/api/v1/auth/refresh", null)).StatusCode);
+    }
+
+    // "Remember me" unticked: the refresh cookie must die with the browser and the server-side
+    // session must be short, and both must survive a refresh rotation. Ticked (or omitted by an
+    // older client) keeps the 30-day persistent cookie.
+    [Fact]
+    public async Task Unticked_remember_me_issues_a_browser_session_cookie_that_stays_one_after_refresh()
+    {
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var email = await RefreshCookieFlow.RegisterAndConfirmAsync(factory, client, "session-cookie");
+
+        var login = await RefreshCookieFlow.LoginAsync(client, email, rememberMe: false);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        RefreshCookieFlow.AssertIssuesHostCookie(login);
+        Assert.DoesNotContain("expires=", Assert.Single(RefreshCookieFlow.SetCookies(login)), StringComparison.OrdinalIgnoreCase);
+
+        var refresh = await client.PostAsync("/api/v1/auth/refresh", null);
+        Assert.Equal(HttpStatusCode.OK, refresh.StatusCode);
+        Assert.DoesNotContain("expires=", Assert.Single(RefreshCookieFlow.SetCookies(refresh)), StringComparison.OrdinalIgnoreCase);
+
+        var session = await RefreshCookieFlow.CurrentSessionAsync(client, refresh);
+        Assert.True(session.ExpiresAt - DateTimeOffset.UtcNow <= TimeSpan.FromHours(12.5),
+            $"A remember-me-off session must be short-lived; it expires at {session.ExpiresAt:O}.");
+    }
+
+    [Fact]
+    public async Task Ticked_or_omitted_remember_me_keeps_the_persistent_cookie()
+    {
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        var email = await RefreshCookieFlow.RegisterAndConfirmAsync(factory, client, "persistent-cookie");
+
+        var ticked = await RefreshCookieFlow.LoginAsync(client, email, rememberMe: true);
+        Assert.Contains("expires=", Assert.Single(RefreshCookieFlow.SetCookies(ticked)), StringComparison.OrdinalIgnoreCase);
+
+        var omitted = await RefreshCookieFlow.LoginAsync(client, email);
+        Assert.Contains("expires=", Assert.Single(RefreshCookieFlow.SetCookies(omitted)), StringComparison.OrdinalIgnoreCase);
+
+        var refresh = await client.PostAsync("/api/v1/auth/refresh", null);
+        Assert.Contains("expires=", Assert.Single(RefreshCookieFlow.SetCookies(refresh)), StringComparison.OrdinalIgnoreCase);
+        var session = await RefreshCookieFlow.CurrentSessionAsync(client, refresh);
+        Assert.True(session.ExpiresAt - DateTimeOffset.UtcNow > TimeSpan.FromDays(29));
+    }
 }
 
 public sealed class StagingCompatibilityRefreshCookieTests(StagingCompatibilityApiFactory factory)
@@ -112,6 +175,24 @@ internal static class RefreshCookieFlow
 
     public static Task<HttpResponseMessage> LoginAsync(HttpClient client, string email) =>
         client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = Password });
+
+    public static Task<HttpResponseMessage> LoginAsync(HttpClient client, string email, bool rememberMe) =>
+        client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = Password, rememberMe });
+
+    /// <summary>The caller's current session, read with the access token the response carried.</summary>
+    public static async Task<AccountSessionView> CurrentSessionAsync(HttpClient client, HttpResponseMessage authenticated)
+    {
+        var token = (await authenticated.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>())
+            .GetProperty("accessToken").GetString();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/sessions");
+        request.Headers.Authorization = new("Bearer", token);
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var sessions = await response.Content.ReadFromJsonAsync<AccountSessionView[]>();
+        return Assert.Single(sessions!, x => x.IsCurrent);
+    }
+
+    public sealed record AccountSessionView(string Id, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt, bool IsCurrent);
 
     public static string[] SetCookies(HttpResponseMessage response) =>
         response.Headers.TryGetValues("Set-Cookie", out var values) ? values.ToArray() : [];

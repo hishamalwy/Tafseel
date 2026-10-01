@@ -79,6 +79,85 @@ public sealed class FinancialSafetyTests : IClassFixture<SqlServerTafseelApiFact
     private const decimal TeacherNet = 85m;
     private const decimal StudentTotal = 108m;
 
+    [Fact]
+    public async Task Coupon_quote_uses_owned_order_total_and_refuses_teacher_and_outsider()
+    {
+        var data = await SeedAsync(couponFixedDiscount: 10);
+        var path = $"/api/v1/payments/orders/{data.OrderId}/coupon-quote";
+        var student = await ClientAsync(data.StudentEmail);
+        var quote = await student.PostAsJsonAsync(path, new { couponCode = data.CouponCode });
+        Assert.Equal(HttpStatusCode.OK, quote.StatusCode);
+        using (var json = JsonDocument.Parse(await quote.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal(108m, json.RootElement.GetProperty("baseAmount").GetDecimal());
+            Assert.Equal(10m, json.RootElement.GetProperty("discountAmount").GetDecimal());
+            Assert.Equal(98m, json.RootElement.GetProperty("chargeAmount").GetDecimal());
+        }
+        var teacher = await ClientAsync(data.TeacherEmail);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await teacher.PostAsJsonAsync(path, new { couponCode = data.CouponCode })).StatusCode);
+        var outsider = await Pass3TestData.CreateUserAsync(factory.Services, Roles.Student);
+        var stranger = await ClientAsync(outsider.Email);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await stranger.PostAsJsonAsync(path, new { couponCode = data.CouponCode })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Retry_cannot_silently_ignore_a_new_coupon_code()
+    {
+        var data = await SeedAsync(couponFixedDiscount: 10);
+        var student = await ClientAsync(data.StudentEmail);
+        await InitiateAsync(student, data.OrderId, "one-payment-attempt", null);
+        var retry = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/payments/orders/{data.OrderId}")
+        {
+            Content = JsonContent.Create(new { couponCode = data.CouponCode })
+        };
+        retry.Headers.TryAddWithoutValidation("Idempotency-Key", "one-payment-attempt");
+        var response = await student.SendAsync(retry);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal("payment_coupon_mismatch", await CodeAsync(response));
+    }
+
+    [Fact]
+    public async Task Selected_open_request_coupon_records_a_discount_without_an_order_yet()
+    {
+        var data = await SeedMarketplaceAsync();
+        var code = "OPEN" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            db.Add(new Coupon("Open request coupon", code, CouponDiscountType.Fixed, 10, null,
+                factory.Clock.GetUtcNow()));
+            await db.SaveChangesAsync();
+        }
+        var student = await ClientAsync(data.StudentEmail);
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/payments/open-requests/{data.RequestId}")
+        {
+            Content = JsonContent.Create(new { couponCode = code })
+        };
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", "open-coupon-" + data.RequestId);
+        var response = await student.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var paymentJson = JsonDocument.Parse(await response.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("payment");
+        var reference = paymentJson.GetProperty("providerReference").GetString()!;
+        await using var check = factory.Services.CreateAsyncScope();
+        var payments = check.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        var pending = await payments.Payments.SingleAsync(x => x.LearningRequestId == data.RequestId);
+        Assert.Equal(98m, pending.Amount);
+        Assert.NotNull(pending.PendingCouponId);
+        Assert.Equal(10m, pending.PendingCouponDiscount);
+        Assert.False(await payments.CouponRedemptions.AnyAsync(x => x.PaymentId == pending.Id));
+        (await WebhookAsync(Payload("open-coupon-confirm-" + pending.Id, reference, 98m, "SAR", true)))
+            .EnsureSuccessStatusCode();
+        payments.ChangeTracker.Clear();
+        var confirmed = await payments.Payments.SingleAsync(x => x.Id == pending.Id);
+        var redemption = await payments.CouponRedemptions.SingleAsync(x => x.PaymentId == pending.Id);
+        Assert.Equal(confirmed.OrderId, redemption.OrderId);
+        Assert.Equal(10m, redemption.DiscountAmount);
+    }
+
     // ---------------------------------------------------------------- FR-1: coupon-aware allocation
 
     [Theory]
@@ -725,8 +804,9 @@ public sealed class FinancialSafetyTests : IClassFixture<SqlServerTafseelApiFact
         {
             legalName = "Verified Teacher",
             countryCode = "SA",
-            payoutMethod = "Bank transfer",
-            destinationLabel = "IBAN •••• 1234",
+            payoutMethod = "bank_transfer",
+            bankName = "Test Bank",
+            iban = "SA0380000000608010167519",
             identityLast4 = "1234"
         });
         submitted.EnsureSuccessStatusCode();

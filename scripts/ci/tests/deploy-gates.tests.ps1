@@ -30,6 +30,8 @@ function Assert-True {
 $expectedGates = @(
   "build-and-provider-neutral",
   "sql-server",
+  "frontend-unit",
+  "browser-journeys",
   "publish-smoke",
   "dependencies-and-secrets",
   "codeql-csharp",

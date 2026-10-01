@@ -1,11 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of } from 'rxjs';
-import { LiveSessionLike, OfferLike, OpenRequestLike, OrderLike, Payable } from '../models/payable';
+import { LiveSessionLike, OfferLike, OpenRequestLike, OpenRequestPaymentQuote, OrderLike, Payable } from '../models/payable';
 import { BookableService, BookingDraft, Slot, toDateKey } from '../models/booking';
 import {
   BookableTeacher, BookingGateway, CreatedBooking,
-  MockCheckoutGateway, MockCheckoutSession, MockCompletion,
+  MockCheckoutGateway, MockCheckoutSession, MockCompletion, CouponCheckoutQuote,
   PayableGateway, PaymentGateway, PaymentInitiation, TeacherSummary
 } from '../services/checkout.ports';
 
@@ -79,21 +79,31 @@ export class HttpPayableGateway implements PayableGateway {
   offers(learningRequestId: string): Observable<readonly OfferLike[]> {
     return this.http.get<OfferLike[]>(`/api/v1/open-marketplace/requests/${encodeURIComponent(learningRequestId)}/offers`);
   }
+
+  openRequestQuote(learningRequestId: string): Observable<OpenRequestPaymentQuote> {
+    return this.http.get<OpenRequestPaymentQuote>(
+      `/api/v1/payments/open-requests/${encodeURIComponent(learningRequestId)}/quote`);
+  }
 }
 
 @Injectable()
 export class HttpPaymentGateway implements PaymentGateway {
   private readonly http = inject(HttpClient);
 
-  initiate(payable: Payable, idempotencyKey: string): Observable<PaymentInitiation> {
+  initiate(payable: Payable, idempotencyKey: string, couponCode: string | null): Observable<PaymentInitiation> {
     return this.http
       .post<{ checkoutReference?: string; payment?: { providerReference?: string } }>(
-        Payable.paymentPath(payable), {},
+        Payable.paymentPath(payable), couponCode ? { couponCode } : {},
         { headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey }) })
       .pipe(map(result => ({
         checkoutReference:
           result.checkoutReference || result.payment?.providerReference || ''
       })));
+  }
+
+  quoteCoupon(payable: Payable, code: string): Observable<CouponCheckoutQuote> {
+    return this.http.post<CouponCheckoutQuote>(
+      `${Payable.paymentPath(payable)}/coupon-quote`, { couponCode: code });
   }
 
   mockSimulatorEnabled(): Observable<boolean> {
@@ -148,6 +158,20 @@ function isConfirmed(status: number | string | undefined): boolean {
   return Number(status) === 1 || String(status).toLowerCase() === 'confirmed';
 }
 
+/** A service as the public teacher profile returns it; a live offering's `price` is per hour. */
+function toBookableService(x: Record<string, unknown>): BookableService {
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  return {
+    id: String(x['id'] ?? ''),
+    currency: String(x['currency'] ?? 'SAR'),
+    allowedDurations: Array.isArray(x['allowedDurations']) ? (x['allowedDurations'] as unknown[]).map(Number) : [],
+    canBook: x['canBook'] === true,
+    serviceCatalogCode: String(x['serviceCatalogCode'] ?? ''),
+    basePrice: n(x['basePrice']) ?? n(x['price']),
+    emergencyPremiumAmount: n(x['emergencyPremiumAmount'])
+  };
+}
+
 @Injectable()
 export class HttpBookingGateway implements BookingGateway {
   private readonly http = inject(HttpClient);
@@ -156,14 +180,14 @@ export class HttpBookingGateway implements BookingGateway {
     return this.http
       .get<{
         id?: string; userId?: string; hasAvatar?: boolean;
-        fullName?: string; fullNameEnglish?: string; services?: BookableService[];
+        fullName?: string; fullNameEnglish?: string; services?: Record<string, unknown>[];
       }>(`/api/v1/teachers/${encodeURIComponent(teacherId)}`)
       .pipe(map(dto => ({
         id: dto.id ?? dto.userId ?? teacherId,
         hasAvatar: !!dto.hasAvatar,
         fullName: dto.fullName ?? '',
         fullNameEnglish: dto.fullNameEnglish ?? '',
-        services: dto.services ?? []
+        services: (dto.services ?? []).map(toBookableService)
       })));
   }
 

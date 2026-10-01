@@ -28,6 +28,8 @@ export interface AgreedPriceSource {
   /** The offering price when the student sent the request; null for open and historical requests. */
   readonly listedPriceAtRequest?: unknown;
   readonly listedCurrencyAtRequest?: unknown;
+  /** The teacher's own words for a price that differs from the listed one (DEC-UX-03). */
+  readonly priceChangeReason?: unknown;
 }
 
 export interface PriceRow {

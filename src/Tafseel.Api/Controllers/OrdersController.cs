@@ -107,8 +107,37 @@ public sealed class LearningRequestsController(IOrderService orders) : Controlle
 
 [ApiController]
 [Route("api/v1/open-marketplace")]
-public sealed class OpenMarketplaceController(IOpenMarketplaceService marketplace) : ControllerBase
+public sealed class OpenMarketplaceController(
+    IOpenMarketplaceService marketplace, IOpenRequestDraftService drafts) : ControllerBase
 {
+    // Upload first (Product Contract §7a): the student's own draft. 204 when there is none yet.
+    [Authorize(Roles = Roles.Student), HttpGet("drafts/current")]
+    public async Task<IActionResult> CurrentDraft(CancellationToken ct) =>
+        await drafts.GetCurrentAsync(UserId(), ct) is { } draft ? Ok(draft) : NoContent();
+
+    [Authorize(Roles = Roles.Student), HttpPut("drafts/current")]
+    public Task<OpenRequestDraftDto> SaveDraft(SaveOpenRequestDraft input, CancellationToken ct) =>
+        drafts.SaveAsync(UserId(), input, ct);
+
+    [Authorize(Roles = Roles.Student), EnableRateLimiting("upload"), RequestSizeLimit(50 * 1024 * 1024)]
+    [HttpPost("drafts/current/attachments")]
+    public async Task<OpenRequestDraftDto> AddDraftAttachment(IFormFile file, CancellationToken ct)
+    {
+        await using var stream = file.OpenReadStream();
+        return await drafts.AddAttachmentAsync(UserId(), stream, file.FileName, file.ContentType, file.Length, ct);
+    }
+
+    [Authorize(Roles = Roles.Student), HttpDelete("drafts/current/attachments/{attachmentId:guid}")]
+    public Task<OpenRequestDraftDto> RemoveDraftAttachment(Guid attachmentId, CancellationToken ct) =>
+        drafts.RemoveAttachmentAsync(UserId(), attachmentId, ct);
+
+    [Authorize(Roles = Roles.Student), HttpDelete("drafts/current")]
+    public async Task<IActionResult> DiscardDraft(CancellationToken ct)
+    {
+        await drafts.DiscardAsync(UserId(), ct);
+        return NoContent();
+    }
+
     [Authorize(Roles = Roles.Student), HttpPost("requests")]
     public async Task<IActionResult> Publish(CreateOpenLearningRequest input, CancellationToken ct)
     {
@@ -145,6 +174,11 @@ public sealed class OpenMarketplaceController(IOpenMarketplaceService marketplac
         await marketplace.WithdrawOfferAsync(UserId(), id, version, ct);
         return NoContent();
     }
+
+    [Authorize(Roles = Roles.Teacher), HttpGet("offers/mine")]
+    public Task<PagedResult<TeacherOfferHistoryDto>> MyOffers(
+        int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+        marketplace.GetMyOffersAsync(UserId(), page, pageSize, ct);
 
     [Authorize(Roles = Roles.Teacher), HttpGet("requests/{requestId:guid}/my-offer")]
     public Task<TeacherOfferDto> MyOffer(Guid requestId, CancellationToken ct) =>

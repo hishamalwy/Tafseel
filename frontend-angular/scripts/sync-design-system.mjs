@@ -64,6 +64,8 @@ const sharedCss = sections
 rmSync(cssTo, { force: true });
 mkdirSync(dirname(cssTo), { recursive: true });
 writeFileSync(cssTo, sharedCss);
-writeFileSync(landingCssTo, `/* Generated from css/tafseel.css by sync-design-system.mjs. */\n${sections.map(x => x.content).join('\n\n')}\n`);
+const landingCss = `/* Generated from css/tafseel.css by sync-design-system.mjs. */\n${sections.map(x => x.content).join('\n\n')}\n`;
+if (!existsSync(landingCssTo) || readFileSync(landingCssTo, 'utf8') !== landingCss)
+  writeFileSync(landingCssTo, landingCss);
 const rewritten = (readFileSync(cssFrom, 'utf8').match(/\.\.\/assets\//g) ?? []).length;
 console.log(`synced ${cssFrom} -> ${cssTo} + lazy landing CSS (${rewritten} asset urls rewritten)`);

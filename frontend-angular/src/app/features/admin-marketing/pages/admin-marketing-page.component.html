@@ -1,0 +1,64 @@
+<tf-workspace-shell role="Admin" section="marketplace">
+  <div class="tf-marketing">
+    <header class="tf-marketing__header">
+      <span class="tf-page-header-eyebrow">{{ t('marketing_eyebrow', 'Marketplace') }}</span>
+      <h1>{{ t('marketing_title', 'Campaigns & discounts') }}</h1>
+      <p>{{ t('marketing_intro', 'Publish a message on the home page or create a code students can use at checkout.') }}</p>
+    </header>
+    <nav class="tf-marketing__tabs" [attr.aria-label]="t('marketing_tabs', 'Marketing tools')">
+      <a routerLink="/admin/marketing/coupons" [attr.aria-current]="tab === 'coupons' ? 'page' : null">{{ t('marketing_coupons', 'Discount codes') }}</a>
+      <a routerLink="/admin/marketing/promotions" [attr.aria-current]="tab === 'promotions' ? 'page' : null">{{ t('marketing_promotions', 'Home page promotions') }}</a>
+    </nav>
+    @if (loading()) { <div class="tf-state" role="status">{{ t('common_loading', 'Loading…') }}</div> }
+    @if (error()) { <div class="tf-alert" data-kind="error" role="alert">{{ error() }} <button type="button" class="tf-button tf-button-secondary" (click)="load()">{{ t('common_retry', 'Retry') }}</button></div> }
+    @if (!loading() && tab === 'coupons') {
+      <section class="tf-marketing__panel" aria-labelledby="coupon-create-title">
+        <div class="tf-marketing__panel-head"><h2 id="coupon-create-title">{{ t('marketing_new_coupon', 'New discount code') }}</h2><p>{{ t('marketing_coupon_hint', 'The code becomes usable as soon as you create it.') }}</p></div>
+        <form class="tf-marketing__form" (submit)="createCoupon(); $event.preventDefault()">
+          <label class="tf-field"><span>{{ t('admin_coupon_name', 'Internal name') }}</span><input required maxlength="200" [value]="coupon().name" (input)="patchCoupon({ name: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('admin_coupon_code', 'Coupon code') }}</span><input required maxlength="40" autocomplete="off" [value]="coupon().code" (input)="patchCoupon({ code: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('admin_coupon_type', 'Discount type') }}</span><select [value]="coupon().discountType" (change)="patchCoupon({ discountType: +$any($event.target).value })"><option value="0">{{ t('admin_coupon_type_percent', 'Percent') }}</option><option value="1">{{ t('admin_coupon_type_fixed', 'Fixed amount') }}</option></select></label>
+          <label class="tf-field"><span>{{ t('admin_coupon_value', 'Discount value') }}</span><input required type="number" min="0.01" [max]="coupon().discountType === 0 ? 100 : 1000000" step="0.01" [value]="coupon().discountValue" (input)="patchCoupon({ discountValue: +$any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('marketing_expires_optional', 'Expires (optional)') }}</span><input type="datetime-local" (change)="patchCoupon({ expiresAt: expiry($any($event.target).value) })"></label>
+          <button type="submit" class="tf-button" [disabled]="busy() || !coupon().name.trim() || !coupon().code.trim()">{{ busy() ? t('common_saving', 'Saving…') : t('marketing_create_coupon', 'Create code') }}</button>
+        </form>
+      </section>
+      <section class="tf-marketing__list" aria-labelledby="coupon-list-title">
+        <h2 id="coupon-list-title">{{ t('marketing_existing_coupons', 'Your codes') }}</h2>
+        @for (item of coupons(); track item.id) {
+          <article class="tf-marketing__item" data-testid="admin-coupon">
+            <div><strong class="tf-marketing__code">{{ item.code }}</strong><span>{{ item.name }}</span><small>{{ item.discountValue }}{{ item.discountType === 0 ? '%' : ' ﷼' }} · {{ t('marketing_expiry', 'Expires') }} {{ date(item.expiresAt) }}</small></div>
+            <button type="button" class="tf-button tf-button-secondary" [disabled]="busy()" (click)="toggleCoupon(item)">{{ item.isActive ? t('marketing_disable', 'Pause') : t('marketing_enable', 'Activate') }}</button>
+          </article>
+        } @empty { <p class="tf-muted">{{ t('marketing_no_coupons', 'No codes yet.') }}</p> }
+      </section>
+    }
+    @if (!loading() && tab === 'promotions') {
+      <section class="tf-marketing__panel" aria-labelledby="promotion-create-title">
+        <div class="tf-marketing__panel-head"><h2 id="promotion-create-title">{{ t('marketing_new_promotion', 'New home page promotion') }}</h2><p>{{ t('marketing_promotion_hint', 'Write the message in both languages so visitors see the right version.') }}</p></div>
+        <form class="tf-marketing__form" (submit)="createPromotion(); $event.preventDefault()">
+          <label class="tf-field"><span>{{ t('marketing_promotion_type', 'Type') }}</span><select [value]="promotion().kind" (change)="patchPromotion({ kind: +$any($event.target).value, couponCode: '' })"><option value="2">{{ t('marketing_announcement', 'Announcement') }}</option><option value="0">{{ t('marketing_discount', 'Discount') }}</option><option value="4">{{ t('marketing_event', 'Event') }}</option></select></label>
+          <label class="tf-field"><span>{{ t('marketing_title_ar', 'Arabic title') }}</span><input required maxlength="160" dir="rtl" [value]="promotion().titleAr" (input)="patchPromotion({ titleAr: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('marketing_title_en', 'English title') }}</span><input required maxlength="160" dir="ltr" [value]="promotion().titleEn" (input)="patchPromotion({ titleEn: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('marketing_body_ar', 'Arabic description') }}</span><textarea maxlength="400" rows="3" dir="rtl" [value]="promotion().bodyAr" (input)="patchPromotion({ bodyAr: $any($event.target).value })"></textarea></label>
+          <label class="tf-field"><span>{{ t('marketing_body_en', 'English description') }}</span><textarea maxlength="400" rows="3" dir="ltr" [value]="promotion().bodyEn" (input)="patchPromotion({ bodyEn: $any($event.target).value })"></textarea></label>
+          @if (promotion().kind === 0) {
+            <label class="tf-field"><span>{{ t('admin_coupon_code', 'Coupon code') }}</span><select required [value]="promotion().couponCode" (change)="patchPromotion({ couponCode: $any($event.target).value })"><option value="">{{ t('marketing_choose_coupon', 'Choose an active code') }}</option>@for (code of usableCoupons(); track code.id) { <option [value]="code.code">{{ code.code }}</option> }</select></label>
+          }
+          <label class="tf-field"><span>{{ t('marketing_expires_optional', 'Ends (optional)') }}</span><input type="datetime-local" (change)="patchPromotion({ endsAt: expiry($any($event.target).value) })"></label>
+          <button type="submit" class="tf-button" [disabled]="busy() || !promotion().titleAr.trim() || !promotion().titleEn.trim() || (promotion().kind === 0 && !promotion().couponCode)">{{ busy() ? t('common_saving', 'Saving…') : t('marketing_publish', 'Publish promotion') }}</button>
+        </form>
+      </section>
+      <section class="tf-marketing__list" aria-labelledby="promotion-list-title">
+        <h2 id="promotion-list-title">{{ t('marketing_existing_promotions', 'Your promotions') }}</h2>
+        @for (item of promotions(); track item.id) {
+          <article class="tf-marketing__item" data-testid="admin-promotion">
+            <div><strong>{{ locale.lang() === 'ar' ? item.titleAr : item.titleEn }}</strong><span>{{ item.couponCode || (locale.lang() === 'ar' ? item.bodyAr : item.bodyEn) }}</span><small>{{ item.isLive ? t('marketing_live', 'Live') : item.isActive ? t('marketing_scheduled', 'Scheduled') : t('marketing_paused', 'Paused') }}</small></div>
+            <button type="button" class="tf-button tf-button-secondary" [disabled]="busy()" (click)="togglePromotion(item)">{{ item.isActive ? t('marketing_disable', 'Pause') : t('marketing_enable', 'Activate') }}</button>
+          </article>
+        } @empty { <p class="tf-muted">{{ t('marketing_no_promotions', 'No promotions yet.') }}</p> }
+      </section>
+    }
+  </div>
+</tf-workspace-shell>
+<tf-toast />

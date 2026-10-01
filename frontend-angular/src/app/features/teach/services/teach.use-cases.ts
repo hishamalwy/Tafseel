@@ -43,7 +43,8 @@ export class LoadTeachWorkspace {
       firstValueFrom(this.gateway.profile()),
       firstValueFrom(this.gateway.applications()),
       firstValueFrom(this.gateway.lifecycle()),
-      firstValueFrom(this.gateway.qualifications())
+      firstValueFrom(this.gateway.qualifications()),
+      firstValueFrom(this.gateway.openSubjectIds())
     ] as const);
 
     const at = <T>(index: number, fallback: T): T => {
@@ -58,11 +59,18 @@ export class LoadTeachWorkspace {
     const qualifications = at<readonly QualificationCard[]>(5, []);
 
     const selectableSubjects =
-      Application.selectableSubjects(subjects, applications, lifecycle, qualifications);
+      Application.selectableSubjects(subjects, applications, lifecycle, qualifications,
+        at<ReadonlySet<string> | null>(6, null));
 
     // "Apply for another subject" deliberately starts with no current
-    // application, so the wizard opens on a blank details step.
-    const current = options.additional ? null : Application.preferred(applications);
+    // application, so the wizard opens on a blank details step — unless the
+    // teacher was sent here for a subject whose application is still in flight
+    // (for example, changes were requested): that application opens instead of
+    // a blank form for some other subject.
+    const inFlight = options.preferredSubjectId
+      ? applications.find(a => a.subjectId === options.preferredSubjectId && Application.isOpen(a)) ?? null
+      : null;
+    const current = inFlight ?? (options.additional ? null : Application.preferred(applications));
 
     return {
       subjects,

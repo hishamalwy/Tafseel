@@ -453,9 +453,19 @@ internal sealed class TeacherApplicationService(
             .Concat(reviews.Select(x => x.ReviewerId))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct().ToArray();
+        var qualification = await db.TeacherSubjectQualifications.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.TeacherId == application.TeacherId && x.SubjectId == application.SubjectId, ct);
+        if (qualification?.RevokedByUserId is { } revokedBy) actorIds = [.. actorIds, revokedBy];
         var names = await db.Users.AsNoTracking()
             .Where(x => actorIds.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id, x => x.FullName, ct);
+        SubjectQualificationDto? qualificationDto = null;
+        if (qualification is not null)
+            qualificationDto = new(qualification.Id, qualification.IsActive, qualification.ApprovedAt, qualification.RevokedAt,
+                qualification.RevocationReason,
+                qualification.RevokedByUserId is null ? null : names.GetValueOrDefault(qualification.RevokedByUserId),
+                await db.TeacherServices.CountAsync(x => x.TeacherId == application.TeacherId
+                    && x.SubjectId == application.SubjectId && x.IsActive, ct));
         return new(
             mapped,
             history.Select(x => new TeacherApplicationHistoryItemDto(
@@ -463,7 +473,8 @@ internal sealed class TeacherApplicationService(
                 names.GetValueOrDefault(x.ActorId), x.Note)).ToArray(),
             reviews.Select(x => new TeacherApplicationReviewSummaryDto(
                 x.CreatedAt, x.Decision, x.Comment,
-                names.GetValueOrDefault(x.ReviewerId), x.InternalNotes)).ToArray());
+                names.GetValueOrDefault(x.ReviewerId), x.InternalNotes)).ToArray(),
+            qualificationDto);
     }
 
     public async Task StartReviewAsync(
@@ -543,14 +554,24 @@ internal sealed class TeacherApplicationService(
             {
                 var title = await db.QualificationTopics.Where(x => x.Id == application.QualificationTopicId)
                     .Select(x => x.Name).SingleAsync(ct);
-                db.TeacherTeachingSamples.Add(TeacherTeachingSample.FromQualificationDemo(
+                var sample = TeacherTeachingSample.FromQualificationDemo(
                     application.TeacherId, application.SubjectId, title, demo.StorageKey,
                     demo.DurationSeconds, application.Id, demo.Id, application.QualificationTopicId,
-                    reviewerId, now));
+                    reviewerId, now);
+                // DEC-UX-01: the demo was recorded as review material. It becomes a sample the teacher can
+                // show, but nobody sees it on the profile until the teacher explicitly chooses to show it.
+                sample.SetProfileVisibility(false, now);
+                db.TeacherTeachingSamples.Add(sample);
             }
         }
         await notifications.QueueAsync(application.TeacherId, "ApplicationDecision",
-            $"Teacher application {input.Decision}", input.Comment ?? "Your application was reviewed.",
+            input.Decision switch
+            {
+                ReviewDecision.Approve => "Your teaching application was approved",
+                ReviewDecision.RequestChanges => "Changes requested on your teaching application",
+                _ => "Your teaching application was not approved"
+            },
+            input.Comment ?? "Your application was reviewed.",
             AppRoutes.TeacherApply,
             $"application:{application.Id}:review:{application.Reviews.Last().Id}",
             true, ct);
@@ -603,9 +624,27 @@ internal sealed class TeacherApplicationService(
                     "Teacher Showcase hidden because its subject qualification was revoked.",
                     $"qualification:{qualification.Id}:showcase:{sample.Id}");
         }
+        // A reused application video in this subject stops being the public introduction, and its consent ends.
+        var intro = await db.TeacherIntroVideos.SingleOrDefaultAsync(x => x.TeacherId == qualification.TeacherId
+            && x.Source == IntroVideoSource.ApplicationVideo && x.SourceSubjectId == qualification.SubjectId, ct);
+        if (intro is not null)
+        {
+            intro.Hide(now);
+            foreach (var consent in await db.TeacherVideoConsents
+                         .Where(x => x.TeacherId == qualification.TeacherId && x.WithdrawnAt == null).ToArrayAsync(ct))
+                consent.Withdraw(now);
+        }
+        audit.Add(reviewerId, "QualificationRevoked", "TeacherSubjectQualification", qualification.Id.ToString(),
+            // The full reason is kept on the qualification itself; the audit line holds up to 2000 characters.
+            $"Qualification withdrawn; {services.Length} service(s) paused. Reason: {qualification.RevocationReason}" is { Length: > 2000 } line
+                ? line[..1999] + "…"
+                : $"Qualification withdrawn; {services.Length} service(s) paused. Reason: {qualification.RevocationReason}",
+            $"qualification:{qualification.Id}:revoked");
         await notifications.QueueAsync(
-            qualification.TeacherId, "QualificationRevoked", "Subject qualification updated",
-            input.Reason, AppRoutes.TeacherApply,
+            qualification.TeacherId, "QualificationRevoked", "Subject qualification withdrawn",
+            // The full reason stays on the qualification and in the audit; a notification holds up to 1000 characters.
+            (qualification.RevocationReason ?? input.Reason) is { Length: > 1000 } longReason ? longReason[..999] + "…" : qualification.RevocationReason ?? input.Reason,
+            AppRoutes.TeacherApply,
             $"qualification-revoked:{qualification.Id}", email: true, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
@@ -643,7 +682,7 @@ internal sealed class TeacherApplicationService(
         var hasAvailability = await db.TeacherAvailabilityRules.AsNoTracking()
             .AnyAsync(x => x.TeacherId == teacherId, ct);
         var hasPublicSample = await db.TeacherTeachingSamples.AsNoTracking()
-            .AnyAsync(x => x.TeacherId == teacherId && x.PublishedAt != null
+            .AnyAsync(x => x.TeacherId == teacherId && x.PublishedAt != null && x.IsProfileVisible
                 && approvedSubjectIds.Contains(x.SubjectId), ct);
         var activeQualifiedServices = await (
             from service in db.TeacherServices.AsNoTracking()

@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { countText } from '@core/i18n/count-text';
 import { SignalSessionStore } from '@core/auth/services/session.store';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
@@ -44,6 +45,8 @@ export class TeacherProfilePageComponent {
   readonly favouriteBusy = signal(false);
 
   private readonly teacherId = this.route.snapshot.paramMap.get('teacherId') ?? '';
+  /** What a report from this profile is about (help and abuse intake). */
+  readonly reportAbout = `teacher:${this.teacherId}`;
 
   constructor() {
     void this.load();
@@ -63,7 +66,7 @@ export class TeacherProfilePageComponent {
 
   readonly avatar = computed(() => {
     const teacher = this.teacher();
-    return this.fmt.avatarUrl(teacher?.id, !!teacher?.hasAvatar, null, this.name());
+    return this.fmt.avatarUrl(teacher?.id, !!teacher?.hasAvatar, null, 'teacher');
   });
 
   /** Headline and bio each have a localized and an English field. */
@@ -93,8 +96,8 @@ export class TeacherProfilePageComponent {
       case 'duration': return wording.minutes.length
         ? this.locale.format('tp_session_minutes', { minutes: wording.minutes.join(' / ') }, '{minutes} min session')
         : this.t('tp_live_session', 'Live session');
-      case 'hours': return this.locale.format('tp_hours_n', { n: wording.value }, '{n} hours');
-      case 'days': return `${wording.value} ${this.t('tp_days', 'days')}`;
+      case 'hours': return countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_hours', wording.value, '1 hour', '{n} hours');
+      case 'days': return countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_days', wording.value, '1 day', '{n} days');
       default: return this.t('tp_flexible', 'Flexible');
     }
   }
@@ -146,9 +149,14 @@ export class TeacherProfilePageComponent {
   }
 
   /** A qualification sample is the trusted one; a showcase is teacher-supplied. */
+  sampleTitle(sample: { trustCode: string; title: string }): string {
+    if (sample.trustCode === 'intro') return this.t('tp_intro_video', 'Introduction video');
+    return sample.title || this.t('tp_samples', 'Teaching samples');
+  }
+
   sampleTrustLabel(sample: { trustCode: string }): string {
     const code = (sample.trustCode || '').toLowerCase();
-    if (!code) return '';
+    if (!code || code === 'intro') return '';
     return code.includes('qualification')
       ? this.t('tp_sample_qualification', 'Qualification sample')
       : this.t('tp_sample_showcase', 'Teacher showcase');
@@ -206,10 +214,6 @@ export class TeacherProfilePageComponent {
   stars(rating: number): readonly string[] {
     return Array.from({ length: 5 }, (_, i) =>
       i < Math.round(rating) ? 'is-on' : 'is-off');
-  }
-
-  initials(name: string): string {
-    return name.trim().split(/\s+/).slice(0, 2).map(part => part[0] ?? '').join('');
   }
 
   private step(delta: number): void {

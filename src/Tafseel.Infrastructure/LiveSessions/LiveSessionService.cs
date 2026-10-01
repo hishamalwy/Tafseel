@@ -347,8 +347,8 @@ internal sealed class LiveSessionService(
                 _fees.TeacherCommissionPercent);
             booking.CaptureServiceIdentity(service.Type);
             db.Add(booking);
-            await notifications.QueueAsync(booking.TeacherId, "SessionBooking", "New live-session booking",
-                booking.Title, AppRoutes.LiveSession(booking.Id), $"session:{booking.Id}:booked", true, ct);
+            await notifications.QueueAsync(booking.TeacherId, "SessionRequest", "New live-session request",
+                booking.Title, AppRoutes.LiveSession(booking.Id), $"session:{booking.Id}:requested", true, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             return Map(booking);
@@ -365,6 +365,36 @@ internal sealed class LiveSessionService(
         {
             throw Conflict();
         }
+    }
+
+    public async Task RespondToRequestAsync(
+        string teacherId, Guid id, bool accept, string version, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        try
+        {
+            var booking = await db.LiveSessionBookings.SingleOrDefaultAsync(
+                    x => x.Id == id && x.TeacherId == teacherId, ct)
+                ?? throw new DomainException("session_not_owned", "Live session was not found.");
+            ApplyVersion(booking, version);
+            if (accept)
+            {
+                await LockScheduleAsync(booking.TeacherId, ct);
+                await RequireAvailableAsync(booking.TeacherId, booking.StartsAt, booking.EndsAt, booking.Id, ct);
+                await RequireNoConflictAsync(booking.TeacherId, booking.StartsAt, booking.EndsAt, booking.Id, ct);
+            }
+            booking.RespondToRequest(teacherId, accept, clock.GetUtcNow());
+            await notifications.QueueAsync(booking.StudentId,
+                accept ? "SessionRequestAccepted" : "SessionRequestDeclined",
+                accept ? "Live-session request accepted" : "Live-session request declined",
+                booking.Title, AppRoutes.LiveSession(booking.Id),
+                $"session:{booking.Id}:request-response", true, ct);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateException) { throw Conflict(); }
+        catch (SqlException) { throw Conflict(); }
+        catch (InvalidOperationException exception) when (ContainsSqlException(exception)) { throw Conflict(); }
     }
 
     public async Task<PagedResult<LiveSessionDto>> GetMineAsync(
@@ -567,7 +597,11 @@ internal sealed class LiveSessionService(
         var now = clock.GetUtcNow();
         if (now < validFrom || now > validUntil)
             throw new DomainException("join_window_closed", "The live session join window is closed.");
-        return new(await links.GetJoinUrlAsync(booking.Id, booking.JoinKey, ct), validFrom, validUntil);
+        var displayName = await db.Users.AsNoTracking().Where(x => x.Id == userId)
+            .Select(x => x.FullName).SingleAsync(ct);
+        var link = await links.GetJoinLinkAsync(booking.Id, booking.JoinKey, userId,
+            displayName, booking.TeacherId == userId, validFrom, validUntil, ct);
+        return new(link.Url, validFrom, validUntil, link.RoomName, link.Jwt, link.ExternalApiUrl);
     }
 
     private async Task<string> RequireAvailableAsync(

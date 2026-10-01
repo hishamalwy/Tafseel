@@ -86,6 +86,21 @@ describe('HttpRequestGateway', () => {
       status: 'unavailable', message: 'AI assistance is not available right now.', suggestion: null
     });
   });
+  it('names each requestable service from the public profile, whose fields are nameEn/nameAr, not serviceName*', async () => {
+    const teacher = firstValueFrom(gateway.requestTeacher('teacher-1'));
+    backend.expectOne('/api/v1/teachers/teacher-1').flush({ fullName: 'معلمة', fullNameEnglish: 'Teacher A', services: [{
+      id: 's1', subjectId: 'sub', serviceCatalogCode: 'recorded_explanation', title: 'Custom recorded explanation',
+      nameEn: 'Custom recorded explanation', nameAr: 'شرح مسجّل مخصص', price: 150, currency: 'SAR',
+      deliveryHours: 48, canRequest: true, requiresScheduling: false
+    }] });
+
+    expect((await teacher).fullNameEnglish).toBe('Teacher A');
+    expect((await teacher).services).toEqual([{
+      id: 's1', subjectId: 'sub', serviceCatalogCode: 'recorded_explanation',
+      serviceNameEnglish: 'Custom recorded explanation', serviceNameArabic: 'شرح مسجّل مخصص',
+      price: 150, currency: 'SAR', deliveryDays: 2, canRequest: true, requiresScheduling: false
+    }]);
+  });
 });
 
 describe('preferredDeliveryAt', () => {

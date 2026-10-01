@@ -11,7 +11,8 @@ import { Tone, Viewer, sessionStatus } from '@shared/vocabulary/status-vocabular
 
 export const SESSION_STATUS = {
   AWAITING_PAYMENT: 0, CONFIRMED: 1, COMPLETED: 2, CANCELLED: 3, STUDENT_NO_SHOW: 4, TEACHER_NO_SHOW: 5,
-  COMPLETION_PENDING: 6, STUDENT_NO_SHOW_PENDING: 7, TEACHER_NO_SHOW_PENDING: 8
+  COMPLETION_PENDING: 6, STUDENT_NO_SHOW_PENDING: 7, TEACHER_NO_SHOW_PENDING: 8,
+  AWAITING_TEACHER_APPROVAL: 9, DECLINED: 10
 } as const;
 
 /** `LiveSessionOptions` defaults: join opens 15 minutes early, a no-show can be reported 15 minutes after the end. */
@@ -48,10 +49,13 @@ export interface LiveSession {
   readonly rescheduleRequestedById: string;
   readonly outcomeReviewDeadline: string;
   readonly rescheduleCount: number;
+  /** The student has already reviewed this session; one review per completed session. */
+  readonly hasReview: boolean;
 }
 
 export type SessionAction =
-  | 'pay' | 'join' | 'reschedule' | 'respond-reschedule' | 'cancel' | 'complete' | 'no-show' | 'confirm-settlement' | 'attach';
+  | 'pay' | 'join' | 'reschedule' | 'respond-reschedule' | 'respond-request' | 'cancel' | 'complete' | 'no-show' | 'confirm-settlement' | 'attach'
+  | 'review';
 
 export const Session = {
   roleOf(session: Pick<LiveSession, 'studentId' | 'teacherId'>, viewerId: string): 'student' | 'teacher' | null {
@@ -75,17 +79,29 @@ export const Session = {
     const actions: SessionAction[] = [];
     const ends = Date.parse(session.endsAt);
     const open = session.status === SESSION_STATUS.AWAITING_PAYMENT || session.status === SESSION_STATUS.CONFIRMED;
+    if (session.status === SESSION_STATUS.AWAITING_TEACHER_APPROVAL) {
+      if (role === 'teacher') actions.push('respond-request');
+      if (role === 'student') actions.push('cancel');
+      actions.push('attach');
+      return actions;
+    }
     if (role === 'student' && session.status === SESSION_STATUS.AWAITING_PAYMENT) actions.push('pay');
     // Join is offered whenever the booking is confirmed; the server refuses it outside the window.
     if (session.status === SESSION_STATUS.CONFIRMED) actions.push('join');
-    if (open && !session.rescheduleRequestedById && Date.parse(session.startsAt) > now) actions.push('reschedule');
+    // DEC-UX-08: once the join window opens the session is happening; cancelling or moving it then only strands the
+    // other person, who is already on the way. After the session the no-show and completion steps take over.
+    const happening = session.status === SESSION_STATUS.CONFIRMED && now >= Session.joinOpensAt(session);
+    if (open && !happening && !session.rescheduleRequestedById && Date.parse(session.startsAt) > now) actions.push('reschedule');
     if (session.rescheduleRequestedById && session.rescheduleRequestedById !== viewerId) actions.push('respond-reschedule');
-    if (open) actions.push('cancel', 'attach');
+    if (open && !happening) actions.push('cancel');
+    if (open) actions.push('attach');
     if (role === 'teacher' && session.status === SESSION_STATUS.CONFIRMED && now >= ends) actions.push('complete');
     if (session.status === SESSION_STATUS.CONFIRMED && now >= ends + NO_SHOW_GRACE_MINUTES * 60_000) actions.push('no-show');
     if ((session.status === SESSION_STATUS.COMPLETION_PENDING && role === 'student')
       || (session.status === SESSION_STATUS.STUDENT_NO_SHOW_PENDING && role === 'student')
       || (session.status === SESSION_STATUS.TEACHER_NO_SHOW_PENDING && role === 'teacher')) actions.push('confirm-settlement');
+    // `CreateLiveSessionReviewAsync`: the student reviews a completed session once.
+    if (role === 'student' && session.status === SESSION_STATUS.COMPLETED && !session.hasReview) actions.push('review');
     return actions;
   },
 

@@ -40,6 +40,14 @@ const session = (over: Partial<Row> = {}): Row => ({
 });
 
 describe('UX-01 student home composition', () => {
+  it('shows a request waiting for the teacher without offering checkout', () => {
+    const home = compose({ sessions: [session({ status: 9 })] });
+    expect(home.actions).toEqual([]);
+    expect(home.current[0]).toMatchObject({
+      status: { labelKey: 'session_status_awaiting_teacher_student' },
+      link: { path: ['/live-sessions', 's1'] }
+    });
+  });
   it('shows a brand-new student nothing but the two ways to start', () => {
     const home = compose({});
     expect(home).toMatchObject({ newStudent: true, moreActions: 0, moreCurrent: 0, upcoming: null });
@@ -122,7 +130,7 @@ describe('UX-01 student home composition', () => {
     expect(home.actions).toEqual([]);
     expect(home.current.map(c => c.title)).toEqual(['Chain rule', 'Chain rule']);
     expect(home.current[0].status?.labelKey).toBe('order_status_in_progress');
-    expect(home.current[0].cta).toBe('Open');
+    expect(home.current[0].cta).toBe('View order');
     expect(home.current[0].link).toEqual({ path: ['/orders', 'o2'] });
     const paid = compose({ orders: [order({ status: 0, paymentStatus: 1 })] });
     expect(paid.actions).toEqual([]);

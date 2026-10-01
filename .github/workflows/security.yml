@@ -25,8 +25,14 @@ jobs:
           dotnet-version: 8.0.x
           cache: true
           cache-dependency-path: '**/packages.lock.json'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
       - run: dotnet restore Tafseel.sln --locked-mode
-      - run: dotnet list Tafseel.sln package --vulnerable --include-transitive
+      # Fails on any High or Critical advisory in NuGet (transitive included) or in the npm
+      # production dependencies of frontend-angular and tests/browser.
+      - name: Dependency vulnerability gate
+        run: node scripts/ci/check-vulnerable-packages.mjs --min=high
       - run: dotnet list Tafseel.sln package --deprecated
       - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
         env:

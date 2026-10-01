@@ -467,7 +467,7 @@
         "GET"
       ],
       "action": "Payments.Reconciliation",
-      "access": "Reports.View",
+      "access": "Finance.Reconciliation.View",
       "body": null
     },
     {
@@ -476,7 +476,7 @@
         "GET"
       ],
       "action": "Payments.CouponReconciliation",
-      "access": "Reports.View",
+      "access": "Finance.Reconciliation.View",
       "body": null
     },
     {
@@ -672,7 +672,7 @@
         "GET"
       ],
       "action": "Payments.PayoutProfiles",
-      "access": "Withdrawals.Review",
+      "access": "Finance.PayoutProfiles.Review",
       "body": null
     },
     {
@@ -681,7 +681,7 @@
         "POST"
       ],
       "action": "Payments.ReviewPayoutProfile",
-      "access": "Withdrawals.Review",
+      "access": "Finance.PayoutProfiles.Review",
       "body": {
         "kind": "json",
         "type": "ReviewPayoutProfile",
@@ -1203,6 +1203,42 @@
       }
     },
     {
+      "route": "/api/v1/admin/support/cases",
+      "methods": [
+        "GET"
+      ],
+      "action": "Support.Queue",
+      "access": "Support.Cases.Manage",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/support/cases/{id:guid}/resolve",
+      "methods": [
+        "POST"
+      ],
+      "action": "Support.Resolve",
+      "access": "Support.Cases.Manage",
+      "body": {
+        "kind": "json",
+        "type": "ResolveSupportCase",
+        "fields": [
+          {
+            "name": "outcome",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/admin/support/cases/{id:guid}/take",
+      "methods": [
+        "POST"
+      ],
+      "action": "Support.Take",
+      "access": "Support.Cases.Manage",
+      "body": null
+    },
+    {
       "route": "/api/v1/admin/topics",
       "methods": [
         "POST"
@@ -1287,7 +1323,16 @@
         "GET"
       ],
       "action": "Payments.Withdrawals",
-      "access": "Withdrawals.Review",
+      "access": "Finance.Withdrawals.Execute",
+      "body": null
+    },
+    {
+      "route": "/api/v1/admin/withdrawals/{id:guid}/transfer-instruction",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.TransferInstruction",
+      "access": "Finance.Withdrawals.Execute",
       "body": null
     },
     {
@@ -1444,6 +1489,24 @@
       }
     },
     {
+      "route": "/api/v1/auth/language",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Auth.SetLanguage",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "SetLanguageRequest",
+        "fields": [
+          {
+            "name": "lang",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
       "route": "/api/v1/auth/login",
       "methods": [
         "POST"
@@ -1465,6 +1528,10 @@
           {
             "name": "password",
             "required": true
+          },
+          {
+            "name": "rememberMe",
+            "required": false
           }
         ]
       }
@@ -1694,6 +1761,15 @@
       "body": null
     },
     {
+      "route": "/api/v1/auth/sessions/sign-out-others",
+      "methods": [
+        "POST"
+      ],
+      "action": "Auth.RevokeOtherSessions",
+      "access": "authenticated",
+      "body": null
+    },
+    {
       "route": "/api/v1/auth/sessions/{sessionId}",
       "methods": [
         "DELETE"
@@ -1901,6 +1977,96 @@
       "body": null
     },
     {
+      "route": "/api/v1/finance/attention",
+      "methods": [
+        "GET"
+      ],
+      "action": "Finance.Attention",
+      "access": "Finance.Payments.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/finance/audit",
+      "methods": [
+        "GET"
+      ],
+      "action": "Finance.Audit",
+      "access": "Finance.Audit.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/finance/payments",
+      "methods": [
+        "GET"
+      ],
+      "action": "Finance.Payments",
+      "access": "Finance.Payments.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/finance/payments/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Finance.Payment",
+      "access": "Finance.Payments.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/finance/reconciliation/exceptions",
+      "methods": [
+        "GET"
+      ],
+      "action": "Finance.Exceptions",
+      "access": "Finance.Reconciliation.View",
+      "body": null
+    },
+    {
+      "route": "/api/v1/finance/reconciliation/exceptions/{id:guid}/acknowledge",
+      "methods": [
+        "POST"
+      ],
+      "action": "Finance.Acknowledge",
+      "access": "Finance.Reconciliation.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "AnnotateReconciliationException",
+        "fields": [
+          {
+            "name": "note",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/finance/reconciliation/exceptions/{id:guid}/resolve",
+      "methods": [
+        "POST"
+      ],
+      "action": "Finance.Resolve",
+      "access": "Finance.Reconciliation.Resolve",
+      "body": {
+        "kind": "json",
+        "type": "AnnotateReconciliationException",
+        "fields": [
+          {
+            "name": "note",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/finance/reconciliation/scan",
+      "methods": [
+        "POST"
+      ],
+      "action": "Finance.Scan",
+      "access": "Finance.Reconciliation.View",
+      "body": null
+    },
+    {
       "route": "/api/v1/languages",
       "methods": [
         "GET"
@@ -2005,6 +2171,10 @@
           {
             "name": "finalPrice",
             "required": true
+          },
+          {
+            "name": "priceChangeReason",
+            "required": false
           },
           {
             "name": "revisionAllowance",
@@ -2264,6 +2434,24 @@
       }
     },
     {
+      "route": "/api/v1/live-sessions/{id:guid}/request/respond",
+      "methods": [
+        "POST"
+      ],
+      "action": "LiveSessions.RespondToRequest",
+      "access": "Teacher Sessions.ManageOwn",
+      "body": {
+        "kind": "json",
+        "type": "RespondToLiveSessionRequest",
+        "fields": [
+          {
+            "name": "accept",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
       "route": "/api/v1/live-sessions/{id:guid}/reschedule",
       "methods": [
         "POST"
@@ -2444,6 +2632,95 @@
       "body": null
     },
     {
+      "route": "/api/v1/open-marketplace/drafts/current",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "OpenMarketplace.DiscardDraft",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/drafts/current",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.CurrentDraft",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/drafts/current",
+      "methods": [
+        "PUT"
+      ],
+      "action": "OpenMarketplace.SaveDraft",
+      "access": "Student",
+      "body": {
+        "kind": "json",
+        "type": "SaveOpenRequestDraft",
+        "fields": [
+          {
+            "name": "budgetMax",
+            "required": false
+          },
+          {
+            "name": "budgetMin",
+            "required": false
+          },
+          {
+            "name": "deadline",
+            "required": false
+          },
+          {
+            "name": "requirements",
+            "required": false
+          },
+          {
+            "name": "serviceCatalogItemId",
+            "required": false
+          },
+          {
+            "name": "subjectId",
+            "required": false
+          },
+          {
+            "name": "title",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/open-marketplace/drafts/current/attachments",
+      "methods": [
+        "POST"
+      ],
+      "action": "OpenMarketplace.AddDraftAttachment",
+      "access": "Student",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/open-marketplace/drafts/current/attachments/{attachmentId:guid}",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "OpenMarketplace.RemoveDraftAttachment",
+      "access": "Student",
+      "body": null
+    },
+    {
+      "route": "/api/v1/open-marketplace/offers/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "OpenMarketplace.MyOffers",
+      "access": "Teacher",
+      "body": null
+    },
+    {
       "route": "/api/v1/open-marketplace/offers/{id:guid}",
       "methods": [
         "PUT"
@@ -2560,6 +2837,10 @@
           {
             "name": "deadline",
             "required": true
+          },
+          {
+            "name": "draftId",
+            "required": false
           },
           {
             "name": "requirements",
@@ -2893,6 +3174,15 @@
       }
     },
     {
+      "route": "/api/v1/payments/open-requests/{learningRequestId:guid}/quote",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.OpenRequestQuote",
+      "access": "Payments.ViewOwn",
+      "body": null
+    },
+    {
       "route": "/api/v1/payments/orders/{orderId:guid}",
       "methods": [
         "POST"
@@ -2943,7 +3233,7 @@
         "POST"
       ],
       "action": "Payments.Refund",
-      "access": "Payments.Manage",
+      "access": "Finance.Refunds.Execute",
       "body": {
         "kind": "json",
         "type": "AdminRefundRequest",
@@ -2951,6 +3241,24 @@
           {
             "name": "reason",
             "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/payments/{kind}/{id:guid}/coupon-quote",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.CouponQuote",
+      "access": "Payments.ViewOwn",
+      "body": {
+        "kind": "json",
+        "type": "ApplyCouponRequest",
+        "fields": [
+          {
+            "name": "couponCode",
+            "required": false
           }
         ]
       }
@@ -3043,6 +3351,114 @@
       "action": "Catalog.FeaturedSubjects",
       "access": "anonymous",
       "body": null
+    },
+    {
+      "route": "/api/v1/support/account-access",
+      "methods": [
+        "POST"
+      ],
+      "action": "Support.AccountAccess",
+      "access": "anonymous",
+      "body": {
+        "kind": "json",
+        "type": "CreateAccountAccessCase",
+        "fields": [
+          {
+            "name": "description",
+            "required": true
+          },
+          {
+            "name": "email",
+            "required": true
+          },
+          {
+            "name": "fullName",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/support/attachments/{id:guid}/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Support.AttachmentContent",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/support/cases",
+      "methods": [
+        "POST"
+      ],
+      "action": "Support.Create",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "CreateSupportCase",
+        "fields": [
+          {
+            "name": "category",
+            "required": true
+          },
+          {
+            "name": "description",
+            "required": true
+          },
+          {
+            "name": "relatedReference",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/support/cases/mine",
+      "methods": [
+        "GET"
+      ],
+      "action": "Support.Mine",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/support/cases/{id:guid}",
+      "methods": [
+        "GET"
+      ],
+      "action": "Support.Get",
+      "access": "authenticated",
+      "body": null
+    },
+    {
+      "route": "/api/v1/support/cases/{id:guid}/attachments",
+      "methods": [
+        "POST"
+      ],
+      "action": "Support.Attach",
+      "access": "authenticated",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/support/cases/{id:guid}/messages",
+      "methods": [
+        "POST"
+      ],
+      "action": "Support.Message",
+      "access": "authenticated",
+      "body": {
+        "kind": "json",
+        "type": "SupportMessageInput",
+        "fields": [
+          {
+            "name": "body",
+            "required": true
+          }
+        ]
+      }
     },
     {
       "route": "/api/v1/teacher-applications",
@@ -3475,6 +3891,75 @@
       "action": "Marketplace.EligibleSubjects",
       "access": "Teachers.ManageOwnProfile",
       "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/intro-video",
+      "methods": [
+        "DELETE"
+      ],
+      "action": "Marketplace.RemoveIntroVideo",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/intro-video",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.MyIntroVideo",
+      "access": "Teachers.ManageOwnProfile",
+      "body": null
+    },
+    {
+      "route": "/api/v1/teachers/me/intro-video",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.UploadIntroVideo",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "form"
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/intro-video/from-application",
+      "methods": [
+        "POST"
+      ],
+      "action": "Marketplace.UseApplicationVideo",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "UseApplicationVideoInput",
+        "fields": [
+          {
+            "name": "consent",
+            "required": true
+          },
+          {
+            "name": "sampleId",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/teachers/me/intro-video/visibility",
+      "methods": [
+        "PUT"
+      ],
+      "action": "Marketplace.SetIntroVideoVisibility",
+      "access": "Teachers.ManageOwnProfile",
+      "body": {
+        "kind": "json",
+        "type": "IntroVideoVisibilityInput",
+        "fields": [
+          {
+            "name": "visible",
+            "required": true
+          }
+        ]
+      }
     },
     {
       "route": "/api/v1/teachers/me/languages",
@@ -4059,6 +4544,15 @@
       "body": null
     },
     {
+      "route": "/api/v1/teachers/{teacherId}/intro-video/content",
+      "methods": [
+        "GET"
+      ],
+      "action": "Marketplace.IntroVideoContent",
+      "access": "anonymous",
+      "body": null
+    },
+    {
       "route": "/api/v1/teachers/{teacherId}/reviews",
       "methods": [
         "GET"
@@ -4117,6 +4611,15 @@
       "body": null
     },
     {
+      "route": "/api/v1/withdrawals/earnings",
+      "methods": [
+        "GET"
+      ],
+      "action": "Payments.Earnings",
+      "access": "Withdrawals.Request",
+      "body": null
+    },
+    {
       "route": "/api/v1/withdrawals/mine",
       "methods": [
         "GET"
@@ -4155,11 +4658,15 @@
         "type": "SubmitPayoutProfile",
         "fields": [
           {
+            "name": "bankName",
+            "required": true
+          },
+          {
             "name": "countryCode",
             "required": true
           },
           {
-            "name": "destinationLabel",
+            "name": "iban",
             "required": true
           },
           {
@@ -4183,7 +4690,7 @@
         "POST"
       ],
       "action": "Payments.ProcessWithdrawal",
-      "access": "Withdrawals.Review",
+      "access": "Finance.Withdrawals.Execute",
       "body": {
         "kind": "json",
         "type": "ProcessWithdrawal",
@@ -4191,6 +4698,10 @@
           {
             "name": "approve",
             "required": true
+          },
+          {
+            "name": "confirmNoTransferSent",
+            "required": false
           },
           {
             "name": "providerReference",
@@ -4202,6 +4713,53 @@
           }
         ]
       }
+    },
+    {
+      "route": "/api/v1/withdrawals/{id:guid}/transfer-confirmation",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.ConfirmTransfer",
+      "access": "Finance.Withdrawals.Execute",
+      "body": {
+        "kind": "json",
+        "type": "ConfirmWithdrawalTransfer",
+        "fields": [
+          {
+            "name": "amount",
+            "required": true
+          },
+          {
+            "name": "bankReference",
+            "required": true
+          },
+          {
+            "name": "confirmedAgainstBankRecord",
+            "required": true
+          },
+          {
+            "name": "currency",
+            "required": true
+          },
+          {
+            "name": "sourceInstitution",
+            "required": true
+          },
+          {
+            "name": "transferredAt",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/v1/withdrawals/{id:guid}/transfer-initiation",
+      "methods": [
+        "POST"
+      ],
+      "action": "Payments.InitiateTransfer",
+      "access": "Finance.Withdrawals.Execute",
+      "body": null
     }
   ]
 }

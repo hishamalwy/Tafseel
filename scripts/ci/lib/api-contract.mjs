@@ -150,6 +150,12 @@ export function extractClientCalls(root) {
       if (verb === 'upload') body = { kind: 'form' };
       else if (['post', 'put', 'patch'].includes(verb) && text[urlArgument.end] === ',')
         body = describeBody(readArgument(text, urlArgument.end + 1).source);
+      // A DELETE carries its body in the options object: http.delete(url, { body: { ... } }).
+      else if (verb === 'delete' && text[urlArgument.end] === ',') {
+        const options = readArgument(text, urlArgument.end + 1).source;
+        const at = options.search(/\bbody\s*:/);
+        if (at >= 0) body = describeBody(readArgument(options, options.indexOf(':', at) + 1).source);
+      }
       calls.push({ method, route: normalizeRoute(url), body, ...site, via: viaDashboard ? 'DashboardGateway' : 'HttpClient' });
     }
   }

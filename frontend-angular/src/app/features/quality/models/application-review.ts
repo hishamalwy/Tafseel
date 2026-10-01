@@ -109,7 +109,22 @@ export interface ApplicationReview {
   readonly application: ReviewApplication;
   readonly history: readonly ReviewHistoryItem[];
   readonly reviews: readonly ReviewRecord[];
+  /** The teacher's qualification in this subject, once one was granted; a reviewer can withdraw it. */
+  readonly qualification: SubjectQualification | null;
 }
+
+export interface SubjectQualification {
+  readonly id: string;
+  readonly isActive: boolean;
+  readonly approvedAt: string;
+  readonly revokedAt: string | null;
+  readonly reason: string;
+  readonly revokedByName: string;
+  readonly activeServices: number;
+}
+
+/** The server requires 10 to 2000 characters, said to the teacher as written. */
+export const REVOCATION_REASON = { min: 10, max: 2000 } as const;
 
 /** The decision form as the reviewer fills it in. A score of null is not given yet. */
 export interface DecisionDraft {

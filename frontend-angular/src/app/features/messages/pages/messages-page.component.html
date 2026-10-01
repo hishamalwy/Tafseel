@@ -15,6 +15,7 @@
         <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
       } @else if (listError()) {
         <div class="tf-alert" data-kind="error" role="alert">{{ listError() }}</div>
+        <button type="button" class="tf-button tf-button-secondary" (click)="reloadList()">{{ t('common_retry', 'Retry') }}</button>
       } @else if (conversations().length) {
         <ul class="tf-inbox" data-testid="inbox">
           @for (item of conversations(); track item.id) {
@@ -32,8 +33,10 @@
       }
     </section>
 
-    <section class="tf-profile-editor-card" aria-labelledby="thread-title">
+    <section class="tf-profile-editor-card tf-thread-panel" [class.tf-thread-panel--idle]="!conversationId()" aria-labelledby="thread-title">
       @if (!conversationId()) {
+        <span class="tf-thread-idle-icon" aria-hidden="true"><tf-icon name="message" [size]="24" /></span>
+        <h2 id="thread-title">{{ t('messages_conversation', 'Conversation') }}</h2>
         <p class="tf-muted">{{ t('messages_pick', 'Choose a conversation.') }}</p>
       } @else {
         <div class="tf-page-header">
@@ -41,9 +44,13 @@
             <a class="tf-back-link" routerLink="/messages">{{ t('messages_inbox', 'Conversations') }}</a>
             <h2 id="thread-title">{{ current() ? name(current()!) : t('messages_conversation', 'Conversation') }}</h2>
           </div>
-          @if (current() && Messaging.contextLink(current()!); as link) {
-            <a class="tf-button tf-button-ghost tf-button-sm" [routerLink]="link">{{ t(Messaging.scopeKey(current()!.scope), '') }}</a>
-          }
+          <div class="tf-thread-links">
+            @if (current() && Messaging.contextLink(current()!); as link) {
+              <a class="tf-button tf-button-ghost tf-button-sm" [routerLink]="link">{{ t(Messaging.scopeKey(current()!.scope), '') }}</a>
+            }
+            <a class="tf-button tf-button-ghost tf-button-sm" routerLink="/help" data-testid="report-conversation"
+               [queryParams]="{ category: 'harassment', about: 'conversation:' + conversationId() }">{{ t('help_report_conversation', 'Report this conversation') }}</a>
+          </div>
         </div>
 
         @if (threadError()) {
@@ -71,8 +78,9 @@
               <textarea id="message-body" name="body" rows="3" [attr.maxlength]="limits.body" [ngModel]="draft()" (ngModelChange)="draft.set($event)"></textarea>
             </div>
             <div class="tf-field">
-              <label for="message-file">{{ t('messages_attach', 'Attach a file (optional: PDF, PNG, JPEG, DOCX, PPTX or ZIP, up to 50 MB)') }}</label>
-              <input id="message-file" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip" (change)="chooseFile($event)">
+              <tf-file-picker inputId="message-file" [compact]="true" accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip"
+                              [title]="t('messages_attach', 'Attach a file (optional: PDF, PNG, JPEG, DOCX, PPTX or ZIP, up to 50 MB)')"
+                              [files]="file() ? [file()!] : []" (picked)="pickFile($event)" (removed)="removeFile()" />
             </div>
             @if (sendError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="send-error">{{ sendError() }}</div> }
             <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="send-message" [disabled]="sending()">{{ sending() ? t('common_saving', 'Saving…') : t('demand_send', 'Send') }}</button></div>

@@ -2,18 +2,20 @@
 name: Tafseel
 description: A calm, evidence-led educational marketplace built around real study needs.
 colors:
-  primary: "#5036D8"
-  primary-hover: "color-mix(in oklab, #5036D8 85%, black)"
-  canvas: "#F7F4EC"
-  canvas-alt: "#F0EBDE"
-  surface: "#FFFFFF"
-  ink: "#17151C"
-  border: "#E5DED2"
+  brand-violet: "#5036D8"
+  brand-bone: "#F8F4E8"
+  primary: "#4B3C9F"
+  primary-hover: "#3E3188"
+  canvas: "#F6F5F1"
+  canvas-alt: "#ECEAE4"
+  surface: "#FDFCF9"
+  ink: "#131218"
+  border: "#DCD9D2"
   live: "#116A88"
   success: "oklch(0.50 0.125 155)"
   error: "oklch(0.54 0.175 25)"
   warning: "oklch(0.52 0.135 72)"
-  primary-dark: "#A698EB"
+  primary-dark: "#DDFA64"
   live-dark: "#73AEC1"
   surface-dark: "#1C1E26"
   media-canvas: "#0B0D13"
@@ -25,13 +27,13 @@ colors:
   shadow-ink: "rgba(0,0,0,.14)"
   shadow-ink-strong: "rgba(10,12,18,.58)"
   shadow-ink-dialog: "oklch(0.18 0.03 265/.28)"
-  border-strong: "#D4CCBE"
-  surface-2: "#FAF8F2"
-  text-2: "#706B70"
-  muted: "#706B70"
-  ink-2: "#706B70"
-  ink-3: "#706B70"
-  primary-soft: "#F0EEFF"
+  border-strong: "#C6C2B8"
+  surface-2: "#F4F2ED"
+  text-2: "#625E66"
+  muted: "#625E66"
+  ink-2: "#625E66"
+  ink-3: "#625E66"
+  primary-soft: "#F0EEF7"
   accent-soft: "#DFE9EE"
   success-soft: "#DFF8E6"
   warning-soft: "#FFEED2"
@@ -42,24 +44,24 @@ colors:
   stage-saved: "#FF9A90"
 typography:
   display:
-    fontFamily: "Thmanyah Serif Display, Thmanyah Sans, serif"
+    fontFamily: "Montserrat, Thmanyah Sans, sans-serif"
     fontSize: "clamp(2.25rem, 5vw, 4.75rem)"
     fontWeight: 700
     lineHeight: 1.08
     letterSpacing: "-0.03em"
   headline:
-    fontFamily: "Thmanyah Serif Display, Thmanyah Sans, serif"
+    fontFamily: "Montserrat, Thmanyah Sans, sans-serif"
     fontSize: "clamp(1.75rem, 3vw, 2.75rem)"
     fontWeight: 700
     lineHeight: 1.18
     letterSpacing: "-0.02em"
   body:
-    fontFamily: "Thmanyah Sans, system-ui, sans-serif"
+    fontFamily: "Montserrat, Thmanyah Sans, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "Thmanyah Sans, system-ui, sans-serif"
+    fontFamily: "Montserrat, Thmanyah Sans, system-ui, sans-serif"
     fontSize: "0.8125rem"
     fontWeight: 700
     lineHeight: 1.35
@@ -261,6 +263,10 @@ invents its own scrim, focus behaviour, or state language.
 | **Workflow header** | `.tf-workflow-header` > `__inner` > `__brand` / `__context` (`__title`, `__step`) / `__actions` / `__exit` | Request, Payment, Book Session — deliberately quieter; never a marketplace nav bar. `__exit` mirrors in RTL |
 | **Mobile data card** | `.tf-data-card` > `__head` / `__title` / `__meta` / `__status` / `__money` / `__actions` (alias `.tf-work-card*`) | only where a desktop table genuinely has a card alternative; both render from the SAME projection |
 | **Table / DataList** | `.tf-table-wrap` > `.tf-table[data-density]` > caption, `thead th[scope=col]`, `tbody tr`, cell roles | Admin Users, Teacher Active Orders |
+| **File picker** | `<tf-file-picker>` > `.tf-upload-drop` (`--compact`) + `.tf-upload-files` > `li.tf-upload-file` (kind, name, size, Remove) + `.tf-upload-progress` + `.tf-upload-file-error` | the only way to ask for a file: request attachments, delivery, booking, messages, dispute evidence, session files. The page keeps its files and upload; the native input stays in the label under `inputId` |
+| **Form actions** | `.tf-form-actions` | one row for every form's buttons: 10px gap, 18px from the last field |
+| **Workflow measure** | `.tf-shell` on a Focused Workflow page + `--measure-workflow` (1180px) | the full-bleed track keeps its rule; the gutter grows so request, payment, booking, disputes and policies read at one width, header aligned |
+| **Workspace shell** | `<tf-workspace-shell role section>` | every role screen, including the generic dashboard (Settings, Admin, lists); no page draws its own sidebar or top bar |
 
 **Overlay behaviour is one mechanic, not per-page code.** `Tafseel.modal.sync(isOpen, {…})` is called
 from `componentDidUpdate` and owns the document-level effects the DC runtime does not model:
@@ -348,32 +354,28 @@ The visual system rejects generic AI-SaaS staging: no decorative glow fields, co
 
 ## Brand Identity
 
-The identity ships as three colours, one mark, and one pattern. They live in
-`css/tafseel.css` as `--brand-violet` / `--brand-lime` / `--brand-ink`, and every
-semantic token in the system is derived from them — re-skinning the product is an
-edit to that one block, not a search across 7,800 lines.
+The identity ships as three colours, one mark, and one pattern. The official
+colours live in `css/tafseel.css` as brand primitives. Product surfaces and
+frequent actions use quieter semantic tokens in the same stylesheet.
 
 | Primitive | Value | What it is |
 | --- | --- | --- |
-| `--brand-violet` | `#5036D8` | The mark's wing. Primary action and selected state. |
+| `--brand-violet` | `#5036D8` | The mark's wing and focused brand artwork. |
+| `--brand-bone` | `#F8F4E8` | The brand's warm white paper, preserved in supplied artwork. |
 | `--brand-lime` | `#DDFA64` | The mark's wing on dark. The one highlight accent. |
-| `--brand-ink` | `#020200` | The mark's cup and dots. Brand-surface black. |
+| `--brand-ink` | `#131218` | The mark's cup and dots. Brand-surface black. |
 
 **The Mark.** A geometric ت: a wing, a cup, two diamond dots. It is 322 × 438, so
 it is taller than it is wide — never declare it square. `assets/brand/` carries the
-light cut (violet wing, ink body), the dark cut (lime wing, white body), a
+compact isolated cut (eggplant wing, near-black body, per the earlier header reference),
+the dark cut (lime wing, white body), a
 `currentColor` mono cut, the favicon, the isolated wing (fill and stroke) for
 watermarks, and the official lockups from the brand kit.
 
-**The Lockup — The Mark Leads.** Arabic and Latin are two cuts of one logotype,
-never shown together in chrome. The mark leads the word in both scripts: to the
-**right** of it in Arabic, to the **left** of it in English. Chrome ships the
-mark first in the DOM, so ordinary flow produces both readings and nothing
-reverses. English previously flipped to `row-reverse`, which put the mark after
-the word — the lockup then read in opposite orders in the two languages, which
-is not a mirror, it is a different lockup. Full Illustrator lockups live in
-`tafseel-lockup*.svg` for large brand surfaces; chrome keeps a CSS wordmark so
-the name stays selectable and a single language is announced.
+**The Lockup.** Product chrome uses the supplied horizontal Illustrator
+lockup (`tafseel-lockup*.svg`) as a single image. The artwork fixes the mark's
+height at about 1.34 times the stacked Arabic and Latin lettering and keeps
+the mark on the right. The dark cut uses the supplied lime and white variant.
 
 **The Pattern.** The same wing, tessellated: an upright copy dropped exactly half
 an arm-bar below an inverted one, so each stem lands in the notch of the shape
@@ -404,7 +406,7 @@ so a page inherits the treatment instead of asking for it:
 
 | Carrier | Volume | Hook |
 | --- | --- | --- |
-| Ink bands | loud | `.tf-ink-band` — Landing footer, auth aside, About hero |
+| Ink bands | loud | `.tf-ink-band` — Landing footer, auth aside (dark theme only; white with the violet pattern in light), About hero |
 | Empty states | quiet | `.tf-state`, `.tf-mk-empty` — the wing, bottom-anchored |
 | Workflow canvas | faint | `.tf-workflow-header ~ main` — the six task flows |
 | Public mastheads | faint | `.tf-mkb-mast`, `.tf-market-intro`, `.tf-policy-mast` — the title band |
@@ -476,8 +478,9 @@ against the real stylesheet; it is how the above was chosen rather than guessed.
 **Lime Is A Fill, Not A Colour.** `--brand-lime` has the relative luminance of a
 highlighter. It carries `--brand-ink` on top (17.7:1) and it is never text on a
 light surface and never a background for white text. Its jobs: the highlighted
-word, the live/featured marker, the mark's wing on ink, and interactive colour
-inside an ink band, where violet would fall to 2.1:1 and lime holds 17.7:1.
+word (the hero's rotating word is lime text on the dark canvas and brand violet on the
+light one, with no marker under it), the live/featured marker, the mark's wing on ink, and interactive colour
+inside an ink band, where violet would fall to 2.3:1 and lime holds 17.7:1.
 
 **Announcements.** Admin-published slots are Tafseel speaking, not a product-update
 toast. The overlay sits on the bone canvas; the title is display type; the scarce
@@ -491,7 +494,8 @@ overlay carries no tessellation.
 `--text` / `--text-2` / `--border` / `--surface` / `--primary` rather than restating a
 colour on every rule inside it, so one class inverts a whole region and the
 component rules underneath stay unchanged. Used by the Landing footer, the auth
-aside, the About hero, and `.tf-mini-footer`.
+aside (dark theme only; in light it is a white surface with the violet pattern),
+the About hero, and `.tf-mini-footer`.
 
 **The Wordmark Ships In Two Cuts.** "تفصيــل" and "Tafseel" are not translations of
 each other, they are two halves of one logotype, drawn differently: the Arabic in
@@ -571,17 +575,15 @@ a light-mode value left unchanged in dark, where a dark shadow on a dark canvas
 is mud. No surface writes a colour any more: `rawColorsInMarkup` is zero across
 all eighteen.
 
-Measured, not assumed: white on violet 7.34:1, violet on the ivory canvas 6.68:1,
-ink on lime 17.73:1, lime on the dark canvas 15.84:1. Dark mode lifts the brand
-violet to L=76% at its own hue (`#A698EB`), which lands at 7.34:1 on the dark
-canvas — the same ratio white-on-violet gives in light, so "primary" carries
-identical weight in both themes.
+Measured, not assumed: warm white on violet 6.68:1, white on violet 7.34:1,
+and lime on violet 6.27:1. Dark mode gives lime the violet's job (`#DDFA64`),
+which has 15.8:1 contrast against the dark canvas; ink on lime clears AAA.
 
 ## Colors
 
-Violet signals authority and action; neutrals carry most of the interface; cyan is reserved for live-session information.
+Violet signals authority and action in light; lime takes that job in dark. Neutrals carry most of the interface; cyan is reserved for live-session information.
 
-**The Rare Violet Rule.** Violet identifies the next action or selected state, not page atmosphere.
+**The Rare Accent Rule.** The authority color — violet in light, lime in dark — identifies the next action or selected state, not page atmosphere.
 
 **The Evidence Contrast Rule.** Secondary text must remain readable at WCAG AA on the exact surface where it appears.
 
@@ -589,11 +591,12 @@ Violet signals authority and action; neutrals carry most of the interface; cyan 
 
 ## Typography
 
-**Display Font:** Thmanyah Serif Display, with Thmanyah Sans fallback  
-**Body Font:** Thmanyah Sans, with system UI fallback  
-**Label/Mono Font:** Thmanyah Sans for labels; monospace only for filenames, identifiers, and measurements
+**English display and body:** Montserrat, as specified by the brand presentation  
+**Arabic UI:** Thmanyah Sans  
+**Identifiers:** monospace only for filenames, identifiers, and measurements
 
-Display type gives public pages a recognizably Tafseel voice. Operational screens use it only for page-level headings; body, labels, controls, and data remain stable in Thmanyah Sans.
+The supplied lockup is artwork, not browser text. English interface text uses
+self-hosted Montserrat; Arabic falls back to self-hosted Thmanyah Sans.
 
 - **Display:** Public hero only; responsive, bold, maximum 4.75rem.
 - **Headline:** Page and section titles with an obvious step above body copy.
@@ -626,7 +629,7 @@ Controls use 8–12px corners, content containers 12–16px, and large page-leve
 
 ### Buttons
 
-- Primary buttons are violet, at least 44px high, and name a concrete action.
+- Primary buttons are violet in light and lime in dark, at least 44px high, and name a concrete action.
 - Secondary buttons use a neutral surface and one border.
 - Focus uses a visible outline; hover never carries essential meaning.
 

@@ -105,8 +105,8 @@ export class ToggleFavouriteTeacher {
 export class CompareTeachers {
   private readonly gateway = inject(TEACHER_GATEWAY);
 
-  /** The comparison tray holds at most four; more than that stops being readable. */
-  static readonly MAX = 4;
+  /** The API accepts two or three teacher ids. */
+  static readonly MAX = 3;
 
   execute(teacherIds: readonly string[]): Promise<readonly Teacher[]> {
     return firstValueFrom(this.gateway.compare(teacherIds.slice(0, CompareTeachers.MAX)));

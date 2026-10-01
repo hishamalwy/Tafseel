@@ -1,3 +1,0 @@
-{
-  "error": "Error: create async offer failed 400 {\"type\":\"https://tools.ietf.org/html/rfc9110#section-15.5.1\",\"title\":\"Service title is owned by the marketplace catalog and cannot be changed by Teachers.\",\"status\":400,\"code\":\"teacher_service_title_catalog_owned\",\"traceId\":\"0HNNLEG1EDF60:0000000B\",\"correlationId\":\"aa807eaa-30dd-433c-82f0-4313a206cfb1\"}\n    at main (file:///C:/Users/asus/Desktop/Tafseel/tests/browser/release7-final-acceptance-lifecycle.mjs:160:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"
-}

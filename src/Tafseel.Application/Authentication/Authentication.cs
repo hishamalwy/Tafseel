@@ -8,7 +8,9 @@ public static class PolicyVersions
 public sealed record RegisterCommand(
     string Email, string Password, string FullName, string Role,
     string Lang = "ar", string PolicyVersion = PolicyVersions.Current);
-public sealed record LoginCommand(string Email, string Password, string? Code = null);
+/// <param name="RememberMe">False keeps the sign-in to this browser session: a short server-side refresh
+/// lifetime and a refresh cookie with no expiry, so closing the browser ends it.</param>
+public sealed record LoginCommand(string Email, string Password, string? Code = null, bool RememberMe = true);
 public sealed record RegistrationResult(
     bool Succeeded,
     AuthenticationError Error = AuthenticationError.None,
@@ -24,7 +26,8 @@ public sealed record AuthenticatedUser(
     string RefreshToken,
     DateTimeOffset RefreshTokenExpiresAt,
     bool HasAvatar = false,
-    bool MfaEnabled = false);
+    bool MfaEnabled = false,
+    bool Persistent = true);
 public sealed record CurrentUser(
     string UserId,
     string Email,
@@ -92,6 +95,8 @@ public interface IAuthenticationService
     Task<CurrentUser?> GetUserAsync(string userId, CancellationToken cancellationToken);
     Task<CurrentUser?> UpdateProfileAsync(
         string userId, string fullName, string fullNameEnglish, CancellationToken cancellationToken);
+    /// <summary>The language e-mails are written in; follows the site language a signed-in person chooses.</summary>
+    Task<bool> SetLanguageAsync(string userId, string lang, CancellationToken cancellationToken);
     Task<CurrentUser?> SetAvatarAsync(
         string userId, Stream stream, string fileName, string contentType, long size, CancellationToken cancellationToken);
     Task<CurrentUser?> ClearAvatarAsync(string userId, CancellationToken cancellationToken);

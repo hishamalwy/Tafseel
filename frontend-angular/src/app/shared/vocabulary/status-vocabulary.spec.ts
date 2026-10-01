@@ -33,7 +33,14 @@ describe('UX-04 status vocabulary — approved Arabic and English terms', () => 
     expect(requestStatus(5, 'student', 0)).toMatchObject({ tone: 'info' });
     expect(requestStatus(5, 'student', 3)).toMatchObject({ tone: 'warning', action: ACTIONS.compareOffers });
     expect(requestStatus(6, 'student')).toMatchObject({ tone: 'warning', action: ACTIONS.payNow });
+    // An accepted request's order may already be paid; the order row owns "Pay now".
+    expect(requestStatus(2, 'student').action).toBe(ACTIONS.openOrder);
     expect(requestStatus(6, 'teacher').tone).toBe('info');
+    // The teacher reads their own work list: "Waiting for the teacher" there meant them.
+    expect(both(requestStatus(0, 'teacher'))).toEqual(['طلب جديد — بانتظار ردك', 'New request — waiting for your answer']);
+    expect(both(requestStatus(1, 'teacher'))).toEqual(['سألت الطالب — بانتظار رده', 'You asked a question — waiting for the student']);
+    expect(both(requestStatus(6, 'teacher'))).toEqual(['اختار الطالب عرضك — بانتظار الدفع', 'Your offer was chosen — waiting for payment']);
+    expect(both(sessionStatus(0, 'teacher'))).toEqual(['مقبولة — بانتظار دفع الطالب', 'Accepted — waiting for the student’s payment']);
     expect(both(ACTIONS.answerTeacher)).toEqual(['أجب المعلم', 'Answer the teacher']);
   });
 
@@ -44,7 +51,8 @@ describe('UX-04 status vocabulary — approved Arabic and English terms', () => 
     expect(both(orderStatus(0, 1, 'teacher'))).toEqual(['تم الدفع — ابدأ العمل', 'Paid — start the work']);
     expect(orderStatus(0, 1, 'teacher')).toMatchObject({ tone: 'warning', action: ACTIONS.startWork });
     expect(both(orderStatus(2, 1, 'student'))).toEqual(['تم التسليم — راجعه', 'Delivered — review it']);
-    expect(both(orderStatus(2, 1, 'teacher'))).toEqual(['تم التسليم', 'Delivered']);
+    expect(both(orderStatus(2, 1, 'teacher'))).toEqual(['تم التسليم — بانتظار الطالب', 'Delivered — waiting for the student']);
+    expect(both(orderStatus(3, 1, 'student'))).toEqual(['طلبت تعديلًا — بانتظار المعلم', 'You asked for changes — waiting for the teacher']);
     expect(orderStatus(3, 1, 'teacher')).toMatchObject({ tone: 'warning', action: ACTIONS.deliverRevision });
     expect(orderStatus(1, 1, 'teacher', { isOverdue: true }).tone).toBe('warning');
     expect(orderStatus(4, 1, 'student', { reviewCanSubmit: true, hasReview: false }).action).toEqual(ACTIONS.writeReview);
@@ -111,7 +119,9 @@ describe('UX-04 status vocabulary — approved Arabic and English terms', () => 
       'ProfileUnpublished', 'Refund', 'RequestDeclined', 'RequestExpired', 'Review', 'ReviewSubmitted', 'RevisionRequested',
       'SessionBooking', 'SessionCancelled', 'SessionCompletionRequested', 'SessionNoShowReview', 'SessionOutcomeRequired',
       'SessionOutcomeResolved', 'SessionReminder', 'SessionRescheduleRejected', 'SessionRescheduleRequested',
-      'SessionRescheduled', 'SessionSettlementConfirmed', 'SessionSettlementFinalized', 'Withdrawal', 'WorkStarted'];
+      'SessionRescheduled', 'SessionSettlementConfirmed', 'SessionSettlementFinalized', 'Withdrawal', 'WorkStarted',
+      'QualificationRevoked', 'SessionRequest', 'SessionRequestAccepted', 'SessionRequestDeclined', 'Support',
+      'RequestCancelled', 'OrderCancelled', 'PaymentFailed', 'AccountStatus'];
     for (const type of server) {
       const copy = notificationCopy(type);
       expect(copy, type).not.toBeNull();
@@ -121,7 +131,9 @@ describe('UX-04 status vocabulary — approved Arabic and English terms', () => 
     expect([...STUDENT_TEACHER_NOTIFICATION_TYPES].sort()).toEqual([...server].sort());
     expect(text('ar', notificationCopy('OfferReservationReminder')!)).toBe('أكمل الدفع قبل انتهاء حجز العرض');
     expect(text('en', notificationCopy('ShowcaseApproved')!)).toBe('Update on your teaching samples');
-    expect(notificationCopy('DisputeAdmin')).toBeNull();
+    // Staff queues are named too, so an Arabic bell never shows the English server title.
+    expect(text('ar', notificationCopy('DisputeAdmin')!)).toBe('بلاغ مشكلة بانتظار قرارك');
+    expect(notificationCopy('SomethingUnknown')).toBeNull();
     expect(notificationCopy(42)).toBeNull();
   });
 

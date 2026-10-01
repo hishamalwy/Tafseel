@@ -131,6 +131,12 @@ async function checkD(page, where) {
 }
 
 async function checkT(page, where) {
+  // Measure the settled page: while the workspace's arrival animation translates <main> by a fraction of a
+  // pixel, bottom − top of a 44px control can come out as 43.99999 in floating point.
+  await page.evaluate(() => Promise.race([
+    Promise.all(document.getAnimations().filter(a => a.effect?.getTiming().iterations !== Infinity).map(a => a.finished.catch(() => {}))),
+    new Promise(done => setTimeout(done, 1000))
+  ]));
   const small = await page.evaluate(() => {
     // The matrix excepts "inline text links inside paragraphs": a link sitting inside a sentence, where
     // enlarging it would break the line rather than help anyone. A link whose parent carries other words
@@ -145,7 +151,8 @@ async function checkT(page, where) {
     };
     // A checkbox is tapped through its label, which is what the design system sizes; measuring the 16px
     // box inside it would be measuring the wrong thing.
-    const target = el => (el.matches('input[type=checkbox], input[type=radio]')
+    // The same holds for a file input: it is chosen through its drop zone, which is the label around it.
+    const target = el => (el.matches('input[type=checkbox], input[type=radio], input[type=file]')
       ? el.closest('label') ?? el : el);
     return [...document.querySelectorAll('main button, main a, main input, main select, main [role=button], dialog[open] button, dialog[open] a')]
       .filter(el => el.offsetParent !== null && !el.hasAttribute('disabled'))
@@ -193,6 +200,12 @@ async function checkPAfterScroll(page, where) {
 }
 
 async function checkP(page, where) {
+  // Let entrance animations finish (checkout's phone pay bar slides in over its first second); capped, since
+  // an ambient animation may never end.
+  await page.evaluate(() => Promise.race([
+    Promise.all(document.getAnimations().map(a => a.finished.catch(() => null))),
+    new Promise(resolve => setTimeout(resolve, 2000))
+  ]));
   const cta = await page.evaluate(() => {
     const button = [...document.querySelectorAll(
       'main .tf-button:not(.tf-button-ghost):not(.tf-button-secondary), main .tf-pay-cta, main button[type=submit], .tf-pay-mobile-cta button, dialog[open] button[type=submit]')]

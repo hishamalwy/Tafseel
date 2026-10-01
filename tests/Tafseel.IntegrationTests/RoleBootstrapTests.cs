@@ -113,7 +113,7 @@ public sealed class RoleBootstrapTests
     }
 
     [Fact]
-    public async Task Staging_bootstrap_creates_each_demo_user_once_and_repairs_confirmation_and_role()
+    public async Task Staging_bootstrap_creates_reference_data_but_no_demo_users()
     {
         await using var database = new SqliteConnection("Data Source=:memory:");
         await database.OpenAsync();
@@ -121,48 +121,16 @@ public sealed class RoleBootstrapTests
         await EnsureCreated(services);
 
         await services.InitializeIdentityAsync();
-        Dictionary<string, string> ids;
-        await using (var scope = services.CreateAsyncScope())
-        {
-            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            var expected = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["admin@gmail.com"] = Roles.Admin,
-                ["student@gmail.com"] = Roles.Student,
-                ["teacher@gmail.com"] = Roles.Teacher,
-                ["quality@gmail.com"] = Roles.QualityReviewer
-            };
-            ids = [];
-            foreach (var account in expected)
-            {
-                var user = (await users.FindByEmailAsync(account.Key))!;
-                ids[account.Key] = user.Id;
-                Assert.True(user.EmailConfirmed);
-                Assert.Equal([account.Value], await users.GetRolesAsync(user));
-                Assert.True(await users.CheckPasswordAsync(user, "@Admin123"));
-            }
-
-            var student = (await users.FindByEmailAsync("student@gmail.com"))!;
-            Assert.True((await users.RemoveFromRoleAsync(student, Roles.Student)).Succeeded);
-            var admin = (await users.FindByEmailAsync("admin@gmail.com"))!;
-            admin.EmailConfirmed = false;
-            Assert.True((await users.UpdateAsync(admin)).Succeeded);
-        }
-
         await services.InitializeIdentityAsync();
 
-        await using var verification = services.CreateAsyncScope();
-        var verificationUsers = verification.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        Assert.Equal(4, await verification.ServiceProvider.GetRequiredService<TafseelDbContext>().Users.CountAsync());
-        foreach (var account in ids)
-            Assert.Equal(account.Value, (await verificationUsers.FindByEmailAsync(account.Key))!.Id);
-        Assert.True((await verificationUsers.FindByEmailAsync("admin@gmail.com"))!.EmailConfirmed);
-        Assert.True(await verificationUsers.IsInRoleAsync(
-            (await verificationUsers.FindByEmailAsync("student@gmail.com"))!, Roles.Student));
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        Assert.Equal(0, await db.Users.CountAsync());
+        Assert.Equal(Roles.All.Length, await db.Roles.CountAsync());
     }
 
     [Fact]
-    public async Task Demo_users_are_not_created_outside_staging()
+    public async Task Demo_users_are_not_created_in_production()
     {
         await using var database = new SqliteConnection("Data Source=:memory:");
         await database.OpenAsync();

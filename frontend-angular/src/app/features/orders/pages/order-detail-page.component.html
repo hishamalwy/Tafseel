@@ -40,10 +40,19 @@
               @if (role() === 'student' && o.status === 0 && o.paymentStatus === 1) { <p class="tf-muted">{{ t('td_start_awaiting_student', 'Payment confirmed. The teacher starts work next.') }}</p> }
               @if (can('start')) { <p class="tf-muted">{{ t('order_start_hint', 'Payment is confirmed. Start the work when you begin.') }}</p> }
               @if (role() === 'teacher' && o.status === 0 && o.paymentStatus === 0) { <p class="tf-muted">{{ t('td_start_awaiting_payment', 'Waiting for the student’s payment to be confirmed.') }}</p> }
-              @if (role() === 'teacher' && o.status === 3) { <p class="tf-alert" data-kind="warning" data-testid="revision-requested">{{ t('order_revision_for_teacher', 'The student asked for a revision. Deliver the updated work.') }}</p> }
+              @if (role() === 'teacher' && o.status === 3) { <p class="tf-alert" data-kind="warning" data-testid="revision-requested">{{ t('order_revision_for_teacher', 'The student asked for a revision. Deliver the updated work.') }}</p>
+                @if (latestRevisionNote(); as note) { <blockquote class="tf-revision-note" data-testid="revision-note"><strong>{{ t('order_revision_note_label', 'What the student asked for') }}</strong><p dir="auto">{{ note }}</p></blockquote> } }
               @if (role() === 'teacher' && o.status === 2) { <p class="tf-muted">{{ t('order_waiting_review', 'Delivered. Waiting for the student to accept or ask for a revision.') }}</p> }
               @if (role() === 'student' && (o.status === 1 || o.status === 3)) { <p class="tf-muted">{{ t('order_in_progress_student', 'The teacher is working on it.') }}</p> }
               @if (can('complete')) { <p class="tf-muted">{{ locale.format('order_delivered_hint', { n: revisionsLeft() }, 'Review the delivery, then accept it or ask for a revision ({n} left).') }}</p> }
+              @if (o.status === 5) {
+                <!-- A cancelled order used to show an empty "Next step": say what happened to the money and that nothing is left to do. -->
+                <p class="tf-muted" data-testid="order-cancelled-note">{{ o.paymentStatus === 3
+                  ? (role() === 'teacher'
+                    ? t('order_cancelled_refunded_teacher', 'This order was cancelled and the student’s payment was refunded, so no earnings come from it. You do not need to do anything.')
+                    : t('order_cancelled_refunded_student', 'This order was cancelled and your payment was refunded to the way you paid. You do not need to do anything.'))
+                  : t('order_cancelled_unpaid', 'This order was cancelled before it was paid. Nothing was charged and nothing is left to do.') }}</p>
+              }
               @if (isCompleted()) {
                 <p class="tf-muted" data-testid="order-completed-note">{{ role() === 'teacher' ? t('order_completed_teacher', 'Completed. The earnings from this order are pending clearance before they can be withdrawn.') : t('order_completed_student', 'This order is complete.') }}</p>
                 @if (o.hasReview) { <p class="tf-muted" data-testid="review-submitted">{{ t('order_review_done', 'You reviewed this order.') }}@if (o.reviewOverallScore) { ★ {{ fmt.number(o.reviewOverallScore, { maximumFractionDigits: 1 }) }} }</p> }
@@ -57,6 +66,9 @@
                 @if (can('revision')) { <button type="button" class="tf-button tf-button-secondary" data-testid="open-revision" (click)="toggle('revision')" [attr.aria-expanded]="panel() === 'revision'">{{ t('order_ask_revision', 'Ask for a revision') }}</button> }
                 @if (can('review')) { <button type="button" class="tf-button" data-testid="open-review" (click)="toggle('review')" [attr.aria-expanded]="panel() === 'review'">{{ t('order_leave_review', 'Review the teacher') }}</button> }
                 <button type="button" class="tf-button tf-button-ghost" data-testid="open-conversation" (click)="openConversation()" [disabled]="!!busy()">{{ t('order_message', 'Message') }} {{ counterpart() }}</button>
+                @if (o.paymentStatus === 1 && o.status !== 5) {
+                  <a class="tf-button tf-button-ghost" data-testid="report-problem" routerLink="/disputes" [queryParams]="{ orderId: o.id }">{{ t('order_report_problem', 'Report a problem') }}</a>
+                }
                 @if (can('cancel')) { <button type="button" class="tf-button tf-button-ghost" data-testid="cancel-order" (click)="cancel()" [disabled]="!!busy()">{{ t('order_cancel', 'Cancel order') }}</button> }
               </div>
 
@@ -64,8 +76,12 @@
                 <form class="tf-form" (ngSubmit)="deliver()" novalidate data-testid="deliver-form">
                   <div class="tf-field">
                     <label for="deliver-files">{{ locale.format('order_delivery_files', { max: limits.files }, 'Files (up to {max}: PDF, image, audio or video)') }}</label>
-                    <input id="deliver-files" name="files" type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg" (change)="chooseFiles($event)">
-                    @if (files().length) { <span class="tf-field-help">@for (file of files(); track file.name; let last = $last) { {{ file.name }}{{ last ? '' : ', ' }} }</span> }
+                    <tf-file-picker inputId="deliver-files" [multiple]="true" [busy]="busy() === 'deliver'"
+                                    accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg"
+                                    [title]="t('upload_drop_files', 'Drag files here, or choose them from your device')"
+                                    [hint]="locale.format('order_delivery_limits', { n: limits.files, max: limits.bytes / 1048576 }, 'Up to {n} files · {max} MB each')"
+                                    [error]="deliveryError()"
+                                    [files]="files()" (picked)="pickFiles($event)" (removed)="removeFile($event)" />
                   </div>
                   <div class="tf-field">
                     <label for="deliver-message">{{ t('order_delivery_message', 'Note to the student (optional)') }}</label>
@@ -95,6 +111,7 @@
                       <div class="tf-action-row">
                         @for (star of stars; track star) {
                           <button type="button" class="tf-button tf-button-sm" [class.tf-button-ghost]="review()[criterion] !== star" [attr.aria-pressed]="review()[criterion] === star"
+                                  [attr.aria-label]="t('review_' + criterion, criterion) + ': ' + fmt.number(star)"
                                   [attr.data-testid]="'rate-' + criterion + '-' + star" (click)="rate(criterion, star)">{{ star }}</button>
                         }
                       </div>
@@ -104,8 +121,8 @@
                   <div class="tf-field">
                     <label for="review-comment">{{ t('order_review_comment', 'Your review') }}</label>
                     <textarea id="review-comment" name="comment" rows="4" maxlength="2000" [ngModel]="review().comment" (ngModelChange)="setReview('comment', $event)"
-                              [attr.aria-invalid]="reviewProblems().includes('comment')"></textarea>
-                    @if (reviewProblems().includes('comment')) { <span class="tf-field-error">{{ t('order_review_comment_required', 'Write a few words about the teacher.') }}</span> }
+                              [attr.aria-invalid]="reviewProblems().includes('comment')" [attr.aria-describedby]="reviewProblems().includes('comment') ? 'review-comment-error' : null"></textarea>
+                    @if (reviewProblems().includes('comment')) { <span id="review-comment-error" class="tf-field-error">{{ t('order_review_comment_required', 'Write a few words about the teacher.') }}</span> }
                   </div>
                   <label class="tf-check"><input type="checkbox" name="recommends" [checked]="review().recommends" (change)="setReview('recommends', $any($event.target).checked)"><span>{{ t('order_review_recommends', 'I recommend this teacher') }}</span></label>
                   <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-review" [disabled]="!!busy()">{{ t('order_publish_review', 'Publish review') }}</button></div>
@@ -118,7 +135,8 @@
               @if (o.deliveries.length) {
                 <ul class="tf-file-list" data-testid="deliveries">
                   @for (file of o.deliveries; track file.id) {
-                    <li data-testid="delivery"><span>{{ file.originalName }} · {{ date(file.createdAt) }}@if (file.message) { — {{ file.message }} }</span>
+                    <li data-testid="delivery"><span>@if (file.id === latestDeliveryId()) { <span class="tf-badge" data-tone="info" data-testid="delivery-latest">{{ t('order_delivery_latest', 'Latest') }}</span> }
+                      {{ file.originalName }} · {{ date(file.createdAt) }}@if (file.message) { — {{ file.message }} }</span>
                       <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openDelivery(file)">{{ t('protected_view_action', 'View in Tafseel') }}</button></li>
                   }
                 </ul>
@@ -130,7 +148,7 @@
             @if (role() === 'student') {
               <section class="tf-profile-editor-card" aria-labelledby="order-price-title" data-testid="order-price">
                 <div><h2 id="order-price-title">{{ t('price_agreed_title', 'Agreed price') }}</h2></div>
-                <tf-price-panel [order]="o" [paid]="o.paymentStatus === 1" />
+                <tf-price-panel [order]="o" [paid]="o.paymentStatus === 1 || o.paymentStatus === 3 || o.status === 5" />
               </section>
             }
 
@@ -153,7 +171,7 @@
               } @else if (timeline().length) {
                 <ol class="tf-timeline" data-testid="order-timeline">
                   @for (event of timeline(); track event.id) {
-                    <li [attr.data-event]="event.eventType"><strong>{{ eventLabel(event) }}@if (event.metadata?.revisionSequence; as sequence) { #{{ sequence }} }</strong><small>{{ date(event.occurredAt) }} · {{ actorLabel(event) }}</small></li>
+                    <li [attr.data-event]="event.eventType"><strong>{{ eventLabel(event) }}@if (event.metadata?.revisionSequence; as sequence) { #{{ sequence }} }</strong><small>{{ date(event.occurredAt) }} · {{ actorLabel(event) }}</small>@if (event.metadata?.note; as note) {<p class="tf-timeline-note" dir="auto">{{ note }}</p>}</li>
                   }
                 </ol>
               } @else { <p class="tf-muted">{{ t('order_detail_no_history', 'No history yet.') }}</p> }

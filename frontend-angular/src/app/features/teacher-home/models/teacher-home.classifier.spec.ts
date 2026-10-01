@@ -53,6 +53,13 @@ const balance = (over: Partial<Balance> = {}): Balance =>
   ({ currency: 'SAR', available: 0, pendingWithdrawal: 0, pendingClearance: 0, nextClearanceAt: null, ...over });
 
 describe('UX-02 teacher home composition', () => {
+  it('puts unanswered session requests on the teacher action list', () => {
+    const home = compose({ sessions: [session({ status: 9 })] });
+    expect(home.actions[0]).toMatchObject({
+      title: 'New session request', cta: 'Review session request',
+      link: { path: ['/live-sessions', 's1'] }
+    });
+  });
   it('shows a teacher with nothing assigned no action cards at all', () => {
     const home = compose({});
     expect(home.actions).toEqual([]);

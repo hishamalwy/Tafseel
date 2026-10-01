@@ -1,8 +1,8 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { Availability, ExceptionInput, RuleInput } from '../models/availability';
-import { OnboardingState } from '../models/readiness';
+import { IntroVideo, OnboardingState } from '../models/readiness';
 import { Offering, ServiceInput, ServiceSubject, ServiceType } from '../models/service-offer';
 import {
   AvailabilityException, Credential, CredentialDraft, CredentialKind, NamedItem, OwnProfile, ProfileInput, TopicItem,
@@ -112,9 +112,55 @@ export class HttpTeacherSetupGateway implements TeacherSetupGateway {
     return this.http.get<Json>('/api/v1/teachers/onboarding-status').pipe(map(onboarding));
   }
 
+  introVideo(): Observable<IntroVideo> {
+    return this.http.get<Json>('/api/v1/teachers/me/intro-video').pipe(map(introVideo));
+  }
+
+  uploadIntroVideo(file: File, version: string | null): Observable<HttpEvent<unknown>> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    return this.http.post('/api/v1/teachers/me/intro-video', body,
+      { headers: version ? ifMatch(version) : new HttpHeaders(), reportProgress: true, observe: 'events' });
+  }
+
+  useApplicationVideo(sampleId: string, version: string | null): Observable<IntroVideo> {
+    return this.http.post<Json>('/api/v1/teachers/me/intro-video/from-application', { sampleId, consent: true },
+      { headers: version ? ifMatch(version) : new HttpHeaders() }).pipe(map(introVideo));
+  }
+
+  setIntroVisible(visible: boolean, version: string): Observable<IntroVideo> {
+    return this.http.put<Json>('/api/v1/teachers/me/intro-video/visibility', { visible }, { headers: ifMatch(version) })
+      .pipe(map(introVideo));
+  }
+
+  removeIntroVideo(version: string): Observable<IntroVideo> {
+    return this.http.delete<Json>('/api/v1/teachers/me/intro-video', { headers: ifMatch(version) }).pipe(map(introVideo));
+  }
+
   setPublished(published: boolean): Observable<void> {
     return this.http.put<void>('/api/v1/teachers/me/publication', { published });
   }
+}
+
+export function introVideo(row: Json | null): IntroVideo {
+  const source = row?.['hasVideo'] ? (row['sourceCode'] === 'application' ? 'application' : 'upload') : null;
+  return {
+    source,
+    isPublic: !!row?.['isPublic'],
+    fileName: (row?.['fileName'] as string | null) ?? null,
+    consentedAt: (row?.['consentedAt'] as string | null) ?? null,
+    version: (row?.['version'] as string | null) ?? null,
+    consentStatement: String(row?.['consentStatementToAccept'] ?? ''),
+    applicationVideos: ((row?.['applicationVideos'] as Json[] | undefined) ?? []).map(v => ({
+      sampleId: String(v['sampleId'] ?? ''),
+      subjectName: String(v['subjectName'] ?? ''),
+      subjectNameAr: (v['subjectNameAr'] as string | null) ?? null,
+      title: String(v['title'] ?? ''),
+      titleAr: String(v['titleAr'] ?? ''),
+      durationSeconds: typeof v['durationSeconds'] === 'number' ? v['durationSeconds'] as number : null,
+      inUse: !!v['inUse']
+    }))
+  };
 }
 
 function ifMatch(version: string): HttpHeaders {
@@ -202,6 +248,7 @@ function onboarding(x: Json): OnboardingState {
     hasAvailability: !!x['hasAvailability'], hasPublicSample: !!x['hasPublicSample'], isPublished: !!x['isPublished'],
     readyForPublication: !!x['readyForPublication'],
     blockingReasons: list(x['blockingReasons'], value => String(value)),
-    missingRequirements: list(x['missingRequirements'], value => String(value))
+    missingRequirements: list(x['missingRequirements'], value => String(value)),
+    applicationId: typeof x['applicationId'] === 'string' ? x['applicationId'] as string : undefined
   };
 }

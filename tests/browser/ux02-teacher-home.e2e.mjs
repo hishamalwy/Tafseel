@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import {
   BASE, SEED, acceptRequest, api, attribute, confirmDialog, context, file, finish, noHorizontalOverflow, pathOf,
   outboxLink, payInSimulator, pdf, registerStudent, sendDirectRequest, shot, signIn, spa, sql, start, step, visit,
-  waitForCall, waitUntil
+  waitForCall, waitUntil, pickSlot
 } from './wave3b-harness.mjs';
 
 const stamp = Date.now();
@@ -77,7 +77,7 @@ async function aboveTheFold(locator, what) {
 async function registerTeacher(actor, fullName, email, password) {
   const { page } = actor;
   await visit(page, `${BASE}/ar/auth`);
-  await page.locator('[role=tab]').nth(1).click();
+  await page.locator('.tf-auth-tabs button').nth(1).click();
   await page.getByRole('button', { name: /as Teacher|قدّم كمعلم/i }).click();
   await page.locator('#reg-fullname').fill(fullName);
   await page.locator('#reg-email').fill(email);
@@ -89,7 +89,7 @@ async function registerTeacher(actor, fullName, email, password) {
   assert.ok((await registered).ok(), 'registration accepted');
   await page.waitForURL(url => pathOf(url).endsWith('/auth/confirm-email'), { timeout: 15000 });
   await visit(page, await outboxLink(email, 'mode=confirm'));
-  await page.locator('.tf-toast').waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('.tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
   await page.locator('#login-email').fill(email);
   await page.locator('#login-password').fill(password);
   await page.locator('form button[type=submit]').first().click();
@@ -208,7 +208,7 @@ await step('4. once the student pays, starting the work is the first thing, with
   const net = Number(sql(`SELECT TeacherNet FROM Orders WHERE Id = '${orderId}'`));
   assert.ok(net > 0 && net < PRICE, `the net is the price minus commission (${net})`);
   const amount = (await first.locator('[data-testid=home-card-amount]').innerText()).replace(/\s+/g, ' ');
-  assert.match(amount, new RegExp(`صافي ربحك[^\\d]*${escape(net.toLocaleString('en-US', { maximumFractionDigits: 2 }))}`),
+  assert.match(amount, new RegExp(`صافي ربحك[^\\d]*${escape(net.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(Number(net)) ? 0 : 2 }))}`),
     `the card names the teacher's own earnings (${amount})`);
   assert.ok(!amount.includes('SAR'), 'the currency is the mark, not Latin letters');
   assert.equal(await href(first.locator('[data-testid=home-card-cta]')), `/ar/orders/${orderId}`);
@@ -245,14 +245,18 @@ await step('6. a booked session becomes the teacher’s next session', async () 
   await spa(student, `/sessions/book?teacherId=${SEED.teacherA.Id}&teacherServiceId=${SEED.teacherA.liveServiceId}`);
   await page.locator('#book-session-title').fill(sessionTitle);
   await page.locator('#book-topic').fill('مسائل المعدلات المرتبطة: السلّم والخزان المخروطي.');
-  const slot = page.locator('button.tf-book-slot').nth(6);
-  await slot.waitFor({ timeout: 20000 });
-  await slot.click();
+  await pickSlot(page, 6);
   const created = waitForCall(page, 'POST', /^\/api\/v1\/live-sessions$/);
   await page.locator('button.tf-book-confirm').click();
   const booked = await created;
   assert.equal(booked.status(), 201, 'booked');
   sessionId = (await booked.json()).id;
+  await page.waitForURL(url => pathOf(url) === `/en/live-sessions/${sessionId}`, { timeout: 20000 });
+  await visit(teacher.page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await teacher.page.locator('[data-testid=accept-session-request]').click();
+  await attribute(teacher.page, '[data-testid=session-status]', 'data-status', 0);
+  await visit(page, `${BASE}/en/live-sessions/${sessionId}`);
+  await page.locator('[data-testid=pay-session]').click();
   await page.waitForURL(url => pathOf(url) === '/en/checkout', { timeout: 20000 });
   await payInSimulator(page, new RegExp(`^/(ar|en)/live-sessions/${sessionId}$`));
 
@@ -300,7 +304,7 @@ await step('7. after the work is finished the earnings summary says what the mon
   const earnings = (await home.earnings().innerText()).replace(/\s+/g, ' ');
   assert.match(earnings, /متاح للسحب/);
   assert.match(earnings, /قيد الإتاحة/);
-  assert.ok(earnings.includes(sar.pendingClearance.toLocaleString('en-US', { maximumFractionDigits: 2 })),
+  assert.ok(earnings.includes(sar.pendingClearance.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(Number(sar.pendingClearance)) ? 0 : 2 })),
     `the clearing amount is the server's (${earnings})`);
   assert.ok(!earnings.includes('SAR'), 'money is drawn with the riyal mark');
   for (const word of ['ledger', 'escrow', 'maturity', 'pendingClearance', 'account'])
@@ -314,7 +318,8 @@ await step('8. the whole home stays Arabic, inside the phone, and free of machin
   const text = await homeText(page);
   assert.doesNotMatch(text, /[0-9a-f]{8}-[0-9a-f]{4}-/i, `no id on the home (${text})`);
   assert.doesNotMatch(text, /\bnull\b|\bundefined\b|\bNaN\b|\[object/);
-  assert.doesNotMatch(text, /[A-Za-z]{3,}/, `no English product word on the Arabic home (${text})`);
+  // The seed's run id (hex) appears in test names and titles; it is data, not product copy.
+  assert.doesNotMatch(text.replaceAll(SEED.run, ''), /[A-Za-z]{3,}/, `no English product word on the Arabic home (${text})`);
   assert.doesNotMatch(text, /العملة|آخر تحديث|الحالة:/, `no entity-explorer label (${text})`);
   assert.equal(await page.locator('.tf-dashboard-grid, .tf-dashboard-search, .tf-dashboard-card').count(), 0,
     'no entity grid, no search box, no Refresh');

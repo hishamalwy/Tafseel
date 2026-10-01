@@ -8,6 +8,7 @@ using Tafseel.Application.Authorization;
 using Tafseel.Application.Governance;
 using Tafseel.Domain.Governance;
 using Tafseel.Infrastructure.Messaging;
+using Tafseel.Infrastructure.Operations;
 using Tafseel.Infrastructure.Persistence;
 
 namespace Tafseel.Infrastructure.Governance;
@@ -16,16 +17,24 @@ internal sealed class DisputeSlaWorker(
     IServiceScopeFactory scopes,
     TimeProvider clock,
     IOptions<DisputeOptions> options,
+    WorkerHeartbeats heartbeats,
     ILogger<DisputeSlaWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(15), clock);
+        var interval = TimeSpan.FromMinutes(15);
+        heartbeats.Register("dispute-sla", interval);
+        using var timer = new PeriodicTimer(interval, clock);
         do
         {
-            try { await EscalateOverdueAsync(stoppingToken); }
+            try
+            {
+                await EscalateOverdueAsync(stoppingToken);
+                heartbeats.Succeeded("dispute-sla");
+            }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
+                heartbeats.Failed("dispute-sla");
                 logger.LogWarning(exception, "Dispute SLA escalation scan failed");
             }
         } while (await timer.WaitForNextTickAsync(stoppingToken));

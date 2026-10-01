@@ -46,6 +46,8 @@ export interface Dispute {
   readonly liveSessionBookingId: string | null;
   readonly studentId: string;
   readonly teacherId: string;
+  /** Who reported it; the other participant reads it as something to answer. */
+  readonly openedById?: string | null;
   /** ETag for optimistic concurrency; every mutation must echo it as If-Match. */
   readonly version: string;
   readonly actionDueAt: string | null;

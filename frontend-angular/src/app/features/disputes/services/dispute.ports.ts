@@ -27,6 +27,8 @@ export interface DisputeGateway {
   open(command: OpenDisputeCommand): Observable<Dispute>;
   /** `version` is sent as If-Match; a stale one must fail rather than overwrite. */
   postMessage(id: string, body: string, version: string): Observable<void>;
+  /** The reviewer's question to both parties; only while the case is under review. */
+  postReviewerMessage(id: string, body: string, version: string): Observable<void>;
   uploadEvidence(id: string, file: File, version: string): Observable<void>;
   downloadEvidence(evidenceId: string, fileName: string): Observable<void>;
 }

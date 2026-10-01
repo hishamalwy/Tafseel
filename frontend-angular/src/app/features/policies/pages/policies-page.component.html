@@ -1,20 +1,6 @@
-<a href="#main" class="tf-skip">{{ chrome().skip }}</a>
+<tf-skip-link />
 
-<header class="tf-workflow-header">
-  <div class="tf-shell tf-workflow-header__inner">
-    <a class="tf-workflow-header__brand" routerLink="/" aria-label="Tafseel home">
-      <img decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="18" height="24" />
-      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
-    </a>
-    <span class="tf-workflow-header__crumb">/ {{ chrome().policies }}</span>
-    <div class="tf-workflow-header__actions">
-      <button type="button" class="tf-lang-toggle" (click)="locale.toggle()"
-              [attr.aria-label]="langLabel()" [attr.title]="langLabel()"></button>
-      <button type="button" class="tf-theme-toggle" (click)="theme.toggle()"
-              [attr.aria-label]="themeLabel()"></button>
-    </div>
-  </div>
-</header>
+<tf-workflow-header [crumb]="chrome().policies" />
 
 <main id="main" class="tf-shell tf-policy">
   <div class="tf-policy-mast">
@@ -46,9 +32,8 @@
 <footer class="tf-mini-footer" data-pattern="bottom">
   <div class="tf-shell tf-mini-footer__inner">
     <a class="tf-mini-footer__brand" routerLink="/" aria-label="Tafseel">
-      <img class="tf-footer-mark-light" loading="lazy" decoding="async" data-tafseel-mark src="assets/brand/tafseel-mark.svg" alt="" width="18" height="24" />
-      <img class="tf-footer-mark-dark" loading="lazy" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark" src="assets/brand/tafseel-mark-dark.svg" alt="" width="18" height="24" />
-      <span translate="no" class="tf-mursala tf-wordmark"><span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span></span>
+      <img class="tf-footer-mark-light tf-brand-lockup" loading="lazy" decoding="async" src="assets/brand/tafseel-lockup.svg" alt="" width="100" height="44" />
+      <img class="tf-footer-mark-dark tf-brand-lockup" loading="lazy" decoding="async" src="assets/brand/tafseel-lockup-dark.svg" alt="" width="100" height="44" />
     </a>
     <span class="tf-mini-footer__rights">{{ chrome().rights }}</span>
     <nav class="tf-mini-footer__links" aria-label="Tafseel">

@@ -209,14 +209,14 @@ a student gets 403 and an anonymous caller 401 from balances and policy. Strict 
 (no endpoint changed). Route probe 64/64.
 
 **Browser journey:** `tests/browser/fin01-teacher-earnings.e2e.mjs` — **7/7**
-([log](../../audits/fin01-2026-09-16/evidence/e2e/fin01-teacher-earnings.log)). The balance is earned through
+(log). The balance is earned through
 the real flow (request → pay → start → deliver → complete), then the Arabic phone screen shows it under
 «قيد الإتاحة» — not as withdrawable — with the date and the explanation; the empty state and the student's
 403/route refusal are proven in the same run.
-[Screenshots](../../audits/fin01-2026-09-16/evidence/e2e/screenshots/).
+Screenshots.
 Regressions: UX-04 7/7, UX-05 6/6, Wave 3B direct order 15/15.
 
 **Found while building:** the minimum sentence interpolated the amount as text, putting the Latin code
 `50 SAR` inside an Arabic sentence (now drawn by `tf-price`), and with `available = 0` the page still said
 "You can request a withdrawal of this amount" (the sentence now appears only when there is something to
-withdraw). Both fixed here; details in the [audit](../../audits/fin01-2026-09-16/README.md).
+withdraw). Both fixed here; details in the audit.

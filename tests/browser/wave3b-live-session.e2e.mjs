@@ -1,7 +1,6 @@
 /* Wave 3B end-to-end: live sessions with the mock meeting provider (J8-02, J8-05, J8-06).
  *
- *   STUDENT registers, books the nearest 30-minute slot with teacher A and with teacher B, and a later
- *   slot with teacher A; pays each in the mock simulator
+ *   STUDENT registers and requests three times; each teacher accepts before payment
  *   BOTH see the booking on its own screen; joining the later session is refused as too early;
  *   teacher A cancels it; an unrelated account cannot join
  *   IN THE WINDOW both participants join the nearest session through the page
@@ -14,7 +13,7 @@
 import assert from 'node:assert/strict';
 import {
   BASE, SEED, api, attribute, confirmDialog, context, finish, pathOf, payInSimulator, registerStudent, shot, signIn,
-  spa, sql, start, step, visit, waitForCall, waitUntil
+  spa, sql, start, step, visit, waitForCall, waitUntil, pickSlot
 } from './wave3b-harness.mjs';
 
 const stamp = Date.now();
@@ -37,14 +36,24 @@ async function book(teacher, slotIndex, title) {
   await spa(student, `/sessions/book?teacherId=${teacher.Id}&teacherServiceId=${teacher.liveServiceId}`);
   await page.locator('#book-session-title').fill(title);
   await page.locator('#book-topic').fill('Related rates: the ladder and the conical tank problems.');
-  const slot = page.locator('button.tf-book-slot').nth(slotIndex);
-  await slot.waitFor({ timeout: 20000 });
-  await slot.click();
+  await pickSlot(page, slotIndex);
   const created = waitForCall(page, 'POST', /^\/api\/v1\/live-sessions$/);
   await page.locator('button.tf-book-confirm').click();
   const response = await created;
-  assert.equal(response.status(), 201, 'booked');
+  assert.equal(response.status(), 201, 'requested');
   const booking = await response.json();
+  await page.waitForURL(url => pathOf(url) === `/en/live-sessions/${booking.id}`, { timeout: 15000 });
+  await attribute(page, '[data-testid=session-status]', 'data-status', 9);
+  assert.equal(await page.locator('[data-testid=pay-session]').count(), 0, 'payment waits for teacher approval');
+  const teacherActor = teacher.Id === SEED.teacherA.Id ? teacherA : teacherB;
+  await open(teacherActor, booking.id);
+  await attribute(teacherActor.page, '[data-testid=session-status]', 'data-status', 9);
+  const accepted = waitForCall(teacherActor.page, 'POST', new RegExp(`^/api/v1/live-sessions/${booking.id}/request/respond$`));
+  await teacherActor.page.locator('[data-testid=accept-session-request]').click();
+  assert.equal((await accepted).status(), 204);
+  await attribute(teacherActor.page, '[data-testid=session-status]', 'data-status', 0);
+  await open(student, booking.id);
+  await page.locator('[data-testid=pay-session]').click();
   await page.waitForURL(url => pathOf(url) === '/en/checkout', { timeout: 15000 });
   await payInSimulator(page, new RegExp(`^/en/live-sessions/${booking.id}$`), async () => {
     assert.equal(sql(`SELECT Status FROM LiveSessionBookings WHERE Id = '${booking.id}'`), '0', 'awaiting payment while the simulator is open');
@@ -61,6 +70,8 @@ async function open(actor, id) {
 
 await step('J8 student books and pays the nearest slot with each teacher and a later one with teacher A', async () => {
   await registerStudent(student, `Wave3B Live Student ${stamp}`, studentEmail, studentPassword);
+  await signIn(teacherA, SEED.teacherA.Email);
+  await signIn(teacherB, SEED.teacherB.Email);
   sessions.completion = await book(SEED.teacherA, 0, `Related rates with A ${stamp}`);
   // Payments, including the simulator's reads, are limited to 10 a minute per student: one booking a minute.
   await waitUntil(Date.now() + 61_000, 'the payment limit window resets');
@@ -73,9 +84,10 @@ await step('J8 student books and pays the nearest slot with each teacher and a l
 });
 
 await step('J8-06 both participants see the booking on its own screen, reached from their work lists', async () => {
-  await signIn(teacherA, SEED.teacherA.Email);
+  // UX-03 made sessions part of each role's work list (`tf-work-card`); this journey predates it, and is
+  // matched to both card kinds exactly as wave3b-direct-order was then.
   await spa(teacherA, '/teacher/work?tab=sessions');
-  const card = teacherA.page.locator('article.tf-dashboard-card', { hasText: `Related rates with A ${stamp}` })
+  const card = teacherA.page.locator('article.tf-dashboard-card, article.tf-work-card', { hasText: `Related rates with A ${stamp}` })
     .filter({ has: teacherA.page.locator('[data-testid=row-open]') });
   await card.waitFor({ timeout: 20000 });
   await card.locator('[data-testid=row-open]').click();
@@ -85,20 +97,17 @@ await step('J8-06 both participants see the booking on its own screen, reached f
   await shot(teacherA.page, 'live-01-teacher-booking');
 
   await spa(student, '/student/sessions');
-  const mine = student.page.locator('article.tf-dashboard-card', { hasText: `Related rates with B ${stamp}` })
+  const mine = student.page.locator('article.tf-dashboard-card, article.tf-work-card', { hasText: `Related rates with B ${stamp}` })
     .filter({ has: student.page.locator('[data-testid=row-open]') });
   await mine.waitFor({ timeout: 20000 });
-  await signIn(teacherB, SEED.teacherB.Email);
   await open(teacherB, sessions.noShow.id);
   await attribute(teacherB.page, '[data-testid=session-status]', 'data-status', 1);
 });
 
 await step('J8-02 joining too early is refused by the server, and an unrelated account is refused outright', async () => {
   await open(student, sessions.later.id);
-  const refused = waitForCall(student.page, 'GET', new RegExp(`^/api/v1/live-sessions/${sessions.later.id}/join$`));
-  await student.page.locator('[data-testid=join-session]').click();
-  assert.equal((await refused).status(), 400);
-  await student.page.locator('[data-testid=session-error]').waitFor({ timeout: 10000 });
+  assert.equal(await student.page.locator('[data-testid=join-session]').isDisabled(), true,
+    'the page prevents joining before the window');
   assert.equal(await student.page.evaluate(() => window.__openedRoom ?? null), null, 'no room opened');
   const early = await api(studentEmail, 'GET', `/api/v1/live-sessions/${sessions.later.id}/join`, undefined, {}, studentPassword);
   assert.equal(early.body.code, 'join_window_closed');
@@ -160,6 +169,27 @@ await step('J8-05 after the session ends teacher A asks to complete; only the st
 
   await open(teacherA, sessions.completion.id);
   assert.match(await teacherA.page.locator('[data-testid=session-actions]').innerText(), /pending clearance/i);
+});
+
+await step('PRODUCT-P1 the student reviews the completed session once; the teacher cannot', async () => {
+  await open(teacherA, sessions.completion.id);
+  assert.equal(await teacherA.page.locator('[data-testid=open-session-review]').count(), 0, 'teachers do not review');
+  await open(student, sessions.completion.id);
+  await student.page.locator('[data-testid=open-session-review]').click();
+  const form = student.page.locator('[data-testid=session-review-form]');
+  await form.waitFor();
+  // Nothing is sent while the form is incomplete.
+  await form.locator('[data-testid=submit-session-review]').click();
+  await form.locator('[role=alert]').first().waitFor();
+  for (const criterion of ['explanationClarity', 'subjectKnowledge', 'communication', 'onTimeDelivery', 'valueForMoney'])
+    await form.locator(`[data-testid=session-rate-${criterion}-5]`).click();
+  await form.locator('[data-testid=session-review-comment]').fill('Clear, patient and on time.');
+  const reviewed = waitForCall(student.page, 'POST', new RegExp(`^/api/v1/live-sessions/${sessions.completion.id}/review$`));
+  await form.locator('[data-testid=submit-session-review]').click();
+  assert.ok((await reviewed).ok(), 'review published');
+  await student.page.locator('[data-testid=session-reviewed]').waitFor({ timeout: 15000 });
+  assert.equal(await student.page.locator('[data-testid=open-session-review]').count(), 0, 'one review per session');
+  await shot(student.page, 'live-04b-reviewed-student');
 });
 
 await step('J8-05 after the 15-minute grace the student reports teacher B absent; only teacher B can confirm it', async () => {

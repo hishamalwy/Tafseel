@@ -2,9 +2,9 @@
 
     <div class="tf-auth-card-wrap">
       <div class="tf-panel tf-panel-narrow tf-auth-panel">
-        <div class="tf-auth-tabs" role="tablist">
+        <div class="tf-auth-tabs">
           @for (m of modeTabs(); track m.mode) {
-            <button type="button" role="tab" [attr.aria-selected]="m.active" (click)="goMode(m.mode)">{{ m.label }}</button>
+            <button type="button" [attr.aria-pressed]="m.active" (click)="goMode(m.mode)">{{ m.label }}</button>
           }
         </div>
 
@@ -13,9 +13,15 @@
           @case ('login') {
             <div class="tf-auth-panel">
               <div class="tf-auth-copy tf-auth-copy--spaced">
-                <h1 class="tf-auth-heading">{{ t('auth_welcome_back', 'Welcome back') }}</h1>
-                <p class="tf-muted">{{ t('auth_login_sub', 'Log in to manage your requests and sessions.') }}</p>
+                <h1 class="tf-auth-heading">{{ fromAction() ? t('auth_login_action_title', 'Log in to continue') : t('auth_welcome_back', 'Welcome back') }}</h1>
+                <p class="tf-muted">{{ fromAction()
+                  ? t('auth_login_action_sub', 'You need a free Tafseel account to send a request or book a session. Log in, or choose Sign up above if you are new. We bring you back to what you chose.')
+                  : t('auth_login_sub', 'Log in to manage your requests and sessions.') }}</p>
               </div>
+
+              @if (notice()) {
+                <p class="tf-auth-success" role="status">{{ notice() }}</p>
+              }
 
               <form class="tf-form" (ngSubmit)="onLogin()" novalidate>
                 <tf-text-field
@@ -72,6 +78,9 @@
               <p class="tf-auth-switch">
                 {{ t('auth_no_account', "Don't have an account?") }}
                 <button type="button" class="tf-inline-action" (click)="goMode('register')">{{ t('auth_signup', 'Sign up') }}</button>
+              </p>
+              <p class="tf-auth-switch">
+                <a routerLink="/help/account-access" data-testid="auth-cant-sign-in">{{ t('auth_cant_sign_in', 'Can’t get into your account? Get help') }}</a>
               </p>
             </div>
           }
@@ -156,8 +165,7 @@
                   <span>{{ t('auth_policy_prefix', 'I agree to the') }}
                     <a routerLink="/policies/terms" target="_blank" rel="noopener">{{ t('auth_terms', 'Terms of Service') }}</a>
                     {{ t('auth_policy_join', 'and') }}
-                    <a routerLink="/policies/privacy" target="_blank" rel="noopener">{{ t('auth_privacy', 'Privacy Policy') }}</a>
-                    (v{{ policyVersion }})</span>
+                    <a routerLink="/policies/privacy" target="_blank" rel="noopener">{{ t('auth_privacy', 'Privacy Policy') }}</a></span>
                 </label>
 
                 <button class="tf-button tf-auth-submit" type="submit" [disabled]="registerSubmitDisabled()">

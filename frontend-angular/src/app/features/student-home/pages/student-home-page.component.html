@@ -14,14 +14,45 @@
       <button type="button" class="tf-button" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
     </div>
   } @else if (home(); as view) {
+    <!-- UX-63: a returning student with something to do sees it first; starting something new moves below it. -->
+    @let startFirst = view.newStudent || !view.actions.length;
     <div class="tf-home">
-      @if (view.newStudent) {
-        <section class="tf-home-welcome" data-testid="home-welcome">
-          <h1>{{ locale.format('sh_welcome_title', { firstName: firstName() }, 'Welcome, {firstName}. How can we help today?') }}</h1>
-        </section>
-      } @else {
-        <h1 class="tf-home-greeting" data-testid="home-greeting">{{ locale.format('sh_greeting', { firstName: firstName() }, 'Hi {firstName}') }}</h1>
-      }
+      <section class="tf-home-hero tf-home-start" [class.tf-home-hero--returning]="!view.newStudent"
+               data-testid="home-start" aria-labelledby="home-start-title">
+        <div class="tf-home-hero__copy">
+          @if (view.newStudent) {
+            <div data-testid="home-welcome">
+              <h1>{{ locale.format('sh_welcome_title', { firstName: firstName() }, 'Welcome, {firstName}. How can we help today?') }}</h1>
+            </div>
+          } @else {
+            <h1 class="tf-home-greeting" data-testid="home-greeting">{{ locale.format('sh_greeting', { firstName: firstName() }, 'Hi {firstName}') }}</h1>
+          }
+          <p class="tf-home-hero__lede"><span class="tf-home-date">{{ today() }}</span> {{ view.newStudent
+            ? t('sh_new_lede', 'Choose a teacher, or start with the file or question you need explained.')
+            : t('sh_home_lede', 'Your next step and everything in progress, in one place.') }}</p>
+        </div>
+        @if (startFirst) {
+          <div class="tf-home-start-block">
+            <h2 class="tf-home-start-label" id="home-start-title">{{ t('sh_start_title', 'Start something new') }}</h2>
+            <ng-container *ngTemplateOutlet="startGrid" />
+          </div>
+        }
+      </section>
+
+      <ng-template #startGrid>
+        <div class="tf-home-start-grid">
+          <a class="tf-home-start-card" data-testid="home-find-teacher" routerLink="/teachers">
+            <span class="tf-home-start-card__icon" aria-hidden="true"><tf-icon name="search" [size]="20" /></span>
+            <strong>{{ t('sh_start_find', 'Find a teacher') }}</strong><span class="tf-home-start-card__go" aria-hidden="true"><tf-icon name="arrow-right" [size]="18" /></span>
+            <span>{{ t('sh_start_find_body', 'Browse qualified teachers and ask the one you choose.') }}</span>
+          </a>
+          <a class="tf-home-start-card" data-testid="home-post-request" routerLink="/requests/new">
+            <span class="tf-home-start-card__icon" aria-hidden="true"><tf-icon name="file-plus" [size]="20" /></span>
+            <strong>{{ t('sh_start_post', 'Post a request') }}</strong><span class="tf-home-start-card__go" aria-hidden="true"><tf-icon name="arrow-right" [size]="18" /></span>
+            <span>{{ t('sh_start_post_body', 'Describe what you need, then ask one teacher or receive offers from several.') }}</span>
+          </a>
+        </div>
+      </ng-template>
 
       @if (partial()) {
         <p class="tf-alert" data-kind="error" data-testid="home-partial" role="status">
@@ -58,6 +89,31 @@
         <p class="tf-home-quiet" data-testid="home-nothing-needed">{{ t('sh_nothing_needed', 'Nothing needs your attention right now.') }}</p>
       }
 
+      @if (!startFirst) {
+        <section class="tf-home-section" data-testid="home-start-later" aria-labelledby="home-start-later-title">
+          <h2 id="home-start-later-title">{{ t('sh_start_title', 'Start something new') }}</h2>
+          <ng-container *ngTemplateOutlet="startGrid" />
+        </section>
+      }
+
+      @if (view.upcoming || view.current.length) {
+      <div class="tf-home-work" [class.tf-home-work--single]="!view.upcoming || !view.current.length">
+      @if (view.upcoming; as session) {
+        <section class="tf-home-section" data-testid="home-upcoming" aria-labelledby="home-upcoming-title">
+          <h2 id="home-upcoming-title">{{ t('sh_upcoming_title', 'Your next session') }}</h2>
+          <article class="tf-home-card">
+            <div class="tf-home-card-head">
+              <h3>{{ session.title }}</h3>
+              @if (session.status; as status) {
+                <span class="tf-badge" [attr.data-tone]="status.tone">{{ t(status.labelKey, status.fallback) }}</span>
+              }
+            </div>
+            <p class="tf-home-supporting">{{ session.supporting }}</p>
+            <a class="tf-home-link" data-testid="home-session-open" [routerLink]="session.link.path">{{ session.cta }}</a>
+          </article>
+        </section>
+      }
+
       @if (view.current.length) {
         <section class="tf-home-section" data-testid="home-current" aria-labelledby="home-current-title">
           <h2 id="home-current-title">{{ t('sh_current_title', 'In progress') }}</h2>
@@ -76,36 +132,8 @@
           <a class="tf-home-more" data-testid="home-see-all" routerLink="/student/requests">{{ t('sh_see_all', 'See all my requests') }}</a>
         </section>
       }
-
-      @if (view.upcoming; as session) {
-        <section class="tf-home-section" data-testid="home-upcoming" aria-labelledby="home-upcoming-title">
-          <h2 id="home-upcoming-title">{{ t('sh_upcoming_title', 'Your next session') }}</h2>
-          <article class="tf-home-card">
-            <div class="tf-home-card-head">
-              <h3>{{ session.title }}</h3>
-              @if (session.status; as status) {
-                <span class="tf-badge" [attr.data-tone]="status.tone">{{ t(status.labelKey, status.fallback) }}</span>
-              }
-            </div>
-            <p class="tf-home-supporting">{{ session.supporting }}</p>
-            <a class="tf-home-link" data-testid="home-session-open" [routerLink]="session.link.path">{{ session.cta }}</a>
-          </article>
-        </section>
+      </div>
       }
-
-      <section class="tf-home-section tf-home-start" data-testid="home-start" aria-labelledby="home-start-title">
-        <h2 id="home-start-title">{{ t('sh_start_title', 'Start something new') }}</h2>
-        <div class="tf-home-start-grid">
-          <a class="tf-home-start-card" data-testid="home-find-teacher" routerLink="/teachers">
-            <strong>{{ t('sh_start_find', 'Find a teacher') }}</strong>
-            <span>{{ t('sh_start_find_body', 'Browse qualified teachers and ask the one you choose.') }}</span>
-          </a>
-          <a class="tf-home-start-card" data-testid="home-post-request" routerLink="/requests/new">
-            <strong>{{ t('sh_start_post', 'Post a request') }}</strong>
-            <span>{{ t('sh_start_post_body', 'Describe what you need, then ask one teacher or receive offers from several.') }}</span>
-          </a>
-        </div>
-      </section>
     </div>
   }
 </tf-workspace-shell>

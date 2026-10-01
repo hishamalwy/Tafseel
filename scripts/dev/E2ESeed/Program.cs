@@ -79,13 +79,17 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "supply")
         "Record a short explanation of F = ma with one worked example.", 300);
     var chemistryAssignment = new QualificationTopic(chemistry.Id, $"Balancing equations {run}",
         "Record a short explanation of balancing a chemical equation.", 300);
+    // PRODUCT-P1: a third subject the qualified teacher adds later (changes requested, resubmitted, approved).
+    var biology = new Subject($"E2E Biology {run}", "leaf", $"أحياء تجريبية {run}");
+    var biologyAssignment = new QualificationTopic(biology.Id, $"Cell division {run}",
+        "Record a short explanation of mitosis with one diagram.", 300);
     var topic = new Topic(physics.Id, $"Mechanics {run}", "intermediate", $"الميكانيكا {run}");
     var explanation = new ServiceCatalogItem($"E2E Worked explanation {run}", "A recorded explanation of the student's question.",
         $"e2e_explain_{run}", "شرح مسجّل تجريبي", "شرح مسجّل لسؤال الطالب", minPrice: 20, maxPrice: 500);
     var live = new ServiceCatalogItem($"E2E Live lesson {run}", "A live one-to-one lesson.",
         $"e2e_live_{run}", "درس مباشر تجريبي", "درس مباشر فردي", requiresScheduling: true, allowedDurations: [60],
         minPrice: 50, maxPrice: 800);
-    db.AddRange(physics, chemistry, assignment, chemistryAssignment, topic, explanation, live);
+    db.AddRange(physics, chemistry, biology, assignment, chemistryAssignment, biologyAssignment, topic, explanation, live);
     var languages = db.TeachingLanguages.Count();
     if (languages == 0) db.AddRange(new TeachingLanguage("Arabic", "ar"), new TeachingLanguage("English", "en"));
     await db.SaveChangesAsync();
@@ -95,6 +99,7 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "supply")
         reviewer = new { reviewer.Id, reviewer.Email },
         subjectId = physics.Id, subjectName = physics.Name,
         unqualifiedSubjectId = chemistry.Id, unqualifiedSubjectName = chemistry.Name,
+        secondSubjectId = biology.Id, secondSubjectName = biology.Name,
         qualificationTopicId = assignment.Id,
         explanation = new { explanation.Id, explanation.Code },
         live = new { live.Id, live.Code }
@@ -119,6 +124,8 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "fulfilment")
     // the fulfilment journeys depends on them, and they exercise no capability of their own.
     var reviewer = await UserAsync(Roles.QualityReviewer, "reviewer", "مراجع الجودة", "E2E Quality Reviewer");
     var administrator = await UserAsync(Roles.Admin, "admin", "مشرف تفصيل", "E2E Admin");
+    // A money operator without Admin powers (least privilege): payouts, payments, reconciliation.
+    var financeUser = await UserAsync(Roles.Finance, "finance", "موظف المالية", "E2E Finance");
     var teachers = new List<object>();
     foreach (var (handle, name, englishName, headline, price) in new[]
     {
@@ -147,6 +154,7 @@ if (Environment.GetEnvironmentVariable("TAFSEEL_E2E_SCENARIO") == "fulfilment")
         outsider = new { outsider.Id, outsider.Email },
         reviewer = new { reviewer.Id, reviewer.Email },
         admin = new { administrator.Id, administrator.Email },
+        finance = new { financeUser.Id, financeUser.Email },
         teacherA = teachers[0],
         teacherB = teachers[1],
         subjectId = maths.Id, subjectName = maths.Name,

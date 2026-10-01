@@ -1,14 +1,11 @@
 <footer class="tf-landing-footer" data-pattern="bottom">
   <div class="tf-shell tf-landing-footer-main">
-    <section class="tf-landing-footer-intro" [attr.aria-labelledby]="idPrefix() + '-brand'">
+    <section class="tf-landing-footer-intro" aria-label="Tafseel">
       <a class="tf-landing-footer-brand" routerLink="/" [attr.aria-label]="labels().home">
-        <img class="tf-footer-mark-light" loading="lazy" decoding="async" data-tafseel-mark
-             src="assets/brand/tafseel-mark.svg" alt="" width="29" height="40" />
-        <img class="tf-footer-mark-dark" loading="lazy" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
-             src="assets/brand/tafseel-mark-dark.svg" alt="" width="29" height="40" />
-        <strong [id]="idPrefix() + '-brand'" translate="no" class="tf-mursala tf-wordmark">
-          <span class="tf-wordmark__ar" lang="ar" dir="rtl">تفصيــل</span><span class="tf-wordmark__en" lang="en">Tafseel</span>
-        </strong>
+        <img class="tf-footer-mark-light tf-brand-lockup" loading="lazy" decoding="async"
+             src="assets/brand/tafseel-lockup.svg" alt="" width="100" height="44" />
+        <img class="tf-footer-mark-dark tf-brand-lockup" loading="lazy" decoding="async"
+             src="assets/brand/tafseel-lockup-dark.svg" alt="" width="100" height="44" />
       </a>
       <p class="tf-landing-footer-statement">{{ copy().statement }}</p>
       <p class="tf-landing-footer-copy">{{ copy().tagline }}</p>

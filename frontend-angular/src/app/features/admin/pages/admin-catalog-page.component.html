@@ -1,0 +1,416 @@
+<tf-workspace-shell role="Admin" section="marketplace">
+  <header class="tf-page-header" data-face="sans">
+    <div class="tf-stack">
+      <h1>{{ t('admin_catalog_title', 'Catalog & pricing') }}</h1>
+      <p class="tf-page-header-desc">{{ t('admin_catalog_intro', 'What teachers can offer, in which subjects, and within which prices.') }}</p>
+    </div>
+  </header>
+
+  <nav class="tf-admin-tabs" [attr.aria-label]="t('dashboard_section_tabs', 'Section tabs')">
+    @for (kind of kinds; track kind) {
+      <button type="button" [class.active]="tab() === kind" [attr.aria-pressed]="tab() === kind" (click)="chooseTab(kind)" [attr.data-testid]="'catalog-tab-' + kind">{{ tabLabel(kind) }}</button>
+    }
+  </nav>
+
+  @if (loading() && !snapshot()) {
+    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !snapshot()) {
+    <div class="tf-state" data-state="error" role="alert">
+      <p class="tf-state-title">{{ t('admin_catalog_load_failed', 'The catalog could not be loaded.') }}</p>
+      <p class="tf-state-body">{{ loadError() }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+    </div>
+  } @else if (snapshot()) {
+    <div class="tf-admin-catalog">
+
+      <!-- ================= Services & prices ================= -->
+      @if (tab() === 'services') {
+        <div class="tf-admin-toolbar">
+          <p>{{ t('admin_catalog_services_intro', 'Teachers price their own offerings inside these limits. The server refuses any price outside them.') }}</p>
+          <span class="tf-cluster">
+            <button type="button" class="tf-button tf-button-secondary" (click)="openNew('services')" data-testid="add-service">{{ t('admin_catalog_add_recorded', 'Add a recorded service') }}</button>
+            <button type="button" class="tf-button tf-button-secondary" (click)="openNew('services', true)">{{ t('admin_catalog_add_live', 'Add a live service') }}</button>
+          </span>
+        </div>
+        @if (isOpen('services')) { <ng-container *ngTemplateOutlet="serviceFormTpl" /> }
+        <div class="tf-table-wrap">
+          <table class="tf-table" data-density="dense">
+            <thead><tr>
+              <th>{{ t('admin_catalog_col_service', 'Service') }}</th>
+              <th>{{ t('admin_catalog_col_price', 'Price') }}</th>
+              <th>{{ t('admin_catalog_col_terms', 'Delivery and revisions') }}</th>
+              <th>{{ t('admin_catalog_col_teachers', 'Teachers') }}</th>
+              <th>{{ t('admin_catalog_col_status', 'Status') }}</th>
+              <th><span class="tf-sr-only">{{ t('admin_catalog_col_actions', 'Actions') }}</span></th>
+            </tr></thead>
+            <tbody>
+              @for (s of services(); track s.id) {
+                <tr data-testid="catalog-service">
+                  <td><strong>{{ pick(s.nameEn, s.nameAr) }}</strong><br><small>{{ s.isLive ? t('admin_catalog_kind_live', 'Live session, per hour') : t('admin_catalog_kind_recorded', 'Delivered as files') }}</small></td>
+                  <td>{{ money(s.minPrice) }} – {{ money(s.maxPrice) }}<br><small>{{ t('admin_catalog_default', 'Suggested') }}: {{ money(s.defaultPrice) }}</small></td>
+                  <td>
+                    @if (s.isLive) { {{ s.durations.join(' / ') }} {{ t('admin_catalog_minutes', 'min') }} }
+                    @else { {{ fmt.duration(s.minDeliveryHours) }} – {{ fmt.duration(s.maxDeliveryHours) }}<br><small>{{ locale.format('admin_catalog_revisions_n', { n: s.defaultRevisions, max: s.maxRevisions }, '{n} revisions, up to {max}') }}</small> }
+                  </td>
+                  <td>{{ fmt.number(s.teacherCount) }}</td>
+                  <td><span class="tf-badge" [attr.data-tone]="s.isActive ? 'success' : 'neutral'">{{ s.isActive ? t('admin_catalog_active', 'On') : t('admin_catalog_inactive', 'Off') }}</span></td>
+                  <td class="tf-admin-row-actions">
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="edit('services', s)" [disabled]="busy()">{{ t('common_edit', 'Edit') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="toggle('services', s, pick(s.nameEn, s.nameAr), s.teacherCount)" [disabled]="busy()">{{ s.isActive ? t('admin_catalog_turn_off', 'Turn off') : t('admin_catalog_turn_on', 'Turn on') }}</button>
+                  </td>
+                </tr>
+                @if (isOpen('services', s.id)) { <tr><td colspan="6"><ng-container *ngTemplateOutlet="serviceFormTpl" /></td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- ================= Subjects ================= -->
+      @if (tab() === 'subjects') {
+        <div class="tf-admin-toolbar">
+          <p>{{ t('admin_catalog_subjects_intro', 'A subject opens to teachers once it has at least one qualification topic.') }}</p>
+          <button type="button" class="tf-button tf-button-secondary" (click)="openNew('subjects')" data-testid="add-subject">{{ t('admin_catalog_add_subject', 'Add a subject') }}</button>
+        </div>
+        @if (closedSubjects().length) {
+          <p class="tf-alert" data-kind="warning" data-testid="closed-subjects">{{ locale.format('admin_catalog_closed_subjects', { n: closedSubjects().length }, '{n} active subjects have no qualification topic, so no teacher can apply to them yet.') }}</p>
+        }
+        @if (isOpen('subjects')) { <ng-container *ngTemplateOutlet="subjectFormTpl" /> }
+        <div class="tf-table-wrap">
+          <table class="tf-table" data-density="dense">
+            <thead><tr>
+              <th>{{ t('admin_catalog_col_subject', 'Subject') }}</th>
+              <th>{{ t('admin_catalog_col_open', 'Open to teachers') }}</th>
+              <th>{{ t('admin_catalog_col_topics', 'Specialist topics') }}</th>
+              <th>{{ t('admin_catalog_col_status', 'Status') }}</th>
+              <th><span class="tf-sr-only">{{ t('admin_catalog_col_actions', 'Actions') }}</span></th>
+            </tr></thead>
+            <tbody>
+              @for (s of subjects(); track s.id) {
+                <tr data-testid="catalog-subject">
+                  <td>@if (isEmoji(s.icon)) { <span class="tf-admin-icon" aria-hidden="true">{{ s.icon }}</span> }<strong>{{ pick(s.nameEn, s.nameAr) }}</strong><br><small dir="auto">{{ isAr() ? s.nameEn : s.nameAr }}</small></td>
+                  <td>
+                    @if (qualificationCount(s.id)) { {{ locale.format('admin_catalog_qualification_n', { n: qualificationCount(s.id) }, 'Yes · {n} qualification topic(s)') }} }
+                    @else { <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="chooseTab('qualification-topics'); subjectFilter.set(s.id); openNew('qualification-topics')">{{ t('admin_catalog_add_first_qualification', 'Add a qualification topic') }}</button> }
+                  </td>
+                  <td>{{ fmt.number(topicCount(s.id)) }}</td>
+                  <td><span class="tf-badge" [attr.data-tone]="s.isActive ? 'success' : 'neutral'">{{ s.isActive ? t('admin_catalog_active', 'On') : t('admin_catalog_inactive', 'Off') }}</span></td>
+                  <td class="tf-admin-row-actions">
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="edit('subjects', s)" [disabled]="busy()">{{ t('common_edit', 'Edit') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="toggle('subjects', s, pick(s.nameEn, s.nameAr))" [disabled]="busy()">{{ s.isActive ? t('admin_catalog_turn_off', 'Turn off') : t('admin_catalog_turn_on', 'Turn on') }}</button>
+                  </td>
+                </tr>
+                @if (isOpen('subjects', s.id)) { <tr><td colspan="5"><ng-container *ngTemplateOutlet="subjectFormTpl" /></td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- ================= Qualification topics and specialist topics share a subject filter ================= -->
+      @if (tab() === 'qualification-topics' || tab() === 'topics') {
+        <div class="tf-admin-toolbar">
+          <p>{{ tab() === 'topics'
+            ? t('admin_catalog_topics_intro', 'Teachers list the specialist topics they cover; students see them on the profile.')
+            : t('admin_catalog_qualification_intro', 'The demo assignment a teacher records to be approved in a subject.') }}</p>
+          <span class="tf-cluster">
+            <label class="tf-catalog-subject-filter"><span>{{ t('admin_catalog_col_subject', 'Subject') }}</span>
+              <select [ngModel]="subjectFilter()" (ngModelChange)="subjectFilter.set($event)">
+                <option value="">{{ t('admin_catalog_all_subjects', 'All subjects') }}</option>
+                @for (s of subjects(); track s.id) { <option [value]="s.id">{{ pick(s.nameEn, s.nameAr) }}</option> }
+              </select>
+            </label>
+            <button type="button" class="tf-button tf-button-secondary" (click)="openNew(tab())" data-testid="add-topic">{{ tab() === 'topics' ? t('admin_catalog_add_topic', 'Add a topic') : t('admin_catalog_add_qualification', 'Add a qualification topic') }}</button>
+          </span>
+        </div>
+        @if (isOpen('qualification-topics')) { <ng-container *ngTemplateOutlet="qualificationFormTpl" /> }
+        @if (isOpen('topics')) { <ng-container *ngTemplateOutlet="topicFormTpl" /> }
+      }
+
+      @if (tab() === 'qualification-topics') {
+        <div class="tf-table-wrap">
+          <table class="tf-table tf-admin-qualification-table" data-density="dense">
+            <thead><tr>
+              <th>{{ t('admin_catalog_col_assignment', 'Assignment') }}</th>
+              <th>{{ t('admin_catalog_col_subject', 'Subject') }}</th>
+              <th>{{ t('admin_catalog_col_demo', 'Demo length') }}</th>
+              <th>{{ t('admin_catalog_col_resources', 'Resources') }}</th>
+              <th>{{ t('admin_catalog_col_status', 'Status') }}</th>
+              <th><span class="tf-sr-only">{{ t('admin_catalog_col_actions', 'Actions') }}</span></th>
+            </tr></thead>
+            <tbody>
+              @for (q of qualificationTopics(); track q.id) {
+                <tr data-testid="catalog-qualification">
+                  <td><strong>{{ pick(q.titleEn, q.titleAr) }}</strong><br><small dir="auto">{{ pick(q.instructionsEn, q.instructionsAr) }}</small></td>
+                  <td>{{ subjectName(q.subjectId) }}</td>
+                  <td><bdi dir="ltr">{{ clock(q.minSeconds) }}–{{ clock(q.maxSeconds) }}</bdi></td>
+                  <td>@for (r of q.resources; track r.id) { <a [href]="r.url" target="_blank" rel="noopener">{{ r.name }}</a><br> } @empty { — }</td>
+                  <td><span class="tf-badge" [attr.data-tone]="q.isActive ? 'success' : 'neutral'">{{ q.isActive ? t('admin_catalog_active', 'On') : t('admin_catalog_inactive', 'Off') }}</span></td>
+                  <td class="tf-admin-row-actions">
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="edit('qualification-topics', q)" [disabled]="busy()">{{ t('common_edit', 'Edit') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="openResource(q)" [disabled]="busy()">{{ t('admin_catalog_add_link', 'Add a link') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="toggle('qualification-topics', q, pick(q.titleEn, q.titleAr))" [disabled]="busy()">{{ q.isActive ? t('admin_catalog_turn_off', 'Turn off') : t('admin_catalog_turn_on', 'Turn on') }}</button>
+                  </td>
+                </tr>
+                @if (isOpen('qualification-topics', q.id)) { <tr><td colspan="6"><ng-container *ngTemplateOutlet="qualificationFormTpl" /></td></tr> }
+                @if (isOpen('resource', q.id)) { <tr><td colspan="6"><ng-container *ngTemplateOutlet="resourceFormTpl" /></td></tr> }
+              } @empty {
+                <tr><td colspan="6">{{ t('admin_catalog_empty', 'Nothing here yet.') }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (tab() === 'topics') {
+        <div class="tf-table-wrap">
+          <table class="tf-table tf-admin-topics-table" data-density="dense">
+            <thead><tr>
+              <th>{{ t('admin_catalog_col_topic', 'Topic') }}</th>
+              <th>{{ t('admin_catalog_col_subject', 'Subject') }}</th>
+              <th>{{ t('admin_catalog_col_level', 'Level') }}</th>
+              <th>{{ t('admin_catalog_col_status', 'Status') }}</th>
+              <th><span class="tf-sr-only">{{ t('admin_catalog_col_actions', 'Actions') }}</span></th>
+            </tr></thead>
+            <tbody>
+              @for (x of topics(); track x.id) {
+                <tr data-testid="catalog-topic">
+                  <td><strong>{{ pick(x.nameEn, x.nameAr) }}</strong></td>
+                  <td>{{ subjectName(x.subjectId) }}</td>
+                  <td>{{ t('admin_catalog_level_' + x.level.toLowerCase(), x.level) }}</td>
+                  <td><span class="tf-badge" [attr.data-tone]="x.isActive ? 'success' : 'neutral'">{{ x.isActive ? t('admin_catalog_active', 'On') : t('admin_catalog_inactive', 'Off') }}</span></td>
+                  <td class="tf-admin-row-actions">
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="edit('topics', x)" [disabled]="busy()">{{ t('common_edit', 'Edit') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="toggle('topics', x, pick(x.nameEn, x.nameAr))" [disabled]="busy()">{{ x.isActive ? t('admin_catalog_turn_off', 'Turn off') : t('admin_catalog_turn_on', 'Turn on') }}</button>
+                  </td>
+                </tr>
+                @if (isOpen('topics', x.id)) { <tr><td colspan="5"><ng-container *ngTemplateOutlet="topicFormTpl" /></td></tr> }
+              } @empty {
+                <tr><td colspan="5">{{ t('admin_catalog_empty', 'Nothing here yet.') }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- ================= Education levels ================= -->
+      @if (tab() === 'education-levels') {
+        <div class="tf-admin-toolbar">
+          <p>{{ t('admin_catalog_levels_intro', 'The stages teachers say they teach, from primary to university.') }}</p>
+          <button type="button" class="tf-button tf-button-secondary" (click)="openNew('education-levels')">{{ t('admin_catalog_add_level', 'Add a level') }}</button>
+        </div>
+        @if (isOpen('education-levels')) { <ng-container *ngTemplateOutlet="levelFormTpl" /> }
+        <div class="tf-table-wrap">
+          <table class="tf-table" data-density="dense">
+            <thead><tr><th>{{ t('admin_catalog_col_level', 'Level') }}</th><th>{{ t('admin_catalog_col_status', 'Status') }}</th><th><span class="tf-sr-only">{{ t('admin_catalog_col_actions', 'Actions') }}</span></th></tr></thead>
+            <tbody>
+              @for (l of educationLevels(); track l.id) {
+                <tr>
+                  <td><strong>{{ pick(l.nameEn, l.nameAr) }}</strong><br><small dir="auto">{{ isAr() ? l.nameEn : l.nameAr }}</small></td>
+                  <td><span class="tf-badge" [attr.data-tone]="l.isActive ? 'success' : 'neutral'">{{ l.isActive ? t('admin_catalog_active', 'On') : t('admin_catalog_inactive', 'Off') }}</span></td>
+                  <td class="tf-admin-row-actions">
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="edit('education-levels', l)" [disabled]="busy()">{{ t('common_edit', 'Edit') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="toggle('education-levels', l, pick(l.nameEn, l.nameAr))" [disabled]="busy()">{{ l.isActive ? t('admin_catalog_turn_off', 'Turn off') : t('admin_catalog_turn_on', 'Turn on') }}</button>
+                  </td>
+                </tr>
+                @if (isOpen('education-levels', l.id)) { <tr><td colspan="3"><ng-container *ngTemplateOutlet="levelFormTpl" /></td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- ================= Teaching languages ================= -->
+      @if (tab() === 'languages') {
+        <div class="tf-admin-toolbar">
+          <p>{{ t('admin_catalog_languages_intro', 'The languages a teacher can say they teach in.') }}</p>
+          <button type="button" class="tf-button tf-button-secondary" (click)="openNew('languages')">{{ t('admin_catalog_add_language', 'Add a language') }}</button>
+        </div>
+        @if (isOpen('languages')) { <ng-container *ngTemplateOutlet="languageFormTpl" /> }
+        <div class="tf-table-wrap">
+          <table class="tf-table" data-density="dense">
+            <thead><tr><th>{{ t('admin_catalog_col_language', 'Language') }}</th><th>{{ t('admin_catalog_col_status', 'Status') }}</th><th><span class="tf-sr-only">{{ t('admin_catalog_col_actions', 'Actions') }}</span></th></tr></thead>
+            <tbody>
+              @for (l of languages(); track l.id) {
+                <tr>
+                  <td><strong>{{ l.name }}</strong> <small>({{ l.code }})</small></td>
+                  <td><span class="tf-badge" [attr.data-tone]="l.isActive ? 'success' : 'neutral'">{{ l.isActive ? t('admin_catalog_active', 'On') : t('admin_catalog_inactive', 'Off') }}</span></td>
+                  <td class="tf-admin-row-actions">
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="edit('languages', l)" [disabled]="busy()">{{ t('common_edit', 'Edit') }}</button>
+                    <button type="button" class="tf-button tf-button-ghost tf-button-sm" (click)="toggle('languages', l, l.name)" [disabled]="busy()">{{ l.isActive ? t('admin_catalog_turn_off', 'Turn off') : t('admin_catalog_turn_on', 'Turn on') }}</button>
+                  </td>
+                </tr>
+                @if (isOpen('languages', l.id)) { <tr><td colspan="3"><ng-container *ngTemplateOutlet="languageFormTpl" /></td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ================= Forms ================= -->
+  <ng-template #actionsTpl>
+    @if (error()) { <p class="tf-alert" data-kind="error" role="alert">{{ error() }}</p> }
+    <div class="tf-form-actions">
+      <button type="submit" class="tf-button" [disabled]="busy()" data-testid="catalog-save">{{ busy() ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+      <button type="button" class="tf-button tf-button-ghost" (click)="close()">{{ t('common_cancel', 'Cancel') }}</button>
+    </div>
+  </ng-template>
+
+  <ng-template #serviceFormTpl>
+    @let d = serviceDraft();
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate data-testid="service-form">
+      <h2>{{ form()?.id ? t('admin_catalog_edit_service', 'Edit service') : (d.isLive ? t('admin_catalog_add_live', 'Add a live service') : t('admin_catalog_add_recorded', 'Add a recorded service')) }}</h2>
+      <div class="tf-grid-2">
+        <div class="tf-field"><label for="svc-name-en">{{ t('admin_catalog_name_en', 'Name (English)') }}</label><input id="svc-name-en" name="nameEn" dir="ltr" [ngModel]="d.nameEn" (ngModelChange)="set(serviceDraft, 'nameEn', $event)">@if (problem('nameEn')) { <span class="tf-field-error">{{ problem('nameEn') }}</span> }</div>
+        <div class="tf-field"><label for="svc-name-ar">{{ t('admin_catalog_name_ar', 'Name (Arabic)') }}</label><input id="svc-name-ar" name="nameAr" dir="rtl" [ngModel]="d.nameAr" (ngModelChange)="set(serviceDraft, 'nameAr', $event)">@if (problem('nameAr')) { <span class="tf-field-error">{{ problem('nameAr') }}</span> }</div>
+        <div class="tf-field"><label for="svc-desc-en">{{ t('admin_catalog_description_en', 'Description (English)') }}</label><textarea id="svc-desc-en" name="descriptionEn" rows="2" dir="ltr" [ngModel]="d.descriptionEn" (ngModelChange)="set(serviceDraft, 'descriptionEn', $event)"></textarea>@if (problem('descriptionEn')) { <span class="tf-field-error">{{ problem('descriptionEn') }}</span> }</div>
+        <div class="tf-field"><label for="svc-desc-ar">{{ t('admin_catalog_description_ar', 'Description (Arabic)') }}</label><textarea id="svc-desc-ar" name="descriptionAr" rows="2" dir="rtl" [ngModel]="d.descriptionAr" (ngModelChange)="set(serviceDraft, 'descriptionAr', $event)"></textarea>@if (problem('descriptionAr')) { <span class="tf-field-error">{{ problem('descriptionAr') }}</span> }</div>
+      </div>
+      <fieldset class="tf-admin-fieldset"><legend>{{ d.isLive ? t('admin_catalog_price_hourly', 'Price per hour (SAR)') : t('admin_catalog_price_sar', 'Price (SAR)') }}</legend>
+        <div class="tf-grid-3">
+          <div class="tf-field"><label for="svc-min">{{ t('admin_catalog_lowest', 'Lowest') }}</label><input id="svc-min" name="minPrice" type="number" min="0.01" step="0.01" [ngModel]="d.minPrice" (ngModelChange)="set(serviceDraft, 'minPrice', $event, true)">@if (problem('minPrice')) { <span class="tf-field-error">{{ problem('minPrice') }}</span> }</div>
+          <div class="tf-field"><label for="svc-default">{{ t('admin_catalog_default', 'Suggested') }}</label><input id="svc-default" name="defaultPrice" type="number" min="0.01" step="0.01" [ngModel]="d.defaultPrice" (ngModelChange)="set(serviceDraft, 'defaultPrice', $event, true)">@if (problem('defaultPrice')) { <span class="tf-field-error">{{ problem('defaultPrice') }}</span> }</div>
+          <div class="tf-field"><label for="svc-max">{{ t('admin_catalog_highest', 'Highest') }}</label><input id="svc-max" name="maxPrice" type="number" min="0.01" step="0.01" [ngModel]="d.maxPrice" (ngModelChange)="set(serviceDraft, 'maxPrice', $event, true)">@if (problem('maxPrice')) { <span class="tf-field-error">{{ problem('maxPrice') }}</span> }</div>
+        </div>
+      </fieldset>
+      @if (d.isLive) {
+        <fieldset class="tf-admin-fieldset"><legend>{{ t('admin_catalog_durations', 'Session lengths students can book') }}</legend>
+          <div class="tf-cluster">@for (m of durations; track m) {
+            <label class="tf-admin-check"><input type="checkbox" [checked]="d.durations.includes(m)" (change)="toggleDuration(m)"> {{ m }} {{ t('admin_catalog_minutes', 'min') }}</label>
+          }</div>
+          @if (problem('durations')) { <span class="tf-field-error">{{ problem('durations') }}</span> }
+        </fieldset>
+      } @else {
+        <fieldset class="tf-admin-fieldset"><legend>{{ t('admin_catalog_delivery_hours', 'Delivery time (hours)') }}</legend>
+          <div class="tf-grid-3">
+            <div class="tf-field"><label for="svc-hmin">{{ t('admin_catalog_shortest', 'Shortest') }}</label><input id="svc-hmin" name="minDeliveryHours" type="number" min="1" [ngModel]="d.minDeliveryHours" (ngModelChange)="set(serviceDraft, 'minDeliveryHours', $event, true)">@if (problem('minDeliveryHours')) { <span class="tf-field-error">{{ problem('minDeliveryHours') }}</span> }</div>
+            <div class="tf-field"><label for="svc-hdef">{{ t('admin_catalog_default', 'Suggested') }}</label><input id="svc-hdef" name="defaultDeliveryHours" type="number" min="1" [ngModel]="d.defaultDeliveryHours" (ngModelChange)="set(serviceDraft, 'defaultDeliveryHours', $event, true)">@if (problem('defaultDeliveryHours')) { <span class="tf-field-error">{{ problem('defaultDeliveryHours') }}</span> }</div>
+            <div class="tf-field"><label for="svc-hmax">{{ t('admin_catalog_longest', 'Longest') }}</label><input id="svc-hmax" name="maxDeliveryHours" type="number" min="1" [ngModel]="d.maxDeliveryHours" (ngModelChange)="set(serviceDraft, 'maxDeliveryHours', $event, true)">@if (problem('maxDeliveryHours')) { <span class="tf-field-error">{{ problem('maxDeliveryHours') }}</span> }</div>
+          </div>
+        </fieldset>
+        <fieldset class="tf-admin-fieldset"><legend>{{ t('admin_catalog_revisions', 'Free revisions') }}</legend>
+          <div class="tf-grid-2">
+            <div class="tf-field"><label for="svc-rdef">{{ t('admin_catalog_default', 'Suggested') }}</label><input id="svc-rdef" name="defaultRevisions" type="number" min="0" [ngModel]="d.defaultRevisions" (ngModelChange)="set(serviceDraft, 'defaultRevisions', $event, true)">@if (problem('defaultRevisions')) { <span class="tf-field-error">{{ problem('defaultRevisions') }}</span> }</div>
+            <div class="tf-field"><label for="svc-rmax">{{ t('admin_catalog_most', 'Most') }}</label><input id="svc-rmax" name="maxRevisions" type="number" min="0" max="20" [ngModel]="d.maxRevisions" (ngModelChange)="set(serviceDraft, 'maxRevisions', $event, true)">@if (problem('maxRevisions')) { <span class="tf-field-error">{{ problem('maxRevisions') }}</span> }</div>
+          </div>
+        </fieldset>
+      }
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+
+  <ng-template #subjectFormTpl>
+    @let d = subjectDraft();
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate data-testid="subject-form">
+      <h2>{{ form()?.id ? t('admin_catalog_edit_subject', 'Edit subject') : t('admin_catalog_add_subject', 'Add a subject') }}</h2>
+      <div class="tf-grid-3">
+        <div class="tf-field"><label for="sub-en">{{ t('admin_catalog_name_en', 'Name (English)') }}</label><input id="sub-en" name="nameEn" dir="ltr" [ngModel]="d.nameEn" (ngModelChange)="set(subjectDraft, 'nameEn', $event)">@if (problem('nameEn')) { <span class="tf-field-error">{{ problem('nameEn') }}</span> }</div>
+        <div class="tf-field"><label for="sub-ar">{{ t('admin_catalog_name_ar', 'Name (Arabic)') }}</label><input id="sub-ar" name="nameAr" dir="rtl" [ngModel]="d.nameAr" (ngModelChange)="set(subjectDraft, 'nameAr', $event)">@if (problem('nameAr')) { <span class="tf-field-error">{{ problem('nameAr') }}</span> }</div>
+        <div class="tf-field"><label for="sub-icon">{{ t('admin_catalog_icon', 'Icon (emoji)') }}</label><input id="sub-icon" name="icon" maxlength="8" [ngModel]="d.icon" (ngModelChange)="set(subjectDraft, 'icon', $event)">@if (problem('icon')) { <span class="tf-field-error">{{ problem('icon') }}</span> }</div>
+      </div>
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+
+  <ng-template #qualificationFormTpl>
+    @let d = qualificationDraft();
+    @let editing = !!form()?.id;
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate data-testid="qualification-form">
+      <h2>{{ editing ? t('admin_catalog_edit_qualification', 'Edit qualification topic') : t('admin_catalog_add_qualification', 'Add a qualification topic') }}</h2>
+      @if (!editing) {
+        <div class="tf-field"><label for="qt-subject">{{ t('admin_catalog_col_subject', 'Subject') }}</label>
+          <select id="qt-subject" name="subjectId" [ngModel]="d.subjectId" (ngModelChange)="set(qualificationDraft, 'subjectId', $event)">
+            <option value="">{{ t('admin_catalog_choose', 'Choose…') }}</option>
+            @for (s of subjects(); track s.id) { @if (s.isActive) { <option [value]="s.id">{{ pick(s.nameEn, s.nameAr) }}</option> } }
+          </select>@if (problem('subjectId')) { <span class="tf-field-error">{{ problem('subjectId') }}</span> }</div>
+      }
+      <div class="tf-grid-2">
+        <div class="tf-field"><label for="qt-title-en">{{ t('admin_catalog_title_en', 'Title (English)') }}</label><input id="qt-title-en" name="titleEn" dir="ltr" [ngModel]="d.titleEn" (ngModelChange)="set(qualificationDraft, 'titleEn', $event)">@if (problem('titleEn')) { <span class="tf-field-error">{{ problem('titleEn') }}</span> }</div>
+        <div class="tf-field"><label for="qt-title-ar">{{ t('admin_catalog_title_ar', 'Title (Arabic)') }}</label><input id="qt-title-ar" name="titleAr" dir="rtl" [ngModel]="d.titleAr" (ngModelChange)="set(qualificationDraft, 'titleAr', $event)">@if (problem('titleAr')) { <span class="tf-field-error">{{ problem('titleAr') }}</span> }</div>
+        <div class="tf-field"><label for="qt-ins-en">{{ t('admin_catalog_instructions_en', 'What the teacher records (English)') }}</label><textarea id="qt-ins-en" name="instructionsEn" rows="3" dir="ltr" [ngModel]="d.instructionsEn" (ngModelChange)="set(qualificationDraft, 'instructionsEn', $event)"></textarea>@if (problem('instructionsEn')) { <span class="tf-field-error">{{ problem('instructionsEn') }}</span> }</div>
+        <div class="tf-field"><label for="qt-ins-ar">{{ t('admin_catalog_instructions_ar', 'What the teacher records (Arabic)') }}</label><textarea id="qt-ins-ar" name="instructionsAr" rows="3" dir="rtl" [ngModel]="d.instructionsAr" (ngModelChange)="set(qualificationDraft, 'instructionsAr', $event)"></textarea>@if (problem('instructionsAr')) { <span class="tf-field-error">{{ problem('instructionsAr') }}</span> }</div>
+      </div>
+      <fieldset class="tf-admin-fieldset"><legend>{{ t('admin_catalog_demo_seconds', 'Demo video length (seconds)') }}</legend>
+        <div class="tf-grid-3">
+          @if (!editing) {
+            <div class="tf-field"><label for="qt-min">{{ t('admin_catalog_shortest', 'Shortest') }}</label><input id="qt-min" name="minSeconds" type="number" min="30" max="600" [ngModel]="d.minSeconds" (ngModelChange)="set(qualificationDraft, 'minSeconds', $event, true)">@if (problem('minSeconds')) { <span class="tf-field-error">{{ problem('minSeconds') }}</span> }</div>
+            <div class="tf-field"><label for="qt-exp">{{ t('admin_catalog_expected', 'Expected') }}</label><input id="qt-exp" name="expectedSeconds" type="number" min="30" max="600" [ngModel]="d.expectedSeconds" (ngModelChange)="set(qualificationDraft, 'expectedSeconds', $event, true)">@if (problem('expectedSeconds')) { <span class="tf-field-error">{{ problem('expectedSeconds') }}</span> }</div>
+          }
+          <div class="tf-field"><label for="qt-max">{{ t('admin_catalog_longest', 'Longest') }}</label><input id="qt-max" name="maxSeconds" type="number" min="30" max="600" [ngModel]="d.maxSeconds" (ngModelChange)="set(qualificationDraft, 'maxSeconds', $event, true)">@if (problem('maxSeconds')) { <span class="tf-field-error">{{ problem('maxSeconds') }}</span> }</div>
+        </div>
+      </fieldset>
+      @if (!editing) {
+        <div class="tf-grid-2">
+          <div class="tf-field"><label for="qt-g-en">{{ t('admin_catalog_guidance_en', 'What reviewers look for (English, optional)') }}</label><textarea id="qt-g-en" name="guidanceEn" rows="2" dir="ltr" [ngModel]="d.guidanceEn" (ngModelChange)="set(qualificationDraft, 'guidanceEn', $event)"></textarea></div>
+          <div class="tf-field"><label for="qt-g-ar">{{ t('admin_catalog_guidance_ar', 'What reviewers look for (Arabic, optional)') }}</label><textarea id="qt-g-ar" name="guidanceAr" rows="2" dir="rtl" [ngModel]="d.guidanceAr" (ngModelChange)="set(qualificationDraft, 'guidanceAr', $event)"></textarea></div>
+        </div>
+      }
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+
+  <ng-template #topicFormTpl>
+    @let d = topicDraft();
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate data-testid="topic-form">
+      <h2>{{ form()?.id ? t('admin_catalog_edit_topic', 'Edit topic') : t('admin_catalog_add_topic', 'Add a topic') }}</h2>
+      <div class="tf-grid-2">
+        @if (!form()?.id) {
+          <div class="tf-field"><label for="tp-subject">{{ t('admin_catalog_col_subject', 'Subject') }}</label>
+            <select id="tp-subject" name="subjectId" [ngModel]="d.subjectId" (ngModelChange)="set(topicDraft, 'subjectId', $event)">
+              <option value="">{{ t('admin_catalog_choose', 'Choose…') }}</option>
+              @for (s of subjects(); track s.id) { @if (s.isActive) { <option [value]="s.id">{{ pick(s.nameEn, s.nameAr) }}</option> } }
+            </select>@if (problem('subjectId')) { <span class="tf-field-error">{{ problem('subjectId') }}</span> }</div>
+        }
+        <div class="tf-field"><label for="tp-level">{{ t('admin_catalog_col_level', 'Level') }}</label>
+          <select id="tp-level" name="level" [ngModel]="d.level" (ngModelChange)="set(topicDraft, 'level', $event)">
+            @for (l of levels; track l) { <option [value]="l">{{ t('admin_catalog_level_' + l.toLowerCase(), l) }}</option> }
+            @if (!levels.includes($any(d.level)) && d.level) { <option [value]="d.level">{{ d.level }}</option> }
+          </select></div>
+        <div class="tf-field"><label for="tp-en">{{ t('admin_catalog_name_en', 'Name (English)') }}</label><input id="tp-en" name="nameEn" dir="ltr" [ngModel]="d.nameEn" (ngModelChange)="set(topicDraft, 'nameEn', $event)">@if (problem('nameEn')) { <span class="tf-field-error">{{ problem('nameEn') }}</span> }</div>
+        <div class="tf-field"><label for="tp-ar">{{ t('admin_catalog_name_ar', 'Name (Arabic)') }}</label><input id="tp-ar" name="nameAr" dir="rtl" [ngModel]="d.nameAr" (ngModelChange)="set(topicDraft, 'nameAr', $event)">@if (problem('nameAr')) { <span class="tf-field-error">{{ problem('nameAr') }}</span> }</div>
+      </div>
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+
+  <ng-template #levelFormTpl>
+    @let d = levelDraft();
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate>
+      <h2>{{ form()?.id ? t('admin_catalog_edit_level', 'Edit level') : t('admin_catalog_add_level', 'Add a level') }}</h2>
+      <div class="tf-grid-2">
+        <div class="tf-field"><label for="lv-en">{{ t('admin_catalog_name_en', 'Name (English)') }}</label><input id="lv-en" name="nameEn" dir="ltr" [ngModel]="d.nameEn" (ngModelChange)="set(levelDraft, 'nameEn', $event)">@if (problem('nameEn')) { <span class="tf-field-error">{{ problem('nameEn') }}</span> }</div>
+        <div class="tf-field"><label for="lv-ar">{{ t('admin_catalog_name_ar', 'Name (Arabic)') }}</label><input id="lv-ar" name="nameAr" dir="rtl" [ngModel]="d.nameAr" (ngModelChange)="set(levelDraft, 'nameAr', $event)">@if (problem('nameAr')) { <span class="tf-field-error">{{ problem('nameAr') }}</span> }</div>
+      </div>
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+
+  <ng-template #languageFormTpl>
+    @let d = languageDraft();
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate>
+      <h2>{{ form()?.id ? t('admin_catalog_edit_language', 'Edit language') : t('admin_catalog_add_language', 'Add a language') }}</h2>
+      <div class="tf-grid-2">
+        <div class="tf-field"><label for="lg-name">{{ t('admin_catalog_col_language', 'Language') }}</label><input id="lg-name" name="name" [ngModel]="d.name" (ngModelChange)="set(languageDraft, 'name', $event)">@if (problem('name')) { <span class="tf-field-error">{{ problem('name') }}</span> }</div>
+        <div class="tf-field"><label for="lg-code">{{ t('admin_catalog_language_code', 'Code (e.g. ar, en)') }}</label><input id="lg-code" name="code" dir="ltr" maxlength="3" [ngModel]="d.code" (ngModelChange)="set(languageDraft, 'code', $event)">@if (problem('code')) { <span class="tf-field-error">{{ problem('code') }}</span> }</div>
+      </div>
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+
+  <ng-template #resourceFormTpl>
+    @let d = resourceDraft();
+    <form class="tf-admin-form" (ngSubmit)="save()" novalidate data-testid="resource-form">
+      <h2>{{ t('admin_catalog_add_link', 'Add a link') }}</h2>
+      <p>{{ t('admin_catalog_link_intro', 'A page the teacher should read before recording, shown with the assignment.') }}</p>
+      <div class="tf-grid-3">
+        <div class="tf-field"><label for="rs-en">{{ t('admin_catalog_name_en', 'Name (English)') }}</label><input id="rs-en" name="nameEn" dir="ltr" [ngModel]="d.nameEn" (ngModelChange)="set(resourceDraft, 'nameEn', $event)">@if (problem('nameEn')) { <span class="tf-field-error">{{ problem('nameEn') }}</span> }</div>
+        <div class="tf-field"><label for="rs-ar">{{ t('admin_catalog_name_ar', 'Name (Arabic)') }}</label><input id="rs-ar" name="nameAr" dir="rtl" [ngModel]="d.nameAr" (ngModelChange)="set(resourceDraft, 'nameAr', $event)"></div>
+        <div class="tf-field"><label for="rs-url">{{ t('admin_catalog_url', 'Link (https://…)') }}</label><input id="rs-url" name="url" type="url" dir="ltr" [ngModel]="d.url" (ngModelChange)="set(resourceDraft, 'url', $event)">@if (problem('url')) { <span class="tf-field-error">{{ problem('url') }}</span> }</div>
+      </div>
+      <ng-container *ngTemplateOutlet="actionsTpl" />
+    </form>
+  </ng-template>
+</tf-workspace-shell>
+<tf-toast />

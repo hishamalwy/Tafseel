@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { SignalSessionStore } from '@core/auth/services/session.store';
 import { ResolveLandingRoute } from '@core/auth/services/resolve-landing-route.use-case';
@@ -28,6 +29,7 @@ export class PublicHeaderComponent {
   private readonly store = inject(SignalSessionStore);
   private readonly landing = inject(ResolveLandingRoute);
   readonly locale = inject(LocaleService);
+  private readonly fmt = inject(FormatService);
 
   /** Distinct id per page, as the legacy `aria-controls` required. */
   readonly menuId = input('public-menu');
@@ -44,7 +46,8 @@ export class PublicHeaderComponent {
   });
   readonly avatarSrc = computed(() => {
     const s = this.session();
-    return s?.hasAvatar ? `/api/v1/users/${s.userId}/avatar` : 'assets/brand/default-avatar.svg';
+    return this.fmt.avatarUrl(s?.userId, !!s?.hasAvatar, null,
+      this.store.roles().includes('Teacher') ? 'teacher' : 'student');
   });
 
   /**

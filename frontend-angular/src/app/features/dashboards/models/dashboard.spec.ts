@@ -27,6 +27,17 @@ describe('Dashboard route model', () => {
     expect(Dashboard.rows(null)).toEqual([]);
   });
 
+  it('keeps role filters while paging and searches the full admin collection', () => {
+    expect(Dashboard.pageSource('/admin/users?role=Teacher&page=1&pageSize=20', 3, 'رياضيات & algebra'))
+      .toBe('/admin/users?role=Teacher&page=3&pageSize=20&search=%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A7%D8%AA+%26+algebra');
+    expect(Dashboard.pageSource('/admin/metrics', 3)).toBe('/admin/metrics');
+    // PRODUCT-P1: a status filter travels to the server with the page and the search.
+    expect(Dashboard.pageSource('/admin/operations/orders?page=1&pageSize=20', 1, '', 'overdue'))
+      .toBe('/admin/operations/orders?page=1&pageSize=20&filter=overdue');
+    expect(Dashboard.operationFilters('/admin/operations/sessions?page=1').map(f => f[0])).toContain('admin-review');
+    expect(Dashboard.operationFilters('/admin/users?page=1')).toEqual([]);
+  });
+
   it('keeps every configured tab backed by a route area', () => {
     for (const config of Object.values(DASHBOARDS)) {
       expect(config.areas.length).toBeGreaterThan(0);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Demand, OFFER_STATUS, Offer, OpenRequestDraft, REQUEST_STATUS } from './demand';
+import { Demand, MyOffer, OFFER_STATUS, Offer, OpenRequestDraft, REQUEST_STATUS, myOfferOutcome } from './demand';
 
 const NOW = Date.parse('2026-09-15T10:00:00Z');
 const draft = (patch: Partial<OpenRequestDraft> = {}): OpenRequestDraft => ({
@@ -103,5 +103,75 @@ describe('Demand open request form', () => {
     const offer = { amount: 90, deliveryHours: 24, includedRevisions: 1, message: 'Hi', validUntil: '2026-09-15T13:30:00Z' } as Offer;
     expect(Demand.offerDraft(offer, NOW)).toEqual({ amount: 90, deliveryHours: 24, includedRevisions: 1, validityHours: 4, message: 'Hi' });
     expect(Demand.offerDraft({ ...offer, validUntil: '2026-09-15T09:00:00Z' }, NOW).validityHours).toBe(1);
+  });
+});
+
+describe('What became of a teacher’s offer (UX-82)', () => {
+  const offer = (over: Partial<MyOffer>): MyOffer => ({
+    id: 'o', requestId: 'r', requestTitle: 'Essay', subjectName: 'English', subjectNameArabic: null, serviceName: 'Review',
+    serviceNameArabic: null, amount: 100, currency: 'SAR', deliveryHours: 48, status: OFFER_STATUS.SUBMITTED,
+    requestStatus: REQUEST_STATUS.OPEN_FOR_OFFERS, anotherTeacherChosen: false, orderId: null, updatedAt: '', ...over
+  });
+
+  it('says another teacher was selected, not a bare "not chosen"', () => {
+    const outcome = myOfferOutcome(offer({ status: OFFER_STATUS.NOT_SELECTED, requestStatus: REQUEST_STATUS.CONVERTED_TO_ORDER, anotherTeacherChosen: true }));
+    expect(outcome.fallback).toBe('Another teacher was selected for this request.');
+    expect(outcome.link).toBeNull();
+  });
+
+  it('links to the order when the teacher won, and to the request while it is still open', () => {
+    expect(myOfferOutcome(offer({ status: OFFER_STATUS.ACCEPTED, orderId: 'ord' })).link?.path).toBe('/orders/ord');
+    expect(myOfferOutcome(offer({})).link?.path).toBe('/teacher/opportunities/r');
+    expect(myOfferOutcome(offer({ requestStatus: REQUEST_STATUS.CANCELLED })).key).toBe('my_offers_request_closed');
+  });
+});
+
+describe('Offer price limits from the service (UX-43)', () => {
+  const terms = { minPrice: 50, maxPrice: 400, minDeliveryHours: 12, maxDeliveryHours: 336, maxRevisions: 3 };
+  const draft = { amount: 20, deliveryHours: 48, includedRevisions: 2, validityHours: 168, message: 'Hi' };
+
+  it('names the allowed range instead of a bare out-of-range', () => {
+    expect(Demand.offerProblems(draft, terms).amount).toBe('price_range');
+    expect(Demand.offerProblems({ ...draft, amount: 60 }, terms).amount).toBeUndefined();
+    expect(Demand.offerProblems({ ...draft, includedRevisions: 5 }, terms).includedRevisions).toBe('out_of_range');
+  });
+
+  it('moves a new offer’s starting values inside the service’s limits', () => {
+    expect(Demand.fitOffer({ ...draft, deliveryHours: 1000, includedRevisions: 9 }, terms)).toMatchObject({ deliveryHours: 336, includedRevisions: 3 });
+  });
+});
+
+describe('upload-first open requests', () => {
+  const file = (name: string, size = 1024) => ({ name, size });
+
+  it('accepts the document and image kinds a request carries', () => {
+    for (const name of ['sheet.pdf', 'Photo.JPG', 'notes.txt', 'essay.docx', 'slides.pptx', 'scan.png'])
+      expect(Demand.fileRefusal(file(name), 0)).toBeNull();
+  });
+
+  it('refuses another kind, an empty or oversized file, and a sixth file before sending anything', () => {
+    expect(Demand.fileRefusal(file('setup.exe'), 0)).toBe('wrong-type');
+    expect(Demand.fileRefusal(file('no-extension'), 0)).toBe('wrong-type');
+    expect(Demand.fileRefusal(file('empty.pdf', 0), 0)).toBe('too-large');
+    expect(Demand.fileRefusal(file('big.pdf', 25 * 1024 * 1024 + 1), 0)).toBe('too-large');
+    expect(Demand.fileRefusal(file('sixth.pdf'), 5)).toBe('too-many');
+  });
+
+  it('sends the draft id with the request so its files move onto it, and nothing when there is no draft', () => {
+    expect(Demand.openInput(draft(), 'draft-1').draftId).toBe('draft-1');
+    expect('draftId' in Demand.openInput(draft())).toBe(false);
+  });
+
+  it('shows a saved deadline back in the browser’s own time, and nothing for none', () => {
+    const iso = '2026-09-20T15:00:00.000Z';
+    const local = Demand.localInputValue(iso);
+    expect(new Date(local).toISOString()).toBe(iso);
+    expect(Demand.localInputValue(null)).toBe('');
+    expect(Demand.localInputValue('not a date')).toBe('');
+  });
+
+  it('treats a draft with nothing typed as blank, so it never overwrites the form with emptiness', () => {
+    expect(Demand.isBlank(Demand.emptyOpenDraft())).toBe(true);
+    expect(Demand.isBlank({ ...Demand.emptyOpenDraft(), title: 'Limits' })).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
+<tf-skip-link />
 <tf-workflow-header [crumb]="t('req_breadcrumb', 'New request')" />
 
-<main class="tf-shell tf-req-page">
+<main id="main" class="tf-shell tf-req-page">
   @if (loading()) {
     <p class="tf-req-state" role="status">{{ t('req_loading', 'Preparing your request…') }}</p>
   }
@@ -39,7 +40,7 @@
       <div class="tf-req-success">
         <div class="tf-check-draw" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
         <h1>{{ t('req_sent_title', 'Your request is on its way') }}</h1>
-        <p>{{ t('req_sent_body', 'The teacher will reply with an offer.') }}</p>
+        <p>{{ t('req_sent_body', 'The teacher will now read it and accept it, ask you a question, or decline it. You pay only after they accept. We will e-mail you, and you can follow it any time under “My requests & orders”.') }}</p>
 
         @if (failedFiles().length) {
           <div class="tf-req-failed-files" role="alert">
@@ -70,7 +71,7 @@
               <label for="req-service">{{ t('req_service', 'Service') }}</label>
               <select id="req-service" [value]="serviceId()" (change)="serviceId.set($any($event.target).value)">
                 @for (svc of services(); track svc.id) {
-                  <option [value]="svc.id">
+                  <option [value]="svc.id" [selected]="svc.id === serviceId()">
                     {{ locale.lang() === 'ar' ? (svc.serviceNameArabic || svc.serviceNameEnglish)
                                               : (svc.serviceNameEnglish || svc.serviceNameArabic) }}
                   </option>
@@ -123,28 +124,17 @@
               <div class="tf-field">
                 <label [attr.for]="'req-prompt-' + key">{{ promptLabel(key) }}</label>
                 <textarea [id]="'req-prompt-' + key" rows="2" maxlength="1000"
-                          [value]="prompts()[key] ?? ''"
+                          [value]="promptValue(key)"
                           (input)="setPrompt(key, $any($event.target).value)"></textarea>
               </div>
             }
 
             <div class="tf-field">
               <label for="req-files">{{ t('req_files', 'Attachments') }}</label>
-              <label class="tf-button tf-req-attach">
-                {{ t('req_add_files', 'Add files') }}
-                <input id="req-files" type="file" multiple (change)="onFiles($event)" hidden />
-              </label>
-              @if (files().length) {
-                <ul class="tf-req-files">
-                  @for (file of files(); track file.name; let i = $index) {
-                    <li>
-                      <span>{{ file.name }}</span>
-                      <button type="button" (click)="removeFile(i)"
-                              [attr.aria-label]="t('req_remove_file', 'Remove')">×</button>
-                    </li>
-                  }
-                </ul>
-              }
+              <tf-file-picker inputId="req-files" [multiple]="true" [accept]="fileAccept"
+                              [title]="t('upload_drop_files', 'Drag files here, or choose them from your device')"
+                              [hint]="locale.format('req_files_hint', { n: fileLimits.maxFiles, max: fileLimits.maxBytes / 1048576 }, 'Up to {n} files · PDF, photos (JPEG or PNG), text files, Word or PowerPoint · {max} MB each')"
+                              [files]="files()" [error]="fileError()" (picked)="addFiles($event)" (removed)="removeFile($event)" />
             </div>
           }
 
@@ -158,13 +148,19 @@
               }
             </div>
 
+            @if (service()?.price != null) {
+              <!-- UX-17: a listed price is the price; asking for a budget beside it suggested it was negotiable. -->
+              <p class="tf-field-help" data-testid="req-listed-price">{{ locale.format('req_listed_price_note', { price: fmt.money(service()!.price, service()!.currency) },
+                'The price is {price}. The teacher confirms it when accepting; if it changes, they must tell you why before you pay.') }}</p>
+            } @else {
             <label class="tf-check">
               <input type="checkbox" [checked]="flexibleBudget()"
                      (change)="flexibleBudget.set($any($event.target).checked)" />
               {{ t('req_flexible_budget', 'I am flexible on budget') }}
             </label>
+            }
 
-            @if (!flexibleBudget()) {
+            @if (!flexibleBudget() && service()?.price == null) {
               <div class="tf-field">
                 <label for="req-budget">{{ t('req_budget', 'Your budget') }}</label>
                 <input id="req-budget" type="number" min="0" step="10"
@@ -182,6 +178,18 @@
           @if (step() === 4) {
             <section class="tf-req-review" aria-labelledby="req-review-title">
               <h2 id="req-review-title">{{ t('req_review', 'Review your request') }}</h2>
+              <dl class="tf-req-review__facts">
+                @if (teacherName()) {
+                  <div><dt>{{ t('req_review_teacher', 'Teacher') }}</dt><dd>{{ teacherName() }}</dd></div>
+                }
+                <div><dt>{{ t('req_service', 'Service') }}</dt><dd>{{ serviceName() }}</dd></div>
+                @if (service(); as svc) {
+                  <div><dt>{{ t('price_plain', 'Price') }}</dt><dd><tf-price [amount]="svc.price" [currency]="svc.currency" /></dd></div>
+                }
+                @if (deliveryAt(); as due) {
+                  <div><dt>{{ t('req_delivery', 'When do you need it?') }}</dt><dd>{{ fmt.dateOnly(due) }}</dd></div>
+                }
+              </dl>
               <p class="tf-req-review__title">{{ requestTitle() }}</p>
               <pre class="tf-req-review__body">{{ description() }}</pre>
               @if (files().length) {
@@ -201,15 +209,20 @@
           }
 
           <div class="tf-req-nav">
-            <button type="button" class="tf-button tf-button-secondary" (click)="back()" [disabled]="step() === 1">
-              {{ t('req_back', 'Back') }}
-            </button>
+            @if (step() > 1) {
+              <button type="button" class="tf-button tf-button-secondary" (click)="back()">
+                {{ t('req_back', 'Back') }}
+              </button>
+            }
+            @if (missingHint(); as hint) {
+              <p class="tf-req-missing" role="status">{{ hint }}</p>
+            }
             @if (step() < 4) {
-              <button type="button" class="tf-button" (click)="next()" [disabled]="!canAdvance()">
+              <button type="button" class="tf-button tf-req-forward" (click)="next()" [disabled]="!canAdvance()">
                 {{ t('req_next', 'Next') }}
               </button>
             } @else {
-              <button type="button" class="tf-button" (click)="submit()" [disabled]="!canSubmit()">
+              <button type="button" class="tf-button tf-req-forward" (click)="submit()" [disabled]="!canSubmit()">
                 {{ submitting() ? t('req_sending', 'Sending…') : t('req_send', 'Send request') }}
               </button>
             }
@@ -222,6 +235,9 @@
 
         <aside class="tf-req-context" [attr.aria-label]="t('req_context', 'Your teacher')">
           <p class="tf-req-context-eyebrow">{{ t('req_context_eyebrow', 'Requesting from') }}</p>
+          @if (teacherName()) {
+            <p class="tf-req-context-teacher">{{ teacherName() }}</p>
+          }
           <p class="tf-req-context-service">{{ serviceName() }}</p>
           @if (service(); as svc) {
             <ul class="tf-req-context-facts">
@@ -231,8 +247,8 @@
               </li>
               @if (svc.deliveryDays) {
                 <li>
-                  <span>{{ t('pay_context_delivery', 'Delivery') }}</span>
-                  <strong>{{ svc.deliveryDays }} {{ t('tp_days', 'days') }}</strong>
+                  <span>{{ t('req_context_delivery_time', 'Usual delivery time') }}</span>
+                  <strong>{{ days(svc.deliveryDays) }}</strong>
                 </li>
               }
             </ul>

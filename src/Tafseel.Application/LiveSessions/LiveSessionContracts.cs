@@ -18,6 +18,7 @@ public sealed record RescheduleLiveSession(
     DateTime LocalStart,
     [param: Required, NotWhiteSpace, StringLength(100)] string TimeZoneId);
 public sealed record RespondToLiveSessionReschedule(bool Accept);
+public sealed record RespondToLiveSessionRequest(bool Accept);
 
 public sealed record LiveSessionDto(
     Guid Id, string StudentId, string TeacherId, Guid TeacherServiceId, string Title, string Notes,
@@ -62,7 +63,9 @@ public static class AvailabilitySummaryStates
     public const string FullyBooked = "fully_booked";
     public const string NotApplicable = "not_applicable";
 }
-public sealed record JoinSessionDto(string Url, DateTimeOffset ValidFrom, DateTimeOffset ValidUntil);
+public sealed record JoinSessionDto(string Url, DateTimeOffset ValidFrom, DateTimeOffset ValidUntil,
+    string? RoomName = null, string? Jwt = null, string? ExternalApiUrl = null);
+public sealed record LiveSessionJoinLink(string Url, string? RoomName = null, string? Jwt = null, string? ExternalApiUrl = null);
 
 public interface ILiveSessionService
 {
@@ -78,6 +81,7 @@ public interface ILiveSessionService
         string viewerTimeZoneId,
         CancellationToken ct);
     Task<LiveSessionDto> BookAsync(string studentId, BookLiveSession input, CancellationToken ct);
+    Task RespondToRequestAsync(string teacherId, Guid id, bool accept, string version, CancellationToken ct);
     Task<PagedResult<LiveSessionDto>> GetMineAsync(string userId, int page, int pageSize, CancellationToken ct);
     Task RescheduleAsync(string userId, Guid id, RescheduleLiveSession input, string version, CancellationToken ct);
     Task RespondToRescheduleAsync(string userId, Guid id, bool accept, string version, CancellationToken ct);
@@ -92,7 +96,8 @@ public interface ILiveSessionService
 
 public interface ILiveSessionLinkProvider
 {
-    Task<string> GetJoinUrlAsync(Guid bookingId, string joinKey, CancellationToken ct);
+    Task<LiveSessionJoinLink> GetJoinLinkAsync(Guid bookingId, string joinKey, string userId,
+        string displayName, bool isTeacher, DateTimeOffset validFrom, DateTimeOffset validUntil, CancellationToken ct);
 }
 
 public sealed class LiveSessionOptions
@@ -107,4 +112,19 @@ public sealed class LiveSessionOptions
 
     public DateTimeOffset PassiveOutcomeDeadline(DateTimeOffset endsAt) =>
         endsAt.AddMinutes(NoShowGraceMinutes).AddHours(SettlementReviewHours);
+}
+
+public sealed class JaasOptions
+{
+    public const string SectionName = "JaaS";
+    public string AppId { get; init; } = "";
+    public string KeyId { get; init; } = "";
+    public string PrivateKeyPem { get; init; } = "";
+    /// <summary>
+    /// Alternative to <see cref="PrivateKeyPem"/>: a PEM file the server reads, kept outside the published site
+    /// (for example App_Data on the host), so the key never sits in a settings file. The inline value wins if both are set.
+    /// </summary>
+    public string PrivateKeyPath { get; init; } = "";
+    /// <summary>Development-only pre-signed token. Prefer a private key so each participant gets their own JWT.</summary>
+    public string StaticJwt { get; init; } = "";
 }

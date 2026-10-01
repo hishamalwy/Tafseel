@@ -10,13 +10,14 @@ import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { ToastComponent } from '@shared/components/toast.component';
+import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
 import { ReviewDecisionFormComponent } from '../components/review-decision-form.component';
 import {
-  ApplicationReview, REVIEW_PRIORITY, Review, ReviewDecision, ReviewPriority
+  ApplicationReview, REVIEW_PRIORITY, REVOCATION_REASON, Review, ReviewDecision, ReviewPriority
 } from '../models/application-review';
 import {
-  LoadApplicationReview, OpenApplicationDemo, StartApplicationReview
+  LoadApplicationReview, OpenApplicationDemo, RevokeQualification, StartApplicationReview
 } from '../services/quality-review.use-cases';
 
 @Component({
@@ -33,10 +34,11 @@ import {
     .tf-review-facts dd { margin: 0; font-weight: 650; text-align: end; overflow-wrap: anywhere; }
     .tf-review-timeline { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
     .tf-review-timeline li { display: grid; gap: 3px; padding-inline-start: 12px; border-inline-start: 2px solid var(--border); font-size: 13px; }
-    .tf-review-timeline small { color: var(--muted); }
+    .tf-review-timeline small { color: var(--muted); font-size: 12px; }
     .tf-review-video { width: 100%; max-height: 70vh; border-radius: var(--r-md); background: #000; }
     .tf-review-instructions { margin: 0; white-space: pre-line; color: var(--text-2); font-size: 14px; line-height: 1.7; }
-    .tf-review-back { display: inline-block; margin-bottom: 12px; font-size: 13px; font-weight: 650; }
+    .tf-review-back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-bottom: 4px; font-size: 13px; font-weight: 650; }
+    .tf-review-back svg { width: 16px; height: 16px; flex: none; }
     @media (max-width: 960px) { .tf-review-layout { grid-template-columns: minmax(0, 1fr); } }
   `
 })
@@ -45,6 +47,8 @@ export class ApplicationReviewPageComponent implements OnDestroy {
   private readonly load = inject(LoadApplicationReview);
   private readonly start = inject(StartApplicationReview);
   private readonly openDemo = inject(OpenApplicationDemo);
+  private readonly revoke = inject(RevokeQualification);
+  private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
   private readonly title = inject(Title);
   private readonly session = inject(SESSION_STORE);
@@ -63,6 +67,11 @@ export class ApplicationReviewPageComponent implements OnDestroy {
   readonly demo = signal<ProtectedObjectUrl | null>(null);
   readonly demoLoading = signal(false);
   readonly demoError = signal('');
+  readonly revoking = signal(false);
+  readonly revokeOpen = signal(false);
+  readonly revokeReason = signal('');
+  readonly revokeError = signal('');
+  readonly reasonLimits = REVOCATION_REASON;
 
   private readonly reviewerId = computed(() => this.session.current()?.userId ?? '');
   readonly canStart = computed(() => { const r = this.review(); return !!r && Review.canStartReview(r.application); });
@@ -142,6 +151,36 @@ export class ApplicationReviewPageComponent implements OnDestroy {
       this.demoError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
     } finally {
       this.demoLoading.set(false);
+    }
+  }
+
+  async withdrawQualification(): Promise<void> {
+    const q = this.review()?.qualification;
+    if (!q?.isActive || this.revoking()) return;
+    const reason = this.revokeReason().trim();
+    if (reason.length < REVOCATION_REASON.min || reason.length > REVOCATION_REASON.max) {
+      this.revokeError.set(this.t('quality_revoke_reason_invalid', 'Write the reason for the teacher in 10 to 2000 characters.'));
+      return;
+    }
+    const confirmed = await this.dialogs.confirm({
+      title: this.t('quality_revoke_confirm_title', 'Withdraw this qualification?'),
+      body: this.locale.format('quality_revoke_confirm_body', { n: q.activeServices },
+        'The teacher can no longer sell this subject: {n} active service(s) are paused and leave the marketplace. The teacher is told your reason. Orders already paid for are not changed.'),
+      confirmLabel: this.t('quality_revoke', 'Withdraw qualification'), cancelLabel: this.t('common_cancel', 'Cancel'), destructive: true
+    });
+    if (!confirmed) return;
+    this.revoking.set(true);
+    this.revokeError.set('');
+    try {
+      await this.revoke.execute(q.id, reason);
+      this.revokeOpen.set(false);
+      this.revokeReason.set('');
+      await this.refresh();
+      this.toasts.show(this.t('quality_revoked', 'Qualification withdrawn. The teacher has been told why.'));
+    } catch (error) {
+      this.revokeError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
+    } finally {
+      this.revoking.set(false);
     }
   }
 

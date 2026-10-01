@@ -186,7 +186,7 @@ export function timeZoneChoices(...saved: readonly string[]): readonly string[] 
  * follows so two zones sharing a name are still distinguishable.
  */
 export function timeZoneLabel(zone: string, lang: string): string {
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   try {
     const name = new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName: 'long' })
       .formatToParts(new Date())
@@ -195,8 +195,34 @@ export function timeZoneLabel(zone: string, lang: string): string {
       .formatToParts(new Date())
       .find(part => part.type === 'timeZoneName')?.value;
     if (!name) return zone;
+    // People look for their city, not for a zone's official name: Riyadh, Kuwait and Qatar all read
+    // "Arabia Standard Time (GMT+3)", and Cairo reads "Eastern European Summer Time", which no one in
+    // Cairo would look for. The city leads wherever we know it.
+    const city = zoneCity(zone, lang);
+    if (city) return offset ? `${city} (${offset})` : city;
     return offset ? `${name} (${offset})` : name;
   } catch {
     return zone;
   }
+}
+
+/** Cities of the zones Tafseel offers first, in both languages; other zones are named by Intl alone in Arabic. */
+const ZONE_CITIES: Readonly<Record<string, readonly [en: string, ar: string]>> = {
+  'Asia/Riyadh': ['Riyadh', 'الرياض'], 'Asia/Dubai': ['Dubai', 'دبي'], 'Asia/Kuwait': ['Kuwait', 'الكويت'],
+  'Asia/Qatar': ['Doha', 'الدوحة'], 'Asia/Bahrain': ['Bahrain', 'البحرين'], 'Asia/Muscat': ['Muscat', 'مسقط'],
+  'Asia/Amman': ['Amman', 'عمّان'], 'Asia/Beirut': ['Beirut', 'بيروت'], 'Asia/Damascus': ['Damascus', 'دمشق'],
+  'Asia/Baghdad': ['Baghdad', 'بغداد'], 'Africa/Cairo': ['Cairo', 'القاهرة'], 'Africa/Khartoum': ['Khartoum', 'الخرطوم'],
+  'Asia/Istanbul': ['Istanbul', 'إسطنبول'], 'Europe/Istanbul': ['Istanbul', 'إسطنبول'], 'Europe/London': ['London', 'لندن'],
+  'America/New_York': ['New York', 'نيويورك'], 'Asia/Aden': ['Aden', 'عدن'], 'Africa/Tripoli': ['Tripoli', 'طرابلس'],
+  'Africa/Tunis': ['Tunis', 'تونس'], 'Africa/Algiers': ['Algiers', 'الجزائر'], 'Africa/Casablanca': ['Casablanca', 'الدار البيضاء'],
+  'UTC': ['Greenwich time', 'توقيت غرينتش'], 'Etc/UTC': ['Greenwich time', 'توقيت غرينتش'],
+  'Asia/Jerusalem': ['Jerusalem', 'القدس'], 'Asia/Gaza': ['Gaza', 'غزة'], 'Asia/Hebron': ['Hebron', 'الخليل']
+};
+
+function zoneCity(zone: string, lang: string): string {
+  const known = ZONE_CITIES[zone];
+  if (known) return lang === 'ar' ? known[1] : known[0];
+  // In English the identifier's last part is the city ("America/Los_Angeles"); in Arabic it would be Latin.
+  if (lang === 'ar' || !zone.includes('/')) return '';
+  return zone.split('/').pop()!.replace(/_/g, ' ');
 }

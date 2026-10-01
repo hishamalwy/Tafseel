@@ -1,4 +1,5 @@
-﻿using System.Net.Mail;
+using System.Net.Mail;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,7 @@ using Tafseel.Application.Students;
 using Tafseel.Application.TeacherApplications;
 using Tafseel.Application.TeacherBusiness;
 using Tafseel.Domain.Catalog;
+using Tafseel.Domain.Governance;
 using Tafseel.Domain.Marketing;
 using Tafseel.Infrastructure.Catalog;
 using Tafseel.Infrastructure.Ai;
@@ -101,19 +103,20 @@ public static class DependencyInjection
     private static readonly (string Name, string Code)[] CanonicalLanguages =
         [("Arabic", "ar"), ("English", "en")];
 
-    // Shared by Staging demo-user seeding and opt-in Development demo-user seeding (ADR-012):
-    // both paths seed the same canonical accounts/roles, only the password source differs.
-    private static readonly (string Role, string Email, string FullName, string FullNameEnglish)[] DemoUserAccounts =
+    // The canonical demo accounts, one per role (ADR-012). Created only where demo data is allowed, with the
+    // environment's own seed password; finance@gmail.com is the one Finance demo account.
+    internal static readonly (string Role, string Email, string FullName, string FullNameEnglish)[] DemoUserAccounts =
     [
         (Roles.Admin, "admin@gmail.com", "Tafseel Admin", "Tafseel Admin"),
         (Roles.Student, "student@gmail.com", "Tafseel Student", "Tafseel Student"),
         (Roles.Teacher, "teacher@gmail.com", "معلم تفصيل", "Tafseel Teacher"),
-        (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer", "Tafseel Quality Reviewer")
+        (Roles.QualityReviewer, "quality@gmail.com", "Tafseel Quality Reviewer", "Tafseel Quality Reviewer"),
+        // PRODUCT-P1: the Finance role (money duties only). Help reports are Admin work, so there is no support account.
+        (Roles.Finance, "finance@gmail.com", "مالية تفصيل", "Tafseel Finance")
     ];
 
-    // Opt-in Development-only demo catalog content (ADR-013). Real production subjects/topics are
-    // business content decided separately; this is placeholder content so a fresh Development
-    // database has something to browse. QualificationTopic max duration mirrors the 3-minute
+    // Baseline catalog content shared by Development, Staging and PreProduction (ADR-013). Real
+    // production subjects/topics are business content decided separately. QualificationTopic max duration mirrors the 3-minute
     // teaching-demo copy already shown to applicants on the sign-in screen.
     private static readonly (
         string Name, string NameAr, string Icon, int DisplayOrder,
@@ -281,8 +284,9 @@ public static class DependencyInjection
             .Validate(options =>
                     options.AccessTokenMinutes is >= 1 and <= 60
                     && options.RefreshTokenDays is >= 1 and <= 90
+                    && options.SessionRefreshHours is >= 1 and <= 24
                     && TimeSpan.FromDays(options.RefreshTokenDays) > TimeSpan.FromMinutes(options.AccessTokenMinutes),
-                "JWT access lifetime must be 1-60 minutes and refresh lifetime 1-90 days and longer than access lifetime.")
+                "JWT access lifetime must be 1-60 minutes, refresh lifetime 1-90 days and longer than access lifetime, and the session refresh lifetime 1-24 hours.")
             .Validate(options =>
                     !environment.IsProduction()
                     || !options.SigningKey.Contains("development", StringComparison.OrdinalIgnoreCase),
@@ -318,14 +322,17 @@ public static class DependencyInjection
         services.AddScoped<IAiMarketplaceAssistant, AiMarketplaceAssistant>();
         services.AddScoped<ITeacherApplicationService, TeacherApplicationService>();
         services.AddScoped<IMarketplaceService, MarketplaceService>();
+        services.AddScoped<IIntroVideoService, IntroVideoService>();
         services.AddScoped<ITeacherBusinessService, TeacherBusinessService>();
         services.AddScoped<IMarketplaceIntelligenceService, MarketplaceIntelligenceService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOpenMarketplaceService, OpenMarketplaceService>();
+        services.AddScoped<IOpenRequestDraftService, OpenRequestDraftService>();
         services.AddScoped<OpenMarketplaceReservationExpiryService>();
         services.AddOptions<OpenMarketplaceOptions>().Bind(configuration.GetSection(OpenMarketplaceOptions.SectionName))
             .Validate(x => x.OfferReservationMinutes is >= 15 and <= 1440, "Offer reservation must be 15-1440 minutes.")
             .ValidateOnStart();
+        services.AddSingleton<Tafseel.Infrastructure.Operations.WorkerHeartbeats>();
         services.AddHostedService<OpenMarketplaceReservationWorker>();
         services.AddHostedService<OrderAutoReleaseWorker>();
         services.AddHostedService<LiveSessionSettlementWorker>();
@@ -335,7 +342,11 @@ public static class DependencyInjection
         services.AddHostedService(sp => sp.GetRequiredService<EarningsMaturityWorker>());
         services.AddScoped<ILiveSessionService, LiveSessionService>();
         services.AddScoped<IFinancialService, FinancialService>();
+        services.AddScoped<IFinanceOperationsService, FinanceOperationsService>();
+        services.AddScoped<ITeacherEarningsService, TeacherEarningsService>();
+        services.AddScoped<ISupportService, SupportService>();
         services.AddScoped<ICouponService, CouponService>();
+        services.AddScoped<ICouponCheckoutQuoteService, CouponCheckoutQuoteService>();
         services.AddScoped<IPromotionService, PromotionService>();
         services.AddScoped<IPlatformStatsService, PlatformStatsService>();
         services.AddSingleton<MockPaymentProvider>();
@@ -361,16 +372,16 @@ public static class DependencyInjection
         services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubjectUserIdProvider>();
         services.AddHostedService<NotificationOutboxWorker>();
         services.AddSingleton<MockLiveSessionLinkProvider>();
+        services.AddSingleton<JaasLiveSessionLinkProvider>();
         services.AddSingleton<ILiveSessionLinkProvider>(sp =>
         {
             var provider = sp.GetRequiredService<IOptions<LiveSessionOptions>>().Value.Provider;
             return provider switch
             {
                 "Mock" => sp.GetRequiredService<MockLiveSessionLinkProvider>(),
-                // Zoom / GoogleMeet / MicrosoftTeams adapters are intentionally not registered until
-                // vendor credentials and join-window contracts are approved — fail closed instead of faking.
+                "JaaS" => sp.GetRequiredService<JaasLiveSessionLinkProvider>(),
                 _ => throw new InvalidOperationException(
-                    $"Live-session provider '{provider}' is not registered. Development uses Mock; Production requires a registered real provider (Zoom, GoogleMeet, or MicrosoftTeams).")
+                    $"Live-session provider '{provider}' is not registered. Use Mock or JaaS.")
             };
         });
         services.AddOptions<FileStorageOptions>()
@@ -394,12 +405,27 @@ public static class DependencyInjection
                     || string.Equals(options.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase),
                 "Production requires FileStorage:Provider=AzureBlob (Local storage is forbidden).")
             .ValidateOnStart();
+        // SEC-04: every upload is scanned before it is stored; Production requires a real engine (clamd).
+        services.AddOptions<MalwareScanningOptions>()
+            .Bind(configuration.GetSection(MalwareScanningOptions.SectionName))
+            .Validate(x => x.Mode is "Development" or "ClamAv", "MalwareScanning:Mode must be Development or ClamAv.")
+            .Validate(x => x.Mode != "ClamAv" || (!string.IsNullOrWhiteSpace(x.ClamAv.Host)
+                    && !x.ClamAv.Host.StartsWith("REPLACE_", StringComparison.Ordinal) && x.ClamAv.Port is > 0 and < 65536),
+                "MalwareScanning:ClamAv requires a Host and Port.")
+            .Validate(x => !environment.IsProduction() || x.Mode == "ClamAv",
+                "Production requires MalwareScanning:Mode=ClamAv; the development scanner only recognises a test file.")
+            .ValidateOnStart();
+        services.AddSingleton<IMalwareScanner>(sp =>
+            sp.GetRequiredService<IOptions<MalwareScanningOptions>>().Value.Enforced
+                ? ActivatorUtilities.CreateInstance<ClamAvMalwareScanner>(sp)
+                : new DevelopmentMalwareScanner());
         services.AddScoped<IFileStorageService>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<FileStorageOptions>>().Value;
-            return options.Provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase)
+            IFileStorageService storage = options.Provider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase)
                 ? ActivatorUtilities.CreateInstance<AzureBlobFileStorageService>(sp)
                 : ActivatorUtilities.CreateInstance<LocalFileStorageService>(sp);
+            return ActivatorUtilities.CreateInstance<ScanningFileStorageService>(sp, storage);
         });
         services.AddOptions<FeeOptions>()
             .Bind(configuration.GetRequiredSection(FeeOptions.SectionName))
@@ -416,6 +442,19 @@ public static class DependencyInjection
                 && x.MaturityBatchSize is >= 1 and <= 500,
                 "Withdrawal minimum, currency, settlement window, or maturity batch size are invalid.")
             .ValidateOnStart();
+        // DEC-04 payout destinations. Outside Development/Testing the host refuses to start without key
+        // material from the secret store; in Development/Testing a missing key makes every payout-destination
+        // operation fail closed instead. There is no default key.
+        services.AddOptions<PayoutDestinationOptions>()
+            .Bind(configuration.GetSection(PayoutDestinationOptions.SectionName))
+            .Validate(x => (string.IsNullOrEmpty(x.ActiveKeyId) && x.Keys.Count == 0) || x.IsUsable(out _),
+                "PayoutDestinations key material is invalid: the active key must be listed and every key must be 32 random bytes, base64-encoded.")
+            .Validate(x => environment.IsDevelopment() || environment.IsEnvironment("Testing") || x.IsUsable(out _),
+                "PayoutDestinations:ActiveKeyId and its key are required outside Development/Testing; supply them from the secret store.")
+            .ValidateOnStart();
+        services.AddSingleton<IPayoutDestinationVault, AesGcmPayoutDestinationVault>();
+        // The only payout adapter until PAY-01 selects a provider. It moves no money (see its summary).
+        services.AddSingleton<IPayoutProvider, ManualBankTransferPayoutProvider>();
         services.AddOptions<LiveSessionOptions>()
             .Bind(configuration.GetRequiredSection(LiveSessionOptions.SectionName))
             .Validate(x => x.EmergencyPremiumPercent is >= 0 and <= 1000
@@ -427,21 +466,28 @@ public static class DependencyInjection
                 "Live session premium, cancellation, and join-window settings are invalid.")
             .Validate(x =>
                     x.Provider == "Mock"
-                    || x.Provider is "Zoom" or "GoogleMeet" or "MicrosoftTeams",
-                "LiveSessions:Provider must be Mock, Zoom, GoogleMeet, or MicrosoftTeams.")
+                    || x.Provider == "JaaS",
+                "LiveSessions:Provider must be Mock or JaaS.")
             .Validate(x =>
                     x.Provider != "Mock"
                     || !environment.IsProduction(),
                 "The mock live-session provider is forbidden in Production.")
-            .Validate(x =>
-                    environment.IsProduction()
-                    || x.Provider == "Mock",
-                "Non-Production environments must use LiveSessions:Provider=Mock until a real adapter is registered.")
-            .Validate(x =>
-                    !environment.IsProduction()
-                    || x.Provider == "Mock"
-                    || false,
-                "No non-mock live-session provider implementation is registered yet (Zoom/GoogleMeet/MicrosoftTeams). Production remains fail-closed.")
+            .ValidateOnStart();
+        services.AddOptions<JaasOptions>()
+            .Bind(configuration.GetSection(JaasOptions.SectionName))
+            .Validate(x => configuration.GetValue<string>("LiveSessions:Provider") != "JaaS"
+                || (x.AppId.StartsWith("vpaas-magic-cookie-", StringComparison.Ordinal)
+                    && (ValidJaasStaticJwt(x.StaticJwt)
+                        || (x.KeyId.StartsWith(x.AppId + "/", StringComparison.Ordinal)
+                            && JaasSigningKey.IsUsable(x)))),
+                "JaaS requires an AppId and either a private signing key (JaaS:PrivateKeyPem or JaaS:PrivateKeyPath) or a sandbox StaticJwt.")
+            // A static token is one identity for every participant, is bound to no room or join window, and
+            // expires on its own; PreProduction rehearses Production, so it signs per participant too.
+            .Validate(x => !(environment.IsProduction() || environment.IsPreProduction())
+                    || configuration.GetValue<string>("LiveSessions:Provider") != "JaaS"
+                    || string.IsNullOrWhiteSpace(x.StaticJwt)
+                    && !x.KeyId.Contains("SAMPLE_APP", StringComparison.OrdinalIgnoreCase),
+                "Production and PreProduction JaaS require per-participant signing with the account's own key (no StaticJwt, no sample Key ID).")
             .ValidateOnStart();
         services.AddOptions<PaymentOptions>()
             .Bind(configuration.GetRequiredSection(PaymentOptions.SectionName))
@@ -530,6 +576,11 @@ public static class DependencyInjection
                         && new Uri(options.ConfirmationUrl).Host is not ("localhost" or "127.0.0.1")
                         && new Uri(options.AppBaseUrl).Host is not ("localhost" or "127.0.0.1")),
                 "Non-development email must use a verified sender; Production also requires non-local frontend URLs.")
+            .Validate(options => options.Delivery is "Resend" or "Outbox",
+                "Email:Delivery must be Resend or Outbox.")
+            .Validate(options => !environment.IsProduction()
+                    || options.Delivery == "Resend" && options.SuppressedRecipients.Length == 0,
+                "Production sends every email through Resend and suppresses no recipient.")
             .ValidateOnStart();
         services.AddHttpClient<ResendClient>(client => client.Timeout = TimeSpan.FromSeconds(15));
         services.AddOptions<ResendClientOptions>()
@@ -537,17 +588,18 @@ public static class DependencyInjection
             .Validate(options => !string.IsNullOrWhiteSpace(options.ApiToken), "Resend:ApiToken is required.")
             .ValidateOnStart();
         services.AddTransient<IResend, ResendClient>();
-        // Development uses a local outbox so register/confirm works without a real Resend token.
-        // Testing replaces IEmailSender in the web factory; Production/Staging keep Resend.
-        if (environment.IsDevelopment())
-            services.AddTransient<IEmailSender, DevelopmentEmailSender>();
-        else
-            services.AddTransient<IEmailSender, ResendEmailSender>();
+        // Development (and a Staging that asks for Email:Delivery=Outbox) writes mail to a local outbox, so
+        // register/confirm works without sending anything. Testing replaces IEmailSender in the web factory.
+        // Either way the seeded demo addresses are suppressed: they are real mailboxes of other people.
+        var outbox = environment.IsDevelopment()
+            || string.Equals(configuration["Email:Delivery"], "Outbox", StringComparison.OrdinalIgnoreCase);
+        services.AddTransient<DevelopmentEmailSender>();
+        services.AddTransient<ResendEmailSender>();
+        services.AddTransient<IEmailSender>(sp => ActivatorUtilities.CreateInstance<SuppressingEmailSender>(sp,
+            outbox ? sp.GetRequiredService<DevelopmentEmailSender>() : sp.GetRequiredService<ResendEmailSender>()));
 
-        // Opt-in Development-only demo user seeding (ADR-012). The password is only ever required
-        // when it would actually be used (Development and Enabled); Staging/Production never need it
-        // and are never asked to provide it, because the seeding path itself never runs there
-        // (see IdentityInitialization.RunAsync and the redundant guard in SeedDevelopmentDemoUsersAsync).
+        // Demo-account seeding (ADR-012). At startup the password is only required when it would be used
+        // (Development and Enabled); the explicit `seed` command requires it itself (EnvironmentSeed).
         services.AddOptions<SeedUsersOptions>()
             .Bind(configuration.GetSection(SeedUsersOptions.SectionName))
             .Validate(options => options.IsValid(environment.IsDevelopment()),
@@ -587,103 +639,125 @@ public static class DependencyInjection
         await ApplyCanonicalServicePolicyAsync(db);
 
         var environment = scope.ServiceProvider.GetService<IHostEnvironment>();
-        var staging = environment?.IsStaging() == true;
-        // Resolving .Value runs SeedUsersOptions.IsValid: it throws OptionsValidationException with a
-        // safe (password-free) message if Enabled=true in Development without a configured password.
-        // The predicate is self-gating, so this is a no-op outside Development-and-Enabled.
+        // Startup seeds demo data only in Development, and only when a developer opted in. Staging and
+        // PreProduction get the same demo data from the explicit, password-carrying `seed` command
+        // (Seeding/EnvironmentSeed.cs); Production never does. There is no built-in password anywhere.
+        // Resolving .Value runs SeedUsersOptions.IsValid, which throws a password-free error when a developer
+        // enabled seeding without configuring SeedUsers:Password.
         var seedUsersOptions = scope.ServiceProvider.GetService<IOptions<SeedUsersOptions>>()?.Value;
         var developmentSeedEnabled = environment?.IsDevelopment() == true && seedUsersOptions?.Enabled == true;
         var seedDemoDataOptions = scope.ServiceProvider.GetService<IOptions<SeedDemoDataOptions>>()?.Value;
         var demoCatalogSeedEnabled = environment?.IsDevelopment() == true && seedDemoDataOptions?.Enabled == true;
-        if (await IdentitySeedIsCurrentAsync(db, staging, developmentSeedEnabled, demoCatalogSeedEnabled))
+        if (await IdentitySeedIsCurrentAsync(db, developmentSeedEnabled, demoCatalogSeedEnabled))
             return;
 
         var strategy = new NonRetryingExecutionStrategy(db);
         await strategy.ExecuteAsync(async () =>
         {
             await using var transaction = await db.Database.BeginTransactionAsync();
-            var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            foreach (var role in Roles.All)
-                if (!await roles.RoleExistsAsync(role))
-                {
-                    var result = await roles.CreateAsync(new IdentityRole(role));
-                    if (!result.Succeeded)
-                        throw new InvalidOperationException($"Required Identity role '{role}' could not be created.");
-                }
-
-            // Canonical services back real business logic (e.g. LiveSessionService/MarketplaceService key off
-            // Code == "live_session") and must exist idempotently in every environment, not just staging demo data.
-            foreach (var service in CanonicalServices)
-                if (!await db.ServiceCatalogItems.AnyAsync(x => x.Code == service.Code))
-                    db.Add(new ServiceCatalogItem(
-                        service.Name,
-                        service.Description,
-                        service.Code,
-                        service.NameAr,
-                        service.DescriptionAr,
-                        displayOrder: service.DisplayOrder));
-
-            foreach (var language in CanonicalLanguages)
-                if (!await db.TeachingLanguages.AnyAsync(x => x.Code == language.Code))
-                    db.Add(new TeachingLanguage(language.Name, language.Code));
-            await db.SaveChangesAsync();
-
-            // After the services exist, so a database created in this same run gets the decided policy
-            // rather than the domain's unset-price fallback (DEC-01).
-            await ApplyCanonicalServicePolicyAsync(db);
-
-            if (staging)
-            {
-                var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-                var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
-                foreach (var account in DemoUserAccounts)
-                {
-                    var user = await users.FindByEmailAsync(account.Email);
-                    if (user is null)
-                    {
-                        user = new ApplicationUser
-                        {
-                            UserName = account.Email,
-                            Email = account.Email,
-                            FullName = account.FullName,
-                            FullNameEnglish = account.FullNameEnglish,
-                            EmailConfirmed = true
-                        };
-                        user.PasswordHash = hasher.HashPassword(user, "@Admin123");
-                        var created = await users.CreateAsync(user);
-                        if (!created.Succeeded)
-                            throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be created.");
-                    }
-                    else if (!user.EmailConfirmed)
-                    {
-                        user.EmailConfirmed = true;
-                        var confirmed = await users.UpdateAsync(user);
-                        if (!confirmed.Succeeded)
-                            throw new InvalidOperationException($"Staging demo user '{account.Email}' could not be confirmed.");
-                    }
-
-                    if (!await users.IsInRoleAsync(user, account.Role))
-                    {
-                        var assigned = await users.AddToRoleAsync(user, account.Role);
-                        if (!assigned.Succeeded)
-                            throw new InvalidOperationException(
-                                $"Staging demo user '{account.Email}' could not be assigned to '{account.Role}'.");
-                    }
-                }
-            }
+            await EnsureReferenceDataAsync(scope.ServiceProvider, db);
 
             if (developmentSeedEnabled)
-            {
-                var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-                await SeedDevelopmentDemoUsersAsync(environment, seedUsersOptions, users, logger);
-                await SeedDevelopmentAdditionalReviewerAsync(environment, seedUsersOptions, users, logger);
-            }
+                await SeedDemoAccountsAsync(environment, seedUsersOptions!.Password,
+                    scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(), logger);
 
             if (demoCatalogSeedEnabled)
-                await SeedDevelopmentDemoCatalogAsync(environment, seedDemoDataOptions, db, logger);
+                await SeedDemoCatalogAsync(environment, db, logger);
 
             await transaction.CommitAsync();
         });
+    }
+
+    /// <summary>
+    /// The data every environment needs before anyone can use it: the Identity roles, the canonical
+    /// Catalog Services with their DEC-01 policy, and the teaching languages. Idempotent.
+    /// </summary>
+    internal static async Task EnsureReferenceDataAsync(IServiceProvider scoped, TafseelDbContext db)
+    {
+        var roles = scoped.GetRequiredService<RoleManager<IdentityRole>>();
+        foreach (var role in Roles.All)
+            if (!await roles.RoleExistsAsync(role))
+            {
+                var result = await roles.CreateAsync(new IdentityRole(role));
+                if (!result.Succeeded)
+                    throw new InvalidOperationException($"Required Identity role '{role}' could not be created.");
+            }
+
+        // Canonical services back real business logic (e.g. LiveSessionService/MarketplaceService key off
+        // Code == "live_session") and must exist idempotently in every environment, not just staging demo data.
+        foreach (var service in CanonicalServices)
+            if (!await db.ServiceCatalogItems.AnyAsync(x => x.Code == service.Code))
+                db.Add(new ServiceCatalogItem(
+                    service.Name,
+                    service.Description,
+                    service.Code,
+                    service.NameAr,
+                    service.DescriptionAr,
+                    displayOrder: service.DisplayOrder));
+
+        foreach (var language in CanonicalLanguages)
+            if (!await db.TeachingLanguages.AnyAsync(x => x.Code == language.Code))
+                db.Add(new TeachingLanguage(language.Name, language.Code));
+        await db.SaveChangesAsync();
+
+        // After the services exist, so a database created in this same run gets the decided policy
+        // rather than the domain's unset-price fallback (DEC-01).
+        await ApplyCanonicalServicePolicyAsync(db);
+    }
+
+    /// <summary>
+    /// Deploy-time provisioning for Staging and Production, which never seed on startup (F-001): run
+    /// <c>dotnet Tafseel.Api.dll provision</c> after the migrations. Creates the reference data and, when
+    /// <paramref name="bootstrapAdminEmail"/> names an existing, confirmed account and no Admin exists yet,
+    /// makes that account the first Admin. It never migrates and never creates demo users or demo catalog.
+    /// Returns what it did, for the deploy log.
+    /// </summary>
+    public static async Task<IReadOnlyList<string>> ProvisionAsync(
+        this IServiceProvider services, string? bootstrapAdminEmail, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        var report = new List<string>();
+        var strategy = new NonRetryingExecutionStrategy(db);
+        await strategy.ExecuteAsync(async () =>
+        {
+            report.Clear();
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await BackfillCanonicalServiceLocalizationAsync(db);
+            await EnsureReferenceDataAsync(scope.ServiceProvider, db);
+            report.Add("Roles, canonical services and teaching languages are in place.");
+            report.Add(await PromoteBootstrapAdminAsync(scope.ServiceProvider, db, bootstrapAdminEmail));
+            await transaction.CommitAsync(ct);
+        });
+        return report;
+    }
+
+    /// <summary>
+    /// The first Admin of an environment, whom no one can appoint from inside the app. It only acts while
+    /// there is no Admin at all, so the setting cannot be used to gain Admin once the environment has one.
+    /// </summary>
+    private static async Task<string> PromoteBootstrapAdminAsync(
+        IServiceProvider scoped, TafseelDbContext db, string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "No bootstrap Admin was requested.";
+        var users = scoped.GetRequiredService<UserManager<ApplicationUser>>();
+        if ((await users.GetUsersInRoleAsync(Roles.Admin)).Count > 0)
+            return "An Admin already exists, so the bootstrap Admin setting was ignored.";
+        var user = await users.FindByEmailAsync(email.Trim())
+            ?? throw new InvalidOperationException("The bootstrap Admin account does not exist. Register it first.");
+        if (!user.EmailConfirmed)
+            throw new InvalidOperationException("The bootstrap Admin account must confirm its email first.");
+        if (user.IsSuspended)
+            throw new InvalidOperationException("The bootstrap Admin account is suspended.");
+        var added = await users.AddToRoleAsync(user, Roles.Admin);
+        if (!added.Succeeded)
+            throw new InvalidOperationException("The bootstrap Admin role could not be assigned.");
+        await users.UpdateSecurityStampAsync(user);
+        db.Add(new AuditLogEntry(user.Id, "AdminBootstrapped", "User", user.Id,
+            "First Admin appointed by deploy-time provisioning.", "provisioning", DateTimeOffset.UtcNow));
+        await db.SaveChangesAsync();
+        return "The bootstrap account is now the first Admin.";
     }
 
     /// <summary>
@@ -756,7 +830,7 @@ public static class DependencyInjection
     }
 
     private static async Task<bool> IdentitySeedIsCurrentAsync(
-        TafseelDbContext db, bool staging, bool developmentSeedEnabled, bool demoCatalogSeedEnabled)
+        TafseelDbContext db, bool developmentSeedEnabled, bool demoCatalogSeedEnabled)
     {
         if (await db.Roles.CountAsync(x => x.Name != null && Roles.All.Contains(x.Name)) != Roles.All.Length)
             return false;
@@ -769,10 +843,8 @@ public static class DependencyInjection
         if (await db.TeachingLanguages.CountAsync(x => languageCodes.Contains(x.Code)) != languageCodes.Length)
             return false;
 
-        // Staging and opt-in Development seeding expect the exact same accounts/roles; only the
-        // password source differs, and this fast-path check never verifies passwords either way
-        // (see SeedDevelopmentDemoUsersAsync), keeping repeated startups bounded.
-        if (staging || developmentSeedEnabled)
+        // The fast path never verifies passwords (see SeedDemoAccountsAsync), keeping repeated startups bounded.
+        if (developmentSeedEnabled)
         {
             var emails = DemoUserAccounts.Select(x => x.Email).ToArray();
             var users = await db.Users
@@ -795,29 +867,8 @@ public static class DependencyInjection
                 return false;
         }
 
-        if (developmentSeedEnabled)
-        {
-            (string Email, string Role)[] additionalAccounts =
-            [
-                ("qa.reviewer.sprint02@example.com", Roles.QualityReviewer),
-                ("qa.admin.sprint02@example.com", Roles.Admin)
-            ];
-            foreach (var account in additionalAccounts)
-            {
-                var assigned = await (
-                    from user in db.Users
-                    join userRole in db.UserRoles on user.Id equals userRole.UserId
-                    join role in db.Roles on userRole.RoleId equals role.Id
-                    where user.Email == account.Email && user.EmailConfirmed && role.Name == account.Role
-                    select user.Id)
-                    .AnyAsync();
-                if (!assigned)
-                    return false;
-            }
-        }
-
         // Heuristic only (subject presence, not topics/qualification-topics/education-levels): if it
-        // under-detects staleness, SeedDevelopmentDemoCatalogAsync still repairs idempotently on the
+        // under-detects staleness, SeedDemoCatalogAsync still repairs idempotently on the
         // full pass it would trigger for an unrelated reason; this just keeps repeated startups bounded.
         if (demoCatalogSeedEnabled)
         {
@@ -837,23 +888,22 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Creates/repairs the four canonical demo accounts from configuration. Defensive guard: this
-    /// must never create accounts outside Development, even if called directly or misconfigured
-    /// elsewhere — the check here does not trust the caller's gating.
+    /// Creates/repairs the canonical demo accounts (one per role) with the environment's seed password. Defensive
+    /// guard: never creates accounts in Production or an unknown environment, whatever the caller did.
     /// </summary>
-    private static async Task SeedDevelopmentDemoUsersAsync(
+    internal static async Task SeedDemoAccountsAsync(
         IHostEnvironment? environment,
-        SeedUsersOptions? seedOptions,
+        string? password,
         UserManager<ApplicationUser> users,
         ILogger logger)
     {
-        if (environment?.IsDevelopment() != true || seedOptions?.Enabled != true)
+        if (!environment.AllowsDemoData())
             return;
 
-        if (string.IsNullOrWhiteSpace(seedOptions.Password))
+        if (string.IsNullOrWhiteSpace(password))
             throw new InvalidOperationException(
-                "SeedUsers:Enabled is true but SeedUsers:Password is not configured. Set it via " +
-                "User Secrets or the SeedUsers__Password environment variable (Development only).");
+                "Demo accounts need SeedUsers:Password. Set it via User Secrets (Development) or the " +
+                "SeedUsers__Password environment variable / server-owned host settings (Staging, PreProduction).");
 
         foreach (var account in DemoUserAccounts)
         {
@@ -870,13 +920,13 @@ public static class DependencyInjection
                     EmailConfirmed = true
                 };
                 // Standard UserManager.CreateAsync(user, password): runs full Identity password
-                // validation and hashing, unlike the Staging shortcut above.
-                var created = await users.CreateAsync(user, seedOptions.Password);
+                // validation and hashing, never a pre-hashed shortcut.
+                var created = await users.CreateAsync(user, password);
                 if (!created.Succeeded)
                     throw new InvalidOperationException(
-                        $"Development demo user '{account.Email}' could not be created: "
+                        $"Demo user '{account.Email}' could not be created: "
                         + string.Join("; ", created.Errors.Select(x => x.Description)));
-                logger.LogInformation("Development demo user seeding: created {Email}.", account.Email);
+                logger.LogInformation("Demo user seeding: created {Email}.", account.Email);
             }
             else
             {
@@ -886,21 +936,21 @@ public static class DependencyInjection
                     var confirmed = await users.UpdateAsync(user);
                     if (!confirmed.Succeeded)
                         throw new InvalidOperationException(
-                            $"Development demo user '{account.Email}' email confirmation could not be repaired.");
+                            $"Demo user '{account.Email}' email confirmation could not be repaired.");
                     logger.LogInformation(
-                        "Development demo user seeding: repaired email confirmation for {Email}.", account.Email);
+                        "Demo user seeding: repaired email confirmation for {Email}.", account.Email);
                 }
                 else
                 {
-                    logger.LogInformation("Development demo user seeding: {Email} already exists.", account.Email);
+                    logger.LogInformation("Demo user seeding: {Email} already exists.", account.Email);
                 }
 
                 // Never reset an existing account's password; just report a mismatch so a developer
                 // can tell why login fails, without ever logging either password.
-                if (!await users.CheckPasswordAsync(user, seedOptions.Password))
+                if (!await users.CheckPasswordAsync(user, password))
                     logger.LogWarning(
-                        "Development demo user seeding: {Email} exists but does not accept the " +
-                        "configured SeedUsers:Password; its stored password was left unchanged.",
+                        "Demo user seeding: {Email} exists but does not accept the " +
+                        "configured seed password; its stored password was left unchanged.",
                         account.Email);
             }
 
@@ -909,93 +959,29 @@ public static class DependencyInjection
                 var assigned = await users.AddToRoleAsync(user, account.Role);
                 if (!assigned.Succeeded)
                     throw new InvalidOperationException(
-                        $"Development demo user '{account.Email}' could not be assigned to role '{account.Role}'.");
+                        $"Demo user '{account.Email}' could not be assigned to role '{account.Role}'.");
                 // Only log this as a "repair" when the account already existed; a brand-new account
                 // getting its one canonical role is expected, not drift.
                 if (wasExisting)
                     logger.LogInformation(
-                        "Development demo user seeding: repaired role for {Email} -> {Role}.", account.Email, account.Role);
+                        "Demo user seeding: repaired role for {Email} -> {Role}.", account.Email, account.Role);
             }
         }
 
-        logger.LogInformation("Development demo user seeding completed ({Count} accounts).", DemoUserAccounts.Length);
+        logger.LogInformation("Demo user seeding completed ({Count} accounts).", DemoUserAccounts.Length);
     }
 
     /// <summary>
-    /// Phase 4 Sprint 0.2: creates a small number of additional, clearly-labeled Development-only UAT
-    /// accounts for privileged roles (QualityReviewer, Admin), separate from the canonical
-    /// <see cref="DemoUserAccounts"/> list. Exists because the canonical `quality@gmail.com` /
-    /// `admin@gmail.com` accounts already have an unknown password in this environment, and this
-    /// sprint's rules forbid resetting an existing account's password merely for convenience.
-    /// Shares the exact same safety properties as <see cref="SeedDevelopmentDemoUsersAsync"/>: gated
-    /// on Development + SeedUsers:Enabled (re-checked here, not trusting the caller), idempotent,
-    /// never resets a password on an account that already exists, no Staging/Production effect.
+    /// Creates/repairs the baseline catalog every non-production environment shares: subjects, topics,
+    /// qualification topics and education levels (plus sample landing promotions in Development only). Defensive guard mirrors
+    /// <see cref="SeedDemoAccountsAsync"/>: never trusts the caller's gating.
     /// </summary>
-    private static async Task SeedDevelopmentAdditionalReviewerAsync(
+    internal static async Task SeedDemoCatalogAsync(
         IHostEnvironment? environment,
-        SeedUsersOptions? seedOptions,
-        UserManager<ApplicationUser> users,
-        ILogger logger)
-    {
-        if (environment?.IsDevelopment() != true || seedOptions?.Enabled != true)
-            return;
-
-        if (string.IsNullOrWhiteSpace(seedOptions.Password))
-            return; // SeedDevelopmentDemoUsersAsync already throws a clear error for this case.
-
-        (string Email, string FullName, string Role)[] accounts =
-        [
-            ("qa.reviewer.sprint02@example.com", "Sprint 0.2 UAT Reviewer", Roles.QualityReviewer),
-            ("qa.admin.sprint02@example.com", "Sprint 0.2 UAT Admin", Roles.Admin)
-        ];
-
-        foreach (var account in accounts)
-        {
-            var user = await users.FindByEmailAsync(account.Email);
-            if (user is null)
-            {
-                user = new ApplicationUser
-                {
-                    UserName = account.Email,
-                    Email = account.Email,
-                    FullName = account.FullName,
-                    FullNameEnglish = account.FullName,
-                    EmailConfirmed = true
-                };
-                var created = await users.CreateAsync(user, seedOptions.Password);
-                if (!created.Succeeded)
-                    throw new InvalidOperationException(
-                        $"Development additional-reviewer UAT user '{account.Email}' could not be created: "
-                        + string.Join("; ", created.Errors.Select(x => x.Description)));
-                logger.LogInformation("Development additional-reviewer UAT seeding: created {Email}.", account.Email);
-            }
-            else if (!user.EmailConfirmed)
-            {
-                user.EmailConfirmed = true;
-                await users.UpdateAsync(user);
-            }
-
-            if (!await users.IsInRoleAsync(user, account.Role))
-            {
-                var assigned = await users.AddToRoleAsync(user, account.Role);
-                if (!assigned.Succeeded)
-                    throw new InvalidOperationException(
-                        $"Development additional-reviewer UAT user '{account.Email}' could not be assigned to '{account.Role}'.");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Creates/repairs demo subjects, topics, qualification topics and education levels. Defensive
-    /// guard mirrors <see cref="SeedDevelopmentDemoUsersAsync"/>: never trusts the caller's gating.
-    /// </summary>
-    private static async Task SeedDevelopmentDemoCatalogAsync(
-        IHostEnvironment? environment,
-        SeedDemoDataOptions? options,
         TafseelDbContext db,
         ILogger logger)
     {
-        if (environment?.IsDevelopment() != true || options?.Enabled != true)
+        if (!environment.AllowsDemoData())
             return;
 
         foreach (var subjectSeed in DemoSubjects)
@@ -1006,7 +992,7 @@ public static class DependencyInjection
             {
                 subject = new Subject(subjectSeed.Name, subjectSeed.Icon, subjectSeed.NameAr, subjectSeed.DisplayOrder);
                 db.Add(subject);
-                logger.LogInformation("Development demo catalog seeding: created subject {Subject}.", subjectSeed.Name);
+                logger.LogInformation("Demo catalog seeding: created subject {Subject}.", subjectSeed.Name);
             }
 
             foreach (var topicSeed in subjectSeed.Topics)
@@ -1019,7 +1005,7 @@ public static class DependencyInjection
                     db.Add(new Tafseel.Domain.Catalog.Topic(
                         subject.Id, topicSeed.Name, topicSeed.Difficulty, topicSeed.NameAr));
                     logger.LogInformation(
-                        "Development demo catalog seeding: created topic {Topic} under {Subject}.",
+                        "Demo catalog seeding: created topic {Topic} under {Subject}.",
                         topicSeed.Name, subjectSeed.Name);
                 }
                 else if (string.IsNullOrWhiteSpace(topic.NameAr))
@@ -1027,7 +1013,7 @@ public static class DependencyInjection
                     // Topics seeded before Arabic names existed would otherwise stay English in the Arabic UI.
                     topic.Update(topic.Name, topic.Difficulty, topicSeed.NameAr);
                     logger.LogInformation(
-                        "Development demo catalog seeding: added Arabic name for topic {Topic}.", topicSeed.Name);
+                        "Demo catalog seeding: added Arabic name for topic {Topic}.", topicSeed.Name);
                 }
             }
 
@@ -1047,7 +1033,7 @@ public static class DependencyInjection
                     qualificationSeed.EvaluationGuidance, qualificationSeed.EvaluationGuidanceAr, displayOrder: 10);
                 db.Add(qualificationTopic);
                 logger.LogInformation(
-                    "Development demo catalog seeding: created qualification topic {Topic} under {Subject}.",
+                    "Demo catalog seeding: created qualification topic {Topic} under {Subject}.",
                     qualificationSeed.Name, subjectSeed.Name);
             }
         }
@@ -1061,10 +1047,12 @@ public static class DependencyInjection
             var level = new EducationLevel(levelSeed.Name);
             level.Rename(levelSeed.Name, levelSeed.NameAr);
             db.Add(level);
-            logger.LogInformation("Development demo catalog seeding: created education level {Level}.", levelSeed.Name);
+            logger.LogInformation("Demo catalog seeding: created education level {Level}.", levelSeed.Name);
         }
 
-        if (!await db.Promotions.AnyAsync())
+        // Sample promotions are Development placeholders, not baseline: a published promotion opens a modal on the
+        // landing page, which would stand between a PreProduction tester and the "Upload your file" action.
+        if (environment.IsDevelopment() && !await db.Promotions.AnyAsync())
         {
             var now = DateTimeOffset.UtcNow;
             foreach (var promotionSeed in DemoPromotions)
@@ -1084,13 +1072,16 @@ public static class DependencyInjection
                 db.Add(promotion);
             }
             logger.LogInformation(
-                "Development demo catalog seeding: created {Count} landing promotions.", DemoPromotions.Length);
+                "Demo catalog seeding: created {Count} landing promotions.", DemoPromotions.Length);
         }
 
         await db.SaveChangesAsync();
         logger.LogInformation(
-            "Development demo catalog seeding completed ({Subjects} subjects).", DemoSubjects.Length);
+            "Demo catalog seeding completed ({Subjects} subjects).", DemoSubjects.Length);
     }
+
+    private static bool ValidJaasStaticJwt(string token) =>
+        !string.IsNullOrWhiteSpace(token) && token.Split('.').Length == 3;
 
     private static bool ValidFrontendUrl(string value, bool requireHttps) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri)

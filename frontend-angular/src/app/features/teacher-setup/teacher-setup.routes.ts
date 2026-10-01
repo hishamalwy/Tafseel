@@ -4,7 +4,7 @@ import { HttpTeacherSetupGateway } from './services/http-teacher-setup.gateway';
 import { TEACHER_SETUP_GATEWAY } from './services/teacher-setup.ports';
 import {
   LoadOwnProfile, LoadProfileWorkspace, LoadPublication, LoadServicesWorkspace, ManageAvailability, ManageCredentials,
-  ManageServices, SaveTeacherProfile, SaveTeachingChoices, SetPublication
+  LoadSetupProgress, ManagePublicVideo, ManageServices, SaveTeacherProfile, SaveTeachingChoices, SetPublication
 } from './services/teacher-setup.use-cases';
 
 /**
@@ -15,7 +15,8 @@ import {
  */
 const providers: Provider[] = [
   HttpTeacherSetupGateway,
-  { provide: TEACHER_SETUP_GATEWAY, useExisting: HttpTeacherSetupGateway }
+  { provide: TEACHER_SETUP_GATEWAY, useExisting: HttpTeacherSetupGateway },
+  LoadSetupProgress
 ];
 
 export const PROFILE_ROUTES: Routes = [{
@@ -38,6 +39,6 @@ export const AVAILABILITY_ROUTES: Routes = [{
 
 export const PUBLICATION_ROUTES: Routes = [{
   path: '',
-  providers: [...providers, LoadPublication, SetPublication],
+  providers: [...providers, LoadPublication, SetPublication, ManagePublicVideo],
   loadComponent: () => import('./pages/teacher-publication-page.component').then(m => m.TeacherPublicationPageComponent)
 }];

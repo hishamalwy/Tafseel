@@ -36,10 +36,12 @@ import { ThemeToggleComponent } from '@shared/components/theme-toggle.component'
       <aside class="tf-auth-aside tf-ink-band" data-hide-sm="1"
              data-pattern="bottom" data-pattern-tone="lime" data-pattern-scale="lg">
         <div>
-          <img decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
+          <img class="tf-auth-mark-light" decoding="async" data-tafseel-mark
+               src="assets/brand/tafseel-mark.svg" alt="Tafseel" width="68" height="92" />
+          <img class="tf-auth-mark-dark" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
                src="assets/brand/tafseel-mark-dark.svg" alt="Tafseel" width="68" height="92" />
           <h2 dir="rtl" lang="ar" translate="no">درسك على مقاسك.</h2>
-          <p class="tf-mursala">Education, tailored to you.</p>
+          <p class="tf-mursala" lang="en" dir="ltr">Education, tailored to you.</p>
         </div>
       </aside>
     </div>

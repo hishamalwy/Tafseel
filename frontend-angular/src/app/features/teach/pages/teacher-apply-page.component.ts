@@ -11,11 +11,13 @@ import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.compone
 import { Application, SelectableSubject, TeacherApplication, WizardStep, subjectName } from '../models/application';
 import { Assignment, DEMO_FILE_PATTERN, QualificationTopic, formatDuration, formatFileSize } from '../models/assignment';
 import { LoadQualificationTopics, LoadTeachWorkspace, RefreshApplications, SaveApplicationDetails, SubmitApplication, TeachWorkspace, UploadDemo } from '../services/teach.use-cases';
+import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'tf-teacher-apply-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, WorkflowHeaderComponent, ToastComponent],
+  imports: [FormsModule, RouterLink, WorkflowHeaderComponent, ToastComponent, SkipLinkComponent],
   templateUrl: './teacher-apply-page.component.html',
   styleUrl: './teacher-apply-page.component.css'
 })
@@ -48,10 +50,15 @@ export class TeacherApplyPageComponent {
   readonly languageIds = signal<readonly string[]>([]);
   readonly demoFile = signal<File | null>(null);
   readonly demoSeconds = signal<number | null>(null);
+  readonly demoError = signal('');
+  readonly draggingDemo = signal(false);
   readonly states = computed(() => Application.stepperStates(this.step(), this.current()));
   readonly topic = computed(() => this.topics().find(x => x.id === this.topicId()) ?? null);
   readonly duration = computed(() => Assignment.duration(this.topic()));
   readonly selectedSubjects = computed<readonly SelectableSubject[]>(() => this.workspace()?.selectableSubjects ?? []);
+  readonly hasOpenSubject = computed(() => this.selectedSubjects().some(subject => !subject.disabled));
+  /** What "Save and continue" is still waiting for, by name; a toast that says only "complete the details" is gone before anyone finds the field. */
+  readonly missingDetails = signal('');
 
   constructor() {
     this.title.setTitle(this.t('apply_title', 'Teacher qualification') + ' — Tafseel');
@@ -61,11 +68,19 @@ export class TeacherApplyPageComponent {
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
   label(item: { name: string; nameArabic: string }): string { return subjectName({ id: '', ...item }, this.locale.isRtl()); }
   topicLabel(item: QualificationTopic): string { return Assignment.title(item, this.locale.isRtl()); }
+  /** The subject in the reader's language; the list used to print the English name on an Arabic page. */
+  appSubject(application: TeacherApplication): string {
+    return subjectName({ id: application.subjectId, name: application.subjectName, nameArabic: application.subjectNameArabic }, this.locale.isRtl());
+  }
   statusName(status: number): string { return this.t(Application.statusKey(status), 'Unknown'); }
   statusKind(status: number): string { return Application.statusKind(status); }
   durationText(seconds: number): string { return formatDuration(seconds); }
   fileSize(file: File): string { return formatFileSize(file.size); }
   checked(id: string): boolean { return this.languageIds().includes(id); }
+  /** The server names languages in English only; the reader's word comes from the locale table by code, as on the profile. */
+  languageName(language: { code: string; name: string }): string {
+    return (language.code && this.t(`language_name_${language.code}`, '')) || language.name;
+  }
 
   async open(): Promise<void> {
     this.loading.set(true);
@@ -114,12 +129,35 @@ export class TeacherApplyPageComponent {
   }
 
   chooseFile(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-    this.demoFile.set(file); this.demoSeconds.set(null);
+    const input = event.target as HTMLInputElement;
+    this.selectDemoFile(input.files?.[0] ?? null);
+    input.value = '';
+  }
+
+  dragDemo(event: DragEvent): void {
+    event.preventDefault();
+    this.draggingDemo.set(true);
+  }
+
+  dropDemo(event: DragEvent): void {
+    event.preventDefault();
+    this.draggingDemo.set(false);
+    this.selectDemoFile(event.dataTransfer?.files[0] ?? null);
+  }
+
+  removeDemoFile(): void {
+    this.demoFile.set(null);
+    this.demoSeconds.set(null);
+    this.demoError.set('');
+  }
+
+  private selectDemoFile(file: File | null): void {
+    this.demoFile.set(null); this.demoSeconds.set(null); this.demoError.set('');
     if (!file || !DEMO_FILE_PATTERN.test(file.name)) {
-      if (file) this.toasts.show(this.t('apply_demo_type_invalid', 'Choose an MP4 or WebM video.'));
+      if (file) this.demoError.set(this.t('apply_demo_type_invalid', 'Choose an MP4 or WebM video.'));
       return;
     }
+    this.demoFile.set(file);
     const view = this.document.defaultView;
     if (!view) return;
     const url = view.URL.createObjectURL(file);
@@ -129,6 +167,12 @@ export class TeacherApplyPageComponent {
       const seconds = Math.round(video.duration || 0);
       this.demoSeconds.set(Number.isFinite(seconds) && seconds > 0 ? seconds : null);
       view.URL.revokeObjectURL(url);
+      // UX-52: say a video is too short or too long as soon as it is chosen, not after a long upload.
+      const range = this.duration(), known = this.demoSeconds();
+      if (known != null && !Assignment.withinRange(known, range)) {
+        this.demoError.set(this.locale.format('apply_duration_out_of_range_picked', { length: formatDuration(known), min: formatDuration(range.min), max: formatDuration(range.max) },
+          'This video is {length} long. Choose a video between {min} and {max}.'));
+      }
     };
     video.onerror = () => view.URL.revokeObjectURL(url);
     video.src = url;
@@ -139,14 +183,15 @@ export class TeacherApplyPageComponent {
     if (!application || !file || !DEMO_FILE_PATTERN.test(file.name) || this.busy()) return;
     const range = this.duration(), known = this.demoSeconds();
     if (known != null && !Assignment.withinRange(known, range)) {
-      this.toasts.show(this.locale.format('apply_duration_out_of_range', { min: formatDuration(range.min), max: formatDuration(range.max) }, 'Video duration is outside the allowed range.')); return;
+      this.demoError.set(this.locale.format('apply_duration_out_of_range', { min: formatDuration(range.min), max: formatDuration(range.max) }, 'Video duration is outside the allowed range.')); return;
     }
+    this.demoError.set('');
     this.busy.set(true);
     try {
       await this.uploadDemo.execute(application, file, known ?? Assignment.fallbackSeconds(range));
-      await this.refresh(application.id); this.demoFile.set(null);
+      await this.refresh(application.id); this.removeDemoFile();
       this.toasts.show(this.t('apply_demo_uploaded', 'Demo uploaded.'));
-    } catch (error) { this.toasts.show(this.error(error, 'apply_demo_error', 'Demo could not be uploaded.')); }
+    } catch (error) { this.demoError.set(this.error(error, 'apply_demo_error', 'Demo could not be uploaded.')); }
     finally { this.busy.set(false); }
   }
 
@@ -166,12 +211,15 @@ export class TeacherApplyPageComponent {
   }
 
   startAnother(): void {
+    if (!this.hasOpenSubject()) return;
     this.current.set(null); this.fill(null); this.step.set('details');
     const id = Application.firstOpenSubjectId(this.selectedSubjects());
     if (id) void this.changeSubject(id);
   }
 
-  visit(step: WizardStep): void { if (Application.canVisit(step, this.current())) this.step.set(step); }
+  /** A step the application has not reached yet is shown locked, rather than as a button that ignores the tap. */
+  reachable(step: WizardStep): boolean { return Application.canVisit(step, this.current()); }
+  visit(step: WizardStep): void { if (this.reachable(step)) this.step.set(step); }
   async openResource(resource: QualificationTopic['resources'][number], download = false): Promise<void> {
     const path = Assignment.apiPath(resource.url, this.document.baseURI);
     if (path) await this.files.open('/api/v1' + path, { download, fileName: resource.fileName });
@@ -188,7 +236,16 @@ export class TeacherApplyPageComponent {
   }
 
   private validDetails(): boolean {
-    if (!this.subjectId() || !this.topicId() || !/\p{L}/u.test(this.city()) || this.years() == null || this.years()! < 0 || this.years()! > 80 || !this.languageIds().length) {
+    const missing = [
+      !this.subjectId() || !this.topicId() ? this.t('apply_topic', 'Qualification topic') : '',
+      !/\p{L}/u.test(this.city()) ? this.t('apply_city', 'City') : '',
+      this.years() == null || this.years()! < 0 || this.years()! > 80 ? this.t('apply_years', 'Years of experience') : '',
+      !this.languageIds().length ? this.t('apply_languages', 'Teaching languages') : ''
+    ].filter(Boolean);
+    this.missingDetails.set(missing.length
+      ? this.locale.format('apply_details_missing', { fields: missing.join(this.locale.isRtl() ? '، ' : ', ') }, 'Still needed: {fields}.')
+      : '');
+    if (missing.length) {
       this.toasts.show(this.t('apply_details_invalid', 'Complete the required application details.')); return false;
     }
     return this.topics().some(x => x.id === this.topicId() && x.parentId === this.subjectId());

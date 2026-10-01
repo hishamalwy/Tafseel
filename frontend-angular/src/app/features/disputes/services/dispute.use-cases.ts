@@ -55,10 +55,13 @@ export class OpenDispute {
 export class PostCaseMessage {
   private readonly gateway = inject(DISPUTE_GATEWAY);
 
-  execute(dispute: Dispute, body: string): Promise<void> {
+  /** A participant writes to the other party; the reviewer (Admin) asks both parties through its own endpoint. */
+  execute(dispute: Dispute, body: string, asReviewer = false): Promise<void> {
     const trimmed = body.trim();
     if (!trimmed) throw new Error('A message needs a body.');
-    return firstValueFrom(this.gateway.postMessage(dispute.id, trimmed, dispute.version));
+    return firstValueFrom(asReviewer
+      ? this.gateway.postReviewerMessage(dispute.id, trimmed, dispute.version)
+      : this.gateway.postMessage(dispute.id, trimmed, dispute.version));
   }
 }
 

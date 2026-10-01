@@ -129,6 +129,24 @@ public sealed class AdminCommandCentreTests(SqlServerTafseelApiFactory factory)
             >= payload.GetProperty("items").GetArrayLength());
     }
 
+    /// <summary>PRODUCT-P1: every operations list is searched by a pasted reference or by an e-mail.</summary>
+    [Theory]
+    [InlineData("operations/requests")]
+    [InlineData("operations/orders")]
+    [InlineData("operations/sessions")]
+    [InlineData("disputes")]
+    public async Task Operations_lists_are_searched_by_reference_or_email(string path)
+    {
+        var admin = await ClientAsync(Roles.Admin);
+        foreach (var term in new[] { Guid.NewGuid().ToString(), "nobody-" + Guid.NewGuid().ToString("N") + "@example.com" })
+        {
+            var response = await admin.GetAsync($"/api/v1/admin/{path}?page=1&pageSize=20&search={Uri.EscapeDataString(term)}");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+            Assert.Equal(0, payload.GetProperty("totalCount").GetInt32());
+        }
+    }
+
     [Theory]
     [InlineData("open")]
     [InlineData("under-review")]

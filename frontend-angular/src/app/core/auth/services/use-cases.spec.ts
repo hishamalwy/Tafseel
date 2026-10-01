@@ -205,7 +205,7 @@ describe('ResolveLandingRoute', () => {
     configure();
     await expect(run(['Admin'], null)).resolves.toBe('/admin');
     await expect(run(['QualityReviewer'], null)).resolves.toBe('/quality');
-    await expect(run(['Student'], null)).resolves.toBe('/');
+    await expect(run(['Student'], null)).resolves.toBe('/student');
   });
 
   /** The one exception carried over from the original `destination()`. */

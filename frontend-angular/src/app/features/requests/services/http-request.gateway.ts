@@ -7,19 +7,47 @@ import {
 } from '../models/learning-request';
 import {
   AiCapabilities, BriefSuggestion, CreatedRequest, DraftStore, LearningPreferences, MarketplaceGateway,
-  NewRequest, Offer, OfferTerms, OpenRequest, RequestGateway
+  NewRequest, Offer, OfferTerms, OpenRequest, RequestGateway, RequestTeacher
 } from '../services/request.ports';
 
 interface PageDto<T> { items?: T[] }
+
+/** A service as the public teacher profile returns it (`GET /teachers/{id}`). */
+interface TeacherServiceDto {
+  id: string; subjectId?: string | null; serviceCatalogCode?: string | null;
+  title?: string | null; nameEn?: string | null; nameAr?: string | null;
+  price?: number | null; currency?: string | null; deliveryHours?: number | null;
+  canRequest?: boolean; requiresScheduling?: boolean;
+}
+
+function toRequestableService(dto: TeacherServiceDto): RequestableService {
+  const english = dto.nameEn || dto.title || dto.nameAr || '';
+  return {
+    id: dto.id,
+    subjectId: dto.subjectId ?? null,
+    serviceCatalogCode: dto.serviceCatalogCode ?? '',
+    serviceNameEnglish: english,
+    serviceNameArabic: dto.nameAr || english,
+    price: dto.price ?? null,
+    currency: dto.currency ?? 'SAR',
+    deliveryDays: dto.deliveryHours ? Math.ceil(dto.deliveryHours / 24) : null,
+    canRequest: dto.canRequest ?? true,
+    requiresScheduling: dto.requiresScheduling ?? false
+  };
+}
 
 @Injectable()
 export class HttpRequestGateway implements RequestGateway {
   private readonly http = inject(HttpClient);
 
-  teacherServices(teacherId: string): Observable<readonly RequestableService[]> {
+  requestTeacher(teacherId: string): Observable<RequestTeacher> {
     return this.http
-      .get<{ services?: RequestableService[] }>(`/api/v1/teachers/${encodeURIComponent(teacherId)}`)
-      .pipe(map(profile => profile.services ?? []));
+      .get<{ fullName?: string; fullNameEnglish?: string; services?: TeacherServiceDto[] }>(`/api/v1/teachers/${encodeURIComponent(teacherId)}`)
+      .pipe(map(profile => ({
+        fullName: profile.fullName ?? '',
+        fullNameEnglish: profile.fullNameEnglish ?? '',
+        services: (profile.services ?? []).map(toRequestableService)
+      })));
   }
 
   preferences(): Observable<LearningPreferences> {

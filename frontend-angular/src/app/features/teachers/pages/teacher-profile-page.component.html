@@ -30,13 +30,17 @@
           <span>{{ name() }}</span>
         </nav>
 
-        <div class="tf-mkp-stage-in">
+        <div class="tf-mkp-stage-in" [class.tf-mkp-stage-in--solo]="!t0.samples.length">
+          <!-- UX-10: application videos are private by default (DEC-UX-01), so many profiles have no sample; an empty
+               player would lead the page. The profile then opens on the teacher. -->
+          @if (t0.samples.length) {
           <section class="tf-mkp-media" [attr.aria-label]="t('tp_samples', 'Teaching samples')">
             <div class="tf-mkp-media-head">
               <div>
-                <h2 id="featured-sample-title">
-                  {{ selectedSample()?.title || t('tp_samples', 'Teaching samples') }}
-                </h2>
+                <p class="tf-mkp-sample-title" id="featured-sample-title">
+                  @if (selectedSample(); as sample) { {{ sampleTitle(sample) }} }
+                  @else { {{ t('tp_samples', 'Teaching samples') }} }
+                </p>
               </div>
               @if (t0.samples.length > 1) {
                 <span class="tf-mkp-pos" role="status" aria-live="polite">
@@ -69,7 +73,7 @@
                     <div class="tf-media-watermark" aria-hidden="true">{{ mediaWatermark() }}</div>
                     <video [src]="sample.mediaUrl" controls preload="metadata" playsinline
                            controlsList="nodownload noremoteplayback" disablePictureInPicture
-                           [attr.aria-label]="sample.title" (contextmenu)="$event.preventDefault()"></video>
+                           [attr.aria-label]="sampleTitle(sample)" (contextmenu)="$event.preventDefault()"></video>
                   </div>
                 } @else {
                   <div class="tf-mkp-nomedia">
@@ -99,6 +103,7 @@
               }
             }
           </section>
+          }
 
           <section class="tf-mkp-id" aria-labelledby="profile-heading">
             <div class="tf-mkp-eyebrow">{{ t('tp_teacher_profile_label', 'Teacher profile') }}</div>
@@ -168,6 +173,10 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" /></svg>
                 <span>{{ t('tp_share', 'Share') }}</span>
               </button>
+              <a routerLink="/help" data-testid="report-profile" [queryParams]="{ category: 'unsafe', about: reportAbout }">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5" /></svg>
+                <span>{{ t('help_report_profile', 'Report') }}</span>
+              </a>
             </div>
           </section>
         </div>
@@ -184,35 +193,38 @@
           <div class="tf-mkp-shelf-fact">
             <span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" /></svg>
-              {{ t('tp_delivery', 'Delivery') }}
+              {{ chosen.isLive ? t('tp_session_length', 'Session length') : t('tp_delivery', 'Delivery') }}
             </span>
             <strong>{{ chosen.deliveryLabel }}</strong>
           </div>
-          <div class="tf-mkp-shelf-fact tf-mkp-shelf-fact--dur">
-            <span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-              {{ t('tp_revisions', 'Revisions') }}
-            </span>
-            <strong>{{ chosen.revisionsLabel }}</strong>
-          </div>
+          @if (!chosen.isLive) {
+            <div class="tf-mkp-shelf-fact tf-mkp-shelf-fact--dur">
+              <span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                {{ t('tp_revisions', 'Revisions') }}
+              </span>
+              <strong>{{ chosen.revisionsLabel }}</strong>
+            </div>
+          }
           <div class="tf-mkp-shelf-price">
             <tf-price size="lg" [amount]="chosen.price" [currency]="chosen.currency" />
+            @if (chosen.isLive) { <span class="tf-mkp-per-hour">{{ t('tp_per_hour', 'per hour') }}</span> }
           </div>
           <div class="tf-mkp-shelf-acts">
             @if (chosen.canRequest) {
-              <a class="tf-mk-btn tf-mk-btn--primary"
+              <a class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--lg"
                  [routerLink]="requestLink().path" [queryParams]="requestLink().query">
                 {{ t('tp_request', 'Request this service') }}
               </a>
             }
             @if (chosen.isLive) {
-              <a class="tf-mk-btn tf-mk-btn--secondary"
+              <a class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--lg"
                  [routerLink]="bookLink().path" [queryParams]="bookLink().query">
-                {{ t('tp_book_live', 'Book a live session') }}
+                {{ t('tp_book_live', 'Request a live session') }}
               </a>
             }
           </div>
-          @if (availabilityLabel(); as availability) {
+          @if (chosen.isLive ? availabilityLabel() : ''; as availability) {
             <p class="tf-mkp-shelf-note">{{ availability }}</p>
           }
         </div>
@@ -223,7 +235,6 @@
       <section id="profile-services" class="tf-mkp-sec" aria-labelledby="services-heading">
         <div class="tf-mkp-sec-h">
           <h2 class="tf-mk-section-h" id="services-heading">{{ t('tp_tab_services', 'Services') }}</h2>
-          <p>{{ t('tp_timezone_note', 'Times shown in the teacher’s time zone') }}</p>
         </div>
 
         @if (!services().length) {
@@ -231,7 +242,9 @@
         } @else {
           <div class="tf-mkp-svcs">
             @for (service of services(); track service.id) {
-              <article class="tf-mkp-svc" [class.is-selected]="service.selected" [attr.data-service-id]="service.id" [attr.data-live]="service.isLive">
+              <article class="tf-mkp-svc" [class.is-selected]="service.selected"
+                       [class.is-live]="service.isLive" [class.is-async]="!service.isLive"
+                       [attr.data-service-id]="service.id" [attr.data-live]="service.isLive">
                 <div class="tf-mkp-svc-in">
                   <span class="tf-mkp-svc-kind">
                     {{ service.isLive ? t('tp_live_session', 'Live session') : t('tp_recorded', 'Recorded') }}
@@ -241,11 +254,16 @@
                     <p class="tf-mkp-svc-desc">{{ description }}</p>
                   }
                   <div class="tf-mkp-svc-facts">
-                    <div><span>{{ t('tp_delivery', 'Delivery') }}</span><strong>{{ service.deliveryLabel }}</strong></div>
-                    <div><span>{{ t('tp_revisions', 'Revisions') }}</span><strong>{{ service.revisionsLabel }}</strong></div>
+                    <div><span>{{ service.isLive ? t('tp_session_length', 'Session length') : t('tp_delivery', 'Delivery') }}</span><strong>{{ service.deliveryLabel }}</strong></div>
+                    @if (!service.isLive) {
+                      <div><span>{{ t('tp_revisions', 'Revisions') }}</span><strong>{{ service.revisionsLabel }}</strong></div>
+                    }
                   </div>
                   <div class="tf-mkp-svc-buy">
-                    <tf-price size="lg" [amount]="service.price" [currency]="service.currency" />
+                    <span>
+                      <tf-price size="lg" [amount]="service.price" [currency]="service.currency" />
+                      @if (service.isLive) { <span class="tf-mkp-per-hour">{{ t('tp_per_hour', 'per hour') }}</span> }
+                    </span>
                     <button type="button" [attr.aria-pressed]="service.selected"
                             (click)="selectService(service.id)">
                       {{ service.selected ? t('tp_selected', 'Selected') : t('tp_select', 'Select') }}
@@ -305,7 +323,7 @@
                 </span>
                 <p class="tf-mkp-rev-q">{{ review.body }}</p>
                 <div class="tf-mkp-rev-by">
-                  <span class="tf-mkp-rev-mark" aria-hidden="true">{{ initials(review.author) }}</span>
+                  <img class="tf-mkp-rev-mark" [src]="fmt.defaultAvatar('student')" alt="" width="38" height="38" loading="lazy" decoding="async" />
                   <div class="tf-mkp-rev-who">
                     <strong>{{ review.author }}</strong>
                     <span>{{ review.when }}</span>
@@ -411,16 +429,23 @@
     </div>
 
     @if (selectedService(); as chosen) {
-      @if (chosen.canRequest) {
-        <div class="tf-mkp-mcta">
+      @if (chosen.canRequest || chosen.isLive) {
+        <div class="tf-mkp-mcta is-on">
           <div class="tf-mkp-mcta-c">
             <span>{{ chosen.name }}</span>
             <tf-price size="md" [amount]="chosen.price" [currency]="chosen.currency" />
           </div>
-          <a class="tf-mk-btn tf-mk-btn--primary"
-             [routerLink]="requestLink().path" [queryParams]="requestLink().query">
-            {{ t('tp_request', 'Request this service') }}
-          </a>
+          @if (chosen.canRequest) {
+            <a class="tf-mk-btn tf-mk-btn--primary"
+               [routerLink]="requestLink().path" [queryParams]="requestLink().query">
+              {{ t('tp_request', 'Request this service') }}
+            </a>
+          } @else if (chosen.isLive) {
+            <a class="tf-mk-btn tf-mk-btn--primary"
+               [routerLink]="bookLink().path" [queryParams]="bookLink().query">
+              {{ t('tp_book_live', 'Request a live session') }}
+            </a>
+          }
         </div>
       }
     }

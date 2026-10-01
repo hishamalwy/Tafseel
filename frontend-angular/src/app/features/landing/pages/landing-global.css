@@ -166,10 +166,15 @@ html[dir="rtl"] .tf-subject-card:focus-visible .tf-subject-card-title{transform:
    the tightest gap of any section head on the page, and it landed immediately
    above a bordered row — so the heading, the rule and the two entry links read
    as one welded block instead of a heading followed by a choice. */
-.tf-story-heading{max-inline-size:940px;margin-block-end:clamp(30px,3.4vw,46px)}
+.tf-story-heading{
+  inline-size:min(100%,1680px);max-inline-size:none;
+  margin-inline:auto;margin-block-end:clamp(24px,2.6vw,34px)
+}
+.tf-story-heading p{max-inline-size:62ch}
 .tf-story-entry-paths{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  margin-block-end:clamp(40px,3.8vw,56px);
+  inline-size:min(100%,1680px);max-inline-size:none;
+  margin-inline:auto;margin-block-end:clamp(30px,3vw,40px);
   border-block:1px solid var(--border);
 }
 .tf-story-entry-paths a{
@@ -188,8 +193,9 @@ html[dir="rtl"] .tf-subject-card:focus-visible .tf-subject-card-title{transform:
 .tf-story-entry-paths a:hover,.tf-story-entry-paths a:focus-visible{color:var(--primary)}
 .tf-story-entry-paths a:focus-visible{outline:2px solid var(--primary);outline-offset:4px}
 .tf-product-story{
-  display:grid;grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr);
-  align-items:start;gap:clamp(36px,5vw,84px);min-inline-size:0;
+  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);
+  align-items:start;gap:clamp(28px,3.8vw,56px);min-inline-size:0;
+  inline-size:min(100%,1680px);max-inline-size:none;margin-inline:auto;
 }
 .tf-story-visual{position:sticky;inset-block-start:96px;min-inline-size:0}
 .tf-story-canvas{
@@ -223,7 +229,7 @@ html[data-theme="dark"] .tf-story-canvas{box-shadow:none}
    inset INSIDE the card, so it steps the same direction in both themes and the
    paper in front of it is the thing that reads as raised. */
 .tf-story-stage{
-  position:relative;min-block-size:420px;overflow:hidden;
+  position:relative;min-block-size:440px;overflow:hidden;
   background:var(--surface-recessed);
 }
 .tf-story-panel{
@@ -559,6 +565,10 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
 .tf-tcard-cta:focus-visible{
   background:var(--primary);border-color:var(--primary);color:var(--primary-ink);
 }
+/* The whole card opens the profile: the profile link is the card's one link, stretched over it. */
+.tf-tcard{position:relative;cursor:pointer}
+.tf-tcard-cta::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.tf-tcard .tf-tcard-cta::after{border-radius:var(--r-xl)}
 .tf-tcard.is-skeleton{
   min-block-size:288px;pointer-events:none;
   background:linear-gradient(90deg,var(--surface-2) 25%,var(--bg-alt) 50%,var(--surface-2) 75%);
@@ -1198,7 +1208,7 @@ html[lang="ar"] .tf-kingdom-eyebrow{letter-spacing:0;text-transform:none;font-si
    quieter than it so the map keeps the column.
    ============================================================ */
 .tf-orbs{
-  --orb-size:108px;
+  --orb-size:116px;
   --orb-ease:cubic-bezier(.2,.8,.2,1);
   --orb-face:color-mix(in oklab,var(--primary) 5%,transparent);
   --orb-track:color-mix(in oklab,var(--primary) 17%,transparent);
@@ -1223,6 +1233,46 @@ html[data-theme="dark"] .tf-orbs{
                     0 0 22px color-mix(in oklab,var(--primary) 24%,transparent);
 }
 
+/* The dark theme now owns the lime primary globally. The landing host still
+   restates it so the Kingdom can locally quiet the same token without the
+   page drifting back to a different accent. */
+html[data-theme="dark"] tf-landing-page{
+  --primary:var(--brand-lime);
+  --primary-hover:color-mix(in oklab,var(--brand-lime) 84%,white);
+  --primary-ink:var(--brand-ink);
+  --primary-soft:color-mix(in oklab,var(--brand-lime) 14%,#1C1E26);
+  --surface-selected:color-mix(in oklab,var(--brand-lime) 14%,var(--surface));
+  --focus-ring-color:color-mix(in oklab,var(--brand-lime) 70%,transparent);
+}
+html[data-theme="dark"] tf-landing-page .tf-orb:not([data-pending="true"]) .tf-orb-value{color:var(--brand-lime)}
+/* The map is the largest lit area on the page. Full lime at the violet's neon
+   strength is glare, so here it is a quieter lime - lower lightness, less
+   chroma - and every glow layer is brought down with it. The small controls
+   keep the full lime; the big decorative surface does not compete with them. */
+html[data-theme="dark"] tf-landing-page .tf-kingdom{
+  --primary:oklch(0.84 0.12 120);
+  --kd-fill:color-mix(in oklab,var(--primary) 5%,transparent);
+  --kd-line:color-mix(in oklab,var(--primary) 42%,transparent);
+  --kd-fill-hi:color-mix(in oklab,var(--primary) 13%,transparent);
+  --kd-line-hi:color-mix(in oklab,var(--primary) 85%,transparent);
+  --kd-border:color-mix(in oklab,var(--primary) 72%,transparent);
+  --kd-net:color-mix(in oklab,var(--primary) 20%,transparent);
+  --kd-pulse:color-mix(in oklab,var(--primary) 70%,transparent);
+  --kd-node-glow:color-mix(in oklab,var(--primary) 55%,transparent);
+  --kd-node-bloom:drop-shadow(0 0 1.5px var(--kd-node-glow))
+                  drop-shadow(0 0 5px var(--kd-node-glow));
+  --kd-line-glow:color-mix(in oklab,var(--primary) 70%,transparent);
+  --kd-glow-line-op:.5;
+  --kd-glow:color-mix(in oklab,var(--primary) 14%,transparent);
+  --kd-lift-shadow:color-mix(in oklab,var(--primary) 32%,transparent);
+  --kd-border-glow:drop-shadow(0 0 2px color-mix(in oklab,var(--primary) 55%,transparent))
+                   drop-shadow(0 0 8px color-mix(in oklab,var(--primary) 26%,transparent))
+                   drop-shadow(0 0 18px color-mix(in oklab,var(--primary) 10%,transparent));
+  --kd-orb-op:.24;
+  --kd-halo-op:.16;
+  --kd-halo-lit:1.4;
+}
+
 .tf-orbs-lede{
   margin:0 0 10px;
   font-size:11.5px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;
@@ -1231,7 +1281,7 @@ html[data-theme="dark"] .tf-orbs{
 html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.5px}
 
 .tf-orb-row{
-  display:flex;gap:18px;margin:0;padding:0;list-style:none;
+  display:flex;gap:14px;margin:0;padding:0;list-style:none;
   /* Aligned to the actions above, not to the page: flex-start follows the
      writing direction, so RTL puts the first orb on the right. */
   justify-content:flex-start;
@@ -1256,6 +1306,7 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   animation:tf-orb-breathe 5.4s ease-in-out infinite;
 }
 .tf-orb:nth-child(2)::before{animation-delay:-2.1s}
+.tf-orb:nth-child(3)::before{animation-delay:-3.4s}
 @keyframes tf-orb-breathe{
   0%,100%{opacity:.65}
   50%{opacity:1}
@@ -1276,6 +1327,7 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   filter:var(--orb-arc-glow);
 }
 .tf-orb:nth-child(2) .tf-orb-spin{animation-duration:16s;animation-delay:-5s}
+.tf-orb:nth-child(3) .tf-orb-spin{animation-duration:19s;animation-delay:-8s}
 @keyframes tf-orb-orbit{to{transform:rotate(360deg)}}
 .tf-orb-arc{
   stroke:var(--orb-accent);stroke-width:2.2;stroke-linecap:round;
@@ -1308,7 +1360,7 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   transition:transform 340ms var(--orb-ease);
 }
 .tf-orb-label{
-  font-size:12.5px;font-weight:500;line-height:1.2;color:var(--muted);
+  font-size:12.5px;font-weight:700;line-height:1.2;color:var(--text-2);
 }
 /* Waiting on /platform/stats: the orb keeps its place and its ring, and the
    dash reads as "not in yet" rather than as a number. */
@@ -1339,12 +1391,10 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   .tf-orb-row{gap:16px}
 }
 @media (max-width:520px){
-  /* Still side by side: two small circles read as a pair, a stacked pair reads
-     as a list. */
-  .tf-orbs{--orb-size:88px}
-  .tf-orb-row{gap:14px}
+  .tf-orbs{--orb-size:94px}
+  .tf-orb-row{gap:10px}
   .tf-orb-value{font-size:clamp(17px,calc(38px - var(--len,4) * 2.9px),22px)}
-  .tf-orb-label{font-size:11.5px}
+  .tf-orb-label{font-size:11px;text-align:center;max-inline-size:10ch}
   .tf-orb-mark svg{inline-size:11px;block-size:11px}
 }
 /* Short laptop viewports already compact the hero; the orbs follow it down
@@ -1366,6 +1416,19 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   .tf-orb:hover{transform:none}
   .tf-orb:hover .tf-orb-value{transform:none}
 }
+
+/* Community counts stay legible in both languages. */
+.tf-orbs{display:block;min-block-size:0;margin-block-start:clamp(20px,2.5vw,32px);inline-size:min(100%,560px)}
+.tf-orbs-lede{margin-block-end:12px}
+.tf-orb-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.tf-orb{inline-size:auto;block-size:auto;min-inline-size:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;padding:2px clamp(10px,1.5vw,24px);border-radius:0;border-inline-start:1px solid var(--border);background:none;box-shadow:none;transition:none}
+.tf-orb:first-child{padding-inline-start:0;border-inline-start:0}
+.tf-orb::before{content:none;animation:none}
+.tf-orb-value,.tf-orb[data-pending="true"] .tf-orb-value{font-size:clamp(26px,2vw,34px);font-weight:800;line-height:1;color:var(--text);opacity:1;letter-spacing:var(--type-page-title-tracking)}
+.tf-orb[data-pending="true"] .tf-orb-value{color:var(--muted)}
+.tf-orb-label{max-inline-size:none;text-align:start;font-size:clamp(11px,.9vw,13px);font-weight:650;line-height:1.4;color:var(--text-2)}
+@media (hover:hover){.tf-orb:hover{transform:none;background:none;box-shadow:none}.tf-orb:hover .tf-orb-value{transform:none}}
+@media (max-width:520px){.tf-orb{padding-inline:10px}.tf-orb-value,.tf-orb[data-pending="true"] .tf-orb-value{font-size:24px}.tf-orb-label{font-size:10.5px}}
 
 /* The hero is the one full-bleed .tf-shell that should not be: past ~1520px the
    two columns stop growing and the pair centres, so the copy and the map keep

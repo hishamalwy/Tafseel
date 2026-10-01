@@ -7,6 +7,7 @@
     </div>
   </header>
 
+  @if (step() !== 'upload') {
   <div class="tf-grid-2 tf-request-modes" data-testid="request-modes">
     <a class="tf-profile-editor-card" routerLink="/teachers">
       <div><h2>{{ t('request_mode_direct', 'A specific teacher') }}</h2><p>{{ t('request_mode_direct_body', 'I already know who I want. Choose a teacher, then send them your request.') }}</p></div>
@@ -15,6 +16,7 @@
       <div><h2>{{ t('request_mode_open', 'An open request') }}</h2><p>{{ t('request_mode_open_body', 'Let qualified teachers send me offers. I compare them and pick one.') }}</p></div>
     </div>
   </div>
+  }
 
   @if (loading()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
@@ -25,45 +27,78 @@
       <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
     </div>
   } @else if (form(); as f) {
+    @if (step() === 'upload') {
+      <section class="tf-profile-editor-card" aria-labelledby="open-upload-title" data-testid="upload-first-step">
+        <div>
+          <h2 id="open-upload-title">{{ t('open_upload_title', 'Start with your file') }}</h2>
+          <p>{{ t('open_upload_intro', 'Upload the page, sheet or assignment you want explained. We check it for viruses first, then you add the details.') }}</p>
+        </div>
+        <div class="tf-stack">
+          <tf-file-picker inputId="open-upload-file" testId="draft-file-picker" [multiple]="true" [accept]="fileAccept"
+                          [title]="t('open_upload_drop', 'Choose a file or drop it here')" [hint]="fileHint()"
+                          [busy]="uploading()" [busyText]="t('open_upload_busy', 'Uploading and checking the file…')"
+                          [error]="fileError()" [disabled]="attached().length >= fileLimits.maxFiles"
+                          (picked)="upload($event)" />
+          @if (attached().length) {
+            <ul class="tf-upload-files" data-testid="draft-files">
+              @for (file of attached(); track file.id) {
+                <li class="tf-upload-file" data-testid="draft-file">
+                  <span class="tf-upload-file-kind" aria-hidden="true">{{ kind(file) }}</span>
+                  <span class="tf-upload-file-main"><strong>{{ file.name }}</strong><span class="tf-upload-file-size">{{ size(file) }}</span></span>
+                  <button type="button" class="tf-upload-file-remove" data-testid="draft-file-remove" [disabled]="uploading()"
+                          (click)="remove(file)" [attr.aria-label]="t('common_remove', 'Remove') + ' ' + file.name">{{ t('common_remove', 'Remove') }}</button>
+                </li>
+              }
+            </ul>
+          }
+          <div class="tf-form-actions">
+            <button type="button" class="tf-button" data-testid="upload-continue" [disabled]="!attached().length || uploading()"
+                    (click)="continueToDetails()">{{ t('open_upload_continue', 'Continue') }}</button>
+            <button type="button" class="tf-button tf-button-ghost" data-testid="upload-skip" [disabled]="uploading()"
+                    (click)="continueToDetails()">{{ t('open_upload_skip', 'Describe it without a file') }}</button>
+          </div>
+        </div>
+      </section>
+    } @else {
     <section class="tf-profile-editor-card" aria-labelledby="open-request-form-title">
       <div><h2 id="open-request-form-title">{{ t('open_request_details', 'Your request') }}</h2></div>
       <form class="tf-form" (ngSubmit)="submit()" novalidate data-testid="open-request-form">
         <div class="tf-grid-2">
           <div class="tf-field">
             <label for="open-subject">{{ t('apply_subject', 'Subject') }}</label>
-            <select id="open-subject" name="subject" [ngModel]="draft().subjectId" (ngModelChange)="set('subjectId', $event)" [attr.aria-invalid]="!!problem('subjectId')">
+            <select id="open-subject" name="subject" [ngModel]="draft().subjectId" (ngModelChange)="set('subjectId', $event)" [attr.aria-invalid]="!!problem('subjectId')" [attr.aria-describedby]="problem('subjectId') ? 'open-subject-error' : null">
               <option value="">{{ t('common_choose', 'Choose…') }}</option>
               @for (item of f.subjects; track item.id) { <option [value]="item.id">{{ name(item) }}</option> }
             </select>
-            @if (problem('subjectId')) { <span class="tf-field-error">{{ problem('subjectId') }}</span> }
+            @if (problem('subjectId')) { <span id="open-subject-error" class="tf-field-error">{{ problem('subjectId') }}</span> }
           </div>
           <div class="tf-field">
             <label for="open-service">{{ t('open_request_service', 'Kind of help') }}</label>
-            <select id="open-service" name="service" [ngModel]="draft().serviceTypeId" (ngModelChange)="set('serviceTypeId', $event)" [attr.aria-invalid]="!!problem('serviceTypeId')">
+            <select id="open-service" name="service" [ngModel]="draft().serviceTypeId" (ngModelChange)="set('serviceTypeId', $event)" [attr.aria-invalid]="!!problem('serviceTypeId')" [attr.aria-describedby]="problem('serviceTypeId') ? 'open-service-error' : null">
               <option value="">{{ t('common_choose', 'Choose…') }}</option>
               @for (item of f.serviceTypes; track item.id) { <option [value]="item.id">{{ name(item) }}</option> }
             </select>
-            @if (problem('serviceTypeId')) { <span class="tf-field-error">{{ problem('serviceTypeId') }}</span> }
+            @if (problem('serviceTypeId')) { <span id="open-service-error" class="tf-field-error">{{ problem('serviceTypeId') }}</span> }
           </div>
         </div>
         <div class="tf-field">
           <label for="open-title">{{ t('open_request_title_label', 'Title') }}</label>
-          <input id="open-title" name="title" [ngModel]="draft().title" (ngModelChange)="set('title', $event)" [attr.maxlength]="limits.title" [attr.aria-invalid]="!!problem('title')">
-          @if (problem('title')) { <span class="tf-field-error">{{ problem('title') }}</span> }
+          <input id="open-title" name="title" [ngModel]="draft().title" (ngModelChange)="set('title', $event)" [attr.maxlength]="limits.title" [attr.aria-invalid]="!!problem('title')" [attr.aria-describedby]="problem('title') ? 'open-title-error' : null">
+          @if (problem('title')) { <span id="open-title-error" class="tf-field-error">{{ problem('title') }}</span> }
         </div>
         <div class="tf-field">
           <label for="open-requirements">{{ t('open_request_requirements', 'What you need') }}</label>
           <textarea id="open-requirements" name="requirements" rows="6" [ngModel]="draft().requirements" (ngModelChange)="set('requirements', $event)"
-                    [attr.maxlength]="limits.requirements" [attr.aria-invalid]="!!problem('requirements')"></textarea>
+                    [attr.maxlength]="limits.requirements" [attr.aria-invalid]="!!problem('requirements')" [attr.aria-describedby]="problem('requirements') ? 'open-requirements-error' : null"></textarea>
           <span class="tf-field-help">{{ draft().requirements.length }}/{{ limits.requirements }}</span>
-          @if (problem('requirements')) { <span class="tf-field-error">{{ problem('requirements') }}</span> }
+          @if (problem('requirements')) { <span id="open-requirements-error" class="tf-field-error">{{ problem('requirements') }}</span> }
         </div>
         <div class="tf-grid-2">
           <div class="tf-field">
             <label for="open-deadline">{{ t('open_request_deadline', 'Needed by') }}</label>
-            <input id="open-deadline" name="deadline" type="datetime-local" [ngModel]="draft().deadline" (ngModelChange)="set('deadline', $event)" [attr.aria-invalid]="!!problem('deadline')">
+            <input id="open-deadline" name="deadline" type="datetime-local" [ngModel]="draft().deadline" (ngModelChange)="set('deadline', $event)" [attr.aria-invalid]="!!problem('deadline')" [attr.aria-describedby]="problem('deadline') ? 'open-deadline-error' : null">
             <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zone() }, 'In this device’s time zone ({zone}).') }}</span>
-            @if (problem('deadline')) { <span class="tf-field-error">{{ problem('deadline') }}</span> }
+            @if (problem('deadline')) { <span id="open-deadline-error" class="tf-field-error">{{ problem('deadline') }}</span> }
           </div>
           <fieldset class="tf-field">
             <legend>{{ t('open_request_budget', 'Budget range (optional)') }}</legend>
@@ -71,16 +106,36 @@
               <input id="open-budget-min" name="budgetMin" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('open_request_budget_min', 'From')"
                      [placeholder]="t('open_request_budget_min', 'From')" [ngModel]="draft().budgetMin" (ngModelChange)="set('budgetMin', $event)">
               <input id="open-budget-max" name="budgetMax" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('open_request_budget_max', 'To')"
-                     [placeholder]="t('open_request_budget_max', 'To')" [ngModel]="draft().budgetMax" (ngModelChange)="set('budgetMax', $event)" [attr.aria-invalid]="!!problem('budgetMax')">
+                     [placeholder]="t('open_request_budget_max', 'To')" [ngModel]="draft().budgetMax" (ngModelChange)="set('budgetMax', $event)" [attr.aria-invalid]="!!problem('budgetMax')" [attr.aria-describedby]="problem('budgetMax') ? 'open-budget-error' : null">
             </div>
-            @if (problem('budgetMax')) { <span class="tf-field-error">{{ problem('budgetMax') }}</span> }
+            @if (problem('budgetMax')) { <span id="open-budget-error" class="tf-field-error">{{ problem('budgetMax') }}</span> }
           </fieldset>
         </div>
+        <fieldset class="tf-field" data-testid="open-request-files">
+          <legend>{{ t('open_files_title', 'Your files') }}</legend>
+            @if (attached().length) {
+              <ul class="tf-upload-files" data-testid="draft-files">
+                @for (file of attached(); track file.id) {
+                  <li class="tf-upload-file" data-testid="draft-file">
+                    <span class="tf-upload-file-kind" aria-hidden="true">{{ kind(file) }}</span>
+                    <span class="tf-upload-file-main"><strong>{{ file.name }}</strong><span class="tf-upload-file-size">{{ size(file) }}</span></span>
+                    <button type="button" class="tf-upload-file-remove" data-testid="draft-file-remove" [disabled]="uploading()"
+                              (click)="remove(file)" [attr.aria-label]="t('common_remove', 'Remove') + ' ' + file.name">{{ t('common_remove', 'Remove') }}</button>
+                  </li>
+                }
+              </ul>
+            }
+            <tf-file-picker inputId="open-request-file" testId="draft-file-picker-more" [compact]="true" [multiple]="true" [accept]="fileAccept"
+                            [title]="attached().length ? t('open_files_add', 'Add another file') : t('open_upload_drop', 'Choose a file or drop it here')"
+                            [hint]="fileHint()" [busy]="uploading()" [busyText]="t('open_upload_busy', 'Uploading and checking the file…')"
+                            [error]="fileError()" [disabled]="attached().length >= fileLimits.maxFiles" (picked)="upload($event)" />
+        </fieldset>
         @if (error()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="open-request-error">{{ error() }}</div> }
         <div class="tf-form-actions">
-          <button type="submit" class="tf-button" data-testid="publish-open-request" [disabled]="busy()">{{ busy() ? t('common_saving', 'Saving…') : t('open_request_publish', 'Publish request') }}</button>
+          <button type="submit" class="tf-button" data-testid="publish-open-request" [disabled]="busy() || uploading()">{{ busy() ? t('common_saving', 'Saving…') : t('open_request_publish', 'Publish request') }}</button>
         </div>
       </form>
     </section>
+    }
   }
 </tf-workspace-shell>

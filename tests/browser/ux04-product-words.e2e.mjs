@@ -109,7 +109,8 @@ await step('the student and teacher have work in several states', async () => {
 
 await step('every student list speaks product words, in Arabic and in English', async () => {
   // Home is no longer a generic dashboard section (UX-01); its own words are audited by ux01-student-home.
-  const sections = ['/student/requests', '/student/requests?view=action', '/student/settings'];
+  // Settings moved to the shared /account screen (D-08); pc-help-account-finance audits it.
+  const sections = ['/student/requests', '/student/requests?view=action'];
   for (const section of sections) {
     await audit(student, section, { arabic: true });
     await audit(studentEn, section, { arabic: false });
@@ -141,8 +142,9 @@ await step('the student’s own work reads as its state, not its number', async 
 
 await step('every teacher list speaks product words, in Arabic and in English', async () => {
   // Home is no longer a generic dashboard section (UX-02); its own words are audited by ux02-teacher-home.
+  // Settings moved to the shared /account screen (D-08); pc-help-account-finance audits it.
   const sections = ['/teacher/work', '/teacher/work?view=action',
-    '/teacher/opportunities', '/teacher/qualifications', '/teacher/settings'];
+    '/teacher/opportunities', '/teacher/qualifications'];
   for (const section of sections) {
     await audit(teacherAr, section, { arabic: true });
     await audit(teacher, section, { arabic: false });

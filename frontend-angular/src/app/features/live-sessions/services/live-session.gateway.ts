@@ -2,6 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, firstValueFrom, map } from 'rxjs';
 import { LiveSession, SessionAttachment } from '../models/live-session';
+import { ReviewDraft } from '@features/orders/models/order-detail';
 
 type Json = Record<string, any>;
 
@@ -22,9 +23,15 @@ export class LiveSessionGateway {
     return null;
   }
 
-  join(id: string): Observable<{ url: string; validFrom: string; validUntil: string }> {
+  join(id: string): Observable<{ url: string; validFrom: string; validUntil: string; roomName: string; jwt: string; externalApiUrl: string }> {
     return this.http.get<Json>(`/api/v1/live-sessions/${encodeURIComponent(id)}/join`)
-      .pipe(map(x => ({ url: text(x['url']), validFrom: text(x['validFrom']), validUntil: text(x['validUntil']) })));
+      .pipe(map(x => ({ url: text(x['url']), validFrom: text(x['validFrom']), validUntil: text(x['validUntil']),
+        roomName: text(x['roomName']), jwt: text(x['jwt']), externalApiUrl: text(x['externalApiUrl']) })));
+  }
+
+  respondToRequest(id: string, accept: boolean, version: string): Observable<void> {
+    return this.http.post<void>(`/api/v1/live-sessions/${encodeURIComponent(id)}/request/respond`,
+      { accept }, { headers: ifMatch(version) });
   }
 
   complete(id: string, version: string): Observable<void> {
@@ -63,9 +70,22 @@ export class LiveSessionGateway {
       .pipe(map(conversation => conversation.id));
   }
 
+  /** One review per completed session, by its student (`POST live-sessions/{id}/review`). */
+  review(id: string, draft: ReviewDraft): Promise<void> {
+    return firstValueFrom(this.http.post<unknown>(`/api/v1/live-sessions/${encodeURIComponent(id)}/review`, reviewBody(draft)))
+      .then(() => undefined);
+  }
+
   attachmentPath(attachmentId: string): string {
     return `/api/v1/live-sessions/attachments/${encodeURIComponent(attachmentId)}/content`;
   }
+}
+
+function reviewBody(draft: ReviewDraft): Json {
+  return {
+    explanationClarity: draft.explanationClarity, subjectKnowledge: draft.subjectKnowledge, communication: draft.communication,
+    onTimeDelivery: draft.onTimeDelivery, valueForMoney: draft.valueForMoney, comment: draft.comment.trim(), recommends: draft.recommends
+  };
 }
 
 function ifMatch(version: string): HttpHeaders {
@@ -86,6 +106,7 @@ export function session(x: Json): LiveSession {
     version: text(x['version']), studentName: text(x['studentDisplayName']), teacherName: text(x['teacherDisplayName']),
     serviceName: text(x['serviceNameEnglish']), serviceNameArabic: text(x['serviceNameArabic']),
     proposedStartsAt: text(x['proposedStartsAt']), rescheduleRequestedById: text(x['rescheduleRequestedById']),
-    outcomeReviewDeadline: text(x['outcomeReviewDeadline']), rescheduleCount: Number(x['rescheduleCount'] ?? 0)
+    outcomeReviewDeadline: text(x['outcomeReviewDeadline']), rescheduleCount: Number(x['rescheduleCount'] ?? 0),
+    hasReview: !!x['hasReview']
   };
 }

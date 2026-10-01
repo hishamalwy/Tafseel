@@ -6,11 +6,12 @@
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Tafseel connects students across Saudi Arabia with verified teachers." />
-  <meta name="theme-color" content="#F7F4EC" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#F8F4E8" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#121318" media="(prefers-color-scheme: dark)" />
   <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/brand/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
+  <link rel="preload" href="assets/fonts/saudi-riyal/saudi-riyal.woff2" as="font" type="font/woff2" crossorigin />
   <!-- Paint the stored theme before first paint, so there is no light flash on a
        dark-mode reload. Kept inline and tiny on purpose; everything else is bundled. -->
   <script>
@@ -20,7 +21,10 @@
         var dark = t === 'dark' || (t !== 'light' &&
           window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-        var l = localStorage.getItem('tafseel-lang');
+        // The /ar/ or /en/ prefix names the language; storage only decides
+        // where there is none (ng serve).
+        var seg = (location.pathname.split('/')[1] || '').toLowerCase();
+        var l = seg === 'ar' || seg === 'en' ? seg : localStorage.getItem('tafseel-lang');
         if (l === 'en' || l === 'ar') {
           document.documentElement.setAttribute('lang', l);
           document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');

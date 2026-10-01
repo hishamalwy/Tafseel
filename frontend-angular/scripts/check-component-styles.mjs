@@ -25,23 +25,19 @@ if (oversized.length) {
 
 
 /*
- * The Saudi Riyal mark must not depend on anything that might not arrive (UX-06).
- *
- * It used to be a webfont glyph revealed by `html.tf-riyal-font-ok`, a class nothing ever added, so every
- * price in the product fell back to the Latin letters "SAR" - inside Arabic sentences included. The mark is
- * now painted from artwork carried in the stylesheet itself. These four checks keep it that way: a future
- * edit that reintroduces a load-order gate, or drops the Arabic fallback, fails the build rather than
- * quietly changing what a price says.
+ * The Saudi Riyal mark is U+20C1 from the self-hosted saudi_riyal face, in both languages.
+ * It used to be gated on `html.tf-riyal-font-ok` (never set) or painted as an SVG mask with
+ * "SAR" / "31.33" fallbacks. These checks keep the official glyph on every price.
  */
 const design = readFileSync(fileURLToPath(new URL('../../css/tafseel.css', import.meta.url)), 'utf8')
   // Rules only: the comment above them is allowed to say what the old gate was.
   .replace(/\/\*[\s\S]*?\*\//g, '');
 const riyalProblems = [
   design.includes('tf-riyal-font-ok') ? 'the mark is gated on a font-loaded class again' : null,
-  design.includes("--riyal-mark:url('data:image/svg+xml") ? null : 'the inline mark artwork is missing',
-  design.includes('mask:var(--riyal-mark)') ? null : 'nothing paints the mark',
-  design.includes('html[lang="ar"] .tf-price-currency--mark::before') ? null
-    : 'an Arabic page has no Arabic currency fallback',
+  design.includes("font-family:'saudi_riyal'") ? null : 'the saudi_riyal face is missing from the mark',
+  /content:"\\20C1"/.test(design) ? null : 'the mark is not the official U+20C1 glyph',
+  /content:"SAR"/.test(design) ? 'the mark still falls back to the letters SAR' : null,
+  /content:"31\.33"/.test(design) ? 'the Arabic mark still falls back to 31.33' : null,
   // UX-06: every text field and select is a 44px target; they were 42px, a thumb's width short of it.
   /\.tf-field select\{\s*height:44px;\s*min-height:44px;/.test(design) ? null
     : 'form fields are no longer 44px tall'
@@ -51,5 +47,39 @@ if (riyalProblems.length) {
   console.error(['css/tafseel.css UX-06 guards:', ...riyalProblems.map(p => `- ${p}`)].join('\n'));
   process.exitCode = 1;
 } else {
-  console.log('UX-06 guards passed (riyal mark self-contained, Arabic fallback present, 44px form fields).');
+  console.log('UX-06 guards passed (official riyal glyph, 44px form fields).');
+}
+
+/**
+ * Every screen with a <main> starts with a skip link pointing at that main's id (WCAG 2.4.1).
+ * Signed-in screens used to have none, so a keyboard reader tabbed through the whole sidebar
+ * on every page. The auth shell is exempt: its <main> is the first element on the page.
+ */
+function templates(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return templates(path);
+    if (path.endsWith('.component.html')) return [path];
+    return path.endsWith('.component.ts') && !path.endsWith('.spec.ts') ? [path] : [];
+  });
+}
+const skipProblems = [];
+for (const path of templates(root)) {
+  const text = readFileSync(path, 'utf8');
+  // A .ts file counts only through its inline template, never its comments or strings.
+  const source = path.endsWith('.ts') ? (text.match(/template:\s*`([\s\S]*?)`/)?.[1] ?? '') : text;
+  const main = source.match(/<main\b[^>]*>/);
+  if (!main || relative(root, path).split(/[\\/]/).join('/') === 'shared/layouts/auth-shell.component.ts') continue;
+  const id = main[0].match(/\bid="([^"]+)"/)?.[1];
+  const link = source.match(/<tf-skip-link\b[^>]*>/);
+  const target = link?.[0].match(/\btarget="([^"]+)"/)?.[1] ?? 'main';
+  if (!link) skipProblems.push(`${relative(root, path)}: <main> without a <tf-skip-link>`);
+  else if (id !== target) skipProblems.push(`${relative(root, path)}: skip link targets #${target} but <main> has id "${id ?? ''}"`);
+  else if (source.indexOf(link[0]) > source.indexOf(main[0])) skipProblems.push(`${relative(root, path)}: skip link comes after <main>`);
+}
+if (skipProblems.length) {
+  console.error(['Skip-link guard:', ...skipProblems.map(p => `- ${p}`)].join('\n'));
+  process.exitCode = 1;
+} else {
+  console.log('Skip-link guard passed (every <main> is reachable from a leading skip link).');
 }

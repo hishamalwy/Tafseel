@@ -33,9 +33,9 @@ const teacherB = await context();
 async function sendOffer(actor, amount, hours, revisions, message) {
   const { page } = actor;
   await page.locator('#offer-amount').fill(String(amount));
-  await page.locator('#offer-hours').fill(String(hours));
-  await page.locator('#offer-revisions').fill(String(revisions));
-  await page.locator('#offer-validity').fill('72');
+  await page.locator('#offer-hours').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, String(hours));
+  await page.locator('#offer-revisions').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, String(revisions));
+  await page.locator('#offer-validity').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '72');
   await page.locator('#offer-message').fill(message);
   const saved = waitForCall(page, /POST|PUT/, /^\/api\/v1\/open-marketplace\/(opportunities\/[0-9a-f-]{36}\/offers|offers\/[0-9a-f-]{36})$/);
   await page.locator('[data-testid=save-offer]').click();
@@ -75,7 +75,8 @@ await step('J4-01 student chooses an open request and publishes it from the real
   requestId = (await response.json()).id;
   await page.waitForURL(url => pathOf(url) === `/en/requests/${requestId}`, { timeout: 15000 });
   await attribute(page, '[data-testid=request-status]', 'data-status', 5);
-  assert.match(await page.locator('[data-testid=offer-count]').innerText(), /0/);
+  // UX-67: right after publishing, the page says who can see it rather than "0 offers".
+  assert.match(await page.locator('[data-testid=offer-count]').innerText(), /can see your request now/);
   await shot(page, 'open-01-published');
 });
 
@@ -193,7 +194,12 @@ await step('J4-08 student pays the reserved request; the payment creates exactly
   await page.locator('[data-testid=pay-reserved]').click();
   await page.waitForURL(url => pathOf(url) === '/en/checkout', { timeout: 15000 });
   await page.locator('[data-testid=checkout-reservation]').waitFor({ timeout: 15000 });
-  await page.locator('[data-testid=fee-at-payment]').waitFor();
+  const fee = page.getByTestId('checkout-platform-fee');
+  await fee.waitFor();
+  assert.match(await fee.innerText(), /10[.,]8/, 'student fee is shown before payment starts');
+  assert.match(await page.getByTestId('checkout-total').innerText(), /145[.,]8/,
+    'final charge is shown before payment starts');
+  assert.equal(sql(`SELECT COUNT(*) FROM Payments WHERE LearningRequestId = '${requestId}'`), '0');
   await shot(page, 'open-06-checkout');
   await payInSimulator(page, /^\/en\/orders\/[0-9a-f-]{36}$/, async () => {
     assert.equal(sql(`SELECT COUNT(*) FROM Orders WHERE LearningRequestId = '${requestId}'`), '0', 'still no order while payment is pending');

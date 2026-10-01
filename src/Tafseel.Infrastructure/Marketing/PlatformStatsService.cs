@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tafseel.Application.Authorization;
 using Tafseel.Application.Marketing;
+using Tafseel.Domain.LiveSessions;
 using Tafseel.Infrastructure.Marketplace;
 using Tafseel.Infrastructure.Persistence;
 
@@ -18,7 +19,9 @@ internal sealed class PlatformStatsService(TafseelDbContext db) : IPlatformStats
         var students = await StudentsAsync(ct);
         var teachers = await TeacherPublicQueries.BrowsableTeachers(db).CountAsync(ct);
         var subjects = await db.Subjects.AsNoTracking().CountAsync(x => x.IsActive, ct);
-        return new PlatformStatsDto(students, teachers, subjects);
+        var completedSessions = await db.LiveSessionBookings.AsNoTracking()
+            .CountAsync(x => x.Status == LiveSessionStatus.Completed, ct);
+        return new PlatformStatsDto(students, teachers, subjects, completedSessions);
     }
 
     private async Task<int> StudentsAsync(CancellationToken ct)

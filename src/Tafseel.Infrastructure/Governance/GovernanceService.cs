@@ -476,7 +476,11 @@ internal sealed class GovernanceService(
     }
 
     public async Task<PagedResult<DisputeDto>> GetDisputesAsync(
-        string userId, bool admin, int page, int pageSize, string? filter, CancellationToken ct)
+        string userId, bool admin, int page, int pageSize, string? filter, CancellationToken ct) =>
+        await GetDisputesAsync(userId, admin, page, pageSize, filter, null, ct);
+
+    public async Task<PagedResult<DisputeDto>> GetDisputesAsync(
+        string userId, bool admin, int page, int pageSize, string? filter, string? search, CancellationToken ct)
     {
         page = Math.Max(page, 1); pageSize = Math.Clamp(pageSize, 1, 100);
         var query = db.Disputes.AsQueryable();
@@ -489,6 +493,16 @@ internal sealed class GovernanceService(
             "resolved" => query.Where(x => x.Status == DisputeStatus.Resolved),
             _ => query
         };
+        // Staff find a dispute by its id, the purchase it is about, or either party's name or e-mail.
+        if (admin && !string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            if (Guid.TryParse(term, out var id))
+                query = query.Where(x => x.Id == id || x.OrderId == id || x.LiveSessionBookingId == id);
+            else
+                query = query.Where(x => db.Users.Any(u => (u.Id == x.StudentId || u.Id == x.TeacherId)
+                    && (u.FullName.Contains(term) || (u.Email != null && u.Email.Contains(term)))));
+        }
         var total = await query.CountAsync(ct);
         var items = await query.AsNoTracking().OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
@@ -525,12 +539,13 @@ internal sealed class GovernanceService(
         string adminId, Guid id, AddDisputeMessage input, string version, CancellationToken ct)
     {
         var dispute = await RequiredDisputeAsync(id, ct);
+        EnsureNotParty(adminId, dispute);
         ApplyVersion(dispute, version);
         dispute.AddReviewerMessage(adminId, input.Body, clock.GetUtcNow());
         var message = dispute.Messages.Last();
         foreach (var recipient in new[] { dispute.StudentId, dispute.TeacherId })
-            await notifications.QueueAsync(recipient, "Dispute", "Reviewer requested information",
-                "The dispute reviewer added a message to the case.", AppRoutes.Dispute(id),
+            await notifications.QueueAsync(recipient, "Dispute", "Tafseel's reviewer asked a question",
+                "Tafseel's reviewer asked a question about your dispute. Reply on the case.", AppRoutes.Dispute(id),
                 $"dispute:{id}:message:{message.Id}:{recipient}", true, ct);
         audit.Add(adminId, "DisputeReviewerMessageAdded", "Dispute", id.ToString(),
             "The reviewer added a dispute message.", $"dispute:{id}:message:{message.Id}");
@@ -583,6 +598,7 @@ internal sealed class GovernanceService(
         string adminId, Guid id, string version, CancellationToken ct)
     {
         var dispute = await RequiredDisputeAsync(id, ct);
+        EnsureNotParty(adminId, dispute);
         if (dispute.Status == DisputeStatus.UnderReview) return;
         ApplyVersion(dispute, version);
         if (!dispute.StartReview(adminId, clock.GetUtcNow())) return;
@@ -603,6 +619,7 @@ internal sealed class GovernanceService(
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await LockAsync($"dispute:{id}", ct);
         var dispute = await RequiredDisputeAsync(id, ct);
+        EnsureNotParty(adminId, dispute);
         if (dispute.Status == DisputeStatus.Resolved
             && dispute.Decisions.Single().IdempotencyKey == idempotencyKey)
         {
@@ -656,6 +673,13 @@ internal sealed class GovernanceService(
             .SingleOrDefaultAsync(ct);
         var profile = await db.TeacherProfiles.SingleAsync(x => x.TeacherId == teacherId, ct);
         profile.SetRating(aggregate?.Average ?? 0, aggregate?.Count ?? 0, clock.GetUtcNow());
+    }
+    /// <summary>Roles are additive: nobody adjudicates a case they are a party to.</summary>
+    private static void EnsureNotParty(string adminId, Dispute dispute)
+    {
+        if (adminId == dispute.StudentId || adminId == dispute.TeacherId)
+            throw new DomainException("dispute_self_adjudication_forbidden",
+                "You cannot review or decide a dispute you are a party to.");
     }
     private async Task<Dispute> OwnedDisputeAsync(
         string userId, Guid id, string version, CancellationToken ct)
@@ -802,6 +826,14 @@ internal sealed class AdminService(
             profile.Unpublish(clock.GetUtcNow());
         audit.Add(adminId, suspended ? "UserSuspended" : "UserReactivated", "User", userId,
             suspended ? "Account suspended." : "Account reactivated.", $"user:{userId}:suspension:{clock.GetUtcNow().UtcTicks}");
+        // PRODUCT-P1: the person is told by e-mail; a suspended account cannot open the bell.
+        await notifications.QueueAsync(userId, "AccountStatus",
+            suspended ? "Your Tafseel account was suspended" : "Your Tafseel account was restored",
+            suspended
+                ? "Tafseel suspended your account. If you think this is a mistake, tell us through Help."
+                : "Your account is active again. You can sign in.",
+            suspended ? AppRoutes.HelpAccountAccess : AppRoutes.SignIn,
+            $"user:{userId}:suspension:{clock.GetUtcNow().UtcTicks}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -834,6 +866,9 @@ internal sealed class AdminService(
         await users.UpdateSecurityStampAsync(user);
         audit.Add(adminId, assigned ? "RoleAssigned" : "RoleRemoved", "User", userId,
             $"{role} {(assigned ? "assigned" : "removed")}.", $"user:{userId}:role:{role}:{assigned}");
+        await notifications.QueueAsync(userId, "AccountStatus", "Your access on Tafseel changed",
+            "An administrator changed what you can do on Tafseel. Sign in again to see it.", AppRoutes.SignIn,
+            $"user:{userId}:role:{role}:{assigned}:{clock.GetUtcNow().UtcTicks}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -850,7 +885,7 @@ internal sealed class AdminService(
                 .SumAsync(x => (decimal?)x.Amount, ct) ?? 0,
             await AccountBalanceAsync(LedgerAccountKind.PlatformRevenue, ct),
             await db.Disputes.CountAsync(x => x.Status != DisputeStatus.Resolved, ct),
-            await db.WithdrawalRequests.CountAsync(x => x.Status == WithdrawalStatus.Pending, ct));
+            await db.WithdrawalRequests.CountAsync(x => x.Status == WithdrawalStatus.Pending || x.Status == WithdrawalStatus.TransferInitiated, ct));
 
     public async Task<AdminAttentionDto> GetAttentionAsync(CancellationToken ct)
     {
@@ -902,7 +937,7 @@ internal sealed class AdminService(
             && x.AgreedDeliveryAt < now, ct);
 
         var pendingWithdrawals = await db.WithdrawalRequests
-            .CountAsync(x => x.Status == WithdrawalStatus.Pending, ct);
+            .CountAsync(x => x.Status == WithdrawalStatus.Pending || x.Status == WithdrawalStatus.TransferInitiated, ct);
         var pendingPayoutProfiles = await db.TeacherPayoutProfiles
             .CountAsync(x => x.Status == PayoutVerificationStatus.Pending, ct);
 
@@ -941,9 +976,12 @@ internal sealed class AdminService(
             await AccountBalanceAsync(LedgerAccountKind.PlatformRevenue, ct),
             "SAR");
 
+        // Help and abuse reports nobody has resolved yet (Open or being handled).
+        var openSupportCases = await db.SupportCases.CountAsync(x => x.Status != SupportCaseStatus.Resolved, ct);
+
         return new(applications, openDisputes, silentSessions, overdueOrders,
             pendingWithdrawals, pendingPayoutProfiles, suspendedWithActiveCommerce, stuckPayments,
-            reconciliation.IsBalanced, anomalies, platform);
+            reconciliation.IsBalanced, anomalies, platform, openSupportCases);
     }
 
     public async Task<IReadOnlyCollection<PopularSubjectMetric>> GetPopularSubjectsAsync(CancellationToken ct)
@@ -990,8 +1028,15 @@ internal sealed class AdminService(
         var items = await query
             .OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct);
+        // Who did it, by name: the Admin reading the trail cannot resolve a user id. Actors that are not
+        // users (the system, a worker) have no name and keep their id.
+        var actorIds = items.Select(x => x.ActorId).Distinct().ToArray();
+        var names = await db.Users.AsNoTracking().Where(x => actorIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.FullName, x.FullNameEnglish }).ToDictionaryAsync(x => x.Id, ct);
         return new(items.Select(x => new AuditDto(x.Id, x.ActorId, x.Action, x.EntityType,
-            x.EntityId, x.Summary, x.CorrelationId, x.CreatedAt)).ToArray(), page, pageSize, total);
+            x.EntityId, x.Summary, x.CorrelationId, x.CreatedAt,
+            names.GetValueOrDefault(x.ActorId)?.FullName, names.GetValueOrDefault(x.ActorId)?.FullNameEnglish))
+            .ToArray(), page, pageSize, total);
     }
 
     public async Task<PagedResult<AdminOperationItemDto>> GetRequestsAsync(
@@ -1018,9 +1063,15 @@ internal sealed class AdminService(
         };
         if (!string.IsNullOrWhiteSpace(search))
         {
+            // PRODUCT-P1 (operational lookup): a pasted reference finds its record; otherwise a title, a name or an e-mail.
             var term = search.Trim();
-            query = query.Where(x => x.request.Title.Contains(term) || x.student.FullName.Contains(term)
-                || (x.teacher != null && x.teacher.FullName.Contains(term)));
+            if (Guid.TryParse(term, out var id))
+                query = query.Where(x => x.request.Id == id);
+            else
+                query = query.Where(x => x.request.Title.Contains(term) || x.student.FullName.Contains(term)
+                    || (x.student.Email != null && x.student.Email.Contains(term))
+                    || (x.teacher != null && (x.teacher.FullName.Contains(term)
+                        || (x.teacher.Email != null && x.teacher.Email.Contains(term)))));
         }
         var total = await query.CountAsync(ct);
         var rows = await query.OrderByDescending(x => x.request.UpdatedAt).ThenBy(x => x.request.Id)
@@ -1066,8 +1117,13 @@ internal sealed class AdminService(
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
-            query = query.Where(x => x.request.Title.Contains(term)
-                || x.student.FullName.Contains(term) || x.teacher.FullName.Contains(term));
+            if (Guid.TryParse(term, out var id))
+                query = query.Where(x => x.order.Id == id || x.order.LearningRequestId == id);
+            else
+                query = query.Where(x => x.request.Title.Contains(term)
+                    || x.student.FullName.Contains(term) || x.teacher.FullName.Contains(term)
+                    || (x.student.Email != null && x.student.Email.Contains(term))
+                    || (x.teacher.Email != null && x.teacher.Email.Contains(term)));
         }
         var total = await query.CountAsync(ct);
         var rows = await query.OrderByDescending(x => x.order.UpdatedAt).ThenBy(x => x.order.Id)
@@ -1130,8 +1186,13 @@ internal sealed class AdminService(
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
-            query = query.Where(x => x.session.Title.Contains(term) || x.student.FullName.Contains(term)
-                || x.teacher.FullName.Contains(term));
+            if (Guid.TryParse(term, out var id))
+                query = query.Where(x => x.session.Id == id);
+            else
+                query = query.Where(x => x.session.Title.Contains(term) || x.student.FullName.Contains(term)
+                    || x.teacher.FullName.Contains(term)
+                    || (x.student.Email != null && x.student.Email.Contains(term))
+                    || (x.teacher.Email != null && x.teacher.Email.Contains(term)));
         }
         var total = await query.CountAsync(ct);
         var items = await query.OrderByDescending(x =>

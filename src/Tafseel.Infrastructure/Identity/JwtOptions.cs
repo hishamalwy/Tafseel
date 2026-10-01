@@ -8,4 +8,6 @@ public sealed class JwtOptions
     public required string SigningKey { get; init; }
     public int AccessTokenMinutes { get; init; } = 15;
     public int RefreshTokenDays { get; init; } = 30;
+    /// <summary>Server-side refresh lifetime for a sign-in without "Remember me".</summary>
+    public int SessionRefreshHours { get; init; } = 12;
 }

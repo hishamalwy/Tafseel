@@ -9,10 +9,13 @@ import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ProtectedFileViewerComponent } from '@shared/components/protected-file-viewer.component';
+import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { Conversation, MESSAGE_LIMITS, Message, MessageAttachment, Messaging } from '../models/messaging';
 import { MessagesGateway } from '../services/messages.gateway';
 import { MessagesRealtime } from '../services/messages-realtime.service';
+import { IconComponent } from '@shared/components/icon.component';
+import { UnreadMessages } from '@features/navigation/services/unread-messages';
 
 /**
  * The inbox and one conversation (J9-02). The list shows unread counts; opening a conversation
@@ -22,7 +25,7 @@ import { MessagesRealtime } from '../services/messages-realtime.service';
 @Component({
   selector: 'tf-messages-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ProtectedFileViewerComponent],
+  imports: [IconComponent, FormsModule, RouterLink, WorkspaceShellComponent, ProtectedFileViewerComponent, FilePickerComponent],
   templateUrl: './messages-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css',
   styles: `
@@ -36,6 +39,23 @@ import { MessagesRealtime } from '../services/messages-realtime.service';
     .tf-bubble[data-mine="true"] { margin-inline-start: auto; background: var(--primary-soft); }
     .tf-bubble p { margin: 0; white-space: pre-line; }
     .tf-bubble small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    /* One inbox surface: the list is a rail inside it, the conversation fills the rest (V3). */
+    .tf-messages { gap: 0; padding: 0; align-items: stretch; border: 1px solid var(--border); border-radius: var(--r-lg);
+      background: var(--surface); overflow: hidden; min-block-size: min(620px, calc(100dvh - 240px)); }
+    .tf-messages > .tf-profile-editor-card { margin: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+    .tf-messages > .tf-inbox-panel { border-inline-end: 1px solid var(--border); background: color-mix(in oklab, var(--surface-2) 45%, var(--surface)); }
+    .tf-inbox { gap: 2px; }
+    .tf-inbox a { border-color: transparent; border-radius: var(--r-md); padding: 12px; transition: background-color var(--motion-fast) ease; }
+    .tf-inbox a:hover { background: var(--surface-2); }
+    .tf-inbox a[aria-current='page'] { border-color: transparent; background: var(--primary-soft); }
+    .tf-inbox strong { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .tf-thread-links { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tf-thread-panel--idle { display: grid; place-content: center; justify-items: center; gap: 6px; text-align: center; }
+    .tf-thread-panel--idle h2 { margin: 0; font-size: 17px; }
+    .tf-thread-idle-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-block-end: 6px; border-radius: 12px;
+      background: var(--primary-soft); color: var(--primary); }
+    @media (max-width: 860px) { .tf-messages { min-block-size: 0; } .tf-messages > .tf-inbox-panel { border-inline-end: 0; } .tf-thread-panel--idle { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .tf-inbox a { transition: none; } }
     @media (max-width: 860px) { .tf-messages { grid-template-columns: minmax(0, 1fr); } .tf-messages[data-open="true"] .tf-inbox-panel { display: none; } }
     /* On a phone the thread must leave room for the box you type in: at 60vh the composer fell below the
        fold, so a student opening a conversation could not see where to reply (UX-06). */
@@ -51,6 +71,7 @@ export class MessagesPageComponent {
   private readonly title = inject(Title);
   private readonly injector = inject(Injector);
   readonly realtime = inject(MessagesRealtime);
+  private readonly unread = inject(UnreadMessages);
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
   readonly Messaging = Messaging;
@@ -112,6 +133,8 @@ export class MessagesPageComponent {
   async reloadList(): Promise<void> {
     try {
       this.conversations.set(await firstValueFrom(this.gateway.conversations()));
+      // The list just read is the freshest count there is; the navigation badge follows it (UX-71).
+      this.unread.count.set(this.conversations().reduce((sum, c) => sum + c.unreadCount, 0));
       this.listError.set('');
     } catch (error) {
       this.listError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
@@ -138,13 +161,14 @@ export class MessagesPageComponent {
     }
   }
 
-  chooseFile(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
+  pickFile(files: readonly File[]): void {
+    const file = files[0] ?? null;
     this.file.set(file);
     const problem = Messaging.attachmentProblem(file);
     this.sendError.set(problem ? this.t(`messages_attachment_${problem}`, problem) : '');
   }
+
+  removeFile(): void { this.file.set(null); this.sendError.set(''); }
 
   async send(form?: HTMLFormElement): Promise<void> {
     const id = this.conversationId(), body = this.draft(), file = this.file();

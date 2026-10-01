@@ -56,7 +56,7 @@ public sealed class AuthController(
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var result = await authentication.LoginAsync(
-            new(request.Email, request.Password, request.Code), cancellationToken);
+            new(request.Email, request.Password, request.Code, request.RememberMe), cancellationToken);
         return ToResponse(result);
     }
 
@@ -108,6 +108,27 @@ public sealed class AuthController(
         if (current)
             ClearRefreshCookies();
         return NoContent();
+    }
+
+    /// <summary>Signs out every device except this one (a lost phone, a shared computer).</summary>
+    [Authorize]
+    [HttpPost("sessions/sign-out-others")]
+    public async Task<IActionResult> RevokeOtherSessions(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue("sub");
+        if (userId is null)
+            return Unauthorized();
+        if (!TryReadRefreshToken(out var currentRefreshToken))
+            return Error(400, "current_session_unknown", "This device's sign-in could not be identified. Sign in again and retry.");
+        var sessions = await authentication.GetSessionsAsync(userId, currentRefreshToken, cancellationToken);
+        if (!sessions.Any(x => x.IsCurrent))
+            return Error(400, "current_session_unknown", "This device's sign-in could not be identified. Sign in again and retry.");
+        var signedOut = 0;
+        foreach (var session in sessions.Where(x => !x.IsCurrent))
+            if (await authentication.RevokeSessionAsync(userId, session.Id, cancellationToken))
+                signedOut++;
+        logger.LogInformation("Signed out {Count} other sessions", signedOut);
+        return Ok(new { signedOut });
     }
 
     [Authorize]
@@ -239,6 +260,17 @@ public sealed class AuthController(
         return user is null ? NotFound() : Ok(user);
     }
 
+    /// <summary>Keeps notification e-mails in the language the person now uses the site in (UX-26).</summary>
+    [Authorize]
+    [HttpPut("language")]
+    public async Task<IActionResult> SetLanguage(SetLanguageRequest request, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue("sub");
+        return userId is not null && await authentication.SetLanguageAsync(userId, request.Lang, cancellationToken)
+            ? NoContent()
+            : NotFound();
+    }
+
     [Authorize]
     [EnableRateLimiting("upload")]
     [RequestSizeLimit(2 * 1024 * 1024)]
@@ -354,7 +386,9 @@ public sealed class AuthController(
 
         var user = result.User!;
         Response.Cookies.Append(
-            RefreshCookie, user.RefreshToken, IssueCookieOptions(user.RefreshTokenExpiresAt));
+            RefreshCookie, user.RefreshToken,
+            // Without "Remember me" the cookie carries no expiry, so the browser drops it on close.
+            IssueCookieOptions(user.Persistent ? user.RefreshTokenExpiresAt : null));
         return Ok(new
         {
             user.UserId,
@@ -426,11 +460,15 @@ public sealed record RegisterRequest(
 public sealed record LoginRequest(
     [Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MaxLength(128)] string Password,
-    [RegularExpression(@"^[0-9A-Za-z -]{6,20}$")] string? Code = null);
+    [RegularExpression(@"^[0-9A-Za-z -]{6,20}$")] string? Code = null,
+    bool RememberMe = true);
 
 public sealed record UpdateProfileRequest(
     [Required, MaxLength(200), RegularExpression(@"^(?!\s*\d+\s*$).*$", ErrorMessage = "Full name cannot contain only numbers.")] string FullName,
     [MaxLength(200), RegularExpression(@"^(?!\s*\d+\s*$).*$", ErrorMessage = "English name cannot contain only numbers.")] string? FullNameEnglish = null);
+
+public sealed record SetLanguageRequest(
+    [Required, RegularExpression("^(ar|en)$")] string Lang);
 
 public sealed record ChangePasswordRequest(
     [Required, MaxLength(128)] string CurrentPassword,

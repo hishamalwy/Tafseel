@@ -40,6 +40,15 @@ public sealed class LiveSessionsController(ILiveSessionService sessions) : Contr
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
         sessions.GetMineAsync(UserId(), page, pageSize, ct);
 
+    [Authorize(Policy = Permissions.SessionsManageOwn, Roles = Roles.Teacher), HttpPost("{id:guid}/request/respond")]
+    public async Task<IActionResult> RespondToRequest(
+        Guid id, RespondToLiveSessionRequest input,
+        [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct)
+    {
+        await sessions.RespondToRequestAsync(UserId(), id, input.Accept, version, ct);
+        return NoContent();
+    }
+
     [Authorize(Policy = Permissions.SessionsManageOwn), HttpPost("{id:guid}/reschedule")]
     public async Task<IActionResult> Reschedule(
         Guid id, RescheduleLiveSession input,

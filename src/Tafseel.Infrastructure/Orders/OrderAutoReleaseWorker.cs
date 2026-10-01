@@ -9,6 +9,7 @@ using Tafseel.Application.Governance;
 using Tafseel.Domain.Governance;
 using Tafseel.Domain.Orders;
 using Tafseel.Infrastructure.Messaging;
+using Tafseel.Infrastructure.Operations;
 using Tafseel.Infrastructure.Persistence;
 
 namespace Tafseel.Infrastructure.Orders;
@@ -18,20 +19,25 @@ internal sealed class OrderAutoReleaseWorker(
     TimeProvider clock,
     IOptions<PaymentOptions> options,
     IOptions<DisputeOptions> disputeOptions,
+    WorkerHeartbeats heartbeats,
     ILogger<OrderAutoReleaseWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.Value.AutoReleaseEnabled) return;
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5), clock);
+        var interval = TimeSpan.FromMinutes(5);
+        heartbeats.Register("order-auto-release", interval);
+        using var timer = new PeriodicTimer(interval, clock);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
                 await ReleaseDueOrdersAsync(stoppingToken);
+                heartbeats.Succeeded("order-auto-release");
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
+                heartbeats.Failed("order-auto-release");
                 logger.LogWarning(exception, "Order automatic escrow release scan failed");
             }
         }

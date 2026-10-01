@@ -90,8 +90,15 @@ export interface OfferTerms {
   readonly message: string;
 }
 
+/** The teacher a direct request goes to: who they are, and what can be asked of them. */
+export interface RequestTeacher {
+  readonly fullName: string;
+  readonly fullNameEnglish: string;
+  readonly services: readonly RequestableService[];
+}
+
 export interface RequestGateway {
-  teacherServices(teacherId: string): Observable<readonly RequestableService[]>;
+  requestTeacher(teacherId: string): Observable<RequestTeacher>;
   preferences(): Observable<LearningPreferences>;
   create(request: NewRequest): Observable<CreatedRequest>;
   attach(requestId: string, file: File, version: string): Observable<void>;

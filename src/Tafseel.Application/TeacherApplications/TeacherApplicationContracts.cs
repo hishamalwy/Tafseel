@@ -78,7 +78,18 @@ public sealed record TeacherApplicationReviewSummaryDto(
 public sealed record TeacherApplicationQueueDetailDto(
     TeacherApplicationDto Application,
     IReadOnlyCollection<TeacherApplicationHistoryItemDto> History,
-    IReadOnlyCollection<TeacherApplicationReviewSummaryDto> Reviews);
+    IReadOnlyCollection<TeacherApplicationReviewSummaryDto> Reviews,
+    SubjectQualificationDto? Qualification = null);
+
+/// <summary>The teacher's qualification in the application's subject, so a reviewer can withdraw it later.</summary>
+public sealed record SubjectQualificationDto(
+    Guid Id,
+    bool IsActive,
+    DateTimeOffset ApprovedAt,
+    DateTimeOffset? RevokedAt,
+    string? RevocationReason,
+    string? RevokedByName,
+    int ActiveServices);
 
 public sealed record TeacherApplicationQueueSummaryDto(
     int Actionable,
@@ -149,7 +160,7 @@ public sealed record TeacherQualificationCardDto(
 
 public sealed record PrivateMediaFile(Stream Content, string ContentType, string FileName);
 public sealed record RevokeQualificationInput(
-    [param: Required, NotWhiteSpace, StringLength(2000)] string Reason);
+    [param: Required, NotWhiteSpace, StringLength(2000, MinimumLength = 10)] string Reason);
 public sealed record ReviewScoreInput(
     [param: EnumDataType(typeof(EvaluationCriterion))] EvaluationCriterion Criterion,
     [param: Range(1, 5)] int Score);

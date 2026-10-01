@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal
+  ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal
 } from '@angular/core';
 import { ReducedMotion } from '@core/a11y/reduced-motion.service';
 
@@ -14,6 +14,10 @@ import { ReducedMotion } from '@core/a11y/reduced-motion.service';
  *
  * The full sentence is announced once, in the parent's `aria-label`; this is
  * decorative, so the visible slots stay hidden from assistive technology.
+ *
+ * It rolls through the words once and comes to rest on the first, the word the
+ * headline's `aria-label` names: one pass of a few seconds, then still. Under
+ * reduced motion it never moves at all.
  */
 @Component({
   selector: 'tf-hero-rotator',
@@ -36,6 +40,9 @@ export class HeroRotatorComponent {
   /** Reserves the widest word's space so the headline never reflows. */
   readonly minWidth = input('8.6ch');
   readonly intervalMs = input(2600);
+  /** Emitted once, when the cycle has come back to the first word and stopped. */
+  readonly settled = output<void>();
+  private readonly done = signal(false);
 
   private readonly index = signal(0);
   private readonly previousIndex = signal(0);
@@ -48,12 +55,17 @@ export class HeroRotatorComponent {
   constructor() {
     const destroyRef = inject(DestroyRef);
     effect(onCleanup => {
-      if (this.motion.preferred()) return;
+      if (this.motion.preferred() || this.done()) return;
       const period = this.intervalMs();
       const timer = setInterval(() => {
         this.previousIndex.set(this.index());
         this.index.update(i => (i + 1) % this.words().length);
         this.tick.update(t => t + 1);
+        if (this.index() === 0) {
+          clearInterval(timer);
+          this.done.set(true);
+          this.settled.emit();
+        }
       }, period);
       onCleanup(() => clearInterval(timer));
     });

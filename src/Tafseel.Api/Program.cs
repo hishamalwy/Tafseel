@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Text;
@@ -51,6 +51,14 @@ builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration).WriteTo.Console());
 
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+// One-shot operator commands (docs/ENVIRONMENTS.md); each exits before the site starts.
+var command = args.FirstOrDefault(a => a is "provision" or "seed" or "reset-database");
+if (command is "seed" or "reset-database")
+{
+    // The seed lives its Finance scenario through the real services on a clock it can move.
+    builder.Services.AddSingleton<Tafseel.Infrastructure.Seeding.SeedClock>();
+    builder.Services.AddSingleton<TimeProvider>(sp => sp.GetRequiredService<Tafseel.Infrastructure.Seeding.SeedClock>());
+}
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -241,6 +249,16 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0
         }));
+    // Provider webhooks are authenticated by their signature, arrive in bursts when a provider retries, and come
+    // from a few provider addresses; the per-student checkout budget above would refuse them.
+    options.AddPolicy("webhook", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 300,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
     options.AddPolicy("messaging", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue("sub") ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions
@@ -268,7 +286,12 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<TafseelDbContext>("database", tags: ["ready"])
-    .AddCheck<Tafseel.Infrastructure.Files.FileStorageHealthCheck>("file-storage", tags: ["ready"]);
+    .AddCheck<Tafseel.Infrastructure.Files.FileStorageHealthCheck>("file-storage", tags: ["ready"])
+    .AddCheck<Tafseel.Infrastructure.Files.MalwareScannerHealthCheck>("malware-scanner", tags: ["ready"])
+    // Degraded (still 200) when a money or deadline worker has not succeeded for two intervals.
+    .AddCheck<Tafseel.Infrastructure.Operations.WorkerHealthCheck>("background-workers", tags: ["ready"])
+    // Degraded (still 200) when emails have failed or stalled, or a reconciliation case is open.
+    .AddCheck<Tafseel.Infrastructure.Operations.OperationalBacklogHealthCheck>("operational-backlog", tags: ["ready"]);
 builder.Services.AddSignalR();
 if (builder.Environment.IsDevelopment())
 {
@@ -293,8 +316,38 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+// Deploy-time provisioning (`dotnet Tafseel.Api.dll provision`), run after the migrations: roles, canonical
+// services and languages, plus the first Admin named by Provisioning:BootstrapAdminEmail. It exits before
+// the host starts, so it neither serves traffic nor needs the payment and meeting providers.
+if (command == "provision")
+{
+    foreach (var line in await app.Services.ProvisionAsync(app.Configuration["Provisioning:BootstrapAdminEmail"]))
+        Console.WriteLine(line);
+    return;
+}
+// `seed`: the canonical, idempotent baseline + demo data for Development, Staging and PreProduction.
+// `reset-database --confirm <database>`: empty that environment's own database, migrate, seed. Both refuse Production.
+if (command is "seed" or "reset-database")
+{
+    var clock = app.Services.GetRequiredService<Tafseel.Infrastructure.Seeding.SeedClock>();
+    var password = app.Configuration["SeedUsers:Password"];
+    var confirmIndex = Array.IndexOf(args, "--confirm");
+    var report = command == "seed"
+        ? await Tafseel.Infrastructure.Seeding.EnvironmentSeed.RunAsync(app.Services, password, clock)
+        : await Tafseel.Infrastructure.Seeding.DatabaseReset.ResetAsync(app.Services,
+            confirmIndex >= 0 && confirmIndex + 1 < args.Length ? args[confirmIndex + 1] : null, password, clock);
+    foreach (var line in report)
+        Console.WriteLine(line);
+    return;
+}
+
+// Production refuses to serve with a placeholder, local or demo value, and names every such setting at once.
+Tafseel.Infrastructure.Operations.ProductionConfigurationGuard.EnsureReady(app.Configuration, app.Environment);
+
 var enforceHttps = app.Environment.IsProduction()
     || app.Configuration.GetValue<bool>("Security:EnforceHttps");
+var jaasEnabled = app.Configuration["LiveSessions:Provider"] == "JaaS";
 
 // The client shell carries one inline script - the snippet that reads the saved
 // theme and stamps it on <html> before first paint, which cannot be an external
@@ -341,16 +394,21 @@ app.Use(async (context, next) =>
         || string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
         headers.Append("Cross-Origin-Opener-Policy", "same-origin");
     headers.Append("Cross-Origin-Resource-Policy", "same-origin");
-    headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), display-capture=()");
+    var jaasOrigin = jaasEnabled ? " https://8x8.vc" : "";
+    headers.Append("Permissions-Policy", jaasEnabled
+        ? "camera=(self \"https://8x8.vc\"), microphone=(self \"https://8x8.vc\"), " +
+          "geolocation=(), payment=(), display-capture=(self \"https://8x8.vc\")"
+        : "camera=(), microphone=(), geolocation=(), payment=(), display-capture=()");
     var transportPolicy = enforceHttps ? "; upgrade-insecure-requests" : "";
     headers.Append("Content-Security-Policy",
-        $"default-src 'self'; script-src 'self'{inlineScriptHashes}; style-src 'self' 'unsafe-inline'; " +
+        $"default-src 'self'; script-src 'self'{inlineScriptHashes}{jaasOrigin}; " +
+        "style-src 'self' 'unsafe-inline'; " +
         // The protected-file viewer fetches a delivery as a blob and shows it
         // from an object URL, so blob: has to be a legal source for the three
         // media kinds it renders and for the frame the PDF viewer uses. Framing
         // stays same-origin - frame-ancestors 'none' still denies everyone else.
         "font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; " +
-        "frame-src 'self' blob:; connect-src 'self' wss:; " +
+        $"frame-src 'self' blob:{jaasOrigin}; connect-src 'self' wss:; " +
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" + transportPolicy);
     if (context.Request.Path.StartsWithSegments("/api"))
     {
@@ -475,6 +533,18 @@ static IResult BrandAsset(string file)
 var webClientRoot = Path.Combine(AppContext.BaseDirectory, "webclient");
 string[] locales = ["ar", "en"];
 
+// ---- search engines ------------------------------------------------------------
+// Only Production is indexable; every other host (staging runs the payment simulator) tells
+// crawlers to stay out. The origin is the configured public site address, not the request host.
+var indexable = app.Environment.IsProduction();
+var siteOrigin = (app.Configuration["Email:AppBaseUrl"] ?? "").TrimEnd('/');
+app.MapGet("/robots.txt", () =>
+    Results.Text(Tafseel.Api.Routing.SiteIndex.Robots(indexable, siteOrigin), "text/plain; charset=utf-8"));
+app.MapGet("/sitemap.xml", async (Tafseel.Application.Marketplace.IMarketplaceService marketplace, CancellationToken ct) =>
+    Results.Text(
+        Tafseel.Api.Routing.SiteIndex.Sitemap(siteOrigin, webClientRoot, await marketplace.GetPublicTeacherLinksAsync(ct)),
+        "application/xml; charset=utf-8"));
+
 
 app.MapFallback(async context =>
 {
@@ -517,8 +587,18 @@ app.MapFallback(async context =>
         return;
     }
 
+    // An address no Angular route owns is a real 404: the shell still renders the not-found
+    // page for the reader, but crawlers and link checkers see the status, not a soft 200.
+    var afterLocale = string.Join('/', segments.Skip(1));
+    if (!Tafseel.Api.Routing.SiteIndex.IsClientRoute(segments.Length > 1 ? segments[1] : ""))
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+    var tags = context.Response.StatusCode == StatusCodes.Status404NotFound
+        ? "<meta name=\"robots\" content=\"noindex\" />"
+        : Tafseel.Api.Routing.SiteIndex.HeadTags(indexable, siteOrigin, locale, afterLocale);
     context.Response.ContentType = "text/html; charset=utf-8";
-    await context.Response.SendFileAsync(file);
+    await context.Response.WriteAsync(
+        Tafseel.Api.Routing.SiteIndex.WithHeadTags(await File.ReadAllTextAsync(file), tags));
 });
 
 // Arabic is the default: the reader who states no preference, or states one we

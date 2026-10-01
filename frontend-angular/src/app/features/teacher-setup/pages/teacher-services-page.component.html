@@ -6,9 +6,12 @@
       <p class="tf-page-header-desc">{{ t('setup_services_intro', 'Choose from Tafseel’s services and set your price within the allowed range.') }}</p>
     </div>
     <div class="tf-page-header-actions">
+      <a class="tf-button tf-button-secondary" data-testid="apply-another-subject" routerLink="/teach/apply" [queryParams]="{ mode: 'additional' }">{{ t('setup_apply_another_subject', 'Apply for another subject') }}</a>
       <a class="tf-button tf-button-ghost" routerLink="/teacher/publication">{{ t('setup_publication_title', 'Publication') }}</a>
     </div>
   </header>
+
+  <tf-setup-progress current="services" />
 
   @if (loading() && !workspace()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
@@ -41,8 +44,8 @@
           <ul class="tf-service-policy">
             <li class="tf-badge" data-tone="neutral">{{ ServiceOffer.isAsync(type) ? t('setup_type_async', 'Explanation delivered to the student') : t('setup_type_live', 'Live session, booked from your availability') }}</li>
             <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_price', { min: money(type.minPrice, type.currency), max: money(type.maxPrice, type.currency) }, 'Price {min} – {max}') }}</li>
-            @if (ServiceOffer.isAsync(type)) { <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_delivery', { min: type.minDeliveryHours ?? 1, max: type.maxDeliveryHours ?? 8760 }, 'Delivery {min}–{max} h') }}</li> }
-            <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_revisions', { max: type.maxRevisions }, 'Up to {max} revisions') }}</li>
+            @if (ServiceOffer.isAsync(type)) { <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_delivery', { min: fmt.duration(type.minDeliveryHours ?? 1), max: fmt.duration(type.maxDeliveryHours ?? 8760) }, 'Delivery in {min} to {max}') }}</li>
+            <li class="tf-badge" data-tone="neutral">{{ locale.format('setup_policy_revisions', { max: type.maxRevisions }, 'Up to {max} revisions') }}</li> }
           </ul>
           @if (type.availabilityState !== 'available') {
             <p class="tf-alert" data-kind="warning" [attr.data-state]="type.availabilityState">{{ t('setup_type_state_' + type.availabilityState, type.availabilityState) }}</p>
@@ -52,12 +55,13 @@
             <div class="tf-offer-row" data-testid="offering" [attr.data-offering-id]="offering.id" [attr.data-active]="offering.isActive">
               <span><strong>{{ subjectName(type, offering.subjectId) }}</strong><small>{{ t('setup_offering_state_' + offering.configurationState, offering.configurationState) }}</small></span>
               <span><small>{{ t('setup_price', 'Price') }}</small>{{ money(offering.price, offering.currency) }}</span>
-              <span>@if (ServiceOffer.isAsync(type)) { <small>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</small>{{ offering.deliveryHours }} }</span>
-              <span><small>{{ t('setup_revisions', 'Revisions') }}</small>{{ offering.revisions }}</span>
+              <span>@if (ServiceOffer.isAsync(type)) { <small>{{ t('setup_delivery_time', 'Delivery time') }}</small>{{ fmt.duration(offering.deliveryHours) }} }</span>
+              <span>@if (ServiceOffer.isAsync(type)) { <small>{{ t('setup_revisions', 'Revisions') }}</small>{{ offering.revisions }} }</span>
               <span><small>{{ t('setup_marketplace_state', 'In the marketplace') }}</small>{{ offering.canRequest || offering.canBook ? t('setup_bookable', 'Can be requested') : t('setup_not_bookable', 'Not yet') }}</span>
               <span class="tf-offer-actions">
                 <label class="tf-offer-switch">
                   <input type="checkbox" role="switch" class="tf-switch" [checked]="offering.isActive" [disabled]="!!busy()"
+                         [attr.aria-label]="typeName(type) + ' — ' + subjectName(type, offering.subjectId)"
                          (change)="toggle(offering, $any($event.target).checked)" data-testid="offering-active">
                   <span>{{ offering.isActive ? t('setup_service_active', 'On') : t('setup_service_inactive', 'Off') }}</span>
                 </label>
@@ -87,34 +91,43 @@
       @if (editor()?.mode === 'create') {
         <div class="tf-field">
           <label for="offer-subject">{{ t('apply_subject', 'Subject') }}</label>
-          <select id="offer-subject" name="subject" [ngModel]="subjectId()" (ngModelChange)="subjectId.set($event)" [attr.aria-invalid]="!!problem('subject', type)">
+          <select id="offer-subject" name="subject" [ngModel]="subjectId()" (ngModelChange)="subjectId.set($event)" [attr.aria-invalid]="!!problem('subject', type)" [attr.aria-describedby]="problem('subject', type) ? 'offer-subject-error' : null">
             @for (subject of sellable(type); track subject.id) { <option [value]="subject.id">{{ subjectName(type, subject.id) }}</option> }
           </select>
           <span class="tf-field-help">{{ t('setup_subject_help', 'Only subjects you are approved to teach are listed.') }}</span>
-          @if (problem('subject', type)) { <span class="tf-field-error">{{ problem('subject', type) }}</span> }
+          @if (problem('subject', type)) { <span id="offer-subject-error" class="tf-field-error">{{ problem('subject', type) }}</span> }
         </div>
       }
       <div class="tf-grid-2">
         <div class="tf-field">
-          <label for="offer-price">{{ locale.format('setup_price_in', { currency: fmt.currencyLabel(type.currency) }, 'Price ({currency})') }}</label>
+          <label for="offer-price">{{ ServiceOffer.isAsync(type)
+            ? locale.format('setup_price_in', { currency: fmt.currencyLabel(type.currency) }, 'Price ({currency})')
+            : locale.format('setup_price_per_hour_in', { currency: fmt.currencyLabel(type.currency) }, 'Price per hour ({currency})') }}</label>
+          @if (!ServiceOffer.isAsync(type)) { <small class="tf-muted">{{ t('setup_price_per_hour_help', 'Students pay this for each hour; a 30-minute session costs half.') }}</small> }
           <input id="offer-price" name="price" type="number" inputmode="decimal" step="0.01" [attr.min]="type.minPrice" [attr.max]="type.maxPrice"
-                 [ngModel]="terms().price" (ngModelChange)="setTerm('price', $event)" [attr.aria-invalid]="!!problem('price', type)">
-          @if (problem('price', type)) { <span class="tf-field-error">{{ problem('price', type) }}</span> }
+                 [ngModel]="terms().price" (ngModelChange)="setTerm('price', $event)" [attr.aria-invalid]="!!problem('price', type)" [attr.aria-describedby]="problem('price', type) ? 'offer-price-error' : null">
+          @if (problem('price', type)) { <span id="offer-price-error" class="tf-field-error">{{ problem('price', type) }}</span> }
         </div>
         @if (ServiceOffer.isAsync(type)) {
           <div class="tf-field">
-            <label for="offer-delivery">{{ t('setup_delivery_hours', 'Delivery (hours)') }}</label>
-            <input id="offer-delivery" name="deliveryHours" type="number" step="1" [attr.min]="type.minDeliveryHours" [attr.max]="type.maxDeliveryHours"
-                   [ngModel]="terms().deliveryHours" (ngModelChange)="setTerm('deliveryHours', $event)" [attr.aria-invalid]="!!problem('deliveryHours', type)">
-            @if (problem('deliveryHours', type)) { <span class="tf-field-error">{{ problem('deliveryHours', type) }}</span> }
+            <label for="offer-delivery">{{ t('setup_delivery_time', 'Delivery time') }}</label>
+            <select id="offer-delivery" name="deliveryHours"
+                   [ngModel]="terms().deliveryHours" (ngModelChange)="setTerm('deliveryHours', $event)" [attr.aria-invalid]="!!problem('deliveryHours', type)" [attr.aria-describedby]="problem('deliveryHours', type) ? 'offer-delivery-error' : null">
+              @for (h of deliveryChoices(type); track h) { <option [ngValue]="h" [attr.data-value]="h">{{ fmt.duration(h) }}</option> }
+            </select>
+            @if (problem('deliveryHours', type)) { <span id="offer-delivery-error" class="tf-field-error">{{ problem('deliveryHours', type) }}</span> }
           </div>
         }
+        @if (ServiceOffer.isAsync(type)) {
         <div class="tf-field">
           <label for="offer-revisions">{{ t('setup_revisions', 'Revisions') }}</label>
-          <input id="offer-revisions" name="revisions" type="number" step="1" min="0" [attr.max]="type.maxRevisions"
-                 [ngModel]="terms().revisions" (ngModelChange)="setTerm('revisions', $event)" [attr.aria-invalid]="!!problem('revisions', type)">
-          @if (problem('revisions', type)) { <span class="tf-field-error">{{ problem('revisions', type) }}</span> }
+          <select id="offer-revisions" name="revisions"
+                 [ngModel]="terms().revisions" (ngModelChange)="setTerm('revisions', $event)" [attr.aria-invalid]="!!problem('revisions', type)" [attr.aria-describedby]="problem('revisions', type) ? 'offer-revisions-error' : null">
+            @for (n of revisionChoices(type); track n) { <option [ngValue]="n" [attr.data-value]="n">{{ fmt.number(n) }}</option> }
+          </select>
+          @if (problem('revisions', type)) { <span id="offer-revisions-error" class="tf-field-error">{{ problem('revisions', type) }}</span> }
         </div>
+        }
       </div>
       <div class="tf-grid-2">
         <div class="tf-field">

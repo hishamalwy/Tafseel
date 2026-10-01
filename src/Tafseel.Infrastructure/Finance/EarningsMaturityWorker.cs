@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Tafseel.Application.Finance;
+using Tafseel.Infrastructure.Operations;
 
 namespace Tafseel.Infrastructure.Finance;
 
@@ -19,21 +20,26 @@ internal sealed class EarningsMaturityWorker(
     IServiceScopeFactory scopes,
     TimeProvider clock,
     IOptions<WithdrawalOptions> options,
+    WorkerHeartbeats heartbeats,
     ILogger<EarningsMaturityWorker> logger) : BackgroundService
 {
     private readonly int _batchSize = Math.Clamp(options.Value.MaturityBatchSize, 1, 500);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5), clock);
+        var interval = TimeSpan.FromMinutes(5);
+        heartbeats.Register("earnings-maturity", interval);
+        using var timer = new PeriodicTimer(interval, clock);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
                 await MatureDueEarningsAsync(stoppingToken);
+                heartbeats.Succeeded("earnings-maturity");
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
+                heartbeats.Failed("earnings-maturity");
                 logger.LogWarning(exception, "Teacher earnings maturity scan failed");
             }
         }

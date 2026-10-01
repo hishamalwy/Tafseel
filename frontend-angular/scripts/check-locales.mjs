@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { serverErrorCodes } from './server-error-codes.mjs';
 
 const root = fileURLToPath(new URL('../src/app/', import.meta.url));
 const localeRoot = new URL('../public/locale/', import.meta.url);
@@ -46,11 +47,18 @@ const missing = Object.fromEntries(Object.entries(locales).map(([lang, table]) =
   [...used.keys()].filter(key => !(key in table))
 ]));
 
+// problemMessage() shows `err_<code>` for a refused request; without it an English reader
+// gets the server's sentence and an Arabic reader only the generic line. Every code the
+// server can raise therefore needs its own entry in both languages.
+const serverCodes = [...serverErrorCodes().keys()];
+for (const lang of ['en', 'ar'])
+  missing[lang].push(...serverCodes.map(code => `err_${code}`).filter(key => !(key in locales[lang]) && !missing[lang].includes(key)));
+
 if (missing.en.length || missing.ar.length) {
   for (const lang of ['en', 'ar']) {
     if (missing[lang].length) console.error(`${lang}: missing ${missing[lang].length} keys\n${missing[lang].join(', ')}`);
   }
   process.exitCode = 1;
 } else {
-  console.log(`Angular locale coverage passed (${used.size} keys in en/ar).`);
+  console.log(`Angular locale coverage passed (${used.size} keys and ${serverCodes.length} server error codes in en/ar).`);
 }

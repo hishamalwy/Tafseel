@@ -20,7 +20,7 @@ export interface PasswordRuleView {
       <span class="tf-pw-rules__heading">{{ heading() }}</span>
       @for (rule of rules(); track rule.label) {
         <div class="tf-pw-rule" [class.tf-pw-rule--met]="rule.satisfied">
-          <span class="tf-pw-rule__badge" aria-hidden="true">{{ rule.satisfied ? '✓' : '' }}</span>
+          <span class="tf-pw-rule__badge" aria-hidden="true">@if (rule.satisfied) { <svg viewBox="0 0 24 24" width="12" height="12"><path d="m5 12.5 4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg> }</span>
           <span>{{ rule.label }}</span>
         </div>
       }

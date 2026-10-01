@@ -24,6 +24,38 @@ describe('Payable.fromOrder — the price checkout discloses (UX-09)', () => {
 
   it('leaves the payables that have no order behind them without one', () => {
     expect(Payable.fromLiveSession({ id: 's1', basePrice: 100, totalPrice: 100 }).order).toBeNull();
-    expect(Payable.fromOpenRequest({ id: 'r1' }, { id: 'of1', amount: 90 }).order).toBeNull();
+    expect(Payable.fromOpenRequest({ id: 'r1' }, { id: 'of1', amount: 90 }, {
+      offerAmount: 90, studentFeePercent: 8, studentFeeAmount: 7.2,
+      total: 97.2, currency: 'SAR', reservationExpiresAt: new Date().toISOString()
+    }).order).toBeNull();
+  });
+});
+
+describe('Payable.fromOpenRequest — authoritative charge', () => {
+  it('uses the server quote for the fee and final total', () => {
+    const payable = Payable.fromOpenRequest({ id: 'r1', title: 'Algebra' },
+      { id: 'of1', amount: 90, teacherId: 't1' }, {
+        offerAmount: 120, studentFeePercent: 8, studentFeeAmount: 9.6,
+        total: 129.6, currency: 'SAR', reservationExpiresAt: new Date().toISOString()
+      });
+    expect(payable.lines.map(line => line.amount)).toEqual([120, 9.6]);
+    expect(payable.total).toBe(129.6);
+  });
+});
+
+describe('Payable — a purchase that is already paid', () => {
+  it('marks a paid or refunded order, so checkout does not offer to pay again', () => {
+    expect(Payable.fromOrder({ ...ORDER, paymentStatus: 0 }, false).alreadyPaid).toBe(false);
+    expect(Payable.fromOrder({ ...ORDER, paymentStatus: 1 }, false).alreadyPaid).toBe(true);
+    expect(Payable.fromOrder({ ...ORDER, paymentStatus: 3 }, false).alreadyPaid).toBe(true);
+  });
+
+  it('marks a paid live session, but never an unanswered request, as already paid', () => {
+    const booking = { id: 'b1', basePrice: 60, totalPrice: 60 };
+    expect(Payable.fromLiveSession({ ...booking, status: 0 }).alreadyPaid).toBe(false);
+    expect(Payable.fromLiveSession({ ...booking, status: 1 }).alreadyPaid).toBe(true);
+    expect(Payable.fromLiveSession({ ...booking, status: 3 }).alreadyPaid).toBe(false);
+    expect(Payable.fromLiveSession({ ...booking, status: 9 }).alreadyPaid).toBe(false);
+    expect(Payable.fromLiveSession({ ...booking, status: 10 }).alreadyPaid).toBe(false);
   });
 });

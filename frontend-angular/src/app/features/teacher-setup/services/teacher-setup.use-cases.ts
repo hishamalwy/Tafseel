@@ -1,7 +1,8 @@
+import { HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { Availability, ExceptionDraft, RuleDraft } from '../models/availability';
-import { OnboardingState } from '../models/readiness';
+import { IntroVideo, OnboardingState } from '../models/readiness';
 import { OfferTerms, Offering, ServiceOffer, ServiceType } from '../models/service-offer';
 import {
   CredentialDraft, CredentialForm, CredentialKind, NamedItem, OwnProfile, ProfileDraft, ProfileForm, TopicItem, WeeklyRule
@@ -208,5 +209,46 @@ export class SetPublication {
 
   execute(published: boolean): Promise<void> {
     return firstValueFrom(this.gateway.setPublished(published));
+  }
+}
+
+/** Where a newly approved teacher stands on the way to being found; read by the steps strip on each setup screen. */
+@Injectable()
+export class LoadSetupProgress {
+  private readonly gateway = inject(TEACHER_SETUP_GATEWAY);
+
+  execute(): Promise<OnboardingState> {
+    return firstValueFrom(this.gateway.onboarding());
+  }
+}
+
+/** The one public introduction video: upload, preview, show or hide, replace, remove, or reuse an application video. */
+@Injectable()
+export class ManagePublicVideo {
+  private readonly gateway = inject(TEACHER_SETUP_GATEWAY);
+
+  load(): Promise<IntroVideo> {
+    return firstValueFrom(this.gateway.introVideo());
+  }
+
+  /** Reports upload progress (0–100) and resolves with the saved state. */
+  async upload(file: File, current: IntroVideo, progress: (percent: number) => void): Promise<IntroVideo> {
+    await lastValueFrom(this.gateway.uploadIntroVideo(file, current.version).pipe(tap(event => {
+      if (event.type === HttpEventType.UploadProgress && event.total) progress(Math.round(100 * event.loaded / event.total));
+    })));
+    return this.load();
+  }
+
+  /** Only called after the teacher ticked the consent sentence; the server records it. */
+  useApplicationVideo(sampleId: string, current: IntroVideo): Promise<IntroVideo> {
+    return firstValueFrom(this.gateway.useApplicationVideo(sampleId, current.version));
+  }
+
+  setVisible(current: IntroVideo, visible: boolean): Promise<IntroVideo> {
+    return firstValueFrom(this.gateway.setIntroVisible(visible, current.version ?? ''));
+  }
+
+  remove(current: IntroVideo): Promise<IntroVideo> {
+    return firstValueFrom(this.gateway.removeIntroVideo(current.version ?? ''));
   }
 }

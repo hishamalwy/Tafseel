@@ -124,9 +124,7 @@ export class Campaigns {
   private readonly memory = inject(CAMPAIGN_MEMORY);
 
   /**
-   * The slot to open the visit with, or null. Discount slots are not candidates in V1: their offer is a
-   * coupon code and checkout cannot redeem one (UX-07), so showing one would promise what Tafseel cannot
-   * honour.
+   * The first eligible published slot. A discount without a code cannot be redeemed.
    */
   primary(promotions: readonly Promotion[]): Promotion | null {
     return Campaign.eligible(this.memory.visit(), V1_PROMOTIONS.showable(promotions))[0] ?? null;

@@ -54,8 +54,13 @@
                 <a class="tf-button tf-button-ghost" [routerLink]="['/requests', open.id, 'offers']">{{ t('demand_view_offers', 'View offers') }}</a>
               </div>
             } @else if (Demand.canSelectOffers(open)) {
-              <p class="tf-muted" data-testid="offer-count">{{ locale.format('demand_offer_count', { n: open.offerCount ?? 0 }, '{n} offers so far') }}</p>
-              <div class="tf-action-row"><a class="tf-button" data-testid="compare-offers" [routerLink]="['/requests', open.id, 'offers']">{{ t('demand_compare_offers', 'Compare offers') }}</a></div>
+              @if ((open.offerCount ?? 0) > 0) {
+                <p class="tf-muted" data-testid="offer-count">{{ locale.format('demand_offer_count', { n: open.offerCount ?? 0 }, '{n} offers so far') }}</p>
+                <div class="tf-action-row"><a class="tf-button" data-testid="compare-offers" [routerLink]="['/requests', open.id, 'offers']">{{ t('demand_compare_offers', 'Compare offers') }}</a></div>
+              } @else {
+                <!-- "0 offers so far" with a Compare button read as broken; say that waiting is the step. -->
+                <p class="tf-muted" data-testid="offer-count">{{ t('demand_no_offers_yet', 'Teachers approved in this subject can see your request now. We will let you know when the first offer arrives; you do not need to do anything until then.') }}</p>
+              }
             } @else {
               <p class="tf-muted">{{ t('demand_no_action', 'There is nothing to do on this request.') }}</p>
             }
@@ -63,6 +68,10 @@
             <p class="tf-muted">{{ t('demand_answer_teacher', 'The teacher asked a question. Answer it below so they can accept.') }}</p>
           } @else if (v.request.status === 0) {
             <p class="tf-muted">{{ t('demand_waiting_teacher', 'The teacher is reviewing your request.') }}</p>
+            @if (v.replyHours) {
+              <p class="tf-muted" data-testid="teacher-reply-time">{{ locale.format('demand_teacher_usually_replies', { time: fmt.duration(v.replyHours) },
+                'This teacher usually replies within {time}. We will tell you when they do.') }}</p>
+            }
           } @else {
             <p class="tf-muted">{{ t('demand_no_action', 'There is nothing to do on this request.') }}</p>
           }
@@ -100,7 +109,13 @@
                   <label for="request-message">{{ isTeacher() ? t('demand_ask_label', 'Ask the student') : t('demand_reply_label', 'Your answer') }}</label>
                   <textarea id="request-message" name="message" rows="3" maxlength="2000" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
                 </div>
-                <div class="tf-form-actions"><button type="submit" class="tf-button tf-button-secondary" [disabled]="busy()">{{ t('demand_send', 'Send') }}</button></div>
+                @if (!isTeacher()) {
+                  <tf-file-picker inputId="reply-files" [multiple]="true" [accept]="fileAccept" [compact]="true" testId="reply-files"
+                                  [title]="t('demand_reply_files', 'Add a file the teacher asked for (optional)')"
+                                  [hint]="locale.format('req_files_hint', { n: fileLimits.maxFiles, max: fileLimits.maxBytes / 1048576 }, 'Up to {n} files · PDF, photos (JPEG or PNG), text files, Word or PowerPoint · {max} MB each')"
+                                  [files]="replyFiles()" (picked)="addReplyFiles($event, v.request.attachments.length)" (removed)="removeReplyFile($event)" />
+                }
+                <div class="tf-form-actions"><button type="submit" class="tf-button tf-button-secondary" [disabled]="busy()">{{ isTeacher() ? t('demand_send_question', 'Send question') : t('demand_send_answer', 'Send answer') }}</button></div>
               </form>
             }
           </section>
@@ -122,7 +137,10 @@
               <div><dt>{{ isTeacher() ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}</dt><dd>{{ (isTeacher() ? v.request.studentName : v.request.teacherName) || '—' }}</dd></div>
               <div><dt>{{ t('demand_service', 'Service') }}</dt><dd>{{ serviceName() }}</dd></div>
               <div><dt>{{ t('demand_wanted_by', 'Wanted by') }}</dt><dd>{{ date(v.request.preferredDeliveryAt) }}</dd></div>
+              <!-- A request at a listed price has no budget to show (UX-17): the price is the listed one. -->
+              @if (v.request.budget !== null || v.request.listedPriceAtRequest == null) {
               <div><dt>{{ t('demand_budget', 'Budget') }}</dt><dd>@if (v.request.budget !== null) { <tf-price [amount]="v.request.budget" /> } @else { {{ t('demand_flexible', 'Flexible') }} }</dd></div>
+              }
             } @else if (v.open; as open) {
               <div><dt>{{ t('apply_subject', 'Subject') }}</dt><dd>{{ subjectName() }}</dd></div>
               <div><dt>{{ t('demand_service', 'Service') }}</dt><dd>{{ Demand.localName({ name: open.serviceName, nameArabic: open.serviceNameArabic }, locale.isRtl()) }}</dd></div>

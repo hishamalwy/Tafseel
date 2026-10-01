@@ -10,6 +10,8 @@
     </div>
   </header>
 
+  <tf-setup-progress current="publication" />
+
   @if (loading() && !workspace()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
   } @else if (loadError() && !workspace()) {
@@ -52,6 +54,8 @@
         </div>
       </section>
 
+      <tf-public-video />
+
       @if (blockers().length) {
         <section class="tf-profile-editor-card" aria-labelledby="readiness-blockers-title">
           <div><h2 id="readiness-blockers-title">{{ t('setup_blockers_title', 'What stops publishing') }}</h2></div>
@@ -71,9 +75,9 @@
         <ol class="tf-readiness-list" data-testid="readiness-steps">
           @for (step of steps(); track step.key) {
             <li [attr.data-step]="step.key" [attr.data-done]="step.done">
-              <span><span class="tf-readiness-mark" aria-hidden="true">{{ step.done ? '✓' : '' }}</span>{{ t('setup_step_' + step.key, step.key) }}
+              <span><span class="tf-readiness-mark" aria-hidden="true">@if (step.done) { <svg viewBox="0 0 24 24" width="12" height="12"><path d="m5 12.5 4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg> }</span>{{ t('setup_step_' + step.key, step.key) }}
                 <span class="tf-sr-only">{{ step.done ? t('setup_step_done', 'Done') : t('setup_step_todo', 'Not done') }}</span></span>
-              <a [routerLink]="step.link" [queryParams]="step.query ?? null">{{ step.done ? t('setup_review', 'Review') : t('setup_open', 'Open') }}</a>
+              @if (!step.done) { <a [routerLink]="step.link" [queryParams]="step.query ?? null">{{ t('setup_open', 'Open') }}</a> }
             </li>
           }
         </ol>

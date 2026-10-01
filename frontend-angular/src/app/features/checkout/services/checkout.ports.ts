@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { LiveSessionLike, OfferLike, OpenRequestLike, OrderLike, Payable } from '../models/payable';
+import { LiveSessionLike, OfferLike, OpenRequestLike, OpenRequestPaymentQuote, OrderLike, Payable } from '../models/payable';
 
 export interface TeacherSummary {
   readonly id: string;
@@ -25,16 +25,26 @@ export interface PayableGateway {
   /** The student's open request, with its reservation. */
   openRequest(learningRequestId: string): Observable<OpenRequestLike>;
   offers(learningRequestId: string): Observable<readonly OfferLike[]>;
+  openRequestQuote(learningRequestId: string): Observable<OpenRequestPaymentQuote>;
 }
 
 /** Starting and resuming a payment. */
 export interface PaymentGateway {
   /** `Idempotency-Key` makes a repeat attempt join the existing payment. */
-  initiate(payable: Payable, idempotencyKey: string): Observable<PaymentInitiation>;
+  initiate(payable: Payable, idempotencyKey: string, couponCode: string | null): Observable<PaymentInitiation>;
+  quoteCoupon(payable: Payable, code: string): Observable<CouponCheckoutQuote>;
   /** Whether this deployment offers the mock simulator instead of a real provider. */
   mockSimulatorEnabled(): Observable<boolean>;
   /** Whether a mock checkout already exists for this payable and can be resumed. */
   mockCheckoutExists(reference: string): Observable<boolean>;
+}
+
+export interface CouponCheckoutQuote {
+  readonly code: string;
+  readonly baseAmount: number;
+  readonly discountAmount: number;
+  readonly chargeAmount: number;
+  readonly currency: string;
 }
 
 export const PAYABLE_GATEWAY = new InjectionToken<PayableGateway>('PayableGateway');

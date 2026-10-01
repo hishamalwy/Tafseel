@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  ChangeDetectionStrategy, Component, PLATFORM_ID, ViewEncapsulation, computed, effect, inject, signal
+  ChangeDetectionStrategy, Component, HostListener, PLATFORM_ID, ViewEncapsulation, computed, effect, inject, signal
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -76,6 +76,12 @@ export class LandingPageComponent {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
+  /** Set once the visitor has started doing something; a dialog that opens after that interrupts them. */
+  private engaged = false;
+
+  @HostListener('document:keydown')
+  @HostListener('document:pointerdown')
+  markEngaged(): void { this.engaged = true; }
 
   private readonly content = signal<LandingContent | null>(null);
   private readonly journey = signal<StudentJourney | null>(null);
@@ -124,7 +130,7 @@ export class LandingPageComponent {
         note: copy.teacherNote
       };
     }
-    if (roles.includes('Admin') || roles.includes('QualityReviewer')) {
+    if (roles.includes('Admin') || roles.includes('Finance') || roles.includes('QualityReviewer')) {
       return {
         primaryLabel: copy.staffPrimary,
         primaryLink: this.landingRoute.homeFor(roles),
@@ -183,7 +189,7 @@ export class LandingPageComponent {
     return (this.content()?.teachers ?? []).map(teacher => ({
       id: teacher.id,
       name: teacher.name,
-      avatar: this.fmt.avatarUrl(teacher.id, teacher.hasAvatar, null, teacher.name),
+      avatar: this.fmt.avatarUrl(teacher.id, teacher.hasAvatar, null, 'teacher'),
       subject: FeaturedTeacher.subject(teacher, ar),
       headline: teacher.headline,
       qualified: teacher.qualified,
@@ -197,8 +203,7 @@ export class LandingPageComponent {
         ? `(${this.fmt.number(teacher.ratingCount)})` : '',
       topics: FeaturedTeacher.topics(teacher),
       deliveryLabel: teacher.deliveryHours
-        ? this.locale.format('feat_delivery', { hours: this.fmt.number(teacher.deliveryHours) },
-            `Delivery within ${teacher.deliveryHours}h`)
+        ? this.locale.format('feat_delivery', { time: this.fmt.duration(teacher.deliveryHours) }, 'Delivery within {time}')
         : '',
       hasPrice: teacher.startingPrice != null,
       price: teacher.startingPrice,
@@ -241,7 +246,8 @@ export class LandingPageComponent {
     const stats = this.content()?.stats ?? null;
     return ([
       { icon: 'tf-i-students', total: stats?.students ?? null, label: this.copy().orbStudents },
-      { icon: 'tf-i-teacher-cap', total: stats?.teachers ?? null, label: this.copy().orbTeachers }
+      { icon: 'tf-i-teacher-cap', total: stats?.teachers ?? null, label: this.copy().orbTeachers },
+      { icon: 'tf-i-calendar', total: stats?.completedSessions ?? null, label: this.copy().orbSessions }
     ]).map(metric => {
       const value = metric.total === null ? '—' : this.fmt.number(metric.total);
       return {
@@ -269,7 +275,7 @@ export class LandingPageComponent {
     if (!source) return null;
     const card = this.teacherCards().find(c => c.id === source.id);
     return {
-      avatar: this.fmt.avatarUrl(source.id, source.hasAvatar, null, source.name),
+      avatar: this.fmt.avatarUrl(source.id, source.hasAvatar, null, 'teacher'),
       name: source.name,
       subject: FeaturedTeacher.subject(source, this.isArabic()),
       rating: card?.hasRating ? `${card.rating} ★ ${card.reviewsLabel}` : '',
@@ -347,6 +353,9 @@ export class LandingPageComponent {
     const promotion = this.campaigns.primary(promotions);
     if (!promotion || this.campaigns.coolingDown(promotions)) return;
     setTimeout(() => {
+      // Someone already typing a search or tapping a card is not shown the campaign now; it is not
+      // recorded as seen either, so it can open on a later, quieter visit.
+      if (this.engaged) return;
       this.campaigns.record(promotion.id, 'seenAt');
       this.wizardPromotion.set(promotion);
     }, WIZARD_DELAY_MS);

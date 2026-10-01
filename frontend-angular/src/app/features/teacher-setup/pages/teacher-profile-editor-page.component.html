@@ -10,6 +10,8 @@
     </div>
   </header>
 
+  <tf-setup-progress current="profile" />
+
   @if (loading() && !workspace()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
   } @else if (loadError() && !workspace()) {
@@ -29,43 +31,47 @@
           <div class="tf-field">
             <label for="profile-headline">{{ t('setup_headline', 'Headline') }}</label>
             <input id="profile-headline" name="headline" [ngModel]="draft().headline" (ngModelChange)="set('headline', $event)"
-                   [attr.maxlength]="limits.headline" [attr.aria-invalid]="!!fieldError('headline')" aria-describedby="profile-headline-help">
+                   [attr.maxlength]="limits.headline" [attr.aria-invalid]="!!fieldError('headline')" [attr.aria-describedby]="fieldError('headline') ? 'profile-headline-help profile-headline-error' : 'profile-headline-help'">
             <span class="tf-field-help" id="profile-headline-help">{{ t('setup_headline_help', 'One line students see on your card, e.g. “Patient physics explanations for secondary students”.') }}</span>
-            @if (fieldError('headline')) { <span class="tf-field-error">{{ fieldError('headline') }}</span> }
+            @if (fieldError('headline')) { <span id="profile-headline-error" class="tf-field-error">{{ fieldError('headline') }}</span> }
           </div>
           <div class="tf-field">
             <label for="profile-bio">{{ t('setup_bio', 'Bio') }}</label>
             <textarea id="profile-bio" name="bio" rows="6" [ngModel]="draft().bio" (ngModelChange)="set('bio', $event)"
-                      [attr.maxlength]="limits.bio" [attr.aria-invalid]="!!fieldError('bio')"></textarea>
+                      [attr.maxlength]="limits.bio" [attr.aria-invalid]="!!fieldError('bio')" [attr.aria-describedby]="fieldError('bio') ? 'profile-bio-error' : null"></textarea>
             <span class="tf-field-help">{{ draft().bio.length }}/{{ limits.bio }}</span>
-            @if (fieldError('bio')) { <span class="tf-field-error">{{ fieldError('bio') }}</span> }
+            @if (fieldError('bio')) { <span id="profile-bio-error" class="tf-field-error">{{ fieldError('bio') }}</span> }
           </div>
           <div class="tf-grid-2">
             <div class="tf-field">
               <label for="profile-country">{{ t('setup_country', 'Country') }}</label>
               <input id="profile-country" name="country" [ngModel]="draft().country" (ngModelChange)="set('country', $event)"
-                     [attr.maxlength]="limits.country" [attr.aria-invalid]="!!fieldError('country')" autocomplete="country-name">
-              @if (fieldError('country')) { <span class="tf-field-error">{{ fieldError('country') }}</span> }
+                     [attr.maxlength]="limits.country" [attr.aria-invalid]="!!fieldError('country')" [attr.aria-describedby]="fieldError('country') ? 'profile-country-error' : null" autocomplete="country-name">
+              @if (fieldError('country')) { <span id="profile-country-error" class="tf-field-error">{{ fieldError('country') }}</span> }
             </div>
             <div class="tf-field">
               <label for="profile-city">{{ t('apply_city', 'City') }}</label>
               <input id="profile-city" name="city" [ngModel]="draft().city" (ngModelChange)="set('city', $event)"
-                     [attr.maxlength]="limits.city" [attr.aria-invalid]="!!fieldError('city')" autocomplete="address-level2">
-              @if (fieldError('city')) { <span class="tf-field-error">{{ fieldError('city') }}</span> }
+                     [attr.maxlength]="limits.city" [attr.aria-invalid]="!!fieldError('city')" [attr.aria-describedby]="fieldError('city') ? 'profile-city-error' : null" autocomplete="address-level2">
+              @if (fieldError('city')) { <span id="profile-city-error" class="tf-field-error">{{ fieldError('city') }}</span> }
             </div>
             <div class="tf-field">
               <label for="profile-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
-              <select id="profile-zone" name="timeZoneId" [ngModel]="draft().timeZoneId" (ngModelChange)="set('timeZoneId', $event)" [attr.aria-invalid]="!!fieldError('timeZoneId')">
+              <select id="profile-zone" name="timeZoneId" [ngModel]="draft().timeZoneId" (ngModelChange)="set('timeZoneId', $event)" [attr.aria-invalid]="!!fieldError('timeZoneId')" [attr.aria-describedby]="fieldError('timeZoneId') ? 'profile-zone-error' : null">
                 @for (zone of zones(); track zone) { <option [value]="zone">{{ zoneLabel(zone) }}</option> }
               </select>
               <span class="tf-field-help">{{ locale.format('setup_browser_zone', { zone: zoneLabel(browserZone) }, 'This device is set to {zone}.') }}</span>
-              @if (fieldError('timeZoneId')) { <span class="tf-field-error">{{ fieldError('timeZoneId') }}</span> }
+              @if (fieldError('timeZoneId')) { <span id="profile-zone-error" class="tf-field-error">{{ fieldError('timeZoneId') }}</span> }
             </div>
             <div class="tf-field">
-              <label for="profile-response">{{ t('setup_response_time', 'Typical reply time (minutes)') }}</label>
-              <input id="profile-response" name="responseTimeMinutes" type="number" min="0" [attr.max]="limits.responseTimeMinutes" step="1"
-                     [ngModel]="draft().responseTimeMinutes" (ngModelChange)="set('responseTimeMinutes', $event)" [attr.aria-invalid]="!!fieldError('responseTimeMinutes')">
-              @if (fieldError('responseTimeMinutes')) { <span class="tf-field-error">{{ fieldError('responseTimeMinutes') }}</span> }
+              <label for="profile-response">{{ t('setup_response_time_plain', 'You usually reply within') }}</label>
+              <!-- UX-61: a choice of plain lengths, not a minutes box that started at 0. -->
+              <select id="profile-response" name="responseTimeMinutes"
+                     [ngModel]="draft().responseTimeMinutes" (ngModelChange)="set('responseTimeMinutes', $event)" [attr.aria-invalid]="!!fieldError('responseTimeMinutes')" [attr.aria-describedby]="fieldError('responseTimeMinutes') ? 'profile-response-error' : null">
+                <option [ngValue]="null">{{ t('common_choose', 'Choose…') }}</option>
+                @for (m of responseChoices(); track m) { <option [ngValue]="m" [attr.data-value]="m">{{ fmt.duration(m / 60) }}</option> }
+              </select>
+              @if (fieldError('responseTimeMinutes')) { <span id="profile-response-error" class="tf-field-error">{{ fieldError('responseTimeMinutes') }}</span> }
             </div>
           </div>
           @if (errors().core) { <div class="tf-alert" data-kind="error" role="alert" data-testid="profile-error">{{ errors().core }}</div> }

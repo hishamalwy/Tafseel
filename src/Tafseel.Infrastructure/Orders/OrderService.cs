@@ -207,11 +207,17 @@ internal sealed class OrderService(
                 ?? Math.Max(1, (int)Math.Ceiling((input.AgreedDeliveryAt - now).TotalHours));
             ServiceCatalogPolicyValidator.EnsureAcceptedTerms(
                 row.catalog, input.FinalPrice, input.Currency, now, now.AddHours(deliveryHours), input.RevisionAllowance);
+            // DEC-UX-03: a price that differs from what the student saw is explained before they pay.
+            var priceDiffers = request.ListedPriceAtRequest is { } listedPrice && listedPrice != input.FinalPrice;
+            if (priceDiffers && string.IsNullOrWhiteSpace(input.PriceChangeReason))
+                throw new DomainException("price_change_reason_required",
+                    "Explain why the price differs from the listed price.");
             request.Accept(teacherId, idempotencyKey, now);
             var order = new Order(
                 request.Id, request.StudentId, teacherId, row.service.Id, input.FinalPrice, input.Currency,
                 _fees.StudentFeePercent, _fees.TeacherCommissionPercent, input.AgreedDeliveryAt,
                 input.RevisionAllowance, now, deliveryHours);
+            if (priceDiffers) order.RecordPriceChangeReason(input.PriceChangeReason);
             order.CaptureServiceIdentity(row.catalog);
             db.Add(order);
             await notifications.QueueAsync(request.StudentId, "PaymentRequired",
@@ -243,10 +249,19 @@ internal sealed class OrderService(
         var request = await OwnedRequestAsync(studentId, requestId, student: true, version, ct);
         var now = clock.GetUtcNow();
         request.Cancel(studentId, now);
+        // PRODUCT-P1: a teacher who was asked, or who made an offer, is told the request is gone.
+        if (request.TeacherId is { } askedTeacher)
+            await notifications.QueueAsync(askedTeacher, "RequestCancelled", "Request cancelled",
+                "The student cancelled the request before it became an order.", AppRoutes.TeacherHome,
+                $"request:{request.Id}:cancelled:{askedTeacher}", true, ct);
         if (request.SourcingMode == RequestSourcingMode.OpenMarketplace)
         {
             var offers = await db.TeacherOffers.Where(x => x.LearningRequestId == request.Id).ToArrayAsync(ct);
             foreach (var offer in offers) offer.Expire(now);
+            foreach (var offeringTeacher in offers.Select(x => x.TeacherId).Distinct())
+                await notifications.QueueAsync(offeringTeacher, "RequestCancelled", "Request cancelled",
+                    "The student cancelled the request before it became an order.", AppRoutes.TeacherHome,
+                    $"request:{request.Id}:cancelled:{offeringTeacher}", true, ct);
             var payments = await db.Payments.Where(x => x.LearningRequestId == request.Id
                 && x.Status == Domain.Finance.PaymentStatus.Pending).ToArrayAsync(ct);
             foreach (var payment in payments) payment.Fail(now);
@@ -333,11 +348,11 @@ internal sealed class OrderService(
 
         var revisions = await db.Set<RevisionRequest>().AsNoTracking()
             .Where(x => x.OrderId == orderId)
-            .Select(x => new { x.Id, x.Sequence, x.CreatedAt })
+            .Select(x => new { x.Id, x.Sequence, x.Reason, x.CreatedAt })
             .ToArrayAsync(ct);
         rows.AddRange(revisions.Select(x => new TimelineRow(
             $"revision:{x.Id:N}", "revision_requested", x.CreatedAt, "student", 40,
-            new(x.Sequence))));
+            new(x.Sequence, null, x.Reason))));
 
         return rows
             .OrderBy(x => x.OccurredAt)
@@ -447,6 +462,10 @@ internal sealed class OrderService(
             ?? throw new DomainException("order_not_owned", "Order was not found.");
         ApplyVersion(order, version);
         order.CancelBeforePayment(userId, clock.GetUtcNow());
+        var other = userId == order.StudentId ? order.TeacherId : order.StudentId;
+        await notifications.QueueAsync(other, "OrderCancelled", "Order cancelled",
+            "The order was cancelled before it was paid. Nothing was charged.", AppRoutes.Order(order.Id),
+            $"order:{order.Id}:cancelled", true, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -726,7 +745,7 @@ internal sealed class OrderService(
             x.Extensions.OrderByDescending(e => e.CreatedAt).Select(e => new OrderExtensionDto(
                 e.Id, e.RequestedById, e.RespondedById, e.ProposedDeliveryAt,
                 e.Reason, e.Response, e.Status, e.CreatedAt)).ToArray(),
-            listed.Price, listed.Currency);
+            listed.Price, listed.Currency, x.PriceChangeReason);
     }
 
     /// <summary>The Learning Request's listed-price snapshot, read with the request title it travels beside.</summary>

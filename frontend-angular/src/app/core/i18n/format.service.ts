@@ -1,11 +1,18 @@
 import { Injectable, computed, inject } from '@angular/core';
-import { Money, MoneyView } from '@shared/models/money';
+import { Money, MoneyView, RIYAL_MARK } from '@shared/models/money';
 import {
-  DisplayName, PartyNameFields, PartyRole, UserNameFields, initialsAvatar
+  DisplayName, PartyNameFields, PartyRole, UserNameFields
 } from '@shared/models/display-name';
 import { LocaleService } from './locale.service';
 
-const DEFAULT_AVATAR = 'assets/brand/default-avatar.svg?v=premium-1';
+/**
+ * Who a picture stands in for when a person has not uploaded one. A teacher at a board and a student in a
+ * graduation cap say what the person is; the two-letter monogram they replaced said only how the name is spelled.
+ */
+const DEFAULT_AVATARS: Readonly<Record<PartyRole, string>> = {
+  teacher: 'assets/brand/default-avatar-teacher.svg?v=role-1',
+  student: 'assets/brand/default-avatar-student.svg?v=role-1'
+};
 
 /**
  * The language-aware half of `js/tafseel.js` — `money`, `date`, `number`,
@@ -25,22 +32,22 @@ export class FormatService {
   private readonly locale = inject(LocaleService);
 
   private readonly isArabic = computed(() => this.locale.lang() === 'ar');
-  private readonly intlLocale = computed(() => (this.isArabic() ? 'ar-SA' : 'en-US'));
+  private readonly intlLocale = computed(() => (this.isArabic() ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US'));
   private readonly unavailable = computed(() => this.locale.t('td_unavailable', '—'));
-  /** How SAR is written where the drawn mark cannot go (UX-06). */
-  private readonly sarLabel = computed(() => this.locale.t('currency_sar_short', 'SAR'));
+  /** Official SAMA mark — the same glyph in Arabic and English. */
+  private readonly sarLabel = computed(() => this.locale.t('currency_sar_short', RIYAL_MARK));
   private readonly nameUnavailable = computed(() => this.locale.t('name_unavailable', '—'));
 
   // ---- money ----
 
-  /** Plain text: `1,620 ر.س` in Arabic, `1,620 SAR` in English. Safe anywhere; never a currency glyph. */
+  /** Plain text: `1,620 ⃁` in both languages. Safe anywhere; never "SAR" or «ر.س». */
   money(value: unknown, currency?: string): string {
     return Money.format(value, currency, this.unavailable(), this.sarLabel());
   }
 
   /**
-   * A currency named in words, as the reader writes it: «ر.س» in Arabic, "SAR" in English. For labels such
-   * as «السعر (ر.س)» that name the currency without an amount; any other currency keeps its ISO code.
+   * A currency named without an amount, as the official mark: «السعر (⃁)».
+   * Any other currency keeps its ISO code.
    */
   currencyLabel(currency: string | null | undefined): string {
     const code = (currency ?? 'SAR').trim().toUpperCase() || 'SAR';
@@ -79,6 +86,20 @@ export class FormatService {
     ).format(parsed);
   }
 
+  /**
+   * A length of time a person reads at a glance: "12 hours", "2 days", "1 week", "1 day and 12 hours"
+   * («يومان», «٣ أيام»). Tafseel stores delivery and validity in hours; nobody plans a week as 168 hours.
+   */
+  duration(hours: unknown): string {
+    const total = Math.max(0, Math.round(Number(hours) || 0));
+    const unit = (n: number, name: 'hour' | 'day' | 'week') =>
+      new Intl.NumberFormat(this.intlLocale(), { style: 'unit', unit: name, unitDisplay: 'long' }).format(n);
+    if (total < 24) return unit(total, 'hour');
+    const days = Math.floor(total / 24), rest = total % 24;
+    if (rest) return new Intl.ListFormat(this.intlLocale(), { type: 'conjunction' }).format([unit(days, 'day'), unit(rest, 'hour')]);
+    return days % 7 === 0 ? unit(days / 7, 'week') : unit(days, 'day');
+  }
+
   dateOnly(value: string | number | Date): string {
     return this.date(value, { dateStyle: 'medium' });
   }
@@ -104,15 +125,18 @@ export class FormatService {
     return DisplayName.ofParty(dto, role, this.isArabic(), this.nameUnavailable());
   }
 
-  readonly defaultAvatar = DEFAULT_AVATAR;
+  /** The picture for someone with no upload, by what they are on Tafseel. */
+  defaultAvatar(role: PartyRole): string {
+    return DEFAULT_AVATARS[role];
+  }
 
   /**
-   * A real avatar when one exists, otherwise a deterministic monogram, otherwise
-   * the house default. `version` busts the cache after an upload.
+   * A real avatar when one exists, otherwise the default for the person's role.
+   * `version` busts the cache after an upload.
    */
   avatarUrl(
     userId: string | null | undefined, hasAvatar: boolean,
-    version?: string | number | null, label?: string | null
+    version?: string | number | null, role: PartyRole = 'teacher'
   ): string {
     if (hasAvatar && userId) {
       const url = `/api/v1/users/${encodeURIComponent(userId)}/avatar`;
@@ -120,7 +144,6 @@ export class FormatService {
         ? url
         : `${url}?v=${encodeURIComponent(String(version))}`;
     }
-    if (label) return initialsAvatar(label, userId ?? label);
-    return DEFAULT_AVATAR;
+    return DEFAULT_AVATARS[role];
   }
 }

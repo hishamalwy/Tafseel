@@ -30,6 +30,7 @@ public sealed class Phase5OrderTests(SqlServerTafseelApiFactory factory)
         var body = new
         {
             finalPrice = 101m,
+            priceChangeReason = "One extra exercise.",
             currency = "SAR",
             agreedDeliveryAt = DateTimeOffset.UtcNow.AddDays(2),
             revisionAllowance = 1

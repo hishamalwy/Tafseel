@@ -14,7 +14,7 @@ internal static class PrivateMediaRules
     public static readonly string[] AttachmentCategories =
     [
         "request-attachments", "order-deliveries", "live-session-attachments",
-        "message-attachments", "dispute-evidence", "qualification-resources"
+        "message-attachments", "dispute-evidence", "qualification-resources", "support-evidence"
     ];
 
     private static readonly byte[] PngSignature = [137, 80, 78, 71, 13, 10, 26, 10];

@@ -31,6 +31,10 @@ public class TafseelApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:SigningKey", "integration-tests-only-signing-key-32-bytes");
         builder.UseSetting("Resend:ApiToken", "integration-tests-only-resend-token");
         builder.UseSetting("Payments:WebhookSecret", "integration-tests-only-payment-webhook-secret");
+        // A fresh random payout-destination key per test host: nothing to keep secret, nothing in the repository.
+        builder.UseSetting("PayoutDestinations:ActiveKeyId", "tests");
+        builder.UseSetting("PayoutDestinations:Keys:tests",
+            Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
         builder.UseSetting("FileStorage:Provider", "Local");
         builder.UseSetting("FileStorage:RootPath", _filesPath);
         builder.ConfigureServices(services =>

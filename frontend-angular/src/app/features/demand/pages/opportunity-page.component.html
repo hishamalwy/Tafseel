@@ -3,11 +3,24 @@
 
   @if (loading() && !request()) {
     <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+  } @else if (loadError() && !request() && outcome(); as outcome) {
+    <div class="tf-state" data-state="empty" role="status" data-testid="opportunity-closed">
+      <h1 class="tf-state-title">{{ pastOffer()?.requestTitle }}</h1>
+      <p class="tf-state-body" data-testid="opportunity-closed-reason">{{ t(outcome.key, outcome.fallback) }}</p>
+      <div class="tf-action-row">
+        @if (outcome.link; as link) { <a class="tf-button" [routerLink]="link.path">{{ t(link.key, link.fallback) }}</a> }
+        <a class="tf-button" [class.tf-button-secondary]="!!outcome.link" routerLink="/teacher/opportunities">{{ t('demand_opportunity_to_list', 'See open requests') }}</a>
+        <a class="tf-button tf-button-secondary" routerLink="/teacher/offers">{{ t('nav_my_offers', 'My offers') }}</a>
+      </div>
+    </div>
   } @else if (loadError() && !request()) {
     <div class="tf-state" data-state="error" role="alert">
       <h1 class="tf-state-title">{{ t('demand_opportunity_failed', 'This opportunity is not available to you.') }}</h1>
       <p class="tf-state-body">{{ loadError() }}</p>
-      <button type="button" class="tf-button tf-button-secondary" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+      <div class="tf-action-row">
+        <a class="tf-button" routerLink="/teacher/work">{{ t('demand_opportunity_to_work', 'Go to my work') }}</a>
+        <a class="tf-button tf-button-secondary" routerLink="/teacher/opportunities">{{ t('demand_opportunity_to_list', 'See open requests') }}</a>
+      </div>
     </div>
   } @else if (request(); as r) {
     <header class="tf-page-header" data-face="sans">
@@ -38,7 +51,7 @@
               <dl class="tf-facts">
                 <div><dt>{{ t('apply_status_label', 'Status') }}</dt><dd>{{ t(Demand.offerStatusKey(mine.status, 'teacher'), '') }}</dd></div>
                 <div><dt>{{ t('demand_price', 'Price') }}</dt><dd><tf-price [amount]="mine.amount" [currency]="mine.currency" /></dd></div>
-                <div><dt>{{ t('setup_delivery_hours', 'Delivery (hours)') }}</dt><dd>{{ mine.deliveryHours }}</dd></div>
+                <div><dt>{{ t('setup_delivery_time', 'Delivery time') }}</dt><dd>{{ fmt.duration(mine.deliveryHours) }}</dd></div>
                 <div><dt>{{ t('setup_revisions', 'Revisions') }}</dt><dd>{{ mine.includedRevisions }}</dd></div>
                 <div><dt>{{ t('demand_valid_until', 'Valid until') }}</dt><dd>{{ date(mine.validUntil) }}</dd></div>
               </dl>
@@ -59,29 +72,36 @@
               <div class="tf-grid-2">
                 <div class="tf-field">
                   <label for="offer-amount">{{ locale.format('setup_price_in', { currency: fmt.currencyLabel(r.currency) }, 'Price ({currency})') }}</label>
-                  <input id="offer-amount" name="amount" type="number" step="0.01" min="0.01" [ngModel]="draft().amount" (ngModelChange)="set('amount', $event)" [attr.aria-invalid]="!!problem('amount')">
-                  @if (problem('amount')) { <span class="tf-field-error">{{ problem('amount') }}</span> }
+                  <input id="offer-amount" name="amount" type="number" step="0.01" min="0.01" [ngModel]="draft().amount" (ngModelChange)="set('amount', $event)" [attr.aria-invalid]="!!problem('amount')" [attr.aria-describedby]="problem('amount') ? 'offer-amount-error' : null">
+                  @if (problem('amount')) { <span id="offer-amount-error" class="tf-field-error">{{ problem('amount') }}</span> }
+                  @else if (terms(); as terms) { <small class="tf-field-hint" data-testid="offer-price-range">{{ locale.format('demand_price_range_hint', { min: fmt.money(terms.minPrice, r.currency), max: fmt.money(terms.maxPrice, r.currency) }, 'Between {min} and {max} for this service.') }}</small> }
                 </div>
                 <div class="tf-field">
-                  <label for="offer-hours">{{ t('setup_delivery_hours', 'Delivery (hours)') }}</label>
-                  <input id="offer-hours" name="deliveryHours" type="number" step="1" min="1" [attr.max]="limits.hoursMax" [ngModel]="draft().deliveryHours" (ngModelChange)="set('deliveryHours', $event)" [attr.aria-invalid]="!!problem('deliveryHours')">
-                  @if (problem('deliveryHours')) { <span class="tf-field-error">{{ problem('deliveryHours') }}</span> }
+                  <label for="offer-hours">{{ t('setup_delivery_time', 'Delivery time') }}</label>
+                  <select id="offer-hours" name="deliveryHours" [ngModel]="draft().deliveryHours" (ngModelChange)="set('deliveryHours', $event)" [attr.aria-invalid]="!!problem('deliveryHours')" [attr.aria-describedby]="problem('deliveryHours') ? 'offer-hours-error' : null">
+                    @for (h of deliveryChoices(); track h) { <option [ngValue]="h" [attr.data-value]="h">{{ fmt.duration(h) }}</option> }
+                  </select>
+                  @if (problem('deliveryHours')) { <span id="offer-hours-error" class="tf-field-error">{{ problem('deliveryHours') }}</span> }
                 </div>
                 <div class="tf-field">
                   <label for="offer-revisions">{{ t('setup_revisions', 'Revisions') }}</label>
-                  <input id="offer-revisions" name="includedRevisions" type="number" step="1" min="0" [attr.max]="limits.revisionsMax" [ngModel]="draft().includedRevisions" (ngModelChange)="set('includedRevisions', $event)" [attr.aria-invalid]="!!problem('includedRevisions')">
-                  @if (problem('includedRevisions')) { <span class="tf-field-error">{{ problem('includedRevisions') }}</span> }
+                  <select id="offer-revisions" name="includedRevisions" [ngModel]="draft().includedRevisions" (ngModelChange)="set('includedRevisions', $event)" [attr.aria-invalid]="!!problem('includedRevisions')" [attr.aria-describedby]="problem('includedRevisions') ? 'offer-revisions-error' : null">
+                    @for (n of revisionChoices(); track n) { <option [ngValue]="n" [attr.data-value]="n">{{ fmt.number(n) }}</option> }
+                  </select>
+                  @if (problem('includedRevisions')) { <span id="offer-revisions-error" class="tf-field-error">{{ problem('includedRevisions') }}</span> }
                 </div>
                 <div class="tf-field">
-                  <label for="offer-validity">{{ t('demand_validity_hours', 'Offer valid for (hours)') }}</label>
-                  <input id="offer-validity" name="validityHours" type="number" step="1" min="1" [attr.max]="limits.validityMax" [ngModel]="draft().validityHours" (ngModelChange)="set('validityHours', $event)" [attr.aria-invalid]="!!problem('validityHours')">
-                  @if (problem('validityHours')) { <span class="tf-field-error">{{ problem('validityHours') }}</span> }
+                  <label for="offer-validity">{{ t('demand_validity_time', 'Your offer stays open for') }}</label>
+                  <select id="offer-validity" name="validityHours" [ngModel]="draft().validityHours" (ngModelChange)="set('validityHours', $event)" [attr.aria-invalid]="!!problem('validityHours')" [attr.aria-describedby]="problem('validityHours') ? 'offer-validity-error' : null">
+                    @for (h of validityChoices(); track h) { <option [ngValue]="h" [attr.data-value]="h">{{ fmt.duration(h) }}</option> }
+                  </select>
+                  @if (problem('validityHours')) { <span id="offer-validity-error" class="tf-field-error">{{ problem('validityHours') }}</span> }
                 </div>
               </div>
               <div class="tf-field">
                 <label for="offer-message">{{ t('demand_offer_message', 'Message to the student') }}</label>
-                <textarea id="offer-message" name="message" rows="4" [attr.maxlength]="limits.message" [ngModel]="draft().message" (ngModelChange)="set('message', $event)" [attr.aria-invalid]="!!problem('message')"></textarea>
-                @if (problem('message')) { <span class="tf-field-error">{{ problem('message') }}</span> }
+                <textarea id="offer-message" name="message" rows="4" [attr.maxlength]="limits.message" [ngModel]="draft().message" (ngModelChange)="set('message', $event)" [attr.aria-invalid]="!!problem('message')" [attr.aria-describedby]="problem('message') ? 'offer-message-error' : null"></textarea>
+                @if (problem('message')) { <span id="offer-message-error" class="tf-field-error">{{ problem('message') }}</span> }
               </div>
               <div class="tf-form-actions">
                 <button type="submit" class="tf-button" data-testid="save-offer" [disabled]="busy()">{{ busy() ? t('common_saving', 'Saving…') : (Demand.canEditOffer(myOffer()) ? t('demand_update_offer', 'Update offer') : t('demand_send_offer', 'Send offer')) }}</button>

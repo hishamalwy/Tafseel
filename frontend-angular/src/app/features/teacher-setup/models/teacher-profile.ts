@@ -105,10 +105,16 @@ export interface CredentialDraft {
 
 export const ProfileForm = {
   draft(profile: OwnProfile | null, fallbackTimeZone: string): ProfileDraft {
+    // Approval creates the profile with the server's default zone, UTC. On a profile nobody has written
+    // yet that is not the teacher's choice: offer the device's zone, which the page already names, so a
+    // teacher who never opens the long list does not save UTC and publish weekly times three hours off.
+    const untouched = !profile?.headline && !profile?.bio && !profile?.city;
+    const saved = profile?.timeZoneId && !(untouched && profile.timeZoneId === 'UTC') ? profile.timeZoneId : '';
     return {
       headline: profile?.headline ?? '', bio: profile?.bio ?? '', country: profile?.country ?? '',
-      city: profile?.city ?? '', timeZoneId: profile?.timeZoneId || fallbackTimeZone,
-      responseTimeMinutes: profile?.responseTimeMinutes ?? null
+      city: profile?.city ?? '', timeZoneId: saved || fallbackTimeZone,
+      // A never-edited profile carries 0, which no teacher means; they choose (UX-61).
+      responseTimeMinutes: profile?.responseTimeMinutes || null
     };
   },
 

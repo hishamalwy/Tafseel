@@ -7,8 +7,9 @@ import { firstValueFrom } from 'rxjs';
 import { ProblemDetailsDto } from '@core/http/api.dto';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
+import { countText } from '@core/i18n/count-text';
 import {
-  AcceptError, AcceptForm, AcceptPolicy, acceptDefaults, deliveryWindow, toAcceptBody, toLocalInput, validateAccept
+  AcceptError, AcceptForm, AcceptPolicy, acceptDefaults, deliveryWindow, priceDiffers, toAcceptBody, toLocalInput, validateAccept
 } from '../models/accept-terms';
 import { AcceptRequestGateway } from '../services/accept-request.gateway';
 
@@ -19,6 +20,8 @@ export interface AcceptableRequest {
   readonly title: string;
   readonly teacherServiceId: string;
   readonly preferredDeliveryAt: string | null;
+  /** The price the student saw when sending the request, if the server kept it. */
+  readonly listedPrice?: number | null;
 }
 
 /**
@@ -52,20 +55,27 @@ export interface AcceptableRequest {
           </label>
 
           <label class="tf-system-dialog-field">
-            <span>{{ t('accept_currency', 'Currency') }}</span>
-            <input name="currency" [value]="currencyLabel(p.currency)" readonly aria-readonly="true" />
-          </label>
-
-          <label class="tf-system-dialog-field">
             <span>{{ t('accept_delivery', 'Agreed delivery') }}</span>
             <input id="accept-delivery" name="delivery" type="datetime-local" required
                    [attr.min]="window().min" [attr.max]="window().max"
                    [value]="form().deliveryLocal" (input)="patch({ deliveryLocal: $any($event.target).value })"
                    [attr.aria-invalid]="shown('delivery')" aria-describedby="accept-delivery-hint" />
             <small id="accept-delivery-hint" [class.tf-field-error]="shown('delivery')">
-              {{ t('accept_delivery_range', 'Between') }} {{ p.minDeliveryHours }} – {{ p.maxDeliveryHours }} {{ t('accept_hours_from_now', 'hours from now') }}
+              {{ locale.format('accept_delivery_window', { from: span(p.minDeliveryHours), to: span(p.maxDeliveryHours) }, 'Between {from} and {to} from now') }}
             </small>
           </label>
+
+          @if (differs()) {
+            <label class="tf-system-dialog-field">
+              <span>{{ t('accept_reason', 'Why is the price different? (the student sees this)') }}</span>
+              <textarea id="accept-reason" name="reason" rows="3" maxlength="500" required
+                        [value]="form().reason ?? ''" (input)="patch({ reason: $any($event.target).value })"
+                        [attr.aria-invalid]="shown('reason')" aria-describedby="accept-reason-hint"></textarea>
+              <small id="accept-reason-hint" [class.tf-field-error]="shown('reason')">{{ locale.format('accept_reason_hint',
+                { listed: fmt.money(request()?.listedPrice ?? 0, policy()?.currency ?? 'SAR') },
+                'The student saw {listed}. For example: the request needs extra work, or it is longer than usual.') }}</small>
+            </label>
+          }
 
           <label class="tf-system-dialog-field">
             <span>{{ t('accept_revisions', 'Revisions included') }}</span>
@@ -76,6 +86,7 @@ export interface AcceptableRequest {
               }
             </select>
           </label>
+          <p class="tf-accept-next">{{ t('accept_what_next', 'What happens next: the student is asked to pay this price. You start the work only after they have paid. Your earnings, after Tafseel’s commission, then appear under Earnings.') }}</p>
         } @else if (!loading()) {
           <p role="alert">{{ t('accept_no_policy', 'This service is no longer available to accept.') }}</p>
         }
@@ -98,12 +109,14 @@ export interface AcceptableRequest {
     }
     .tf-system-dialog-field small { font-weight: var(--weight-regular, 400); color: var(--text-2); }
     .tf-system-dialog-field small.tf-field-error { color: var(--error); }
+    .tf-accept-next { margin: 4px 0 0; padding: 10px 12px; font-size: 13px; line-height: 1.6; color: var(--text-2);
+      background: var(--surface-2); border-radius: var(--r-sm); }
   `
 })
 export class AcceptRequestDialogComponent {
   private readonly gateway = inject(AcceptRequestGateway);
-  private readonly locale = inject(LocaleService);
-  private readonly fmt = inject(FormatService);
+  readonly locale = inject(LocaleService);
+  readonly fmt = inject(FormatService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   /** Emitted after the server accepted; the host reloads its list. */
@@ -120,7 +133,7 @@ export class AcceptRequestDialogComponent {
 
   readonly errors = computed(() => {
     const policy = this.policy();
-    return policy ? validateAccept(this.form(), policy, new Date()) : [];
+    return policy ? validateAccept(this.form(), policy, new Date(), this.request()?.listedPrice) : [];
   });
   readonly window = computed(() => {
     const policy = this.policy();
@@ -128,11 +141,20 @@ export class AcceptRequestDialogComponent {
     const [min, max] = deliveryWindow(policy, new Date());
     return { min: toLocalInput(min), max: toLocalInput(max) };
   });
+  /** Whether the teacher is changing the price the student saw, which needs their reason. */
+  readonly differs = computed(() => priceDiffers(this.form(), this.request()?.listedPrice));
   readonly revisionChoices = computed(() =>
     Array.from({ length: (this.policy()?.maxRevisions ?? 0) + 1 }, (_, i) => i));
 
   t(key: string, fallback: string): string {
     return this.locale.t(key, fallback);
+  }
+
+  /** "12 hours", "14 days": an older teacher should not have to divide 336 by 24. */
+  span(hours: number): string {
+    return hours < 48 || hours % 24 !== 0
+      ? countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_hours', hours, '1 hour', '{n} hours')
+      : countText((k, f) => this.locale.t(k, f), this.locale.lang(), 'count_days', hours / 24, '1 day', '{n} days');
   }
 
   /**
@@ -183,11 +205,17 @@ export class AcceptRequestDialogComponent {
     const policy = this.policy();
     this.attempted.set(true);
     this.serverError.set('');
-    if (!request || !policy || this.busy() || this.errors().length) return;
+    if (!request || !policy || this.busy()) return;
+    if (this.errors().length) {
+      this.serverError.set(this.t('accept_fix_fields', 'Check the highlighted terms before accepting.'));
+      const first = this.errors()[0];
+      this.dialog().nativeElement.querySelector<HTMLElement>(`#accept-${first}`)?.focus();
+      return;
+    }
 
     this.busy.set(true);
     try {
-      await firstValueFrom(this.gateway.accept(request.id, request.version, this.idempotencyKey, toAcceptBody(this.form(), policy)));
+      await firstValueFrom(this.gateway.accept(request.id, request.version, this.idempotencyKey, toAcceptBody(this.form(), policy, this.request()?.listedPrice)));
       this.dialog().nativeElement.close();
       this.accepted.emit();
     } catch (error) {

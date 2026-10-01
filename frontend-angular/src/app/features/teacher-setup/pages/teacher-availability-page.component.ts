@@ -14,6 +14,7 @@ import {
   timeZoneChoices, timeZoneLabel } from '../models/availability';
 import { AvailabilityException, OwnProfile, WeeklyRule } from '../models/teacher-profile';
 import { FormInvalid, LoadOwnProfile, ManageAvailability } from '../services/teacher-setup.use-cases';
+import { SetupProgressComponent } from '../components/setup-progress.component';
 
 const SLOT_CHOICES = [15, 30, 45, 60, 90, 120, 180, 240] as const;
 
@@ -21,7 +22,7 @@ const SLOT_CHOICES = [15, 30, 45, 60, 90, 120, 180, 240] as const;
 @Component({
   selector: 'tf-teacher-availability-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent],
+  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent],
   templateUrl: './teacher-availability-page.component.html',
   styles: `
     .tf-availability { display: grid; gap: 18px; max-width: 980px; }
@@ -73,7 +74,15 @@ export class TeacherAvailabilityPageComponent {
 
   readonly rules = computed(() => Availability.sorted(this.profile()?.rules ?? []));
   readonly exceptions = computed(() => Availability.sortedExceptions(this.profile()?.exceptions ?? []));
-  readonly defaultZone = computed(() => this.profile()?.timeZoneId || this.deviceZone);
+  /**
+   * New windows start in the profile's zone. A profile nobody has written yet still carries the UTC an
+   * approval leaves on it; a teacher who types 9:00–12:00 there means their own morning, not UTC's.
+   */
+  readonly defaultZone = computed(() => {
+    const p = this.profile();
+    const untouched = !p?.headline && !p?.bio && !p?.city;
+    return p?.timeZoneId && !(untouched && p.timeZoneId === 'UTC') ? p.timeZoneId : this.deviceZone;
+  });
   readonly zones = computed(() => timeZoneChoices(this.defaultZone(), this.rule().timeZoneId, ...this.rules().map(r => r.timeZoneId)));
   readonly ruleProblems = computed<readonly RuleProblem[]>(() =>
     this.ruleAttempted() ? Availability.ruleProblems(this.rule(), this.profile()?.rules ?? [], this.editing() ?? '') : []);

@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Data.Common;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +22,7 @@ internal sealed class FinancialService(
     TafseelDbContext db, IPaymentProvider provider, ICouponService coupons,
     NotificationWriter notifications, IOptions<FeeOptions> feeOptions,
     IOptions<WithdrawalOptions> withdrawalOptions, IOptions<DisputeOptions> disputeOptions,
-    TimeProvider clock) : IFinancialService
+    TimeProvider clock, IPayoutProvider payouts, IPayoutDestinationVault payoutVault) : IFinancialService
 {
     private readonly WithdrawalOptions _withdrawals = withdrawalOptions.Value;
     private readonly DisputeOptions _disputes = disputeOptions.Value;
@@ -37,6 +37,7 @@ internal sealed class FinancialService(
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
+            await EnsureRetryCouponMatchesAsync(existing, couponCode, ct);
             var retry = await provider.InitiateAsync(orderId, existing.Amount, existing.Currency, ct);
             return new(Map(existing), retry.CheckoutReference);
         }
@@ -73,6 +74,7 @@ internal sealed class FinancialService(
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
+            await EnsureRetryCouponMatchesAsync(existing, couponCode, ct);
             var retry = await provider.InitiateAsync(
                 liveSessionBookingId, existing.Amount, existing.Currency, ct);
             return new(Map(existing), retry.CheckoutReference);
@@ -111,6 +113,7 @@ internal sealed class FinancialService(
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
+            await EnsureRetryCouponMatchesAsync(existing, couponCode, ct);
             var retry = await provider.InitiateAsync(learningRequestId, existing.Amount, existing.Currency, ct);
             return new(Map(existing), retry.CheckoutReference);
         }
@@ -124,8 +127,7 @@ internal sealed class FinancialService(
             throw new DomainException("payment_not_allowed", "This Offer reservation cannot be paid.");
         var offer = await db.TeacherOffers.AsNoTracking().SingleAsync(
             x => x.Id == offerId && x.Status == TeacherOfferStatus.Selected, ct);
-        var studentTotal = decimal.Round(
-            offer.Amount * (1 + feeOptions.Value.StudentFeePercent / 100), 2, MidpointRounding.AwayFromZero);
+        var studentTotal = OpenRequestStudentTotal(offer.Amount);
         var (coupon, discount, charge) = await coupons.ResolveForPaymentAsync(couponCode, studentTotal, "SAR", now, ct);
         var initiation = await provider.InitiateAsync(request.Id, charge, "SAR", ct);
         var payment = Payment.ForOpenRequest(request.Id, studentId, charge, "SAR",
@@ -134,10 +136,52 @@ internal sealed class FinancialService(
             new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, now),
             Audit("OpenRequestPaymentInitiated", studentId, "LearningRequest", request.Id.ToString(), idempotencyKey));
         if (coupon is not null)
-            db.Add(new CouponRedemption(coupon.Id, studentId, payment.Id, null, null, discount, "SAR", now));
+            payment.RecordOpenRequestCoupon(coupon.Id, discount);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return new(Map(payment), initiation.CheckoutReference);
+    }
+
+    public async Task<OpenRequestPaymentQuoteDto> QuoteOpenRequestPaymentAsync(
+        string studentId, Guid learningRequestId, CancellationToken ct)
+    {
+        var request = await db.LearningRequests.AsNoTracking().SingleOrDefaultAsync(
+                x => x.Id == learningRequestId && x.StudentId == studentId, ct)
+            ?? throw new DomainException("request_not_owned", "Learning request was not found.");
+        if (request.Status != LearningRequestStatus.AwaitingPayment
+            || request.PaymentReservationExpiresAt is not DateTimeOffset expiresAt
+            || clock.GetUtcNow() >= expiresAt
+            || request.SelectedOfferId is not Guid offerId)
+            throw new DomainException("payment_not_allowed", "This Offer reservation cannot be paid.");
+
+        var offer = await db.TeacherOffers.AsNoTracking().SingleOrDefaultAsync(
+                x => x.Id == offerId && x.LearningRequestId == learningRequestId
+                    && x.Status == TeacherOfferStatus.Selected, ct)
+            ?? throw new DomainException("payment_not_allowed", "This Offer reservation cannot be paid.");
+        var total = OpenRequestStudentTotal(offer.Amount);
+        return new(offer.Amount, feeOptions.Value.StudentFeePercent, total - offer.Amount,
+            total, "SAR", expiresAt);
+    }
+
+    private decimal OpenRequestStudentTotal(decimal offerAmount) => decimal.Round(
+        offerAmount * (1 + feeOptions.Value.StudentFeePercent / 100), 2, MidpointRounding.AwayFromZero);
+
+    private async Task EnsureRetryCouponMatchesAsync(Payment payment, string? requestedCode, CancellationToken ct)
+    {
+        // A blank code means "resume the existing checkout". An explicitly supplied code must
+        // be the code that produced its amount; a retry cannot silently charge the old amount.
+        if (string.IsNullOrWhiteSpace(requestedCode)) return;
+        var code = Coupon.NormalizeCode(requestedCode);
+        var originalCode = payment.PendingCouponId is Guid pendingCouponId
+            ? await db.Coupons.AsNoTracking().Where(x => x.Id == pendingCouponId)
+                .Select(x => x.Code).SingleAsync(ct)
+            : await (
+            from redemption in db.CouponRedemptions.AsNoTracking()
+            join coupon in db.Coupons.AsNoTracking() on redemption.CouponId equals coupon.Id
+            where redemption.PaymentId == payment.Id
+            select coupon.Code).SingleOrDefaultAsync(ct);
+        if (!string.Equals(originalCode, code, StringComparison.Ordinal))
+            throw new DomainException("payment_coupon_mismatch", "This payment started with different coupon terms.");
     }
 
     public async Task ProcessWebhookAsync(
@@ -169,6 +213,14 @@ internal sealed class FinancialService(
         {
             db.Add(new PaymentAttempt(payment.Id, payment.ProviderReference,
                 PaymentAttemptStatus.Failed, "provider_failed", now));
+            // PRODUCT-P1: the payer learns the payment did not go through, instead of waiting on a spinner.
+            var retry = payment.OrderId is { } failedOrder ? AppRoutes.Order(failedOrder)
+                : payment.LiveSessionBookingId is { } failedSession ? AppRoutes.LiveSession(failedSession)
+                : payment.LearningRequestId is { } failedRequest ? AppRoutes.Request(failedRequest)
+                : AppRoutes.StudentPayments;
+            await notifications.QueueAsync(payment.StudentId, "PaymentFailed", "Payment did not go through",
+                "Your payment did not go through and nothing was charged. You can try again.", retry,
+                $"payment:{payment.Id}:failed:{message.EventId}", true, ct);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
             return;
@@ -231,6 +283,9 @@ internal sealed class FinancialService(
                     losingOffer.MarkNotSelected(now);
                 payment.LinkConvertedOrder(order.Id);
                 db.Add(order);
+                if (payment.PendingCouponId is Guid couponId && payment.PendingCouponDiscount is decimal discount)
+                    db.Add(new CouponRedemption(couponId, payment.StudentId, payment.Id,
+                        order.Id, null, discount, payment.Currency, now));
                 db.AddRange(
                     new EscrowEntry(payment.Id, order.Id, EscrowEntryType.Held,
                         payment.Amount, payment.Currency, $"payment:{payment.Id}:hold", now),
@@ -434,11 +489,13 @@ internal sealed class FinancialService(
         if (payment.LiveSessionBookingId is Guid bookingId)
         {
             var booking = await db.LiveSessionBookings.SingleAsync(x => x.Id == bookingId, ct);
+            EnsureNotOwnPurchase(adminId, payment.StudentId, booking.TeacherId);
             refund = await RefundLiveSessionCoreAsync(payment, booking, adminId, idempotencyKey, ct);
         }
         else if (payment.OrderId is Guid orderId)
         {
             var order = await db.Orders.SingleAsync(x => x.Id == orderId, ct);
+            EnsureNotOwnPurchase(adminId, payment.StudentId, order.TeacherId);
             refund = await RefundCoreAsync(payment, order, adminId, idempotencyKey, ct);
         }
         else
@@ -448,6 +505,15 @@ internal sealed class FinancialService(
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Map(refund);
+    }
+
+    /// <summary>Roles are additive: nobody refunds a purchase they bought or were paid for.</summary>
+    private static void EnsureNotOwnPurchase(string actorId, string studentId, string teacherId)
+    {
+        if (string.Equals(actorId, studentId, StringComparison.Ordinal)
+            || string.Equals(actorId, teacherId, StringComparison.Ordinal))
+            throw new DomainException("refund_self_processing_forbidden",
+                "You cannot refund a purchase you are part of.");
     }
 
     public async Task SettleDisputeAsync(
@@ -501,17 +567,29 @@ internal sealed class FinancialService(
         if (payoutProfile?.Status != PayoutVerificationStatus.Verified)
             throw new DomainException("verified_payout_profile_required",
                 "A verified payout profile is required before requesting a withdrawal.");
+        // A verified masked-only profile (saved before full destinations) cannot be paid: re-enrol first.
+        if (!payoutProfile.CanReceiveTransfers)
+            throw new DomainException("payout_destination_reenrollment_required",
+                "Payout details must be entered again with a full bank destination.");
         var available = await AccountAsync(LedgerAccountKind.TeacherAvailable, teacherId, currency, ct);
         var balance = await BalanceAsync(available.Id, ct);
         if (balance < input.Amount)
             throw new DomainException("insufficient_balance", "Available balance is insufficient.");
         var pending = await AccountAsync(LedgerAccountKind.WithdrawalClearing, teacherId, currency, ct);
-        var withdrawal = new WithdrawalRequest(teacherId, input.Amount, currency, idempotencyKey,
-            payoutProfile.PayoutMethod, payoutProfile.DestinationLabel, clock.GetUtcNow());
+        var withdrawal = WithdrawalRequest.ToVerifiedDestination(teacherId, input.Amount, currency, idempotencyKey,
+            payoutProfile, clock.GetUtcNow());
         db.AddRange(withdrawal,
             new LedgerEntry($"withdrawal:{withdrawal.Id}:reserve", available.Id, pending.Id,
                 withdrawal.Amount, currency, "Withdrawal", withdrawal.Id.ToString(), clock.GetUtcNow()),
             Audit("WithdrawalRequested", teacherId, "Withdrawal", withdrawal.Id.ToString(), idempotencyKey));
+        await notifications.QueueAsync(teacherId, "Withdrawal", "Withdrawal requested",
+            "Your withdrawal was requested and the amount is set aside.", AppRoutes.TeacherEarnings,
+            $"withdrawal:{withdrawal.Id}:{withdrawal.Status}", false, ct);
+        // PRODUCT-P1: the people who pay it out hear about it, instead of finding it by looking at the queue.
+        foreach (var operatorId in await FinanceTeamIdsAsync(teacherId, ct))
+            await notifications.QueueAsync(operatorId, "FinanceQueue", "New withdrawal to pay out",
+                "A teacher requested a withdrawal. Check the transfer details and start the transfer.",
+                AppRoutes.FinanceWithdrawals, $"withdrawal:{withdrawal.Id}:requested:{operatorId}", false, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Map(withdrawal);
@@ -522,38 +600,137 @@ internal sealed class FinancialService(
         string idempotencyKey, CancellationToken ct)
     {
         idempotencyKey = RequiredKey(idempotencyKey);
+        // PRODUCT-P0: a typed reference can no longer mark a withdrawal transferred. The transfer is recorded
+        // only through initiation and bank evidence (InitiateWithdrawalTransferAsync / ConfirmWithdrawalTransferAsync).
+        if (input.Approve)
+            throw new DomainException("withdrawal_transfer_evidence_required",
+                "Start the transfer and record the bank's evidence; a reference alone cannot mark a withdrawal transferred.");
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await LockAsync($"withdrawal-process:{id}", ct);
         var item = await db.WithdrawalRequests.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("withdrawal_not_found", "Withdrawal was not found.");
+        item.EnsureMayBeHandledBy(adminId);
+        if (item.Status == WithdrawalStatus.Rejected) return Map(item);
         ApplyVersion(item, version);
-        if (item.Status != WithdrawalStatus.Pending) return Map(item);
+        var wasInitiated = item.Status == WithdrawalStatus.TransferInitiated;
+        var now = clock.GetUtcNow();
+        item.Reject(adminId, input.RejectionReason ?? "Rejected after finance review.", input.ConfirmNoTransferSent, now);
         var pending = await AccountAsync(LedgerAccountKind.WithdrawalClearing, item.TeacherId, item.Currency, ct);
-        if (input.Approve)
-        {
-            if (string.IsNullOrWhiteSpace(input.ProviderReference))
-                throw new DomainException("provider_reference_required", "Provider reference is required.");
-            item.Complete(input.ProviderReference, clock.GetUtcNow());
-            var providerClearing = await AccountAsync(LedgerAccountKind.ProviderClearing, "", item.Currency, ct);
-            db.Add(new LedgerEntry($"withdrawal:{item.Id}:paid", pending.Id, providerClearing.Id,
-                item.Amount, item.Currency, "Withdrawal", item.Id.ToString(), clock.GetUtcNow()));
-        }
-        else
-        {
-            item.Reject(input.RejectionReason ?? "Rejected after finance review.", clock.GetUtcNow());
-            var available = await AccountAsync(LedgerAccountKind.TeacherAvailable, item.TeacherId, item.Currency, ct);
-            db.Add(new LedgerEntry($"withdrawal:{item.Id}:return", pending.Id, available.Id,
-                item.Amount, item.Currency, "Withdrawal", item.Id.ToString(), clock.GetUtcNow()));
-        }
-        db.Add(Audit(input.Approve ? "WithdrawalCompleted" : "WithdrawalRejected",
+        var available = await AccountAsync(LedgerAccountKind.TeacherAvailable, item.TeacherId, item.Currency, ct);
+        db.Add(new LedgerEntry($"withdrawal:{item.Id}:return", pending.Id, available.Id,
+            item.Amount, item.Currency, "Withdrawal", item.Id.ToString(), now));
+        db.Add(Audit(wasInitiated ? "WithdrawalTransferCancelledNoTransferSent" : "WithdrawalRejected",
             adminId, "Withdrawal", item.Id.ToString(), idempotencyKey));
-        await notifications.QueueAsync(item.TeacherId, "Withdrawal",
-            input.Approve ? "Withdrawal completed" : "Withdrawal rejected",
-            input.Approve ? "Your withdrawal was processed." : "Your funds are available again.",
-            "/teacher/earnings", $"withdrawal:{item.Id}:{item.Status}", true, ct);
+        await notifications.QueueAsync(item.TeacherId, "Withdrawal", "Withdrawal rejected",
+            "Your funds are available again.", AppRoutes.TeacherEarnings,
+            $"withdrawal:{item.Id}:{item.Status}", true, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Map(item);
+    }
+
+    public async Task<WithdrawalTransferInstructionDto> GetWithdrawalTransferInstructionAsync(
+        string adminId, Guid id, CancellationToken ct)
+    {
+        var item = await db.WithdrawalRequests.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("withdrawal_not_found", "Withdrawal was not found.");
+        item.EnsureMayBeHandledBy(adminId);
+        if (item.Status is not (WithdrawalStatus.Pending or WithdrawalStatus.TransferInitiated))
+            throw new DomainException("withdrawal_instruction_unavailable",
+                "Transfer details are shown only for withdrawals that are still to be sent.");
+        var destination = payoutVault.Open(item.TeacherId, item.SealedDestination());
+        var teacherName = await db.Users.AsNoTracking().Where(x => x.Id == item.TeacherId)
+            .Select(x => x.FullNameEnglish ?? x.FullName).SingleOrDefaultAsync(ct);
+        // Every disclosure of a full destination is attributable. The correlation key carries no destination data.
+        db.Add(Audit("WithdrawalTransferInstructionViewed", adminId, "Withdrawal", item.Id.ToString(),
+            $"instruction:{item.Id}:{clock.GetUtcNow():O}"));
+        await db.SaveChangesAsync(ct);
+        return new(item.Id, item.Status, item.Amount, item.Currency, item.TeacherId, teacherName,
+            destination.BeneficiaryName, destination.BankName, destination.Iban, destination.CountryCode,
+            item.DestinationLabel ?? destination.MaskedLabel,
+            item.InitiationReference ?? ManualBankTransferPayoutProvider.TransferNote(item.Id),
+            item.CreatedAt, item.DestinationVerifiedAt, item.TransferInitiatedAt,
+            item.Status == WithdrawalStatus.TransferInitiated, item.PayoutProvider ?? payouts.Name,
+            payouts.MovesFundsElectronically, Convert.ToBase64String(item.RowVersion));
+    }
+
+    public async Task<AdminWithdrawalDto> InitiateWithdrawalTransferAsync(
+        string adminId, Guid id, string version, string idempotencyKey, CancellationToken ct)
+    {
+        idempotencyKey = RequiredKey(idempotencyKey);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockAsync($"withdrawal-process:{id}", ct);
+        var item = await db.WithdrawalRequests.SingleOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("withdrawal_not_found", "Withdrawal was not found.");
+        item.EnsureMayBeHandledBy(adminId);
+        if (item.Status == WithdrawalStatus.TransferInitiated && item.InitiationIdempotencyKey == idempotencyKey)
+            return await AdminMapAsync(item, ct);
+        ApplyVersion(item, version);
+        if (item.Status != WithdrawalStatus.Pending)
+            throw new DomainException("invalid_withdrawal_transition", "The withdrawal transition is not allowed.");
+        var initiation = await payouts.InitiateAsync(
+            new(item.Id, item.TeacherId, item.Amount, item.Currency, item.SealedDestination()), ct);
+        var now = clock.GetUtcNow();
+        item.InitiateTransfer(adminId, initiation.Provider, initiation.Reference, idempotencyKey, now);
+        // No ledger movement: the amount stays reserved in WithdrawalClearing until evidence confirms the transfer.
+        db.Add(Audit("WithdrawalTransferInitiated", adminId, "Withdrawal", item.Id.ToString(), idempotencyKey));
+        await notifications.QueueAsync(item.TeacherId, "Withdrawal", "Transfer started",
+            "Tafseel's finance team started your bank transfer.", AppRoutes.TeacherEarnings,
+            $"withdrawal:{item.Id}:{item.Status}", true, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return await AdminMapAsync(item, ct);
+    }
+
+    public async Task<AdminWithdrawalDto> ConfirmWithdrawalTransferAsync(
+        string adminId, Guid id, ConfirmWithdrawalTransfer input, string version, string idempotencyKey, CancellationToken ct)
+    {
+        idempotencyKey = RequiredKey(idempotencyKey);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await LockAsync($"withdrawal-process:{id}", ct);
+        var item = await db.WithdrawalRequests.SingleOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("withdrawal_not_found", "Withdrawal was not found.");
+        item.EnsureMayBeHandledBy(adminId);
+        var recorded = await db.PayoutTransferEvidences.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.WithdrawalId == item.Id, ct);
+        if (recorded is not null)
+        {
+            if (recorded.IdempotencyKey == idempotencyKey) return await AdminMapAsync(item, ct);
+            throw new DomainException("invalid_withdrawal_transition", "The withdrawal transition is not allowed.");
+        }
+        ApplyVersion(item, version);
+        var now = clock.GetUtcNow();
+        var evidence = PayoutTransferEvidence.ManualAttestation(item.Id, adminId, input.SourceInstitution,
+            input.BankReference, input.TransferredAt, input.Amount, input.Currency,
+            input.ConfirmedAgainstBankRecord, idempotencyKey, now);
+        if (evidence.Kind != payouts.CompletionEvidenceKind)
+            throw new DomainException("transfer_evidence_kind_unsupported", "This payout adapter needs a different kind of evidence.");
+        // One bank reference proves one transfer.
+        if (await db.PayoutTransferEvidences.AnyAsync(x => x.BankReference == evidence.BankReference, ct))
+            throw new DomainException("transfer_reference_duplicate", "This bank reference is already recorded for another transfer.");
+        item.ConfirmTransferred(evidence, now);
+        var pending = await AccountAsync(LedgerAccountKind.WithdrawalClearing, item.TeacherId, item.Currency, ct);
+        var providerClearing = await AccountAsync(LedgerAccountKind.ProviderClearing, "", item.Currency, ct);
+        db.AddRange(evidence,
+            new LedgerEntry($"withdrawal:{item.Id}:paid", pending.Id, providerClearing.Id,
+                item.Amount, item.Currency, "Withdrawal", item.Id.ToString(), now),
+            Audit("WithdrawalTransferConfirmed", adminId, "Withdrawal", item.Id.ToString(), idempotencyKey));
+        await notifications.QueueAsync(item.TeacherId, "Withdrawal", "Withdrawal completed",
+            "Your bank transfer was sent.", AppRoutes.TeacherEarnings,
+            $"withdrawal:{item.Id}:{item.Status}", true, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return await AdminMapAsync(item, ct);
+    }
+
+    private async Task<AdminWithdrawalDto> AdminMapAsync(WithdrawalRequest x, CancellationToken ct)
+    {
+        var name = await db.Users.AsNoTracking().Where(u => u.Id == x.TeacherId)
+            .Select(u => new { u.FullName, u.FullNameEnglish }).SingleOrDefaultAsync(ct);
+        return new(x.Id, x.TeacherId, x.Amount, x.Currency, x.Status, x.ProviderReference, x.CreatedAt,
+            Convert.ToBase64String(x.RowVersion), name?.FullName, name?.FullNameEnglish, x.PayoutMethod,
+            x.DestinationLabel, x.RejectionReason, x.UpdatedAt, x.HasDestinationSnapshot, x.InitiationReference,
+            x.TransferInitiatedAt, x.TransferredAt);
     }
 
     public async Task<IReadOnlyCollection<BalanceDto>> GetBalancesAsync(
@@ -727,7 +904,12 @@ internal sealed class FinancialService(
                 x.RejectionReason,
                 x.CreatedAt,
                 x.UpdatedAt,
-                x.RowVersion
+                x.RowVersion,
+                // The sealed destination itself is never read for a list.
+                HasDestinationSnapshot = x.PayoutMethod == PayoutMethods.BankTransfer && x.DestinationKeyId != null,
+                x.InitiationReference,
+                x.TransferInitiatedAt,
+                x.TransferredAt
             })
             .ToArrayAsync(ct);
         var teacherIds = rows.Select(x => x.TeacherId).Distinct().ToArray();
@@ -741,7 +923,7 @@ internal sealed class FinancialService(
                 x.Id, x.TeacherId, x.Amount, x.Currency, x.Status,
                 x.ProviderReference, x.CreatedAt, Convert.ToBase64String(x.RowVersion),
                 name.FullName, name.FullNameEnglish, x.PayoutMethod, x.DestinationLabel, x.RejectionReason,
-                x.UpdatedAt);
+                x.UpdatedAt, x.HasDestinationSnapshot, x.InitiationReference, x.TransferInitiatedAt, x.TransferredAt);
         }).ToArray();
         return new(items, page, pageSize, total);
     }
@@ -757,21 +939,46 @@ internal sealed class FinancialService(
         string teacherId, SubmitPayoutProfile input, CancellationToken ct)
     {
         var now = clock.GetUtcNow();
+        // V1 pays by bank transfer only; a mobile wallet has no adapter that could pay it (DEC-04).
+        if (!string.Equals(input.PayoutMethod?.Trim(), PayoutMethods.BankTransfer, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException("payout_method_not_supported", "Only bank transfer payouts are available.");
+        var destination = BankTransferDestination.Create(input.LegalName, input.BankName, input.Iban, input.CountryCode);
+        // Sealed before anything is tracked: the IBAN never reaches the database, a log or the audit trail in clear.
+        var sealedDestination = payoutVault.Seal(teacherId, destination);
         var profile = await db.TeacherPayoutProfiles.SingleOrDefaultAsync(x => x.TeacherId == teacherId, ct);
         if (profile is null)
         {
-            profile = new TeacherPayoutProfile(teacherId, input.LegalName, input.CountryCode,
-                input.PayoutMethod, input.DestinationLabel, input.IdentityLast4, now);
+            profile = new TeacherPayoutProfile(teacherId, destination, input.IdentityLast4, sealedDestination, now);
             db.Add(profile);
         }
         else
         {
-            profile.Update(input.LegalName, input.CountryCode, input.PayoutMethod,
-                input.DestinationLabel, input.IdentityLast4, now);
+            profile.SubmitBankTransfer(destination, input.IdentityLast4, sealedDestination, now);
         }
         db.Add(Audit("PayoutProfileSubmitted", teacherId, "PayoutProfile", teacherId, $"profile:{teacherId}:{now:O}"));
+        foreach (var operatorId in await FinanceTeamIdsAsync(teacherId, ct))
+            await notifications.QueueAsync(operatorId, "FinanceQueue", "Bank details to verify",
+                "A teacher entered or changed their bank details. Verify them before any withdrawal is paid.",
+                AppRoutes.FinancePayoutProfiles, $"payout-profile:{teacherId}:{now:O}:{operatorId}", false, ct);
         await db.SaveChangesAsync(ct);
         return Map(profile);
+    }
+
+    /// <summary>
+    /// Who handles money work: the Finance users, or the Admins while no Finance user exists. The person the work
+    /// is about is never told to handle it (a staff member who also teaches).
+    /// </summary>
+    private async Task<string[]> FinanceTeamIdsAsync(string subjectUserId, CancellationToken ct)
+    {
+        async Task<string[]> InRoleAsync(string roleName) => await (
+                from membership in db.UserRoles.AsNoTracking()
+                join role in db.Roles.AsNoTracking() on membership.RoleId equals role.Id
+                join user in db.Users.AsNoTracking() on membership.UserId equals user.Id
+                where role.Name == roleName && !user.IsSuspended && user.Id != subjectUserId
+                select user.Id)
+            .Distinct().ToArrayAsync(ct);
+        var finance = await InRoleAsync(Tafseel.Application.Authorization.Roles.Finance);
+        return finance.Length > 0 ? finance : await InRoleAsync(Tafseel.Application.Authorization.Roles.Admin);
     }
 
     public async Task<Application.Common.PagedResult<PayoutProfileDto>> GetPayoutProfilesAsync(
@@ -1228,9 +1435,10 @@ internal sealed class FinancialService(
     private static WithdrawalDto Map(WithdrawalRequest x) =>
         new(x.Id, x.Amount, x.Currency, x.Status, x.ProviderReference,
             x.CreatedAt, Convert.ToBase64String(x.RowVersion),
-            x.PayoutMethod, x.DestinationLabel, x.RejectionReason, x.UpdatedAt);
+            x.PayoutMethod, x.DestinationLabel, x.RejectionReason, x.UpdatedAt,
+            x.TransferInitiatedAt, x.TransferredAt);
     private static PayoutProfileDto Map(TeacherPayoutProfile x) =>
         new(x.TeacherId, x.LegalName, x.CountryCode, x.PayoutMethod, x.DestinationLabel,
             x.IdentityLast4, x.Status, x.RejectionReason, x.SubmittedAt, x.ReviewedAt,
-            Convert.ToBase64String(x.RowVersion));
+            Convert.ToBase64String(x.RowVersion), x.CanReceiveTransfers, !x.HasTransferCapableDestination);
 }

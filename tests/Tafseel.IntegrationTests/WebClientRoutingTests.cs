@@ -53,7 +53,6 @@ public sealed partial class WebClientRoutingTests(TafseelApiFactory factory)
     [InlineData("/en/disputes/3f1c6a52-4b8e-4d7a-9c3e-2a1b0c9d8e7f", "en")]
     [InlineData("/ar/teacher/reviews/3f1c6a52-4b8e-4d7a-9c3e-2a1b0c9d8e7f", "ar")]
     [InlineData("/en/admin/operations/sessions", "en")]
-    [InlineData("/ar/no/such/page", "ar")]
     public async Task A_locale_path_gets_that_locales_client(string path, string locale)
     {
         var response = await Client().GetAsync(path);

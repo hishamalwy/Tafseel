@@ -51,6 +51,10 @@ describe('toAuthFailure', () => {
     expect(toAuthFailure(problem(503, { code: 'nope' })).reason).toBe('server-fault');
   });
 
+  it('maps a bare 429 to a localizable rate-limit reason', () => {
+    expect(toAuthFailure(problem(429, null)).reason).toBe('rate-limited');
+  });
+
   it('falls back to unknown for an unmapped 4xx code', () => {
     expect(toAuthFailure(problem(400, { code: 'brand_new_code' })).reason).toBe('unknown');
   });

@@ -10,6 +10,7 @@ using Tafseel.Application.LiveSessions;
 using Tafseel.Domain.Governance;
 using Tafseel.Domain.LiveSessions;
 using Tafseel.Infrastructure.Messaging;
+using Tafseel.Infrastructure.Operations;
 using Tafseel.Infrastructure.Persistence;
 
 namespace Tafseel.Infrastructure.LiveSessions;
@@ -18,16 +19,24 @@ internal sealed class LiveSessionSettlementWorker(
     IServiceScopeFactory scopes,
     TimeProvider clock,
     IOptions<LiveSessionOptions> options,
+    WorkerHeartbeats heartbeats,
     ILogger<LiveSessionSettlementWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5), clock);
+        var interval = TimeSpan.FromMinutes(5);
+        heartbeats.Register("live-session-settlement", interval);
+        using var timer = new PeriodicTimer(interval, clock);
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            try { await SettleDueSessionsAsync(stoppingToken); }
+            try
+            {
+                await SettleDueSessionsAsync(stoppingToken);
+                heartbeats.Succeeded("live-session-settlement");
+            }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
+                heartbeats.Failed("live-session-settlement");
                 logger.LogWarning(exception, "Live-session settlement scan failed");
             }
         }

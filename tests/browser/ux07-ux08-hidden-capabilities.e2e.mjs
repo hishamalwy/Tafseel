@@ -57,8 +57,10 @@ await step('1. a visitor is never shown a coupon code, or a discount they cannot
   const live = Array.isArray(promotions.body) ? promotions.body : [];
   const codes = live.map(p => (p.couponCode ?? '').trim()).filter(Boolean);
   console.log(`  ${live.length} live promotion(s), ${codes.length} carrying a code`);
-  assert.ok(codes.includes(COUPON), 'the server really is publishing a coupon code');
-  assert.ok(live.some(p => p.kind === 0 || p.kindCode === 'discount'), 'and a discount campaign');
+  // The public endpoint used to carry the code, which is why the screen had to hide it; it now withholds
+  // the code itself. Either way the checks below are what matter: no visitor ever sees it.
+  if (!codes.includes(COUPON)) console.log('  the server no longer publishes the coupon code to visitors');
+  if (!live.some(p => p.kind === 0 || p.kindCode === 'discount')) console.log('  the server no longer lists the unredeemable discount to visitors');
 
   const text = await page.locator('body').innerText();
   for (const code of codes)
@@ -80,7 +82,7 @@ await step('1. a visitor is never shown a coupon code, or a discount they cannot
   await shot(page, 'ux07-landing-ar');
 });
 
-await step('2. checkout has no code field, and charges what the server says', async () => {
+await step('2. checkout offers a working code field (DEC-15), and charges what the server says', async () => {
   await registerStudent(student, `طالبة UX-07 ${stamp}`, studentEmail, studentPassword);
   await signIn(teacher, SEED.teacherA.Email);
   const requestId = await sendDirectRequest(student, SEED.teacherA, directTitle);
@@ -94,16 +96,17 @@ await step('2. checkout has no code field, and charges what the server says', as
   await payButton(page).waitFor({ timeout: 20000 });
 
   const checkout = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
-  assert.doesNotMatch(checkout, /كوبون|كود الخصم|استخدم الكود|promo|coupon|discount code/i,
-    `checkout offers no code (${checkout.slice(0, 200)})`);
-  assert.equal(await page.locator('input[name*=coupon i], input[id*=coupon i], input[placeholder*=كود]').count(), 0,
-    'no coupon input');
-  assert.equal(await page.getByRole('button', { name: /apply|تطبيق/i }).count(), 0, 'no dead Apply button');
+  // DEC-15 (owner decision, after UX-07): coupons are redeemable at checkout in V1, so the field is offered —
+  // labelled, optional, and never in the way of paying the server's total.
+  const code = page.locator('[data-testid=checkout-coupon]');
+  assert.equal(await code.count(), 1, 'one coupon field');
+  assert.ok(await page.locator('label[for=pay-coupon-code]').count(), 'the field has a visible label');
+  assert.ok(await payButton(page).isEnabled(), 'paying does not wait for a code');
 
   // The amount is the server's, and paying it works exactly as before.
   const total = await api(studentEmail, 'GET', `/api/v1/orders/${orderId}`, undefined, {}, studentPassword);
   assert.equal(total.status, 200);
-  const expected = Number(total.body.studentTotal).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const expected = Number(total.body.studentTotal).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(Number(Number(total.body.studentTotal))) ? 0 : 2 });
   assert.ok(checkout.includes(expected), `checkout shows the authoritative total ${expected} (${checkout.slice(0, 200)})`);
   await noHorizontalOverflow(page, 'checkout at 390px');
   await shot(page, 'ux07-checkout-ar');
@@ -112,8 +115,8 @@ await step('2. checkout has no code field, and charges what the server says', as
   await attribute(page, '[data-testid=order-status]', 'data-payment', 1);
 });
 
-await step('3. the coupon capability is still there on the server, simply not offered', async () => {
-  // UX-07 hides a promise the product cannot keep; it removes no capability.
+await step('3. the coupon capability is there on the server', async () => {
+  // UX-07 hid a promise the product could not keep; DEC-15 then made the promise keepable.
   const promotions = await api(SEED.teacherA.Email, 'GET', '/api/v1/promotions');
   assert.equal(promotions.status, 200, 'GET /promotions still answers');
   const coupons = await api(SEED.admin.Email, 'GET', '/api/v1/admin/coupons');

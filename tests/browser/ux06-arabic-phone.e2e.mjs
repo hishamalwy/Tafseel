@@ -18,7 +18,7 @@
 import assert from 'node:assert/strict';
 import {
   BASE, SEED, acceptRequest, api, attribute, confirmDialog, context, file, finish, pathOf, payButton, payInSimulator,
-  pdf, registerStudent, shot, signIn, spa, start, step, visit, waitForCall, waitUntil
+  pdf, registerStudent, shot, signIn, spa, sql, start, step, visit, waitForCall, waitUntil, pickSlot
 } from './wave3b-harness.mjs';
 import { PHONE, allowFixture, screen } from './ux06-checks.mjs';
 
@@ -49,6 +49,9 @@ let orderId = '';
 let openId = '';
 let offerA = '';
 let sessionId = '';
+let sessionStartsAt = 0;
+let sessionEndsAt = 0;
+let disputeId = '';
 
 // ------------------------------------------------------------------ teacher side, before any work exists
 
@@ -71,6 +74,23 @@ await step('rows 1-4 · teacher setup: profile, services, availability, visibili
   const bounds = policies.map(policy => (policy.match(/[\d,]+/g) ?? []).map(n => Number(n.replace(/,/g, ''))).sort((a, b) => a - b));
   assert.deepEqual(bounds, [[50, 800], [60, 1000], [80, 1500], [60, 600]], `the decided bounds (${JSON.stringify(bounds)})`);
   await screen(page, 'row 2 teacher services', { name: 'ux06-02-teacher-services' });
+
+  // Row 2's error state: a price outside DEC-01 is refused in the form, in Arabic, and never sent.
+  const offering = page.locator(`[data-testid=offering][data-offering-id="${teacherA.explanationServiceId}"]`);
+  await offering.locator('button', { hasText: 'تعديل' }).click();
+  const form = page.locator('[data-testid=offering-form]');
+  await form.locator('#offer-price').waitFor({ state: 'visible', timeout: 15000 });
+  let saves = 0;
+  const count = r => { if (/PUT|POST/.test(r.method()) && /\/api\/v1\/teachers\/me\/services/.test(new URL(r.url()).pathname)) saves++; };
+  page.on('request', count);
+  await form.locator('#offer-price').fill('5');
+  await form.locator('button[type=submit]').click();
+  await form.locator('.tf-field-error').first().waitFor({ timeout: 10000 });
+  page.off('request', count);
+  assert.equal(saves, 0, 'an out-of-policy price is not sent');
+  await screen(page, 'row 2 a price outside the policy', { name: 'ux06-02b-price-error', form: true });
+  await offering.locator('button', { hasText: 'إلغاء' }).click();
+  await form.waitFor({ state: 'detached', timeout: 10000 });
 
   await spa(teacher, '/teacher/availability');
   await page.locator('[data-testid=add-rule], [data-testid=no-rules]').first().waitFor({ timeout: 20000 });
@@ -308,10 +328,11 @@ await step('rows 19-20 · the student opens a dispute on the delivered order; th
   await page.locator('#dispute-target').selectOption(option);
   await page.locator('#dispute-reason').fill(`الملف المسلّم لا يغطي التمارين المطلوبة في الطلب. ${LONG_MESSAGE}`);
   const opened = waitForCall(page, 'POST', /^\/api\/v1\/disputes$/);
-  await page.locator('.tf-dispute-create__form button[type=submit]').click();
+  await page.locator('[data-testid=dispute-review-open]').click();
+    await page.locator('[data-testid=dispute-send]').click();
   const response = await opened;
   assert.ok(response.ok(), `the dispute was opened (${response.status()})`);
-  const disputeId = (await response.json()).id;
+  disputeId = (await response.json()).id;
 
   // The server's own deep link to the case (AppRoutes.Dispute), which forwards to it on the disputes screen.
   await visit(page, `${BASE}/ar/disputes/${disputeId}`);
@@ -321,6 +342,25 @@ await step('rows 19-20 · the student opens a dispute on the delivered order; th
     new RegExp(`^/ar/orders/${orderId}/?$`), 'the case links to the order it is about');
   await screen(page, 'row 20 the open case', { name: 'ux06-20-dispute-detail', form: true });
   await screen(page, 'row 19 disputes list with an open case', { skip: ['P'] });
+});
+
+await step('row 20 · operations resolve the case; the student reads the outcome', async () => {
+  // The reviewer's side is not a customer screen; it is driven through its API, as the regression suite
+  // does, so the student's view of a resolved case can be judged.
+  const admin = SEED.admin.Email;
+  const read = async () => (await api(admin, 'GET', `/api/v1/admin/disputes/${disputeId}`)).body;
+  const started = await api(admin, 'POST', `/api/v1/admin/disputes/${disputeId}/start-review`, {}, { 'if-match': (await read()).version });
+  assert.equal(started.status, 204, `review started (${started.status})`);
+  const resolved = await api(admin, 'POST', `/api/v1/admin/disputes/${disputeId}/resolve`,
+    { resolution: 2, rationale: 'راجعنا الملف المسلّم والطلب: التسليم يطابق المطلوب، ولا يترتب على القضية أي إجراء مالي.' },
+    { 'if-match': (await read()).version, 'idempotency-key': `ux06-${stamp}` });
+  assert.equal(resolved.status, 200, `case resolved (${resolved.status})`);
+
+  const { page } = student;
+  await visit(page, `${BASE}/ar/disputes/${disputeId}`);
+  await page.locator('.tf-dispute-final').waitFor({ timeout: 20000 });
+  assert.match(await page.locator('.tf-dispute-final').innerText(), /راجعنا الملف المسلّم/, 'the outcome is explained');
+  await screen(page, 'row 20 a resolved case with its outcome', { name: 'ux06-20b-dispute-resolved', skip: ['P'] });
 });
 
 // ------------------------------------------------------------------ open marketplace
@@ -360,9 +400,9 @@ await step('rows 12-13 · the teacher’s opportunities, two offers, and the stu
   await t.locator('[data-testid=offer-form]').waitFor({ timeout: 20000 });
   await screen(t, 'row 13 opportunity with the offer form', { name: 'ux06-13b-offer-form', form: true });
   await t.locator('#offer-amount').fill('150');
-  await t.locator('#offer-hours').fill('48');
-  await t.locator('#offer-revisions').fill('2');
-  await t.locator('#offer-validity').fill('72');
+  await t.locator('#offer-hours').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '48');
+  await t.locator('#offer-revisions').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '2');
+  await t.locator('#offer-validity').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '72');
   await t.locator('#offer-message').fill(LONG_MESSAGE);
   const saved = waitForCall(t, /POST|PUT/, /^\/api\/v1\/open-marketplace\/opportunities\/[0-9a-f-]{36}\/offers$/);
   await t.locator('[data-testid=save-offer]').click();
@@ -377,9 +417,9 @@ await step('rows 12-13 · the teacher’s opportunities, two offers, and the stu
   await visit(b, `${BASE}/ar/teacher/opportunities/${openId}`);
   await b.locator('[data-testid=offer-form]').waitFor({ timeout: 20000 });
   await b.locator('#offer-amount').fill('200');
-  await b.locator('#offer-hours').fill('24');
-  await b.locator('#offer-revisions').fill('1');
-  await b.locator('#offer-validity').fill('72');
+  await b.locator('#offer-hours').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '24');
+  await b.locator('#offer-revisions').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '1');
+  await b.locator('#offer-validity').evaluate((s, v) => { s.value = [...s.options].find(o => o.dataset.value === String(v)).value; s.dispatchEvent(new Event('change', { bubbles: true })); }, '72');
   await b.locator('#offer-message').fill('أستطيع البدء فورًا وتسليم الحل خلال يوم واحد.');
   const savedB = waitForCall(b, /POST|PUT/, /^\/api\/v1\/open-marketplace\/opportunities\/[0-9a-f-]{36}\/offers$/);
   await b.locator('[data-testid=save-offer]').click();
@@ -388,6 +428,28 @@ await step('rows 12-13 · the teacher’s opportunities, two offers, and the stu
   await visit(page, `${BASE}/ar/requests/${openId}/offers`);
   await page.locator('[data-testid=offer]').nth(1).waitFor({ timeout: 20000 });
   await screen(page, 'row 12 comparing two offers', { name: 'ux06-12b-offers' });
+});
+
+await step('row 12 · a selection made against terms that changed is refused and explained', async () => {
+  // Teacher A changes the offer while the student is still looking at the old terms.
+  const t = teacher.page;
+  await visit(t, `${BASE}/ar/teacher/opportunities/${openId}`);
+  await t.locator('[data-testid=edit-offer]').click();
+  await t.locator('#offer-amount').fill('140');
+  const changed = waitForCall(t, /POST|PUT/, /^\/api\/v1\/open-marketplace\/offers\/[0-9a-f-]{36}$/);
+  await t.locator('[data-testid=save-offer]').click();
+  assert.ok((await changed).ok(), 'the offer was changed');
+
+  const { page } = student;
+  await page.locator(`[data-testid=offer][data-offer-id="${offerA}"] [data-testid=select-offer]`).click();
+  const refused = waitForCall(page, 'POST', new RegExp(`/offers/${offerA}/select$`));
+  await confirmDialog(page);
+  assert.equal((await refused).status(), 409, 'the stale selection is refused');
+  await page.locator('[data-testid=offers-notice]').waitFor({ timeout: 15000 });
+  await page.waitForFunction(id => document.querySelector(`[data-offer-id="${id}"]`)?.textContent?.includes('140'), offerA, { timeout: 15000 });
+  // The notice leads the screen in this state — it is why the selection failed — and each offer below it
+  // carries its own select action, so every one of those must be reachable and 44px (P as for a list).
+  await screen(page, 'row 12 the changed-offer notice', { name: 'ux06-12d-offer-changed', form: true });
 });
 
 await step('rows 12, 10 and 15 · the student selects an offer; the hold counts down; checkout for it', async () => {
@@ -411,7 +473,8 @@ await step('rows 12, 10 and 15 · the student selects an offer; the hold counts 
   await page.locator('[data-testid=pay-reserved]').click();
   await page.waitForURL(url => pathOf(url) === '/ar/checkout', { timeout: 15000 });
   await page.locator('[data-testid=checkout-reservation]').waitFor({ timeout: 15000 });
-  await page.locator('[data-testid=fee-at-payment]').waitFor();
+  // The server's quote now shows the fee as its own line before paying (DEC-15), replacing the old note.
+  await page.locator('[data-testid=checkout-platform-fee]').waitFor();
   await screen(page, 'row 15 checkout for a reserved offer', { name: 'ux06-15-checkout-reserved' });
   await payInSimulator(page, /^\/ar\/orders\/[0-9a-f-]{36}$/);
   await attribute(page, '[data-testid=order-status]', 'data-payment', 1);
@@ -423,19 +486,30 @@ await step('rows 17, 16 and 18 · booking a live session, its checkout, and the 
   const { page } = student;
   await waitUntil(Date.now() + 61_000, 'the payment limit window resets');
   await visit(page, `${BASE}/ar/sessions/book?teacherId=${teacherA.Id}&teacherServiceId=${teacherA.liveServiceId}`);
-  await page.locator('button.tf-book-slot').first().waitFor({ timeout: 20000 });
+  await page.locator('[data-testid=book-day]').first().waitFor({ timeout: 20000 });
   await screen(page, 'row 17 live booking with slots', { name: 'ux06-17a-booking', form: true });
 
   await page.locator('#book-session-title').fill(`جلسة مباشرة لقاعدة السلسلة ${stamp}`);
   await page.locator('#book-topic').fill('معدلات التغير المرتبطة: مسألة السلم ومسألة الخزان المخروطي.');
-  await page.locator('button.tf-book-slot').first().click();
+  await pickSlot(page, 0);
   await screen(page, 'row 17 a slot chosen', { name: 'ux06-17b-booking-chosen', form: true });
   const created = waitForCall(page, 'POST', /^\/api\/v1\/live-sessions$/);
   await page.locator('button.tf-book-confirm').click();
   const response = await created;
   assert.equal(response.status(), 201, 'booked');
-  sessionId = (await response.json()).id;
+  const booked = await response.json();
+  sessionId = booked.id;
+  sessionStartsAt = Date.parse(booked.startsAt);
+  sessionEndsAt = Date.parse(booked.endsAt);
 
+  await page.waitForURL(url => pathOf(url) === `/ar/live-sessions/${sessionId}`, { timeout: 15000 });
+  await attribute(page, '[data-testid=session-status]', 'data-status', 9);
+  await screen(page, 'row 18 live session request awaiting teacher', { name: 'ux06-18-request-pending', skip: ['P'] });
+  await visit(teacher.page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await teacher.page.locator('[data-testid=accept-session-request]').click();
+  await attribute(teacher.page, '[data-testid=session-status]', 'data-status', 0);
+  await visit(page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await page.locator('[data-testid=pay-session]').click();
   await page.waitForURL(url => pathOf(url) === '/ar/checkout', { timeout: 15000 });
   await payButton(page).waitFor({ timeout: 15000 });
   await screen(page, 'row 16 checkout for a live session', { name: 'ux06-16-checkout-live' });
@@ -448,12 +522,107 @@ await step('rows 17, 16 and 18 · booking a live session, its checkout, and the 
   await screen(teacher.page, 'row 18 live session, confirmed (teacher)', { name: 'ux06-18b-session-teacher', skip: ['P'] });
 });
 
+await step('row 18 · a later session the teacher cancels: the dialog, and the student told of the refund', async () => {
+  const { page } = student;
+  await waitUntil(Date.now() + 61_000, 'the payment limit window resets');
+  // Six half-hours after the nearest slot: well clear of the session above.
+  await visit(page, `${BASE}/ar/sessions/book?teacherId=${teacherA.Id}&teacherServiceId=${teacherA.liveServiceId}`);
+  await page.locator('#book-session-title').fill(`مراجعة لاحقة ${stamp}`);
+  await page.locator('#book-topic').fill('مسائل القيم القصوى والصغرى.');
+  await pickSlot(page, 6);
+  const created = waitForCall(page, 'POST', /^\/api\/v1\/live-sessions$/);
+  await page.locator('button.tf-book-confirm').click();
+  const later = await (await created).json();
+  await page.waitForURL(url => pathOf(url) === `/ar/live-sessions/${later.id}`, { timeout: 15000 });
+  await visit(teacher.page, `${BASE}/ar/live-sessions/${later.id}`);
+  await teacher.page.locator('[data-testid=accept-session-request]').click();
+  await attribute(teacher.page, '[data-testid=session-status]', 'data-status', 0);
+  await visit(page, `${BASE}/ar/live-sessions/${later.id}`);
+  await page.locator('[data-testid=pay-session]').click();
+  await page.waitForURL(url => pathOf(url) === '/ar/checkout', { timeout: 15000 });
+  await payInSimulator(page, new RegExp(`^/ar/live-sessions/${later.id}$`));
+
+  const t = teacher.page;
+  await visit(t, `${BASE}/ar/live-sessions/${later.id}`);
+
+  // The teacher proposes a new time a day later, in the reschedule form...
+  await t.locator('[data-testid=open-reschedule]').click();
+  await t.locator('#reschedule-at').waitFor({ timeout: 10000 });
+  const proposedAt = await t.evaluate(ms => {
+    const d = new Date(ms); const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }, Date.parse(later.startsAt) + 24 * 60 * 60_000);
+  await t.locator('#reschedule-at').fill(proposedAt);
+  await screen(t, 'row 18 proposing a new time', { name: 'ux06-18g-reschedule-form', form: true });
+  const proposed = waitForCall(t, 'POST', new RegExp(`^/api/v1/live-sessions/${later.id}/reschedule$`));
+  await t.locator('[data-testid=reschedule-form] button[type=submit]').click();
+  assert.ok((await proposed).ok(), `a new time was proposed (${(await proposed).status()})`);
+
+  // ...the student sees the proposal with both answers, and declines it.
+  await visit(page, `${BASE}/ar/live-sessions/${later.id}`);
+  await page.locator('[data-testid=reschedule-proposal]').waitFor({ timeout: 20000 });
+  await page.locator('[data-testid=accept-reschedule]').waitFor();
+  await screen(page, 'row 18 a new time proposed', { name: 'ux06-18h-reschedule-proposed' });
+  const answered = waitForCall(page, 'POST', new RegExp(`^/api/v1/live-sessions/${later.id}/reschedule/respond$`));
+  await page.locator('[data-testid=decline-reschedule]').click();
+  await confirmDialog(page).catch(() => {});
+  assert.ok((await answered).ok(), 'the proposal was answered');
+
+  await visit(t, `${BASE}/ar/live-sessions/${later.id}`);
+  await t.locator('[data-testid=cancel-session]').click();
+  await t.locator('dialog.tf-system-dialog[open]').waitFor({ timeout: 10000 });
+  await screen(t, 'row 18 the teacher cancelling', { name: 'ux06-18c-cancel-dialog' });
+  const cancelled = waitForCall(t, 'POST', new RegExp(`^/api/v1/live-sessions/${later.id}/cancel$`));
+  await confirmDialog(t);
+  assert.equal((await cancelled).status(), 204, 'cancelled');
+
+  await visit(page, `${BASE}/ar/live-sessions/${later.id}`);
+  await attribute(page, '[data-testid=session-status]', 'data-status', 3);
+  assert.equal(sql(`SELECT Status FROM LiveSessionBookings WHERE Id = '${later.id}'`), '3', 'the server recorded the cancellation');
+  await screen(page, 'row 18 cancelled, the student refunded', { name: 'ux06-18d-session-cancelled', skip: ['P'] });
+});
+
 await step('shells · the student home with work in progress', async () => {
   const { page } = student;
   await spa(student, '/student/overview');
   await page.locator('main').waitFor({ timeout: 20000 });
   await page.waitForLoadState('networkidle').catch(() => {});
   await screen(page, 'student home with work in progress', { name: 'ux06-shell-student-home' });
+});
+
+await step('row 18 · the first session’s join window opens: the join action on the phone', async () => {
+  // The window opens fifteen minutes before the start (LiveSessionOptions.JoinWindowMinutes). The session
+  // booked above is the nearest slot, so this is a bounded real-time wait, not a sleep chosen by hand.
+  const opens = sessionStartsAt - 15 * 60_000 + 5_000;
+  assert.ok(opens - Date.now() < 45 * 60_000, `the join window is within reach (${Math.round((opens - Date.now()) / 60_000)} minutes)`);
+  await waitUntil(opens, 'the join window opens');
+
+  const { page } = student;
+  await visit(page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await page.locator('[data-testid=join-session]').waitFor({ timeout: 30000 });
+  await screen(page, 'row 18 the join window, student', { name: 'ux06-18e-join-student' });
+
+  await visit(teacher.page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await teacher.page.locator('[data-testid=join-session]').waitFor({ timeout: 30000 });
+  await screen(teacher.page, 'row 18 the join window, teacher', { name: 'ux06-18f-join-teacher' });
+});
+
+await step('row 18 · the session has ended: the teacher marks it done, the student is asked to confirm', async () => {
+  await waitUntil(sessionEndsAt + 30_000, 'the session ends');
+  const t = teacher.page;
+  await visit(t, `${BASE}/ar/live-sessions/${sessionId}`);
+  await t.locator('[data-testid=complete-session]').waitFor({ timeout: 30000 });
+  await t.locator('[data-testid=complete-session]').click();
+  await t.locator('dialog.tf-system-dialog[open]').waitFor({ timeout: 10000 });
+  await screen(t, 'row 18 the teacher marking the session done', { name: 'ux06-18i-complete-dialog' });
+  const completed = waitForCall(t, 'POST', new RegExp(`^/api/v1/live-sessions/${sessionId}/complete$`));
+  await confirmDialog(t);
+  assert.ok((await completed).ok(), 'completion was requested');
+
+  const { page } = student;
+  await visit(page, `${BASE}/ar/live-sessions/${sessionId}`);
+  await page.locator('[data-testid=confirm-settlement]').waitFor({ timeout: 30000 });
+  await screen(page, 'row 18 completion pending, the student asked to confirm', { name: 'ux06-18j-completion-pending' });
 });
 
 await step('the same screens in English still read left-to-right', async () => {

@@ -162,7 +162,10 @@ describe('UX-01 StudentHomePageComponent', () => {
     expect(textOf(page, 'home-actions')).toContain('المعلم لديه سؤال');
     expect(textOf(page, 'home-current')).toContain('قيد التنفيذ');
     expect(textOf(page, 'home-card-amount')).toBe('المبلغ 250');
-    expect(textOf(page, 'home-start')).toContain('ابدأ طلبًا جديدًا');
+    // UX-63: with something to do, starting something new comes after it.
+    expect(textOf(page, 'home-start-later')).toContain('ابدأ طلبًا جديدًا');
+    const order = [...page.querySelectorAll('[data-testid=home-actions], [data-testid=home-start-later]')].map(e => e.getAttribute('data-testid'));
+    expect(order).toEqual(['home-actions', 'home-start-later']);
     const shown = page.textContent ?? '';
     expect(shown).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);
     expect(shown).not.toMatch(/\bnull\b|\bundefined\b|\bNaN\b|\[object/);

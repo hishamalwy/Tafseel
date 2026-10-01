@@ -202,6 +202,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
         var teacher = await SeedTeacherAsync(approved: true, withService: true);
         var hidden = await SeedTeacherAsync(approved: false, withService: true);
         string hiddenName;
+        string topicName;
         string serviceNameAr;
         await using (var scope = factory.Services.CreateAsyncScope())
         {
@@ -211,6 +212,7 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
             hiddenUser.FullName = hiddenName;
             hiddenUser.FullNameEnglish = hiddenName;
             serviceNameAr = (await db.ServiceCatalogItems.SingleAsync(x => x.Id == teacher.ServiceTypeId)).NameAr;
+            topicName = (await db.Topics.SingleAsync(x => x.Id == teacher.TopicId)).Name;
             db.Add(new TeacherService(
                 teacher.Id, teacher.OtherSubjectId, teacher.ServiceTypeId,
                 "Ineligible cross-subject offer", "Must not enter discovery.",
@@ -243,6 +245,10 @@ public sealed class Phase4MarketplaceTests(SqlServerTafseelApiFactory factory)
             .GetProperty("totalCount").GetInt32());
         Assert.Equal(teacher.Id, Assert.Single((await Search(
             $"search={Uri.EscapeDataString(serviceNameAr)}&subjectId={teacher.SubjectId}"))
+            .GetProperty("items").EnumerateArray(), x => x.GetProperty("teacherId").GetString() == teacher.Id)
+            .GetProperty("teacherId").GetString());
+        Assert.Equal(teacher.Id, Assert.Single((await Search(
+            $"search={Uri.EscapeDataString(topicName)}&subjectId={teacher.SubjectId}"))
             .GetProperty("items").EnumerateArray(), x => x.GetProperty("teacherId").GetString() == teacher.Id)
             .GetProperty("teacherId").GetString());
         Assert.Equal(0, (await Search($"search={Uri.EscapeDataString(hiddenName)}"))

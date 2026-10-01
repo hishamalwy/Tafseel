@@ -75,7 +75,7 @@ public sealed record PromotionInput(
     [param: Range(0, 10000)] int DisplayOrder);
 
 /// <summary>Public counters shown on the landing page's mini dashboard.</summary>
-public sealed record PlatformStatsDto(int Students, int Teachers, int Subjects);
+public sealed record PlatformStatsDto(int Students, int Teachers, int Subjects, int CompletedSessions);
 
 public interface IPromotionService
 {

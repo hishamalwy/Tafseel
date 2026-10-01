@@ -27,7 +27,8 @@ public sealed class DevelopmentDemoUserSeedingTests
         ["admin@gmail.com"] = Roles.Admin,
         ["student@gmail.com"] = Roles.Student,
         ["teacher@gmail.com"] = Roles.Teacher,
-        ["quality@gmail.com"] = Roles.QualityReviewer
+        ["quality@gmail.com"] = Roles.QualityReviewer,
+        ["finance@gmail.com"] = Roles.Finance
     };
 
     [Fact]
@@ -62,7 +63,7 @@ public sealed class DevelopmentDemoUserSeedingTests
     }
 
     [Fact]
-    public async Task Development_enabled_seeds_all_four_demo_accounts_with_roles_and_confirmed_email()
+    public async Task Development_enabled_seeds_all_canonical_demo_accounts_with_roles_and_confirmed_email()
     {
         await using var database = new SqliteConnection("Data Source=:memory:");
         await database.OpenAsync();
@@ -77,9 +78,8 @@ public sealed class DevelopmentDemoUserSeedingTests
         await using var scope = services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        // Phase 4 Sprint 0.2 added two additional Development-only UAT accounts
-        // (qa.reviewer.sprint02@example.com, qa.admin.sprint02@example.com) alongside these four.
-        Assert.Equal(6, await db.Users.CountAsync());
+        // Exactly the five canonical accounts, one per role; no extra UAT accounts.
+        Assert.Equal(5, await db.Users.CountAsync());
         foreach (var (email, role) in ExpectedAccounts)
         {
             var user = await users.FindByEmailAsync(email);
@@ -110,7 +110,7 @@ public sealed class DevelopmentDemoUserSeedingTests
 
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Equal(6, await db.Users.CountAsync());
+        Assert.Equal(5, await db.Users.CountAsync());
         foreach (var email in ExpectedAccounts.Keys)
             Assert.Equal(1, await db.Users.CountAsync(x => x.Email == email));
     }
@@ -153,7 +153,7 @@ public sealed class DevelopmentDemoUserSeedingTests
         await using var verification = services.CreateAsyncScope();
         var verifyUsers = verification.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var db = verification.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Equal(6, await db.Users.CountAsync());
+        Assert.Equal(5, await db.Users.CountAsync());
 
         var repairedStudent = (await verifyUsers.FindByEmailAsync("student@gmail.com"))!;
         Assert.True(await verifyUsers.IsInRoleAsync(repairedStudent, Roles.Student));
@@ -207,12 +207,12 @@ public sealed class DevelopmentDemoUserSeedingTests
     }
 
     [Fact]
-    public async Task Staging_enabled_still_only_runs_the_preexisting_staging_path_not_development_seeding()
+    public async Task Staging_startup_never_seeds_demo_users_and_has_no_built_in_password()
     {
         await using var database = new SqliteConnection("Data Source=:memory:");
         await database.OpenAsync();
-        // A distinct password proves that if the Development path ran here, accounts would accept
-        // this password instead of the legacy Staging "@Admin123" — it must not.
+        // Staging gets demo accounts only from the explicit `seed` command with its own password; startup
+        // creates none, whatever SeedUsers says.
         await using var services = Services(
                 database, Environments.Staging,
                 new SeedUsersOptions { Enabled = true, Password = ValidPassword })
@@ -222,12 +222,7 @@ public sealed class DevelopmentDemoUserSeedingTests
         await services.InitializeIdentityAsync();
 
         await using var scope = services.CreateAsyncScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
-        Assert.Equal(4, await db.Users.CountAsync());
-        var admin = (await users.FindByEmailAsync("admin@gmail.com"))!;
-        Assert.True(await users.CheckPasswordAsync(admin, "@Admin123"));
-        Assert.False(await users.CheckPasswordAsync(admin, ValidPassword));
+        Assert.Equal(0, await scope.ServiceProvider.GetRequiredService<TafseelDbContext>().Users.CountAsync());
     }
 
     [Fact]
@@ -283,7 +278,7 @@ public sealed class DevelopmentDemoUserSeedingTests
             await using var scope = verifyServices.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
             var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            Assert.Equal(6, await db.Users.CountAsync());
+            Assert.Equal(5, await db.Users.CountAsync());
             foreach (var (email, role) in ExpectedAccounts)
             {
                 Assert.Equal(1, await db.Users.CountAsync(x => x.Email == email));

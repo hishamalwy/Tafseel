@@ -16,13 +16,13 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { readSql } from './lib/sql.mjs';
 import { chromium } from '@playwright/test';
 
 export const BASE = (process.env.TAFSEEL_BASE_URL ?? 'http://localhost:5313').replace(/\/$/, '');
 export const SEED = JSON.parse(readFileSync(required('TAFSEEL_E2E_SEED'), 'utf8'));
 export const PASSWORD = required('TAFSEEL_E2E_PASSWORD');
 const OUTBOX = process.env.TAFSEEL_DEV_OUTBOX ?? '';
-const SQL_SERVER = process.env.TAFSEEL_E2E_SQL_SERVER ?? '(localdb)\\MSSQLLocalDB';
 const DATABASE = process.env.TAFSEEL_E2E_DATABASE ?? '';
 const SHOTS = process.env.TAFSEEL_SHOT_DIR;
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
@@ -107,7 +107,7 @@ export async function signIn(actor, email, password = PASSWORD) {
 export async function registerStudent(actor, fullName, email, password) {
   const { page, locale } = actor;
   await visit(page, `${BASE}/${locale}/auth`);
-  await page.locator('[role=tab]').nth(1).click();
+  await page.locator('.tf-auth-tabs button').nth(1).click();
   await page.locator('#reg-fullname').fill(fullName);
   await page.locator('#reg-email').fill(email);
   await page.locator('#reg-password').fill(password);
@@ -119,7 +119,8 @@ export async function registerStudent(actor, fullName, email, password) {
   assert.ok((await registered).ok(), 'registration accepted');
   await page.waitForURL(url => pathOf(url).endsWith('/auth/confirm-email'), { timeout: 15000 });
   await visit(page, await outboxLink(email, 'mode=confirm'));
-  await page.locator('.tf-toast').waitFor({ state: 'visible', timeout: 15000 });
+  // The confirmation is said on the sign-in form itself (UX-11), where the person is about to act.
+  await page.locator('.tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
   await page.locator('#login-email').fill(email);
   await page.locator('#login-password').fill(password);
   await budget(1);
@@ -213,7 +214,7 @@ export async function attribute(page, selector, name, expected, timeout = 20000)
  * Starts the payment from checkout, lets the caller look at the pending state while the simulator
  * is open, then confirms in the official mock simulator and waits for the return address.
  */
-export async function payInSimulator(page, returnPath, whileOnSimulator = async () => {}) {
+export async function payInSimulator(page, returnPath, whileOnSimulator = async () => {}, afterConfirmation = async () => {}) {
   const initiated = waitForCall(page, 'POST', /^\/api\/v1\/payments\/(orders|live-sessions|open-requests)\/[0-9a-f-]{36}$/);
   await payButton(page).click();
   const response = await initiated;
@@ -224,6 +225,8 @@ export async function payInSimulator(page, returnPath, whileOnSimulator = async 
   const completed = waitForCall(page, 'POST', /^\/api\/v1\/payments\/mock\/simulator\/complete$/);
   await page.locator('button.tf-pay-cta').click();
   assert.ok((await completed).ok(), 'simulator completed the payment');
+  await page.locator('[data-testid=payment-confirmed]').waitFor({ timeout: 15000 });
+  await afterConfirmation();
   await page.locator('button.tf-pay-primary-link').click();
   await page.waitForURL(url => returnPath.test(pathOf(url)), { timeout: 20000 });
   await page.waitForLoadState('networkidle');
@@ -242,7 +245,11 @@ export async function waitUntil(moment, what) {
 /** A direct request through the request wizard, for journeys that need an order as their setting. */
 export async function sendDirectRequest(student, teacher, title) {
   const { page } = student;
-  await spa(student, `/requests/new?teacherId=${teacher.Id}&teacherServiceId=${teacher.explanationServiceId}`);
+  const wizard = `/requests/new?teacherId=${teacher.Id}&teacherServiceId=${teacher.explanationServiceId}`;
+  // The wizard reads its teacher once, when it opens, and no screen links one teacher's wizard to another's:
+  // a request sent straight after another opens the wizard afresh, as arriving from the next profile does.
+  if (pathOf(page.url()).endsWith('/requests/new')) await visit(page, `${BASE}/${student.locale}${wizard}`);
+  else await spa(student, wizard);
   const next = page.locator('.tf-req-nav button.tf-button:not(.tf-button-secondary)');
   await page.locator('#req-title').waitFor({ timeout: 15000 });
   await page.locator('#req-title').fill(title);
@@ -267,6 +274,8 @@ export async function acceptRequest(teacher, requestId, price) {
   const dialog = page.locator('[data-testid=accept-dialog]');
   await dialog.locator('#accept-price').waitFor({ state: 'visible', timeout: 15000 });
   await dialog.locator('#accept-price').fill(String(price));
+  // DEC-UX-03: a price different from the listed one needs the teacher's reason, shown to the student.
+  if (await dialog.locator('#accept-reason').isVisible()) await dialog.locator('#accept-reason').fill('يحتاج الطلب تمارين إضافية.');
   const accepted = waitForCall(page, 'POST', new RegExp(`^/api/v1/learning-requests/${requestId}/accept$`));
   await dialog.locator('button[type=submit]').click();
   const response = await accepted;
@@ -296,12 +305,7 @@ export async function shot(page, name) {
 
 /** Reads server state from the throwaway database; journeys never write to it. */
 export function sql(query) {
-  if (!/^TafseelE2E/i.test(DATABASE)) throw new Error('Set TAFSEEL_E2E_DATABASE to the throwaway TafseelE2E* database');
-  if (/\b(insert|update|delete|merge|drop|alter|truncate|exec)\b/i.test(query)) throw new Error('Journeys only read the database');
-  const candidates = ['C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/sqlcmd.exe',
-    'C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/180/Tools/Binn/sqlcmd.exe'];
-  const sqlcmd = candidates.find(existsSync) ?? 'sqlcmd';
-  return execFileSync(sqlcmd, ['-S', SQL_SERVER, '-d', DATABASE, '-E', '-b', '-h', '-1', '-W', '-Q', `SET NOCOUNT ON; ${query}`], { encoding: 'utf8' }).trim();
+  return readSql(DATABASE, query);
 }
 
 export function file(name, bytes) {
@@ -352,9 +356,31 @@ export async function outboxLink(address, marker) {
       : [];
     for (const f of files.reverse()) {
       const href = [...readFileSync(f, 'utf8').matchAll(/href="([^"]+)"/g)].map(m => m[1].replace(/&amp;/g, '&')).find(h => h.includes(marker));
-      if (href) return href;
+      if (href) {
+        const link = new URL(href);
+        const host = new URL(BASE);
+        return `${host.origin}${link.pathname}${link.search}${link.hash}`;
+      }
     }
     await new Promise(r => setTimeout(r, 250));
   }
   throw new Error(`No ${marker} email for ${address} in ${OUTBOX}`);
+}
+
+/**
+ * Choose the index-th open booking slot counting from the nearest, across the booking page's day strip
+ * (one day's times are shown at a time, so a later slot may sit on a later day).
+ */
+export async function pickSlot(page, index = 0) {
+  await page.locator('[data-testid=book-day]').first().waitFor({ timeout: 20000 });
+  const days = page.locator('[data-testid=book-day]:not([disabled])');
+  const count = await days.count();
+  for (let day = 0; day < count; day++) {
+    await days.nth(day).click();
+    const slots = page.locator('button.tf-book-slot');
+    const open = await slots.count();
+    if (index < open) { await slots.nth(index).click(); return; }
+    index -= open;
+  }
+  throw new Error('Not enough open booking slots this week');
 }

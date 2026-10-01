@@ -15,6 +15,9 @@ export interface WizardContext {
   readonly draft: RequestDraft | null;
   /** The teacher offers only scheduled services, so there is nothing to request. */
   readonly schedulingOnly: boolean;
+  /** Who the request goes to, so the student is never unsure which teacher they are writing to. */
+  readonly teacherName?: string;
+  readonly teacherNameEnglish?: string;
 }
 
 /**
@@ -29,20 +32,23 @@ export class OpenRequestWizard {
   private readonly drafts = inject(DRAFT_STORE);
 
   async execute(teacherId: string, studentId: string): Promise<WizardContext> {
-    const [allServices, preferencesResult] = await Promise.all([
-      firstValueFrom(this.requests.teacherServices(teacherId)),
+    const [teacher, preferencesResult] = await Promise.all([
+      firstValueFrom(this.requests.requestTeacher(teacherId)),
       firstValueFrom(this.requests.preferences())
         .then(preferences => ({ ok: true, preferences: preferences as LearningPreferences | null }))
         .catch(() => ({ ok: false, preferences: null as LearningPreferences | null }))
     ]);
 
+    const allServices = teacher.services;
     const services = requestableServices(allServices);
     return {
       services,
       preferences: preferencesResult.preferences,
       preferencesFailed: !preferencesResult.ok,
       draft: this.drafts.read(studentId, teacherId),
-      schedulingOnly: allServices.length > 0 && services.length === 0
+      schedulingOnly: allServices.length > 0 && services.length === 0,
+      teacherName: teacher.fullName,
+      teacherNameEnglish: teacher.fullNameEnglish
     };
   }
 }

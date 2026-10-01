@@ -1,0 +1,30 @@
+.tf-session-upload .tf-upload-drop { min-height:132px; margin-block-start:14px; }
+.tf-session-upload input[type=file] { position:absolute;inline-size:1px;block-size:1px;opacity:0;overflow:hidden; }
+.tf-session-upload .tf-upload-drop { position:relative; }
+.tf-session-upload .tf-upload-drop.is-busy { opacity:var(--disabled-opacity);cursor:wait; }
+.tf-session-upload .tf-upload-file-status { margin-block-start:8px; }
+
+.tf-session-meeting { inline-size: 100%; margin-block-end: 20px; }
+.tf-session-meeting-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-block-end: 12px;
+}
+.tf-session-meeting-bar h3 { margin: 0; font-size: 20px; }
+.tf-session-meeting-bar p { margin: 4px 0 0; color: var(--text-2); font-size: 14px; }
+.tf-session-meeting-stage {
+  inline-size: 100%;
+  block-size: min(68vh, 680px);
+  min-block-size: 420px;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--media-canvas);
+}
+.tf-session-meeting-stage iframe { display: block; border: 0; }
+@media (max-width: 600px) {
+  .tf-session-meeting-stage { block-size: 68vh; min-block-size: 360px; }
+  .tf-session-meeting-bar .tf-button { inline-size: 100%; }
+}

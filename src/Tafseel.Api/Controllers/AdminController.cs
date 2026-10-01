@@ -110,19 +110,19 @@ public sealed class AdminController(IAdminService admin, ICouponService coupons)
         return Created($"/api/v1/admin/disputes/{disputeId}", new { disputeId });
     }
 
-    [Authorize(Policy = "PlatformSettings.Manage"), HttpGet("coupons")]
+    [Authorize(Policy = Permissions.PlatformSettingsManage), HttpGet("coupons")]
     public Task<IReadOnlyCollection<CouponDto>> Coupons(CancellationToken ct) => coupons.ListAsync(ct);
 
-    [Authorize(Policy = "PlatformSettings.Manage"), HttpPost("coupons")]
+    [Authorize(Policy = Permissions.PlatformSettingsManage), HttpPost("coupons")]
     public async Task<IActionResult> CreateCoupon(CreateCoupon input, CancellationToken ct) =>
         Created("", await coupons.CreateAsync(input, ct));
 
-    [Authorize(Policy = "PlatformSettings.Manage"), HttpPut("coupons/{id:guid}")]
+    [Authorize(Policy = Permissions.PlatformSettingsManage), HttpPut("coupons/{id:guid}")]
     public Task<CouponDto> UpdateCoupon(
         Guid id, UpdateCoupon input, [FromHeader(Name = "If-Match"), Required] string version, CancellationToken ct) =>
         coupons.UpdateAsync(id, input, version, ct);
 
-    [Authorize(Policy = "PlatformSettings.Manage"), HttpPatch("coupons/{id:guid}/active")]
+    [Authorize(Policy = Permissions.PlatformSettingsManage), HttpPatch("coupons/{id:guid}/active")]
     public async Task<IActionResult> SetCouponActive(Guid id, SetCouponActiveRequest input, CancellationToken ct)
     {
         await coupons.SetActiveAsync(id, input.IsActive, ct);

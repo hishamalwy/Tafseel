@@ -35,21 +35,17 @@ function render(over: Partial<Promotion> = {}, lang: 'ar' | 'en' = 'en'): HTMLEl
 }
 
 describe('UX-07 the promo dialog', () => {
-  it('never shows a coupon code, whatever the server published', () => {
-    const page = render({ couponCode: 'TAFSEEL20' });
-    const copy = landingCopy(false);
-    expect(page.textContent).not.toContain('TAFSEEL20');
-    expect(page.querySelector('.tf-promo-code')).toBeNull();
-    expect(page.querySelector('.tf-promo-code-copy')).toBeNull();
-    // Nothing invites the visitor to use a code they cannot redeem.
-    expect(page.textContent).not.toContain(copy.promoCodeLabel);
-    expect(page.textContent).not.toContain(copy.promoCopy);
+  it('shows a copyable code on a discount', () => {
+    const page = render({ kindCode: 'discount', couponCode: 'TAFSEEL20' });
+    expect(page.textContent).toContain('TAFSEEL20');
+    expect(page.querySelector('.tf-promo-code')).not.toBeNull();
+    expect(page.textContent).toContain(landingCopy(false).promoCopy);
   });
 
-  it('says the same in Arabic', () => {
-    const page = render({ couponCode: 'TAFSEEL20' }, 'ar');
-    expect(page.textContent).not.toContain('TAFSEEL20');
-    expect(page.textContent).not.toContain(landingCopy(true).promoCodeLabel);
+  it('labels the code in Arabic', () => {
+    const page = render({ kindCode: 'discount', couponCode: 'TAFSEEL20' }, 'ar');
+    expect(page.textContent).toContain('TAFSEEL20');
+    expect(page.textContent).toContain(landingCopy(true).promoCodeLabel);
     expect(page.textContent).toContain('جلسات مباشرة');
   });
 
@@ -60,7 +56,7 @@ describe('UX-07 the promo dialog', () => {
     expect(page.textContent).toContain('Try it now');
   });
 
-  it('leaves no empty field where the code block used to be', () => {
+  it('leaves no empty field when an announcement has no coupon', () => {
     const page = render({ couponCode: 'TAFSEEL20' });
     // Only fields with real content remain (this promotion has no countdown).
     for (const field of [...page.querySelectorAll('.tf-promo-field')])

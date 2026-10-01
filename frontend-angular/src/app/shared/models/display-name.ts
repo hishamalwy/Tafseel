@@ -52,38 +52,3 @@ export const DisplayName = {
     return DisplayName.pick(primary, english, isArabic) || unavailable;
   }
 } as const;
-
-/**
- * A deterministic monogram avatar.
- *
- * Ported from `initialsAvatarDataUri`. The point of the hash is that one person
- * gets the same two letters on the same colour every time, on every device —
- * the alternative the legacy code replaced was one generic book icon repeated
- * on every teacher card.
- */
-const PALETTE = [
-  '#5036D8', '#1F6FB4', '#2E8B74', '#7A3E9D',
-  '#B4571F', '#9D2E5C', '#2E6B84', '#6B6B2E'
-] as const;
-
-export function initialsAvatar(label: string, seed?: string): string {
-  const words = String(label ?? '').trim().split(/\s+/).filter(Boolean);
-  const initials = words.slice(0, 2)
-    .map(word => Array.from(word)[0] ?? '')
-    .join('')
-    .toLocaleUpperCase() || '?';
-
-  const key = String(seed ?? label ?? '');
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  const color = PALETTE[hash % PALETTE.length]!;
-
-  const safe = initials.replace(/[&<>"']/g, '');
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="${safe}">` +
-    `<rect width="256" height="256" fill="${color}"/>` +
-    `<text x="50%" y="50%" dy="0.35em" text-anchor="middle" fill="#fff" ` +
-    `font-family="system-ui,sans-serif" font-size="112" font-weight="700">${safe}</text></svg>`;
-
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-}

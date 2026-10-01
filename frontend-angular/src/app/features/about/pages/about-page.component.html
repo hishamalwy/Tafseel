@@ -12,7 +12,9 @@
         <p class="tf-about-hero__lede">{{ c().heroLede }}</p>
       </div>
       <div class="tf-about-hero__mark" aria-hidden="true">
-        <img decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
+        <img class="tf-about-hero__mark-light" decoding="async" data-tafseel-mark
+             src="assets/brand/tafseel-mark.svg" alt="" width="162" height="220" />
+        <img class="tf-about-hero__mark-dark" decoding="async" data-tafseel-mark data-tafseel-mark-force="dark"
              src="assets/brand/tafseel-mark-dark.svg" alt="" width="162" height="220" />
       </div>
     </div>
@@ -55,8 +57,8 @@
       <h2 id="about-cta-title" class="tf-about-cta__title">{{ c().ctaTitle }}</h2>
       <p class="tf-about-cta__body">{{ c().ctaBody }}</p>
       <div class="tf-about-cta__actions">
-        <a class="tf-hero-action tf-hero-action--primary" routerLink="/requests/new">{{ c().ctaPrimary }}</a>
-        <a class="tf-hero-action tf-hero-action--secondary" routerLink="/teach/apply">{{ c().ctaSecondary }}</a>
+        @if (showStudentCta()) { <a class="tf-hero-action tf-hero-action--primary" routerLink="/requests/new">{{ c().ctaPrimary }}</a> }
+        @if (showTeacherCta()) { <a class="tf-hero-action tf-hero-action--secondary" [routerLink]="teacherJoinLink().path" [queryParams]="teacherJoinLink().query">{{ c().ctaSecondary }}</a> }
       </div>
     </div>
   </section>

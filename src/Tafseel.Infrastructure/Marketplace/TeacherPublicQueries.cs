@@ -44,14 +44,15 @@ internal static class TeacherPublicQueries
         BrowsableTeachers(db).AnyAsync(x => x.Profile.TeacherId == teacherId, ct);
 
     /// <summary>
-    /// Samples that may appear on the public profile (before media-existence check).
+    /// Reviewed showcases that may appear on the public profile (before media-existence check). Application
+    /// videos never appear here: a teacher shows one only as their introduction video, after consenting
+    /// (see <see cref="PublicIntroVideos"/>).
     /// </summary>
     public static IQueryable<TeacherTeachingSample> VisibleSamples(
         TafseelDbContext db, bool showcasesEnabled) =>
         db.TeacherTeachingSamples.AsNoTracking().Where(x =>
             x.IsProfileVisible
-            && (x.SourceType == TeachingSampleSourceType.QualificationGenerated && x.PublishedAt != null
-                || showcasesEnabled
+            && (showcasesEnabled
                     && x.SourceType == TeachingSampleSourceType.TeacherShowcase
                     && x.ModerationStatus == ShowcaseModerationStatus.Approved
                     && x.ArchivedAt == null
@@ -61,6 +62,20 @@ internal static class TeacherPublicQueries
                 && q.SubjectId == x.SubjectId
                 && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
             && db.Subjects.Any(subject => subject.Id == x.SubjectId && subject.IsActive));
+
+    /// <summary>
+    /// Introduction videos a visitor may play: shown by the teacher, and, for a reused application video, still
+    /// backed by an active qualification in an active subject and a consent that has not been withdrawn.
+    /// </summary>
+    public static IQueryable<TeacherIntroVideo> PublicIntroVideos(TafseelDbContext db) =>
+        db.TeacherIntroVideos.AsNoTracking().Where(x => x.IsPublic && x.StorageKey != ""
+            && (x.Source == IntroVideoSource.OwnUpload
+                || x.Source == IntroVideoSource.ApplicationVideo
+                    && db.TeacherVideoConsents.Any(c => c.Id == x.ConsentId && c.WithdrawnAt == null)
+                    && db.TeacherSubjectQualifications.Any(q => q.TeacherId == x.TeacherId
+                        && q.SubjectId == x.SourceSubjectId
+                        && q.Status == TeacherQualificationStatus.Approved && q.RevokedAt == null)
+                    && db.Subjects.Any(subject => subject.Id == x.SourceSubjectId && subject.IsActive)));
 
     public sealed class BrowsableTeacher
     {

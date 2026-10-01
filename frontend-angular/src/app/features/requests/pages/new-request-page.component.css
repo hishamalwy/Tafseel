@@ -50,20 +50,6 @@
 .tf-req-ai__body { margin: 0; line-height: 1.7; white-space: pre-wrap; }
 .tf-req-ai__actions { display: flex; gap: 10px; }
 
-.tf-req-attach { cursor: pointer; justify-content: center; }
-.tf-req-files { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
-.tf-req-files li {
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-sm);
-  background: var(--bg); font-size: 13px;
-}
-/* Removing an attachment is a real action on a phone, so it gets a real target (UX-06). */
-.tf-req-files button {
-  border: 0; background: none; cursor: pointer; font-size: 18px; line-height: 1;
-  color: var(--muted); min-inline-size: var(--touch-min, 44px); min-block-size: var(--touch-min, 44px);
-  flex: none;
-}
-
 .tf-req-review { display: grid; gap: 10px; }
 .tf-req-review h2 { font-size: 16px; }
 .tf-req-review__title { margin: 0; font-weight: 700; }
@@ -74,7 +60,14 @@
 }
 .tf-req-review__files { margin: 0; font-size: 13px; color: var(--muted); }
 
-.tf-req-nav { display: flex; gap: 10px; justify-content: space-between; margin-block-start: 4px; }
+.tf-req-nav { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-block-start: 4px; }
+.tf-req-missing { flex: 1 1 100%; order: -1; margin: 0; font-size: 13px; color: var(--text-2); }
+.tf-req-review__facts { display: grid; gap: 6px; margin: 0 0 12px; }
+.tf-req-review__facts div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.tf-req-review__facts dt { color: var(--text-2); }
+.tf-req-review__facts dd { margin: 0; font-weight: 700; }
+/* Step 1 has no Back, so the forward action keeps its place at the end of the row. */
+.tf-req-forward { margin-inline-start: auto; }
 .tf-req-draft { margin: 0; font-size: 12px; color: var(--muted); }
 
 .tf-req-success { display: grid; gap: 14px; justify-items: center; text-align: center; padding-block: 56px; }

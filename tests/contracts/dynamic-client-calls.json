@@ -15,7 +15,7 @@
     },
     {
       "file": "frontend-angular/src/app/features/teachers/services/http-teacher.gateway.ts",
-      "snippet": ".get<CatalogItem[] | PageDto<CatalogItem>>(path)"
+        "snippet": ".get<(NamedDto & { nameEnglish?: string; nameArabic?: string })[]"
     }
   ],
   "calls": [

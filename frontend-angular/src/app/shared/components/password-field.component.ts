@@ -39,6 +39,12 @@ import { IconComponent } from './icon.component';
     :host { display: contents; }
     .tf-field--invalid { border-color: var(--error); background: var(--error-soft); }
     .tf-field-error { color: var(--error); font-weight: 600; }
+    /* The shared sheet removes the outline and only recolours the icon, which is not a visible
+       focus indicator; this restores the same 3px ring every other control uses. */
+    .tf-password-toggle:focus-visible {
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 30%, transparent);
+      border-radius: var(--r-sm);
+    }
   `
 })
 export class PasswordFieldComponent {

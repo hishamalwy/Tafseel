@@ -1,7 +1,7 @@
 # Tafseel V1 — Owner Decisions
 
 **Status document · Release Control 2 · recorded 2026-09-15.** One entry per V1-blocking owner decision.
-Analysis and options: [`V1_DECISION_PACK.md`](./V1_DECISION_PACK.md). A decision is **DECIDED** only when the
+Analysis and options: `V1_DECISION_PACK.md`. A decision is **DECIDED** only when the
 Product Owner has stated it explicitly; the documents listed for it are updated in the same change.
 
 | ID | Topic | Status | Decision |
@@ -16,9 +16,10 @@ Product Owner has stated it explicitly; the documents listed for it are updated 
 | DEC-11 | Secure paid video at launch | **DECIDED** | Option A — private authorized files; HLS/DASH/DRM V1.1+ |
 | DEC-12 | Production hosting and data location | **OPEN** | Direction recorded; provider and region open |
 | DEC-13 | Listed price reference for the agreed-price disclosure | **DECIDED** | Option A — immutable server-side snapshot at Direct Request creation; no backfill; implemented by UX-09 |
+| DEC-14 | Live session approval before payment | **DECIDED** | Student requests a slot; teacher accepts or declines; only accepted requests can be paid |
 
-All decisions were recorded as documentation and planning only; no code, configuration, database value or
-historical record was changed.
+Decisions are recorded here before their implementation. Each ticket tracks the code, schema and
+verification work that follows; historical financial records remain governed by the Product Contract.
 
 ---
 
@@ -53,7 +54,7 @@ historical record was changed.
 - **Effective V1 rule:** current server behaviour, plus disclosure: when the accepted price differs from the
   listed price, request, order and checkout show the listed price, the agreed price and the final amount
   payable.
-- **Tickets unblocked / created:** **UX-09 — Agreed price disclosure** (V1 blocker; re-estimated M after DEC-13; **implemented and released 2026-09-17**, [audit](../audits/ux09-2026-09-17/README.md))
+- **Tickets unblocked / created:** **UX-09 — Agreed price disclosure** (V1 blocker; re-estimated M after DEC-13; **implemented and released 2026-09-17**, audit)
 - **Documents affected:** Product Contract §3.2 · V1_SCOPE §4 · V1_RELEASE_BLOCKERS · PRODUCTION_READINESS U11
 
 ## DEC-04 — Teacher payout mechanism
@@ -187,3 +188,17 @@ historical record was changed.
   read contracts, disclosure, tests, browser proof). **No separate snapshot ticket.**
 - **Documents affected:** Product Contract §3.2, §3.3 · V1_DECISION_PACK · V1_RELEASE_BLOCKERS · PRODUCTION_READINESS U11 ·
   `docs/tickets/v1/UX-09.md` · ticket board
+
+## DEC-14 — Teacher approval before live-session payment
+- **Status:** DECIDED (Product Owner, 2026-09-26).
+- **Decision:** A student submits a live-session time request. The teacher accepts or declines it. Payment is available only after acceptance; the existing confirmation, join, cancellation, no-show and settlement rules follow successful payment.
+- **Slot policy:** A pending request does not reserve a teacher slot. Acceptance checks availability again and reserves it for payment. The Product Owner delegated this choice; keeping pending requests non-reserving avoids an absent teacher blocking their calendar.
+- **Authorization:** only the selected teacher may accept or decline; the student may cancel a pending request. A request whose start time has passed cannot be accepted.
+- **Implementation constraints:** The Product Owner authorizes the necessary protected domain and migration changes for this rule. A failing domain test precedes the change. Payment remains server-gated by state; no client-only bypass.
+- **Tickets affected:** live-session booking and payment journey, MEET-01 browser proof.
+
+## DEC-15 — Coupons and promotions in V1
+- **Status:** DECIDED (Product Owner, 2026-09-26); supersedes the DEC-09 default deferral.
+- **Decision:** Admins can create and manage redeemable coupon codes and publish landing promotions in V1. Students can enter a coupon during checkout for direct orders, live sessions and selected open-request offers. The server validates the code and computes the discount when payment starts; the checkout shows a server quote before the student commits.
+- **Constraints:** Coupon rules, minimum charge, redemption records, fees, escrow, idempotency and settlement remain governed by the existing Domain and Finance implementation. An invalid or expired code cannot silently fall back to the undiscounted charge. Promotions that promise a coupon must have a code usable at checkout. Every write and quote remains role or participant authorized.
+- **Tickets affected:** Admin marketing and checkout; V1_SCOPE coupons/promotions and UX-07 visibility.

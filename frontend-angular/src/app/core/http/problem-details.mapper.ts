@@ -33,7 +33,7 @@ export function toAuthFailure(response: HttpErrorResponse): AuthFailure {
   const message = body.detail || body.title || response.statusText || 'Request failed.';
   const mapped = body.code ? REASON_BY_CODE[body.code] : undefined;
   const reason: AuthFailureReason =
-    mapped ?? (response.status >= 500 ? 'server-fault' : 'unknown');
+    mapped ?? (response.status === 429 ? 'rate-limited' : response.status >= 500 ? 'server-fault' : 'unknown');
 
   return new AuthFailure(reason, message, body.traceId ?? null, body.errors ?? {});
 }

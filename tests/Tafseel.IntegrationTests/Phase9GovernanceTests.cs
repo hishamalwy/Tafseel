@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Tafseel.Application.Authorization;
@@ -13,6 +14,7 @@ using Tafseel.Domain.Governance;
 using Tafseel.Domain.Marketplace;
 using Tafseel.Domain.Orders;
 using Tafseel.Domain.TeacherApplications;
+using Tafseel.Infrastructure.Identity;
 using Tafseel.Infrastructure.Persistence;
 
 namespace Tafseel.IntegrationTests;
@@ -205,6 +207,63 @@ public sealed class Phase9GovernanceTests(SqlServerTafseelApiFactory factory)
             x.Id == disputeId && x.Status == DisputeStatus.Resolved).ToArrayAsync());
         Assert.True(await db.AuditLogEntries.AnyAsync(x =>
             x.Action == "DisputeResolved" && x.EntityId == disputeId.ToString()));
+    }
+
+    [Fact]
+    public async Task Reviewer_asks_both_parties_they_reply_and_a_party_never_adjudicates_their_own_case()
+    {
+        var data = await SeedAsync();
+        var student = await ClientAsync(data.Student.Email);
+        var teacher = await ClientAsync(data.Teacher.Email);
+        var admin = await ClientAsync(data.Admin.Email);
+        await PayAndDeliverAsync(data, student);
+        var opened = await student.PostAsJsonAsync("/api/v1/disputes",
+            new { orderId = data.OrderId, reason = "The explanation skips exercise 4." });
+        opened.EnsureSuccessStatusCode();
+        var disputeId = JsonDocument.Parse(await opened.Content.ReadAsStringAsync()).RootElement.GetProperty("id").GetGuid();
+
+        // A question is asked only once the case is under review.
+        var early = await SendAsync(admin, HttpMethod.Post, $"/api/v1/admin/disputes/{disputeId}/messages",
+            new { body = "Which exercise is missing?" }, await DisputeVersionAsync(disputeId));
+        Assert.Equal(HttpStatusCode.Conflict, early.StatusCode);
+        (await SendAsync(admin, HttpMethod.Post, $"/api/v1/admin/disputes/{disputeId}/start-review",
+            null, await DisputeVersionAsync(disputeId))).EnsureSuccessStatusCode();
+        (await SendAsync(admin, HttpMethod.Post, $"/api/v1/admin/disputes/{disputeId}/messages",
+            new { body = "Teacher: please upload the worked solution for exercise 4." }, await DisputeVersionAsync(disputeId)))
+            .EnsureSuccessStatusCode();
+        // Parties cannot use the reviewer's endpoint.
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(teacher, HttpMethod.Post,
+            $"/api/v1/admin/disputes/{disputeId}/messages", new { body = "I am the reviewer now." },
+            await DisputeVersionAsync(disputeId))).StatusCode);
+        (await SendAsync(teacher, HttpMethod.Post, $"/api/v1/disputes/{disputeId}/messages",
+            new { body = "Exercise 4 is on page 3 of the delivery." }, await DisputeVersionAsync(disputeId)))
+            .EnsureSuccessStatusCode();
+
+        var read = JsonDocument.Parse(await student.GetStringAsync($"/api/v1/disputes/{disputeId}")).RootElement;
+        var messages = read.GetProperty("messages").EnumerateArray().ToArray();
+        Assert.Contains(messages, m => m.GetProperty("senderId").GetString() == data.Admin.Id);
+        Assert.Contains(messages, m => m.GetProperty("senderId").GetString() == data.Teacher.Id);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+            // Both parties were told about the question.
+            Assert.Equal(2, await db.Notifications.CountAsync(n => n.Link != null && n.Link.Contains(disputeId.ToString())
+                && n.Title == "Tafseel's reviewer asked a question"));
+        }
+
+        // An Admin who is also the teacher cannot touch the decision.
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await users.FindByIdAsync(data.Teacher.Id);
+            Assert.True((await users.AddToRoleAsync(user!, Roles.Admin)).Succeeded);
+        }
+        var selfAdmin = await ClientAsync(data.Teacher.Email);
+        var self = await SendAsync(selfAdmin, HttpMethod.Post, $"/api/v1/admin/disputes/{disputeId}/resolve",
+            new { resolution = (int)DisputeResolution.ReleaseTeacher, rationale = "My own case." },
+            await DisputeVersionAsync(disputeId), "self-resolve");
+        Assert.Equal(HttpStatusCode.BadRequest, self.StatusCode);
+        Assert.Equal("dispute_self_adjudication_forbidden", await CodeAsync(self));
     }
 
     [Fact]

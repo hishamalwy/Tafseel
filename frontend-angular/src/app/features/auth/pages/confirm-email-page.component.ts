@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { LocaleService } from '@core/i18n/locale.service';
+import { ResendConfirmation } from '@core/auth/services/recover-password.use-case';
 import { AuthShellComponent } from '@shared/layouts/auth-shell.component';
 
 /**
@@ -21,6 +22,9 @@ export class ConfirmEmailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
   readonly locale = inject(LocaleService);
+  private readonly resendConfirmation = inject(ResendConfirmation);
+  readonly resending = signal(false);
+  readonly resendStatus = signal<'sent' | 'failed' | null>(null);
 
   private readonly query = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap
@@ -63,5 +67,19 @@ export class ConfirmEmailPageComponent {
 
   t(key: string, fallback = ''): string {
     return this.locale.t(key, fallback);
+  }
+
+  async resend(): Promise<void> {
+    if (!this.email() || this.resending()) return;
+    this.resending.set(true);
+    this.resendStatus.set(null);
+    try {
+      await this.resendConfirmation.execute(this.email(), this.locale.lang());
+      this.resendStatus.set('sent');
+    } catch {
+      this.resendStatus.set('failed');
+    } finally {
+      this.resending.set(false);
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { Role } from '@core/auth/models/role';
 
-export type DashboardRole = Extract<Role, 'Student' | 'Teacher' | 'QualityReviewer' | 'Admin'>;
+export type DashboardRole = Extract<Role, 'Student' | 'Teacher' | 'QualityReviewer' | 'Admin' | 'Finance'>;
 
 export interface DashboardTab {
   readonly key: string;
@@ -84,10 +84,17 @@ export const DASHBOARDS: Readonly<Record<DashboardRole, DashboardConfig>> = {
       // education levels and qualification-topic editors are B11-12; promotions are DEC-09/B11-08.
       area('marketplace', 'Marketplace', [tab('services', 'Services', ['/admin/catalog/services']), tab('subjects', 'Subjects', ['/admin/catalog/subjects'])]),
       area('operations', 'Operations', [tab('requests', 'Requests', ['/admin/operations/requests?page=1&pageSize=20']), tab('orders', 'Orders', ['/admin/operations/orders?page=1&pageSize=20']), tab('sessions', 'Sessions', ['/admin/operations/sessions?page=1&pageSize=20']), tab('disputes', 'Disputes', ['/admin/disputes?page=1&pageSize=20']), tab('reviews', 'Reviews', ['/admin/reviews?page=1&pageSize=20', '/admin/reviews/summary'])]),
-      area('finance', 'Finance', [tab('payments', 'Payments', ['/admin/metrics']), tab('withdrawals', 'Withdrawals', ['/admin/withdrawals?status=0&page=1&pageSize=20']), tab('payoutProfiles', 'Payout profiles', ['/admin/payout-profiles?status=0&page=1&pageSize=20']), tab('reconciliation', 'Reconciliation', ['/admin/finance/reconciliation'])]),
+      // Finance is the Finance workspace (features/finance); /admin/finance redirects there.
+      // Help and reports is its own screen (features/support); the router serves it before this generic page.
+      area('help', 'Help and reports', [tab('help', 'Help and reports', [])], 'nav_help_reports'),
       // Audit (UX-03): the audit log is the whole area in V1; there is no platform-settings screen to show.
       area('system', 'Audit', [tab('audit', 'Audit', ['/admin/audit?page=1&pageSize=20'])])
     ]
+  },
+  // Every Finance screen is its own page (features/finance); Admin reaches the same pages as owner access.
+  Finance: {
+    role: 'Finance', basePath: '/finance', titleKey: 'fin_title', title: 'Finance workspace',
+    areas: [area('home', 'Home', [tab('home', 'Home', [])])]
   }
 };
 
@@ -136,6 +143,42 @@ export const FOCUS_PARAMS = ['orderId', 'sessionId', 'requestId', 'conversationI
 
 export const Dashboard = {
   record,
+  pageSource(source: string, page: number, search = '', filter = ''): string {
+    if (!source.includes('pageSize=')) return source;
+    const url = new URL(source, 'https://tafseel.invalid');
+    url.searchParams.set('page', String(page));
+    if (search) url.searchParams.set('search', search);
+    if (filter) url.searchParams.set('filter', filter);
+    return url.pathname + url.search;
+  },
+
+  /**
+   * PRODUCT-P1 (operational lookup): the server-side status filters of each Admin operations list, exactly the
+   * values `GovernanceService` accepts. An unknown value filters nothing there, so these are the whole set.
+   */
+  operationFilters(source: string | undefined): readonly (readonly [string, string, string])[] {
+    if (!source) return [];
+    if (source.startsWith('/admin/operations/requests')) return [
+      ['direct', 'ops_filter_direct', 'Sent to one teacher'], ['marketplace', 'ops_filter_marketplace', 'Open to offers'],
+      ['awaiting-teacher', 'ops_filter_awaiting_teacher', 'Waiting for the teacher'], ['open', 'ops_filter_open', 'Taking offers'],
+      ['payment-reservation', 'ops_filter_payment', 'Waiting for payment'], ['expired', 'ops_filter_expired', 'Expired'],
+      ['converted', 'ops_filter_converted', 'Became an order']];
+    if (source.startsWith('/admin/operations/orders')) return [
+      ['awaiting-payment', 'ops_filter_payment', 'Waiting for payment'], ['in-progress', 'ops_filter_in_progress', 'In progress'],
+      ['overdue', 'ops_filter_overdue', 'Past the agreed delivery'], ['delivered', 'ops_filter_delivered', 'Delivered'],
+      ['revision', 'ops_filter_revision', 'Revision requested'], ['completed', 'ops_filter_completed', 'Completed'],
+      ['cancelled', 'ops_filter_cancelled', 'Cancelled'], ['refunded', 'ops_filter_refunded', 'Refunded'],
+      ['disputed', 'ops_filter_disputed', 'Has an open dispute']];
+    if (source.startsWith('/admin/operations/sessions')) return [
+      ['upcoming', 'ops_filter_upcoming', 'Upcoming'], ['awaiting-outcome', 'ops_filter_awaiting_outcome', 'Waiting for the outcome'],
+      ['admin-review', 'ops_filter_admin_review', 'Needs your decision'], ['no-show-pending', 'ops_filter_no_show', 'No-show reported'],
+      ['completed', 'ops_filter_completed', 'Completed'], ['cancelled', 'ops_filter_cancelled', 'Cancelled'],
+      ['disputed', 'ops_filter_disputed', 'Has an open dispute']];
+    if (source.startsWith('/admin/disputes')) return [
+      ['unresolved', 'ops_filter_unresolved', 'Not resolved'], ['open', 'ops_filter_dispute_open', 'New'],
+      ['under-review', 'ops_filter_under_review', 'Being reviewed'], ['resolved', 'ops_filter_resolved', 'Resolved']];
+    return [];
+  },
   notificationAction(link: unknown): NotificationAction | null {
     if (typeof link !== 'string') return null;
     const raw = link.trim();
@@ -170,6 +213,7 @@ export const Dashboard = {
     if (source === '/learning-requests/mine' || source === '/learning-requests/assigned') return ['/requests', id];
     if (source === '/open-marketplace/opportunities') return ['/teacher/opportunities', id];
     if (source === '/conversations') return ['/conversations', id];
+    if (source === '/admin/disputes') return ['/disputes', id];
     return null;
   },
   focusId(query: { get(name: string): string | null }): string {

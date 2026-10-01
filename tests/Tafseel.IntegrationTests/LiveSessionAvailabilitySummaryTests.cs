@@ -124,18 +124,26 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
         var localStart = DateTime.SpecifyKind(
             before.GetProperty("nextSlotStartUtc").GetDateTimeOffset().UtcDateTime,
             DateTimeKind.Unspecified);
-        (await BookAsync(first, data.ServiceId, localStart)).EnsureSuccessStatusCode();
+        var requested = await BookAsync(first, data.ServiceId, localStart);
+        requested.EnsureSuccessStatusCode();
+        var requestedId = JsonDocument.Parse(await requested.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("id").GetGuid();
 
         var after = JsonDocument.Parse(await publicClient.GetStringAsync(summaryPath)).RootElement
             .GetProperty("summaries")[0];
         Assert.Equal("next_available", after.GetProperty("state").GetString());
-        Assert.NotEqual(
+        Assert.Equal(
             before.GetProperty("nextSlotStartUtc").GetDateTimeOffset(),
             after.GetProperty("nextSlotStartUtc").GetDateTimeOffset());
-        Assert.Equal(HttpStatusCode.Conflict,
-            (await BookAsync(second, data.ServiceId, localStart)).StatusCode);
+        (await BookAsync(second, data.ServiceId, localStart)).EnsureSuccessStatusCode();
 
         var teacher = await ClientForAsync(data.TeacherEmail);
+        var response = new HttpRequestMessage(HttpMethod.Post,
+            $"/api/v1/live-sessions/{requestedId}/request/respond")
+        { Content = JsonContent.Create(new { accept = true }) };
+        response.Headers.TryAddWithoutValidation("If-Match", await VersionAsync(requestedId));
+        (await teacher.SendAsync(response)).EnsureSuccessStatusCode();
+
         var remove = await teacher.DeleteAsync(
             $"/api/v1/teachers/me/availability/rules/{data.RuleId}");
         Assert.Equal(HttpStatusCode.Conflict, remove.StatusCode);
@@ -277,6 +285,8 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
         var confirmedBookings = Enumerable.Range(0, 5).Select(week => Booking(
             student.Id, users[6].Id, confirmed.Id,
             new DateTimeOffset(2027, 1, 4, 14, 0, 0, TimeSpan.Zero).AddDays(week * 7))).ToArray();
+        foreach (var booking in awaitingBookings.Concat(confirmedBookings))
+            booking.RespondToRequest(booking.TeacherId, true, factory.Clock.GetUtcNow());
         foreach (var booking in confirmedBookings)
             booking.ConfirmPayment("provider", factory.Clock.GetUtcNow());
         var cancelledBooking = Booking(
@@ -371,6 +381,14 @@ public sealed class LiveSessionAvailabilitySummaryTests(SqlServerTafseelApiFacto
             24,
             Guid.NewGuid().ToString("N"),
             factory.Clock.GetUtcNow());
+
+    private async Task<string> VersionAsync(Guid id)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TafseelDbContext>();
+        return Convert.ToBase64String(await db.LiveSessionBookings.AsNoTracking()
+            .Where(x => x.Id == id).Select(x => x.RowVersion).SingleAsync());
+    }
 
     private async Task<HttpClient> ClientForAsync(string email)
     {

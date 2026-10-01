@@ -29,5 +29,7 @@ public sealed class RefreshToken
     public DateTimeOffset ExpiresAt { get; init; }
     public DateTimeOffset? RevokedAt { get; set; }
     public string? ReplacedByTokenHash { get; set; }
+    /// <summary>False for a "Remember me" off sign-in; every token rotated from it inherits the value.</summary>
+    public bool Persistent { get; init; } = true;
     public bool IsActive(DateTimeOffset now) => RevokedAt is null && ExpiresAt > now;
 }

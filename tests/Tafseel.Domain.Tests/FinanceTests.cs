@@ -29,10 +29,12 @@ public sealed class FinanceTests
     [Fact]
     public void Withdrawal_is_terminal_and_idempotent()
     {
+        // Completion needs an initiated transfer and evidence (PayoutTests); rejection is terminal and replay-safe.
         var item = new WithdrawalRequest("teacher", 50, "SAR", "key", Now);
-        Assert.True(item.Complete("provider-ref", Now.AddMinutes(1)));
-        Assert.False(item.Complete("provider-ref", Now.AddMinutes(2)));
-        Assert.Throws<DomainException>(() => item.Reject(Now.AddMinutes(3)));
+        Assert.True(item.Reject("admin", "Rejected after finance review.", false, Now.AddMinutes(1)));
+        Assert.False(item.Reject("admin", "Rejected after finance review.", false, Now.AddMinutes(2)));
+        Assert.Throws<DomainException>(() =>
+            item.InitiateTransfer("admin", "ManualBankTransfer", "TFS-W-1", "init", Now.AddMinutes(3)));
     }
 
     [Fact]
@@ -43,6 +45,18 @@ public sealed class FinanceTests
         Assert.Null(payment.OrderId);
         Assert.Equal(bookingId, payment.LiveSessionBookingId);
         Assert.True(payment.Confirm(90, "SAR", Now));
+    }
+
+    [Fact]
+    public void Open_request_payment_keeps_coupon_terms_until_order_conversion()
+    {
+        var couponId = Guid.NewGuid();
+        var payment = Payment.ForOpenRequest(Guid.NewGuid(), "student", 98, "SAR", "Mock", "ref", "key", Now);
+        payment.RecordOpenRequestCoupon(couponId, 10);
+        Assert.Equal(couponId, payment.PendingCouponId);
+        Assert.Equal(10, payment.PendingCouponDiscount);
+        Assert.Throws<DomainException>(() => payment.RecordOpenRequestCoupon(Guid.NewGuid(), 10));
+        Assert.Throws<DomainException>(() => CreatePayment().RecordOpenRequestCoupon(couponId, 10));
     }
 
     private static Payment CreatePayment() =>

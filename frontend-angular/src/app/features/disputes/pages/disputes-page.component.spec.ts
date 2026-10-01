@@ -26,7 +26,7 @@ async function render(role: 'Student' | 'Admin') {
     list: () => of({ items: [CASE], page: 1, totalCount: 1 }),
     byId: () => of(CASE),
     eligiblePurchases: () => of([ELIGIBLE]),
-    open: () => of(CASE), postMessage: () => of(undefined), uploadEvidence: () => of(undefined),
+    open: () => of(CASE), postMessage: () => of(undefined), postReviewerMessage: () => of(undefined), uploadEvidence: () => of(undefined),
     downloadEvidence: () => of(undefined)
   };
   TestBed.configureTestingModule({
@@ -35,7 +35,7 @@ async function render(role: 'Student' | 'Admin') {
       { provide: DISPUTE_GATEWAY, useValue: gateway },
       { provide: DISPUTE_ADMIN_GATEWAY, useValue: { ...gateway, startReview: () => of(undefined), resolve: () => of(undefined) } },
       { provide: SignalSessionStore, useValue: { roles: signal([role]), value: signal({ userId: role === 'Admin' ? 'a1' : 's1' }) } },
-      { provide: LocaleService, useValue: { lang: signal('ar'), isRtl: signal(true), t: (_: string, fallback = '') => (_ === 'currency_sar_short' ? 'ر.س' : fallback) } }
+      { provide: LocaleService, useValue: { lang: signal('ar'), isRtl: signal(true), t: (_: string, fallback = '') => (_ === 'currency_sar_short' ? '\u20C1' : fallback) } }
     ]
   });
   const fixture = TestBed.createComponent(DisputesPageComponent);
@@ -69,12 +69,12 @@ describe('DisputesPageComponent', () => {
     expect(link?.textContent?.trim()).toBe('عرض الطلب');
   });
 
-  it('prices a purchase the way every other price is written: Latin digits and «ر.س»', async () => {
+  it('prices a purchase the way every other price is written: Latin digits and the official mark', async () => {
     const option = [...(await render('Student')).querySelectorAll('#dispute-target option')]
       .map(o => o.textContent ?? '').find(text => text.includes('شرح'));
 
     expect(option).toContain('853.2');
-    expect(option).toContain('ر.س');
+    expect(option).toContain('\u20C1');
     expect(option).not.toMatch(/[٠-٩]/);
   });
 

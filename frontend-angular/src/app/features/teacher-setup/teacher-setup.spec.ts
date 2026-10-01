@@ -20,7 +20,7 @@ import { TEACHER_SETUP_GATEWAY } from './services/teacher-setup.ports';
 
 const table = (t: unknown) => t as Record<string, string>;
 import {
-  FormInvalid, LoadPublication, ManageAvailability, ManageServices, SaveTeacherProfile, SetPublication
+  FormInvalid, LoadPublication, LoadSetupProgress, ManagePublicVideo, ManageAvailability, ManageServices, SaveTeacherProfile, SetPublication
 } from './services/teacher-setup.use-cases';
 
 const PHYSICS = 'a1111111-1111-1111-1111-111111111111';
@@ -65,6 +65,11 @@ describe('teacher profile form (J11-06)', () => {
     const form = ProfileForm.draft(profile, 'Asia/Riyadh');
     expect(form.timeZoneId).toBe('Arab Standard Time');
     expect(ProfileForm.input(form)).toEqual({ headline: 'Physics', bio: 'Bio', country: 'SA', city: 'Riyadh', timeZoneId: 'Arab Standard Time', responseTimeMinutes: 15 });
+  });
+
+  it('offers the device zone instead of the UTC an approval leaves on a profile nobody has written yet', () => {
+    expect(ProfileForm.draft(ownProfile({ timeZoneId: 'UTC' }), 'Africa/Cairo').timeZoneId).toBe('Africa/Cairo');
+    expect(ProfileForm.draft(ownProfile({ headline: 'H', timeZoneId: 'UTC' }), 'Africa/Cairo').timeZoneId).toBe('UTC');
   });
 
   it('checks credentials before adding them', () => {
@@ -289,8 +294,8 @@ describe('TeacherPublicationPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [TeacherPublicationPageComponent],
       providers: [
-        provideRouter([]), LoadPublication, SetPublication,
-        { provide: TEACHER_SETUP_GATEWAY, useValue: { onboarding: vi.fn(() => of(onboarding)), profile: () => of(ownProfile({ teacherId: 't1' })), setPublished } },
+        provideRouter([]), LoadPublication, SetPublication, LoadSetupProgress, ManagePublicVideo,
+        { provide: TEACHER_SETUP_GATEWAY, useValue: { onboarding: vi.fn(() => of(onboarding)), profile: () => of(ownProfile({ teacherId: 't1' })), setPublished, introVideo: () => of({ source: null, isPublic: false, fileName: null, consentedAt: null, version: null, applicationVideos: [], consentStatement: '' }) } },
         { provide: SESSION_STORE, useValue: { current: () => ({ fullName: 'T', userId: 't1' }) } },
         { provide: DialogService, useValue: { confirm: async () => true } },
         { provide: LocaleService, useValue: { t: (_: string, f: string) => f, format: (_: string, __: unknown, f: string) => f, isRtl: () => false, lang: () => 'en' } }

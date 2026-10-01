@@ -26,6 +26,7 @@ export interface PlatformStats {
   readonly students: number | null;
   readonly teachers: number | null;
   readonly subjects: number | null;
+  readonly completedSessions: number | null;
 }
 
 export interface FeaturedTeacher {
@@ -100,5 +101,5 @@ export const CatalogService = {
  */
 export function catalogueIndex(n: number, isArabic: boolean): string {
   if (!isArabic) return String(n).padStart(2, '0');
-  return new Intl.NumberFormat('ar-SA').format(n).padStart(2, '٠');
+  return new Intl.NumberFormat('ar-SA-u-ca-gregory-nu-latn').format(n).padStart(2, '0');
 }

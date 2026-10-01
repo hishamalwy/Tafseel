@@ -4,7 +4,7 @@ using System.Text.Encodings.Web;
 namespace Tafseel.Infrastructure.Email;
 
 /// <summary>
-/// Accent used for the kicker label. The CTA button always stays brand violet —
+/// Accent used for the kicker label. The CTA button always stays brand eggplant —
 /// the kit's primary action colour, never reassigned.
 /// </summary>
 internal enum EmailAccent
@@ -25,11 +25,11 @@ internal enum EmailAccent
 /// </summary>
 internal static class EmailTemplate
 {
-    private const string Violet = "#5036D8";
+    private const string Eggplant = "#614051";
     private const string Lime = "#DDFA64";
     private const string NearBlack = "#020200";
     private const string CardDark = "#1B1C24";
-    private const string WarmBone = "#F3F0E8";
+    private const string WarmBone = "#F1EBE1";
     private const string BorderOnDark = "#33333F";
     private const string MutedOnDark = "#A9A7B4";
     private const string Cyan = "#73AEC1";
@@ -85,7 +85,7 @@ internal static class EmailTemplate
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{{NearBlack}};padding:32px 16px">
             <tr><td align="center">
             <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:{{CardDark}};border:1px solid {{BorderOnDark}};border-radius:16px;overflow:hidden">
-            <tr><td style="height:5px;line-height:5px;font-size:0;background:{{Violet}}">&nbsp;</td></tr>
+            <tr><td style="height:5px;line-height:5px;font-size:0;background:{{Eggplant}}">&nbsp;</td></tr>
             <tr><td align="center" style="padding:44px 40px 32px;background-color:{{NearBlack}}">
             <img src="{{enc.Encode(assets)}}/assets/brand/tafseel-mark-dark.png" width="44" height="60" alt="تفصيل" style="display:block;margin:0 auto 22px;width:44px;height:60px;border:0">
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 14px"><tr>
@@ -105,7 +105,7 @@ internal static class EmailTemplate
         {
             sb.Append($$"""
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px"><tr>
-                <td style="border-radius:10px;background:{{Violet}}">
+                <td style="border-radius:10px;background:{{Eggplant}}">
                 <a href="{{enc.Encode(ctaUrl)}}" style="display:inline-block;padding:14px 30px;font-family:{{SansStack}};font-weight:700;font-size:15px;color:#FFFFFF;text-decoration:none;border-radius:10px">{{enc.Encode(ctaText)}}</a>
                 </td>
                 </tr></table>

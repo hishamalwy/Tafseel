@@ -1,0 +1,42 @@
+# Weekly, grouped update PRs. The SHA-pinned actions and digest-pinned base images only stay
+# patched because this file proposes the bumps; the vulnerability gate in security.yml is what
+# blocks a known-bad version from merging in the meantime.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      microsoft:
+        patterns: ["Microsoft.*", "System.*"]
+      other:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /frontend-angular
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      angular:
+        patterns: ["@angular/*", "@angular-devkit/*"]
+      other:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /tests/browser
+    schedule: { interval: weekly, day: monday }
+    groups:
+      playwright:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly, day: monday }
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions:
+        patterns: ["*"]

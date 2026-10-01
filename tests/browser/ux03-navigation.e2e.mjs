@@ -43,7 +43,7 @@ const activeKey = async page => (await nav(page)).find(item => item.current)?.ke
 /** Opens a workspace page and waits for its navigation to be there. */
 async function openPage(actor, path) {
   await visit(actor.page, `${BASE}${path}`);
-  await actor.page.locator('[data-testid=primary-nav]').waitFor({ timeout: 20000 });
+  await actor.page.locator('[data-testid=primary-nav]').waitFor({ state: 'attached', timeout: 20000 });
   return actor.page;
 }
 
@@ -79,6 +79,8 @@ await step('1. a student is offered five goals, in Arabic, on a phone', async ()
   assert.equal(await activeKey(page), 'home', 'the home is the one highlighted');
 
   // The navigation is Arabic, fits the phone, and every item is a real target.
+  await page.locator('[data-drawer-toggle]').click();
+  await page.locator('[data-testid=primary-nav]').waitFor({ state: 'visible' });
   const text = (await page.locator('[data-testid=primary-nav]').innerText()).replace(/\s+/g, ' ');
   assert.doesNotMatch(text, /[A-Za-z]{3,}/, `no English in the Arabic navigation (${text})`);
   for (const item of await page.locator('[data-testid=nav-item]').all()) {
@@ -87,6 +89,7 @@ await step('1. a student is offered five goals, in Arabic, on a phone', async ()
   }
   await noHorizontalOverflow(page, 'student navigation at 390px');
   await shot(page, 'ux03-student-nav-ar');
+  await page.keyboard.press('Escape');
 });
 
 await step('2. each of the five opens, and the header keeps the bell, account and language', async () => {
@@ -101,11 +104,12 @@ await step('2. each of the five opens, and the header keeps the bell, account an
   // The bell is where notifications live now.
   await page.locator('[data-testid=notification-bell]').click();
   await page.locator('[data-testid=notification-panel]').waitFor({ timeout: 15000 });
+  await shot(page, 'ux03-notifications-ar');
   // The account menu is where settings went.
   await page.keyboard.press('Escape').catch(() => {});
   await page.locator('[data-testid=account-menu-toggle]').click();
   await page.locator('[data-testid=account-menu]').waitFor({ timeout: 15000 });
-  assert.match(await page.locator('[data-testid=account-settings]').getAttribute('href'), /\/student\/settings\/?$/);
+  assert.match(await page.locator('[data-testid=account-settings]').getAttribute('href'), /\/account\/?$/);
   await shot(page, 'ux03-student-account-ar');
 });
 
@@ -209,7 +213,7 @@ await step('8. quality has two destinations and admin six, with nothing V1 hides
   const adminItems = await nav(adminPage);
   assert.equal(adminItems.length, 6, `six areas (${adminItems.map(i => i.label).join(' · ')})`);
   assert.deepEqual(adminItems.map(i => i.label),
-    ['Attention', 'People', 'Catalog & pricing', 'Operations', 'Finance', 'Audit']);
+    ['Attention', 'People', 'Catalog & marketing', 'Operations', 'Finance', 'Audit']);
   await everyDestinationOpens(admin, adminItems);
   // Insights is B11-10: the address answers, the navigation does not offer it.
   await visit(admin.page, `${BASE}/en/admin/insights`);

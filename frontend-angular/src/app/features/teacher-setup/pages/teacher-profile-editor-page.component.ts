@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { problemMessage } from '@core/http/problem-message';
+import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { ToastComponent } from '@shared/components/toast.component';
@@ -15,6 +16,7 @@ import {
 import {
   FormInvalid, LoadProfileWorkspace, ProfileWorkspace, SaveTeacherProfile, SaveTeachingChoices, TeachingChoice
 } from '../services/teacher-setup.use-cases';
+import { SetupProgressComponent } from '../components/setup-progress.component';
 
 type Section = 'core' | TeachingChoice;
 
@@ -22,7 +24,7 @@ type Section = 'core' | TeachingChoice;
 @Component({
   selector: 'tf-teacher-profile-editor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, CredentialListComponent],
+  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, CredentialListComponent, SetupProgressComponent],
   templateUrl: './teacher-profile-editor-page.component.html',
   styles: `
     .tf-profile-editor-card .tf-field-help { display: block; }
@@ -43,6 +45,13 @@ export class TeacherProfileEditorPageComponent {
   readonly loadError = signal('');
   readonly workspace = signal<ProfileWorkspace | null>(null);
   readonly draft = signal<ProfileDraft>(ProfileForm.draft(null, browserTimeZone()));
+  readonly fmt = inject(FormatService);
+  /** Reply times a person states (an hour, a day), in the minutes the API stores; a saved odd value stays listed. */
+  readonly responseChoices = computed(() => {
+    const choices = [60, 120, 180, 360, 720, 1440, 2880];
+    const current = this.draft().responseTimeMinutes;
+    return current && !choices.includes(current) ? [...choices, current].sort((a, b) => a - b) : choices;
+  });
   readonly attempted = signal(false);
   readonly saving = signal<Section | ''>('');
   readonly serverFields = signal<Partial<Record<string, string>>>({});

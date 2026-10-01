@@ -1,5 +1,5 @@
 /**
- * The two things a student can pay for.
+ * The three things a student can pay for.
  *
  * Orders and live-session bookings are different resources with different
  * endpoints and different price breakdowns, but checkout treats them the same
@@ -36,12 +36,16 @@ export interface Payable {
   /** Order-only context; null for a live session. */
   readonly learningRequestId: string | null;
   readonly agreedDeliveryAt: string | null;
+  /** Open request only: the offer's delivery time, counted from payment (there is no date until then). */
+  readonly deliveryHours?: number | null;
   readonly revisionAllowance: number | null;
   readonly categoryCode: string | null;
   /** Open request only: the reservation the payment must beat. */
   readonly reservationExpiresAt: string | null;
-  /** True when the platform fee is added by the server at payment and not known here. */
-  readonly feeAtPayment: boolean;
+  /** A live session's time; what the student is paying for is that hour, not a delivery. */
+  readonly session?: { readonly startsAt: string; readonly endsAt: string; readonly timeZoneId: string } | null;
+  /** The payment for this payable is already confirmed: checkout must not offer to pay again. */
+  readonly alreadyPaid?: boolean;
 }
 
 /** The raw order shape, as the API returns it. */
@@ -54,10 +58,13 @@ export interface OrderLike {
   price?: number | null; studentFeeAmount?: number | null; studentTotal?: number | null;
   studentFeePercent?: number | null;
   listedPriceAtRequest?: number | null; listedCurrencyAtRequest?: string | null;
+  priceChangeReason?: string | null;
   requestTitle?: string | null;
   serviceNameEnglish?: string | null; serviceNameArabic?: string | null;
   teacherId?: string | null; learningRequestId?: string | null;
   agreedDeliveryAt?: string | null; revisionAllowance?: number | null;
+  /** `OrderPaymentStatus`: 1 is Paid, 3 is Refunded. */
+  paymentStatus?: number | null;
   categoryCode?: string | null;
 }
 
@@ -72,10 +79,23 @@ export interface OfferLike {
   deliveryHours?: number | null; includedRevisions?: number | null;
 }
 
+/** The server's authoritative price for a selected, unexpired open-request offer. */
+export interface OpenRequestPaymentQuote {
+  offerAmount: number;
+  studentFeePercent: number;
+  studentFeeAmount: number;
+  total: number;
+  currency: string;
+  reservationExpiresAt: string;
+}
+
 export interface LiveSessionLike {
   id: string; currency?: string | null;
   basePrice?: number | null; emergencyPremiumAmount?: number | null; totalPrice?: number | null;
   title?: string | null; teacherId?: string | null;
+  startsAt?: string | null; endsAt?: string | null; studentTimeZoneId?: string | null;
+  /** `LiveSessionStatus`: 0 is awaiting payment, 3 cancelled, 9 awaiting teacher, 10 declined. */
+  status?: number | null;
 }
 
 export const Payable = {
@@ -107,7 +127,7 @@ export const Payable = {
       revisionAllowance: order.revisionAllowance ?? null,
       categoryCode: order.categoryCode ?? null,
       reservationExpiresAt: null,
-      feeAtPayment: false
+      alreadyPaid: order.paymentStatus === 1 || order.paymentStatus === 3
     };
   },
 
@@ -135,32 +155,37 @@ export const Payable = {
       revisionAllowance: null,
       categoryCode: null,
       reservationExpiresAt: null,
-      feeAtPayment: false
+      session: booking.startsAt && booking.endsAt
+        ? { startsAt: booking.startsAt, endsAt: booking.endsAt, timeZoneId: booking.studentTimeZoneId || '' }
+        : null,
+      alreadyPaid: booking.status != null && ![0, 3, 9, 10].includes(booking.status)
     };
   },
 
   /**
-   * A reserved open request pays for its selected offer. The order does not exist yet: the server
-   * creates it when the payment succeeds, adding the student fee to the offer amount.
+   * The order does not exist yet. The server quotes the charge for the selected offer before
+   * payment begins and creates the order when payment succeeds.
    */
-  fromOpenRequest(request: OpenRequestLike, offer: OfferLike): Payable {
-    const amount = Number(offer.amount) || 0;
+  fromOpenRequest(request: OpenRequestLike, offer: OfferLike, quote: OpenRequestPaymentQuote): Payable {
     return {
       kind: 'open-request',
       id: request.id,
-      currency: offer.currency || request.currency || 'SAR',
+      currency: quote.currency,
       title: request.title || '',
       subtitleKey: 'pay_open_request_subtitle',
-      lines: [{ labelKey: 'pay_offer_price', amount }],
-      total: amount,
+      lines: [
+        { labelKey: 'pay_offer_price', amount: quote.offerAmount },
+        { labelKey: 'pay_platform_fee', amount: quote.studentFeeAmount }
+      ],
+      total: quote.total,
       order: null,
       teacherId: offer.teacherId ?? null,
       learningRequestId: request.id,
       agreedDeliveryAt: null,
       revisionAllowance: offer.includedRevisions ?? null,
+      deliveryHours: offer.deliveryHours ?? null,
       categoryCode: null,
-      reservationExpiresAt: request.paymentReservationExpiresAt ?? null,
-      feeAtPayment: true
+      reservationExpiresAt: quote.reservationExpiresAt
     };
   },
 

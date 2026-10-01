@@ -64,8 +64,8 @@ public sealed class GovernanceController(IGovernanceService governance) : Contro
 
     [Authorize(Policy = Permissions.DisputesResolve), HttpGet("admin/disputes")]
     public Task<PagedResult<DisputeDto>> All(
-        int page = 1, int pageSize = 20, string? filter = null, CancellationToken ct = default) =>
-        governance.GetDisputesAsync(UserId(), admin: true, page, pageSize, filter, ct);
+        int page = 1, int pageSize = 20, string? filter = null, string? search = null, CancellationToken ct = default) =>
+        governance.GetDisputesAsync(UserId(), admin: true, page, pageSize, filter, search, ct);
 
     [Authorize(Policy = Permissions.DisputesCreate), HttpGet("disputes/{id:guid}")]
     public Task<DisputeDto> GetMine(Guid id, CancellationToken ct) =>
