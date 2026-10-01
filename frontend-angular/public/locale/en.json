@@ -5109,6 +5109,14 @@
   "fin_action_ReconciliationExceptionResolved": "Reconciliation case resolved",
   "fin_action_ReconciliationExceptionReopened": "Reconciliation case reopened",
   "fin_action_EarningMatured": "Earnings became available",
+  "fin_action_PaymentInitiated": "Payment started",
+  "fin_action_PaymentConfirmed": "Payment confirmed",
+  "fin_action_PaymentFailed": "Payment failed",
+  "fin_action_PaymentRefunded": "Payment refunded",
+  "fin_action_EscrowReleased": "Held money released",
+  "fin_action_EscrowReleasedToPending": "Held money released to the teacher (clearing)",
+  "fin_action_EscrowOverReleased": "Held money over-released (flagged)",
+  "fin_action_EarningMaturityCancelled": "Clearing earning cancelled",
   "err_transfer_attestation_required": "Confirm that the bank’s own record shows this transfer.",
   "err_payout_destination_reenrollment_required": "Payout details must be entered again with a full IBAN.",
   "err_payout_self_review_forbidden": "You cannot review your own payout details.",
@@ -5446,5 +5454,6 @@
   "withdraw_fact_transferred": "Transferred",
   "withdraw_fact_destination": "Sent to",
   "withdraw_fact_reference": "Bank reference",
-  "withdraw_fact_reason": "Reason"
+  "withdraw_fact_reason": "Reason",
+  "nav_unread_one": "Unread"
 }

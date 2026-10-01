@@ -5109,6 +5109,14 @@
   "fin_action_ReconciliationExceptionResolved": "إغلاق حالة مطابقة",
   "fin_action_ReconciliationExceptionReopened": "إعادة فتح حالة مطابقة",
   "fin_action_EarningMatured": "إتاحة أرباح للسحب",
+  "fin_action_PaymentInitiated": "بدء الدفع",
+  "fin_action_PaymentConfirmed": "تأكيد الدفع",
+  "fin_action_PaymentFailed": "فشل الدفع",
+  "fin_action_PaymentRefunded": "استرداد الدفعة",
+  "fin_action_EscrowReleased": "صرف المبلغ المحجوز",
+  "fin_action_EscrowReleasedToPending": "صرف المبلغ المحجوز للمعلم (قيد التسوية)",
+  "fin_action_EscrowOverReleased": "صرف يتجاوز المبلغ المحجوز (مُبلَّغ عنه)",
+  "fin_action_EarningMaturityCancelled": "إلغاء أرباح قيد التسوية",
   "err_transfer_attestation_required": "أكّد أن سجل البنك يُظهر هذا التحويل.",
   "err_payout_destination_reenrollment_required": "يجب إدخال بيانات التحويل من جديد مع رقم الآيبان كاملًا.",
   "err_payout_self_review_forbidden": "لا يمكنك مراجعة بيانات التحويل الخاصة بك.",
@@ -5446,5 +5454,6 @@
   "withdraw_fact_transferred": "تاريخ التحويل",
   "withdraw_fact_destination": "إلى",
   "withdraw_fact_reference": "مرجع البنك",
-  "withdraw_fact_reason": "السبب"
+  "withdraw_fact_reason": "السبب",
+  "nav_unread_one": "غير مقروء"
 }

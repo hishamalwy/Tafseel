@@ -139,6 +139,31 @@ await step('Student: browse, requests, messages, upload-first open request', asy
   await student.context.close();
 });
 
+// The old build counted the test-mode strip's capabilities read (one per page) against the student's 10-per-minute
+// payment budget, so after about ten pages checkout answered 429. Browse more than that, then spend from the budget.
+await step('Student: 15 page loads do not use up the payment budget (no 429 at checkout)', async () => {
+  const student = await actor();
+  await signIn(student, 'student@gmail.com');
+  const { page } = student;
+  const capabilities = [];
+  let bearer = null; // the app's own token, so the payment call below lands in this student's budget
+  page.on('request', r => { bearer = r.headers()['authorization'] ?? bearer; });
+  page.on('response', r => { if (new URL(r.url()).pathname === '/api/v1/payments/mock/capabilities') capabilities.push(r.status()); });
+  const tour = ['/', '/teachers', '/student/requests', '/messages', '/help', '/account', '/teachers', '/', '/student/requests',
+    '/messages', '/help', '/teachers', '/', '/student/requests', '/teachers'];
+  for (const path of tour) await page.goto(`${BASE}/en${path}`, { waitUntil: 'networkidle' });
+  assert.ok(capabilities.length >= 10, `the test-mode strip read capabilities on each page (${capabilities.length})`);
+  assert.deepEqual([...new Set(capabilities)], [200], `capabilities statuses: ${capabilities.join(',')}`);
+  assert.ok(bearer, 'the app called the API as the signed-in student');
+  const response = await page.request.post(`${BASE}/api/v1/payments/order/${crypto.randomUUID()}/coupon-quote`, {
+    headers: { Authorization: bearer, 'Content-Type': 'application/json' }, data: { couponCode: 'SMOKE' }
+  });
+  const status = response.status();
+  assert.notEqual(status, 429, 'a payment-budget endpoint still answers after normal browsing');
+  assert.deepEqual(page.failures, []);
+  await student.context.close();
+});
+
 await step('Student, Arabic phone: landing and upload-first step fit the screen', async () => {
   const phone = await actor({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'ar-SA' });
   await signIn(phone, 'student@gmail.com');
