@@ -34,18 +34,18 @@ export interface PasswordRuleView {
       border-radius: var(--r-sm);
     }
     .tf-pw-rules__heading {
-      font-size: 11px; font-weight: 700; color: var(--text-2);
+      font-size: var(--type-caption-size); font-weight: 700; color: var(--text-2);
       text-transform: uppercase; letter-spacing: .03em; margin-block-end: 2px;
     }
     .tf-pw-rule {
       display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 600; color: var(--text-2);
+      font-size: var(--type-meta-size); font-weight: 600; color: var(--text-2);
     }
     .tf-pw-rule--met { color: var(--success); }
     .tf-pw-rule__badge {
       display: inline-flex; align-items: center; justify-content: center;
       inline-size: 16px; block-size: 16px; border-radius: 50%;
-      font-size: 11px; line-height: 1; flex: none;
+      font-size: var(--type-caption-size); line-height: 1; flex: none;
       background: var(--surface); color: var(--muted); border: 1px solid var(--border);
       transition: background-color var(--t), color var(--t), border-color var(--t);
     }

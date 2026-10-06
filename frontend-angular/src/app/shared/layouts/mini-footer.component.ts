@@ -17,7 +17,7 @@ import { BrandMarkComponent } from '@shared/components/brand-mark.component';
         <nav class="tf-mini-footer__links" aria-label="Tafseel">
           <a routerLink="/about">{{ aboutLabel() }}</a>
           <a routerLink="/teachers">{{ browseLabel() }}</a>
-          <a routerLink="/requests/new">{{ postLabel() }}</a>
+          <a routerLink="/requests/new/open">{{ postLabel() }}</a>
         </nav>
       </div>
     </footer>

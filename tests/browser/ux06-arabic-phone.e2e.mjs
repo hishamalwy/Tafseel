@@ -147,9 +147,9 @@ await step('rows 7-8 · a new student posts a direct request with a long title a
   await page.waitForLoadState('networkidle').catch(() => {});
   await screen(page, 'student home, new student', { name: 'ux06-shell-student-home-new' });
 
-  await spa(student, '/requests/new');
-  await page.locator('[data-testid=request-modes]').waitFor({ timeout: 20000 });
-  await screen(page, 'row 7 request-mode choice', { name: 'ux06-07-request-modes', skip: ['D'] });
+  await spa(student, '/requests/new/open');
+  await page.locator('#open-title').waitFor({ timeout: 20000 });
+  await screen(page, 'row 7 explanation form', { name: 'ux06-07-explanation-form', skip: ['D'] });
 
   // A full load: the wizard is already mounted at /requests/new and would not remount for a query change.
   await visit(page, `${BASE}/ar/requests/new?teacherId=${teacherA.Id}&teacherServiceId=${teacherA.explanationServiceId}`);

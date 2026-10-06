@@ -19,8 +19,8 @@
   border-radius: var(--r-lg); padding: 22px;
 }
 .tf-req-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.tf-req-head h1 { font-size: 22px; letter-spacing: -.02em; }
-.tf-req-step { color: var(--muted); font-size: 13px; margin: 0; }
+.tf-req-head h1 { font-size: var(--type-page-title-size); letter-spacing: -.02em; }
+.tf-req-step { color: var(--muted); font-size: var(--type-label-size); margin: 0; }
 
 .tf-req-page input[type='text'],
 .tf-req-page input[type='number'],
@@ -36,7 +36,7 @@
 
 .tf-inline-action {
   border: 0; background: none; padding: 0; font: inherit;
-  font-size: 13px; font-weight: 700; color: var(--primary);
+  font-size: var(--type-label-size); font-weight: 700; color: var(--primary);
   cursor: pointer; min-block-size: 44px; display: inline-flex; align-items: center;
   justify-self: start;
 }
@@ -46,33 +46,33 @@
   display: grid; gap: 10px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2);
 }
-.tf-req-ai__label { margin: 0; font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
+.tf-req-ai__label { margin: 0; font-size: var(--type-meta-size); font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
 .tf-req-ai__body { margin: 0; line-height: 1.7; white-space: pre-wrap; }
 .tf-req-ai__actions { display: flex; gap: 10px; }
 
 .tf-req-review { display: grid; gap: 10px; }
-.tf-req-review h2 { font-size: 16px; }
+.tf-req-review h2 { font-size: var(--type-item-title-size); }
 .tf-req-review__title { margin: 0; font-weight: 700; }
 .tf-req-review__body {
   margin: 0; padding: 14px; white-space: pre-wrap; font: inherit; line-height: 1.7;
   border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg);
   overflow-x: auto;
 }
-.tf-req-review__files { margin: 0; font-size: 13px; color: var(--muted); }
+.tf-req-review__files { margin: 0; font-size: var(--type-label-size); color: var(--muted); }
 
 .tf-req-nav { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-block-start: 4px; }
-.tf-req-missing { flex: 1 1 100%; order: -1; margin: 0; font-size: 13px; color: var(--text-2); }
+.tf-req-missing { flex: 1 1 100%; order: -1; margin: 0; font-size: var(--type-label-size); color: var(--text-2); }
 .tf-req-review__facts { display: grid; gap: 6px; margin: 0 0 12px; }
-.tf-req-review__facts div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.tf-req-review__facts div { display: flex; justify-content: space-between; gap: 12px; font-size: var(--type-body-sm-size); }
 .tf-req-review__facts dt { color: var(--text-2); }
 .tf-req-review__facts dd { margin: 0; font-weight: 700; }
 /* Step 1 has no Back, so the forward action keeps its place at the end of the row. */
 .tf-req-forward { margin-inline-start: auto; }
-.tf-req-draft { margin: 0; font-size: 12px; color: var(--muted); }
+.tf-req-draft { margin: 0; font-size: var(--type-meta-size); color: var(--muted); }
 
 .tf-req-success { display: grid; gap: 14px; justify-items: center; text-align: center; padding-block: 56px; }
 .tf-req-failed-files {
   display: grid; gap: 8px; justify-items: center;
   padding: 14px; border-radius: var(--r-md); background: var(--error-soft); color: var(--error);
 }
-.tf-req-failed-files ul { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.tf-req-failed-files ul { list-style: none; margin: 0; padding: 0; font-size: var(--type-label-size); }

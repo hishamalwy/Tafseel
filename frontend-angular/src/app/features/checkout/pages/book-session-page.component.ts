@@ -1,3 +1,8 @@
+import { BookingStylesComponent } from '@shared/components/lazy-feature-styles.component';
+import { TimeZoneSelectComponent } from '@shared/components/time-zone-select.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -5,7 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
-import { timeZoneLabel } from '@features/teacher-setup/models/availability';
+import { timeZoneLabel } from '@shared/utils/time-zones';
 import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast.component';
 import { PriceComponent } from '@shared/components/price.component';
@@ -25,7 +30,7 @@ import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 @Component({
   selector: 'tf-book-session-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, SkipLinkComponent, FilePickerComponent],
+  imports: [BookingStylesComponent, TimeZoneSelectComponent, SkeletonComponent, UiStateComponent, ActionFeedbackDirective, RouterLink, WorkflowHeaderComponent, ToastComponent, PriceComponent, SkipLinkComponent, FilePickerComponent],
   templateUrl: './book-session-page.component.html',
   styleUrl: './book-session-page.component.css'
 })
@@ -135,6 +140,17 @@ export class BookSessionPageComponent {
     const premium = this.emergency() ? (Number(service.emergencyPremiumAmount) || 0) : 0;
     return { amount: base + premium, currency: service.currency || 'SAR' };
   });
+
+  readonly showAllTimes = signal(false);
+  readonly hasMoreTimes = computed(() => (this.activeDay()?.slots.length ?? 0) > 12);
+  readonly visibleDayParts = computed(() => {
+    const parts = this.dayParts();
+    if (this.showAllTimes()) return parts;
+    let seen = 0;
+    return parts.map(part => ({ ...part, slots: part.slots.filter(slot => seen++ < 12 || slot.key === this.selectedSlot()?.key) }))
+      .filter(part => part.slots.length);
+  });
+  chooseDay(key: string): void { this.chosenDay.set(key); this.showAllTimes.set(false); }
 
   /** Timezones offered; the detected one is always present even if unlisted. */
   /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */

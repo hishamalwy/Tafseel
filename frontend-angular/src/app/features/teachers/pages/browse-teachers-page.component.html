@@ -1,3 +1,4 @@
+<tf-teacher-styles />
 <tf-skip-link />
 <tf-public-header menuId="browse-public-menu" />
 
@@ -33,7 +34,7 @@
           <div class="tf-smart-search__field">
             <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
             <label for="f-q" class="tf-sr-only">{{ t('browse_search_label', 'Search teachers') }}</label>
-            <input class="tf-smart-search__input" id="f-q" maxlength="2000"
+            <input autocomplete="off" class="tf-smart-search__input" id="f-q" maxlength="2000"
                    [placeholder]="t('browse_search_placeholder', 'Search a teacher or describe what you need…')"
                    [value]="draft().q ?? ''" (input)="patchDraft({ q: $any($event.target).value })" />
           </div>
@@ -69,7 +70,7 @@
         </select>
 
         <button type="button" class="tf-mkb-sheet-btn" aria-controls="browse-filter-sheet"
-                [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
+                [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters($event)">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" /></svg>
           <span>{{ t('browse_more_filters', 'More filters') }}</span>@if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
         </button>
@@ -77,7 +78,7 @@
 
       <div class="tf-mkb-mobile">
         <button type="button" class="tf-mkb-sheet-btn" aria-controls="browse-filter-sheet"
-                [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
+                [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters($event)">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" /></svg>
           <span>{{ t('browse_filters', 'Filters') }}</span>@if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
         </button>
@@ -93,7 +94,29 @@
     </div>
 
     @if (filtersOpen()) {
-      <div id="browse-filter-sheet" class="tf-mkb-sheet">
+      <section id="browse-filter-sheet" class="tf-mkb-filter-panel" aria-labelledby="browse-filter-title"
+               (keydown.escape)="closeFilters()" animate.enter="tf-motion-enter">
+        <header class="tf-mkb-filter-panel__head">
+          <h2 id="browse-filter-title">{{ t('browse_filters', 'Filters') }}</h2>
+          <button id="browse-filter-close" type="button" class="tf-mk-btn tf-mk-btn--secondary tf-mk-btn--sm"
+                  (click)="closeFilters()">{{ t('common_close', 'Close') }}</button>
+        </header>
+        <label class="tf-mkb-sheet-field tf-mkb-filter-panel__primary">
+          <span>{{ t('browse_subject', 'Subject') }}</span>
+          <select id="f-subject-mobile" name="subjectId" class="tf-mk-select" [value]="draft().subjectId ?? ''"
+                  (change)="patchDraft({ subjectId: $any($event.target).value })">
+            <option value="">{{ t('browse_all_subjects', 'All subjects') }}</option>
+            @for (item of catalogs().subjects; track item.id) { <option [value]="item.id">{{ catalogLabel(item) }}</option> }
+          </select>
+        </label>
+        <label class="tf-mkb-sheet-field tf-mkb-filter-panel__primary">
+          <span>{{ t('browse_service', 'Service') }}</span>
+          <select id="f-service-mobile" name="serviceId" class="tf-mk-select" [value]="draft().serviceId ?? ''"
+                  (change)="patchDraft({ serviceId: $any($event.target).value })">
+            <option value="">{{ t('browse_all_services', 'All services') }}</option>
+            @for (item of catalogs().services; track item.id) { <option [value]="item.id">{{ catalogLabel(item) }}</option> }
+          </select>
+        </label>
         <label class="tf-mkb-sheet-field">
           <span>{{ t('browse_level', 'Education level') }}</span>
           <select class="tf-mk-select" [value]="draft().educationLevelId ?? ''"
@@ -107,7 +130,7 @@
 
         <label class="tf-mkb-sheet-field">
           <span>{{ t('browse_max_price', 'Maximum price') }}</span>
-          <input class="tf-mk-select" type="number" min="0" step="10" [value]="draft().maxPrice ?? ''"
+          <input autocomplete="off" class="tf-mk-select" type="number" min="0" step="10" [value]="draft().maxPrice ?? ''"
                  (input)="patchDraft({ maxPrice: +$any($event.target).value || undefined })" />
         </label>
 
@@ -134,7 +157,7 @@
             {{ t('browse_clear', 'Clear') }}
           </button>
         </div>
-      </div>
+      </section>
     }
   </section>
 
@@ -159,12 +182,7 @@
     </div>
 
     @if (loading()) {
-      <div role="status" aria-live="polite">
-        <span class="tf-sr-only">{{ t('browse_loading', 'Loading teachers…') }}</span>
-        <div class="tf-mkb-skeletons" aria-hidden="true">
-          <div class="tf-skeleton"></div><div class="tf-skeleton"></div><div class="tf-skeleton"></div>
-        </div>
-      </div>
+      <tf-skeleton kind="teachers" [label]="t('browse_loading', 'Loading teachers…')" />
     } @else if (error()) {
       <div class="tf-mk-empty" role="alert">
         <p style="color:var(--error);margin:0 0 16px">{{ t('browse_failed', 'Could not load teachers.') }}</p>
@@ -173,17 +191,16 @@
         </button>
       </div>
     } @else if (!cards().length) {
-      <div class="tf-mk-empty">
-        <h2>{{ t('browse_empty_title', 'No teachers match these filters') }}</h2>
-        <p>{{ t('browse_empty', 'No teachers match these filters yet.') }}</p>
+      <tf-ui-state variant="filtered" [title]="t('browse_empty_title', 'No teachers match these filters')"
+                   [body]="t('craft_search_empty', 'Try a broader subject or clear a filter to see more teachers.')">
         <div class="tf-mk-empty-actions">
           <button type="button" class="tf-mk-btn tf-mk-btn--primary tf-mk-btn--sm" (click)="clearFilters()">
             {{ t('browse_reset_filters', 'Reset filters') }}
           </button>
         </div>
-      </div>
+      </tf-ui-state>
     } @else {
-      <div class="tf-mkb-grid">
+      <div class="tf-mkb-grid" animate.enter="tf-motion-fade">
         @for (card of cards(); track card.id) {
           <article class="tf-mkb-card" [class.is-live]="card.isLive" [class.is-async]="!card.isLive">
             <div class="tf-mkb-strip">
@@ -218,7 +235,7 @@
                 <img loading="lazy" decoding="async" class="tf-mk-av tf-mk-av--m tf-img-avatar"
                      [src]="card.avatar" alt="" width="64" height="64" />
                 <div class="tf-mkb-idcopy">
-                  <a class="tf-mkb-name" [routerLink]="['/teachers', card.id]">
+                  <a class="tf-mkb-name" [tfTeacherTransition]="card.id" [routerLink]="['/teachers', card.id]">
                     {{ card.name }}
                     @if (card.isQualified) {
                       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

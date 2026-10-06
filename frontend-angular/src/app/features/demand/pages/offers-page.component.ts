@@ -23,7 +23,7 @@ import { LoadOffers, OfferChanged, OffersView, SelectOffer } from '../services/d
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent],
   templateUrl: './offers-page.component.html',
-  styleUrl: '../../../shared/styles/workspace-detail.css'
+  styleUrls: ['../../../shared/styles/workspace-detail.css', './offers-page.component.css']
 })
 export class OffersPageComponent {
   private readonly route = inject(ActivatedRoute);
@@ -46,6 +46,7 @@ export class OffersPageComponent {
   readonly now = signal(Date.now());
 
   readonly offers = computed(() => this.view()?.offers ?? []);
+  readonly comparing = signal(false);
   readonly reserved = computed(() => { const r = this.view()?.request; return !!r && Demand.isReserved(r); });
   readonly secondsLeft = computed(() => {
     const r = this.view()?.request;

@@ -17,57 +17,12 @@
     </header>
 
     <div class="tf-promo-wizard-body" data-step="0" [style]="bodyStyle()">
-      @switch (lead()) {
-        @case ('figure') {
-          <p class="tf-promo-lead tf-promo-lead--figure">
-            <span class="tf-promo-lead-figure">{{ highlight() }}</span>
-            <span class="tf-promo-lead-note">{{ copy().promoOff }}</span>
-          </p>
-        }
-        @case ('date') {
-          <div class="tf-promo-lead">
-            <div class="tf-promo-date">
-              <span class="tf-promo-date-day">{{ dateDay() }}</span>
-              <span class="tf-promo-date-month">{{ dateMonth() }}</span>
-            </div>
-          </div>
-        }
-        @default {
-          <div class="tf-promo-lead tf-promo-lead--mark" aria-hidden="true">
-            <img data-tafseel-mark data-tafseel-mark-force="dark"
-                 src="assets/brand/tafseel-mark-dark.svg" alt="" width="48" height="65" />
-          </div>
-        }
+      <tf-promotion-content [title]="title()" [body]="body()" [lead]="lead()" [figure]="highlight()" [figureNote]="copy().promoOff"
+        [dateDay]="dateDay()" [dateMonth]="dateMonth()" [code]="kind() === 'discount' ? code() : ''" [codeLabel]="copy().promoCodeLabel"
+        [copyLabel]="copying() ? copy().promoCopying : copy().promoCopy" [units]="countdown()" [countdownLabel]="copy().promoCountdown" (copyRequested)="copyCode()" />
+      @if (copyFailed()) {
+        <p class="tf-promo-copy-status" role="status">{{ copy().promoCopyFailed }} <code dir="ltr">{{ code() }}</code></p>
       }
-
-      <div class="tf-promo-wizard-copy">
-        <h2 class="tf-promo-title" id="promo-wizard-title">{{ title() }}</h2>
-        @if (body(); as text) { <p class="tf-promo-body">{{ text }}</p> }
-
-        @if (kind() === 'discount' && code()) {
-          <div class="tf-promo-field">
-            <span class="tf-promo-field-label">{{ copy().promoCodeLabel }}</span>
-            <button type="button" class="tf-promo-code" data-testid="promo-code" (click)="copyCode()">
-              <span class="tf-promo-code-value">{{ code() }}</span>
-              <span class="tf-promo-code-copy">{{ copy().promoCopy }}</span>
-            </button>
-          </div>
-        }
-
-        @if (countdown(); as units) {
-          <div class="tf-promo-field">
-            <span class="tf-promo-field-label">{{ copy().promoCountdown }}</span>
-            <div class="tf-promo-countdown" role="timer" [attr.aria-label]="copy().promoCountdown">
-              @for (unit of units; track unit.label) {
-                <span class="tf-promo-countdown-unit">
-                  <span class="tf-promo-countdown-value">{{ unit.value }}</span>
-                  <span class="tf-promo-countdown-label">{{ unit.label }}</span>
-                </span>
-              }
-            </div>
-          </div>
-        }
-      </div>
     </div>
 
     <footer class="tf-promo-wizard-foot">

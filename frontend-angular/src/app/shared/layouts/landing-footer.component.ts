@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { RouterLink } from '@angular/router';
 import { LocaleService } from '@core/i18n/locale.service';
 import { LangToggleComponent } from '@shared/components/lang-toggle.component';
+import { SignalSessionStore } from '@core/auth/services/session.store';
+import { ResolveLandingRoute } from '@core/auth/services/resolve-landing-route.use-case';
 
 export interface FooterCopy {
   readonly statement: string;
@@ -26,6 +28,16 @@ export interface FooterCopy {
 })
 export class LandingFooterComponent {
   readonly locale = inject(LocaleService);
+  private readonly store = inject(SignalSessionStore);
+  private readonly landing = inject(ResolveLandingRoute);
+  readonly showsTeacherJoin = computed(() => !this.store.isAuthenticated());
+  readonly demandLink = computed(() => {
+    const roles = this.store.roles();
+    if (roles.includes('Teacher')) return { path: '/teacher/opportunities', label: this.t('nav_open_requests', 'Open requests') };
+    if (roles.some(role => ['Admin', 'Finance', 'QualityReviewer'].includes(role)))
+      return { path: this.landing.homeFor(roles), label: this.t('nav_dashboard', 'Dashboard') };
+    return { path: '/requests/new/open', label: this.t('nav_get_help', 'Get help') };
+  });
 
   readonly copy = input.required<FooterCopy>();
   /** Prefix for the heading ids, so two footers on one document stay unique. */
@@ -45,7 +57,7 @@ export class LandingFooterComponent {
     company: this.t('foot_company', 'Company'),
     browse: this.t('nav_browse', 'Browse teachers'),
     how: this.t('nav_how', 'How it works'),
-    post: this.t('nav_post_request', 'Post a Request'),
+    post: this.t('nav_get_help', 'Get help'),
     teach: this.t('nav_teach', 'Become a teacher'),
     about: this.t('nav_about', 'About'),
     terms: this.t('nav_terms', 'Terms'),

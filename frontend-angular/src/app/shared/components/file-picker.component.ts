@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { IconComponent, IconName } from './icon.component';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, untracked, output, signal } from '@angular/core';
 import { LocaleService } from '@core/i18n/locale.service';
 
 let nextId = 0;
@@ -27,6 +28,7 @@ export function fileKindText(name: string): string {
  */
 @Component({
   selector: 'tf-file-picker',
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <label class="tf-upload-drop" [class.tf-upload-drop--compact]="compact()" [class.is-dragover]="dragging()"
@@ -48,15 +50,17 @@ export function fileKindText(name: string): string {
     @if (busy()) {
       <div class="tf-upload-progress" role="status">
         <span class="tf-upload-file-status">{{ busyText() || t('common_uploading', 'Uploading…') }}</span>
-        <span class="tf-upload-file-bar"><span></span></span>
+        @if (progress() !== null) { <progress class="tf-upload-real-progress" max="100" [value]="progress()" [attr.aria-label]="busyText() || t('common_uploading', 'Uploading…')"></progress> }
+        @else { <span class="tf-upload-file-bar" aria-hidden="true"><span></span></span> }
       </div>
     }
     @if (files().length) {
       <ul class="tf-upload-files">
         @for (file of files(); track $index; let index = $index) {
-          <li class="tf-upload-file" data-testid="picked-file">
-            <span class="tf-upload-file-kind" aria-hidden="true">{{ kind(file) }}</span>
-            <span class="tf-upload-file-main"><strong>{{ file.name }}</strong><span class="tf-upload-file-size">{{ size(file) }}</span></span>
+          <li class="tf-upload-file" animate.enter="tf-motion-fade" data-testid="picked-file">
+            @if (previews().get(file); as preview) { <img class="tf-upload-file-preview" [src]="preview" alt="" width="44" height="44" /> }
+            @else { <span class="tf-upload-file-kind" aria-hidden="true"><tf-icon [name]="fileIcon(file)" [size]="22" iconRole="meta" /></span> }
+            <span class="tf-upload-file-main"><strong>{{ file.name }}</strong><span class="tf-upload-file-size"><span class="tf-file-kind-label">{{ kind(file) }}</span> · {{ size(file) }}</span></span>
             @if (removable() && !busy()) {
               <button type="button" class="tf-upload-file-remove" (click)="removed.emit(index)"
                       [attr.aria-label]="t('common_remove', 'Remove') + ' ' + file.name">{{ t('common_remove', 'Remove') }}</button>
@@ -82,6 +86,8 @@ export class FilePickerComponent {
   readonly disabled = input(false);
   readonly busy = input(false);
   readonly busyText = input('');
+  /** An actual transferred percentage, when the owning gateway reports one; otherwise indeterminate. */
+  readonly progress = input<number | null>(null);
   readonly error = input('');
   /** For a zone with no visible label of its own elsewhere. */
   readonly ariaLabel = input('');
@@ -96,6 +102,28 @@ export class FilePickerComponent {
 
   readonly dragging = signal(false);
   readonly hintId = `tf-file-hint-${++nextId}`;
+
+  readonly previews = signal<ReadonlyMap<File, string>>(new Map());
+
+  constructor() {
+    effect(() => {
+      const current = untracked(this.previews), next = new Map<File, string>();
+      for (const file of this.files()) {
+        if (/^image\/(png|jpeg|webp)$/.test(file.type) && typeof URL.createObjectURL === 'function')
+          next.set(file, current.get(file) ?? URL.createObjectURL(file));
+      }
+      for (const [file, url] of current) if (!next.has(file)) URL.revokeObjectURL(url);
+      this.previews.set(next);
+    });
+    inject(DestroyRef).onDestroy(() => { for (const url of this.previews().values()) URL.revokeObjectURL(url); });
+  }
+
+  fileIcon(file: File): IconName {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('audio/')) return 'audio';
+    if (file.type.startsWith('video/')) return 'video';
+    return 'document';
+  }
 
   t(key: string, fallback: string): string { return this.locale.t(key, fallback); }
   size(file: File): string { return fileSizeText(file.size); }

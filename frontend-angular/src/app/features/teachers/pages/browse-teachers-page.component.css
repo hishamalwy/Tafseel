@@ -57,3 +57,10 @@
 @media (max-width: 600px) {
   .tf-compare-tray { flex-wrap: wrap; inset-inline: 8px; }
 }
+:host .tf-mkb-filter-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-block:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+:host .tf-mkb-filter-panel__head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px}
+:host .tf-mkb-filter-panel__head h2{margin:0;font-size:var(--type-section-title-size)}
+:host .tf-mkb-sheet-field{display:grid;gap:6px;min-inline-size:0}
+:host .tf-mkb-sheet-field select,:host .tf-mkb-sheet-field input{inline-size:100%;min-inline-size:0}
+:host .tf-mkb-filter-panel__primary{display:none}
+@media(max-width:720px){:host .tf-mkb-filter-panel{grid-template-columns:minmax(0,1fr);padding:16px}:host .tf-mkb-filter-panel__primary{display:grid}}

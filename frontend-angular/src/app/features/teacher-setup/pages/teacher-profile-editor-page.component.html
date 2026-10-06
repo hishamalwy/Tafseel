@@ -11,9 +11,12 @@
   </header>
 
   <tf-setup-progress current="profile" />
+  @if (hasUnsavedChanges()) {
+    <p class="tf-field-help" role="status" data-testid="profile-unsaved">{{ t('craft_unsaved_status', 'You have changes that have not been saved.') }}</p>
+  }
 
   @if (loading() && !workspace()) {
-    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+    <tf-skeleton kind="work" />
   } @else if (loadError() && !workspace()) {
     <div class="tf-state" data-state="error" role="alert">
       <p class="tf-state-title">{{ t('setup_profile_failed', 'Your profile could not be loaded.') }}</p>
@@ -30,14 +33,14 @@
         <form class="tf-form" (ngSubmit)="save()" novalidate>
           <div class="tf-field">
             <label for="profile-headline">{{ t('setup_headline', 'Headline') }}</label>
-            <input id="profile-headline" name="headline" [ngModel]="draft().headline" (ngModelChange)="set('headline', $event)"
+            <input autocomplete="off" id="profile-headline" name="headline" [ngModel]="draft().headline" (ngModelChange)="set('headline', $event)"
                    [attr.maxlength]="limits.headline" [attr.aria-invalid]="!!fieldError('headline')" [attr.aria-describedby]="fieldError('headline') ? 'profile-headline-help profile-headline-error' : 'profile-headline-help'">
             <span class="tf-field-help" id="profile-headline-help">{{ t('setup_headline_help', 'One line students see on your card, e.g. “Patient physics explanations for secondary students”.') }}</span>
             @if (fieldError('headline')) { <span id="profile-headline-error" class="tf-field-error">{{ fieldError('headline') }}</span> }
           </div>
           <div class="tf-field">
             <label for="profile-bio">{{ t('setup_bio', 'Bio') }}</label>
-            <textarea id="profile-bio" name="bio" rows="6" [ngModel]="draft().bio" (ngModelChange)="set('bio', $event)"
+            <textarea autocomplete="off" id="profile-bio" name="bio" rows="6" [ngModel]="draft().bio" (ngModelChange)="set('bio', $event)"
                       [attr.maxlength]="limits.bio" [attr.aria-invalid]="!!fieldError('bio')" [attr.aria-describedby]="fieldError('bio') ? 'profile-bio-error' : null"></textarea>
             <span class="tf-field-help">{{ draft().bio.length }}/{{ limits.bio }}</span>
             @if (fieldError('bio')) { <span id="profile-bio-error" class="tf-field-error">{{ fieldError('bio') }}</span> }
@@ -57,9 +60,7 @@
             </div>
             <div class="tf-field">
               <label for="profile-zone">{{ t('setup_time_zone', 'Time zone') }}</label>
-              <select id="profile-zone" name="timeZoneId" [ngModel]="draft().timeZoneId" (ngModelChange)="set('timeZoneId', $event)" [attr.aria-invalid]="!!fieldError('timeZoneId')" [attr.aria-describedby]="fieldError('timeZoneId') ? 'profile-zone-error' : null">
-                @for (zone of zones(); track zone) { <option [value]="zone">{{ zoneLabel(zone) }}</option> }
-              </select>
+              <tf-time-zone-select fieldId="profile-zone" [value]="draft().timeZoneId" [choices]="zones()" (valueChange)="set('timeZoneId', $event)" [invalid]="!!fieldError('timeZoneId')" [describedBy]="fieldError('timeZoneId') ? 'profile-zone-error' : ''" />
               <span class="tf-field-help">{{ locale.format('setup_browser_zone', { zone: zoneLabel(browserZone) }, 'This device is set to {zone}.') }}</span>
               @if (fieldError('timeZoneId')) { <span id="profile-zone-error" class="tf-field-error">{{ fieldError('timeZoneId') }}</span> }
             </div>
@@ -76,8 +77,8 @@
           </div>
           @if (errors().core) { <div class="tf-alert" data-kind="error" role="alert" data-testid="profile-error">{{ errors().core }}</div> }
           <div class="tf-form-actions">
-            <button type="submit" class="tf-button" data-testid="save-profile" [disabled]="saving() === 'core'">{{ saving() === 'core' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
-            <span class="tf-status" data-kind="success" role="status">{{ saved() === 'core' ? t('common_saved', 'Saved.') : '' }}</span>
+            <button type="submit" class="tf-button" data-testid="save-profile" [tfActionFeedback]="saving() === 'core' ? 'busy' : saved() === 'core' ? 'success' : 'idle'" [disabled]="saving() === 'core'">{{ saving() === 'core' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+            @if (saved() === 'core') { <span class="tf-form-saved" role="status"><tf-icon name="check" iconRole="status" [size]="16" />{{ t('common_saved', 'Saved.') }}</span> }
           </div>
         </form>
       </section>
@@ -93,8 +94,8 @@
         </fieldset>
         @if (errors().languages) { <div class="tf-alert" data-kind="error" role="alert">{{ errors().languages }}</div> }
         <div class="tf-form-actions">
-          <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('languages')" [disabled]="saving() === 'languages' || !dirty('languages')">{{ saving() === 'languages' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
-          <span class="tf-status" data-kind="success" role="status">{{ saved() === 'languages' ? t('common_saved', 'Saved.') : '' }}</span>
+          <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('languages')" [tfActionFeedback]="saving() === 'languages' ? 'busy' : saved() === 'languages' ? 'success' : 'idle'" [disabled]="saving() === 'languages' || !dirty('languages')">{{ saving() === 'languages' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+          @if (saved() === 'languages') { <span class="tf-form-saved" role="status"><tf-icon name="check" iconRole="status" [size]="16" />{{ t('common_saved', 'Saved.') }}</span> }
         </div>
       </section>
 
@@ -107,8 +108,8 @@
         </fieldset>
         @if (errors().educationLevels) { <div class="tf-alert" data-kind="error" role="alert">{{ errors().educationLevels }}</div> }
         <div class="tf-form-actions">
-          <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('educationLevels')" [disabled]="saving() === 'educationLevels' || !dirty('educationLevels')">{{ saving() === 'educationLevels' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
-          <span class="tf-status" data-kind="success" role="status">{{ saved() === 'educationLevels' ? t('common_saved', 'Saved.') : '' }}</span>
+          <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('educationLevels')" [tfActionFeedback]="saving() === 'educationLevels' ? 'busy' : saved() === 'educationLevels' ? 'success' : 'idle'" [disabled]="saving() === 'educationLevels' || !dirty('educationLevels')">{{ saving() === 'educationLevels' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+          @if (saved() === 'educationLevels') { <span class="tf-form-saved" role="status"><tf-icon name="check" iconRole="status" [size]="16" />{{ t('common_saved', 'Saved.') }}</span> }
         </div>
       </section>
 
@@ -128,8 +129,8 @@
         @if (errors().topics) { <div class="tf-alert" data-kind="error" role="alert">{{ errors().topics }}</div> }
         @if (topicGroups().length) {
           <div class="tf-form-actions">
-            <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('topics')" [disabled]="saving() === 'topics' || !dirty('topics')">{{ saving() === 'topics' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
-            <span class="tf-status" data-kind="success" role="status">{{ saved() === 'topics' ? t('common_saved', 'Saved.') : '' }}</span>
+            <button type="button" class="tf-button tf-button-secondary" (click)="saveChoice('topics')" [tfActionFeedback]="saving() === 'topics' ? 'busy' : saved() === 'topics' ? 'success' : 'idle'" [disabled]="saving() === 'topics' || !dirty('topics')">{{ saving() === 'topics' ? t('common_saving', 'Saving…') : t('common_save', 'Save') }}</button>
+            @if (saved() === 'topics') { <span class="tf-form-saved" role="status"><tf-icon name="check" iconRole="status" [size]="16" />{{ t('common_saved', 'Saved.') }}</span> }
           </div>
         }
       </section>

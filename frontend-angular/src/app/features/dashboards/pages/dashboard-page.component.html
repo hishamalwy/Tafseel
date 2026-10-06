@@ -3,13 +3,13 @@
     <header class="tf-dashboard-heading"><h1>{{ heading() }}</h1>@if (!productCards) { <button type="button" class="tf-button tf-button-secondary" (click)="reload()" [disabled]="loading()">{{ t('common_refresh', 'Refresh') }}</button> }</header>
     @if (area().tabs.length > 1) { <nav class="tf-dashboard-tabs" [attr.aria-label]="t('dashboard_section_tabs', 'Section tabs')">@for (item of area().tabs; track item.key) { <button type="button" [class.active]="tab().key === item.key" [attr.aria-pressed]="tab().key === item.key" (click)="chooseTab(item)">{{ tabLabel(item) }}</button> }</nav> }
     @if (tab().key === 'settings') {
-      <section class="tf-dashboard-settings"><h2>{{ t('settings_profile', 'Profile & data') }}</h2><div class="tf-grid-2"><label class="tf-field"><span>{{ t('auth_full_name', 'Full name') }}</span><input [ngModel]="profileName()" (ngModelChange)="profileName.set($event)"></label><label class="tf-field"><span>{{ t('auth_full_name_english', 'English name') }}</span><input [ngModel]="profileNameEnglish()" (ngModelChange)="profileNameEnglish.set($event)"></label></div><div class="tf-form-actions"><button class="tf-button" type="button" (click)="saveProfile()">{{ t('common_save', 'Save') }}</button><button class="tf-button tf-button-secondary" type="button" (click)="exportData()">{{ t('settings_export_data', 'Export my data') }}</button></div></section>
+      <section class="tf-dashboard-settings"><h2>{{ t('settings_profile', 'Profile & data') }}</h2><div class="tf-grid-2"><label class="tf-field"><span>{{ t('auth_full_name', 'Full name') }}</span><input autocomplete="off" [ngModel]="profileName()" (ngModelChange)="profileName.set($event)"></label><label class="tf-field"><span>{{ t('auth_full_name_english', 'English name') }}</span><input autocomplete="off" [ngModel]="profileNameEnglish()" (ngModelChange)="profileNameEnglish.set($event)"></label></div><div class="tf-form-actions"><button class="tf-button" type="button" (click)="saveProfile()">{{ t('common_save', 'Save') }}</button><button class="tf-button tf-button-secondary" type="button" (click)="exportData()">{{ t('settings_export_data', 'Export my data') }}</button></div></section>
     }
     @if (tab().key === 'notifications') { <button class="tf-button tf-button-secondary" type="button" (click)="markAllRead()">{{ t('notifications_mark_all', 'Mark all as read') }}</button> }
     @if (!productCards && !adminSummary()) {
       @if (serverSearch()) {
         <form class="tf-dashboard-search tf-dashboard-search-all" (submit)="searchAll(); $event.preventDefault()">
-          <label><span class="tf-sr-only">{{ t('common_search', 'Search') }}</span><input type="search" name="search" data-testid="ops-search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="filters().length ? t('ops_search_hint', 'Reference, name or e-mail') : t('common_search', 'Search')"></label>
+          <label><span class="tf-sr-only">{{ t('common_search', 'Search') }}</span><input autocomplete="off" type="search" name="search" data-testid="ops-search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="filters().length ? t('ops_search_hint', 'Reference, name or e-mail') : t('common_search', 'Search')"></label>
           @if (filters().length) {
             <label><span class="tf-sr-only">{{ t('fin_col_status', 'Status') }}</span>
               <select name="filter" data-testid="ops-filter" [ngModel]="filter()" (ngModelChange)="chooseFilter($event)">
@@ -20,7 +20,7 @@
           <button type="submit" class="tf-button tf-button-secondary">{{ t('common_search', 'Search') }}</button>
         </form>
       } @else {
-        <label class="tf-dashboard-search"><span class="tf-sr-only">{{ t('dashboard_filter_current_page', 'Filter this page') }}</span><input type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="t('dashboard_filter_current_page', 'Filter this page')"></label>
+        <label class="tf-dashboard-search"><span class="tf-sr-only">{{ t('dashboard_filter_current_page', 'Filter this page') }}</span><input autocomplete="off" type="search" [ngModel]="query()" (ngModelChange)="query.set($event)" [placeholder]="t('dashboard_filter_current_page', 'Filter this page')"></label>
       }
     }
     @if (loading()) { <div class="tf-dashboard-loading" role="status">{{ t('common_loading', 'Loading…') }}<div class="tf-skeleton"></div><div class="tf-skeleton"></div></div> }
@@ -44,7 +44,16 @@
         }
       </section>
     }
-    @if (!loading() && !adminSummary() && !cards().length && !errors().length) { <div class="tf-dashboard-empty"><h2>{{ t('common_empty_title', 'Nothing here yet') }}</h2><p>{{ t('common_empty_body', 'New activity will appear here.') }}</p></div> }
+    @if (!loading() && !adminSummary() && !cards().length && !errors().length) { <div class="tf-dashboard-empty" role="status">
+      @if (hasListFilters()) {
+        <h2>{{ t('craft_filtered_empty', 'No results for these filters') }}</h2><p>{{ t('craft_filtered_empty_body', 'Clear the search and filters to see all available items.') }}</p>
+        <button type="button" class="tf-button tf-button-secondary" (click)="clearListFilters()">{{ t('craft_clear_filters', 'Clear search and filters') }}</button>
+      } @else {
+        <h2>{{ t('common_empty_title', 'Nothing here yet') }}</h2><p>{{ t('common_empty_body', 'New activity will appear here.') }}</p>
+        @if (role === 'Teacher') { <a class="tf-button tf-button-secondary" routerLink="/teacher/services">{{ t('craft_review_services', 'Review my teaching services') }}</a> }
+        @else { <button type="button" class="tf-button tf-button-secondary" (click)="reload()">{{ t('common_refresh', 'Refresh') }}</button> }
+      }
+    </div> }
     @if (!loading() && cards().length) {
       <div class="tf-dashboard-grid" [attr.data-layout]="role === 'Admin' ? 'rows' : null">
         @for (item of cards(); track item.row['id'] || $index) { @let row = item.row; @let card = item.card;

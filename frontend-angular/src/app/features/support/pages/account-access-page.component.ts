@@ -48,7 +48,7 @@ import { SUPPORT_STYLES } from './support-shared';
               </div>
               <div class="tf-field">
                 <label for="help-access-description">{{ t('help_description', 'What happened?') }}</label>
-                <textarea id="help-access-description" name="description" maxlength="4000" required data-testid="help-access-description"
+                <textarea autocomplete="off" id="help-access-description" name="description" maxlength="4000" required data-testid="help-access-description"
                           [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea>
               </div>
               <p class="tf-help-privacy">{{ t('help_access_privacy', 'Never send your password. Tafseel will never ask for it.') }}</p>
@@ -64,7 +64,7 @@ import { SUPPORT_STYLES } from './support-shared';
     .tf-help-public { padding-block: 40px 64px; }
     .tf-help-steps { display: grid; gap: 6px; margin: 0; padding-inline-start: 20px; line-height: 1.8; }
     .tf-help-steps a { font-weight: 700; }
-    .tf-help-privacy { margin: 0; color: var(--text-2); font-size: 13px; }
+    .tf-help-privacy { margin: 0; color: var(--text-2); font-size: var(--type-label-size); }
   `]
 })
 export class AccountAccessPageComponent {

@@ -153,7 +153,7 @@ await step("J2-02 confirmation link from the dev outbox confirms the address in 
   assert.equal(url.pathname, "/auth");
   await visit(page, link);
   assert.match(pathOf(page.url()), /^\/(ar|en)\/auth$/);
-  await page.locator(".tf-auth-success, .tf-toast").first().waitFor({ state: "visible", timeout: 15000 });
+  await page.locator("[data-testid=auth-notice], .tf-auth-success, .tf-toast").first().waitFor({ state: "visible", timeout: 15000 });
   assert.equal(await page.locator(".tf-auth-alert[role=alert]").count(), 0, "no invalid-link alert");
   await shot(page, "confirm-email");
   userId = sql(`SET NOCOUNT ON; SELECT Id FROM AspNetUsers WHERE Email = '${email}' AND EmailConfirmed = 1`).trim();

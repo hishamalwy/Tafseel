@@ -1,3 +1,6 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
+import { UiStateComponent } from '@shared/components/ui-state.component';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +12,8 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { durationChoices } from '@shared/models/duration';
 import { ToastComponent } from '@shared/components/toast.component';
-import { ToastService } from '@shared/services/toast.service';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
+import { injectUnsavedChanges } from '@shared/utils/unsaved-changes';
 import { APPROACH_MAX, OfferTerms, Offering, ServiceOffer, ServiceSubject, ServiceType, TermsField } from '../models/service-offer';
 import { NamedItem, localName } from '../models/teacher-profile';
 import { FormInvalid, LoadServicesWorkspace, ManageServices, ServicesWorkspace } from '../services/teacher-setup.use-cases';
@@ -25,16 +29,16 @@ const HIDDEN_STATES = new Set(['catalog_inactive', 'catalog_hidden', 'catalog_un
 @Component({
   selector: 'tf-teacher-services-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, NgTemplateOutlet, RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent],
+  imports: [SkeletonComponent, ActionFeedbackDirective, UiStateComponent, FormsModule, NgTemplateOutlet, RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent],
   templateUrl: './teacher-services-page.component.html',
   styles: `
     .tf-services { display: grid; gap: 18px; }
     .tf-service-policy { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
     .tf-offer-row { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, .8fr)) minmax(0, 1fr) auto; align-items: center; gap: 10px 14px;
-      padding: 12px 0; border-block-start: 1px solid var(--border); font-size: 14px; }
-    .tf-offer-row small { display: block; color: var(--muted); font-size: 12px; }
+      padding: 12px 0; border-block-start: 1px solid var(--border); font-size: var(--type-body-sm-size); }
+    .tf-offer-row small { display: block; color: var(--muted); font-size: var(--type-meta-size); }
     .tf-offer-actions { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
-    .tf-offer-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; }
+    .tf-offer-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: var(--type-label-size); }
     .tf-offer-form { padding: 16px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); }
     @media (max-width: 860px) { .tf-offer-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .tf-offer-actions { grid-column: 1 / -1; justify-content: flex-start; } }
   `
@@ -42,7 +46,6 @@ const HIDDEN_STATES = new Set(['catalog_inactive', 'catalog_hidden', 'catalog_un
 export class TeacherServicesPageComponent {
   private readonly load = inject(LoadServicesWorkspace);
   private readonly services = inject(ManageServices);
-  private readonly toasts = inject(ToastService);
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
   readonly ServiceOffer = ServiceOffer;
@@ -54,8 +57,13 @@ export class TeacherServicesPageComponent {
   readonly editor = signal<Editor | null>(null);
   readonly subjectId = signal('');
   readonly terms = signal<OfferTerms>({ price: null, deliveryHours: null, revisions: null, approachEn: '', approachAr: '' });
+  private readonly editorBaseline = signal('');
+  readonly unsavedChanges = injectUnsavedChanges(() => !!this.editor() &&
+    this.editorBaseline() !== JSON.stringify([this.subjectId(), this.terms()]));
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
   readonly busy = signal('');
+  readonly successNotice = signal('');
   readonly formError = signal('');
   readonly rowError = signal<{ id: string; text: string } | null>(null);
 
@@ -105,22 +113,29 @@ export class TeacherServicesPageComponent {
     finally { this.loading.set(false); }
   }
 
-  openCreate(type: ServiceType): void {
+  async openCreate(type: ServiceType): Promise<void> {
+    if (!await this.unsavedChanges.canLeave()) return;
     this.editor.set({ mode: 'create', typeId: type.id });
     this.subjectId.set(this.sellable(type)[0]?.id ?? '');
     this.terms.set(ServiceOffer.defaultTerms(type));
+    this.editorBaseline.set(JSON.stringify([this.subjectId(), this.terms()]));
     this.attempted.set(false);
     this.formError.set('');
   }
 
-  openEdit(type: ServiceType, offering: Offering): void {
+  async openEdit(type: ServiceType, offering: Offering): Promise<void> {
+    if (!await this.unsavedChanges.canLeave()) return;
     this.editor.set({ mode: 'edit', offeringId: offering.id, typeId: type.id });
     this.terms.set(ServiceOffer.termsOf(offering));
+    this.editorBaseline.set(JSON.stringify([this.subjectId(), this.terms()]));
     this.attempted.set(false);
     this.formError.set('');
   }
 
-  close(): void { this.editor.set(null); this.formError.set(''); }
+  async close(): Promise<void> {
+    if (this.busy() || !await this.unsavedChanges.canLeave()) return;
+    this.editor.set(null); this.formError.set('');
+  }
 
   /** Delivery lengths a person reads ("2 days"), inside what the service allows; the saved value is always listed. */
   deliveryChoices(type: ServiceType): number[] {
@@ -147,7 +162,8 @@ export class TeacherServicesPageComponent {
     if (!editor || !workspace || this.busy()) return;
     this.attempted.set(true);
     this.formError.set('');
-    if (Object.keys(this.problems()).length) return;
+    if (Object.keys(this.problems()).length) return this.focusFirstInvalid();
+    this.successNotice.set('');
     this.busy.set(editor.mode === 'create' ? `create:${type.id}` : `edit:${editor.offeringId}`);
     try {
       if (editor.mode === 'create') await this.services.create(workspace, type, this.subjectId(), this.terms());
@@ -156,9 +172,9 @@ export class TeacherServicesPageComponent {
         if (!offering) return;
         await this.services.update(type, offering, this.terms());
       }
-      this.close();
+      this.editor.set(null); this.formError.set('');
       await this.refresh();
-      this.toasts.show(editor.mode === 'create' ? this.t('setup_service_created', 'Service created and switched on.') : this.t('common_saved', 'Saved.'));
+      this.successNotice.set(editor.mode === 'create' ? this.t('setup_service_created', 'Service created and switched on.') : this.t('common_saved', 'Saved.'));
     } catch (error) {
       this.formError.set(error instanceof FormInvalid
         ? this.t('setup_service_subject_not_sellable', 'You can only offer a service in a subject you are approved to teach.')
@@ -170,12 +186,13 @@ export class TeacherServicesPageComponent {
 
   async toggle(offering: Offering, active: boolean): Promise<void> {
     if (this.busy()) return;
+    this.successNotice.set('');
     this.busy.set(`active:${offering.id}`);
     this.rowError.set(null);
     try {
       await this.services.setActive(offering, active);
       await this.refresh();
-      this.toasts.show(active ? this.t('setup_service_on', 'Service switched on.') : this.t('setup_service_off', 'Service switched off.'));
+      this.successNotice.set(active ? this.t('setup_service_on', 'Service switched on.') : this.t('setup_service_off', 'Service switched off.'));
     } catch (error) {
       this.rowError.set({ id: offering.id, text: problemMessage(error, (k, f) => this.t(k, f)).text });
       await this.refresh();

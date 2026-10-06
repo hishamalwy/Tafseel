@@ -1,3 +1,7 @@
+import { TeacherStylesComponent } from '@shared/components/lazy-feature-styles.component';
+import { TeacherTransitionDirective } from '@shared/directives/teacher-transition.directive';
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -34,7 +38,7 @@ import { containModalFocus } from '@shared/utils/modal-focus';
 @Component({
   selector: 'tf-browse-teachers-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, PublicHeaderComponent, SkipLinkComponent, ToastComponent, PriceComponent],
+  imports: [TeacherStylesComponent, TeacherTransitionDirective, UiStateComponent, SkeletonComponent, FormsModule, RouterLink, PublicHeaderComponent, SkipLinkComponent, ToastComponent, PriceComponent],
   templateUrl: './browse-teachers-page.component.html',
   styleUrl: './browse-teachers-page.component.css'
 })
@@ -74,6 +78,7 @@ export class BrowseTeachersPageComponent {
   readonly compareLimit = CompareTeachers.MAX;
   readonly comparison = signal<readonly Teacher[] | null>(null);
   readonly filtersOpen = signal(false);
+  private filterTrigger: HTMLElement | null = null;
 
   // Draft filter state; committed to the URL on apply.
   readonly draft = signal<TeacherQuery>({});
@@ -221,6 +226,19 @@ export class BrowseTeachersPageComponent {
   }
 
   // ---- filters ----
+  toggleFilters(event: Event): void {
+    if (this.filtersOpen()) { this.closeFilters(); return; }
+    this.filterTrigger = event.currentTarget as HTMLElement;
+    this.filtersOpen.set(true);
+    afterNextRender(() => this.document.getElementById('browse-filter-close')?.focus(), { injector: this.injector });
+  }
+
+  closeFilters(): void {
+    if (!this.filtersOpen()) return;
+    this.filtersOpen.set(false);
+    this.filterTrigger?.focus();
+  }
+
   patchDraft(patch: Partial<TeacherQuery>): void {
     this.draft.update(current => ({ ...current, ...patch }));
   }
@@ -231,10 +249,12 @@ export class BrowseTeachersPageComponent {
       relativeTo: this.route,
       queryParams: this.toUrl({ ...this.draft(), page: 1 })
     });
-    this.filtersOpen.set(false);
+    this.closeFilters();
   }
 
   clearFilters(): void {
+    this.draft.set({});
+    this.closeFilters();
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 

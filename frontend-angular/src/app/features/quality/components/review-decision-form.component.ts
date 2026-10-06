@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { problemMessage } from '@core/http/problem-message';
 import { LocaleService } from '@core/i18n/locale.service';
 import { DialogService } from '@shared/services/dialog.service';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
 import {
   ApplicationReview, COMMENT_MAX, DecisionDraft, EVALUATION_CRITERIA, NOTES_MAX, REVIEW_DECISION, Review,
   ReviewDecision, SCORE_RANGE
@@ -26,10 +27,10 @@ import { DecideApplication } from '../services/quality-review.use-cases';
     :host { display: block; }
     .tf-decision-criteria { display: grid; gap: 14px; margin: 0; padding: 0; border: 0; }
     .tf-decision-criterion { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; }
-    .tf-decision-criterion > span { font-size: 14px; font-weight: 600; }
+    .tf-decision-criterion > span { font-size: var(--type-body-sm-size); font-weight: 600; }
     .tf-decision-choices { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0; padding: 0; border: 0; }
-    .tf-decision-choices legend, .tf-decision-criteria legend { margin-bottom: 8px; font-size: 13px; font-weight: 700; color: var(--text-2); }
-    .tf-decision-count { justify-self: end; font-size: 12px; color: var(--muted); }
+    .tf-decision-choices legend, .tf-decision-criteria legend { margin-bottom: 8px; font-size: var(--type-label-size); font-weight: 700; color: var(--text-2); }
+    .tf-decision-count { justify-self: end; font-size: var(--type-meta-size); color: var(--muted); }
     @media (max-width: 560px) { .tf-decision-criterion { grid-template-columns: minmax(0, 1fr); } }
   `
 })
@@ -48,7 +49,9 @@ export class ReviewDecisionFormComponent {
   readonly Review = Review;
 
   readonly draft = signal<DecisionDraft>(Review.emptyDraft());
+  readonly hasUnsavedChanges = computed(() => JSON.stringify(this.draft()) !== JSON.stringify(Review.emptyDraft()));
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
   readonly busy = signal(false);
   readonly error = signal('');
   readonly problems = computed(() => this.attempted() ? Review.problems(this.draft()) : []);
@@ -73,7 +76,7 @@ export class ReviewDecisionFormComponent {
     this.attempted.set(true);
     this.error.set('');
     const draft = this.draft();
-    if (Review.problems(draft).length || draft.decision === null) return;
+    if (Review.problems(draft).length || draft.decision === null) return this.focusFirstInvalid();
     const decision = draft.decision;
     const confirmed = await this.dialogs.confirm({
       title: this.t(Review.decisionKey(decision), ''),
@@ -88,6 +91,7 @@ export class ReviewDecisionFormComponent {
     this.busy.set(true);
     try {
       await this.decide.execute(this.review(), draft);
+      this.draft.set(Review.emptyDraft());
       this.decided.emit(decision);
     } catch (error) {
       this.error.set(problemMessage(error, (key, fallback) => this.t(key, fallback)).text);

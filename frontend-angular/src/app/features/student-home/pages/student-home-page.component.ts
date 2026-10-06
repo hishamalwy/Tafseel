@@ -1,3 +1,4 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Title } from '@angular/platform-browser';
@@ -24,7 +25,7 @@ import { HomeData, LoadStudentHome } from '../services/student-home.use-cases';
 @Component({
   selector: 'tf-student-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, IconComponent, PriceComponent, RouterLink, WorkspaceShellComponent],
+  imports: [SkeletonComponent, NgTemplateOutlet, IconComponent, PriceComponent, RouterLink, WorkspaceShellComponent],
   templateUrl: './student-home-page.component.html',
   styles: `
     /* The student home is an attention rail: who you are and today, what needs you, then what is moving.
@@ -36,12 +37,12 @@ import { HomeData, LoadStudentHome } from '../services/student-home.use-cases';
       border-radius: var(--r-xl); background: var(--surface); }
     .tf-home-greeting, .tf-home-hero h1 { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 2.6vw, 36px);
       line-height: 1.16; letter-spacing: -.028em; font-weight: var(--weight-heavy); text-wrap: balance; }
-    .tf-home-hero__lede { max-inline-size: 52ch; margin: 10px 0 0; color: var(--text-2); font-size: 15px; line-height: 1.6; }
+    .tf-home-hero__lede { max-inline-size: 52ch; margin: 10px 0 0; color: var(--text-2); font-size: var(--type-body-size); line-height: 1.6; }
     .tf-home-date { color: var(--text); font-weight: 600; }
     .tf-home-date::after { content: "·"; margin-inline: 8px; color: var(--muted); }
     .tf-home-greeting.tf-skeleton { height: 36px; max-width: 240px; }
     .tf-home-start-block { display: grid; gap: 12px; }
-    .tf-home-start-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-2); }
+    .tf-home-start-label { margin: 0; font-size: var(--type-label-size); font-weight: 700; color: var(--text-2); }
 
     .tf-home-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-content: start; }
     [data-testid='home-start-later'] .tf-home-start-grid { grid-column: 1 / -1; }
@@ -57,21 +58,23 @@ import { HomeData, LoadStudentHome } from '../services/student-home.use-cases';
     [data-testid='home-actions'] .tf-home-card:first-of-type { border-color: color-mix(in oklab, var(--primary) 34%, var(--border));
       background: color-mix(in oklab, var(--primary-soft) 55%, var(--surface)); }
     [data-testid='home-actions'] .tf-home-card { min-block-size: 168px; }
-    .tf-home-card h3 { margin: 0; font-size: 16px; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; text-wrap: pretty; }
+    .tf-home-card h3 { margin: 0; font-size: var(--type-item-title-size); font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; text-wrap: pretty; }
     .tf-home-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .tf-home-supporting { margin: 0; font-size: 13px; color: var(--text-2); line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .tf-home-supporting { margin: 0; font-size: var(--type-label-size); color: var(--text-2); line-height: 1.6; font-variant-numeric: tabular-nums; }
     .tf-home-card .tf-button, .tf-home-card .tf-button-secondary { margin-block-start: auto; min-height: 44px; }
     .tf-home-card .tf-button { margin-block-start: auto; }
     .tf-home-link { margin-block-start: auto; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding-inline: 16px; border: 1px solid var(--border-strong); border-radius: var(--r-sm);
-      background: var(--surface); color: var(--text); font-size: 14px; font-weight: 700; text-decoration: none;
+      background: var(--surface); color: var(--text); font-size: var(--type-body-sm-size); font-weight: 700; text-decoration: none;
       transition: border-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
-    .tf-home-link:hover { border-color: var(--primary); color: var(--primary); }
+    @media (hover:hover) and (pointer:fine){.tf-home-link:hover { border-color: var(--primary); color: var(--primary); } }
     .tf-home-link:focus-visible { outline: 3px solid var(--focus-ring-color); outline-offset: 2px; }
-    .tf-home-more { grid-column: 1 / -1; justify-self: start; font-size: 14px; font-weight: 700; min-height: 44px;
+    .tf-home-more { grid-column: 1 / -1; justify-self: start; font-size: var(--type-body-sm-size); font-weight: 700; min-height: 44px;
       display: inline-flex; align-items: center; color: var(--primary); }
     .tf-home-quiet { margin: 0; padding: 18px 22px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg);
-      font-size: 14px; color: var(--text-2); }
+      font-size: var(--type-body-sm-size); color: var(--text-2); }
+    .tf-home-partial { align-items: center; flex-wrap: wrap; gap: var(--space-3) var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--r-md); }
+    .tf-home-partial .tf-retry { margin-inline-start: auto; flex: none; }
 
     /* What is moving: rows in one list, not a stack of separate boxes. */
     .tf-home-work { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 32px; align-items: start; }
@@ -84,7 +87,7 @@ import { HomeData, LoadStudentHome } from '../services/student-home.use-cases';
     .tf-home-work .tf-home-card-head { inline-size: 100%; }
     .tf-home-work [data-testid='home-current-card'] { display: grid; grid-template-columns: minmax(0, 1fr) auto;
       align-items: center; column-gap: 24px; row-gap: 6px; transition: background var(--motion-fast) var(--ease-out); }
-    .tf-home-work [data-testid='home-current-card']:hover { background: color-mix(in oklab, var(--primary-soft) 30%, var(--surface)); }
+    @media (hover:hover) and (pointer:fine){.tf-home-work [data-testid='home-current-card']:hover { background: color-mix(in oklab, var(--primary-soft) 30%, var(--surface)); } }
     .tf-home-work [data-testid='home-current-card'] .tf-home-card-head,
     .tf-home-work [data-testid='home-current-card'] .tf-home-supporting { grid-column: 1; }
     .tf-home-work [data-testid='home-current-card'] .tf-home-card-head { flex-direction: column; align-items: flex-start; gap: 7px; }
@@ -100,20 +103,19 @@ import { HomeData, LoadStudentHome } from '../services/student-home.use-cases';
       background: var(--surface); color: var(--text); text-decoration: none;
       transition: transform var(--dur-short) var(--ease-out), border-color var(--motion-fast) var(--ease-out), box-shadow var(--dur-short) var(--ease-out); }
     :host-context([dir='rtl']) .tf-home-start-card { padding: 18px 18px 18px 44px; }
-    .tf-home-start-card:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--primary) 50%, var(--border)); box-shadow: var(--shadow-hover); }
+    @media (hover:hover) and (pointer:fine){.tf-home-start-card:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--primary) 50%, var(--border)); box-shadow: var(--shadow-hover); } }
     .tf-home-start-card:focus-visible { outline: 3px solid var(--focus-ring-color); outline-offset: 3px; }
     .tf-home-start-card__icon { grid-row: 1 / span 2; display: grid; place-items: center; inline-size: 40px; block-size: 40px;
       border-radius: 10px; background: var(--primary-soft); color: var(--primary); }
-    .tf-home-start-card strong { align-self: end; font-size: 15px; line-height: 1.35; }
-    .tf-home-start-card > span:last-child { grid-column: 2; font-size: 13px; color: var(--text-2); line-height: 1.55; }
+    .tf-home-start-card strong { align-self: end; font-size: var(--type-body-size); line-height: 1.35; }
+    .tf-home-start-card > span:last-child { grid-column: 2; font-size: var(--type-label-size); color: var(--text-2); line-height: 1.55; }
     .tf-home-start-card__go { position: absolute; inset-block-start: 18px; inset-inline-end: 16px; color: var(--muted);
       transition: transform var(--dur-short) var(--ease-out), color var(--motion-fast) var(--ease-out); }
-    .tf-home-start-card:hover .tf-home-start-card__go { color: var(--primary); transform: translateX(3px); }
-    :host-context([dir='rtl']) .tf-home-start-card:hover .tf-home-start-card__go { transform: translateX(-3px); }
+    @media (hover:hover) and (pointer:fine){.tf-home-start-card:hover .tf-home-start-card__go { color: var(--primary); transform: translateX(3px); }:host-context([dir='rtl']) .tf-home-start-card:hover .tf-home-start-card__go { transform: translateX(-3px); } }
     :host-context([dir='rtl']) .tf-home-start-card__go { transform: scaleX(-1); }
-    :host-context([dir='rtl']) .tf-home-start-card:hover .tf-home-start-card__go { transform: scaleX(-1) translateX(3px); }
+    @media (hover:hover) and (pointer:fine){:host-context([dir='rtl']) .tf-home-start-card:hover .tf-home-start-card__go { transform: scaleX(-1) translateX(3px); } }
     :host-context(html[data-theme='dark']) .tf-home-start-card__icon { background: color-mix(in oklab, var(--brand-lime) 14%, transparent); color: var(--brand-lime); }
-    :host-context(html[data-theme='dark']) .tf-home-start-card:hover .tf-home-start-card__go { color: var(--brand-lime); }
+    @media (hover:hover) and (pointer:fine){:host-context(html[data-theme='dark']) .tf-home-start-card:hover .tf-home-start-card__go { color: var(--brand-lime); } }
     :host-context(html[data-theme='dark']) [data-testid='home-actions'] .tf-home-card:first-of-type {
       border-color: color-mix(in oklab, var(--brand-lime) 34%, var(--border)); background: color-mix(in oklab, var(--brand-lime) 7%, var(--surface)); }
 
@@ -128,10 +130,12 @@ import { HomeData, LoadStudentHome } from '../services/student-home.use-cases';
       .tf-home-start-grid, .tf-home-section { grid-template-columns: minmax(0, 1fr); }
       [data-testid='home-actions'] .tf-home-card { min-block-size: 0; }
       .tf-home-work [data-testid='home-current-card'] { display: flex; flex-direction: column; align-items: flex-start; }
+      .tf-home-partial { align-items: stretch; }
+      .tf-home-partial .tf-retry { inline-size: 100%; margin-inline-start: 0; }
     }
     @media (prefers-reduced-motion: reduce) {
       .tf-home-start-card, .tf-home-start-card__go { transition: none; }
-      .tf-home-start-card:hover { transform: none; }
+      @media (hover:hover) and (pointer:fine){.tf-home-start-card:hover { transform: none; } }
     }
   `
 })
@@ -142,6 +146,7 @@ export class StudentHomePageComponent {
   readonly locale = inject(LocaleService);
 
   readonly loading = signal(true);
+  readonly refreshing = signal(false);
   readonly error = signal('');
   readonly partial = signal(false);
   private readonly data = signal<HomeData | null>(null);
@@ -220,6 +225,8 @@ export class StudentHomePageComponent {
   }
 
   async refresh(showLoading = true): Promise<void> {
+    if (this.refreshing()) return;
+    this.refreshing.set(true);
     if (showLoading) this.loading.set(true);
     this.error.set('');
     try {
@@ -232,6 +239,7 @@ export class StudentHomePageComponent {
       this.error.set(problemMessage(error, (k, f) => this.t(k, f)).text);
     } finally {
       this.loading.set(false);
+      this.refreshing.set(false);
     }
   }
 }

@@ -39,14 +39,13 @@ async function signIn(who, email) {
   await page.waitForURL(url => !/\/auth\/?$/.test(new URL(String(url)).pathname), { timeout: 30000 });
 }
 
-/** Opens a screen and requires: it stays there, no error state, the test-mode strip, no 5xx, no script error. */
+/** Opens a screen and requires: it stays there, no error state, no 5xx, no script error. */
 async function screen(who, path, { contains } = {}) {
   const { page, lang } = who;
   await page.goto(`${BASE}/${lang}${path}`, { waitUntil: 'networkidle' });
   const at = new URL(page.url()).pathname.replace(/\/$/, '');
   assert.equal(at, `/${lang}${path}`.split('?')[0].replace(/\/$/, ''), `${path} is reachable`);
   assert.equal(await page.locator('.tf-alert[data-kind=error], .tf-state[data-state=error]').count(), 0, `${path} shows no error`);
-  await page.locator('[data-testid=test-mode-banner]').waitFor({ timeout: 10000 });
   if (contains) await page.getByText(contains).first().waitFor({ timeout: 15000 });
   assert.deepEqual(page.failures, [], `${path}: ${page.failures.join('; ')}`);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${lang}${path.replace(/[/?=&]/g, '_')}.png`, fullPage: true });
@@ -140,21 +139,21 @@ await step('Student: browse, requests, messages, upload-first open request', asy
   await student.context.close();
 });
 
-// The old build counted the test-mode strip's capabilities read (one per page) against the student's 10-per-minute
-// payment budget, so after about ten pages checkout answered 429. Browse more than that, then spend from the budget.
+// An old build counted a read made on every page against the student's 10-per-minute payment budget, so after about
+// ten pages checkout answered 429. Browse more than that, then spend from the budget.
 await step('Student: 15 page loads do not use up the payment budget (no 429 at checkout)', async () => {
   const student = await actor();
   await signIn(student, 'student@gmail.com');
   const { page } = student;
-  const capabilities = [];
+  const apiStatuses = [];
   let bearer = null; // the app's own token, so the payment call below lands in this student's budget
   page.on('request', r => { bearer = r.headers()['authorization'] ?? bearer; });
-  page.on('response', r => { if (new URL(r.url()).pathname === '/api/v1/payments/mock/capabilities') capabilities.push(r.status()); });
+  page.on('response', r => { if (new URL(r.url()).pathname.startsWith('/api/v1/')) apiStatuses.push(r.status()); });
   const tour = ['/', '/teachers', '/student/requests', '/messages', '/help', '/account', '/teachers', '/', '/student/requests',
     '/messages', '/help', '/teachers', '/', '/student/requests', '/teachers'];
   for (const path of tour) await page.goto(`${BASE}/en${path}`, { waitUntil: 'networkidle' });
-  assert.ok(capabilities.length >= 10, `the test-mode strip read capabilities on each page (${capabilities.length})`);
-  assert.deepEqual([...new Set(capabilities)], [200], `capabilities statuses: ${capabilities.join(',')}`);
+  assert.ok(apiStatuses.length >= 15, `normal browsing made at least 15 API calls (${apiStatuses.length})`);
+  assert.ok(!apiStatuses.includes(429), `no API call was rate-limited while browsing: ${apiStatuses.join(',')}`);
   assert.ok(bearer, 'the app called the API as the signed-in student');
   const response = await page.request.post(`${BASE}/api/v1/payments/order/${crypto.randomUUID()}/coupon-quote`, {
     headers: { Authorization: bearer, 'Content-Type': 'application/json' }, data: { couponCode: 'SMOKE' }

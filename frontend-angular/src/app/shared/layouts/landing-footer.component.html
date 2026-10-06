@@ -25,8 +25,10 @@
     <nav class="tf-landing-footer-directory" [attr.aria-label]="labels().explore">
       <a routerLink="/teachers">{{ labels().browse }}</a>
       <a routerLink="/" fragment="how">{{ labels().how }}</a>
-      <a routerLink="/requests/new">{{ labels().post }}</a>
-      <a routerLink="/teach/apply">{{ labels().teach }}</a>
+      <a [routerLink]="demandLink().path">{{ demandLink().label }}</a>
+      @if (showsTeacherJoin()) {
+        <a routerLink="/auth" [queryParams]="{ mode: 'register', role: 'teacher' }">{{ labels().teach }}</a>
+      }
       <a routerLink="/about">{{ labels().about }}</a>
       <a routerLink="/policies/terms">{{ labels().terms }}</a>
       <a routerLink="/policies/privacy">{{ labels().privacy }}</a>

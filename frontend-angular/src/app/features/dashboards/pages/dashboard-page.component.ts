@@ -62,6 +62,12 @@ export class DashboardPageComponent {
   readonly page = signal(1);
   readonly submittedSearch = signal('');
   readonly filter = signal('');
+  readonly hasListFilters = computed(() => !!this.submittedSearch().trim() || !!this.filter());
+  async clearListFilters(): Promise<void> {
+    this.query.set('');
+    await this.router.navigate([], { relativeTo: this.route,
+      queryParams: { search: null, filter: null, page: null }, queryParamsHandling: 'merge' });
+  }
   readonly filters = computed(() => this.role === 'Admin' ? Dashboard.operationFilters(this.tab().sources[0]) : []);
   private reloadId = 0;
   readonly sectionKey = signal(this.route.snapshot.paramMap.get('section') ?? '');

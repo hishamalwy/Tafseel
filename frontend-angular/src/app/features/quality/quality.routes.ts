@@ -1,5 +1,6 @@
 import { Provider } from '@angular/core';
 import { Routes } from '@angular/router';
+import { unsavedChangesGuard } from '@shared/utils/unsaved-changes';
 import { QUALITY_REVIEW_GATEWAY } from './services/quality-review.ports';
 import { HttpQualityReviewGateway } from './services/http-quality-review.gateway';
 import {
@@ -24,6 +25,7 @@ export const QUEUE_ROUTES: Routes = [{
 
 export const REVIEW_ROUTES: Routes = [{
   path: '',
+  canDeactivate: [unsavedChangesGuard],
   providers: [...providers, LoadApplicationReview, StartApplicationReview, DecideApplication, OpenApplicationDemo, RevokeQualification],
   loadComponent: () => import('./pages/application-review-page.component').then(m => m.ApplicationReviewPageComponent)
 }];

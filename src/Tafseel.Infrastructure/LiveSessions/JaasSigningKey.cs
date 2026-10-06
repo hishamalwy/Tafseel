@@ -16,7 +16,19 @@ internal static class JaasSigningKey
         var path = Path.IsPathRooted(options.PrivateKeyPath)
             ? options.PrivateKeyPath
             : Path.Combine(AppContext.BaseDirectory, options.PrivateKeyPath);
-        return File.Exists(path) ? File.ReadAllText(path) : "";
+        if (File.Exists(path)) return File.ReadAllText(path);
+        // A folder holds the key as the JaaS console downloaded it ("Key <date>.pk" beside its ".pub"), so nobody
+        // has to rename it on the host. Exactly one private key may be there; two would be a guess.
+        if (!Directory.Exists(path)) return "";
+        var keys = Directory.EnumerateFiles(path)
+            .Where(file => file.EndsWith(".pk", StringComparison.OrdinalIgnoreCase)
+                || file.EndsWith(".pem", StringComparison.OrdinalIgnoreCase)
+                || file.EndsWith(".key", StringComparison.OrdinalIgnoreCase))
+            .Select(File.ReadAllText)
+            .Where(text => text.Contains("PRIVATE KEY-----", StringComparison.Ordinal))
+            .Take(2)
+            .ToArray();
+        return keys.Length == 1 ? keys[0] : "";
     }
 
     /// <summary>True when the configured key is an RSA private key that can sign. Says nothing about which one.</summary>

@@ -110,22 +110,32 @@
           } @else if (request.myOfferId) {
             <p class="tf-market-state" role="status" data-testid="offer-sent">{{ t('om_offer_already_sent', 'You have sent an offer on this request.') }}</p>
           } @else {
-            <form class="tf-market-offer-form" (ngSubmit)="sendOffer($event)">
+            <form class="tf-market-offer-form" (ngSubmit)="sendOffer($event)" novalidate>
               <h3>{{ t('om_submit_offer', 'Send an offer') }}</h3>
               <div class="tf-market-offer-grid">
                 <label>
                   <span>{{ t('om_price', 'Price') }}</span>
-                  <input name="amount" type="number" min="1" step="1" required
+                  <input name="amount" type="number" inputmode="decimal" min="1" step="1" required autocomplete="off"
+                         [attr.aria-invalid]="!!offerProblems().price"
+                         [attr.aria-describedby]="offerProblems().price ? 'offer-price-msg' : null"
                          [value]="offerPrice()" (input)="offerPrice.set($any($event.target).value)" />
+                  @if (offerProblems().price; as problem) {
+                    <small class="tf-field-error" id="offer-price-msg">{{ problem }}</small>
+                  }
                 </label>
                 <label>
                   <span>{{ t('om_delivery_days', 'Delivery in days') }}</span>
-                  <input name="deliveryDays" type="number" min="1" [attr.max]="limits.maxDeliveryHours / 24" step="1" required
+                  <input name="deliveryDays" type="number" inputmode="numeric" min="1" [attr.max]="limits.maxDeliveryHours / 24" step="1" required autocomplete="off"
+                         [attr.aria-invalid]="!!offerProblems().days"
+                         [attr.aria-describedby]="offerProblems().days ? 'offer-days-msg' : null"
                          [value]="offerDays()" (input)="offerDays.set($any($event.target).value)" />
+                  @if (offerProblems().days; as problem) {
+                    <small class="tf-field-error" id="offer-days-msg">{{ problem }}</small>
+                  }
                 </label>
                 <label>
                   <span>{{ t('om_revisions', 'Revisions included') }}</span>
-                  <input name="includedRevisions" type="number" min="0" [attr.max]="limits.maxRevisions" step="1" required
+                  <input autocomplete="off" name="includedRevisions" type="number" min="0" [attr.max]="limits.maxRevisions" step="1" required
                          [value]="offerRevisions()" (input)="offerRevisions.set($any($event.target).value)" />
                 </label>
                 <label>
@@ -139,10 +149,15 @@
               </div>
               <label>
                 <span>{{ t('om_message', 'Message') }}</span>
-                <textarea name="message" rows="3" [attr.maxlength]="limits.maxMessage" required
+                <textarea name="message" rows="3" [attr.maxlength]="limits.maxMessage" required autocomplete="off"
+                          [attr.aria-invalid]="!!offerProblems().message"
+                          [attr.aria-describedby]="offerProblems().message ? 'offer-message-msg' : null"
                           [value]="offerMessage()" (input)="offerMessage.set($any($event.target).value)"></textarea>
+                @if (offerProblems().message; as problem) {
+                  <small class="tf-field-error" id="offer-message-msg">{{ problem }}</small>
+                }
               </label>
-              <button type="submit" class="tf-button" [disabled]="!canSubmitOffer()">
+              <button type="submit" class="tf-button" [disabled]="busy()">
                 {{ busy() ? t('om_sending', 'Sending…') : t('om_send_offer', 'Send offer') }}
               </button>
             </form>

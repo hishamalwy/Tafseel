@@ -1,3 +1,6 @@
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { SegmentedControlDirective } from '@shared/directives/segmented-control.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -29,36 +32,36 @@ const SOURCES = {
 @Component({
   selector: 'tf-work-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkspaceShellComponent],
+  imports: [UiStateComponent, SkeletonComponent, SegmentedControlDirective, RouterLink, WorkspaceShellComponent],
   templateUrl: './work-list-page.component.html',
   styles: `
     .tf-work { display: grid; gap: 16px; max-width: 860px; }
     .tf-work h1 { margin: 0; font-size: var(--type-page-title-size); line-height: var(--type-page-title-line); letter-spacing: var(--type-page-title-tracking); font-weight: var(--weight-heavy); }
     /* The filter is one segmented control, not a row of pills; the list is one surface with a row per item. */
-    .tf-work-chips { display: flex; gap: 2px; justify-self: start; max-inline-size: 100%; overflow-x: auto; padding: 3px;
+    .tf-work-chips { display: flex; gap: var(--space-1); justify-self: start; max-inline-size: 100%; overflow-x: auto; padding: var(--space-1);
       border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); scrollbar-width: none; }
     .tf-work-chips::-webkit-scrollbar { display: none; }
-    .tf-work-chip { flex: 0 0 auto; min-height: 40px; padding: 6px 16px; border: 0; border-radius: calc(var(--r-md) - 3px);
-      background: transparent; color: var(--text-2); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    .tf-work-chip { flex: 0 0 auto; min-height: var(--touch-min); padding: 6px var(--space-4); border: 0; border-radius: calc(var(--r-md) - 3px);
+      background: transparent; color: var(--text-2); font: inherit; font-size: var(--type-body-sm-size); font-weight: 600; cursor: pointer; white-space: nowrap;
       transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease; }
-    .tf-work-chip:hover { color: var(--text); }
+    @media (hover:hover) and (pointer:fine){.tf-work-chip:hover { color: var(--text); } }
     .tf-work-chip[aria-pressed='true'] { background: var(--surface); color: var(--text); font-weight: 700;
       box-shadow: 0 1px 2px color-mix(in oklab, var(--text) 10%, transparent), 0 0 0 1px var(--border); }
     .tf-work-list { display: grid; gap: 0; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
     .tf-work-card { display: grid; gap: 6px; padding: 16px 20px; border: 0; border-radius: 0; background: transparent; border-block-start: 1px solid var(--border);
       transition: background-color var(--motion-fast) ease; }
     .tf-work-card:first-of-type { border-block-start: 0; }
-    .tf-work-list:not([data-state]) .tf-work-card:hover { background: color-mix(in oklab, var(--surface-2) 60%, transparent); }
+    @media (hover:hover) and (pointer:fine){.tf-work-list:not([data-state]) .tf-work-card:hover { background: color-mix(in oklab, var(--surface-2) 60%, transparent); } }
     @media (prefers-reduced-motion: reduce) { .tf-work-chip, .tf-work-card { transition: none; } }
-    .tf-work-card h2 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.4; }
+    .tf-work-card h2 { margin: 0; font-size: var(--type-item-title-size); font-weight: 700; line-height: 1.4; }
     .tf-work-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .tf-work-card p { margin: 0; font-size: 13px; color: var(--text-2); }
-    .tf-work-card dl { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: 13px; }
+    .tf-work-card p { margin: 0; font-size: var(--type-label-size); color: var(--text-2); }
+    .tf-work-card dl { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: var(--type-label-size); }
     .tf-work-card dl div { display: flex; gap: 6px; }
     .tf-work-card dt { color: var(--text-2); }
     .tf-work-card dd { margin: 0; font-variant-numeric: tabular-nums; }
     .tf-work-open { justify-self: start; min-height: 44px; display: inline-flex; align-items: center;
-      font-size: 13px; font-weight: 700; }
+      font-size: var(--type-label-size); font-weight: 700; }
     .tf-work-empty { margin: 0; padding: 20px 0; color: var(--text-2); }
     .tf-work-empty a { font-weight: 700; }
   `

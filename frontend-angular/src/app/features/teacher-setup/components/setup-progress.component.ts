@@ -44,15 +44,15 @@ export type SetupStep = 'profile' | 'services' | 'availability' | 'publication';
   styles: `
     .tf-setup-progress { margin-block-end: 20px; padding: 16px 18px; border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--border));
       border-radius: var(--r-lg); background: color-mix(in oklab, var(--primary-soft) 45%, var(--surface)); }
-    .tf-setup-progress__lead { margin: 0 0 12px; font-size: 15px; line-height: 1.6; }
+    .tf-setup-progress__lead { margin: 0 0 12px; font-size: var(--type-body-size); line-height: 1.6; }
     .tf-setup-progress__steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
     .tf-setup-progress__steps a { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px;
       border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); color: var(--text);
-      font-size: 14px; font-weight: 700; text-decoration: none; }
+      font-size: var(--type-body-sm-size); font-weight: 700; text-decoration: none; }
     .tf-setup-progress__steps li[aria-current='step'] a { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
     .tf-setup-progress__steps li[data-done='true'] a { color: var(--text-2); }
     .tf-setup-progress__mark { display: grid; place-items: center; flex: none; inline-size: 26px; block-size: 26px; border-radius: 50%;
-      background: var(--primary-soft); color: var(--primary); font-size: 13px; font-weight: 800; }
+      background: var(--primary-soft); color: var(--primary); font-size: var(--type-label-size); font-weight: 800; }
     li[data-done='true'] .tf-setup-progress__mark { background: var(--success-soft); color: var(--success); }
     @media (max-width: 760px) { .tf-setup-progress__steps { grid-template-columns: minmax(0, 1fr); } }
   `

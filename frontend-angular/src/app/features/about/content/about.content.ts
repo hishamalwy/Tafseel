@@ -1,8 +1,11 @@
 /**
- * About-page copy, generated from `Tafseel-About.dc.html` so the wording is
- * carried over rather than retyped.
+ * About-page copy. It started as a port of `Tafseel-About.dc.html`; it is now
+ * edited here directly. The Arabic is written in Saudi dialect, not Modern
+ * Standard Arabic, and the page carries the brand line "تفصيل — درسك على مقاسك".
  *
- * Regenerate with `npm run gen:content` if the legacy page changes.
+ * Every claim below is one the product already makes elsewhere (escrow until
+ * approval, quality review before a teacher can accept work, per-subject
+ * approval). Nothing here may promise more than that.
  */
 export interface AboutPrinciple { readonly num: string; readonly title: string; readonly body: string; }
 
@@ -36,8 +39,8 @@ export const ABOUT_COPY: Readonly<Record<"ar" | "en", AboutCopy>> = {
     "langLabel": "العربية",
     "themeLabel": "Toggle theme",
     "heroEyebrow": "About Tafseel",
-    "heroTitle": "Education, tailored to you.",
-    "heroLede": "Tafseel exists because the generic explanation — the one recorded once for everybody — is rarely the one that works for you.",
+    "heroTitle": "Tafseel — education, tailored to you.",
+    "heroLede": "We built Tafseel because the generic explanation — the one recorded once for everybody — is rarely the one that works for you.",
     "beliefTitle": "The lesson is not the problem. The fit is.",
     "beliefBody": "Most students who fall behind are not short on effort or ability. They are short on an explanation pitched at their level, in their language, on their timetable. A recorded course cannot do that; it was finished before it ever met you. A teacher can.",
     "principlesKicker": "What we hold to",
@@ -58,19 +61,19 @@ export const ABOUT_COPY: Readonly<Record<"ar" | "en", AboutCopy>> = {
         "body": "Your payment is held until the work is delivered and your review window has run. Approve it, ask for a revision, or open a dispute — and see the reasoning behind the decision."
       }
     ],
-    "originTitle": "Built in Saudi Arabia",
-    "originBody": "Tafseel is built in the Kingdom, in Arabic and English, for students from Tabuk to Jazan — and for the teachers who are good at the moment something finally makes sense.",
+    "originTitle": "Why the name Tafseel?",
+    "originBody": "In Arabic, tafseel is what a tailor does: cutting a garment to your measurements. That is the whole idea. The explanation is cut to your level, your timetable and the exact question you bring — because one size never fits everyone.",
     "ctaTitle": "Bring the thing you are stuck on.",
     "ctaBody": "Post what you need and receive offers from qualified teachers, or pick your teacher yourself.",
     "ctaPrimary": "Post a Request",
     "ctaSecondary": "Become a Teacher",
     "footStatement": "An explanation that finally fits the way you learn.",
-    "footTag": "Education, tailored to you. Personalized explanations from verified teachers.",
+    "footTag": "Personalized explanations from verified teachers.",
     "footExplore": "Explore",
     "footStart": "Start with Tafseel",
     "footCompany": "Company",
     "footRights": "© 2026 Tafseel. All rights reserved.",
-    "footOrigin": "Built in Saudi Arabia for every student looking for a clearer explanation."
+    "footOrigin": "Tafseel — education, tailored to you."
   },
   "ar": {
     "skip": "تخطَّ إلى المحتوى",
@@ -86,41 +89,41 @@ export const ABOUT_COPY: Readonly<Record<"ar" | "en", AboutCopy>> = {
     "navHow": "كيف يعمل",
     "langLabel": "English",
     "themeLabel": "تبديل المظهر",
-    "heroEyebrow": "من نحن",
-    "heroTitle": "درسك على مقاسك.",
-    "heroLede": "وُجدت تفصيل لأن الشرح العام — المسجَّل مرة واحدة للجميع — نادرًا ما يكون الشرح الذي ينفع معك أنت.",
-    "beliefTitle": "المشكلة ليست في الدرس، بل في المقاس.",
-    "beliefBody": "أغلب الطلاب الذين يتأخرون لا ينقصهم اجتهاد ولا قدرة، بل ينقصهم شرح على مستواهم، بلغتهم، وفي وقتهم. الدورة المسجَّلة لا تستطيع ذلك؛ فقد اكتملت قبل أن تعرفك. أما المعلّم فيستطيع.",
-    "principlesKicker": "ما نلتزم به",
+    "heroEyebrow": "عن تفصيل",
+    "heroTitle": "تفصيل — درسك على مقاسك.",
+    "heroLede": "سوّينا تفصيل لأن الشرح العام، اللي ينسجل مرة وحدة للكل، نادر يجي على مقاسك أنت.",
+    "beliefTitle": "المشكلة مو في الدرس، المشكلة في المقاس.",
+    "beliefBody": "أغلب الطلاب اللي يتأخرون ما ينقصهم اجتهاد ولا قدرة، ينقصهم شرح على قد مستواهم، بلغتهم، وفي الوقت اللي يناسبهم. الدورة المسجّلة ما تقدر تسوي كذا؛ خلصت قبل لا تعرفك. أما المعلم فيقدر.",
+    "principlesKicker": "اللي نمشي عليه",
     "principles": [
       {
         "num": "٠١",
-        "title": "نبدأ من موضع التوقف، لا من المنهج",
-        "body": "ترفع الصفحة أو السؤال أو التسجيل الذي توقفت عنده بالضبط، وتحدد الموعد. فيجيبك المعلّم عنه هو، لا عن موضوع عام يقع بداخله."
+        "title": "نبدأ من المكان اللي وقفت عنده، مو من المنهج",
+        "body": "ترفع الصفحة أو السؤال أو التسجيل اللي وقفت عنده بالضبط، وتحدد الموعد. والمعلم يشرح لك هذا بالذات، مو موضوع عام يدخل فيه."
       },
       {
         "num": "٠٢",
-        "title": "التأهيل قبل قبول أي طلب",
-        "body": "يشاهد فريق الجودة في تفصيل نموذج شرح مسجَّلًا ويقرأ الخبرة التي يذكرها المعلّم قبل أن يقبل طلبًا واحدًا. واعتماده في مادة لا يعني اعتماده في غيرها."
+        "title": "ما يقبل المعلم أي طلب قبل لا يتأهل",
+        "body": "فريق الجودة في تفصيل يشوف نموذج شرح مسجّل ويقرأ الخبرة اللي يذكرها المعلم، قبل لا يقبل ولا طلب. واعتماده في مادة ما يعني إنه معتمد في غيرها."
       },
       {
         "num": "٠٣",
-        "title": "لا أحد مطالَب بالثقة في غريب",
-        "body": "يبقى مبلغك محفوظًا حتى يُسلَّم العمل وتنتهي مدة مراجعتك. لك أن تعتمد، أو تطلب تعديلًا، أو تفتح نزاعًا — وأن ترى سبب القرار."
+        "title": "ما نطلب منك تثق في أحد ما تعرفه",
+        "body": "مبلغك يبقى محفوظ عند تفصيل لين يوصلك الشغل وتخلص مدة مراجعتك. بعدها لك الخيار: تعتمد، أو تطلب تعديل، أو تفتح نزاع، وتشوف سبب القرار بنفسك."
       }
     ],
-    "originTitle": "صُنعت في السعودية",
-    "originBody": "تفصيل مبنية في المملكة، بالعربية والإنجليزية، لطلاب من تبوك إلى جازان — ولمعلمين يجيدون تلك اللحظة التي يتضح فيها كل شيء أخيرًا.",
-    "ctaTitle": "احضر معك ما توقفت عنده.",
-    "ctaBody": "انشر ما تحتاجه واستقبل عروضًا من معلمين مؤهلين، أو اختر معلمك بنفسك.",
-    "ctaPrimary": "انشر طلبًا",
+    "originTitle": "ليش سمّيناها تفصيل؟",
+    "originBody": "مثل الثوب اللي ينفصّل على مقاسك، الشرح عندنا ينفصّل على مستواك ووقتك والسؤال اللي معك بالضبط. ما فيه مقاس واحد يناسب الكل، وعشان كذا نبدأ منك أنت.",
+    "ctaTitle": "جيب معك الشي اللي وقفت عنده.",
+    "ctaBody": "انشر وش تحتاج واستقبل عروض من معلمين مؤهلين، أو اختار معلمك بنفسك.",
+    "ctaPrimary": "انشر طلبك",
     "ctaSecondary": "انضم كمعلم",
-    "footStatement": "شرح يناسب طريقتك في التعلم أخيرًا.",
-    "footTag": "درسك على مقاسك. شروحات مخصصة من معلمين موثوقين.",
+    "footStatement": "شرح يجي على طريقتك في التعلّم.",
+    "footTag": "شرح مخصص لك من معلمين موثوقين.",
     "footExplore": "استكشف",
     "footStart": "ابدأ مع تفصيل",
     "footCompany": "تفصيل",
     "footRights": "© 2026 تفصيل. جميع الحقوق محفوظة.",
-    "footOrigin": "صُنعت في السعودية لكل طالب يبحث عن شرح أوضح."
+    "footOrigin": "تفصيل — درسك على مقاسك."
   }
 };

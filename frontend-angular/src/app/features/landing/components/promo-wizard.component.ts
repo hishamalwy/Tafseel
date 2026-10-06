@@ -9,6 +9,7 @@ import { FormatService } from '@core/i18n/format.service';
 import { Promotion } from '../models/promotion';
 import { landingCopy } from '../content/landing.copy';
 import { containModalFocus } from '@shared/utils/modal-focus';
+import { PromotionContentComponent } from '@shared/components/promotion-content.component';
 
 /** How long the exit transition runs; must match the CSS. */
 const LEAVE_MS = 180;
@@ -28,6 +29,7 @@ const LEAVE_MS = 180;
  */
 @Component({
   selector: 'tf-promo-wizard',
+  imports: [PromotionContentComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './promo-wizard.component.html',
   styles: `:host { display: contents; }`
@@ -48,6 +50,8 @@ export class PromoWizardComponent {
 
   private readonly dialog = viewChild.required<ElementRef<HTMLElement>>('dialog');
   readonly leaving = signal(false);
+  readonly copying = signal(false);
+  readonly copyFailed = signal(false);
 
   private readonly isArabic = computed(() => this.locale.lang() === 'ar');
   readonly copy = computed(() => landingCopy(this.isArabic()));
@@ -138,15 +142,20 @@ export class PromoWizardComponent {
    */
   async copyCode(): Promise<void> {
     const code = this.code();
-    if (!code) return;
+    if (!code || this.copying()) return;
     this.claimed.emit();
+    this.copying.set(true);
+    this.copyFailed.set(false);
     try {
-      await this.document.defaultView?.navigator.clipboard.writeText(code);
+      const clipboard = this.document.defaultView?.navigator.clipboard;
+      if (!clipboard) throw new Error('Clipboard unavailable');
+      await clipboard.writeText(code);
+      if (!this.destroyRef.destroyed) this.codeCopied.emit(code);
     } catch {
-      // Clipboard unavailable (insecure context, or permission refused). The
-      // code is on screen and selectable, so there is nothing to recover.
+      if (!this.destroyRef.destroyed) this.copyFailed.set(true);
+    } finally {
+      this.copying.set(false);
     }
-    this.codeCopied.emit(code);
   }
 
   private text(field: 'eyebrow' | 'title' | 'body' | 'highlight' | 'ctaLabel'): string {

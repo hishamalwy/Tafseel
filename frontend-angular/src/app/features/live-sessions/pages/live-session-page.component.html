@@ -1,10 +1,10 @@
-<tf-workspace-shell [role]="role() === 'teacher' ? 'Teacher' : 'Student'" [section]="role() === 'teacher' ? 'work' : 'sessions'">
+<tf-workspace-shell [role]="role() === 'teacher' || (!role() && teacherWorkspace()) ? 'Teacher' : 'Student'" [section]="role() === 'teacher' || (!role() && teacherWorkspace()) ? 'work' : 'sessions'">
   @if (!meetingOpen()) {
-    <a class="tf-back-link" [routerLink]="role() === 'teacher' ? '/teacher/work' : '/student/sessions'" [queryParams]="role() === 'teacher' ? { tab: 'sessions' } : null">{{ t('session_back', 'All sessions') }}</a>
+    <a class="tf-back-link" [routerLink]="role() === 'teacher' || (!role() && teacherWorkspace()) ? '/teacher/work' : '/student/sessions'" [queryParams]="role() === 'teacher' || (!role() && teacherWorkspace()) ? { tab: 'sessions' } : null">{{ t('session_back', 'All sessions') }}</a>
   }
 
   @if (loading()) {
-    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+    <tf-skeleton kind="detail" />
   } @else if (loadError()) {
     <div class="tf-state" data-state="error" role="alert">
       <h1 class="tf-state-title">{{ t('session_failed', 'This session could not be loaded.') }}</h1>
@@ -15,6 +15,7 @@
     <div class="tf-state" data-state="error" role="alert" data-testid="session-missing">
       <h1 class="tf-state-title">{{ t('session_missing', 'This session isn’t available') }}</h1>
       <p class="tf-state-body">{{ t('order_detail_missing_body', 'It may belong to another account, or it no longer exists.') }}</p>
+        <a class="tf-button tf-button-secondary" [routerLink]="teacherWorkspace() ? '/teacher/work' : '/student/requests'">{{ t('craft_open_workspace', 'Open my workspace') }}</a>
     </div>
   } @else if (booking(); as b) {
     @if (meetingOpen()) {
@@ -28,13 +29,13 @@
         </div>
         <div #meetingHost class="tf-session-meeting-stage"></div>
       </section>
-      <a class="tf-back-link" [routerLink]="role() === 'teacher' ? '/teacher/work' : '/student/sessions'" [queryParams]="role() === 'teacher' ? { tab: 'sessions' } : null">{{ t('session_back', 'All sessions') }}</a>
+      <a class="tf-back-link" [routerLink]="role() === 'teacher' || (!role() && teacherWorkspace()) ? '/teacher/work' : '/student/sessions'" [queryParams]="role() === 'teacher' || (!role() && teacherWorkspace()) ? { tab: 'sessions' } : null">{{ t('session_back', 'All sessions') }}</a>
     }
     <header class="tf-page-header" data-face="sans">
       <div class="tf-stack">
         <span class="tf-page-header-eyebrow">{{ (locale.isRtl() ? b.serviceNameArabic : b.serviceName) || t('session_title', 'Live session') }}</span>
         <h1>{{ b.title }}</h1>
-        <p class="tf-page-header-desc">{{ role() === 'teacher' ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}: {{ counterpart() }}</p>
+        <p class="tf-page-header-desc">{{ role() === 'teacher' || (!role() && teacherWorkspace()) ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}: {{ counterpart() }}</p>
       </div>
       <div class="tf-page-header-actions">
         <span class="tf-badge" data-testid="session-status" [attr.data-status]="b.status" [attr.data-tone]="Session.statusTone(b.status, role() ?? 'student')">{{ t(Session.statusKey(b.status, role() ?? 'student'), '') }}</span>
@@ -42,6 +43,12 @@
            [queryParams]="{ category: 'session', about: 'session:' + b.id }">{{ t('help_report_session', 'Report conduct') }}</a>
       </div>
     </header>
+    <div class="tf-journey-summary" data-testid="journey-summary">
+      <div><span>{{ t('sd_col_status', 'Status') }}</span><strong>{{ t(Session.statusKey(b.status, role() ?? 'student'), '') }}</strong></div>
+      <div><span>{{ t('craft_session_time', 'Session time') }}</span><strong>{{ when(b.startsAt) }}</strong></div>
+    </div>
+    @if (successNotice()) { <tf-ui-state state="success" variant="confirmation" [compact]="true" [title]="successNotice()" /> }
+
 
     <div class="tf-detail-layout">
       <div class="tf-detail-column">
@@ -57,22 +64,22 @@
               <p class="tf-alert" data-kind="success" data-testid="join-window">{{ locale.format('session_join_now', { start: when(b.startsAt), to: joinCloses() }, 'You can join now. The session starts {start}; joining stays open until {to}. If the other person is not there yet, wait a few minutes in the room.') }}</p>
               <p class="tf-muted" data-testid="join-window-locked">{{ t('session_locked_now', 'The session is starting, so it can no longer be cancelled or moved. If something came up, send a message now.') }}</p>
             } @else {
-              <p class="tf-alert" data-kind="info" data-testid="join-window">{{ role() === 'teacher'
+              <p class="tf-alert" data-kind="info" data-testid="join-window">{{ role() === 'teacher' || (!role() && teacherWorkspace())
                 ? t('session_join_closed_teacher', 'The joining time has ended. Tell Tafseel what happened: press “Mark as completed”, or “Student did not attend”.')
                 : t('session_join_closed_student', 'The joining time has ended. The teacher now confirms what happened; you will be asked to confirm it too.') }}</p>
             }
           }
           @if (b.status === STATUS.AWAITING_TEACHER_APPROVAL) {
-            <p class="tf-alert" data-kind="info">{{ role() === 'teacher'
-              ? t('session_request_teacher_note', 'Review the requested time and topic. The student can pay only after you accept.')
-              : t('session_request_student_note', 'Your request was sent. You can pay after the teacher accepts it.') }}</p>
+            <tf-ui-state state="waiting" variant="confirmation" [compact]="true"
+                         [title]="role() === 'teacher' || (!role() && teacherWorkspace()) ? t('craft_time_review', 'Time request to review') : t('craft_time_sent', 'Time request sent')"
+                         [body]="role() === 'teacher' || (!role() && teacherWorkspace()) ? t('session_request_teacher_note', 'Review the requested time and topic. The student can pay only after you accept.') : t('session_request_student_note', 'Your request was sent. You can pay after the teacher accepts it.')" />
             @if (requestExpired()) { <p class="tf-alert" data-kind="warning">{{ t('session_request_expired_note', 'The requested time has passed. This request can no longer be accepted.') }}</p> }
           }
           @if (b.status === STATUS.CANCELLED) {
             <p class="tf-alert" data-kind="info" data-testid="session-cancelled-note">{{ t('session_cancelled_note', 'This session was cancelled; the other person has been told. Any refund follows the cancellation rule shown when it was cancelled. Nothing is left to do here.') }}</p>
           }
           @if (b.status === STATUS.COMPLETED) {
-            <p class="tf-muted" data-testid="session-completed-note">{{ role() === 'teacher'
+            <p class="tf-muted" data-testid="session-completed-note">{{ role() === 'teacher' || (!role() && teacherWorkspace())
               ? t('session_completed_teacher', 'Completed. The earnings are pending clearance before they can be withdrawn.')
               : t('session_completed_student', 'This session is complete. If something went wrong, you can still report a problem for a few days.') }}</p>
           }
@@ -91,33 +98,33 @@
 
           <div class="tf-action-row">
             @if (can('respond-request')) {
-              <button type="button" class="tf-button" data-testid="accept-session-request" (click)="respondToRequest(true)"
+              <button type="button" class="tf-button" data-testid="accept-session-request" [tfActionFeedback]="busy() === 'respond-request' && pendingChoice() === true ? 'busy' : 'idle'" (click)="pendingChoice.set(true); respondToRequest(true)"
                       [disabled]="!!busy() || requestExpired()">{{ t('session_accept_request', 'Accept request') }}</button>
-              <button type="button" class="tf-button tf-button-secondary" data-testid="decline-session-request" (click)="respondToRequest(false)"
+              <button type="button" class="tf-button tf-button-secondary" data-testid="decline-session-request" [tfActionFeedback]="busy() === 'respond-request' && pendingChoice() === false ? 'busy' : 'idle'" (click)="pendingChoice.set(false); respondToRequest(false)"
                       [disabled]="!!busy()">{{ t('session_decline_request', 'Decline request') }}</button>
             }
             @if (can('pay')) { <a class="tf-button" data-testid="pay-session" routerLink="/checkout" [queryParams]="{ liveSessionId: b.id }">{{ t('order_pay', 'Pay now') }}</a> }
-            @if (can('join') && !meetingOpen()) { <button type="button" class="tf-button" data-testid="join-session" (click)="join()" [disabled]="!!busy() || now() < Session.joinOpensAt(b) || now() > Session.joinClosesAt(b)">{{ t('session_join', 'Join') }}</button> }
-            @if (can('complete')) { <button type="button" class="tf-button" data-testid="complete-session" (click)="complete()" [disabled]="!!busy()">{{ t('session_complete', 'Mark as completed') }}</button> }
-            @if (can('confirm-settlement')) { <button type="button" class="tf-button" data-testid="confirm-settlement" (click)="confirmSettlement()" [disabled]="!!busy()">{{ t('session_confirm_outcome', 'Confirm outcome') }}</button> }
-            @if (can('no-show')) { <button type="button" class="tf-button tf-button-secondary" data-testid="report-no-show" (click)="noShow()" [disabled]="!!busy()">{{ role() === 'teacher' ? t('session_student_absent', 'Student did not attend') : t('session_teacher_absent', 'Teacher did not attend') }}</button> }
+            @if (can('join') && !meetingOpen()) { <button type="button" class="tf-button" data-testid="join-session" [tfActionFeedback]="busy() === 'join' ? 'busy' : 'idle'" (click)="join()" [disabled]="!!busy() || now() < Session.joinOpensAt(b) || now() > Session.joinClosesAt(b)">{{ t('session_join', 'Join') }}</button> }
+            @if (can('complete')) { <button type="button" class="tf-button" data-testid="complete-session" (click)="complete()" [disabled]="!!busy()" [tfActionFeedback]="busy() === 'complete' ? 'busy' : 'idle'">{{ t('session_complete', 'Mark as completed') }}</button> }
+            @if (can('confirm-settlement')) { <button type="button" class="tf-button" data-testid="confirm-settlement" [tfActionFeedback]="busy() === 'confirm-settlement' ? 'busy' : 'idle'" (click)="confirmSettlement()" [disabled]="!!busy()">{{ t('session_confirm_outcome', 'Confirm outcome') }}</button> }
+            @if (can('no-show')) { <button type="button" class="tf-button tf-button-secondary" data-testid="report-no-show" [tfActionFeedback]="busy() === 'no-show' ? 'busy' : 'idle'" (click)="noShow()" [disabled]="!!busy()">{{ role() === 'teacher' || (!role() && teacherWorkspace()) ? t('session_student_absent', 'Student did not attend') : t('session_teacher_absent', 'Teacher did not attend') }}</button> }
             @if (can('respond-reschedule')) {
-              <button type="button" class="tf-button" data-testid="accept-reschedule" (click)="respond(true)" [disabled]="!!busy()">{{ t('session_accept_time', 'Accept new time') }}</button>
-              <button type="button" class="tf-button tf-button-ghost" data-testid="decline-reschedule" (click)="respond(false)" [disabled]="!!busy()">{{ t('session_decline_time', 'Decline') }}</button>
+              <button type="button" class="tf-button" data-testid="accept-reschedule" [tfActionFeedback]="busy() === 'respond-reschedule' && pendingChoice() === true ? 'busy' : 'idle'" (click)="pendingChoice.set(true); respond(true)" [disabled]="!!busy()">{{ t('session_accept_time', 'Accept new time') }}</button>
+              <button type="button" class="tf-button tf-button-ghost" data-testid="decline-reschedule" [tfActionFeedback]="busy() === 'respond-reschedule' && pendingChoice() === false ? 'busy' : 'idle'" (click)="pendingChoice.set(false); respond(false)" [disabled]="!!busy()">{{ t('session_decline_time', 'Decline') }}</button>
             }
             @if (can('reschedule')) { <button type="button" class="tf-button tf-button-ghost" data-testid="open-reschedule" (click)="rescheduleOpen.set(!rescheduleOpen())">{{ t('session_reschedule', 'Propose another time') }}</button> }
-            <button type="button" class="tf-button tf-button-ghost" data-testid="session-message" (click)="message()" [disabled]="!!busy()">{{ t('order_message', 'Message') }} {{ counterpart() }}</button>
+            <button type="button" class="tf-button tf-button-ghost" data-testid="session-message" [tfActionFeedback]="busy() === 'message' ? 'busy' : 'idle'" (click)="message()" [disabled]="!!busy()">{{ t('order_message', 'Message') }} {{ counterpart() }}</button>
             @if (b.status === 1 || b.status === 2 || (b.status >= 4 && b.status <= 8)) {
               <a class="tf-button tf-button-ghost" data-testid="report-problem" routerLink="/disputes" [queryParams]="{ liveSessionId: b.id }">{{ t('order_report_problem', 'Report a problem') }}</a>
             }
-            @if (can('cancel')) { <button type="button" class="tf-button tf-button-ghost" data-testid="cancel-session" (click)="cancel()" [disabled]="!!busy()">{{ t('session_cancel', 'Cancel session') }}</button> }
+            @if (can('cancel')) { <button type="button" class="tf-button tf-button-ghost" data-testid="cancel-session" (click)="cancel()" [disabled]="!!busy()" [tfActionFeedback]="busy() === 'cancel' ? 'busy' : 'idle'">{{ t('session_cancel', 'Cancel session') }}</button> }
             @if (can('review') && !reviewOpen()) { <button type="button" class="tf-button" data-testid="open-session-review" (click)="reviewOpen.set(true)">{{ t('session_review_open', 'Review this session') }}</button> }
           </div>
           @if (role() === 'student' && b.status === STATUS.COMPLETED && b.hasReview) {
             <p class="tf-muted" data-testid="session-reviewed">{{ t('session_reviewed', 'You reviewed this session. Thank you.') }}</p>
           }
           @if (reviewOpen() && can('review')) {
-            <form class="tf-form" (ngSubmit)="submitReview()" novalidate data-testid="session-review-form">
+            <form animate.enter="tf-motion-enter" class="tf-form" (ngSubmit)="submitReview()" novalidate data-testid="session-review-form">
               @for (criterion of criteria; track criterion) {
                 <div class="tf-decision-row" role="group" [attr.aria-labelledby]="'session-review-' + criterion">
                   <span [id]="'session-review-' + criterion">{{ criterionLabel(criterion) }}</span>
@@ -133,13 +140,13 @@
               @if (reviewProblems().includes('ratings')) { <p class="tf-field-error" role="alert">{{ t('order_review_ratings_required', 'Rate every item from 1 to 5.') }}</p> }
               <div class="tf-field">
                 <label for="session-review-comment">{{ t('order_review_comment', 'Your review') }}</label>
-                <textarea id="session-review-comment" name="comment" rows="4" maxlength="2000" data-testid="session-review-comment" [ngModel]="review().comment" (ngModelChange)="setReview('comment', $event)"
+                <textarea autocomplete="off" id="session-review-comment" name="comment" rows="4" maxlength="2000" data-testid="session-review-comment" [ngModel]="review().comment" (ngModelChange)="setReview('comment', $event)"
                           [attr.aria-invalid]="reviewProblems().includes('comment')" [attr.aria-describedby]="reviewProblems().includes('comment') ? 'session-review-comment-error' : null"></textarea>
                 @if (reviewProblems().includes('comment')) { <span id="session-review-comment-error" class="tf-field-error">{{ t('order_review_comment_required', 'Write a few words about the teacher.') }}</span> }
               </div>
               <label class="tf-check"><input type="checkbox" name="recommends" [checked]="review().recommends" (change)="setReview('recommends', $any($event.target).checked)"><span>{{ t('order_review_recommends', 'I recommend this teacher') }}</span></label>
               <div class="tf-form-actions">
-                <button type="submit" class="tf-button" data-testid="submit-session-review" [disabled]="!!busy()">{{ t('order_publish_review', 'Publish review') }}</button>
+                <button type="submit" class="tf-button" data-testid="submit-session-review" [tfActionFeedback]="busy() === 'review' ? 'busy' : 'idle'" [disabled]="!!busy()">{{ t('order_publish_review', 'Publish review') }}</button>
                 <button type="button" class="tf-button tf-button-ghost" (click)="reviewOpen.set(false)">{{ t('common_cancel', 'Cancel') }}</button>
               </div>
             </form>
@@ -147,10 +154,10 @@
           @if (joinUrl()) { <p class="tf-muted" data-testid="join-link">{{ t('session_join_opened', 'The session room opened in a new tab.') }} <a [href]="joinUrl()" target="_blank" rel="noopener">{{ t('session_join_again', 'Open it again') }}</a></p> }
 
           @if (rescheduleOpen() && can('reschedule')) {
-            <form class="tf-form" (ngSubmit)="reschedule()" novalidate data-testid="reschedule-form">
+            <form animate.enter="tf-motion-enter" class="tf-form" (ngSubmit)="reschedule()" novalidate data-testid="reschedule-form">
               <div class="tf-field">
                 <label for="reschedule-at">{{ t('session_new_start', 'New start') }}</label>
-                <input id="reschedule-at" name="at" type="datetime-local" [ngModel]="rescheduleAt()" (ngModelChange)="rescheduleAt.set($event)">
+                <input autocomplete="off" id="reschedule-at" name="at" type="datetime-local" [ngModel]="rescheduleAt()" (ngModelChange)="rescheduleAt.set($event)">
                 <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zoneLabel(zone) }, 'In this device’s time zone ({zone}).') }}</span>
               </div>
               <div class="tf-form-actions"><button type="submit" class="tf-button" [disabled]="!!busy()">{{ t('session_propose', 'Propose time') }}</button></div>
@@ -184,7 +191,7 @@
             <div><dt>{{ t('session_starts', 'Starts') }}</dt><dd data-testid="session-starts">{{ when(b.startsAt) }}</dd></div>
             <div><dt>{{ t('session_ends', 'Ends') }}</dt><dd>{{ when(b.endsAt) }}</dd></div>
             <div><dt>{{ t('setup_time_zone', 'Time zone') }}</dt><dd>{{ zoneLabel(zone) }}</dd></div>
-            <div><dt>{{ role() === 'teacher' ? t('session_student_zone', 'Student’s zone') : t('session_teacher_zone', 'Teacher’s zone') }}</dt><dd>{{ zoneLabel(role() === 'teacher' ? b.studentTimeZoneId : b.teacherTimeZoneId) }}</dd></div>
+            <div><dt>{{ role() === 'teacher' || (!role() && teacherWorkspace()) ? t('session_student_zone', 'Student’s zone') : t('session_teacher_zone', 'Teacher’s zone') }}</dt><dd>{{ zoneLabel(role() === 'teacher' || (!role() && teacherWorkspace()) ? b.studentTimeZoneId : b.teacherTimeZoneId) }}</dd></div>
             <div><dt>{{ t('order_detail_total', 'Total') }}</dt><dd><tf-price [amount]="b.totalPrice" [currency]="b.currency" /></dd></div>
             <div><dt>{{ t('order_payment', 'Payment') }}</dt><dd>{{ b.status === STATUS.AWAITING_TEACHER_APPROVAL || b.status === STATUS.DECLINED ? t('session_payment_not_due', 'Not due yet') : b.status === STATUS.AWAITING_PAYMENT ? t('order_payment_0', 'Pending') : b.status === STATUS.CANCELLED ? t('session_status_cancelled', 'Cancelled') : t('order_payment_1', 'Paid') }}</dd></div>
           </dl>

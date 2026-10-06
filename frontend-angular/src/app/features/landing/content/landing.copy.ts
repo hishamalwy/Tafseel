@@ -14,58 +14,16 @@ export interface StoryStepCopy {
   readonly body: string;
 }
 
-export interface ServiceCopy {
-  readonly nameEnglish: string;
-  readonly nameArabic: string;
-  readonly descriptionEnglish: string;
-  readonly descriptionArabic: string;
-}
-
-/**
- * Static marketing fallbacks for the services section only. Subjects never fall
- * back — an invented subject would send a visitor searching for teachers who do
- * not exist, whereas these four are descriptions of what Tafseel sells.
- */
-export const FALLBACK_SERVICES: readonly ServiceCopy[] = [
-  {
-    nameEnglish: 'Custom recorded explanation', nameArabic: 'شرح مسجّل مخصص',
-    descriptionEnglish: 'A recorded video walking through your exact topic, step by step.',
-    descriptionArabic: 'فيديو مسجّل يشرح لك موضوعك خطوة بخطوة.'
-  },
-  {
-    nameEnglish: 'Assignment guidance', nameArabic: 'إرشاد الواجبات',
-    descriptionEnglish: 'Coaching through your assignment, not ghostwriting.',
-    descriptionArabic: 'توجيه يساعدك تحل واجبك بنفسك، بدون ما أحد يكتبه عنك.'
-  },
-  {
-    nameEnglish: 'Exam revision', nameArabic: 'مراجعة الاختبار',
-    descriptionEnglish: 'Focused revision on your syllabus and past papers.',
-    descriptionArabic: 'مراجعة مكثفة لمنهجك وأسئلة الاختبارات السابقة.'
-  },
-  {
-    nameEnglish: 'Live session', nameArabic: 'جلسة مباشرة',
-    descriptionEnglish: 'One-to-one video call with a shared whiteboard.',
-    descriptionArabic: 'جلسة فيديو فردية مع سبورة مشتركة.'
-  }
-];
-
-/** The four words the hero headline cycles through. */
-export const ROTATE_WORDS = {
-  ar: ['احتياجك', 'مستواك', 'قدراتك', 'وقتك'],
-  en: ['needs', 'level', 'pace', 'schedule']
-} as const;
-
 const ARABIC = {
-  heroLead: 'الشرح العام ما يكفيك',
-  heroPrefix: 'تفصيل، شرحك على مقاس',
-  heroSub: 'ارفع ملفك، اختر الوقت اللي يناسبك، وخذ شرح واضح للجزئية اللي تحتاجها\nبدون تكرار ولا تشتيت',
+  heroLead: 'سؤالك يستاهل',
+  heroPrefix: 'شرح على',
+  heroFocus: 'مقاسك',
+  heroSub: 'ارفع الجزئية اللي وقفتك، واختر معلمك أو انشر طلبك لشرح واضح يناسب احتياجك.',
   heroCta: 'اعرض المعلمين',
   heroJoin: 'انضم كمعلم',
-  heroRotateMin: '5.6ch',
   searchLabel: 'ابحث عن معلم أو مادة أو درس',
   searchPlaceholder: 'مادة، درس، أو معلم…',
-  searchEmpty: 'اكتب اسم معلم أو مادة أو درس.',
-  searchHint: 'البحث يعرض المعلمين المناسبين لك',
+  searchHint: 'ابحث باسم أو مادة، أو اعرض كل المعلمين.',
   uploadCta: 'أو ارفع ملفك',
   accountActions: 'إجراءات الحساب',
   homeLabel: 'العودة إلى بداية الصفحة',
@@ -135,17 +93,21 @@ const ARABIC = {
 
   kingdomEyebrow: 'المملكة العربية السعودية',
   kingdomTitle: 'ثلاث عشرة منطقة، منصة واحدة',
-  kingdomSub: 'من تبوك لجازان، ومن الجوف للشرقية تلقى معلمين معتمدين وين ما كنت.',
+  kingdomSub: 'من أي مكان، شارك سؤالك واختر المعلم المناسب لاحتياجك.',
   kingdomAria: 'خريطة توضيحية للمملكة العربية السعودية بمناطقها الإدارية الثلاث عشرة.',
 
   teachersLoading: 'جاري تحميل المعلمين…',
   teachersEmpty: 'لا يوجد معلمون متاحون للعرض الآن.',
+  servicesError: 'تعذّر تحميل أنواع المساعدة. جرّب مرة ثانية.',
+  servicesEmpty: 'ما فيه أنواع مساعدة منشورة حاليًا.',
 
   promoOff: 'خصم',
   promoRegion: 'عروض وأخبار المنصة',
   promoCodeLabel: 'استخدم الكود',
   promoCopy: 'نسخ',
   promoCopied: 'تم نسخ كود الخصم.',
+  promoCopying: 'جارٍ النسخ…',
+  promoCopyFailed: 'تعذّر النسخ التلقائي. حدّد الكود وانسخه يدويًا:',
   promoCountdown: 'ينتهي العرض خلال',
   promoDays: 'يوم',
   promoHours: 'ساعة',
@@ -155,16 +117,15 @@ const ARABIC = {
 } as const;
 
 const ENGLISH: Record<keyof typeof ARABIC, string> = {
-  heroLead: 'Skip the generic course',
-  heroPrefix: 'Learn around your',
-  heroSub: 'Upload your material, pick the timing, and get the exact part you need explained clearly',
+  heroLead: 'Your question deserves',
+  heroPrefix: 'an explanation for',
+  heroFocus: 'you.',
+  heroSub: 'Share your material. Choose a teacher or post a request for an explanation made for you.',
   heroCta: 'Find teachers',
   heroJoin: 'Become a teacher',
-  heroRotateMin: '8.6ch',
   searchLabel: 'Search for a teacher, subject, or lesson',
   searchPlaceholder: 'Subject, lesson, or teacher…',
-  searchEmpty: 'Enter a teacher, subject, or lesson.',
-  searchHint: 'Search results show matching teachers',
+  searchHint: 'Search by name or subject, or browse all teachers.',
   uploadCta: 'Or upload your file',
   accountActions: 'Account actions',
   homeLabel: 'Back to the top of the page',
@@ -234,17 +195,21 @@ const ENGLISH: Record<keyof typeof ARABIC, string> = {
 
   kingdomEyebrow: 'Across the Kingdom',
   kingdomTitle: 'Thirteen regions, one platform',
-  kingdomSub: 'From Tabuk to Jazan, from Al Jawf to the Eastern Province verified teachers wherever you are.',
+  kingdomSub: 'Wherever you are, share your question and choose a teacher for the part you need to understand.',
   kingdomAria: 'A decorative map of Saudi Arabia showing its thirteen administrative regions.',
 
   teachersLoading: 'Loading teachers…',
   teachersEmpty: 'No teachers are available to feature right now.',
+  servicesError: 'Help formats could not load. Please try again.',
+  servicesEmpty: 'No help formats are published right now.',
 
   promoOff: 'off',
   promoRegion: 'Platform offers and news',
   promoCodeLabel: 'Use the code',
   promoCopy: 'Copy',
   promoCopied: 'Discount code copied.',
+  promoCopying: 'Copying…',
+  promoCopyFailed: 'Automatic copying failed. Select this code and copy it manually:',
   promoCountdown: 'Offer ends in',
   promoDays: 'days',
   promoHours: 'hrs',
@@ -284,14 +249,14 @@ export function escrowSteps(isArabic: boolean): readonly string[] {
       'تفصيل تحتفظ بالمبلغ بأمان',
       'المعلم يسلّم الخدمة',
       'تراجع النتيجة: تعتمدها، تطلب تعديل، أو تفتح نزاع',
-      'بعد اعتمادك، يتحوّل المبلغ للمعلم'
+      'يتحوّل المبلغ بعد اعتمادك، أو الإكمال التلقائي بعد انتهاء مهلة المراجعة إذا ما فيه نزاع مفتوح'
     ]
     : [
       'Student pays when the offer is accepted',
       'Tafseel holds the payment securely',
       'Teacher delivers the service',
       'Student reviews: approve, request a revision, or open a dispute',
-      'Payment is released to the teacher'
+      'Payment is released after approval, or automatic completion after the review window if no dispute is open'
     ];
 }
 

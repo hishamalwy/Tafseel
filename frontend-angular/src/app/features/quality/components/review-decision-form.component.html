@@ -31,7 +31,7 @@
 
   <div class="tf-field">
     <label for="decision-comment">{{ commentRequired() ? t('quality_comment_required_label', 'Feedback to the teacher (required)') : t('quality_comment_label', 'Feedback to the teacher (optional)') }}</label>
-    <textarea id="decision-comment" name="comment" [ngModel]="draft().comment" (ngModelChange)="comment($event)"
+    <textarea autocomplete="off" id="decision-comment" name="comment" [ngModel]="draft().comment" (ngModelChange)="comment($event)"
               [attr.maxlength]="commentMax" [attr.aria-invalid]="has('comment_required') || has('comment_too_long')"
               [attr.aria-describedby]="has('comment_required') || has('comment_too_long') ? 'decision-comment-help decision-comment-error' : 'decision-comment-help'"></textarea>
     <span class="tf-field-help" id="decision-comment-help">{{ t('quality_comment_help', 'The teacher sees this with the decision.') }} {{ draft().comment.length }}/{{ commentMax }}</span>
@@ -41,7 +41,7 @@
 
   <div class="tf-field">
     <label for="decision-notes">{{ t('quality_notes_label', 'Internal notes (reviewers only)') }}</label>
-    <textarea id="decision-notes" name="notes" [ngModel]="draft().internalNotes" (ngModelChange)="notes($event)"
+    <textarea autocomplete="off" id="decision-notes" name="notes" [ngModel]="draft().internalNotes" (ngModelChange)="notes($event)"
               [attr.maxlength]="notesMax" [attr.aria-invalid]="has('notes_too_long')" [attr.aria-describedby]="has('notes_too_long') ? 'decision-notes-error' : null"></textarea>
     @if (has('notes_too_long')) { <p id="decision-notes-error" class="tf-field-error" role="alert">{{ t('quality_notes_too_long', 'Keep internal notes under 4,000 characters.') }}</p> }
   </div>

@@ -35,13 +35,13 @@ import { PriceComponent } from './price.component';
   styles: `
     :host { display: block; }
     .tf-price-panel { display: flex; flex-direction: column; gap: 12px; margin: 0; }
-    .tf-price-panel-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 15px; }
+    .tf-price-panel-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: var(--type-body-size); }
     .tf-price-panel-row dt { color: var(--text-2); margin: 0; }
     .tf-price-panel-row dd { margin: 0; font-weight: 650; text-align: end; word-break: break-word; }
     .tf-price-panel-row[data-row='total'] { margin-block-start: 4px; padding-block-start: 14px; border-block-start: 1px solid var(--border); }
     .tf-price-panel-row[data-row='total'] dt { color: var(--text); font-weight: 650; }
-    .tf-price-panel-reason { margin: 12px 0 0; padding: 10px 12px; font-size: 14px; line-height: 1.6; background: var(--surface-2); border-radius: var(--r-sm); }
-    .tf-price-panel-note { margin: 12px 0 0; font-size: 13px; color: var(--text-2); line-height: 1.5; max-width: 48ch; }
+    .tf-price-panel-reason { margin: 12px 0 0; padding: 10px 12px; font-size: var(--type-body-sm-size); line-height: 1.6; background: var(--surface-2); border-radius: var(--r-sm); }
+    .tf-price-panel-note { margin: 12px 0 0; font-size: var(--type-label-size); color: var(--text-2); line-height: 1.5; max-width: 48ch; }
     /* Checkout: the amount being charged is the loudest thing on the screen, as it was before UX-09. */
     .tf-price-panel[data-emphasis='true'] .tf-price-panel-row[data-row='total'] { margin-block-start: 8px; padding-block-start: 16px; }
     .tf-price-panel[data-emphasis='true'] .tf-price-panel-row[data-row='total'] dd {

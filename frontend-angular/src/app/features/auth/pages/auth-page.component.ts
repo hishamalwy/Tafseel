@@ -1,3 +1,6 @@
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
+import { SegmentedControlDirective } from '@shared/directives/segmented-control.directive';
+import { UiStateComponent } from '@shared/components/ui-state.component';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -41,7 +44,7 @@ type RoleChoice = 'student' | 'teacher';
 @Component({
   selector: 'tf-auth-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [ActionFeedbackDirective, SegmentedControlDirective, UiStateComponent,
     FormsModule, RouterLink, AuthShellComponent, IconComponent, TextFieldComponent,
     PasswordFieldComponent, PasswordRulesComponent, ToastComponent
   ],
@@ -105,6 +108,7 @@ export class AuthPageComponent {
   readonly regPasswordTouched = signal(false);
   readonly regPasswordFocused = signal(false);
   readonly regConfirmTouched = signal(false);
+  readonly termsTouched = signal(false);
 
   // --- reset ---
   readonly resetPassword = signal('');
@@ -184,11 +188,12 @@ export class AuthPageComponent {
   readonly loginPasswordError = computed(() =>
     this.loginPasswordInvalid() ? this.t('auth_password_required', 'Enter your password.') : '');
 
-  readonly loginSubmitDisabled = computed(() =>
-    this.loggingIn()
-    || !EmailAddress.isValid(this.email())
-    || this.password().length === 0
-    || (this.needsMfa() && this.mfaCode().trim().length < 6));
+  /**
+   * Submit stays pressable while a form is incomplete: a disabled button cannot be
+   * focused and never says what is missing. Pressing it reveals every field's error
+   * and moves focus to the first one; only a request in flight disables it.
+   */
+  readonly loginSubmitDisabled = computed(() => this.loggingIn());
 
   readonly fullNameInvalid = computed(() =>
     this.fullNameTouched() && this.fullName().trim().length === 0);
@@ -211,13 +216,9 @@ export class AuthPageComponent {
   readonly regConfirmMatch = computed(() =>
     this.matchHint(this.regPassword(), this.regConfirm(), this.regConfirmTouched()));
 
-  readonly registerSubmitDisabled = computed(() =>
-    this.registering()
-    || this.fullName().trim().length === 0
-    || !EmailAddress.isValid(this.regEmail())
-    || !PasswordPolicy.isSatisfiedBy(this.regPassword())
-    || this.regConfirm() !== this.regPassword()
-    || !this.agreeTerms());
+  readonly termsInvalid = computed(() => this.termsTouched() && !this.agreeTerms());
+
+  readonly registerSubmitDisabled = computed(() => this.registering());
 
   readonly resetPasswordInvalid = computed(() =>
     this.resetPasswordTouched() && !PasswordPolicy.isSatisfiedBy(this.resetPassword()));
@@ -229,10 +230,7 @@ export class AuthPageComponent {
   readonly resetPasswordRules = computed(() => this.decorate(this.resetPassword()));
   readonly resetConfirmMatch = computed(() =>
     this.matchHint(this.resetPassword(), this.resetConfirm(), this.resetConfirmTouched()));
-  readonly resetSubmitDisabled = computed(() =>
-    this.resetting()
-    || !PasswordPolicy.isSatisfiedBy(this.resetPassword())
-    || this.resetConfirm() !== this.resetPassword());
+  readonly resetSubmitDisabled = computed(() => this.resetting());
 
   goMode(mode: Mode): void {
     this.mode.set(mode);
@@ -245,6 +243,13 @@ export class AuthPageComponent {
   // ---- actions ----
   async onLogin(): Promise<void> {
     if (this.loginSubmitDisabled()) return;
+    this.emailTouched.set(true);
+    this.passwordTouched.set(true);
+    const missing = !EmailAddress.isValid(this.email()) ? 'login-email'
+      : this.password().length === 0 ? 'login-password'
+      : this.needsMfa() && this.mfaCode().trim().length < 6 ? 'login-mfa'
+      : null;
+    if (missing) return this.focusField(missing);
     this.loggingIn.set(true);
     this.loginError.set('');
     this.needsConfirmationResend.set(false);
@@ -276,6 +281,18 @@ export class AuthPageComponent {
 
   async onRegister(): Promise<void> {
     if (this.registerSubmitDisabled()) return;
+    this.fullNameTouched.set(true);
+    this.regEmailTouched.set(true);
+    this.regPasswordTouched.set(true);
+    this.regConfirmTouched.set(true);
+    this.termsTouched.set(true);
+    const missing = this.fullName().trim().length === 0 ? 'reg-fullname'
+      : !EmailAddress.isValid(this.regEmail()) ? 'reg-email'
+      : !PasswordPolicy.isSatisfiedBy(this.regPassword()) ? 'reg-password'
+      : this.regConfirm() !== this.regPassword() ? 'reg-confirm'
+      : !this.agreeTerms() ? 'reg-terms'
+      : null;
+    if (missing) return this.focusField(missing);
     this.registering.set(true);
     this.regError.set('');
 
@@ -325,6 +342,12 @@ export class AuthPageComponent {
 
   async onReset(): Promise<void> {
     if (this.resetSubmitDisabled()) return;
+    this.resetPasswordTouched.set(true);
+    this.resetConfirmTouched.set(true);
+    const missing = !PasswordPolicy.isSatisfiedBy(this.resetPassword()) ? 'reset-password'
+      : this.resetConfirm() !== this.resetPassword() ? 'reset-confirm'
+      : null;
+    if (missing) return this.focusField(missing);
     this.resetting.set(true);
     this.resetError.set('');
     try {
@@ -385,8 +408,14 @@ export class AuthPageComponent {
     });
   }
 
+  /** The field exists already; only its error is new, so focus needs no render wait. */
+  private focusField(id: string): void {
+    globalThis.document?.getElementById(id)?.focus();
+  }
+
   private matchHint(password: string, confirm: string, touched: boolean) {
-    if (!confirm || !touched) return null;
+    // An empty confirmation is only a mismatch once there is a password to match.
+    if (!touched || (!confirm && !password)) return null;
     return password === confirm
       ? { text: this.t('auth_passwords_match', 'Passwords match'), ok: true }
       : { text: this.t('auth_passwords_differ', 'Passwords do not match'), ok: false };

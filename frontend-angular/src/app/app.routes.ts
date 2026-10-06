@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Route, Router, Routes } from '@angular/router';
 import { authenticatedGuard, guestOnlyGuard, roleGuard } from '@core/auth/guards/auth.guards';
+import { unsavedChangesGuard } from '@shared/utils/unsaved-changes';
 
 /**
  * The route table for the whole app.
@@ -62,6 +63,12 @@ function movedTab(target: string, tabs: readonly string[]): CanActivateFn {
     : true;
 }
 
+// A generic “Post a request” opens the explanation form. Teacher-specific
+// links retain their existing direct-request wizard and context.
+const requestEntry: CanActivateFn = route => route.queryParamMap.get('teacherId')?.trim()
+  ? true
+  : inject(Router).createUrlTree(['/requests/new/open'], { queryParams: route.queryParams });
+
 export const routes: Routes = [
   // ---- public ----
   {
@@ -79,7 +86,7 @@ export const routes: Routes = [
   },
   {
     path: 'requests/new',
-    canActivate: [authenticatedGuard],
+    canActivate: [authenticatedGuard, requestEntry],
     loadComponent: () =>
       import('@features/requests/pages/new-request-page.component')
         .then(m => m.NewRequestPageComponent)
@@ -318,6 +325,7 @@ export const routes: Routes = [
   // PRODUCT-P1: one account page for every role (name, photo, password, devices, notifications, data, deletion).
   {
     path: 'account',
+    canDeactivate: [unsavedChangesGuard],
     canActivate: [authenticatedGuard],
     loadComponent: () => import('@features/account/pages/account-settings-page.component').then(m => m.AccountSettingsPageComponent)
   },

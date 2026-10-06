@@ -81,14 +81,14 @@
 
             <div class="tf-field">
               <label for="req-title">{{ t('req_title_field', 'Title') }}</label>
-              <input id="req-title" type="text" maxlength="120" required
+              <input autocomplete="off" id="req-title" type="text" maxlength="120" required
                      [placeholder]="t('req_title_placeholder', 'A short summary of what you need')"
                      [value]="requestTitle()" (input)="requestTitle.set($any($event.target).value)" />
             </div>
 
             <div class="tf-field">
               <label for="req-topic">{{ t('req_topic', 'Topic') }}</label>
-              <input id="req-topic" type="text" maxlength="120"
+              <input autocomplete="off" id="req-topic" type="text" maxlength="120"
                      [value]="topicLabel()" (input)="topicLabel.set($any($event.target).value)" />
             </div>
           }
@@ -96,7 +96,7 @@
           @if (step() === 2) {
             <div class="tf-field">
               <label for="req-goal">{{ t('req_goal', 'What do you want to achieve?') }}</label>
-              <textarea id="req-goal" rows="4" maxlength="2000" required
+              <textarea autocomplete="off" id="req-goal" rows="4" maxlength="2000" required
                         [value]="goal()" (input)="goal.set($any($event.target).value)"></textarea>
               <!-- The helper exists only when the server says it can run (UX-08); a student is never
                    offered a button that is going to answer "unavailable". -->
@@ -123,7 +123,7 @@
             @for (key of promptKeys(); track key) {
               <div class="tf-field">
                 <label [attr.for]="'req-prompt-' + key">{{ promptLabel(key) }}</label>
-                <textarea [id]="'req-prompt-' + key" rows="2" maxlength="1000"
+                <textarea autocomplete="off" [id]="'req-prompt-' + key" rows="2" maxlength="1000"
                           [value]="promptValue(key)"
                           (input)="setPrompt(key, $any($event.target).value)"></textarea>
               </div>
@@ -141,7 +141,7 @@
           @if (step() === 3) {
             <div class="tf-field">
               <label for="req-delivery">{{ t('req_delivery', 'When do you need it?') }}</label>
-              <input id="req-delivery" type="date" required [min]="minDeliveryDate"
+              <input autocomplete="off" id="req-delivery" type="date" required [min]="minDeliveryDate"
                      [value]="deliveryDate()" (input)="deliveryDate.set($any($event.target).value)" />
               @if (deliveryDate() && !deliveryAt()) {
                 <p class="tf-field-error" role="alert">{{ t('req_delivery_future', 'Choose today or a later day.') }}</p>
@@ -163,14 +163,14 @@
             @if (!flexibleBudget() && service()?.price == null) {
               <div class="tf-field">
                 <label for="req-budget">{{ t('req_budget', 'Your budget') }}</label>
-                <input id="req-budget" type="number" min="0" step="10"
+                <input autocomplete="off" id="req-budget" type="number" min="0" step="10"
                        [value]="budget()" (input)="budget.set($any($event.target).value)" />
               </div>
             }
 
             <div class="tf-field">
               <label for="req-notes">{{ t('req_notes', 'Anything else?') }}</label>
-              <textarea id="req-notes" rows="3" maxlength="1000"
+              <textarea autocomplete="off" id="req-notes" rows="3" maxlength="1000"
                         [value]="constraints()" (input)="constraints.set($any($event.target).value)"></textarea>
             </div>
           }

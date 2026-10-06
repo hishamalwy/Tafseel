@@ -83,6 +83,29 @@ public sealed class JaasLiveSessionLinkProviderTests
         }
     }
 
+    // The host keeps the key exactly as the JaaS console downloads it: "Key <date>.pk" beside "Key <date>.pub".
+    [Fact]
+    public void A_key_folder_yields_its_single_private_key_and_refuses_ambiguity()
+    {
+        var folder = Directory.CreateTempSubdirectory("tafseel-jaas-").FullName;
+        try
+        {
+            using var key = RSA.Create(2048);
+            File.WriteAllText(Path.Combine(folder, "Key 10_1_2026, 12_31_43 PM.pk"), key.ExportPkcs8PrivateKeyPem());
+            File.WriteAllText(Path.Combine(folder, "Key 10_1_2026, 12_31_43 PM.pub"), key.ExportSubjectPublicKeyInfoPem());
+            var options = new JaasOptions { AppId = "vpaas-magic-cookie-test", KeyId = "vpaas-magic-cookie-test/k", PrivateKeyPath = folder };
+            Assert.True(JaasSigningKey.IsUsable(options));
+
+            using var second = RSA.Create(2048);
+            File.WriteAllText(Path.Combine(folder, "other.pem"), second.ExportPkcs8PrivateKeyPem());
+            Assert.False(JaasSigningKey.IsUsable(options));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task Sandbox_static_jwt_is_returned_for_every_participant()
     {

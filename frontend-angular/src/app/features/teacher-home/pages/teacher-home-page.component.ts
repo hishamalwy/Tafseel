@@ -1,3 +1,4 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
@@ -23,7 +24,7 @@ import { LoadTeacherHome, TeacherHomeData } from '../services/teacher-home.use-c
 @Component({
   selector: 'tf-teacher-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PriceComponent, RouterLink, WorkspaceShellComponent],
+  imports: [SkeletonComponent, PriceComponent, RouterLink, WorkspaceShellComponent],
   templateUrl: './teacher-home-page.component.html',
   styles: `
     /* The teacher's desk: today's work in the main column, the schedule and the money in a narrow rail beside
@@ -39,7 +40,7 @@ import { LoadTeacherHome, TeacherHomeData } from '../services/teacher-home.use-c
     .tf-home-main:empty, .tf-home-rail:empty { display: none; }
     .tf-home-greeting { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 2.6vw, 36px); line-height: 1.16;
       letter-spacing: -.028em; font-weight: var(--weight-heavy); text-wrap: balance; }
-    .tf-home-date { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-2); }
+    .tf-home-date { margin: 0; font-size: var(--type-body-size); font-weight: 600; color: var(--text-2); }
     .tf-home-greeting.tf-skeleton { height: 36px; max-width: 240px; }
     .tf-home-section { display: grid; gap: 12px; align-content: start; }
     .tf-home-section h2 { margin: 0 0 2px; font-size: var(--type-section-title-size); font-weight: 800; letter-spacing: -.012em; color: var(--text); }
@@ -48,35 +49,35 @@ import { LoadTeacherHome, TeacherHomeData } from '../services/teacher-home.use-c
       background: color-mix(in oklab, var(--primary-soft) 55%, var(--surface)); }
     :host-context(html[data-theme='dark']) [data-testid='home-actions'] .tf-home-card:first-of-type {
       border-color: color-mix(in oklab, var(--brand-lime) 34%, var(--border)); background: color-mix(in oklab, var(--brand-lime) 7%, var(--surface)); }
-    .tf-home-card h3 { margin: 0; font-size: 16px; font-weight: 750; line-height: 1.4; text-wrap: pretty; }
+    .tf-home-card h3 { margin: 0; font-size: var(--type-item-title-size); font-weight: 750; line-height: 1.4; text-wrap: pretty; }
     .tf-home-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     .tf-home-setup { padding: 24px 26px; border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
       background: color-mix(in oklab, var(--primary-soft) 40%, var(--surface)); }
-    .tf-home-setup h2 { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.35; letter-spacing: -.012em; }
-    .tf-home-steps { margin: 0; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
-    .tf-home-supporting { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-2); font-variant-numeric: tabular-nums; }
+    .tf-home-setup h2 { margin: 0; font-size: var(--type-section-title-size); font-weight: 800; line-height: 1.35; letter-spacing: -.012em; }
+    .tf-home-steps { margin: 0; font-size: var(--type-label-size); color: var(--text-2); font-variant-numeric: tabular-nums; }
+    .tf-home-supporting { margin: 0; font-size: var(--type-label-size); line-height: 1.6; color: var(--text-2); font-variant-numeric: tabular-nums; }
     /* .tf-price-line is a flex box, so a label and its amount need a row of their own to share. */
     .tf-home-money { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
     .tf-home-card .tf-button, .tf-home-card .tf-button-secondary { justify-self: start; min-height: 44px; margin-block-start: 4px; }
-    .tf-home-link, .tf-home-more { font-size: 14px; font-weight: 700; justify-self: start; min-height: 44px; display: inline-flex;
+    .tf-home-link, .tf-home-more { font-size: var(--type-body-sm-size); font-weight: 700; justify-self: start; min-height: 44px; display: inline-flex;
       align-items: center; color: var(--primary); text-decoration: none; }
-    .tf-home-link:hover, .tf-home-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+    @media (hover:hover) and (pointer:fine){.tf-home-link:hover,.tf-home-more:hover { text-decoration: underline; text-underline-offset: 3px; } }
     .tf-home-quiet { margin: 0; padding: 16px 20px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg);
-      font-size: 14px; line-height: 1.55; color: var(--text-2); }
+      font-size: var(--type-body-sm-size); line-height: 1.55; color: var(--text-2); }
     .tf-home-quiet + .tf-home-quiet { border-style: solid; background: var(--surface); }
     /* The money card: one figure leads, the rest is quiet. */
     .tf-home-earnings { display: grid; gap: 10px; }
-    .tf-home-earnings p { margin: 0; display: flex; gap: 8px; align-items: baseline; justify-content: space-between; font-size: 14px; }
+    .tf-home-earnings p { margin: 0; display: flex; gap: 8px; align-items: baseline; justify-content: space-between; font-size: var(--type-body-sm-size); }
     .tf-home-earnings span { color: var(--text-2); }
     .tf-home-earnings strong { font-weight: 800; font-variant-numeric: tabular-nums; }
     .tf-home-earnings [data-testid='home-available'] { flex-direction: column; align-items: flex-start; gap: 2px;
       padding-block-end: 12px; border-block-end: 1px solid var(--border); }
-    .tf-home-earnings [data-testid='home-available'] strong { font-size: 28px; letter-spacing: -.02em; }
+    .tf-home-earnings [data-testid='home-available'] strong { font-size: var(--type-figure-size); letter-spacing: -.02em; }
     [data-testid='home-upcoming'] .tf-home-card { border-color: color-mix(in oklab, var(--accent) 36%, var(--border));
       background: color-mix(in oklab, var(--accent-soft) 45%, var(--surface)); }
     .tf-home-card .tf-home-quiet { padding: 0; border: 0; background: none; }
     .tf-home[data-state='loading'] { grid-template-columns: minmax(0, 1fr); }
-    .tf-home-section-error { margin: 0; font-size: 13px; color: var(--text-2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .tf-home-section-error { margin: 0; font-size: var(--type-label-size); color: var(--text-2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   `
 })
 export class TeacherHomePageComponent {

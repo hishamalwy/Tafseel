@@ -37,7 +37,7 @@ import { Notification, NotificationsGateway } from '../services/notifications.ga
         }
       </button>
       @if (open()) {
-        <div id="notification-panel" class="tf-bell-panel" role="region" data-testid="notification-panel"
+        <div id="notification-panel" class="tf-bell-panel" animate.enter="tf-popover-enter" animate.leave="tf-popover-leave" [attr.inert]="!open() ? '' : null" role="region" data-testid="notification-panel"
              [attr.aria-label]="t('nav_notifications', 'Notifications')">
           <header class="tf-bell-panel__head">
             <h2 class="tf-bell-panel__title">{{ t('nav_notifications', 'Notifications') }}</h2>
@@ -54,6 +54,9 @@ import { Notification, NotificationsGateway } from '../services/notifications.ga
           </header>
           <!-- Read after an unread row's own sentence by screen readers; never shown, never part of the row's text. -->
           <span id="tf-bell-unread-note" hidden>{{ t('nav_unread_one', 'Unread') }}</span>
+          @if (feedback(); as message) {
+            <p class="tf-bell-feedback" role="status" aria-live="polite" data-testid="notification-feedback">{{ message }}</p>
+          }
           @if (error()) {
             <div class="tf-bell-state" role="alert" data-testid="notification-error">
               <p>{{ t('nav_notifications_error', 'We couldn’t load your notifications.') }}</p>
@@ -109,15 +112,15 @@ import { Notification, NotificationsGateway } from '../services/notifications.ga
 
     .tf-bell-panel { position: absolute; inset-block-start: calc(100% + var(--space-2)); inset-inline-end: 0; z-index: 40;
       width: min(400px, calc(100vw - 24px)); max-height: min(560px, calc(100dvh - 88px)); overflow: hidden;
-      display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--r-lg);
-      background: var(--surface); box-shadow: var(--shadow-lg, 0 16px 48px rgba(0,0,0,.18)); }
+      display: flex; flex-direction: column; border: 1px solid var(--edge-overlay); border-radius: var(--r-lg);
+      background: var(--surface); box-shadow: var(--overlay-shadow); }
     .tf-bell-panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
       min-height: 60px; padding-block: var(--space-2); padding-inline: var(--space-5) var(--space-2);
       border-block-end: 1px solid var(--border); flex: none; }
-    .tf-bell-panel__title { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.3; }
+    .tf-bell-panel__title { margin: 0; font-size: var(--type-item-title-size); font-weight: 800; line-height: 1.3; }
     .tf-bell-panel__actions { display: flex; align-items: center; gap: var(--space-1); }
     .tf-bell-panel__actions .tf-button { color: var(--primary); border-color: transparent; }
-    .tf-bell-panel__actions .tf-button:hover { border-color: var(--border); }
+    @media (hover:hover) and (pointer:fine){.tf-bell-panel__actions .tf-button:hover { border-color: var(--border); } }
     .tf-bell-panel__close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 
     .tf-bell-list { list-style: none; margin: 0; padding: var(--space-2); overflow-y: auto; min-height: 0;
@@ -131,13 +134,13 @@ import { Notification, NotificationsGateway } from '../services/notifications.ga
       width: 100%; min-height: 56px; margin-block: 2px; padding: var(--space-3); border: 0; border-radius: var(--r-sm);
       background: transparent; text-align: start; text-decoration: none; color: inherit; font: inherit; cursor: pointer;
       transition: background var(--t); }
-    .tf-bell-row__hit:hover { background: var(--surface-2); }
+    @media (hover:hover) and (pointer:fine){.tf-bell-row__hit:hover { background: var(--surface-2); } }
     .tf-bell-row__hit:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; background: var(--surface-2); }
     .tf-bell-row__icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--r-sm);
       background: var(--surface-2); color: var(--text-2); }
     .tf-bell-row__text { display: grid; gap: 3px; min-width: 0; }
-    .tf-bell-row__message { font-size: 14px; line-height: 1.45; font-weight: 500; color: var(--text-2); overflow-wrap: anywhere; }
-    .tf-bell-row__time { font-size: 12px; line-height: 1.4; color: var(--text-2); }
+    .tf-bell-row__message { font-size: var(--type-body-sm-size); line-height: 1.45; font-weight: 500; color: var(--text-2); overflow-wrap: anywhere; }
+    .tf-bell-row__time { font-size: var(--type-meta-size); line-height: 1.4; color: var(--text-2); }
     .tf-bell-row__dot { width: 8px; height: 8px; margin-block-start: 7px; border-radius: 50%; }
     /* Unread: the sentence in full weight and ink, the kind in the brand tint, and a dot at the end. */
     .tf-bell-row.is-unread .tf-bell-row__message { font-weight: 700; color: var(--text); }
@@ -145,8 +148,10 @@ import { Notification, NotificationsGateway } from '../services/notifications.ga
     .tf-bell-row.is-unread .tf-bell-row__dot { background: var(--primary); }
 
     .tf-bell-state { display: grid; justify-items: center; gap: var(--space-3); margin: 0; padding: var(--space-8) var(--space-5);
-      text-align: center; color: var(--text-2); font-size: 14px; }
+      text-align: center; color: var(--text-2); font-size: var(--type-body-sm-size); }
     .tf-bell-state p { margin: 0; }
+    .tf-bell-feedback { margin: 0 var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid color-mix(in oklab, var(--primary) 34%, var(--border));
+      border-radius: var(--r-sm); background: var(--primary-soft); color: var(--text); font-size: var(--type-meta-size); line-height: 1.45; }
     .tf-bell-state__icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%;
       background: var(--surface-2); color: var(--text-2); }
 
@@ -166,6 +171,7 @@ export class NotificationBellComponent {
 
   readonly open = signal(false);
   readonly error = signal(false);
+  readonly feedback = signal('');
   readonly items = signal<readonly Notification[]>([]);
   readonly unread = computed(() => this.items().some(item => !item.read));
 
@@ -174,7 +180,7 @@ export class NotificationBellComponent {
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
 
   async toggle(): Promise<void> {
-    if (this.open()) { this.close(); return; }
+    if (this.open()) { this.feedback.set(''); this.close(); return; }
     this.open.set(true);
     await this.load();
   }
@@ -187,6 +193,7 @@ export class NotificationBellComponent {
 
   async load(): Promise<void> {
     this.error.set(false);
+    this.feedback.set('');
     try {
       this.items.set(await firstValueFrom(this.gateway.latest()));
     } catch {
@@ -232,15 +239,20 @@ export class NotificationBellComponent {
   }
 
   async openRow(item: Notification): Promise<void> {
-    this.open.set(false);
+    const hasDestination = this.routeOf(item) !== null || this.legacyHrefOf(item) !== null;
+    if (hasDestination) this.open.set(false);
     if (!item.read) {
       this.items.set(this.items().map(row => (row.id === item.id ? { ...row, read: true } : row)));
       try { await firstValueFrom(this.gateway.markRead(item.id)); } catch { /* reading is not the point of the tap */ }
     }
+    if (!hasDestination) this.feedback.set(this.t('nav_notification_read', 'Notification marked as read.'));
   }
 
   async markAll(): Promise<void> {
     this.items.set(this.items().map(row => ({ ...row, read: true })));
-    try { await firstValueFrom(this.gateway.markAllRead()); } catch { await this.load(); }
+    try {
+      await firstValueFrom(this.gateway.markAllRead());
+      this.feedback.set(this.t('nav_notifications_marked', 'All notifications marked as read.'));
+    } catch { await this.load(); }
   }
 }

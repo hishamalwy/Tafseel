@@ -82,7 +82,7 @@ describe('UX-01 StudentHomePageComponent', () => {
     expect(textOf(page, 'home-welcome')).toBe('Welcome, سارة. How can we help today?');
     expect(textOf(page, 'home-find-teacher')).toContain('Find a teacher');
     expect(textOf(page, 'home-post-request')).toContain('Post a request');
-    expect(hrefs(page)).toEqual(expect.arrayContaining(['/teachers', '/requests/new']));
+    expect(hrefs(page)).toEqual(expect.arrayContaining(['/teachers', '/requests/new/open']));
     // Nothing is waiting, so the page does not pretend otherwise — and shows no entity lists.
     expect(testId(page, 'home-actions')).toBeNull();
     expect(testId(page, 'home-current')).toBeNull();
@@ -181,7 +181,7 @@ describe('UX-01 StudentHomePageComponent', () => {
         teacherDisplayNameEnglish: 'Noura' }])
     });
     expect(hrefs(page)).toEqual(expect.arrayContaining([
-      '/requests/r1/offers', '/orders/o1', '/live-sessions/s1', '/student/requests', '/teachers', '/requests/new'
+      '/requests/r1/offers', '/orders/o1', '/live-sessions/s1', '/student/requests', '/teachers', '/requests/new/open'
     ]));
     // "See all my requests" is the one link to a list; every card itself goes to the item, never to a
     // dashboard section — the item screen is what owns the business action.

@@ -1,7 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  ChangeDetectionStrategy, Component, HostListener, PLATFORM_ID, ViewEncapsulation, computed, effect, inject, signal
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, PLATFORM_ID, ViewEncapsulation, computed, effect, inject,
+  signal, untracked, viewChild
 } from '@angular/core';
+import { ReducedMotion } from '@core/a11y/reduced-motion.service';
 import { Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { FormatService } from '@core/i18n/format.service';
@@ -16,47 +18,47 @@ import { LandingFooterComponent } from '@shared/layouts/landing-footer.component
 import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 import { StudentJourney } from '@shared/models/student-journey';
 import {
-  CatalogService, FeaturedSubject, FeaturedTeacher, catalogueIndex
+  CatalogService, FeaturedSubject, FeaturedTeacher
 } from '../models/featured';
 import { JourneyOffer } from '../services/landing.ports';
 import { Promotion } from '../models/promotion';
 import {
   Campaigns, LandingContent, LoadLandingContent, LoadStudentJourney
 } from '../services/landing.use-cases';
-import { HeroRotatorComponent } from '../components/hero-rotator.component';
 import { JourneyStripComponent } from '../components/journey-strip.component';
 import { KingdomMapComponent } from '../components/kingdom-map.component';
 import { LandingSpriteComponent } from '../components/landing-sprite.component';
 import { ProductStoryComponent, StoryTeacher } from '../components/product-story.component';
 import { PromoWizardComponent } from '../components/promo-wizard.component';
 import {
-  FALLBACK_SERVICES, ROTATE_WORDS, escrowSteps, landingCopy, scaleNote
+  escrowSteps, landingCopy, scaleNote
 } from '../content/landing.copy';
 
 /** Long enough for the hero to paint before a dialog can cover it. */
 const WIZARD_DELAY_MS = 700;
+/** One escrow step after another, close enough to read as a single sequence. */
+const ESCROW_STEP_MS = 220;
 
 /**
  * The home page.
  *
  * Five public reads open it, each settling independently, plus one extra read
  * for a signed-in Student's own requests. The sections it composes are separate
- * components because each owns real behaviour — a rotating word, an autoplaying
+ * components because each owns real behaviour — an autoplaying
  * chapter, a modal campaign — and folding them together is how the legacy page
  * ended up with a 460-line `renderVals` and fourteen timers on one class.
  *
  * What is *not* here is as deliberate: no invented rating, count, availability
  * or total. Where a figure has not arrived the page says so — the community orbs
- * hold a dash rather than a number Tafseel cannot stand behind — and the only
- * section allowed a static fallback is the service catalogue, which describes
- * what Tafseel sells rather than claiming anything about its data.
+ * retain a pending dash until counts are available. The active service catalogue is authoritative;
+ * failure and an empty result never substitute a static marketing catalogue.
  */
 @Component({
   selector: 'tf-landing-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink, SkipLinkComponent, PublicHeaderComponent, LandingFooterComponent,
-    LandingSpriteComponent, KingdomMapComponent, HeroRotatorComponent,
+    LandingSpriteComponent, KingdomMapComponent,
     ProductStoryComponent, JourneyStripComponent, PromoWizardComponent,
     PriceComponent, ToastComponent
   ],
@@ -74,6 +76,9 @@ export class LandingPageComponent {
   private readonly title = inject(Title);
   private readonly toasts = inject(ToastService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly destroyRef = inject(DestroyRef);
+  private loadVersion = 0;
+  private wizardTimer?: ReturnType<typeof setTimeout>;
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
   /** Set once the visitor has started doing something; a dialog that opens after that interrupts them. */
@@ -81,9 +86,10 @@ export class LandingPageComponent {
 
   @HostListener('document:keydown')
   @HostListener('document:pointerdown')
+  @HostListener('document:scroll')
   markEngaged(): void { this.engaged = true; }
 
-  private readonly content = signal<LandingContent | null>(null);
+  private readonly content = signal<Partial<LandingContent>>({});
   private readonly journey = signal<StudentJourney | null>(null);
   private readonly selectedOffer = signal<JourneyOffer | null>(null);
 
@@ -93,10 +99,44 @@ export class LandingPageComponent {
   private readonly isArabic = computed(() => this.locale.lang() === 'ar');
   readonly copy = computed(() => landingCopy(this.isArabic()));
 
+  private readonly motion = inject(ReducedMotion);
+  private readonly escrowRail = viewChild<ElementRef<HTMLElement>>('escrowRail');
+  /** How many escrow steps have arrived; the rail's fill runs to the last of them. */
+  readonly escrowReached = signal(0);
+  readonly escrowFill = computed(() => {
+    const total = this.escrow().length;
+    return total > 1 ? Math.max(0, this.escrowReached() - 1) / (total - 1) : 1;
+  });
+
   constructor() {
+    this.destroyRef.onDestroy(() => clearTimeout(this.wizardTimer));
     effect(() => this.title.setTitle(
       this.isArabic() ? 'تفصيل — التعليم، مفصّل عليك.' : 'Tafseel — Education, Tailored to You.'));
     void this.load();
+
+    // The payment's path is told once, step by step, when the rail comes into view.
+    // Reduced motion, the server render and a browser without an observer get every
+    // step already arrived, so the words never wait on the motion.
+    effect(onCleanup => {
+      const rail = this.escrowRail()?.nativeElement;
+      if (!rail) return;
+      const total = untracked(() => this.escrow().length);
+      if (!this.isBrowser || this.motion.preferred() || !('IntersectionObserver' in globalThis)) {
+        this.escrowReached.set(total);
+        return;
+      }
+      let timer: ReturnType<typeof setInterval> | undefined;
+      const observer = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        observer.disconnect();
+        timer = setInterval(() => {
+          this.escrowReached.update(n => Math.min(total, n + 1));
+          if (this.escrowReached() >= total) clearInterval(timer);
+        }, ESCROW_STEP_MS);
+      }, { threshold: 0.35 });
+      observer.observe(rail);
+      onCleanup(() => { observer.disconnect(); clearInterval(timer); });
+    });
   }
 
   // ---- session-derived ----
@@ -139,7 +179,7 @@ export class LandingPageComponent {
     }
     return {
       primaryLabel: copy.studentPrimary,
-      primaryLink: '/requests/new',
+      primaryLink: '/requests/new/open',
       secondaryLabel: copy.studentSecondary,
       secondaryLink: '/teachers',
       isPost: true,
@@ -151,31 +191,40 @@ export class LandingPageComponent {
     ? this.locale.t('sd_request_route_question', 'Do you already know which teacher you want?')
     : this.copy().accountActions);
 
-  readonly rotateWords = computed(() => ROTATE_WORDS[this.isArabic() ? 'ar' : 'en']);
-
-  /** The whole sentence, announced once, because the visible word is decorative. */
+  /** Stable text, with a natural word boundary in both languages. */
   readonly headlineLabel = computed(() => {
     const copy = this.copy();
-    const word = this.rotateWords()[0];
-    return `${copy.heroLead}. ${copy.heroPrefix} ${word}`;
+    return `${copy.heroLead} ${copy.heroPrefix} ${copy.heroFocus}`;
   });
 
   // ---- content ----
 
-  readonly subjects = computed(() => (this.content()?.subjects ?? []).map((subject, i) => ({
+  readonly subjects = computed(() => (this.content()?.subjects ?? []).map(subject => ({
     id: subject.id,
-    index: catalogueIndex(i + 1, this.isArabic()),
     name: FeaturedSubject.name(subject, this.isArabic()),
     cta: this.locale.t('subj_cta', 'Find teachers')
   })));
 
-  readonly subjectsLoading = computed(() => this.content() === null);
+  readonly subjectsLoading = computed(() => this.content().subjects === undefined);
+  readonly subjectsFailed = computed(() =>
+    !this.subjectsLoading() && this.content()?.subjects === null);
   readonly subjectsEmpty = computed(() =>
-    !this.subjectsLoading() && this.subjects().length === 0);
+    !this.subjectsLoading() && !this.subjectsFailed() && this.subjects().length === 0);
 
-  readonly teachersLoading = computed(() => this.content() === null);
+  readonly teachersLoading = computed(() => this.content().teachers === undefined);
+  readonly teachersFailed = computed(() =>
+    !this.teachersLoading() && this.content()?.teachers === null);
   readonly teachersEmpty = computed(() =>
-    !this.teachersLoading() && this.teacherCards().length === 0);
+    !this.teachersLoading() && !this.teachersFailed() && this.teacherCards().length === 0);
+
+  readonly contentRetrying = signal(false);
+
+  retryContent(): void {
+    if (this.contentRetrying()) return;
+    this.contentRetrying.set(true);
+    this.content.set({});
+    void this.load().finally(() => this.contentRetrying.set(false));
+  }
 
   /**
    * Composed only from fields `/teachers` returns. A missing value removes its
@@ -219,17 +268,18 @@ export class LandingPageComponent {
 
   readonly services = computed(() => {
     const ar = this.isArabic();
-    const live = this.content()?.services;
-    const rows: readonly CatalogService[] = live && live.length ? live : FALLBACK_SERVICES;
-    return rows.map((service, i) => ({
-      index: catalogueIndex(i + 1, ar),
+    const rows = this.content().services ?? [];
+    // Subjects, services and pillars are sets, not steps: only the product story is numbered.
+    return rows.map(service => ({
       name: CatalogService.name(service, ar),
       description: CatalogService.description(service, ar)
     }));
   });
+  readonly servicesLoading = computed(() => this.content().services === undefined);
+  readonly servicesFailed = computed(() => this.content().services === null);
+  readonly servicesEmpty = computed(() => !this.servicesLoading() && !this.servicesFailed() && this.services().length === 0);
 
   readonly trustPillars = computed(() => [1, 2, 3].map(n => ({
-    index: catalogueIndex(n, this.isArabic()),
     title: this.locale.t(`why_pillar${n}_t`, ''),
     body: this.locale.t(`why_pillar${n}_b`, '')
   })));
@@ -238,9 +288,7 @@ export class LandingPageComponent {
     escrowSteps(this.isArabic()).map((text, i) => ({ n: this.fmt.number(i + 1), text })));
 
   /**
-   * The orbs are always on screen; only the number waits. A total is a claim
-   * about the business, so until `/platform/stats` answers, the orb holds a dash
-   * rather than a figure Tafseel cannot stand behind.
+   * A total is a claim about the business; only confirmed counts are displayed.
    */
   readonly communityStats = computed(() => {
     const stats = this.content()?.stats ?? null;
@@ -296,10 +344,10 @@ export class LandingPageComponent {
   readonly footerCopy = computed(() => ({
     statement: this.locale.t('foot_statement', 'An explanation that finally fits the way you learn.'),
     tagline: this.locale.t('foot_tag',
-      'Education, tailored to you. Personalized explanations from verified teachers.'),
+      'Personalized explanations from verified teachers.'),
     rights: this.locale.t('foot_rights', '© 2026 Tafseel. All rights reserved.'),
     origin: this.locale.t('foot_origin',
-      'Built in Saudi Arabia for every student looking for a clearer explanation.')
+      'Tafseel — education, tailored to you.')
   }));
 
   // ---- actions ----
@@ -307,11 +355,7 @@ export class LandingPageComponent {
   search(event: Event): void {
     event.preventDefault();
     const text = this.query().trim();
-    if (!text) {
-      this.toasts.show(this.copy().searchEmpty);
-      return;
-    }
-    void this.router.navigate(['/teachers'], { queryParams: { q: text } });
+    void this.router.navigate(['/teachers'], { queryParams: text ? { q: text } : {} });
   }
 
   onWizardClosed(): void {
@@ -333,13 +377,21 @@ export class LandingPageComponent {
   }
 
   private async load(): Promise<void> {
-    const content = await this.loadContent.execute();
-    this.content.set(content);
-    this.openWizardOnEntry(content.promotions);
-
-    const result = await this.loadJourney.execute(this.roles());
-    this.journey.set(result.journey);
-    this.selectedOffer.set(result.selectedOffer);
+    const version = ++this.loadVersion;
+    const current = () => !this.destroyRef.destroyed && version === this.loadVersion;
+    const journey = this.loadJourney.execute(this.roles()).then(result => {
+      if (!current()) return;
+      this.journey.set(result.journey);
+      this.selectedOffer.set(result.selectedOffer);
+    });
+    const content = await this.loadContent.execute(section => {
+      if (current()) this.content.update(previous => ({ ...previous, ...section }));
+    });
+    if (current()) {
+      this.content.set(content);
+      this.openWizardOnEntry(content.promotions);
+    }
+    await journey;
   }
 
   /**
@@ -352,10 +404,11 @@ export class LandingPageComponent {
     if (!this.isBrowser) return;
     const promotion = this.campaigns.primary(promotions);
     if (!promotion || this.campaigns.coolingDown(promotions)) return;
-    setTimeout(() => {
+    clearTimeout(this.wizardTimer);
+    this.wizardTimer = setTimeout(() => {
       // Someone already typing a search or tapping a card is not shown the campaign now; it is not
       // recorded as seen either, so it can open on a later, quieter visit.
-      if (this.engaged) return;
+      if (this.engaged || this.destroyRef.destroyed) return;
       this.campaigns.record(promotion.id, 'seenAt');
       this.wizardPromotion.set(promotion);
     }, WIZARD_DELAY_MS);

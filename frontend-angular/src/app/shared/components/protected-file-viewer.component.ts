@@ -5,6 +5,7 @@ import { ProtectedFile, ProtectedObjectUrl } from '@core/http/protected-file.ser
 import { LocaleService } from '@core/i18n/locale.service';
 
 type PreviewKind = 'image' | 'video' | 'audio' | 'pdf' | 'unsupported';
+let viewerSequence = 0;
 
 @Component({
   selector: 'tf-protected-file-viewer',
@@ -13,6 +14,7 @@ type PreviewKind = 'image' | 'video' | 'audio' | 'pdf' | 'unsupported';
   styles: ':host{display:contents}'
 })
 export class ProtectedFileViewerComponent implements OnDestroy {
+  readonly headingId = `protected-file-title-${++viewerSequence}`;
   @ViewChild('dialog', { static: true }) private readonly dialog?: ElementRef<HTMLDialogElement>;
   private readonly files = inject(ProtectedFile);
   private readonly sanitizer = inject(DomSanitizer);
@@ -20,6 +22,7 @@ export class ProtectedFileViewerComponent implements OnDestroy {
   private readonly locale = inject(LocaleService);
   private object: ProtectedObjectUrl | null = null;
   private request = 0;
+  private source: { path: string; fileName: string; type: string } | undefined;
 
   readonly loading = signal(false);
   readonly failed = signal(false);
@@ -30,13 +33,14 @@ export class ProtectedFileViewerComponent implements OnDestroy {
   readonly watermark = this.session.current()?.email || this.session.current()?.fullName || 'Tafseel';
 
   async open(path: string, fileName: string, declaredType = ''): Promise<void> {
+    this.source = { path, fileName, type: declaredType };
     const request = ++this.request;
     this.release();
     this.fileName.set(fileName);
     this.kind.set(this.mediaKind(declaredType, fileName));
     this.loading.set(true);
     this.failed.set(false);
-    this.dialog?.nativeElement.showModal();
+    if (this.dialog && !this.dialog.nativeElement.open) this.dialog.nativeElement.showModal();
     try {
       const object = await this.files.objectUrl(path);
       if (request !== this.request) { object?.revoke(); return; }
@@ -60,6 +64,11 @@ export class ProtectedFileViewerComponent implements OnDestroy {
     this.request++;
     this.dialog?.nativeElement.close();
     this.release();
+    this.source = undefined;
+  }
+
+  retry(): void {
+    if (this.source && !this.loading()) void this.open(this.source.path, this.source.fileName, this.source.type);
   }
 
   backdrop(event: MouseEvent): void {
@@ -68,7 +77,7 @@ export class ProtectedFileViewerComponent implements OnDestroy {
 
   prevent(event: Event): void { event.preventDefault(); }
   t(key: string, fallback: string): string { return this.locale.t(key, fallback); }
-  ngOnDestroy(): void { this.release(); }
+  ngOnDestroy(): void { this.request++; this.source = undefined; this.release(); }
 
   private release(): void {
     this.object?.revoke();

@@ -10,6 +10,7 @@ import { SignalSessionStore } from '@core/auth/services/session.store';
 import { ToastService } from '@shared/services/toast.service';
 import { DialogService } from '@shared/services/dialog.service';
 import { ToastComponent } from '@shared/components/toast.component';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
 import { PriceComponent } from '@shared/components/price.component';
 import { PublicHeaderComponent } from '@shared/layouts/public-header.component';
 import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
@@ -71,6 +72,9 @@ export class MarketplacePageComponent {
   readonly offerRevisions = signal('2');
   readonly offerValidityDays = signal('7');
   readonly offerMessage = signal('');
+  /** Errors show once Send is pressed; the button itself stays pressable. */
+  readonly offerAttempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
 
   readonly side = computed<Side>(() =>
     this.store.roles().includes('Teacher') ? 'teacher' : 'student');
@@ -128,12 +132,14 @@ export class MarketplacePageComponent {
     selectable: offer.status === OfferStatus.Submitted
   })));
 
-  readonly canSubmitOffer = computed(() =>
-    !this.busy()
-    && Number(this.offerPrice()) > 0
-    && Number(this.offerDays()) > 0
-    && this.offerMessage().trim().length > 0
-    && this.selectedId() !== '');
+  readonly offerProblems = computed(() => {
+    const problems: Partial<Record<'price' | 'days' | 'message', string>> = {};
+    if (!this.offerAttempted()) return problems;
+    if (!(Number(this.offerPrice()) > 0)) problems.price = this.t('om_needs_price', 'Enter a price.');
+    if (!(Number(this.offerDays()) > 0)) problems.days = this.t('om_needs_delivery', 'Enter a delivery time.');
+    if (!this.offerMessage().trim()) problems.message = this.t('om_needs_message', 'Write a short message to the student.');
+    return problems;
+  });
 
   async load(): Promise<void> {
     this.loading.set(true);
@@ -171,7 +177,9 @@ export class MarketplacePageComponent {
 
   async sendOffer(event: Event): Promise<void> {
     event.preventDefault();
-    if (!this.canSubmitOffer()) return;
+    if (this.busy() || this.selectedId() === '') return;
+    this.offerAttempted.set(true);
+    if (Object.keys(this.offerProblems()).length) return this.focusFirstInvalid();
 
     this.busy.set(true);
     try {
@@ -187,6 +195,7 @@ export class MarketplacePageComponent {
       this.offerRevisions.set('2');
       this.offerValidityDays.set('7');
       this.offerMessage.set('');
+      this.offerAttempted.set(false);
       this.toasts.show(this.t('om_offer_sent', 'Your offer was sent.'));
       await this.load();
     } catch (error) {

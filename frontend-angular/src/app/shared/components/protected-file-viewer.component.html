@@ -1,8 +1,8 @@
-<dialog #dialog class="tf-secure-media-dialog" (click)="backdrop($event)" (cancel)="close()">
+<dialog #dialog class="tf-secure-media-dialog" [attr.aria-labelledby]="headingId" (click)="backdrop($event)" (cancel)="close()">
   <header class="tf-secure-media-head">
     <div>
       <span>{{ t('protected_viewer_label', 'Protected viewer') }}</span>
-      <h2>{{ fileName() }}</h2>
+      <h2 [id]="headingId">{{ fileName() }}</h2>
     </div>
     <button type="button" (click)="close()" [attr.aria-label]="t('common_close', 'Close')">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -13,6 +13,7 @@
       <p class="tf-secure-media-status" role="status">{{ t('common_loading', 'Loading…') }}</p>
     } @else if (failed()) {
       <p class="tf-secure-media-status" role="alert">{{ t('protected_viewer_failed', 'The file could not be opened.') }}</p>
+      <button type="button" class="tf-button tf-button-secondary" (click)="retry()">{{ t('common_retry', 'Retry') }}</button>
     } @else if (kind() === 'image') {
       <img [src]="url()" [alt]="fileName()" draggable="false" />
     } @else if (kind() === 'video') {

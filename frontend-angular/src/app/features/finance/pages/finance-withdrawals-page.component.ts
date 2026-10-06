@@ -1,3 +1,5 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -32,7 +34,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
 @Component({
   selector: 'tf-finance-withdrawals-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, PriceComponent, WorkspaceShellComponent],
+  imports: [SkeletonComponent, ActionFeedbackDirective, FormsModule, PriceComponent, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell [role]="shellRole()" section="finance">
       <div class="tf-fin">
@@ -49,7 +51,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
         </div>
 
         @if (loading()) {
-          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+          <tf-skeleton kind="table" [label]="t('common_loading', 'Loading…')" />
         } @else if (error()) {
           <div class="tf-state" data-state="error" role="alert">
             <p class="tf-state-title">{{ t('fin_withdrawals_error', 'We couldn’t load withdrawals.') }}</p>
@@ -83,13 +85,13 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
                       <td class="tf-table__actions">
                         <div class="tf-fin-row-actions">
                           @if ((w.status === 0 || w.status === 3) && w.hasDestinationSnapshot) {
-                            <button type="button" class="tf-button" [class.tf-button-secondary]="w.status === 3" (click)="openInstruction(w)" [disabled]="busy()" data-testid="finance-transfer-details">{{ t('fin_transfer_details', 'Transfer details') }}</button>
+                            <button type="button" class="tf-button" [class.tf-button-secondary]="w.status === 3" (click)="openInstruction(w)" [tfActionFeedback]="actionState('instruction:' + w.id)" [disabled]="busy()" data-testid="finance-transfer-details">{{ t('fin_transfer_details', 'Transfer details') }}</button>
                           }
                           @if (w.status === 3) {
                             <button type="button" class="tf-button" (click)="openEvidence(w)" [disabled]="busy()" data-testid="finance-record-evidence">{{ t('fin_record_evidence', 'Record bank evidence') }}</button>
                           }
                           @if (w.status === 0 || w.status === 3) {
-                            <button type="button" class="tf-button tf-button-secondary is-danger" (click)="reject(w)" [disabled]="busy()" data-testid="finance-withdrawal-reject">{{ w.status === 3 ? t('fin_cancel_transfer', 'Cancel — no money sent') : t('admin_reject', 'Reject') }}</button>
+                            <button type="button" class="tf-button tf-button-secondary is-danger" (click)="reject(w)" [tfActionFeedback]="actionState('reject:' + w.id)" [disabled]="busy()" data-testid="finance-withdrawal-reject">{{ w.status === 3 ? t('fin_cancel_transfer', 'Cancel — no money sent') : t('admin_reject', 'Reject') }}</button>
                           }
                         </div>
                         @if (w.status === 0 && !w.hasDestinationSnapshot) {
@@ -112,7 +114,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
                             <p class="tf-fin-muted">{{ t('fin_instruction_audit', 'Opening these details was recorded in the financial audit. They close when you leave this page.') }}</p>
                             <div class="tf-fin-actions">
                               @if (w.status === 0) {
-                                <button type="button" class="tf-button" (click)="initiate(w)" [disabled]="busy()" data-testid="finance-start-transfer">{{ t('fin_start_transfer', 'I am sending it now — start the transfer') }}</button>
+                                <button type="button" class="tf-button" (click)="initiate(w)" [tfActionFeedback]="actionState('initiate:' + w.id)" [disabled]="busy()" data-testid="finance-start-transfer">{{ t('fin_start_transfer', 'I am sending it now — start the transfer') }}</button>
                               }
                               <button type="button" class="tf-button tf-button-ghost" (click)="close()">{{ t('common_close', 'Close') }}</button>
                             </div>
@@ -130,17 +132,17 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
                               </div>
                               <div class="tf-field">
                                 <label for="fin-ev-source">{{ t('fin_evidence_source', 'Sent from (bank account)') }}</label>
-                                <input id="fin-ev-source" name="source" maxlength="100" required data-testid="finance-evidence-source"
+                                <input autocomplete="off" id="fin-ev-source" name="source" maxlength="100" required data-testid="finance-evidence-source"
                                        [ngModel]="evidence().sourceInstitution" (ngModelChange)="setEvidence('sourceInstitution', $event)">
                               </div>
                               <div class="tf-field">
                                 <label for="fin-ev-when">{{ t('fin_evidence_when', 'When the bank sent it') }}</label>
-                                <input id="fin-ev-when" name="when" type="datetime-local" required data-testid="finance-evidence-when"
+                                <input autocomplete="off" id="fin-ev-when" name="when" type="datetime-local" required data-testid="finance-evidence-when"
                                        [ngModel]="evidence().transferredAt" (ngModelChange)="setEvidence('transferredAt', $event)">
                               </div>
                               <div class="tf-field">
                                 <label for="fin-ev-amount">{{ locale.format('fin_evidence_amount', { currency: fmt.currencyLabel(w.currency) }, 'Amount sent ({currency})') }}</label>
-                                <input id="fin-ev-amount" name="amount" type="number" inputmode="decimal" step="0.01" required data-testid="finance-evidence-amount"
+                                <input autocomplete="off" id="fin-ev-amount" name="amount" type="number" inputmode="decimal" step="0.01" required data-testid="finance-evidence-amount"
                                        [ngModel]="evidence().amount" (ngModelChange)="setEvidence('amount', $event)">
                               </div>
                               <label class="tf-fin-check">
@@ -150,7 +152,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
                               </label>
                               @if (formError()) { <p class="tf-field-error" role="alert">{{ formError() }}</p> }
                               <div class="tf-fin-actions">
-                                <button type="submit" class="tf-button" [disabled]="busy()" data-testid="finance-evidence-submit">{{ t('fin_evidence_submit', 'Mark as transferred') }}</button>
+                                <button type="submit" class="tf-button" [disabled]="busy()" data-testid="finance-evidence-submit" [tfActionFeedback]="actionState('confirm:' + w.id)">{{ t('fin_evidence_submit', 'Mark as transferred') }}</button>
                                 <button type="button" class="tf-button tf-button-ghost" (click)="close()">{{ t('common_cancel', 'Cancel') }}</button>
                               </div>
                             </form>
@@ -196,6 +198,8 @@ export class FinanceWithdrawalsPageComponent {
   readonly page = signal(1);
   readonly loading = signal(true);
   readonly busy = signal(false);
+  readonly activeAction = signal('');
+  actionState(key: string): 'busy' | 'idle' { return this.busy() && this.activeAction() === key ? 'busy' : 'idle'; }
   readonly error = signal('');
   readonly formError = signal('');
   readonly result = signal<Page<FinanceWithdrawal> | null>(null);
@@ -254,7 +258,7 @@ export class FinanceWithdrawalsPageComponent {
 
   async openInstruction(w: FinanceWithdrawal): Promise<void> {
     this.close();
-    await this.run(async () => {
+    await this.run('instruction:' + w.id, async () => {
       this.instruction.set(await this.gateway.instruction(w.id));
       this.selected.set(w);
       this.mode.set('instruction');
@@ -282,7 +286,7 @@ export class FinanceWithdrawalsPageComponent {
       confirmLabel: this.t('fin_start_transfer_ok', 'Start the transfer'), cancelLabel: this.t('common_cancel', 'Cancel')
     })) return;
     const key = this.keys[`initiate:${w.id}`] ||= crypto.randomUUID();
-    await this.run(async () => {
+    await this.run('initiate:' + w.id, async () => {
       await this.gateway.initiate(w.id, w.version, key);
       delete this.keys[`initiate:${w.id}`];
       this.toasts.show(this.t('fin_transfer_started', 'Transfer started. Record the bank’s evidence once it is sent.'));
@@ -305,7 +309,7 @@ export class FinanceWithdrawalsPageComponent {
       return;
     }
     const key = this.keys[`confirm:${w.id}`] ||= crypto.randomUUID();
-    await this.run(async () => {
+    await this.run('confirm:' + w.id, async () => {
       await this.gateway.confirmTransfer(w.id, {
         bankReference: e.bankReference.trim(), sourceInstitution: e.sourceInstitution.trim(),
         transferredAt: new Date(e.transferredAt).toISOString(), amount, currency: w.currency, confirmedAgainstBankRecord: true
@@ -336,7 +340,7 @@ export class FinanceWithdrawalsPageComponent {
       cancelLabel: this.t('common_cancel', 'Cancel'), destructive: true
     })) return;
     const key = this.keys[`reject:${w.id}`] ||= crypto.randomUUID();
-    await this.run(async () => {
+    await this.run('reject:' + w.id, async () => {
       await this.gateway.reject(w.id, reason.trim(), started, w.version, key);
       delete this.keys[`reject:${w.id}`];
       this.toasts.show(this.t('admin_withdrawal_rejected_done', 'Withdrawal rejected.'));
@@ -345,8 +349,9 @@ export class FinanceWithdrawalsPageComponent {
     });
   }
 
-  private async run(action: () => Promise<void>, inForm = false): Promise<void> {
+  private async run(key: string, action: () => Promise<void>, inForm = false): Promise<void> {
     if (this.busy()) return;
+    this.activeAction.set(key);
     this.busy.set(true);
     try {
       await action();

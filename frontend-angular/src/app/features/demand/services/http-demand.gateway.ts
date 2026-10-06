@@ -19,7 +19,8 @@ export class HttpDemandGateway implements DemandGateway {
     return this.http.get<Json[]>('/api/v1/services').pipe(map(rows => rows
       .filter(x => x['orderType'] === 'async_request' && x['teacherSelectable'] !== false && x['isPublic'] !== false
         && x['requiresScheduling'] !== true && x['isActive'] !== false)
-      .map(x => ({ id: text(x['id']), name: text(x['nameEn']) || text(x['name']), nameArabic: text(x['nameAr']) }))));
+      .map(x => ({ id: text(x['id']), name: text(x['nameEn']) || text(x['name']), nameArabic: text(x['nameAr']),
+        description: text(x['descriptionEn']) || text(x['description']), descriptionArabic: text(x['descriptionAr']) }))));
   }
 
   publish(input: OpenRequestInput): Observable<OpenRequest> {

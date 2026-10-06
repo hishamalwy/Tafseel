@@ -1,3 +1,6 @@
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,7 +19,6 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { DialogService } from '@shared/services/dialog.service';
-import { ToastService } from '@shared/services/toast.service';
 import {
   DELIVERY_LIMITS, ORDER_STATUS_FALLBACK, Order, OrderAction, OrderDelivery, OrderDetail, OrderStatus, OrderTimelineEvent,
   REVIEW_CRITERIA, ReviewDraft, orderStatusKey
@@ -34,7 +36,7 @@ type Panel = 'deliver' | 'revision' | 'review' | null;
 @Component({
   selector: 'tf-order-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent, FilePickerComponent],
+  imports: [UiStateComponent, SkeletonComponent, ActionFeedbackDirective, FormsModule, RouterLink, PriceComponent, PricePanelComponent, ProtectedFileViewerComponent, ToastComponent, WorkspaceShellComponent, FilePickerComponent],
   templateUrl: './order-detail-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css'
 })
@@ -44,8 +46,8 @@ export class OrderDetailPageComponent {
   private readonly router = inject(Router);
   private readonly gateway = inject(OrderDetailGateway);
   private readonly session = inject(SESSION_STORE);
+  readonly teacherWorkspace = computed(() => (this.session.current()?.roles ?? []).includes('Teacher'));
   private readonly dialogs = inject(DialogService);
-  private readonly toasts = inject(ToastService);
   private readonly title = inject(Title);
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
@@ -63,12 +65,15 @@ export class OrderDetailPageComponent {
   });
   readonly timeline = signal<readonly OrderTimelineEvent[]>([]);
   readonly timelineFailed = signal(false);
+  readonly arrivingEvents = signal<ReadonlySet<string>>(new Set());
+  private timelineRead = false;
   /** What the student asked to change in their latest revision request. */
   readonly latestRevisionNote = computed(() => [...this.timeline()].reverse()
     .find(event => event.eventType === 'revision_requested' && event.metadata?.note)?.metadata?.note ?? '');
   readonly panel = signal<Panel>(null);
   readonly busy = signal<OrderAction | 'message' | ''>('');
   readonly actionError = signal('');
+  readonly successNotice = signal('');
   /** A delivery that cannot be sent is explained at the file picker, where it is fixed (UX-38). */
   readonly deliveryError = signal('');
   readonly files = signal<readonly File[]>([]);
@@ -111,6 +116,9 @@ export class OrderDetailPageComponent {
     this.title.setTitle(`${this.t('order_detail_title', 'Order')} — Tafseel`);
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
       this.orderId = params.get('orderId') ?? '';
+      this.successNotice.set('');
+      this.arrivingEvents.set(new Set());
+      this.timelineRead = false;
       this.order.set(null);
       this.panel.set(null);
       void this.load();
@@ -144,6 +152,11 @@ export class OrderDetailPageComponent {
     try {
       const timeline = await firstValueFrom(this.gateway.timeline(orderId));
       if (orderId !== this.orderId) return;
+      if (this.timelineRead) {
+        const previous = new Set(this.timeline().map(event => event.id));
+        this.arrivingEvents.update(ids => new Set([...ids, ...timeline.filter(event => !previous.has(event.id)).map(event => event.id)]));
+      }
+      this.timelineRead = true;
       this.timeline.set(timeline);
       this.timelineFailed.set(false);
     } catch {
@@ -187,7 +200,7 @@ export class OrderDetailPageComponent {
       return;
     }
     await this.run('deliver', async () => {
-      this.progress.set(0);
+      this.progress.set(null);
       await lastValueFrom(this.gateway.deliver(order.id, files, this.deliveryMessage().trim(), order.version ?? '').pipe(tap(event => {
         if (event.type === HttpEventType.UploadProgress && event.total) this.progress.set(Math.round(100 * event.loaded / event.total));
       })));
@@ -272,10 +285,11 @@ export class OrderDetailPageComponent {
     if (this.busy()) return;
     this.busy.set(action);
     this.actionError.set('');
+    this.successNotice.set('');
     try {
       await work();
       await this.load();
-      this.toasts.show(done);
+      this.successNotice.set(done);
     } catch (error) {
       this.actionError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
       await this.load();

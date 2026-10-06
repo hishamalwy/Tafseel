@@ -51,7 +51,7 @@ import { SUPPORT_STYLES } from './support-shared';
             }
             <div class="tf-field">
               <label for="help-description">{{ t('help_description', 'What happened?') }}</label>
-              <textarea id="help-description" name="description" maxlength="4000" data-testid="help-description"
+              <textarea autocomplete="off" id="help-description" name="description" maxlength="4000" data-testid="help-description"
                         [ngModel]="description()" (ngModelChange)="description.set($event)" aria-describedby="help-description-hint"></textarea>
               <small id="help-description-hint" class="tf-fin-muted">{{ t('help_description_hint', 'Say what happened, when, and who was involved. You can add screenshots after sending.') }}</small>
             </div>
@@ -64,7 +64,13 @@ import { SUPPORT_STYLES } from './support-shared';
 
         <section aria-labelledby="help-mine-title" class="tf-help">
           <h2 id="help-mine-title" class="tf-help-subtitle">{{ t('help_mine_title', 'Your reports') }}</h2>
-          @if (loading()) {
+          @if (historyError()) {
+            <div class="tf-alert" data-kind="error" role="alert" data-testid="help-history-error">
+              <p>{{ historyError() }}</p>
+              <button type="button" class="tf-button tf-button-secondary" (click)="load()" [disabled]="loading()">{{ t('common_retry', 'Retry') }}</button>
+            </div>
+          }
+          @if (loading() && !mine().length) {
             <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
           } @else if (mine().length) {
             <ul class="tf-help-list" data-testid="help-mine">
@@ -76,7 +82,7 @@ import { SUPPORT_STYLES } from './support-shared';
                 </a></li>
               }
             </ul>
-          } @else {
+          } @else if (!historyError()) {
             <p class="tf-fin-empty">{{ t('help_mine_empty', 'You have not sent a report.') }}</p>
           }
         </section>
@@ -85,8 +91,8 @@ import { SUPPORT_STYLES } from './support-shared';
   `,
   styles: [SUPPORT_STYLES, `
     .tf-help-subtitle { margin: 0; font-size: var(--type-section-title-size); font-weight: 800; }
-    .tf-fin-muted { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
-    .tf-fin-empty { margin: 0; padding: 24px 20px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); color: var(--text-2); text-align: center; font-size: 14px; }
+    .tf-fin-muted { margin: 0; color: var(--text-2); font-size: var(--type-label-size); line-height: 1.6; }
+    .tf-fin-empty { margin: 0; padding: 24px 20px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); color: var(--text-2); text-align: center; font-size: var(--type-body-sm-size); }
   `]
 })
 export class HelpPageComponent {
@@ -103,6 +109,7 @@ export class HelpPageComponent {
   readonly description = signal('');
   readonly busy = signal(false);
   readonly loading = signal(true);
+  readonly historyError = signal('');
   readonly formError = signal('');
   readonly mine = signal<readonly SupportCaseSummary[]>([]);
   readonly aboutLabel = computed(() => {
@@ -127,7 +134,10 @@ export class HelpPageComponent {
 
   async load(): Promise<void> {
     this.loading.set(true);
-    try { this.mine.set(await this.gateway.mine()); } catch { this.mine.set([]); } finally { this.loading.set(false); }
+    this.historyError.set('');
+    try { this.mine.set(await this.gateway.mine()); }
+    catch { this.historyError.set(this.t('craft_help_history_failed', 'Your reports could not be loaded. Check your connection and try again.')); }
+    finally { this.loading.set(false); }
   }
 
   async submit(): Promise<void> {

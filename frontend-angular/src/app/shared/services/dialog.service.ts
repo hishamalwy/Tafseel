@@ -1,3 +1,4 @@
+import { InteractionMotion } from '@core/a11y/interaction-motion.service';
 import { DOCUMENT } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -43,6 +44,8 @@ export interface PromptOptions {
 export class DialogService {
   private readonly document = inject(DOCUMENT);
   private readonly locale = inject(LocaleService);
+  private readonly motion = inject(InteractionMotion);
+  private dialogCount = 0;
 
   /** Resolves true when confirmed, false when cancelled or dismissed. */
   async confirm(options: ConfirmOptions): Promise<boolean> {
@@ -51,12 +54,12 @@ export class DialogService {
         this.head(options.title ?? this.t('confirm_action', 'Confirm action')),
         this.body(options.body),
         this.actions([
-          { value: 'cancel', label: options.cancelLabel ?? this.t('cancel', 'Cancel'), variant: 'secondary' },
+          { value: 'cancel', label: options.cancelLabel ?? this.t('cancel', 'Cancel'), variant: 'secondary', autofocus: !!options.destructive },
           {
             value: 'confirm',
             label: options.confirmLabel ?? this.t('confirm', 'Confirm'),
             variant: options.destructive ? 'danger' : 'primary',
-            autofocus: true
+            autofocus: !options.destructive
           }
         ])
       );
@@ -129,6 +132,16 @@ export class DialogService {
       const form = this.document.createElement('form');
       form.method = 'dialog';
       build(form as unknown as HTMLDialogElement);
+      const heading = form.querySelector('h2');
+      if (heading) {
+        heading.id = `tf-system-dialog-title-${++this.dialogCount}`;
+        dialog.setAttribute('aria-labelledby', heading.id);
+      }
+      const description = form.querySelector('p');
+      if (description && heading) {
+        description.id = `${heading.id}-description`;
+        dialog.setAttribute('aria-describedby', description.id);
+      }
       dialog.append(form);
       this.document.body.append(dialog);
 
@@ -136,15 +149,30 @@ export class DialogService {
       const finish = (value: string | null): void => {
         if (settled) return;
         settled = true;
-        dialog.remove();
-        previouslyFocused?.focus?.();
-        resolve(value);
+        const cleanUp = (): void => {
+          dialog.remove();
+          previouslyFocused?.focus?.();
+          resolve(value);
+        };
+        if (!this.motion.allowed() || !dialog.open) { cleanUp(); return; }
+        dialog.inert = true;
+        dialog.classList.add('is-leaving');
+        const duration = parseFloat(this.document.defaultView?.getComputedStyle(dialog).getPropertyValue('--motion-overlay-exit') ?? '') || 160;
+        const timer = setTimeout(cleanUp, duration + 60);
+        dialog.addEventListener('animationend', event => {
+          if (event.target !== dialog || event.animationName !== 'tf-craft-leave') return;
+          clearTimeout(timer); cleanUp();
+        }, { once: true });
       };
 
       // Escape fires `cancel`; preventing the default keeps close handling in
       // one place instead of two.
       dialog.addEventListener('cancel', event => { event.preventDefault(); finish(null); });
       dialog.addEventListener('close', () => finish(dialog.returnValue || null));
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        finish((event.submitter as HTMLButtonElement | null)?.value || null);
+      });
 
       dialog.showModal();
       dialog.querySelector<HTMLElement>('[autofocus]')?.focus();
@@ -179,9 +207,9 @@ export class DialogService {
       const button = this.document.createElement('button');
       button.value = spec.value;
       button.textContent = spec.label;
-      button.className = spec.variant === 'primary' ? 'tf-btn-primary'
-        : spec.variant === 'danger' ? 'tf-btn-primary tf-btn-danger'
-        : 'tf-btn-secondary';
+      button.className = spec.variant === 'primary' ? 'tf-button'
+        : spec.variant === 'danger' ? 'tf-button tf-button-danger'
+        : 'tf-button tf-button-secondary';
       if (spec.autofocus) button.setAttribute('autofocus', '');
       row.append(button);
     }

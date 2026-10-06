@@ -5,6 +5,7 @@ export type IconName =
   // Navigation and dashboards: one outline family, 24px grid, round joins, the caller's stroke.
   | 'home' | 'search' | 'file-plus' | 'inbox' | 'message' | 'briefcase' | 'megaphone' | 'wallet'
   | 'sliders' | 'clipboard-check' | 'user' | 'flag' | 'users' | 'grid' | 'activity' | 'coins'
+  | 'document' | 'image' | 'audio' | 'video'
   | 'history' | 'calendar' | 'clock' | 'arrow-right' | 'check' | 'upload' | 'star' | 'bell';
 
 /**
@@ -18,9 +19,13 @@ export type IconName =
   template: `
     <svg [attr.viewBox]="'0 0 24 24'" [attr.width]="size()" [attr.height]="size()"
          [attr.class]="name() === 'arrow-right' ? 'tf-icon-dir' : null"
-         fill="none" stroke="currentColor" [attr.stroke-width]="strokeWidth()"
+         [attr.data-icon-role]="iconRole()" fill="none" stroke="currentColor" [attr.stroke-width]="strokeWidth()"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
       @switch (name()) {
+        @case ('document') { <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5M8 12h8M8 16h6"/> }
+        @case ('image') { <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/> }
+        @case ('audio') { <path d="M9 18V5l11-2v13M9 7l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/> }
+        @case ('video') { <rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3"/> }
         @case ('eye') {
           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>
         }
@@ -89,5 +94,6 @@ export type IconName =
 export class IconComponent {
   readonly name = input.required<IconName>();
   readonly size = input(20);
+  readonly iconRole = input<'action' | 'status' | 'meta'>('action');
   readonly strokeWidth = input(1.8);
 }

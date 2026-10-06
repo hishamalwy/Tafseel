@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { PromotionContentComponent } from '@shared/components/promotion-content.component';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { problemMessage } from '@core/http/problem-message';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -16,7 +19,7 @@ const EMPTY_PROMOTION: PromotionDraft = {
 @Component({
   selector: 'tf-admin-marketing-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, WorkspaceShellComponent, ToastComponent],
+  imports: [SkeletonComponent, PromotionContentComponent, RouterLink, WorkspaceShellComponent, ToastComponent],
   templateUrl: './admin-marketing-page.component.html',
   styleUrl: './admin-marketing-page.component.css'
 })
@@ -25,7 +28,9 @@ export class AdminMarketingPageComponent {
   private readonly manage = inject(AdminMarketing);
   private readonly toasts = inject(ToastService);
   readonly locale = inject(LocaleService);
-  readonly tab = this.route.snapshot.paramMap.get('tab') === 'promotions' ? 'promotions' : 'coupons';
+  get tab(): 'promotions' | 'coupons' { return this.route.snapshot.paramMap.get('tab') === 'promotions' ? 'promotions' : 'coupons'; }
+  readonly previewLanguage = signal<'ar' | 'en'>('ar');
+  private loadId = 0;
   readonly loading = signal(true);
   readonly busy = signal(false);
   readonly error = signal('');
@@ -36,24 +41,33 @@ export class AdminMarketingPageComponent {
   readonly usableCoupons = computed(() => this.coupons().filter(x =>
     x.isActive && (!x.expiresAt || Date.parse(x.expiresAt) > Date.now())));
 
-  constructor() { void this.load(); }
+  constructor() { this.route.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(() => void this.load()); }
 
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
   patchCoupon(change: Partial<CouponDraft>): void { this.coupon.update(value => ({ ...value, ...change })); }
   patchPromotion(change: Partial<PromotionDraft>): void { this.promotion.update(value => ({ ...value, ...change })); }
+  previewTitle(): string {
+    return (this.previewLanguage() === 'ar' ? this.promotion().titleAr : this.promotion().titleEn)
+      || (this.previewLanguage() === 'ar' ? this.t('craft_preview_ar_title', 'عنوان الرسالة') : this.t('craft_preview_en_title', 'Message title'));
+  }
+  previewBody(): string {
+    return (this.previewLanguage() === 'ar' ? this.promotion().bodyAr : this.promotion().bodyEn)
+      || (this.previewLanguage() === 'ar' ? this.t('craft_preview_ar_body', 'الوصف هيظهر هنا أثناء الكتابة.') : this.t('craft_preview_en_body', 'Your description appears here as you type.'));
+  }
   date(value: string | null): string { return value ? new Date(value).toLocaleDateString(this.locale.lang() === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US') : '—'; }
   expiry(value: string): string | null { return value ? new Date(value).toISOString() : null; }
 
   async load(): Promise<void> {
+    const id = ++this.loadId, tab = this.tab;
     this.loading.set(true); this.error.set('');
     try {
-      if (this.tab === 'coupons') this.coupons.set(await this.manage.coupons());
+      if (tab === 'coupons') { const coupons = await this.manage.coupons(); if (id === this.loadId) this.coupons.set(coupons); }
       else {
         const [promotions, coupons] = await Promise.all([this.manage.promotions(), this.manage.coupons()]);
-        this.promotions.set(promotions); this.coupons.set(coupons);
+        if (id === this.loadId) { this.promotions.set(promotions); this.coupons.set(coupons); }
       }
-    } catch (error) { this.error.set(this.message(error)); }
-    finally { this.loading.set(false); }
+    } catch (error) { if (id === this.loadId) this.error.set(this.message(error)); }
+    finally { if (id === this.loadId) this.loading.set(false); }
   }
 
   async createCoupon(): Promise<void> {

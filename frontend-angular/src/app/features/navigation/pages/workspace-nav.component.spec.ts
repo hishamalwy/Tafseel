@@ -157,12 +157,17 @@ describe('UX-03 workspace navigation', () => {
   });
 
   it('never follows a notification link that leaves this site', async () => {
-    const { page } = await open({ latest: () => of([notification({ link: 'https://example.test/steal' })]) });
+    const { page, read } = await open({ latest: () => of([notification({ link: 'https://example.test/steal' })]) });
     (testId(page, 'notification-bell') as HTMLButtonElement).click();
     await new Promise(resolve => setTimeout(resolve));
     const row = testId(page, 'notification-row');
     expect(row?.querySelector('a')).toBeNull();
-    expect(row?.querySelector('button')).not.toBeNull();
+    const button = row?.querySelector('button') as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    button.click();
+    await new Promise(resolve => setTimeout(resolve));
+    expect(read).toContain('n1');
+    expect(testId(page, 'notification-feedback')?.textContent).toContain('Notification marked as read.');
   });
 
   it('still follows a link stored before the move to Angular, through the host redirect', async () => {

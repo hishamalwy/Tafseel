@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { returnQuery } from '@shared/utils/list-context';
+import { SESSION_STORE } from '@core/auth/services/auth.ports';
 import { problemMessage } from '@core/http/problem-message';
 import { FormatService } from '@core/i18n/format.service';
 import { LocaleService } from '@core/i18n/locale.service';
@@ -22,7 +24,7 @@ import { SUPPORT_STYLES } from './support-shared';
   imports: [FormsModule, RouterLink, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell role="Admin" section="attention">
-      <a class="tf-back-link" routerLink="/admin/help">{{ t('help_queue_title', 'Help and reports') }}</a>
+      <a class="tf-back-link" routerLink="/admin/help" [queryParams]="queueReturnParams()">{{ t('help_queue_title', 'Help and reports') }}</a>
       @if (loading()) {
         <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
       } @else if (error()) {
@@ -34,16 +36,37 @@ import { SUPPORT_STYLES } from './support-shared';
             <p><span class="tf-badge" [attr.data-tone]="status().tone" data-testid="admin-help-status">{{ t(status().labelKey, status().fallback) }}</span>
               @if (c.ownerName) { · {{ locale.format('help_owned_by', { name: c.ownerName }, 'Owned by {name}') }} }</p>
           </header>
+          @if (c.status !== 2) {
+            <section class="tf-help-owner" aria-labelledby="admin-help-next" data-testid="admin-help-next">
+              <div>
+                <h2 id="admin-help-next">{{ c.status === 0 ? t('help_admin_next_take', 'Nobody owns this report yet')
+                  : mine(c) ? t('help_admin_next_mine', 'You own this report') : t('help_admin_next_other', 'Another team member owns this report') }}</h2>
+                <p>{{ c.status === 0 ? t('help_admin_next_take_body', 'Take it so the reporter knows a person is on it. Then answer them below and resolve it with what you did.')
+                  : mine(c) ? t('help_admin_next_mine_body', 'Answer the reporter below if you need more, then resolve the report with what Tafseel did.')
+                  : t('help_admin_next_other_body', 'You can still answer the reporter. To resolve it, take it over first.') }}</p>
+              </div>
+              <div class="tf-help-actions">
+                @if (c.status === 0) {
+                  <button type="button" class="tf-button" (click)="take(c)" [disabled]="busy()" data-testid="admin-help-take">{{ t('help_take', 'Take this report') }}</button>
+                } @else if (!mine(c)) {
+                  <button type="button" class="tf-button tf-button-secondary" (click)="take(c)" [disabled]="busy()" data-testid="admin-help-take-over">{{ t('help_take_over', 'Take it over') }}</button>
+                }
+                @if (c.reporterName) {
+                  <a class="tf-button tf-button-secondary" href="#admin-help-reply" (click)="focus($event, 'admin-help-reply')">{{ t('help_admin_go_reply', 'Answer the reporter') }}</a>
+                }
+                <a class="tf-button tf-button-secondary" href="#admin-help-outcome" (click)="focus($event, 'admin-help-outcome')">{{ t('help_admin_go_resolve', 'Resolve with an outcome') }}</a>
+              </div>
+            </section>
+          }
           <section class="tf-help-card" aria-labelledby="admin-help-who">
             <h2 id="admin-help-who">{{ t('help_reporter', 'Reporter') }}</h2>
             <dl class="tf-help-kv">
               @if (c.reporterName) { <dt>{{ t('help_reporter_name', 'Name') }}</dt><dd>{{ c.reporterName }}</dd> }
-              @if (c.reporterEmail || c.contactEmail) { <dt>{{ t('help_reporter_email', 'E-mail') }}</dt><dd class="tf-help-ref" data-testid="admin-help-email">{{ c.reporterEmail || c.contactEmail }}</dd> }
+              @if (c.reporterEmail || c.contactEmail) { <dt>{{ t('help_reporter_email', 'E-mail') }}</dt><dd><span class="tf-help-ref" data-testid="admin-help-email">{{ c.reporterEmail || c.contactEmail }}</span></dd> }
               @if (c.contactName) { <dt>{{ t('help_reporter_name', 'Name') }}</dt><dd>{{ c.contactName }}</dd> }
-              @if (c.relatedReference) { <dt>{{ t('help_related', 'About') }}</dt><dd class="tf-help-ref">{{ c.relatedReference }}</dd> }
+              @if (c.relatedReference) { <dt>{{ t('help_related', 'About') }}</dt><dd><span class="tf-help-ref">{{ c.relatedReference }}</span></dd> }
               <dt>{{ t('help_queue_received', 'Received') }}</dt><dd>{{ when(c.createdAt) }}</dd>
             </dl>
-            @if (!c.reporterName) { <p class="tf-fin-muted">{{ t('help_signed_out_reply', 'This person could not sign in. Reply by e-mail, then record what you did in the outcome.') }}</p> }
             <p class="tf-help-body">{{ c.description }}</p>
             @if (c.attachments.length) {
               <div class="tf-help-files">
@@ -67,46 +90,61 @@ import { SUPPORT_STYLES } from './support-shared';
                   </li>
                 }
               </ol>
+            } @else {
+              <p class="tf-fin-muted">{{ t('help_admin_no_messages', 'No messages yet. Anything you send here reaches the reporter as a notification and an e-mail.') }}</p>
             }
             @if (c.status !== 2) {
-              <div class="tf-help-actions">
-                @if (c.status === 0) { <button type="button" class="tf-button" (click)="take(c)" [disabled]="busy()" data-testid="admin-help-take">{{ t('help_take', 'Take this report') }}</button> }
-              </div>
               @if (c.reporterName) {
                 <form class="tf-help-form" (ngSubmit)="reply(c)" novalidate>
                   <div class="tf-field">
                     <label for="admin-help-reply">{{ t('help_reply_staff', 'Answer the reporter (they are notified)') }}</label>
-                    <textarea id="admin-help-reply" name="reply" maxlength="4000" data-testid="admin-help-reply" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
+                    <textarea autocomplete="off" id="admin-help-reply" name="reply" maxlength="4000" data-testid="admin-help-reply" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
                   </div>
-                  <div class="tf-help-actions"><button type="submit" class="tf-button tf-button-secondary" [disabled]="busy()" data-testid="admin-help-send">{{ t('help_send', 'Send') }}</button></div>
+                  <div class="tf-help-actions"><button type="submit" class="tf-button" [disabled]="busy()" data-testid="admin-help-send">{{ t('help_send_reply', 'Send to the reporter') }}</button></div>
                 </form>
+              } @else {
+                <p class="tf-fin-muted">{{ t('help_signed_out_reply', 'This person could not sign in. Reply by e-mail, then record what you did in the outcome.') }}</p>
               }
+            }
+          </section>
+          @if (c.status !== 2) {
+            <section class="tf-help-card" aria-labelledby="admin-help-close">
+              <h2 id="admin-help-close">{{ t('help_admin_close_title', 'Resolve the report') }}</h2>
               <form class="tf-help-form" (ngSubmit)="resolve(c)" novalidate>
                 <div class="tf-field">
                   <label for="admin-help-outcome">{{ t('help_outcome_label', 'Outcome the reporter will read') }}</label>
-                  <textarea id="admin-help-outcome" name="outcome" maxlength="2000" data-testid="admin-help-outcome" [ngModel]="outcome()" (ngModelChange)="outcome.set($event)"></textarea>
+                  <textarea autocomplete="off" id="admin-help-outcome" name="outcome" maxlength="2000" data-testid="admin-help-outcome" [ngModel]="outcome()" (ngModelChange)="outcome.set($event)"></textarea>
                 </div>
-                <div class="tf-help-actions"><button type="submit" class="tf-button" [disabled]="busy()" data-testid="admin-help-resolve">{{ t('help_resolve', 'Resolve the report') }}</button></div>
+                <div class="tf-help-actions"><button type="submit" class="tf-button" [disabled]="busy() || (c.status === 1 && !mine(c))" data-testid="admin-help-resolve">{{ t('help_resolve', 'Resolve the report') }}</button></div>
               </form>
-            }
-            @if (actionError()) { <p class="tf-field-error" role="alert" data-testid="admin-help-error">{{ actionError() }}</p> }
-          </section>
+            </section>
+          }
+          @if (actionError()) { <p class="tf-field-error" role="alert" data-testid="admin-help-error">{{ actionError() }}</p> }
         </div>
       }
     </tf-workspace-shell>
   `,
   styles: [SUPPORT_STYLES, `
     .tf-help-body { margin: 0; white-space: pre-line; line-height: 1.7; }
-    .tf-fin-muted { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
+    .tf-fin-muted { margin: 0; color: var(--text-2); font-size: var(--type-label-size); line-height: 1.6; }
     .tf-help-head h1 .tf-help-ref { font-size: .6em; }
+    .tf-help-owner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px;
+      padding: 16px 20px; border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--border)); border-radius: var(--r-lg);
+      background: color-mix(in oklab, var(--primary-soft) 40%, var(--surface)); }
+    .tf-help-owner h2 { margin: 0; font-size: var(--type-item-title-size); font-weight: 800; }
+    .tf-help-owner p { margin: 4px 0 0; color: var(--text-2); font-size: var(--type-body-sm-size); line-height: 1.6; max-width: 60ch; }
+    .tf-help-actions a.tf-button { min-height: 44px; text-decoration: none; }
   `]
 })
 export class AdminHelpCasePageComponent implements OnInit {
   private readonly gateway = inject(SupportGateway);
   private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
+  private readonly session = inject(SESSION_STORE);
   readonly fmt = inject(FormatService);
   readonly locale = inject(LocaleService);
+  private readonly route = inject(ActivatedRoute);
+  queueReturnParams() { return returnQuery(this.route.snapshot.queryParamMap, ['q', 'status', 'category', 'focus']); }
   readonly id = input.required<string>();
   readonly loading = signal(true);
   readonly busy = signal(false);
@@ -129,6 +167,19 @@ export class AdminHelpCasePageComponent implements OnInit {
     try { this.item.set(await this.gateway.find(this.id())); }
     catch (error) { this.error.set(problemMessage(error, (k, f) => this.t(k, f)).text); }
     finally { this.loading.set(false); }
+  }
+
+  /** Whether the signed-in staff member is the owner (the case names its owner; the session names the viewer). */
+  mine(c: SupportCase): boolean {
+    const me = this.session.current();
+    return !!c.ownerName && !!me && (c.ownerName === me.fullName || c.ownerName === me.fullNameEnglish);
+  }
+
+  focus(event: Event, id: string): void {
+    event.preventDefault();
+    const field = document.getElementById(id);
+    field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    field?.focus({ preventScroll: true });
   }
 
   async take(c: SupportCase): Promise<void> {

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { problemMessage } from '@core/http/problem-message';
 import { LocaleService } from '@core/i18n/locale.service';
 import { DialogService } from '@shared/services/dialog.service';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
 import {
   CREDENTIAL_LIMITS, Credential, CredentialDraft, CredentialForm, CredentialKind, FieldProblem
 } from '../models/teacher-profile';
@@ -36,23 +37,23 @@ import { FormInvalid, ManageCredentials } from '../services/teacher-setup.use-ca
         <div class="tf-grid-2">
           <div class="tf-field">
             <label [for]="kind() + '-title-input'">{{ t('setup_credential_title', 'Title') }}</label>
-            <input [id]="kind() + '-title-input'" name="title" [ngModel]="draft().title" (ngModelChange)="set('title', $event)"
+            <input autocomplete="off" [id]="kind() + '-title-input'" name="title" [ngModel]="draft().title" (ngModelChange)="set('title', $event)"
                    [attr.maxlength]="limits.title" [attr.aria-invalid]="!!problems().title">
             @if (problems().title) { <span class="tf-field-error">{{ problem(problems().title!) }}</span> }
           </div>
           <div class="tf-field">
             <label [for]="kind() + '-org-input'">{{ t('setup_credential_organization', 'Organization') }}</label>
-            <input [id]="kind() + '-org-input'" name="organization" [ngModel]="draft().organization" (ngModelChange)="set('organization', $event)"
+            <input autocomplete="off" [id]="kind() + '-org-input'" name="organization" [ngModel]="draft().organization" (ngModelChange)="set('organization', $event)"
                    [attr.maxlength]="limits.organization" [attr.aria-invalid]="!!problems().organization">
             @if (problems().organization) { <span class="tf-field-error">{{ problem(problems().organization!) }}</span> }
           </div>
           <div class="tf-field">
             <label [for]="kind() + '-from-input'">{{ t('setup_credential_from', 'From (optional)') }}</label>
-            <input [id]="kind() + '-from-input'" name="from" type="date" [ngModel]="draft().from" (ngModelChange)="set('from', $event)">
+            <input autocomplete="off" [id]="kind() + '-from-input'" name="from" type="date" [ngModel]="draft().from" (ngModelChange)="set('from', $event)">
           </div>
           <div class="tf-field">
             <label [for]="kind() + '-to-input'">{{ t('setup_credential_to', 'To (optional)') }}</label>
-            <input [id]="kind() + '-to-input'" name="to" type="date" [ngModel]="draft().to" (ngModelChange)="set('to', $event)" [attr.aria-invalid]="!!problems().to">
+            <input autocomplete="off" [id]="kind() + '-to-input'" name="to" type="date" [ngModel]="draft().to" (ngModelChange)="set('to', $event)" [attr.aria-invalid]="!!problems().to">
             @if (problems().to) { <span class="tf-field-error">{{ problem(problems().to!) }}</span> }
           </div>
         </div>
@@ -79,6 +80,7 @@ export class CredentialListComponent {
 
   readonly draft = signal<CredentialDraft>(CredentialForm.empty());
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
   readonly busy = signal(false);
   readonly error = signal('');
   readonly problems = computed(() => this.attempted() ? CredentialForm.problems(this.draft()) : {});
@@ -91,7 +93,7 @@ export class CredentialListComponent {
     if (this.busy()) return;
     this.attempted.set(true);
     this.error.set('');
-    if (Object.keys(CredentialForm.problems(this.draft())).length) return;
+    if (Object.keys(CredentialForm.problems(this.draft())).length) return this.focusFirstInvalid();
     this.busy.set(true);
     try {
       await this.credentials.add(this.kind(), this.draft());

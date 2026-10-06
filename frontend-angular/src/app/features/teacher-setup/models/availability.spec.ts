@@ -44,8 +44,10 @@ describe('timeZoneLabel', () => {
 });
 
 describe('timeZoneChoices', () => {
-  it('offers the Kingdom first', () => {
-    expect(timeZoneChoices()[0]).toBe('Asia/Riyadh');
+  it('offers the saved and detected zones first, followed by nearby zones', () => {
+    expect(timeZoneChoices('Pacific/Auckland')[0]).toBe('Pacific/Auckland');
+    expect(timeZoneChoices()[0]).toBe(browserTimeZone());
+    expect(timeZoneChoices().indexOf('Asia/Riyadh')).toBeLessThan(3);
   });
 
   it('takes no zone away: every zone the browser knows is still offered', () => {

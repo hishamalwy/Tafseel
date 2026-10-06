@@ -26,7 +26,7 @@ export class ReducedMotion {
 
   constructor() {
     if (!this.isBrowser) return;
-    const query = this.document.defaultView?.matchMedia('(prefers-reduced-motion: reduce)');
+    const query = this.document.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)');
     if (!query) {
       this.reduced.set(false);
       return;

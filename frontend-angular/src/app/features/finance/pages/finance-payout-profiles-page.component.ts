@@ -1,3 +1,5 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
@@ -26,7 +28,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
 @Component({
   selector: 'tf-finance-payout-profiles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [WorkspaceShellComponent],
+  imports: [SkeletonComponent, ActionFeedbackDirective, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell [role]="shellRole()" section="finance">
       <div class="tf-fin">
@@ -42,7 +44,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
           }
         </div>
         @if (loading()) {
-          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+          <tf-skeleton kind="table" [label]="t('common_loading', 'Loading…')" />
         } @else if (error()) {
           <div class="tf-state" data-state="error" role="alert">
             <p class="tf-state-title">{{ t('fin_payouts_error', 'We couldn’t load payout details.') }}</p>
@@ -74,8 +76,8 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
                       <td class="tf-table__actions">
                         @if (p.status === 0) {
                           <div class="tf-fin-row-actions">
-                            <button type="button" class="tf-button" (click)="review(p, true)" [disabled]="busy() || p.reenrollmentRequired" data-testid="finance-payout-verify">{{ t('admin_payout_verify', 'Verify') }}</button>
-                            <button type="button" class="tf-button tf-button-secondary is-danger" (click)="review(p, false)" [disabled]="busy()" data-testid="finance-payout-reject">{{ t('fin_payout_return', 'Return for changes') }}</button>
+                            <button type="button" class="tf-button" (click)="review(p, true)" [tfActionFeedback]="actionState('approve:' + p.teacherId)" [disabled]="busy() || p.reenrollmentRequired" data-testid="finance-payout-verify">{{ t('admin_payout_verify', 'Verify') }}</button>
+                            <button type="button" class="tf-button tf-button-secondary is-danger" (click)="review(p, false)" [tfActionFeedback]="actionState('reject:' + p.teacherId)" [disabled]="busy()" data-testid="finance-payout-reject">{{ t('fin_payout_return', 'Return for changes') }}</button>
                           </div>
                         }
                       </td>
@@ -105,6 +107,8 @@ export class FinancePayoutProfilesPageComponent {
   readonly filter = signal<number | null>(0);
   readonly loading = signal(true);
   readonly busy = signal(false);
+  readonly activeAction = signal('');
+  actionState(key: string): 'busy' | 'idle' { return this.busy() && this.activeAction() === key ? 'busy' : 'idle'; }
   readonly error = signal('');
   readonly result = signal<Page<PayoutProfileRow> | null>(null);
 
@@ -148,6 +152,7 @@ export class FinancePayoutProfilesPageComponent {
       if (reason === null) return;
       if (!reason.trim()) { this.toasts.show(this.t('admin_reason_required', 'A reason is required.')); return; }
     }
+    this.activeAction.set((approve ? 'approve:' : 'reject:') + p.teacherId);
     this.busy.set(true);
     try {
       await this.gateway.reviewPayoutProfile(p.teacherId, approve, reason?.trim() ?? null, p.version);

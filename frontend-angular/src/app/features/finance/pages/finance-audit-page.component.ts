@@ -1,4 +1,6 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { injectListContext, pageFromQuery } from '@shared/utils/list-context';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { SESSION_STORE } from '@core/auth/services/auth.ports';
@@ -14,7 +16,7 @@ import { FINANCE_STYLES, financeShellRole } from './finance-shared';
 @Component({
   selector: 'tf-finance-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, WorkspaceShellComponent],
+  imports: [SkeletonComponent, FormsModule, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell [role]="shellRole()" section="finance">
       <div class="tf-fin">
@@ -27,12 +29,12 @@ import { FINANCE_STYLES, financeShellRole } from './finance-shared';
         <form class="tf-fin-toolbar" (ngSubmit)="go(1)" role="search" [attr.aria-label]="t('fin_audit_search', 'Search the financial audit')">
           <div class="tf-field">
             <label for="fin-audit-q">{{ t('fin_audit_query', 'Action, record id or person') }}</label>
-            <input id="fin-audit-q" name="q" type="search" maxlength="200" [ngModel]="query()" (ngModelChange)="query.set($event)">
+            <input autocomplete="off" id="fin-audit-q" name="q" type="search" maxlength="200" [ngModel]="query()" (ngModelChange)="query.set($event)">
           </div>
           <button type="submit" class="tf-button">{{ t('common_search', 'Search') }}</button>
         </form>
         @if (loading()) {
-          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+          <tf-skeleton kind="table" [label]="t('common_loading', 'Loading…')" />
         } @else if (error()) {
           <div class="tf-state" data-state="error" role="alert">
             <p class="tf-state-title">{{ t('fin_audit_error', 'We couldn’t load the financial audit.') }}</p>
@@ -88,10 +90,14 @@ export class FinanceAuditPageComponent {
   readonly error = signal('');
   readonly result = signal<Page<FinancialAuditEntry> | null>(null);
   readonly pages = computed(() => { const r = this.result(); return r ? Math.max(1, Math.ceil(r.total / r.pageSize)) : 1; });
+  private request = 0;
+  private readonly context = injectListContext(params => {
+    this.query.set((params.get('q') ?? '').slice(0, 200));
+    this.page.set(pageFromQuery(params.get('page')));
+  }, () => { void this.fetchAudit(); });
 
   constructor() {
     inject(Title).setTitle(`${this.t('fin_audit_title', 'Financial audit')} — Tafseel`);
-    void this.load();
   }
 
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
@@ -102,14 +108,20 @@ export class FinanceAuditPageComponent {
   go(page: number): void { this.page.set(Math.max(1, page)); void this.load(); }
 
   async load(): Promise<void> {
+    this.context.commit({ q: this.query() || null, page: this.page() === 1 ? null : this.page() });
+  }
+
+  private async fetchAudit(): Promise<void> {
+    const request = ++this.request;
     this.loading.set(true);
     this.error.set('');
     try {
-      this.result.set(await this.gateway.audit(this.query(), this.page()));
+      const result = await this.gateway.audit(this.query(), this.page());
+      if (request === this.request) this.result.set(result);
     } catch (error) {
-      this.error.set(problemMessage(error, (k, f) => this.t(k, f)).text);
+      if (request === this.request) this.error.set(problemMessage(error, (k, f) => this.t(k, f)).text);
     } finally {
-      this.loading.set(false);
+      if (request === this.request) this.loading.set(false);
     }
   }
 }

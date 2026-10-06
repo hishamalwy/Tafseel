@@ -1,3 +1,4 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -28,7 +29,7 @@ const STATUSES = [
 @Component({
   selector: 'tf-finance-payments-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, PriceComponent, WorkspaceShellComponent],
+  imports: [SkeletonComponent, FormsModule, RouterLink, PriceComponent, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell [role]="shellRole()" section="finance">
       <div class="tf-fin">
@@ -41,7 +42,7 @@ const STATUSES = [
         <form class="tf-fin-toolbar" (ngSubmit)="search()" role="search" [attr.aria-label]="t('fin_payments_search', 'Search payments')">
           <div class="tf-field">
             <label for="fin-pay-q">{{ t('fin_payments_query', 'Id, reference, name or email') }}</label>
-            <input id="fin-pay-q" name="q" type="search" maxlength="200" [ngModel]="query()" (ngModelChange)="query.set($event)" data-testid="finance-payment-query">
+            <input autocomplete="off" id="fin-pay-q" name="q" type="search" maxlength="200" [ngModel]="query()" (ngModelChange)="query.set($event)" data-testid="finance-payment-query">
           </div>
           <div class="tf-field tf-field--narrow">
             <label for="fin-pay-status">{{ t('fin_payments_status', 'Status') }}</label>
@@ -53,7 +54,7 @@ const STATUSES = [
         </form>
 
         @if (loading()) {
-          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+          <tf-skeleton kind="table" [label]="t('common_loading', 'Loading…')" />
         } @else if (error()) {
           <div class="tf-state" data-state="error" role="alert">
             <p class="tf-state-title">{{ t('fin_payments_error', 'We couldn’t search payments.') }}</p>

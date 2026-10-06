@@ -1,9 +1,10 @@
+<tf-booking-styles />
 <tf-skip-link />
 <tf-workflow-header [crumb]="t('book_breadcrumb', 'Book a live session')" />
 
 <main id="main" class="tf-shell tf-book-page">
   @if (loading()) {
-    <div class="tf-pay-state" role="status">{{ t('book_loading', 'Loading availability…') }}</div>
+    <tf-skeleton kind="detail" [label]="t('book_loading', 'Loading availability…')" />
   }
 
   @if (missingTeacher()) {
@@ -26,30 +27,9 @@
 
   @if (!loading() && !missingTeacher() && !noBookableService() && service(); as svc) {
     <div class="tf-book-layout">
-      <section class="tf-book-form" aria-labelledby="book-title">
+      <section class="tf-book-slots" aria-labelledby="book-title">
         <h1 id="book-title">{{ t('book_title', 'Book a live session') }}</h1>
         <p class="tf-book-lede">{{ t('book_with', 'with') }} <strong>{{ teacherName() }}</strong></p>
-
-        <div class="tf-field">
-          <label for="book-session-title">{{ t('book_session_title', 'Session title') }}</label>
-          <input id="book-session-title" type="text" maxlength="120" required
-                 [attr.aria-invalid]="attempted() && !sessionTitle().trim() ? 'true' : null"
-                 [value]="sessionTitle()" (input)="sessionTitle.set($any($event.target).value); formError.set('')" />
-          @if (attempted() && !sessionTitle().trim()) {
-            <small class="tf-book-field-error">{{ t('book_title_required', 'Add a session title.') }}</small>
-          }
-        </div>
-
-        <div class="tf-field">
-          <label for="book-topic">{{ t('book_topic', 'What do you want to cover?') }}</label>
-          <textarea id="book-topic" rows="3" maxlength="1000" required
-                    [attr.aria-invalid]="attempted() && !topic().trim() ? 'true' : null"
-                    [placeholder]="t('book_topic_placeholder', 'The exact part you are stuck on.')"
-                    [value]="topic()" (input)="topic.set($any($event.target).value); formError.set('')"></textarea>
-          @if (attempted() && !topic().trim()) {
-            <small class="tf-book-field-error">{{ t('book_topic_required', 'Describe what you want to cover.') }}</small>
-          }
-        </div>
 
         <fieldset class="tf-book-fieldset">
           <legend>{{ t('book_duration', 'Duration') }}</legend>
@@ -65,37 +45,18 @@
 
         <div class="tf-field">
           <label for="book-timezone">{{ t('book_timezone', 'Your timezone') }}</label>
-          <select id="book-timezone" [value]="timezone()"
-                  (change)="setTimezone($any($event.target).value)">
-            @for (zone of timezones(); track zone) {
-              <option [value]="zone" [selected]="zone === timezone()">{{ zoneLabel(zone) }}</option>
-            }
-          </select>
+          <tf-time-zone-select fieldId="book-timezone" [value]="timezone()" [choices]="timezones()" (valueChange)="setTimezone($event)" />
         </div>
 
-        <div class="tf-field">
-          <label for="book-notes">{{ t('book_notes', 'Anything else the teacher should know') }}</label>
-          <textarea id="book-notes" rows="2" maxlength="1000"
-                    [value]="notes()" (input)="notes.set($any($event.target).value)"></textarea>
-        </div>
-
-        <div class="tf-field">
-          <tf-file-picker [compact]="true" [title]="t('book_attach', 'Attach a file (optional)')"
-                          [files]="attachment() ? [attachment()!] : []"
-                          (picked)="attachment.set($event[0])" (removed)="attachment.set(null)" />
-        </div>
-      </section>
-
-      <section class="tf-book-slots" aria-labelledby="book-slots-title">
         <h2 id="book-slots-title">{{ t('book_pick_time', 'Pick a time') }}</h2>
 
         @if (slotsLoading()) {
-          <p class="tf-book-muted" role="status">{{ t('book_loading_slots', 'Loading slots…') }}</p>
+          <tf-skeleton kind="slots" [label]="t('book_loading_slots', 'Loading slots…')" />
         } @else if (slotsError()) {
           <div class="tf-alert" data-kind="error" role="alert">{{ t('book_slots_failed', 'Could not load slots.') }}</div>
           <button type="button" class="tf-button tf-button-secondary" (click)="loadSlots()">{{ t('common_retry', 'Retry') }}</button>
         } @else if (!hasAnySlot()) {
-          <p class="tf-book-muted">{{ t('book_no_slots', 'No open slots in the next seven days.') }}</p>
+          <tf-ui-state icon="calendar" [compact]="true" [title]="t('book_no_slots', 'No open slots in the next seven days.')" [body]="t('craft_slots_empty', 'Try another duration or refresh the available times.')" />
           <button type="button" class="tf-button tf-button-secondary" (click)="loadSlots()">{{ t('common_refresh', 'Refresh') }}</button>
         } @else {
           <p class="tf-book-zone">{{ t('book_times_in', 'Times are shown in') }} <strong>{{ zoneLabel(timezone()) }}</strong></p>
@@ -104,14 +65,14 @@
               <button type="button" class="tf-book-daychip" data-testid="book-day"
                       [class.is-selected]="activeDay()?.key === day.key" [attr.aria-pressed]="activeDay()?.key === day.key"
                       [class.has-choice]="selectedDayKey() === day.key"
-                      [disabled]="!day.slots.length" (click)="chosenDay.set(day.key)">
+                      [disabled]="!day.slots.length" (click)="chooseDay(day.key)">
                 <span class="tf-book-daychip__weekday">{{ day.weekday }}</span>
                 <strong>{{ day.date }}</strong>
                 <small>{{ day.slots.length ? locale.format('book_open_count', { n: day.slots.length }, '{n} open') : t('book_day_none', 'No times') }}</small>
               </button>
             }
           </div>
-          @for (part of dayParts(); track part.key) {
+          @for (part of visibleDayParts(); track part.key) {
             <div class="tf-book-part">
               <p class="tf-book-part__head">{{ t(part.labelKey, part.fallback) }}</p>
               <div class="tf-book-times">
@@ -125,11 +86,14 @@
               </div>
             </div>
           }
+          @if (hasMoreTimes()) {
+            <button type="button" class="tf-button tf-button-ghost" [attr.aria-expanded]="showAllTimes()" (click)="showAllTimes.set(!showAllTimes())">{{ showAllTimes() ? t('craft_book_fewer_times', 'Show fewer times') : t('craft_book_all_times', 'Show all available times') }}</button>
+          }
         }
 
         <div class="tf-book-summary">
-          @if (selectedSlot(); as slot) {
-            <p class="tf-book-chosen">{{ t('book_selected', 'Selected') }}: <strong>{{ selectedDayText() }} · {{ slot.label }}</strong></p>
+          @for (slot of selectedSlot() ? [selectedSlot()!] : []; track slot.key) {
+            <p class="tf-book-chosen tf-book-selection" animate.enter="tf-motion-fade" role="status" aria-live="polite">{{ t('book_selected', 'Selected') }}: <strong>{{ selectedDayText() }} · {{ slot.label }}</strong></p>
           }
           @if (emergency()) {
             <p class="tf-book-emergency">{{ t('book_emergency_note', 'Short-notice booking includes a premium.') }}</p>
@@ -140,14 +104,52 @@
               <strong><tf-price [amount]="amount.amount" [currency]="amount.currency" /></strong>
             </p>
           }
+          <p class="tf-book-muted">{{ t('book_request_payment_note', 'The teacher reviews your request first. You pay only after acceptance.') }}</p>
+        </div>
+      </section>
+
+      <section class="tf-book-form" aria-labelledby="book-details-title">
+        <h2 id="book-details-title">{{ t('craft_book_details', 'What do you need help with?') }}</h2>
+        <div class="tf-field">
+          <label for="book-session-title">{{ t('book_session_title', 'Session title') }}</label>
+          <input autocomplete="off" id="book-session-title" type="text" maxlength="120" required
+                 [attr.aria-invalid]="attempted() && !sessionTitle().trim() ? 'true' : null"
+                 [value]="sessionTitle()" (input)="sessionTitle.set($any($event.target).value); formError.set('')" />
+          @if (attempted() && !sessionTitle().trim()) {
+            <small class="tf-book-field-error">{{ t('book_title_required', 'Add a session title.') }}</small>
+          }
+        </div>
+
+        <div class="tf-field">
+          <label for="book-topic">{{ t('book_topic', 'What do you want to cover?') }}</label>
+          <textarea autocomplete="off" id="book-topic" rows="3" maxlength="1000" required
+                    [attr.aria-invalid]="attempted() && !topic().trim() ? 'true' : null"
+                    [placeholder]="t('book_topic_placeholder', 'The exact part you are stuck on.')"
+                    [value]="topic()" (input)="topic.set($any($event.target).value); formError.set('')"></textarea>
+          @if (attempted() && !topic().trim()) {
+            <small class="tf-book-field-error">{{ t('book_topic_required', 'Describe what you want to cover.') }}</small>
+          }
+        </div>
+
+        <div class="tf-field">
+          <label for="book-notes">{{ t('book_notes', 'Anything else the teacher should know') }}</label>
+          <textarea autocomplete="off" id="book-notes" rows="2" maxlength="1000"
+                    [value]="notes()" (input)="notes.set($any($event.target).value)"></textarea>
+        </div>
+
+        <div class="tf-field">
+          <tf-file-picker [compact]="true" [title]="t('book_attach', 'Attach a file (optional)')"
+                          [files]="attachment() ? [attachment()!] : []"
+                          (picked)="attachment.set($event[0])" (removed)="attachment.set(null)" />
+        </div>
+        <div class="tf-book-summary">
           <button type="button" class="tf-button tf-book-confirm"
-                  (click)="confirm()" [disabled]="confirming() || !service()">
+                  (click)="confirm()" [disabled]="confirming() || !service()" [tfActionFeedback]="confirming() ? 'busy' : 'idle'">
             {{ confirming() ? t('book_request_sending', 'Sending request…') : t('book_request_send', 'Send time request') }}
           </button>
           @if (formError()) {
             <p class="tf-book-error" role="alert">{{ formError() }}</p>
           }
-          <p class="tf-book-muted">{{ t('book_request_payment_note', 'The teacher reviews your request first. You pay only after acceptance.') }}</p>
         </div>
       </section>
     </div>

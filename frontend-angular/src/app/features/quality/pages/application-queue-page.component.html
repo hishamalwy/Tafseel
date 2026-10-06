@@ -53,7 +53,7 @@
   </form>
 
   @if (loading()) {
-    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+    <tf-skeleton kind="queue" [label]="t('common_loading', 'Loading…')" />
   } @else if (queue()?.failed) {
     <div class="tf-state" data-state="error" role="alert">
       <p class="tf-state-title">{{ t('quality_queue_failed', 'The application queue could not be loaded.') }}</p>
@@ -81,7 +81,7 @@
           <span role="cell" [attr.data-label]="t('apply_status_label', 'Status')"><span class="tf-badge" [attr.data-tone]="Review.statusTone(item.status)">{{ t(Review.statusKey(item.status), '') }}</span></span>
           <span role="cell" [attr.data-label]="t('quality_col_submitted', 'Submitted')">{{ date(item.submittedAt) }}</span>
           <span role="cell" [attr.data-label]="t('quality_col_priority', 'Priority')">{{ t(Review.priorityKey(item.priority), '') }}</span>
-          <span role="cell" class="tf-quality-queue-action"><a class="tf-button tf-button-secondary tf-button-sm" [routerLink]="['/quality/applications', item.id]">{{ t('quality_open_review', 'Open review') }}</a></span>
+          <span role="cell" class="tf-quality-queue-action"><a class="tf-button tf-button-secondary tf-button-sm" [id]="'quality-row-' + item.id" [routerLink]="['/quality/applications', item.id]" [queryParams]="contextParams(item.id)">{{ t('quality_open_review', 'Open review') }}</a></span>
         </div>
       }
     </div>

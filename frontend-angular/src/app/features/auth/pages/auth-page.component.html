@@ -2,7 +2,7 @@
 
     <div class="tf-auth-card-wrap">
       <div class="tf-panel tf-panel-narrow tf-auth-panel">
-        <div class="tf-auth-tabs">
+        <div tfSegmented class="tf-auth-tabs">
           @for (m of modeTabs(); track m.mode) {
             <button type="button" [attr.aria-pressed]="m.active" (click)="goMode(m.mode)">{{ m.label }}</button>
           }
@@ -11,7 +11,7 @@
         @switch (mode()) {
 
           @case ('login') {
-            <div class="tf-auth-panel">
+            <div class="tf-auth-panel" animate.enter="tf-motion-fade">
               <div class="tf-auth-copy tf-auth-copy--spaced">
                 <h1 class="tf-auth-heading">{{ fromAction() ? t('auth_login_action_title', 'Log in to continue') : t('auth_welcome_back', 'Welcome back') }}</h1>
                 <p class="tf-muted">{{ fromAction()
@@ -20,11 +20,11 @@
               </div>
 
               @if (notice()) {
-                <p class="tf-auth-success" role="status">{{ notice() }}</p>
+                <tf-ui-state data-testid="auth-notice" state="success" variant="confirmation" [compact]="true" [title]="notice()" />
               }
 
               <form class="tf-form" (ngSubmit)="onLogin()" novalidate>
-                <tf-text-field
+                <tf-text-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                   fieldId="login-email" type="email" autocomplete="email" placeholder="you@example.com"
                   [label]="t('auth_email', 'Email')"
                   [(value)]="email"
@@ -32,7 +32,7 @@
                   [message]="loginEmailError()"
                   (blurred)="emailTouched.set(true)" />
 
-                <tf-password-field
+                <tf-password-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                   fieldId="login-password" autocomplete="current-password" placeholder="••••••••"
                   [label]="t('auth_password', 'Password')"
                   [(value)]="password"
@@ -41,7 +41,7 @@
                   (blurred)="passwordTouched.set(true)" />
 
                 @if (needsMfa()) {
-                  <tf-text-field
+                  <tf-text-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                     fieldId="login-mfa" inputMode="numeric" autocomplete="one-time-code"
                     placeholder="123456" dir="ltr" [maxLength]="6"
                     [label]="t('auth_mfa_code', 'Authenticator code')"
@@ -70,7 +70,7 @@
                   </button>
                 </div>
 
-                <button class="tf-button tf-auth-submit" type="submit" [disabled]="loginSubmitDisabled()">
+                <button class="tf-button tf-auth-submit" type="submit" [disabled]="loginSubmitDisabled()" [tfActionFeedback]="loggingIn() ? 'busy' : 'idle'">
                   {{ loggingIn() ? t('auth_logging_in', 'Logging in…') : t('auth_login', 'Log in') }}
                 </button>
               </form>
@@ -86,7 +86,7 @@
           }
 
           @case ('register') {
-            <div class="tf-auth-panel">
+            <div class="tf-auth-panel" animate.enter="tf-motion-fade">
               <div class="tf-auth-copy tf-auth-copy--spaced">
                 <h1 class="tf-auth-heading">{{ t('auth_create_account_h', 'Create your account') }}</h1>
                 <p class="tf-muted">{{ t('auth_choose_usage', 'Choose how you want to use Tafseel.') }}</p>
@@ -113,7 +113,7 @@
               }
 
               <form class="tf-form tf-form--tight" (ngSubmit)="onRegister()" novalidate>
-                <tf-text-field
+                <tf-text-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                   fieldId="reg-fullname" autocomplete="name"
                   [label]="t('auth_full_name', 'Full name')"
                   [(value)]="fullName"
@@ -121,7 +121,7 @@
                   [message]="fullNameError()"
                   (blurred)="fullNameTouched.set(true)" />
 
-                <tf-text-field
+                <tf-text-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                   fieldId="reg-email" type="email" autocomplete="email"
                   [label]="t('auth_email', 'Email')"
                   [(value)]="regEmail"
@@ -130,7 +130,7 @@
                   (blurred)="regEmailTouched.set(true)" />
 
                 <div class="tf-grid-2 tf-grid-2--tight">
-                  <tf-password-field
+                  <tf-password-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                     fieldId="reg-password" autocomplete="new-password"
                     [label]="t('auth_password', 'Password')"
                     [(value)]="regPassword"
@@ -139,7 +139,7 @@
                     (focused)="regPasswordFocused.set(true)"
                     (blurred)="regPasswordTouched.set(true); regPasswordFocused.set(false)" />
 
-                  <tf-password-field
+                  <tf-password-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                     fieldId="reg-confirm" autocomplete="new-password"
                     [label]="t('auth_confirm_password', 'Confirm password')"
                     [(value)]="regConfirm"
@@ -161,14 +161,21 @@
                 }
 
                 <label class="tf-check tf-check--start">
-                  <input type="checkbox" [checked]="agreeTerms()" (change)="agreeTerms.set($any($event.target).checked)" />
+                  <input type="checkbox" id="reg-terms" [checked]="agreeTerms()"
+                         [attr.aria-invalid]="termsInvalid()"
+                         [attr.aria-describedby]="termsInvalid() ? 'reg-terms-msg' : null"
+                         (change)="agreeTerms.set($any($event.target).checked)" />
                   <span>{{ t('auth_policy_prefix', 'I agree to the') }}
                     <a routerLink="/policies/terms" target="_blank" rel="noopener">{{ t('auth_terms', 'Terms of Service') }}</a>
                     {{ t('auth_policy_join', 'and') }}
                     <a routerLink="/policies/privacy" target="_blank" rel="noopener">{{ t('auth_privacy', 'Privacy Policy') }}</a></span>
                 </label>
+                @if (termsInvalid()) {
+                  <span class="tf-field-error" id="reg-terms-msg" role="alert">{{
+                    t('auth_terms_required', 'Agree to the Terms of Service and Privacy Policy to create your account.') }}</span>
+                }
 
-                <button class="tf-button tf-auth-submit" type="submit" [disabled]="registerSubmitDisabled()">
+                <button class="tf-button tf-auth-submit" type="submit" [disabled]="registerSubmitDisabled()" [tfActionFeedback]="registering() ? 'busy' : 'idle'">
                   {{ registering() ? t('auth_creating', 'Creating…') : t('auth_create_account', 'Create account') }}
                 </button>
               </form>
@@ -181,14 +188,14 @@
           }
 
           @case ('reset') {
-            <div class="tf-auth-panel">
+            <div class="tf-auth-panel" animate.enter="tf-motion-fade">
               <div class="tf-auth-copy tf-auth-copy--spaced">
                 <h1 class="tf-auth-heading">{{ t('auth_reset_h', 'Choose a new password') }}</h1>
                 <p class="tf-muted">{{ t('auth_reset_sub', 'Set a strong password for your Tafseel account.') }}</p>
               </div>
 
               <form class="tf-form" (ngSubmit)="onReset()" novalidate>
-                <tf-password-field
+                <tf-password-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                   fieldId="reset-password" autocomplete="new-password"
                   [label]="t('auth_new_password', 'New password')"
                   [(value)]="resetPassword"
@@ -197,7 +204,7 @@
                   (focused)="resetPasswordFocused.set(true)"
                   (blurred)="resetPasswordTouched.set(true); resetPasswordFocused.set(false)" />
 
-                <tf-password-field
+                <tf-password-field [required]="true" [disabled]="loggingIn() || registering() || resetting()"
                   fieldId="reset-confirm" autocomplete="new-password"
                   [label]="t('auth_confirm_password', 'Confirm password')"
                   [(value)]="resetConfirm"
@@ -217,7 +224,7 @@
                   <p class="tf-auth-alert" role="alert">{{ resetError() }}</p>
                 }
 
-                <button class="tf-button tf-auth-submit" type="submit" [disabled]="resetSubmitDisabled()">
+                <button class="tf-button tf-auth-submit" type="submit" [disabled]="resetSubmitDisabled()" [tfActionFeedback]="resetting() ? 'busy' : 'idle'">
                   {{ resetting() ? t('auth_saving', 'Saving…') : t('auth_save_password', 'Save password') }}
                 </button>
               </form>

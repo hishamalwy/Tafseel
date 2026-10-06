@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ReducedMotion } from '@core/a11y/reduced-motion.service';
 import { LocaleService } from '@core/i18n/locale.service';
 import { landingCopy } from '../content/landing.copy';
@@ -18,7 +18,7 @@ const promotion = (over: Partial<Promotion> = {}): Promotion => ({
   ...over
 });
 
-function render(over: Partial<Promotion> = {}, lang: 'ar' | 'en' = 'en'): HTMLElement {
+function renderFixture(over: Partial<Promotion> = {}, lang: 'ar' | 'en' = 'en') {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [PromoWizardComponent],
@@ -31,10 +31,44 @@ function render(over: Partial<Promotion> = {}, lang: 'ar' | 'en' = 'en'): HTMLEl
   const fixture = TestBed.createComponent(PromoWizardComponent);
   fixture.componentRef.setInput('promotion', promotion(over));
   fixture.detectChanges();
-  return fixture.nativeElement as HTMLElement;
+  return fixture;
+}
+
+function render(over: Partial<Promotion> = {}, lang: 'ar' | 'en' = 'en'): HTMLElement {
+  return renderFixture(over, lang).nativeElement as HTMLElement;
 }
 
 describe('UX-07 the promo dialog', () => {
+  it('reports a copied code only after clipboard success and offers manual copy on refusal or missing support', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    try {
+      for (const { clipboard, success } of [
+        { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) }, success: true },
+        { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('permission denied')) }, success: false },
+        { clipboard: undefined, success: false }
+      ]) {
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: clipboard });
+        const fixture = renderFixture({ kindCode: 'discount', couponCode: 'TAFSEEL20' });
+        const copied = vi.fn(), claimed = vi.fn();
+        fixture.componentInstance.codeCopied.subscribe(copied);
+        fixture.componentInstance.claimed.subscribe(claimed);
+        await fixture.componentInstance.copyCode();
+        fixture.detectChanges();
+        expect(claimed).toHaveBeenCalledOnce();
+        if (!success) {
+          expect(copied).not.toHaveBeenCalled();
+          expect(fixture.nativeElement.querySelector('[role=status]')?.textContent).toContain('TAFSEEL20');
+        } else {
+          expect(copied).toHaveBeenCalledWith('TAFSEEL20');
+        }
+        fixture.destroy();
+      }
+    } finally {
+      if (descriptor) Object.defineProperty(navigator, 'clipboard', descriptor);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
+  });
+
   it('shows a copyable code on a discount', () => {
     const page = render({ kindCode: 'discount', couponCode: 'TAFSEEL20' });
     expect(page.textContent).toContain('TAFSEEL20');

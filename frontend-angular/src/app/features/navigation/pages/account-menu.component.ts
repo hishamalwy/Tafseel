@@ -23,7 +23,7 @@ import { DashboardRole } from '@features/dashboards/models/dashboard';
         </svg>
       </button>
       @if (open()) {
-        <div class="tf-account-menu" role="menu" data-testid="account-menu">
+        <div class="tf-account-menu" animate.enter="tf-popover-enter" animate.leave="tf-popover-leave" [attr.inert]="!open() ? '' : null" role="menu" data-testid="account-menu">
           <p class="tf-account-name">{{ session.current()?.fullName }}</p>
           @if (settingsPath(); as path) {
             <a role="menuitem" data-testid="account-settings" [routerLink]="path" (click)="open.set(false)">{{
@@ -47,16 +47,16 @@ import { DashboardRole } from '@features/dashboards/models/dashboard';
   styles: `
     .tf-account { position: relative; display: inline-flex; }
     .tf-account-menu { position: absolute; inset-block-start: calc(100% + 8px); inset-inline-end: 0; z-index: 40;
-      min-width: 220px; padding: 8px; display: grid; gap: 2px; border: 1px solid var(--border);
-      border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-lg, 0 12px 32px rgba(0,0,0,.18)); }
+      min-width: 220px; padding: 8px; display: grid; gap: 2px; border: 1px solid var(--edge-overlay);
+      border-radius: var(--r-md); background: var(--surface); box-shadow: var(--overlay-shadow); }
     .tf-account-name { margin: 0; padding: 6px 10px; font-weight: 700; }
     .tf-account-menu a, .tf-account-menu button { display: flex; align-items: center; min-height: 44px; padding: 8px 10px;
       border: 0; border-radius: var(--r-sm); background: none; text-align: start; text-decoration: none; color: inherit;
       font: inherit; cursor: pointer; }
-    .tf-account-menu a:hover, .tf-account-menu button:hover { background: var(--surface-2, rgba(0,0,0,.04)); }
+    @media (hover:hover) and (pointer:fine){.tf-account-menu a:hover,.tf-account-menu button:hover { background: var(--surface-2, rgba(0,0,0,.04)); } }
     .tf-account-menu .tf-account-sign-out { gap: 10px; margin-block-start: 6px; border-block-start: 1px solid var(--border); border-radius: 0 0 var(--r-sm) var(--r-sm); color: var(--danger); font-weight: 750; }
     .tf-account-sign-out svg { inline-size: 20px; block-size: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .tf-account-menu .tf-account-sign-out:hover { background: var(--danger-soft); }
+    @media (hover:hover) and (pointer:fine){.tf-account-menu .tf-account-sign-out:hover { background: var(--danger-soft); } }
     .tf-account-menu .tf-account-sign-out:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
   `
 })

@@ -12,6 +12,7 @@ import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.compone
 import { durationChoices } from '@shared/models/duration';
 import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
 import { Demand, DraftProblem, MyOffer, OFFER_LIMITS, OFFER_STATUS, OfferDraft, OfferTerms, OpenRequest, REQUEST_STATUS, myOfferOutcome } from '../models/demand';
 import { DraftInvalid, LoadOpportunity, ManageOffer } from '../services/demand.use-cases';
 
@@ -46,6 +47,7 @@ export class OpportunityPageComponent {
   readonly editing = signal(false);
   readonly draft = signal<OfferDraft>(Demand.emptyOffer());
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
   readonly busy = signal(false);
   readonly error = signal('');
   readonly terms = signal<OfferTerms | null>(null);
@@ -127,7 +129,7 @@ export class OpportunityPageComponent {
     if (this.busy()) return;
     this.attempted.set(true);
     this.error.set('');
-    if (Object.keys(Demand.offerProblems(this.draft(), this.terms())).length) return;
+    if (Object.keys(Demand.offerProblems(this.draft(), this.terms())).length) return this.focusFirstInvalid();
     this.busy.set(true);
     try {
       const updating = Demand.canEditOffer(this.myOffer());

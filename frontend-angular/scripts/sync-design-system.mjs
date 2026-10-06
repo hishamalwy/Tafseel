@@ -10,6 +10,7 @@
 import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import postcss from 'postcss';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const project = join(here, '..');
@@ -63,7 +64,33 @@ const sharedCss = sections
 
 rmSync(cssTo, { force: true });
 mkdirSync(dirname(cssTo), { recursive: true });
-writeFileSync(cssTo, sharedCss);
+const sharedRoot = postcss.parse(sharedCss);
+// Only rules whose every selector requires this feature's class can move.
+// Keep mixed selectors and all keyframes in the common sheet; preserve media/supports wrappers.
+function extractFeature(container, family) {
+  const extracted = postcss.root();
+  for (const node of [...(container.nodes ?? [])]) {
+    // Functional pseudos can contain alternative or negated classes; their presence
+    // does not prove the rule requires this feature (e.g. :is(.segment,.book-slot)).
+    if (node.type === 'rule' && node.selectors.every(selector => !selector.includes('(') && family.test(selector))) {
+      extracted.append(node.clone()); node.remove();
+    } else if (node.type === 'atrule' && ['media','supports','layer','container'].includes(node.name)) {
+      const children = extractFeature(node, family);
+      if (children.nodes.length) {
+        const wrapper = node.clone({nodes:[]}); children.nodes.forEach(child => wrapper.append(child.clone())); extracted.append(wrapper);
+        if (!node.nodes.length) node.remove();
+      }
+    }
+  }
+  return extracted;
+}
+for (const [name, family] of [['teachers', /\.tf-mk(?:b)?(?:-|\b)/], ['booking', /\.tf-book(?:-|\b)/]]) {
+  const feature = extractFeature(sharedRoot, family);
+  if (!feature.nodes.length) throw new Error(`No ${name} feature styles extracted`);
+  writeFileSync(join(project,'src','generated',`${name}.css`), `/* Generated feature-only rules from css/tafseel.css. */\n${feature.toString()}\n`);
+  console.log(`${name}: ${feature.nodes.length} rule groups loaded with its lazy pages`);
+}
+writeFileSync(cssTo, sharedRoot.toString());
 const landingCss = `/* Generated from css/tafseel.css by sync-design-system.mjs. */\n${sections.map(x => x.content).join('\n\n')}\n`;
 if (!existsSync(landingCssTo) || readFileSync(landingCssTo, 'utf8') !== landingCss)
   writeFileSync(landingCssTo, landingCss);

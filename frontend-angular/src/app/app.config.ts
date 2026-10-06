@@ -4,12 +4,14 @@ import {
   provideBrowserGlobalErrorListeners, provideZonelessChangeDetection
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling, withPreloading } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { InteractionMotion } from '@core/a11y/interaction-motion.service';
 import { RestoreSession } from '@core/auth/services/restore-session.use-case';
 import { authRetryInterceptor, authTokenInterceptor } from '@core/http/interceptors';
 import { LocaleService } from '@core/i18n/locale.service';
 import { ThemeService } from '@core/theme/theme.service';
+import { PublicNavigationPreloading } from '@core/navigation/public-navigation-preloading';
 import { trailingSlashUrlSerializer } from '@core/http/trailing-slash-url-serializer';
 import { appProviders } from './app.providers';
 import { routes } from './app.routes';
@@ -23,6 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(),
+      withPreloading(PublicNavigationPreloading),
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' })
     ),
     trailingSlashUrlSerializer,
@@ -38,6 +41,7 @@ export const appConfig: ApplicationConfig = {
       // resolving them before the promise is what keeps that true.
       const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
       inject(ThemeService);
+      inject(InteractionMotion);
       const locale = inject(LocaleService);
       const restore = inject(RestoreSession);
 

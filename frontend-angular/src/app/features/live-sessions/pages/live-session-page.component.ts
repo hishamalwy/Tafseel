@@ -1,3 +1,6 @@
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,7 +19,6 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { FilePickerComponent } from '@shared/components/file-picker.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { DialogService } from '@shared/services/dialog.service';
-import { ToastService } from '@shared/services/toast.service';
 import { Order, REVIEW_CRITERIA, ReviewDraft } from '@features/orders/models/order-detail';
 import { LiveSession, SESSION_STATUS, Session, SessionAction, SessionAttachment } from '../models/live-session';
 import { LiveSessionGateway } from '../services/live-session.gateway';
@@ -29,7 +31,7 @@ type JitsiWindow = Window & { JitsiMeetExternalAPI?: new (domain: string, option
 @Component({
   selector: 'tf-live-session-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent, ProtectedFileViewerComponent, FilePickerComponent],
+  imports: [UiStateComponent, SkeletonComponent, ActionFeedbackDirective, FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, PriceComponent, ProtectedFileViewerComponent, FilePickerComponent],
   templateUrl: './live-session-page.component.html',
   styleUrls: ['../../../shared/styles/workspace-detail.css', './live-session-page.component.css']
 })
@@ -40,8 +42,8 @@ export class LiveSessionPageComponent {
   private readonly router = inject(Router);
   private readonly gateway = inject(LiveSessionGateway);
   private readonly session = inject(SESSION_STORE);
+  readonly teacherWorkspace = computed(() => (this.session.current()?.roles ?? []).includes('Teacher'));
   private readonly dialogs = inject(DialogService);
-  private readonly toasts = inject(ToastService);
   private readonly document = inject(DOCUMENT);
   private readonly title = inject(Title);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -63,6 +65,8 @@ export class LiveSessionPageComponent {
   readonly booking = signal<LiveSession | null>(null);
   readonly busy = signal<Busy>('');
   readonly actionError = signal('');
+  readonly successNotice = signal('');
+  readonly pendingChoice = signal<boolean | null>(null);
   readonly joinUrl = signal('');
   readonly meetingOpen = signal(false);
   readonly rescheduleOpen = signal(false);
@@ -86,6 +90,7 @@ export class LiveSessionPageComponent {
     inject(DestroyRef).onDestroy(() => { clearInterval(timer); this.closeMeeting(); });
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
       this.sessionId = params.get('sessionId') ?? '';
+      this.successNotice.set('');
       this.booking.set(null);
       this.joinUrl.set('');
       this.closeMeeting();
@@ -144,13 +149,14 @@ export class LiveSessionPageComponent {
     if (Order.reviewProblems(this.review()).length) return;
     this.busy.set('review');
     this.actionError.set('');
+    this.successNotice.set('');
     try {
       await this.gateway.review(booking.id, this.review());
       this.review.set(Order.emptyReview());
       this.reviewAttempted.set(false);
       this.reviewOpen.set(false);
       await this.load();
-      this.toasts.show(this.t('session_review_thanks', 'Thank you. Your review is published on the teacher’s profile.'));
+      this.successNotice.set(this.t('session_review_thanks', 'Thank you. Your review is published on the teacher’s profile.'));
     } catch (error) {
       this.actionError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
     } finally {
@@ -312,10 +318,11 @@ export class LiveSessionPageComponent {
     if (this.busy()) return;
     this.busy.set(action);
     this.actionError.set('');
+    this.successNotice.set('');
     try {
       await work();
       await this.load();
-      this.toasts.show(done);
+      this.successNotice.set(done);
     } catch (error) {
       this.actionError.set(problemMessage(error, (k, f) => this.t(k, f)).text);
       await this.load();

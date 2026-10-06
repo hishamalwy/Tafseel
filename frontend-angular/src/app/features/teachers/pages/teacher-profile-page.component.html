@@ -1,11 +1,12 @@
+<tf-teacher-styles />
 <tf-skip-link />
 <tf-public-header menuId="profile-public-menu" />
 
 <main id="main" class="tf-profile-page tf-mk-world">
   @if (status() === 'loading') {
     <div class="tf-mk-shell tf-mkp-loading">
-      <div class="tf-skeleton"></div><div class="tf-skeleton"></div>
-      <p class="tf-mk-meta">{{ t('tp_loading', 'Loading teacher profile…') }}</p>
+      <tf-skeleton kind="profile" [label]="t('tp_loading', 'Loading teacher profile…')"
+        [avatarSrc]="loadingAvatar" [avatarTransitionName]="transition.teacherId() ? 'tf-teacher-avatar' : 'none'" />
     </div>
   }
 
@@ -109,7 +110,7 @@
             <div class="tf-mkp-eyebrow">{{ t('tp_teacher_profile_label', 'Teacher profile') }}</div>
             <div class="tf-mkp-lock">
               <div class="tf-mk-av-wrap">
-                <img decoding="async" class="tf-mk-av tf-mk-av--l" [src]="avatar()"
+                <img decoding="async" class="tf-mk-av tf-mk-av--l" [style.view-transition-name]="transition.teacherId() === t0.id ? 'tf-teacher-avatar' : null" [src]="avatar()"
                      [alt]="name()" width="82" height="82" />
                 @if (isQualified()) {
                   <span class="tf-mk-av-check" aria-hidden="true">

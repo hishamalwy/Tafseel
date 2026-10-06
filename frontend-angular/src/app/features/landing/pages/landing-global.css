@@ -37,30 +37,34 @@
    rule would repaint it muted at 16px - which is exactly what it did. */
 .tf-landing-section-text > p:not(.tf-section-eyebrow){
   margin:10px 0 0;color:var(--muted);
-  font-size:16px;line-height:1.6;text-wrap:pretty;
+  font-size:var(--type-body-lg-size);line-height:1.6;text-wrap:pretty;
 }
 .tf-section-eyebrow{
   display:block;margin:0 0 12px;color:var(--primary);
-  font-family:var(--font-sans);font-size:12.5px;font-weight:800;
+  font-family:var(--font-sans);font-size:var(--type-meta-size);font-weight:800;
   line-height:1.2;letter-spacing:.14em;text-transform:uppercase;
 }
 /* Arabic has no letter case and tracking works against its joins, so the eyebrow
    keeps its role through colour and weight rather than through capitals. */
 html[lang="ar"] .tf-section-eyebrow{
-  letter-spacing:0;text-transform:none;font-size:13.5px;
+  letter-spacing:0;text-transform:none;font-size:var(--type-label-size);
 }
 .tf-section-all{
   display:inline-flex;align-items:center;gap:6px;min-block-size:44px;
-  color:var(--text-2);font-size:14.5px;font-weight:700;white-space:nowrap;
+  color:var(--text-2);font-size:var(--type-body-sm-size);font-weight:700;white-space:nowrap;
   transition:color var(--t);
 }
-.tf-section-all:hover,.tf-section-all:focus-visible{color:var(--primary)}
+.tf-section-all:focus-visible{color:var(--primary)}
+@media (hover:hover) and (pointer:fine){.tf-section-all:hover{color:var(--primary)}}
 .tf-landing-state{
   margin:0;padding:26px 20px;
   border:1px dashed var(--border-strong);border-radius:var(--r-lg);
   background:var(--surface);color:var(--muted);
-  font-size:14.5px;line-height:1.55;text-align:center;
+  font-size:var(--type-body-sm-size);line-height:1.55;text-align:center;
 }
+.tf-landing-state--error{display:flex;flex-direction:column;align-items:center;gap:var(--space-3)}
+.tf-landing-state--error p{margin:0}
+.tf-landing-state-icon{inline-size:28px;block-size:28px;fill:none;stroke:var(--primary);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 /* One arrow for the whole page. It points along the reading direction, so RTL is
    a single mirror on the glyph rather than a second icon or reordered markup. */
 .tf-inline-arrow{
@@ -70,10 +74,10 @@ html[lang="ar"] .tf-section-eyebrow{
   transition:transform var(--motion-normal) var(--ease-out);
 }
 html[dir="rtl"] .tf-inline-arrow{transform:scaleX(-1)}
-a:hover .tf-inline-arrow,
 a:focus-visible .tf-inline-arrow{transform:translateX(4px)}
-html[dir="rtl"] a:hover .tf-inline-arrow,
+@media (hover:hover) and (pointer:fine){a:hover .tf-inline-arrow{transform:translateX(4px)}}
 html[dir="rtl"] a:focus-visible .tf-inline-arrow{transform:scaleX(-1) translateX(4px)}
+@media (hover:hover) and (pointer:fine){html[dir="rtl"] a:hover .tf-inline-arrow{transform:scaleX(-1) translateX(4px)}}
 
 /* ===== Subjects - the catalogue ===========================================
    /subjects/featured returns a name and nothing else (its `detail` field carries
@@ -88,7 +92,7 @@ html[dir="rtl"] a:focus-visible .tf-inline-arrow{transform:scaleX(-1) translateX
 }
 .tf-subject-card{
   position:relative;display:grid;
-  grid-template-columns:auto minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr);
   align-items:center;gap:clamp(16px,1.8vw,26px);
   min-block-size:104px;padding-block:22px;
   border:0;border-block-start:1px solid var(--border);border-radius:0;
@@ -104,24 +108,8 @@ html[dir="rtl"] a:focus-visible .tf-inline-arrow{transform:scaleX(-1) translateX
   transition:transform 420ms var(--ease-out);
 }
 html[dir="rtl"] .tf-subject-card::before{transform-origin:right center}
-.tf-subject-card:hover::before,
 .tf-subject-card:focus-visible::before{transform:scaleX(1)}
-.tf-subject-card-index{
-  font-family:var(--font-display);
-  font-size:clamp(30px,3vw,40px);line-height:1;font-weight:800;
-  letter-spacing:-.04em;font-variant-numeric:tabular-nums;
-  color:color-mix(in oklab,var(--text) 34%,var(--canvas));
-  transition:color var(--motion-normal) var(--ease-out);
-}
-html[lang="ar"] .tf-subject-card-index{letter-spacing:0}
-.tf-subject-card:hover .tf-subject-card-index,
-.tf-subject-card:focus-visible .tf-subject-card-index{
-  color:var(--primary);
-}
-html[data-theme="dark"] .tf-subject-card:hover .tf-subject-card-index,
-html[data-theme="dark"] .tf-subject-card:focus-visible .tf-subject-card-index{
-  color:var(--brand-lime);
-}
+@media (hover:hover) and (pointer:fine){.tf-subject-card:hover::before{transform:scaleX(1)}}
 .tf-subject-card-main{
   display:flex;align-items:baseline;justify-content:space-between;
   gap:14px;flex-wrap:wrap;min-inline-size:0;
@@ -132,17 +120,17 @@ html[data-theme="dark"] .tf-subject-card:focus-visible .tf-subject-card-index{
   letter-spacing:-.03em;text-wrap:balance;
   transition:transform var(--motion-normal) var(--ease-out);
 }
-.tf-subject-card:hover .tf-subject-card-title,
 .tf-subject-card:focus-visible .tf-subject-card-title{transform:translateX(4px)}
-html[dir="rtl"] .tf-subject-card:hover .tf-subject-card-title,
+@media (hover:hover) and (pointer:fine){.tf-subject-card:hover .tf-subject-card-title{transform:translateX(4px)}}
 html[dir="rtl"] .tf-subject-card:focus-visible .tf-subject-card-title{transform:translateX(-4px)}
+@media (hover:hover) and (pointer:fine){html[dir="rtl"] .tf-subject-card:hover .tf-subject-card-title{transform:translateX(-4px)}}
 .tf-subject-card-cta{
   display:inline-flex;align-items:center;gap:7px;
-  color:var(--muted);font-size:13.5px;font-weight:700;white-space:nowrap;
+  color:var(--muted);font-size:var(--type-label-size);font-weight:700;white-space:nowrap;
   transition:color var(--motion-normal) var(--ease-out);
 }
-.tf-subject-card:hover .tf-subject-card-cta,
 .tf-subject-card:focus-visible .tf-subject-card-cta{color:var(--primary)}
+@media (hover:hover) and (pointer:fine){.tf-subject-card:hover .tf-subject-card-cta{color:var(--primary)}}
 .tf-subject-card:focus-visible{outline:2px solid var(--primary);outline-offset:4px}
 /* Same height as the real row, so the catalogue never jumps when /subjects lands. */
 .tf-subject-card.is-skeleton{
@@ -188,9 +176,10 @@ html[dir="rtl"] .tf-subject-card:focus-visible .tf-subject-card-title{transform:
   padding-inline-start:clamp(20px,3vw,44px);border-inline-start:1px solid var(--border);
 }
 .tf-story-entry-paths a>span{display:flex;flex-direction:column;gap:5px;min-inline-size:0}
-.tf-story-entry-paths strong{font-family:var(--font-display);font-size:20px;line-height:1.2}
-.tf-story-entry-paths small{color:var(--muted);font-size:13.5px;line-height:1.55}
-.tf-story-entry-paths a:hover,.tf-story-entry-paths a:focus-visible{color:var(--primary)}
+.tf-story-entry-paths strong{font-family:var(--font-display);font-size:var(--type-title-size);line-height:1.2}
+.tf-story-entry-paths small{color:var(--muted);font-size:var(--type-label-size);line-height:1.55}
+.tf-story-entry-paths a:focus-visible{color:var(--primary)}
+@media (hover:hover) and (pointer:fine){.tf-story-entry-paths a:hover{color:var(--primary)}}
 .tf-story-entry-paths a:focus-visible{outline:2px solid var(--primary);outline-offset:4px}
 .tf-product-story{
   display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);
@@ -211,7 +200,7 @@ html[data-theme="dark"] .tf-story-canvas{box-shadow:none}
   min-block-size:64px;padding-inline:clamp(18px,2.4vw,28px);
   display:flex;align-items:center;justify-content:space-between;gap:16px;
   border-block-end:1px solid var(--border);background:var(--surface);
-  color:var(--text);font-size:14px;font-weight:750;
+  color:var(--text);font-size:var(--type-body-sm-size);font-weight:750;
 }
 .tf-story-canvas-title{display:inline-flex;align-items:center;gap:9px;min-inline-size:0}
 /* One piece of chrome, and it earns its place: the dot says the canvas below is
@@ -223,7 +212,7 @@ html[data-theme="dark"] .tf-story-canvas{box-shadow:none}
 .tf-story-canvas-status{
   padding:5px 11px;border:1px solid var(--border);border-radius:999px;
   background:var(--surface-recessed);color:var(--text-2);
-  font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;
+  font-size:var(--type-caption-size);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 /* Recessed, rather than "84% of the surface toward the canvas": the stage is an
    inset INSIDE the card, so it steps the same direction in both themes and the
@@ -243,7 +232,7 @@ html[data-theme="dark"] .tf-story-canvas{box-shadow:none}
   transition-timing-function:var(--ease-out),var(--ease-out),step-start;
 }
 .tf-story-panel-kicker{
-  color:var(--primary);font-size:12px;font-weight:800;
+  color:var(--primary);font-size:var(--type-meta-size);font-weight:800;
   letter-spacing:.08em;text-transform:uppercase;
 }
 html[lang="ar"] .tf-story-panel-kicker{letter-spacing:0;text-transform:none}
@@ -271,13 +260,13 @@ html[data-theme="dark"] .tf-story-doc{
 .tf-story-doc-kind{
   flex:none;padding:3px 7px;border-radius:var(--r-sm);
   background:var(--primary);color:var(--primary-ink);
-  font-size:11px;font-weight:800;letter-spacing:.06em;
+  font-size:var(--type-caption-size);font-weight:800;letter-spacing:.06em;
 }
 .tf-story-doc-name{
   min-inline-size:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--text-2);font-size:12px;font-weight:700;
+  color:var(--text-2);font-size:var(--type-meta-size);font-weight:700;
 }
-.tf-story-doc-heading{margin:0;color:var(--text);font-size:13px;font-weight:800}
+.tf-story-doc-heading{margin:0;color:var(--text);font-size:var(--type-label-size);font-weight:800}
 /* align-items rather than text-align: each line is a shrink-to-fit box hugging
    the sheet's start edge, so the marked one can carry a border without
    stretching across a column of whitespace. */
@@ -291,7 +280,7 @@ html[data-theme="dark"] .tf-story-doc{
 .tf-story-doc-work li{
   unicode-bidi:plaintext;
   padding:7px 10px;border:1px solid transparent;border-radius:var(--r-sm);
-  color:var(--text-2);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
+  color:var(--text-2);font-size:var(--type-body-sm-size);font-weight:700;font-variant-numeric:tabular-nums;
 }
 /* The marked line is the subject of the whole chapter, so it is drawn as a real
    selection with a grab edge - the same idiom the step-2 card repeats - and it
@@ -313,12 +302,12 @@ html[data-theme="dark"] .tf-story-doc{
   font-family:var(--font-display);font-size:clamp(22px,2.5vw,30px);
   line-height:1.16;letter-spacing:-.025em;
 }
-.tf-story-upload-copy>span:not(.tf-story-panel-kicker){color:var(--muted);font-size:14px;line-height:1.55}
+.tf-story-upload-copy>span:not(.tf-story-panel-kicker){color:var(--muted);font-size:var(--type-body-sm-size);line-height:1.55}
 .tf-story-formats{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 0;padding:0;list-style:none}
 .tf-story-formats li{
   padding:6px 11px;border:1px solid var(--border);border-radius:999px;
   background:var(--surface);color:var(--text-2);
-  font-size:11px;font-weight:800;letter-spacing:.06em;
+  font-size:var(--type-caption-size);font-weight:800;letter-spacing:.06em;
 }
 .tf-story-panel--context{display:flex;flex-direction:column;justify-content:center;gap:18px}
 .tf-story-panel--context blockquote{
@@ -335,8 +324,8 @@ html[data-theme="dark"] .tf-story-doc{
   border-start-start-radius:var(--r-md);border-end-start-radius:var(--r-md);
   background:var(--primary);
 }
-.tf-story-selection span{color:var(--primary);font-size:11px;font-weight:800}
-.tf-story-selection p{margin:5px 0 0;color:var(--text);font-size:14px;line-height:1.55}
+.tf-story-selection span{color:var(--primary);font-size:var(--type-caption-size);font-weight:800}
+.tf-story-selection p{margin:5px 0 0;color:var(--text);font-size:var(--type-body-sm-size);line-height:1.55}
 .tf-story-panel--teacher{display:flex;flex-direction:column;justify-content:center;gap:18px}
 .tf-story-teacher-id{
   display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:14px;
@@ -344,16 +333,16 @@ html[data-theme="dark"] .tf-story-doc{
 }
 .tf-story-teacher-id img{inline-size:64px;block-size:64px;border:1px solid var(--border);border-radius:var(--r-lg);object-fit:cover}
 .tf-story-teacher-id>div{display:flex;flex-direction:column;gap:4px;min-inline-size:0}
-.tf-story-teacher-id strong{font-family:var(--font-display);font-size:20px;line-height:1.2}
-.tf-story-teacher-id>div span{color:var(--muted);font-size:13px}
-.tf-story-qualified{display:inline-flex;align-items:center;gap:6px;color:var(--primary);font-size:12px;font-weight:750}
+.tf-story-teacher-id strong{font-family:var(--font-display);font-size:var(--type-title-size);line-height:1.2}
+.tf-story-teacher-id>div span{color:var(--muted);font-size:var(--type-label-size)}
+.tf-story-qualified{display:inline-flex;align-items:center;gap:6px;color:var(--primary);font-size:var(--type-meta-size);font-weight:750}
 .tf-story-qualified svg{inline-size:17px;block-size:17px;fill:none;stroke:currentColor;stroke-width:2.5}
 .tf-story-offer-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
 .tf-story-offer-facts>div{padding-inline:16px;border-inline-start:1px solid var(--border)}
 .tf-story-offer-facts>div:first-child{padding-inline-start:0;border-inline-start:0}
-.tf-story-offer-facts dt{color:var(--muted);font-size:11px;font-weight:700}
-.tf-story-offer-facts dd{margin:5px 0 0;color:var(--text);font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
-.tf-story-choice{align-self:flex-start;color:var(--text-2);font-size:13px;font-weight:700}
+.tf-story-offer-facts dt{color:var(--muted);font-size:var(--type-caption-size);font-weight:700}
+.tf-story-offer-facts dd{margin:5px 0 0;color:var(--text);font-size:var(--type-body-sm-size);font-weight:800;font-variant-numeric:tabular-nums}
+.tf-story-choice{align-self:flex-start;color:var(--text-2);font-size:var(--type-label-size);font-weight:700}
 .tf-story-teacher-empty{display:flex;align-items:center;gap:12px;padding:24px 0;border-block:1px solid var(--border);color:var(--muted)}
 .tf-story-teacher-empty svg{inline-size:24px;block-size:24px;fill:none;stroke:var(--primary);stroke-width:1.8}
 .tf-story-panel--complete{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:12px}
@@ -364,8 +353,8 @@ html[data-theme="dark"] .tf-story-doc{
   box-shadow:0 0 0 5px color-mix(in oklab,var(--success) 10%,transparent);
 }
 .tf-story-complete-mark svg{inline-size:22px;block-size:22px;fill:none;stroke:currentColor;stroke-width:2.5}
-.tf-story-panel--complete p{margin:0;max-inline-size:48ch;color:var(--muted);font-size:14px;line-height:1.6}
-.tf-story-output-row{display:flex;align-items:center;gap:12px;margin-block-start:8px;color:var(--text-2);font-size:13px;font-weight:700}
+.tf-story-panel--complete p{margin:0;max-inline-size:48ch;color:var(--muted);font-size:var(--type-body-sm-size);line-height:1.6}
+.tf-story-output-row{display:flex;align-items:center;gap:12px;margin-block-start:8px;color:var(--text-2);font-size:var(--type-label-size);font-weight:700}
 .tf-story-output-row i{inline-size:1px;block-size:18px;background:var(--border)}
 /* Four segments, not a percentage. The meter answers WHICH of four states the
    canvas is in - the same fact the numbered steps beside it carry - so the two
@@ -413,19 +402,17 @@ html[dir="rtl"] .tf-story-step::before{transform-origin:right center}
 }
 .tf-story-step-copy{display:flex;flex-direction:column;gap:8px;min-inline-size:0}
 .tf-story-step-copy strong{
-  font-family:var(--font-display);font-size:22px;line-height:1.25;letter-spacing:-.02em;
+  font-family:var(--font-display);font-size:var(--type-title-size);line-height:1.25;letter-spacing:-.02em;
   transition:color var(--motion-normal) var(--ease-out);
 }
-.tf-story-step-copy span{max-inline-size:42ch;color:var(--muted);font-size:14px;line-height:1.6}
+.tf-story-step-copy span{max-inline-size:42ch;color:var(--muted);font-size:var(--type-body-sm-size);line-height:1.6}
 .tf-story-step[data-active="true"] .tf-story-step-index{color:var(--primary)}
 /* A step the canvas has already passed is not the same as one it has not
    reached. Completed keeps the violet at half strength; upcoming stays ink. */
 .tf-story-step:has(~ .tf-story-step[data-active="true"]) .tf-story-step-index{
   color:color-mix(in oklab,var(--primary) 52%,transparent);
 }
-.tf-story-step button:hover .tf-story-step-index{color:color-mix(in oklab,var(--text) 55%,transparent)}
-.tf-story-step button:hover .tf-story-step-copy strong{color:var(--primary)}
-.tf-story-step[data-active="true"] button:hover .tf-story-step-index{color:var(--primary)}
+@media (hover:hover) and (pointer:fine){.tf-story-step button:hover .tf-story-step-index{color:color-mix(in oklab,var(--text) 55%,transparent)}.tf-story-step button:hover .tf-story-step-copy strong{color:var(--primary)}.tf-story-step[data-active="true"] button:hover .tf-story-step-index{color:var(--primary)}}
 
 @media (max-width:980px){
   .tf-product-story{grid-template-columns:minmax(0,1fr);gap:28px}
@@ -477,12 +464,11 @@ html[dir="rtl"] .tf-story-step::before{transform-origin:right center}
              box-shadow var(--motion-normal) var(--ease-out),
              transform var(--motion-normal) var(--ease-out);
 }
-.tf-tcard:hover{
+@media (hover:hover) and (pointer:fine){.tf-tcard:hover{
   border-color:color-mix(in oklab,var(--primary) 32%,var(--border-strong));
   box-shadow:var(--shadow-sm);
   transform:translateY(-2px);
-}
-html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface-2)}
+}html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface-2)}}
 .tf-tcard:focus-within{border-color:var(--border-strong)}
 .tf-tcard-head{display:flex;align-items:flex-start;gap:14px;min-inline-size:0}
 .tf-tcard-avatar{
@@ -491,18 +477,18 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
   object-fit:cover;background:var(--surface-2);
   transition:transform var(--motion-normal) var(--ease-out);
 }
-.tf-tcard:hover .tf-tcard-avatar{transform:scale(1.02)}
+@media (hover:hover) and (pointer:fine){.tf-tcard:hover .tf-tcard-avatar{transform:scale(1.02)}}
 .tf-tcard-id{display:flex;flex-direction:column;gap:3px;min-inline-size:0}
 .tf-tcard-name{
   margin:0;font-family:var(--font-display);
-  font-size:19px;line-height:1.22;font-weight:800;letter-spacing:-.02em;
+  font-size:var(--type-section-title-size);line-height:1.22;font-weight:800;letter-spacing:-.02em;
   overflow-wrap:anywhere;
 }
 .tf-tcard-subject{
   margin:0;color:var(--text-2);
-  font-size:14px;font-weight:650;line-height:1.35;overflow-wrap:anywhere;
+  font-size:var(--type-body-sm-size);font-weight:650;line-height:1.35;overflow-wrap:anywhere;
 }
-.tf-tcard-rating{display:flex;align-items:center;gap:6px;margin:2px 0 0;font-size:13.5px}
+.tf-tcard-rating{display:flex;align-items:center;gap:6px;margin:2px 0 0;font-size:var(--type-label-size)}
 .tf-tcard-star{inline-size:15px;block-size:15px;flex:none;fill:var(--warning);stroke:none}
 .tf-tcard-rating strong{font-weight:800;font-variant-numeric:tabular-nums}
 .tf-tcard-rating span{color:var(--muted);font-variant-numeric:tabular-nums}
@@ -511,7 +497,7 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
    strongest thing the card can say, so it sits directly under the identity. */
 .tf-tcard-qualified{
   display:flex;align-items:center;gap:8px;margin:0;
-  color:var(--primary);font-size:13px;font-weight:750;line-height:1.35;
+  color:var(--primary);font-size:var(--type-label-size);font-weight:750;line-height:1.35;
 }
 .tf-tcard-qualified svg{
   inline-size:18px;block-size:18px;flex:none;padding:3px;
@@ -520,7 +506,7 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
   stroke-linecap:round;stroke-linejoin:round;
 }
 .tf-tcard-headline{
-  margin:0;color:var(--muted);font-size:14px;line-height:1.55;
+  margin:0;color:var(--muted);font-size:var(--type-body-sm-size);line-height:1.55;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .tf-tcard-topics{
@@ -530,7 +516,7 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
 .tf-tcard-topics li{
   padding:5px 10px;border:1px solid var(--border);border-radius:999px;
   background:var(--surface-2);color:var(--text-2);
-  font-size:12.5px;font-weight:650;line-height:1.3;
+  font-size:var(--type-meta-size);font-weight:650;line-height:1.3;
 }
 .tf-tcard-foot{
   display:flex;flex-direction:column;gap:12px;
@@ -539,7 +525,7 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
 }
 .tf-tcard-delivery{
   display:flex;align-items:center;gap:7px;margin:0;
-  color:var(--muted);font-size:13px;line-height:1.35;
+  color:var(--muted);font-size:var(--type-label-size);line-height:1.35;
 }
 .tf-tcard-delivery svg{
   inline-size:15px;block-size:15px;flex:none;
@@ -551,20 +537,21 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
   gap:12px;flex-wrap:wrap;
 }
 .tf-tcard-price{display:flex;align-items:baseline;gap:7px;margin:0;min-inline-size:0}
-.tf-tcard-price-label{color:var(--muted);font-size:12.5px;font-weight:650}
-.tf-tcard-price-text{font-size:15px;font-weight:800}
+.tf-tcard-price-label{color:var(--muted);font-size:var(--type-meta-size);font-weight:650}
+.tf-tcard-price-text{font-size:var(--type-body-size);font-weight:800}
 .tf-tcard-cta{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   min-block-size:44px;padding-inline:16px;
   border:1px solid var(--border-strong);border-radius:var(--r-sm);
-  color:var(--text);font-size:13.5px;font-weight:750;white-space:nowrap;
+  color:var(--text);font-size:var(--type-label-size);font-weight:750;white-space:nowrap;
   transition:background var(--t),border-color var(--t),color var(--t);
 }
-.tf-tcard:hover .tf-tcard-cta,
-.tf-tcard-cta:hover,
 .tf-tcard-cta:focus-visible{
   background:var(--primary);border-color:var(--primary);color:var(--primary-ink);
 }
+@media (hover:hover) and (pointer:fine){.tf-tcard:hover .tf-tcard-cta,.tf-tcard-cta:hover{
+  background:var(--primary);border-color:var(--primary);color:var(--primary-ink);
+}}
 /* The whole card opens the profile: the profile link is the card's one link, stretched over it. */
 .tf-tcard{position:relative;cursor:pointer}
 .tf-tcard-cta::after{content:"";position:absolute;inset:0;border-radius:inherit}
@@ -591,7 +578,7 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
 }
 .tf-svc-item{
   position:relative;display:grid;
-  grid-template-columns:auto minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr);
   align-items:start;gap:clamp(16px,1.8vw,26px);
   padding-block:clamp(22px,2.4vw,30px);
   border-block-start:1px solid var(--border);
@@ -603,17 +590,7 @@ html[data-theme="dark"] .tf-tcard:hover{box-shadow:none;background:var(--surface
   transition:transform 420ms var(--ease-out);
 }
 html[dir="rtl"] .tf-svc-item::before{transform-origin:right center}
-.tf-svc-item:hover::before{transform:scaleX(1)}
-.tf-svc-index{
-  font-family:var(--font-display);
-  font-size:clamp(32px,3.4vw,46px);line-height:.92;font-weight:800;
-  letter-spacing:-.04em;font-variant-numeric:tabular-nums;
-  color:color-mix(in oklab,var(--text) 34%,var(--canvas));
-  transition:color var(--motion-normal) var(--ease-out);
-}
-html[lang="ar"] .tf-svc-index{letter-spacing:0}
-.tf-svc-item:hover .tf-svc-index{color:var(--primary)}
-html[data-theme="dark"] .tf-svc-item:hover .tf-svc-index{color:var(--brand-lime)}
+@media (hover:hover) and (pointer:fine){.tf-svc-item:hover::before{transform:scaleX(1)}}
 .tf-svc-body{min-inline-size:0}
 .tf-svc-title{
   margin:0 0 8px;font-family:var(--font-display);
@@ -621,28 +598,21 @@ html[data-theme="dark"] .tf-svc-item:hover .tf-svc-index{color:var(--brand-lime)
   letter-spacing:-.03em;text-wrap:balance;
   transition:transform var(--motion-normal) var(--ease-out);
 }
-.tf-svc-item:hover .tf-svc-title{transform:translateX(3px)}
-html[dir="rtl"] .tf-svc-item:hover .tf-svc-title{transform:translateX(-3px)}
+@media (hover:hover) and (pointer:fine){.tf-svc-item:hover .tf-svc-title{transform:translateX(3px)}html[dir="rtl"] .tf-svc-item:hover .tf-svc-title{transform:translateX(-3px)}}
 .tf-svc-desc{
   margin:0;color:var(--muted);
-  font-size:15px;line-height:1.6;max-inline-size:46ch;text-wrap:pretty;
+  font-size:var(--type-body-size);line-height:1.6;max-inline-size:46ch;text-wrap:pretty;
 }
 
 @media (prefers-reduced-motion:reduce){
   .tf-inline-arrow,
-  .tf-subject-card::before,.tf-subject-card-index,.tf-subject-card-title,.tf-subject-card-cta,
+  .tf-subject-card::before,.tf-subject-card-title,.tf-subject-card-cta,
   .tf-tcard,.tf-tcard-avatar,.tf-tcard-cta,
-  .tf-svc-item::before,.tf-svc-index,.tf-svc-title{transition:none}
-  a:hover .tf-inline-arrow,a:focus-visible .tf-inline-arrow,
-  html[dir="rtl"] a:hover .tf-inline-arrow,
-  html[dir="rtl"] a:focus-visible .tf-inline-arrow,
-  .tf-subject-card:hover .tf-subject-card-title,
-  .tf-subject-card:focus-visible .tf-subject-card-title,
-  .tf-svc-item:hover .tf-svc-title,
-  .tf-tcard:hover .tf-tcard-avatar{transform:none}
-  html[dir="rtl"] a:hover .tf-inline-arrow,
+  .tf-svc-item::before,.tf-svc-title{transition:none}
+  a:focus-visible .tf-inline-arrow,html[dir="rtl"] a:focus-visible .tf-inline-arrow,.tf-subject-card:focus-visible .tf-subject-card-title{transform:none}
+@media (hover:hover) and (pointer:fine){a:hover .tf-inline-arrow,html[dir="rtl"] a:hover .tf-inline-arrow,.tf-subject-card:hover .tf-subject-card-title,.tf-svc-item:hover .tf-svc-title,.tf-tcard:hover .tf-tcard-avatar{transform:none}}
   html[dir="rtl"] a:focus-visible .tf-inline-arrow{transform:scaleX(-1)}
-  .tf-tcard:hover{transform:none}
+@media (hover:hover) and (pointer:fine){html[dir="rtl"] a:hover .tf-inline-arrow{transform:scaleX(-1)}.tf-tcard:hover{transform:none}}
   .tf-subject-card.is-skeleton,.tf-tcard.is-skeleton{animation:none}
 }
 @media (max-width:820px){
@@ -691,37 +661,31 @@ html[dir="rtl"] .tf-svc-item:hover .tf-svc-title{transform:translateX(-3px)}
 }
 .tf-trust-lede{
   margin:12px 0 0;color:var(--text-2);
-  font-size:16px;line-height:1.65;max-inline-size:48ch;text-wrap:pretty;
+  font-size:var(--type-body-lg-size);line-height:1.65;max-inline-size:48ch;text-wrap:pretty;
 }
 /* The one platform figure the hero orbs do not already carry. */
 .tf-trust-scale{
   margin:12px 0 0;color:var(--muted);
-  font-size:14px;line-height:1.6;max-inline-size:48ch;
+  font-size:var(--type-body-sm-size);line-height:1.6;max-inline-size:48ch;
 }
 .tf-trust-pillars{
   display:flex;flex-direction:column;
   margin:clamp(24px,2.8vw,36px) 0 0;padding:0;list-style:none;
 }
 .tf-trust-pillar{
-  display:grid;grid-template-columns:auto minmax(0,1fr);
+  display:grid;grid-template-columns:minmax(0,1fr);
   gap:16px;align-items:start;
   padding-block:18px;
   border-block-start:1px solid var(--border);
 }
-.tf-trust-pillar-index{
-  font-family:var(--font-display);
-  font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums;
-  color:color-mix(in oklab,var(--primary) 72%,transparent);
-}
 .tf-trust-pillar-body{min-inline-size:0}
 .tf-trust-pillar-title{
-  margin:0 0 5px;font-size:16px;line-height:1.3;
+  margin:0 0 5px;font-size:var(--type-item-title-size);line-height:1.3;
   font-weight:750;letter-spacing:-.01em;
 }
 .tf-trust-pillar-text{
   margin:0;color:var(--muted);
-  font-size:14px;line-height:1.6;text-wrap:pretty;
+  font-size:var(--type-body-sm-size);line-height:1.6;text-wrap:pretty;
 }
 
 /* ===== Final CTA - Student first ===========================================
@@ -745,14 +709,14 @@ html[dir="rtl"] .tf-svc-item:hover .tf-svc-title{transform:translateX(-3px)}
 }
 .tf-cta-body{
   margin:12px 0 0;color:var(--muted);
-  font-size:16px;line-height:1.6;max-inline-size:48ch;text-wrap:pretty;
+  font-size:var(--type-body-lg-size);line-height:1.6;max-inline-size:48ch;text-wrap:pretty;
 }
 .tf-cta-route-q{
   margin:18px 0 0;color:var(--text);
-  font-size:15px;font-weight:750;letter-spacing:-.015em;
+  font-size:var(--type-body-size);font-weight:750;letter-spacing:-.015em;
 }
 .tf-cta-actions{
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;
   margin-block-start:14px;
 }
 .tf-cta-primary{
@@ -760,37 +724,45 @@ html[dir="rtl"] .tf-svc-item:hover .tf-svc-title{transform:translateX(-3px)}
   min-block-size:50px;padding-inline:26px;
   border:1px solid transparent;border-radius:var(--r-md);
   background:var(--primary);color:var(--primary-ink);
-  font-size:15.5px;font-weight:750;box-shadow:var(--shadow-sm);
-  transition:background var(--t),box-shadow var(--t);
+  font-size:var(--type-body-size);font-weight:750;box-shadow:var(--shadow-sm);
+  touch-action:manipulation;
+  transition:background var(--t),box-shadow var(--t),transform var(--dur-micro) var(--ease-out);
 }
-.tf-cta-primary:hover{
+@media (hover:hover) and (pointer:fine){.tf-cta-primary:hover{
   background:var(--primary-hover);color:var(--primary-ink);box-shadow:var(--shadow-md);
-}
+}}
+.tf-cta-primary:active{transform:translateY(1px) scale(.985)}
 .tf-cta-secondary{
   display:inline-flex;align-items:center;
-  min-block-size:50px;padding-inline:4px;
-  color:var(--text-2);font-size:15px;font-weight:700;
-  transition:color var(--t);
+  justify-content:center;min-block-size:50px;padding-inline:18px;
+  border:1px solid var(--border-strong);border-radius:var(--r-md);
+  background:var(--surface);color:var(--text);font-size:var(--type-body-size);font-weight:700;
+  touch-action:manipulation;
+  transition:background var(--t),border-color var(--t),color var(--t),box-shadow var(--t),transform var(--dur-micro) var(--ease-out);
 }
-.tf-cta-secondary:hover,.tf-cta-secondary:focus-visible{color:var(--primary)}
+.tf-cta-secondary:focus-visible{color:var(--primary);border-color:var(--primary)}
+@media (hover:hover) and (pointer:fine){.tf-cta-secondary:hover{background:var(--surface-2);color:var(--primary);border-color:var(--primary);box-shadow:var(--shadow-sm)}}
+.tf-cta-secondary:active{transform:translateY(1px) scale(.985)}
 .tf-cta-teacher{
   min-inline-size:0;align-self:center;
   padding-inline-start:clamp(24px,3vw,48px);
   border-inline-start:1px solid var(--border);
 }
 .tf-cta-teacher-title{
-  margin:0;font-size:17px;line-height:1.3;font-weight:750;letter-spacing:-.01em;
+  margin:0;font-size:var(--type-item-title-size);line-height:1.3;font-weight:750;letter-spacing:-.01em;
 }
 .tf-cta-teacher-body{
-  margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.6;
+  margin:8px 0 0;color:var(--muted);font-size:var(--type-body-sm-size);line-height:1.6;
 }
 .tf-cta-teacher-link{
   display:inline-flex;align-items:center;gap:8px;
   min-block-size:44px;margin-block-start:10px;
-  color:var(--primary);font-size:14.5px;font-weight:750;
-  transition:color var(--t);
+  color:var(--primary);font-size:var(--type-body-sm-size);font-weight:750;
+  touch-action:manipulation;
+  transition:color var(--t),transform var(--dur-micro) var(--ease-out);
 }
-.tf-cta-teacher-link:hover{color:var(--primary-hover)}
+@media (hover:hover) and (pointer:fine){.tf-cta-teacher-link:hover{color:var(--primary-hover)}}
+.tf-cta-teacher-link:active{transform:translateY(1px) scale(.985)}
 @media (max-width:980px){
   .tf-landing-trust-grid{grid-template-columns:minmax(0,1fr)}
 }
@@ -803,12 +775,12 @@ html[dir="rtl"] .tf-svc-item:hover .tf-svc-title{transform:translateX(-3px)}
   }
 }
 @media (max-width:640px){
-  .tf-cta-actions{align-items:stretch;flex-direction:column;gap:8px}
+  .tf-cta-actions{align-items:stretch;flex-direction:column;gap:var(--s-1)}
   .tf-cta-primary{width:100%}
-  .tf-cta-secondary{justify-content:center}
+  .tf-cta-secondary{width:100%}
 }
 @media (prefers-reduced-motion:reduce){
-  .tf-cta-primary,.tf-cta-secondary,.tf-cta-teacher-link,.tf-section-all{transition:none}
+  .tf-hero-action,.tf-hero-teach-link,.tf-cta-primary,.tf-cta-secondary,.tf-cta-teacher-link,.tf-section-all{transition:none}
 }
 
 /* ============================================================
@@ -947,11 +919,11 @@ html[data-theme="dark"] .tf-kingdom{
   letter-spacing:-.03em;font-weight:800;text-wrap:balance;
 }
 .tf-kingdom-eyebrow{
-  font-size:12px;font-weight:700;letter-spacing:.14em;
+  font-size:var(--type-meta-size);font-weight:700;letter-spacing:.14em;
   text-transform:uppercase;color:var(--primary);
 }
-html[lang="ar"] .tf-kingdom-eyebrow{letter-spacing:0;text-transform:none;font-size:13px}
-.tf-kingdom-sub{color:var(--muted);font-size:15px;line-height:1.6}
+html[lang="ar"] .tf-kingdom-eyebrow{letter-spacing:0;text-transform:none;font-size:var(--type-label-size)}
+.tf-kingdom-sub{color:var(--muted);font-size:var(--type-body-size);line-height:1.6}
 
 /* ---- stage --------------------------------------------------------------
    The map is not put in a card: it sits on the page canvas with an ambient
@@ -1129,7 +1101,7 @@ html[lang="ar"] .tf-kingdom-eyebrow{letter-spacing:0;text-transform:none;font-si
   background:color-mix(in oklab,var(--surface) 88%,transparent);
   border:1px solid color-mix(in oklab,var(--primary) 24%,var(--border));
   box-shadow:var(--shadow-sm);
-  color:var(--text-2);font-size:12px;font-weight:650;line-height:1.2;white-space:nowrap;
+  color:var(--text-2);font-size:var(--type-meta-size);font-weight:650;line-height:1.2;white-space:nowrap;
   opacity:0;transition:opacity 220ms var(--ease-out);
   backdrop-filter:blur(6px);
 }
@@ -1150,7 +1122,7 @@ html[lang="ar"] .tf-kingdom-eyebrow{letter-spacing:0;text-transform:none;font-si
 }
 @media (min-width:961px) and (max-height:900px){
   .tf-kingdom-title{font-size:clamp(20px,2vw,26px)}
-  .tf-kingdom-sub{font-size:13.5px}
+  .tf-kingdom-sub{font-size:var(--type-label-size)}
   .tf-kingdom-head{gap:5px}
   .tf-kingdom{--kd-max-h:min(68svh,540px)}
 }
@@ -1168,17 +1140,20 @@ html[lang="ar"] .tf-kingdom-eyebrow{letter-spacing:0;text-transform:none;font-si
   }
   .tf-kingdom-stage::before{inset:-8% -4%}
   .tf-kd-cursor{display:none}
-  .tf-kd-net{display:none}
+  /* The network stays on a phone (it is the "between regions" story), lighter: thinner, dimmer lines, and
+     pulses a touch heavier than the lines so a moving one is still caught at this size. */
+  .tf-kd-link{stroke-width:.6;stroke-opacity:.75}
+  .tf-kd-pulse{stroke-width:1.6}
   /* Blur and bloom are in screen px while the map is not, so a phone-width
      map would otherwise wear a desktop-sized halo. */
   .tf-kingdom-stage{--kd-glow-blur:1.6px;--kd-glow-w:1.4}
-  .tf-kingdom-sub{font-size:14px}
+  .tf-kingdom-sub{font-size:var(--type-body-sm-size)}
   html[data-theme="dark"] .tf-kingdom{
     --kd-node-bloom:drop-shadow(0 0 1px var(--kd-node-glow)) drop-shadow(0 0 4px var(--kd-node-glow));
     --kd-border-glow:drop-shadow(0 0 2px color-mix(in oklab,var(--primary) 80%,transparent))
                      drop-shadow(0 0 7px color-mix(in oklab,var(--primary) 32%,transparent));
   }
-  .tf-kingdom-sub{font-size:15px}
+  .tf-kingdom-sub{font-size:var(--type-body-size)}
 }
 
 /* ---- reduced motion ------------------------------------------------------
@@ -1275,10 +1250,10 @@ html[data-theme="dark"] tf-landing-page .tf-kingdom{
 
 .tf-orbs-lede{
   margin:0 0 10px;
-  font-size:11.5px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;
+  font-size:var(--type-caption-size);font-weight:650;letter-spacing:.12em;text-transform:uppercase;
   color:var(--muted);
 }
-html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.5px}
+html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:var(--type-meta-size)}
 
 .tf-orb-row{
   display:flex;gap:14px;margin:0;padding:0;list-style:none;
@@ -1360,7 +1335,7 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   transition:transform 340ms var(--orb-ease);
 }
 .tf-orb-label{
-  font-size:12.5px;font-weight:700;line-height:1.2;color:var(--text-2);
+  font-size:var(--type-meta-size);font-weight:700;line-height:1.2;color:var(--text-2);
 }
 /* Waiting on /platform/stats: the orb keeps its place and its ring, and the
    dash reads as "not in yet" rather than as a number. */
@@ -1394,7 +1369,7 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   .tf-orbs{--orb-size:94px}
   .tf-orb-row{gap:10px}
   .tf-orb-value{font-size:clamp(17px,calc(38px - var(--len,4) * 2.9px),22px)}
-  .tf-orb-label{font-size:11px;text-align:center;max-inline-size:10ch}
+  .tf-orb-label{font-size:var(--type-caption-size);text-align:center;max-inline-size:10ch}
   .tf-orb-mark svg{inline-size:11px;block-size:11px}
 }
 /* Short laptop viewports already compact the hero; the orbs follow it down
@@ -1413,8 +1388,7 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
   .tf-orb-spin{animation:none}
   .tf-orb::before{opacity:.8}
   .tf-orb{transition:box-shadow 200ms linear,background 200ms linear}
-  .tf-orb:hover{transform:none}
-  .tf-orb:hover .tf-orb-value{transform:none}
+  @media (hover:hover) and (pointer:fine){.tf-orb:hover{transform:none}.tf-orb:hover .tf-orb-value{transform:none}}
 }
 
 /* Community counts stay legible in both languages. */
@@ -1428,8 +1402,65 @@ html[lang="ar"] .tf-orbs-lede{letter-spacing:0;text-transform:none;font-size:12.
 .tf-orb[data-pending="true"] .tf-orb-value{color:var(--muted)}
 .tf-orb-label{max-inline-size:none;text-align:start;font-size:clamp(11px,.9vw,13px);font-weight:650;line-height:1.4;color:var(--text-2)}
 @media (hover:hover){.tf-orb:hover{transform:none;background:none;box-shadow:none}.tf-orb:hover .tf-orb-value{transform:none}}
-@media (max-width:520px){.tf-orb{padding-inline:10px}.tf-orb-value,.tf-orb[data-pending="true"] .tf-orb-value{font-size:24px}.tf-orb-label{font-size:10.5px}}
+@media (max-width:520px){.tf-orb{padding-inline:10px}.tf-orb-value,.tf-orb[data-pending="true"] .tf-orb-value{font-size:24px}.tf-orb-label{font-size:var(--type-caption-size)}}
 
 /* The hero is the one full-bleed .tf-shell that should not be: past ~1520px the
    two columns stop growing and the pair centres, so the copy and the map keep
    talking to each other instead of drifting to opposite edges. */
+
+/* Landing: discovery, the Kingdom map and community counts share the original hero. */
+
+.tf-landing-fold{display:block;min-block-size:0}
+
+.tf-landing-hero{
+  display:grid;grid-template-columns:minmax(0,620px) minmax(0,1fr);
+  align-items:center;gap:clamp(28px,3vw,56px);max-inline-size:1520px;
+  padding-block:clamp(48px,7svh,80px);overflow:visible;
+}
+
+.tf-landing-hero-copy{min-inline-size:0;max-inline-size:640px}
+
+.tf-landing-hero-visual{min-inline-size:0;inline-size:100%;transform:none}
+
+.tf-landing-hero .tf-hero-headline{
+  display:grid;gap:.06em;margin:0 0 20px;max-inline-size:none;
+  font-size:clamp(36px,3.6vw,52px);font-weight:800;line-height:1.2;
+  letter-spacing:-.035em;text-wrap:balance;overflow-wrap:normal;
+}
+
+html[lang="ar"] .tf-landing-hero .tf-hero-headline{line-height:1.35;letter-spacing:0}
+
+.tf-hero-headline-lead,.tf-hero-headline-main{display:block}
+
+.tf-hero-headline-phrase{display:block}
+
+.tf-hero-focus{color:var(--primary);white-space:nowrap}
+
+.tf-landing-hero .tf-hero-sub{
+  display:block;max-inline-size:48ch;margin:0 0 28px;
+  color:var(--text-2);font-size:var(--type-body-lg-size);line-height:1.7;white-space:normal;
+}
+
+.tf-landing-hero .tf-hero-search-hint{margin-block:12px 20px}
+
+.tf-landing-hero .tf-hero-teach{margin:0;min-block-size:44px;align-items:center}
+
+.tf-landing-cta-split:not(:has(.tf-cta-teacher)){grid-template-columns:minmax(0,1fr)}
+
+.tf-landing-services .is-skeleton{min-block-size:100px}
+
+.tf-promo-copy-status{margin:16px 0 0;color:var(--text-2);font-size:var(--type-body-sm-size);line-height:1.7}
+
+.tf-promo-copy-status code{display:inline-block;max-inline-size:100%;font-family:var(--font-mono);font-weight:700;color:var(--text);user-select:text;overflow-wrap:anywhere}
+
+@media (max-width:960px){
+  .tf-landing-hero{grid-template-columns:minmax(0,1fr);gap:36px;padding-block:40px}
+  .tf-landing-hero-copy{max-inline-size:680px}
+  .tf-landing-hero .tf-hero-headline{font-size:clamp(34px,5.5vw,48px)}
+}
+
+@media (max-width:640px){
+  .tf-landing-hero{padding-block:28px 40px;gap:32px}
+  .tf-landing-hero .tf-hero-headline{font-size:clamp(30px,8.6vw,38px);margin-block-end:16px}
+  .tf-landing-hero .tf-hero-sub{font-size:var(--type-body-size);margin-block-end:20px;line-height:1.7}
+}

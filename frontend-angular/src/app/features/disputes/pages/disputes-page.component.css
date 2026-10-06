@@ -23,7 +23,7 @@
 }
 .tf-dispute-eyebrow {
   color: var(--primary);
-  font-size: 13px;
+  font-size: var(--type-label-size);
   font-weight: 800;
   margin-block-end: 6px;
 }
@@ -43,12 +43,12 @@
   padding: 20px;
   margin-block-end: 22px;
 }
-.tf-dispute-create h2 { font-size: 18px; margin-block-end: 6px; }
-.tf-dispute-create__intro { color: var(--text-2); font-size: 13px; margin-block-end: 14px; }
+.tf-dispute-create h2 { font-size: var(--type-section-title-size); margin-block-end: 6px; }
+.tf-dispute-create__intro { color: var(--text-2); font-size: var(--type-label-size); margin-block-end: 14px; }
 /* Grid items default to min-width:auto, so a select sized to its longest option widened the whole form past
    its card on a phone (UX-06). Fields fill the card and never push it. */
 .tf-dispute-create__form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-.tf-dispute-create__form label { font-size: 13px; font-weight: 800; }
+.tf-dispute-create__form label { font-size: var(--type-label-size); font-weight: 800; }
 .tf-dispute-create__actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 .tf-dispute-page select,
@@ -72,8 +72,8 @@
   resize: vertical;
 }
 
-.tf-dispute-hint { font-size: 12px; color: var(--muted); }
-.tf-dispute-error-text { color: var(--error); font-size: 13px; }
+.tf-dispute-hint { font-size: var(--type-meta-size); color: var(--muted); }
+.tf-dispute-error-text { color: var(--error); font-size: var(--type-label-size); }
 .tf-dispute-error {
   padding: 14px;
   border-radius: var(--r-md);
@@ -88,7 +88,7 @@
   background: var(--surface);
   margin-block-end: 22px;
 }
-.tf-dispute-note p { color: var(--muted); font-size: 13px; margin-block-start: 5px; line-height: 1.6; }
+.tf-dispute-note p { color: var(--muted); font-size: var(--type-label-size); margin-block-start: 5px; line-height: 1.6; }
 
 /* ---- two-column body ---- */
 .tf-dispute-layout {
@@ -110,7 +110,7 @@
 }
 .tf-dispute-detail { min-block-size: 360px; }
 .tf-dispute-list > header { padding: 16px 18px; border-block-end: 1px solid var(--border); }
-.tf-dispute-list > header h2 { font-size: 16px; }
+.tf-dispute-list > header h2 { font-size: var(--type-item-title-size); }
 
 .tf-dispute-empty { padding: 28px 18px; color: var(--muted); }
 .tf-dispute-back { display: inline-flex; margin-block-start: 14px; }
@@ -133,16 +133,16 @@
 .tf-dispute-row__reason {
   display: block;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--type-label-size);
   margin-block-start: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tf-dispute-row__date { display: block; color: var(--muted); font-size: 11px; margin-block-start: 7px; }
+.tf-dispute-row__date { display: block; color: var(--muted); font-size: var(--type-caption-size); margin-block-start: 7px; }
 
 /* Status tone as data, not a colour string computed in TypeScript. */
-.tf-dispute-status { font-size: 11px; font-weight: 800; }
+.tf-dispute-status { font-size: var(--type-caption-size); font-weight: 800; }
 .tf-dispute-status[data-tone='ok'] { color: var(--success); }
 .tf-dispute-status[data-tone='warn'] { color: var(--warning); }
 .tf-dispute-status[data-tone='info'] { color: var(--primary); }
@@ -154,7 +154,7 @@
   display: inline-flex;
   align-items: center;
   background: var(--surface-2);
-  font-size: 12px;
+  font-size: var(--type-meta-size);
   flex: none;
 }
 
@@ -165,7 +165,7 @@
   justify-content: space-between;
   gap: 8px;
 }
-.tf-dispute-pager span { font-size: 13px; color: var(--muted); }
+.tf-dispute-pager span { font-size: var(--type-label-size); color: var(--muted); }
 
 /* ---- detail ---- */
 .tf-dispute-placeholder { padding: 64px 24px; text-align: center; color: var(--muted); }
@@ -176,21 +176,21 @@
   justify-content: space-between;
   gap: 16px;
 }
-.tf-dispute-detail__target { color: var(--muted); font-size: 12px; }
-.tf-dispute-detail__head h2 { font-size: 20px; margin-block-start: 4px; }
-.tf-dispute-due { font-size: 12px; color: var(--muted); margin-block-start: 8px; }
+.tf-dispute-detail__target { color: var(--muted); font-size: var(--type-meta-size); }
+.tf-dispute-detail__head h2 { font-size: var(--type-section-title-size); margin-block-start: 4px; }
+.tf-dispute-due { font-size: var(--type-meta-size); color: var(--muted); margin-block-start: 8px; }
 .tf-dispute-due.is-overdue { color: var(--error); }
 
 .tf-dispute-detail__body { padding: 20px 22px; display: grid; gap: 22px; }
-.tf-dispute-detail__body h3 { font-size: 14px; margin-block-end: 10px; }
-.tf-dispute-muted { color: var(--muted); font-size: 13px; }
+.tf-dispute-detail__body h3 { font-size: var(--type-body-sm-size); margin-block-end: 10px; }
+.tf-dispute-muted { color: var(--muted); font-size: var(--type-label-size); }
 
 .tf-dispute-messages { display: grid; gap: 9px; }
 .tf-dispute-message { padding: 11px 12px; border-radius: var(--r-sm); background: var(--surface-2); }
 .tf-dispute-message.is-mine { background: var(--primary-soft); }
-.tf-dispute-message strong { font-size: 11px; color: var(--muted); }
+.tf-dispute-message strong { font-size: var(--type-caption-size); color: var(--muted); }
 .tf-dispute-message p { white-space: pre-wrap; line-height: 1.6; margin-block-start: 4px; }
-.tf-dispute-message time { font-size: 11px; color: var(--muted); }
+.tf-dispute-message time { font-size: var(--type-caption-size); color: var(--muted); }
 
 .tf-dispute-timeline { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
 .tf-dispute-timeline li {
@@ -199,10 +199,10 @@
   gap: 12px;
   padding-block: 8px;
   border-block-end: 1px solid var(--border);
-  font-size: 13px;
+  font-size: var(--type-label-size);
 }
 .tf-dispute-timeline span { min-inline-size: 0; overflow-wrap: anywhere; }
-.tf-dispute-timeline time { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.tf-dispute-timeline time { color: var(--muted); font-size: var(--type-meta-size); white-space: nowrap; }
 
 .tf-dispute-evidence { display: flex; gap: 8px; flex-wrap: wrap; }
 .tf-dispute-file {
@@ -210,10 +210,10 @@
   color: var(--text);
   border: 1px solid var(--border);
 }
-.tf-dispute-file { padding: 8px 10px; font-size: 12px; }
+.tf-dispute-file { padding: 8px 10px; font-size: var(--type-meta-size); }
 
 .tf-dispute-reply { display: grid; gap: 10px; }
-.tf-dispute-reply label { font-size: 13px; font-weight: 700; }
+.tf-dispute-reply label { font-size: var(--type-label-size); font-weight: 700; }
 .tf-dispute-reply textarea { background: var(--bg); padding: 11px; }
 .tf-dispute-reply__actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 
@@ -222,7 +222,7 @@
   border-radius: var(--r-sm);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--type-label-size);
 }
 
 .tf-dispute-decision { border-block-start: 1px solid var(--border); padding-block-start: 18px; }
@@ -233,9 +233,9 @@
 .tf-dispute-final { padding: 14px; border-radius: var(--r-md); background: var(--success-soft); }
 .tf-dispute-final p { margin-block-start: 6px; line-height: 1.6; }
 
-.tf-dispute-next { margin: 8px 0 0; padding: 10px 12px; font-size: 14px; line-height: 1.6; color: var(--text-2); background: var(--surface-2); border-radius: var(--r-sm); }
+.tf-dispute-next { margin: 8px 0 0; padding: 10px 12px; font-size: var(--type-body-sm-size); line-height: 1.6; color: var(--text-2); background: var(--surface-2); border-radius: var(--r-sm); }
 .tf-dispute-review { border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px 16px; display: grid; gap: 8px; background: var(--surface-2, transparent); }
-.tf-dispute-review h3 { margin: 0; font-size: 16px; }
+.tf-dispute-review h3 { margin: 0; font-size: var(--type-item-title-size); }
 .tf-dispute-review dl { margin: 0; display: grid; gap: 4px; }
-.tf-dispute-review dt { font-size: 13px; color: var(--text-2); }
+.tf-dispute-review dt { font-size: var(--type-label-size); color: var(--text-2); }
 .tf-dispute-review dd { margin: 0 0 6px; white-space: pre-wrap; }

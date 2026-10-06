@@ -2,24 +2,13 @@
   <header class="tf-page-header" data-face="sans">
     <div class="tf-stack">
       <span class="tf-page-header-eyebrow">{{ t('demand_eyebrow', 'Learning requests') }}</span>
-      <h1>{{ t('open_request_title', 'Post an open request') }}</h1>
+      <h1>{{ t('open_request_title', 'Request an explanation') }}</h1>
       <p class="tf-page-header-desc">{{ t('open_request_intro', 'Describe what you need. Teachers approved in the subject send you offers, and you choose one.') }}</p>
     </div>
   </header>
 
-  @if (step() !== 'upload') {
-  <div class="tf-grid-2 tf-request-modes" data-testid="request-modes">
-    <a class="tf-profile-editor-card" routerLink="/teachers">
-      <div><h2>{{ t('request_mode_direct', 'A specific teacher') }}</h2><p>{{ t('request_mode_direct_body', 'I already know who I want. Choose a teacher, then send them your request.') }}</p></div>
-    </a>
-    <div class="tf-profile-editor-card" aria-current="true" data-testid="request-mode-open">
-      <div><h2>{{ t('request_mode_open', 'An open request') }}</h2><p>{{ t('request_mode_open_body', 'Let qualified teachers send me offers. I compare them and pick one.') }}</p></div>
-    </div>
-  </div>
-  }
-
   @if (loading()) {
-    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+    <tf-skeleton kind="form" [label]="t('common_loading', 'Loading…')" />
   } @else if (loadError()) {
     <div class="tf-state" data-state="error" role="alert">
       <h1 class="tf-state-title">{{ t('open_request_failed', 'The request form could not be loaded.') }}</h1>
@@ -62,6 +51,16 @@
     } @else {
     <section class="tf-profile-editor-card" aria-labelledby="open-request-form-title">
       <div><h2 id="open-request-form-title">{{ t('open_request_details', 'Your request') }}</h2></div>
+      @if (draftStatus() !== 'idle') {
+      <div class="tf-field-help tf-draft-feedback" [attr.data-state]="draftStatus()" role="status" aria-live="polite" data-testid="open-draft-status">
+        @if (draftStatus() === 'saving') { <span>{{ t('craft_draft_saving', 'Saving your draft…') }}</span> }
+        @else if (draftStatus() === 'saved') { <span>{{ t('craft_draft_saved', 'Draft saved. You can come back to it later.') }}</span> }
+        @else if (draftStatus() === 'error') {
+          <span class="tf-field-error">{{ t('craft_draft_failed', 'The latest changes could not be saved. Keep this page open and try again.') }}</span>
+          <button type="button" class="tf-button tf-button-secondary" (click)="saveDraft()">{{ t('common_retry', 'Retry') }}</button>
+        }
+      </div>
+      }
       <form class="tf-form" (ngSubmit)="submit()" novalidate data-testid="open-request-form">
         <div class="tf-grid-2">
           <div class="tf-field">
@@ -74,21 +73,22 @@
           </div>
           <div class="tf-field">
             <label for="open-service">{{ t('open_request_service', 'Kind of help') }}</label>
-            <select id="open-service" name="service" [ngModel]="draft().serviceTypeId" (ngModelChange)="set('serviceTypeId', $event)" [attr.aria-invalid]="!!problem('serviceTypeId')" [attr.aria-describedby]="problem('serviceTypeId') ? 'open-service-error' : null">
+            <select id="open-service" name="service" [ngModel]="draft().serviceTypeId" (ngModelChange)="set('serviceTypeId', $event)" [attr.aria-invalid]="!!problem('serviceTypeId')" [attr.aria-describedby]="problem('serviceTypeId') ? 'open-service-hint open-service-error' : 'open-service-hint'">
               <option value="">{{ t('common_choose', 'Choose…') }}</option>
               @for (item of f.serviceTypes; track item.id) { <option [value]="item.id">{{ name(item) }}</option> }
             </select>
+            <span id="open-service-hint" class="tf-field-help">{{ serviceHint() }}</span>
             @if (problem('serviceTypeId')) { <span id="open-service-error" class="tf-field-error">{{ problem('serviceTypeId') }}</span> }
           </div>
         </div>
         <div class="tf-field">
           <label for="open-title">{{ t('open_request_title_label', 'Title') }}</label>
-          <input id="open-title" name="title" [ngModel]="draft().title" (ngModelChange)="set('title', $event)" [attr.maxlength]="limits.title" [attr.aria-invalid]="!!problem('title')" [attr.aria-describedby]="problem('title') ? 'open-title-error' : null">
+          <input autocomplete="off" id="open-title" name="title" [placeholder]="t('craft_request_example_title', 'Example: Explain quadratic equations with two worked examples')" [ngModel]="draft().title" (ngModelChange)="set('title', $event)" [attr.maxlength]="limits.title" [attr.aria-invalid]="!!problem('title')" [attr.aria-describedby]="problem('title') ? 'open-title-error' : null">
           @if (problem('title')) { <span id="open-title-error" class="tf-field-error">{{ problem('title') }}</span> }
         </div>
         <div class="tf-field">
           <label for="open-requirements">{{ t('open_request_requirements', 'What you need') }}</label>
-          <textarea id="open-requirements" name="requirements" rows="6" [ngModel]="draft().requirements" (ngModelChange)="set('requirements', $event)"
+          <textarea autocomplete="off" id="open-requirements" name="requirements" rows="6" [placeholder]="t('craft_request_example_brief', 'Tell us your level, the part you need explained, and the result you expect.')" [ngModel]="draft().requirements" (ngModelChange)="set('requirements', $event)"
                     [attr.maxlength]="limits.requirements" [attr.aria-invalid]="!!problem('requirements')" [attr.aria-describedby]="problem('requirements') ? 'open-requirements-error' : null"></textarea>
           <span class="tf-field-help">{{ draft().requirements.length }}/{{ limits.requirements }}</span>
           @if (problem('requirements')) { <span id="open-requirements-error" class="tf-field-error">{{ problem('requirements') }}</span> }
@@ -96,18 +96,19 @@
         <div class="tf-grid-2">
           <div class="tf-field">
             <label for="open-deadline">{{ t('open_request_deadline', 'Needed by') }}</label>
-            <input id="open-deadline" name="deadline" type="datetime-local" [ngModel]="draft().deadline" (ngModelChange)="set('deadline', $event)" [attr.aria-invalid]="!!problem('deadline')" [attr.aria-describedby]="problem('deadline') ? 'open-deadline-error' : null">
+            <input autocomplete="off" id="open-deadline" name="deadline" type="datetime-local" [ngModel]="draft().deadline" (ngModelChange)="set('deadline', $event)" [attr.aria-invalid]="!!problem('deadline')" [attr.aria-describedby]="problem('deadline') ? 'open-deadline-error' : null">
             <span class="tf-field-help">{{ locale.format('demand_zone_help', { zone: zone() }, 'In this device’s time zone ({zone}).') }}</span>
             @if (problem('deadline')) { <span id="open-deadline-error" class="tf-field-error">{{ problem('deadline') }}</span> }
           </div>
           <fieldset class="tf-field">
             <legend>{{ t('open_request_budget', 'Budget range (optional)') }}</legend>
             <div class="tf-grid-2">
-              <input id="open-budget-min" name="budgetMin" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('open_request_budget_min', 'From')"
-                     [placeholder]="t('open_request_budget_min', 'From')" [ngModel]="draft().budgetMin" (ngModelChange)="set('budgetMin', $event)">
-              <input id="open-budget-max" name="budgetMax" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('open_request_budget_max', 'To')"
-                     [placeholder]="t('open_request_budget_max', 'To')" [ngModel]="draft().budgetMax" (ngModelChange)="set('budgetMax', $event)" [attr.aria-invalid]="!!problem('budgetMax')" [attr.aria-describedby]="problem('budgetMax') ? 'open-budget-error' : null">
+              <input autocomplete="off" id="open-budget-min" name="budgetMin" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('craft_budget_from', 'From (SAR)')"
+                     [placeholder]="t('craft_budget_from', 'From (SAR)')" [ngModel]="draft().budgetMin" (ngModelChange)="set('budgetMin', $event)">
+              <input autocomplete="off" id="open-budget-max" name="budgetMax" type="number" min="0" step="1" inputmode="decimal" [attr.aria-label]="t('craft_budget_to', 'To (SAR)')"
+                     [placeholder]="t('craft_budget_to', 'To (SAR)')" [ngModel]="draft().budgetMax" (ngModelChange)="set('budgetMax', $event)" [attr.aria-invalid]="!!problem('budgetMax')" [attr.aria-describedby]="problem('budgetMax') ? 'open-budget-error' : null">
             </div>
+            <span class="tf-field-help">{{ t('craft_budget_hint', 'An estimated range in Saudi riyals. Teacher offers may differ.') }}</span>
             @if (problem('budgetMax')) { <span id="open-budget-error" class="tf-field-error">{{ problem('budgetMax') }}</span> }
           </fieldset>
         </div>

@@ -29,7 +29,7 @@ const ENTRANCE_RATIO = 0.18;
 const TOUCH_HOLD_MS = 2400;
 
 /**
- * The Kingdom: the hero's second column, and a visual rather than a control.
+ * An illustrative Kingdom map in the landing hero.
  *
  * No region navigates, filters, carries a count or opens a card. Hovering brings
  * one of the thirteen administrative regions forward and lets the other twelve

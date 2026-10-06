@@ -1,5 +1,6 @@
 import { Provider } from '@angular/core';
 import { Routes } from '@angular/router';
+import { unsavedChangesGuard } from '@shared/utils/unsaved-changes';
 import { HttpTeacherSetupGateway } from './services/http-teacher-setup.gateway';
 import { TEACHER_SETUP_GATEWAY } from './services/teacher-setup.ports';
 import {
@@ -21,12 +22,14 @@ const providers: Provider[] = [
 
 export const PROFILE_ROUTES: Routes = [{
   path: '',
+  canDeactivate: [unsavedChangesGuard],
   providers: [...providers, LoadProfileWorkspace, SaveTeacherProfile, SaveTeachingChoices, ManageCredentials],
   loadComponent: () => import('./pages/teacher-profile-editor-page.component').then(m => m.TeacherProfileEditorPageComponent)
 }];
 
 export const SERVICES_ROUTES: Routes = [{
   path: '',
+  canDeactivate: [unsavedChangesGuard],
   providers: [...providers, LoadServicesWorkspace, ManageServices],
   loadComponent: () => import('./pages/teacher-services-page.component').then(m => m.TeacherServicesPageComponent)
 }];

@@ -139,6 +139,10 @@ for (const [index, journey] of journeys.entries()) {
         Email__PasswordResetUrl: `${base}/auth`,
         Email__AppBaseUrl: base,
         Cors__AllowedOrigins__0: base,
+        // The journeys assert the mock meeting room. Development also reads the developer's User Secrets, which may
+        // point live sessions at a real JaaS account; environment variables win, so the run stays deterministic.
+        LiveSessions__Provider: 'Mock',
+        JaaS__StaticJwt: '',
         // UX-05 verifies the reminder during the next one-minute worker scan.
         ...(journey.startsWith('ux05-') ? { OpenMarketplace__OfferReservationMinutes: '20' } : {})
       }

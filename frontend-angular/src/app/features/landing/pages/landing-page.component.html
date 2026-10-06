@@ -4,17 +4,16 @@
 
 <main id="main" class="tf-landing-main">
 
-  <!-- First screen: the hero alone. Promotions moved into the entry dialog and
-       the counters moved down the page, so the fold carries one message. -->
+  <!-- The original hero pairs discovery with the Kingdom map and platform counts. -->
   <div class="tf-landing-fold">
     <section data-stack="hero" class="tf-shell tf-landing-hero">
       <div class="tf-hero-stagger tf-landing-hero-copy">
         <h1 class="tf-hero-headline" [attr.aria-label]="headlineLabel()">
-          <span class="tf-hero-headline-lead">{{ copy().heroLead }}</span>
+          <span class="tf-hero-headline-lead">{{ copy().heroLead + ' ' }}</span>
           <span class="tf-hero-headline-main">
             <span class="tf-hero-headline-phrase">
-              <span>{{ copy().heroPrefix }}</span>
-              <tf-hero-rotator [words]="rotateWords()" [minWidth]="copy().heroRotateMin" />
+              <span>{{ copy().heroPrefix + ' ' }}</span>
+              <span class="tf-hero-focus">{{ copy().heroFocus }}</span>
             </span>
           </span>
         </h1>
@@ -26,7 +25,8 @@
               <div class="tf-smart-search__field">
                 <svg class="tf-smart-search__icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.4-3.4" /></svg>
                 <label for="hero-q" class="tf-sr-only">{{ copy().searchLabel }}</label>
-                <input class="tf-smart-search__input" id="hero-q" maxlength="2000"
+                <input autocomplete="off" class="tf-smart-search__input" id="hero-q" name="q" maxlength="2000"
+                       aria-describedby="hero-search-hint"
                        [value]="query()" (input)="query.set($any($event.target).value)"
                        [placeholder]="copy().searchPlaceholder" />
               </div>
@@ -43,7 +43,7 @@
             </a>
           }
         </div>
-        <p class="tf-hero-search-hint">{{ copy().searchHint }}</p>
+        <p class="tf-hero-search-hint" id="hero-search-hint">{{ copy().searchHint }}</p>
 
         <!-- The two marketplace sourcing paths are the hero's account actions.
              They are role-aware: a Teacher is never asked to post a Student
@@ -107,8 +107,7 @@
     </section>
   </div>
 
-  <!-- A signed-in Student's real request context continues below the fold; it
-       never competes with the Kingdom visual and never duplicates the dashboard. -->
+  <!-- A signed-in Student's real request context continues below the fold. -->
   @if (showsJourney()) {
     <tf-journey-strip [journey]="journeyValue()!" [selectedOffer]="journeyOffer()" />
   }
@@ -116,7 +115,7 @@
   <!-- Product understanding. One real interface canvas changes state while four
        narrative steps progress; it never intercepts or locks scrolling. -->
   <section id="how" class="tf-shell tf-landing-how">
-    <tf-product-story [teacher]="storyTeacher()" />
+    <tf-product-story [teacher]="storyTeacher()" [canRequest]="heroAction().isPost" />
   </section>
 
   <!-- Discovery. A ruled catalogue rather than a card grid: the subject name is
@@ -138,6 +137,16 @@
         <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
         <div class="tf-subject-card is-skeleton" aria-hidden="true"></div>
       </div>
+      <p class="tf-sr-only" role="status">{{ locale.t('common_loading', 'Loading…') }}</p>
+    } @else if (subjectsFailed()) {
+      <div class="tf-landing-state tf-landing-state--error" role="alert">
+        <svg class="tf-landing-state-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#tf-i-compare" /></svg>
+        <p>{{ locale.t('subj_load_error', 'Subjects could not load right now.') }}</p>
+        <button type="button" class="tf-button tf-button-secondary" [disabled]="contentRetrying()"
+                [attr.aria-busy]="contentRetrying()" (click)="retryContent()">
+          {{ locale.t('common_retry', 'Retry') }}
+        </button>
+      </div>
     } @else if (subjectsEmpty()) {
       <p class="tf-landing-state" role="status">
         {{ locale.t('subj_empty', 'Subjects are unavailable right now. Please try again later.') }}
@@ -146,7 +155,6 @@
       <div class="tf-subject-grid">
         @for (subject of subjects(); track subject.id) {
           <a class="tf-subject-card" routerLink="/teachers" [queryParams]="{ subjectId: subject.id }">
-            <span class="tf-subject-card-index" aria-hidden="true" data-i18n-skip>{{ subject.index }}</span>
             <span class="tf-subject-card-main">
               <span class="tf-subject-card-title">{{ subject.name }}</span>
               <span class="tf-subject-card-cta">
@@ -179,6 +187,15 @@
         <div class="tf-tcard is-skeleton" aria-hidden="true"></div>
       </div>
       <p class="tf-sr-only" role="status">{{ copy().teachersLoading }}</p>
+    } @else if (teachersFailed()) {
+      <div class="tf-landing-state tf-landing-state--error" role="alert">
+        <svg class="tf-landing-state-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#tf-i-teacher-check" /></svg>
+        <p>{{ locale.t('feat_load_error', 'Featured teachers could not load right now.') }}</p>
+        <button type="button" class="tf-button tf-button-secondary" [disabled]="contentRetrying()"
+                [attr.aria-busy]="contentRetrying()" (click)="retryContent()">
+          {{ locale.t('common_retry', 'Retry') }}
+        </button>
+      </div>
     } @else if (teachersEmpty()) {
       <p class="tf-landing-state" role="status">{{ copy().teachersEmpty }}</p>
     } @else {
@@ -255,22 +272,35 @@
         <p>{{ locale.t('svc_p', 'Pick the format that fits the week you’re having.') }}</p>
       </div>
     </div>
-    <ol class="tf-svc-list">
-      @for (service of services(); track service.index) {
+    @if (servicesLoading()) {
+      <div class="tf-svc-list" aria-busy="true">
+        <div class="tf-svc-item is-skeleton" aria-hidden="true"></div>
+        <div class="tf-svc-item is-skeleton" aria-hidden="true"></div>
+      </div>
+      <p class="tf-sr-only" role="status">{{ locale.t('common_loading', 'Loading…') }}</p>
+    } @else if (servicesFailed()) {
+      <div class="tf-landing-state tf-landing-state--error" role="alert">
+        <p>{{ copy().servicesError }}</p>
+        <button type="button" class="tf-button tf-button-secondary" [disabled]="contentRetrying()"
+                [attr.aria-busy]="contentRetrying()" (click)="retryContent()">{{ locale.t('common_retry', 'Retry') }}</button>
+      </div>
+    } @else if (servicesEmpty()) {
+      <p class="tf-landing-state" role="status">{{ copy().servicesEmpty }}</p>
+    } @else {
+    <ul class="tf-svc-list">
+      @for (service of services(); track $index) {
         <li class="tf-svc-item">
-          <span class="tf-svc-index" aria-hidden="true" data-i18n-skip>{{ service.index }}</span>
           <div class="tf-svc-body">
             <h3 class="tf-svc-title">{{ service.name }}</h3>
             <p class="tf-svc-desc">{{ service.description }}</p>
           </div>
         </li>
       }
-    </ol>
+    </ul>
+    }
   </section>
 
-  <!-- Reassurance. Three pillars carry the argument and the escrow rail is the
-       picture of it. The student and teacher totals are already the hero orbs,
-       so only the subject count survives here, as one line under the lede. -->
+  <!-- Reassurance: review terms, trust pillars and the payment's path. -->
   <section id="why" class="tf-landing-trust">
     <div class="tf-shell tf-landing-trust-grid">
       <div class="tf-trust-copy">
@@ -282,9 +312,8 @@
           <p class="tf-trust-scale">{{ note }}</p>
         }
         <ol class="tf-trust-pillars">
-          @for (pillar of trustPillars(); track pillar.index) {
+          @for (pillar of trustPillars(); track $index) {
             <li class="tf-trust-pillar">
-              <span class="tf-trust-pillar-index" aria-hidden="true" data-i18n-skip>{{ pillar.index }}</span>
               <div class="tf-trust-pillar-body">
                 <h3 class="tf-trust-pillar-title">{{ pillar.title }}</h3>
                 <p class="tf-trust-pillar-text">{{ pillar.body }}</p>
@@ -294,13 +323,13 @@
         </ol>
       </div>
 
-      <figure class="tf-escrow-rail" data-escrow-flow>
+      <figure #escrowRail class="tf-escrow-rail" data-escrow-flow [style.--tf-escrow-fill]="escrowFill()">
         <figcaption class="tf-escrow-head">
           <h3 class="tf-escrow-title">{{ locale.t('why_escrow_title', 'How your payment moves') }}</h3>
         </figcaption>
         <ol class="tf-escrow-steps">
           @for (step of escrow(); track step.text) {
-            <li class="tf-escrow-step">
+            <li class="tf-escrow-step" [class.is-in]="$index < escrowReached()">
               <span class="tf-escrow-node" aria-hidden="true"><span class="tf-escrow-n" data-i18n-skip>{{ step.n }}</span></span>
               <span class="tf-escrow-text">{{ step.text }}</span>
             </li>
@@ -308,7 +337,7 @@
         </ol>
         <p class="tf-escrow-note">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-shield" /></svg>
-          <span>{{ locale.t('why_escrow_note', 'Your money stays with Tafseel until you approve the work.') }}</span>
+          <span>{{ locale.t('why_escrow_note', 'Payment is held through the review window. Approve, request a revision, or open a dispute. After the window ends, eligible orders complete automatically unless a dispute is open.') }}</span>
         </p>
       </figure>
     </div>
@@ -320,18 +349,23 @@
   <section class="tf-shell tf-landing-cta">
     <div class="tf-landing-cta-split" data-pattern="corner" data-pattern-scale="lg">
       <div class="tf-cta-student">
-        <h2 class="tf-cta-title">{{ locale.t('cta1_h', 'Get your first explanation this week') }}</h2>
+        <h2 class="tf-cta-title">{{ heroAction().isPost ? locale.t('cta1_h', 'Get your first explanation this week') : heroAction().primaryLabel }}</h2>
+        @if (heroAction().isPost || heroAction().note) {
         <p class="tf-cta-body">
-          {{ locale.t('cta1_p', 'Upload your material, set a deadline, and pick from teachers who’ve already proven they can teach it.') }}
+          {{ heroAction().isPost ? locale.t('cta1_p', 'Upload your material, set a deadline, and pick from teachers who’ve already proven they can teach it.') : heroAction().note }}
         </p>
+        }
         <p class="tf-cta-route-q" id="cta-route-q">
-          {{ locale.t('sd_request_route_question', 'Do you already know which teacher you want?') }}
+          {{ heroActionsLabel() }}
         </p>
         <div class="tf-cta-actions" role="group" aria-labelledby="cta-route-q">
-          <a class="tf-cta-primary" routerLink="/requests/new">{{ locale.t('cta1_primary', 'Post your request') }}</a>
-          <a class="tf-cta-secondary" routerLink="/teachers">{{ locale.t('cta1_secondary', 'Browse teachers') }}</a>
+          <a class="tf-cta-primary" [routerLink]="heroAction().primaryLink">{{ heroAction().primaryLabel }}</a>
+          @if (heroAction().secondaryLabel) {
+            <a class="tf-cta-secondary" [routerLink]="heroAction().secondaryLink">{{ heroAction().secondaryLabel }}</a>
+          }
         </div>
       </div>
+      @if (showsTeacherJoin()) {
       <aside class="tf-cta-teacher" aria-labelledby="cta-teacher-title">
         <h3 class="tf-cta-teacher-title" id="cta-teacher-title">{{ locale.t('cta2_h', 'Start teaching with Tafseel') }}</h3>
         <p class="tf-cta-teacher-body">
@@ -343,6 +377,7 @@
           <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
         </a>
       </aside>
+      }
     </div>
   </section>
 </main>

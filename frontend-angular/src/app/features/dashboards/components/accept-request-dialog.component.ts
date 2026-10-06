@@ -45,7 +45,7 @@ export interface AcceptableRequest {
         } @else if (policy(); as p) {
           <label class="tf-system-dialog-field">
             <span>{{ t('accept_price', 'Final price') }} ({{ currencyLabel(p.currency) }})</span>
-            <input id="accept-price" name="price" type="number" inputmode="decimal" required
+            <input autocomplete="off" id="accept-price" name="price" type="number" inputmode="decimal" required
                    [attr.min]="p.minPrice" [attr.max]="p.maxPrice" step="0.01"
                    [value]="form().price" (input)="patch({ price: $any($event.target).value })"
                    [attr.aria-invalid]="shown('price')" aria-describedby="accept-price-hint" />
@@ -56,7 +56,7 @@ export interface AcceptableRequest {
 
           <label class="tf-system-dialog-field">
             <span>{{ t('accept_delivery', 'Agreed delivery') }}</span>
-            <input id="accept-delivery" name="delivery" type="datetime-local" required
+            <input autocomplete="off" id="accept-delivery" name="delivery" type="datetime-local" required
                    [attr.min]="window().min" [attr.max]="window().max"
                    [value]="form().deliveryLocal" (input)="patch({ deliveryLocal: $any($event.target).value })"
                    [attr.aria-invalid]="shown('delivery')" aria-describedby="accept-delivery-hint" />
@@ -68,7 +68,7 @@ export interface AcceptableRequest {
           @if (differs()) {
             <label class="tf-system-dialog-field">
               <span>{{ t('accept_reason', 'Why is the price different? (the student sees this)') }}</span>
-              <textarea id="accept-reason" name="reason" rows="3" maxlength="500" required
+              <textarea autocomplete="off" id="accept-reason" name="reason" rows="3" maxlength="500" required
                         [value]="form().reason ?? ''" (input)="patch({ reason: $any($event.target).value })"
                         [attr.aria-invalid]="shown('reason')" aria-describedby="accept-reason-hint"></textarea>
               <small id="accept-reason-hint" [class.tf-field-error]="shown('reason')">{{ locale.format('accept_reason_hint',
@@ -105,11 +105,11 @@ export interface AcceptableRequest {
   styles: `
     .tf-system-dialog-field select {
       min-height: 48px; width: 100%; padding-inline: 12px; color: var(--text); background: var(--bg);
-      border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: inherit; font-size: 16px;
+      border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: inherit; font-size: var(--type-body-lg-size);
     }
     .tf-system-dialog-field small { font-weight: var(--weight-regular, 400); color: var(--text-2); }
     .tf-system-dialog-field small.tf-field-error { color: var(--error); }
-    .tf-accept-next { margin: 4px 0 0; padding: 10px 12px; font-size: 13px; line-height: 1.6; color: var(--text-2);
+    .tf-accept-next { margin: 4px 0 0; padding: 10px 12px; font-size: var(--type-label-size); line-height: 1.6; color: var(--text-2);
       background: var(--surface-2); border-radius: var(--r-sm); }
   `
 })

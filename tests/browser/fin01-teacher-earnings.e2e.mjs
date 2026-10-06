@@ -91,7 +91,7 @@ await step('3. the teacher reads it in Arabic on a phone: clearing, why, and whe
   const amount = Number(teacherNet).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(Number(Number(teacherNet))) ? 0 : 2 });
 
   const clearing = (await earnings.clearing().innerText()).replace(/\s+/g, ' ');
-  assert.match(clearing, /في الطريق إليك/);
+  assert.match(clearing, /أرباح ستُتاح قريبًا/);
   assert.ok(clearing.includes(amount), `the clearing card shows ${amount} (${clearing})`);
   assert.match(clearing, /ثم تنتقل تلقائيًا إلى «متاح للسحب»/);
 

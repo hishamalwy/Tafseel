@@ -71,7 +71,7 @@ import { ManagePublicVideo } from '../services/teacher-setup.use-cases';
             </label>
             @if (progress() !== null) {
               <div class="tf-intro-progress" role="progressbar" [attr.aria-valuenow]="progress()" aria-valuemin="0" aria-valuemax="100"
-                   [attr.aria-label]="t('intro_uploading', 'Uploading')"><span [style.width.%]="progress()"></span></div>
+                   [attr.aria-label]="t('intro_uploading', 'Uploading')"><span [style.transform]="'scaleX(' + (progress() ?? 0) / 100 + ')'"></span></div>
             }
           </div>
 
@@ -107,24 +107,25 @@ import { ManagePublicVideo } from '../services/teacher-setup.use-cases';
   styles: [`
     .tf-intro { display: grid; gap: 16px; }
     .tf-intro-head h2 { margin: 0 0 4px; }
-    .tf-intro-head p, .tf-intro-hint { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.6; }
+    .tf-intro-head p, .tf-intro-hint { margin: 0; color: var(--text-2); font-size: var(--type-body-sm-size); line-height: 1.6; }
     .tf-intro-current { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2); }
     .tf-intro-status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .tf-intro-status small { color: var(--text-2); overflow-wrap: anywhere; }
     .tf-intro-player { width: 100%; max-height: 360px; border-radius: var(--r-md); background: #000; }
     .tf-intro-options { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
     .tf-intro-option { display: grid; gap: 10px; align-content: start; padding: 16px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); }
-    .tf-intro-option h3 { margin: 0; font-size: 15px; }
+    .tf-intro-option h3 { margin: 0; font-size: var(--type-body-size); }
     .tf-intro-file { position: relative; justify-self: start; min-height: 44px; }
     .tf-intro-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .tf-intro-file.is-disabled { opacity: .6; pointer-events: none; }
     .tf-intro-progress { height: 6px; border-radius: 999px; background: var(--surface-3, var(--border)); overflow: hidden; }
-    .tf-intro-progress span { display: block; height: 100%; background: var(--brand); transition: width .2s ease; }
+    .tf-intro-progress span { display: block; height: 100%; background: var(--brand); transform-origin: left; transition: transform .2s ease; }
+    :host-context([dir="rtl"]) .tf-intro-progress span { transform-origin: right; }
     .tf-intro-choices { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
     .tf-intro-choice { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); }
     .tf-intro-choice span { flex: 1; display: grid; }
     .tf-intro-choice small { color: var(--text-2); }
-    .tf-intro-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.6; }
+    .tf-intro-consent { display: flex; gap: 10px; align-items: flex-start; font-size: var(--type-body-sm-size); line-height: 1.6; }
     .tf-intro-consent input { margin-top: 4px; min-width: 18px; min-height: 18px; }
     .tf-link-button { border: 0; background: none; color: var(--brand); font: inherit; font-weight: 600; cursor: pointer; min-height: 44px; padding: 0 4px; }
   `]

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { injectUnsavedChanges } from '@shared/utils/unsaved-changes';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
@@ -46,7 +47,7 @@ type Section = 'profile' | 'avatar' | 'password' | 'devices' | 'notifications' |
               </div>
               <div class="tf-field">
                 <label for="acct-name-en">{{ t('auth_full_name_english', 'English name') }}</label>
-                <input id="acct-name-en" name="nameEn" maxlength="200" dir="ltr" [ngModel]="fullNameEnglish()" (ngModelChange)="fullNameEnglish.set($event)">
+                <input autocomplete="name" id="acct-name-en" name="nameEn" maxlength="200" dir="ltr" [ngModel]="fullNameEnglish()" (ngModelChange)="fullNameEnglish.set($event)">
               </div>
             </div>
             <p class="tf-acct-muted">{{ locale.format('acct_email', { email: email() }, 'Signed in as {email}.') }}</p>
@@ -192,11 +193,11 @@ type Section = 'profile' | 'avatar' | 'password' | 'devices' | 'notifications' |
     .tf-acct-head h1 { margin: 0 0 4px; font-size: var(--type-page-title-size); font-weight: var(--weight-heavy, 800); }
     .tf-acct-head p { margin: 0; color: var(--text-2); }
     .tf-acct-card { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
-    .tf-acct-card h2 { margin: 0; font-size: 17px; }
+    .tf-acct-card h2 { margin: 0; font-size: var(--type-item-title-size); }
     .tf-acct-card--danger { border-color: color-mix(in oklab, var(--error) 40%, var(--border)); }
     .tf-acct-form { display: grid; gap: 12px; }
     .tf-acct-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    .tf-acct-muted { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
+    .tf-acct-muted { margin: 0; color: var(--text-2); font-size: var(--type-label-size); line-height: 1.6; }
     .tf-acct-avatar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
     .tf-acct-avatar img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--surface-2); border: 1px solid var(--border); }
     .tf-acct-avatar-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -235,6 +236,13 @@ export class AccountSettingsPageComponent {
   readonly learning = signal<LearningSettings>({ explanationStyle: null, languageId: null, version: null });
   readonly languages = signal<readonly LanguageOption[]>([]);
   readonly deletePassword = signal('');
+  private readonly profileBaseline = signal(JSON.stringify(['', '']));
+  private readonly learningBaseline = signal(JSON.stringify([null, null]));
+  readonly unsavedChanges = injectUnsavedChanges(() => !!this.session.current() && (
+    this.profileBaseline() !== JSON.stringify([this.fullName().trim(), this.fullNameEnglish().trim()]) ||
+    this.learningBaseline() !== JSON.stringify([this.learning().explanationStyle, this.learning().languageId]) ||
+    !!this.currentPassword() || !!this.newPassword() || !!this.deletePassword()
+  ));
   readonly busy = signal<Section | ''>('');
   readonly errors = signal<Partial<Record<Section, string>>>({});
   readonly otherDevices = computed(() => this.devices().filter(d => !d.isCurrent).length);
@@ -255,6 +263,7 @@ export class AccountSettingsPageComponent {
       this.guard('profile', async () => {
         const me = await this.gateway.me();
         this.fullName.set(me.fullName); this.fullNameEnglish.set(me.fullNameEnglish);
+        this.profileBaseline.set(JSON.stringify([me.fullName.trim(), me.fullNameEnglish.trim()]));
         this.email.set(me.email); this.hasAvatar.set(me.hasAvatar);
       }),
       this.guard('devices', async () => this.devices.set(await this.gateway.devices())),
@@ -262,6 +271,7 @@ export class AccountSettingsPageComponent {
       this.isStudent() ? this.guard('learning', async () => {
         const [learning, languages] = await Promise.all([this.gateway.learning(), this.gateway.languages()]);
         this.learning.set(learning); this.languages.set(languages);
+        this.learningBaseline.set(JSON.stringify([learning.explanationStyle, learning.languageId]));
       }) : Promise.resolve()
     ]);
   }
@@ -270,8 +280,10 @@ export class AccountSettingsPageComponent {
     const name = this.fullName().trim();
     if (!name) { this.setError('profile', this.t('acct_name_required', 'Enter your name.')); return; }
     await this.run('profile', async () => {
-      await this.gateway.saveProfile(name, this.fullNameEnglish().trim());
-      this.updateSession({ fullName: name, fullNameEnglish: this.fullNameEnglish().trim() });
+      const english = this.fullNameEnglish().trim();
+      await this.gateway.saveProfile(name, english);
+      this.profileBaseline.set(JSON.stringify([name, english]));
+      this.updateSession({ fullName: name, fullNameEnglish: english });
       this.toasts.show(this.t('acct_saved', 'Saved.'));
     });
   }
@@ -357,7 +369,11 @@ export class AccountSettingsPageComponent {
 
   async saveLearning(): Promise<void> {
     await this.run('learning', async () => {
-      this.learning.set(await this.gateway.saveLearning(this.learning()));
+      const submitted = this.learning();
+      const saved = await this.gateway.saveLearning(submitted);
+      this.learningBaseline.set(JSON.stringify([saved.explanationStyle, saved.languageId]));
+      if (JSON.stringify([this.learning().explanationStyle, this.learning().languageId]) === JSON.stringify([submitted.explanationStyle, submitted.languageId])) this.learning.set(saved);
+      else this.learning.update(current => ({ ...current, version: saved.version }));
       this.toasts.show(this.t('acct_saved', 'Saved.'));
     });
   }

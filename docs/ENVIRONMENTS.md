@@ -11,7 +11,7 @@ through use. Production never receives demo data.
 | URL | `https://localhost:7272` / `http://localhost:5089` | `http://localhost:5200` (launch profile "Staging (local)") | `https://tafseel.runasp.net` | not provisioned (DEC-12) |
 | Database | `Tafseel_Development` (local SQL Server) | `Tafseel_Staging` (local SQL Server) | `db63194` on `db63194.databaseasp.net` (MonsterASP; the host allows one database) | not provisioned |
 | Settings file | `appsettings.Development.json` + User Secrets | `appsettings.Staging.json` + `appsettings.Staging.Host.json` (git-ignored) | `appsettings.PreProduction.json` + `appsettings.PreProduction.Host.json` (server-owned, git-ignored) | `appsettings.Production.json` + secret store |
-| Payments | Mock + simulator | Mock + simulator | **Mock + simulator, on purpose**; every screen shows "Test environment" | Real provider required (mock refused) |
+| Payments | Mock + simulator | Mock + simulator | **Mock + simulator, on purpose** (checkout opens the simulator, not a bank) | Real provider required (mock refused) |
 | Live sessions | Mock, or JaaS from User Secrets | Mock | JaaS, signed per participant with the account's RSA key ([JAAS_PREPRODUCTION.md](operations/JAAS_PREPRODUCTION.md)) | JaaS with the account's own key |
 | Email | Files in `App_Data/dev-outbox` | Files in `App_Data/dev-outbox` | Resend, real mail | Resend |
 | Demo recipients | suppressed | suppressed | **suppressed**: mail to the five demo addresses is never sent | none exist |
@@ -100,7 +100,7 @@ existing accounts; reset the database or use the password-reset flow.
   server with `ConnectionStrings:Tafseel`, `Database:Name` (`db63194`), `Jwt:SigningKey`, `Resend:ApiToken`,
   `Payments:WebhookSecret`, `PayoutDestinations`, `SeedUsers:Password`, `FileStorage:RootPath`, `DataProtection:KeysPath`,
   `JaaS:AppId`, `JaaS:KeyId` and `JaaS:PrivateKeyPath` are in the tracked file; the private key itself is the file
-  `App_Data\jaas\jaas-private-key.pem` on the server, uploaded by hand and never published, logged or sent to the browser.
+  single `.pk`/`.pem` file in `App_Data\jaas\` on the server, uploaded by hand and never published, logged or sent to the browser.
   A static JaaS token is refused here, as in Production. Without the key file the site does not start: upload it first.
 - Deploy: `dotnet publish src/Tafseel.Api -c Release -p:PublishProfile=tafseel-preproduction` (Web Deploy; the profile
   sets `EnvironmentName=PreProduction` in `web.config` and uploads the host settings file). Profiles are git-ignored.

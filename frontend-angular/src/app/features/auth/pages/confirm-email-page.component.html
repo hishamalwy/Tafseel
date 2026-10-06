@@ -7,7 +7,7 @@
   [homeLabel]="t('nav_home', 'Tafseel home')">
 
   <div class="tf-confirm-email-wrap">
-    <section class="tf-confirm-email-card" aria-labelledby="confirm-email-title">
+    <section animate.enter="tf-motion-enter" class="tf-confirm-email-card" aria-labelledby="confirm-email-title">
       <div class="tf-confirm-email-heading">
         <div class="tf-confirm-email-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false">
@@ -33,11 +33,11 @@
       </div>
 
       @if (email()) {
-        <button type="button" class="tf-button tf-confirm-email-login" (click)="resend()" [disabled]="resending()">
+        <button type="button" class="tf-button tf-confirm-email-login" (click)="resend()" [disabled]="resending()" [tfActionFeedback]="resending() ? 'busy' : resendStatus() === 'sent' ? 'success' : 'idle'">
           {{ t('auth_resend_confirmation', 'Resend confirmation email') }}
         </button>
         @if (resendStatus() === 'sent') {
-          <p role="status">{{ t('auth_confirmation_resent', 'If that account exists, a confirmation email is on its way.') }}</p>
+          <tf-ui-state state="success" variant="confirmation" [compact]="true" [title]="t('auth_confirmation_resent', 'If that account exists, a confirmation email is on its way.')" />
         } @else if (resendStatus() === 'failed') {
           <p role="alert">{{ t('confirm_email_resend_failed', 'Could not send the email. Please try again.') }}</p>
         }

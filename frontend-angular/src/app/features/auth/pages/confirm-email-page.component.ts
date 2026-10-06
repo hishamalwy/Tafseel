@@ -1,3 +1,5 @@
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -15,7 +17,7 @@ import { AuthShellComponent } from '@shared/layouts/auth-shell.component';
 @Component({
   selector: 'tf-confirm-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, AuthShellComponent],
+  imports: [UiStateComponent, ActionFeedbackDirective, RouterLink, AuthShellComponent],
   templateUrl: './confirm-email-page.component.html'
 })
 export class ConfirmEmailPageComponent {

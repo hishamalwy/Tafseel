@@ -83,3 +83,62 @@ if (skipProblems.length) {
 } else {
   console.log('Skip-link guard passed (every <main> is reachable from a leading skip link).');
 }
+
+/*
+ * DESIGN.md, Typography Roles and Motion: component styles size type by role, never by pixel;
+ * every :hover sits under (hover:hover) so a tap never leaves a card lifted on a phone; and the
+ * tokens live in one :root and one dark block instead of a second :root further down the file.
+ */
+const componentStyles = [
+  ...files(root).filter(path => !path.endsWith('landing-global.css')),
+  ...templates(root).filter(path => path.endsWith('.ts'))
+];
+const rawType = componentStyles.flatMap(path =>
+  [...readFileSync(path, 'utf8').matchAll(/font-size:\s*[0-9.]+px/g)].map(() => relative(root, path)));
+
+/** Every rule whose selector names :hover but is not nested in a hover media query. */
+function ungatedHover(css) {
+  const source = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const stack = [];
+  const found = [];
+  let prelude = '';
+  for (const ch of source) {
+    if (ch === '{') {
+      const head = prelude.trim();
+      if (head.includes(':hover') && !head.startsWith('@') && !stack.some(s => /hover\s*:\s*hover/.test(s)))
+        found.push(head.split('\n').pop().slice(0, 80));
+      stack.push(head);
+      prelude = '';
+    } else if (ch === '}') {
+      stack.pop();
+      prelude = '';
+    } else if (ch === ';' && stack.length && !stack[stack.length - 1].startsWith('@')) {
+      prelude = '';
+    } else {
+      prelude += ch;
+    }
+  }
+  return found;
+}
+const hoverProblems = [
+  ...ungatedHover(readFileSync(fileURLToPath(new URL('../../css/tafseel.css', import.meta.url)), 'utf8'))
+    .map(rule => `css/tafseel.css: ${rule}`),
+  ...files(root).filter(path => !path.endsWith('landing-global.css'))
+    .flatMap(path => ungatedHover(readFileSync(path, 'utf8')).map(rule => `${relative(root, path)}: ${rule}`))
+];
+const tokenBlocks = {
+  ':root': (design.match(/^:root\s*\{/gm) ?? []).length,
+  'html[data-theme="dark"]': (design.match(/^html\[data-theme="dark"\]\s*\{/gm) ?? []).length
+};
+const systemProblems = [
+  ...[...new Set(rawType)].map(path => `${path}: raw px font-size; use var(--type-<role>-size)`),
+  ...hoverProblems.map(rule => `${rule} — :hover outside @media (hover:hover) and (pointer:fine)`),
+  ...Object.entries(tokenBlocks).filter(([, n]) => n !== 1)
+    .map(([selector, n]) => `css/tafseel.css has ${n} top-level ${selector} blocks; keep one`)
+];
+if (systemProblems.length) {
+  console.error(['Design-system guard:', ...systemProblems.map(p => `- ${p}`)].join('\n'));
+  process.exitCode = 1;
+} else {
+  console.log('Design-system guard passed (type roles, pointer-only hover, one token block per theme).');
+}

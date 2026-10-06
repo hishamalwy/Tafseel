@@ -35,7 +35,7 @@ For a plain schema upgrade that keeps data, apply the release's idempotent scrip
 ## Check
 
 - `https://tafseel.runasp.net/health/ready` → `Healthy` (or `Degraded` with an operational backlog).
-- Every page shows the "Test environment" strip: payments are simulated here.
+- Checkout opens the payment simulator: payments are simulated here.
 - Sign in as each demo account with the PreProduction seed password.
 
 ## Limits of this host

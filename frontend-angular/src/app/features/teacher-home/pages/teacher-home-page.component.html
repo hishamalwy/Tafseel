@@ -1,11 +1,6 @@
 <tf-workspace-shell role="Teacher" section="home">
   @if (loading()) {
-    <div class="tf-home" data-state="loading" role="status" aria-live="polite">
-      <span class="tf-sr-only">{{ t('common_loading', 'Loading…') }}</span>
-      <p class="tf-home-greeting tf-skeleton"></p>
-      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-    </div>
+    <tf-skeleton kind="work" />
   } @else if (error()) {
     <div class="tf-state" data-state="error" data-testid="home-error" role="alert">
       <p class="tf-state-title">{{ t('th_error', 'We couldn’t load your home.') }}</p>
@@ -45,7 +40,7 @@
           @if (failed().work) {
             <p class="tf-home-section-error" data-testid="home-work-error" role="status">
               {{ t('th_section_error', 'Couldn’t load.') }}
-              <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+              <button type="button" class="tf-button tf-button-secondary tf-button-sm tf-retry" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
             </p>
           } @else if (view.actions.length) {
             @for (card of view.actions; track card.key; let first = $first) {
@@ -83,7 +78,7 @@
             @if (failed().opportunities) {
               <p class="tf-home-section-error" data-testid="home-opportunities-error" role="status">
                 {{ t('th_section_error', 'Couldn’t load.') }}
-                <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+                <button type="button" class="tf-button tf-button-secondary tf-button-sm tf-retry" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
               </p>
             } @else if (view.opportunities.length) {
               @for (item of view.opportunities; track item.key) {
@@ -141,7 +136,7 @@
             @if (failed().earnings) {
               <p class="tf-home-section-error" data-testid="home-earnings-error" role="status">
                 {{ t('th_section_error', 'Couldn’t load.') }}
-                <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+                <button type="button" class="tf-button tf-button-secondary tf-button-sm tf-retry" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
               </p>
             } @else if (view.earnings.empty || !view.earnings.view) {
               <p class="tf-home-quiet" data-testid="home-no-earnings">{{ t('earn_empty_title', 'No earnings yet') }}</p>

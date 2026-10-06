@@ -1,3 +1,7 @@
+import { TimeZoneSelectComponent } from '@shared/components/time-zone-select.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
+import { UiStateComponent } from '@shared/components/ui-state.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -8,7 +12,6 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { ToastComponent } from '@shared/components/toast.component';
 import { DialogService } from '@shared/services/dialog.service';
-import { ToastService } from '@shared/services/toast.service';
 import {
   Availability, DAYS_OF_WEEK, ExceptionDraft, ExceptionProblem, REASON_MAX, RuleDraft, RuleProblem, SLOT_RANGE, browserTimeZone,
   timeZoneChoices, timeZoneLabel } from '../models/availability';
@@ -22,17 +25,17 @@ const SLOT_CHOICES = [15, 30, 45, 60, 90, 120, 180, 240] as const;
 @Component({
   selector: 'tf-teacher-availability-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent],
+  imports: [TimeZoneSelectComponent, SkeletonComponent, ActionFeedbackDirective, UiStateComponent, FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, SetupProgressComponent],
   templateUrl: './teacher-availability-page.component.html',
   styles: `
     .tf-availability { display: grid; gap: 18px; max-width: 980px; }
     .tf-availability-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .tf-availability-list li { display: grid; grid-template-columns: minmax(90px, .8fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; align-items: center; gap: 8px 14px;
-      padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 14px; }
-    .tf-availability-list small { color: var(--muted); font-size: 12px; }
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: var(--type-body-sm-size); }
+    .tf-availability-list small { color: var(--muted); font-size: var(--type-meta-size); }
     .tf-availability-list .tf-cluster { justify-content: flex-end; }
     .tf-availability-days { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 0; padding: 0; border: 0; }
-    .tf-availability-days legend { margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+    .tf-availability-days legend { margin-bottom: 6px; font-size: var(--type-label-size); font-weight: 700; color: var(--text-2); }
     .tf-availability-form { padding: 16px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); }
     .tf-availability-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
     time { font-variant-numeric: tabular-nums; }
@@ -47,7 +50,6 @@ export class TeacherAvailabilityPageComponent {
   private readonly loadProfile = inject(LoadOwnProfile);
   private readonly availability = inject(ManageAvailability);
   private readonly dialogs = inject(DialogService);
-  private readonly toasts = inject(ToastService);
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
   readonly days = DAYS_OF_WEEK;
@@ -71,6 +73,7 @@ export class TeacherAvailabilityPageComponent {
   readonly exceptionAttempted = signal(false);
   readonly exceptionError = signal('');
   readonly busy = signal('');
+  readonly successNotice = signal('');
 
   readonly rules = computed(() => Availability.sorted(this.profile()?.rules ?? []));
   readonly exceptions = computed(() => Availability.sortedExceptions(this.profile()?.exceptions ?? []));
@@ -161,7 +164,7 @@ export class TeacherAvailabilityPageComponent {
     await this.run('rule', async () => {
       await this.availability.saveRule(profile.rules, this.rule(), editing);
       this.closeRule();
-      this.toasts.show(this.t('setup_rule_saved', 'Weekly availability saved.'));
+      this.successNotice.set(this.t('setup_rule_saved', 'Weekly availability saved.'));
     }, text => this.ruleError.set(text));
   }
 
@@ -173,7 +176,7 @@ export class TeacherAvailabilityPageComponent {
     await this.run(`rule:${rule.id}`, async () => {
       await this.availability.removeRule(rule.id);
       if (this.editing() === rule.id) this.closeRule();
-      this.toasts.show(this.t('setup_rule_removed', 'Window removed.'));
+      this.successNotice.set(this.t('setup_rule_removed', 'Window removed.'));
     }, text => this.ruleError.set(text));
   }
 
@@ -186,7 +189,7 @@ export class TeacherAvailabilityPageComponent {
       await this.availability.addException(this.exception());
       this.exception.set(Availability.emptyException());
       this.exceptionAttempted.set(false);
-      this.toasts.show(this.t('setup_exception_saved', 'Time off added.'));
+      this.successNotice.set(this.t('setup_exception_saved', 'Time off added.'));
     }, text => this.exceptionError.set(text));
   }
 
@@ -197,11 +200,12 @@ export class TeacherAvailabilityPageComponent {
     })) return;
     await this.run(`exception:${item.id}`, async () => {
       await this.availability.removeException(item.id);
-      this.toasts.show(this.t('setup_exception_removed', 'Time off removed.'));
+      this.successNotice.set(this.t('setup_exception_removed', 'Time off removed.'));
     }, text => this.exceptionError.set(text));
   }
 
   private async run(key: string, work: () => Promise<void>, fail: (text: string) => void): Promise<void> {
+    this.successNotice.set('');
     this.busy.set(key);
     try {
       await work();

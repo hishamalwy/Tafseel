@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
+import { injectUnsavedChanges } from '@shared/utils/unsaved-changes';
+import { returnQuery } from '@shared/utils/list-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -29,15 +31,15 @@ import {
     .tf-review-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 18px; align-items: start; }
     .tf-review-column { display: grid; gap: 18px; min-width: 0; }
     .tf-review-facts { display: grid; gap: 10px; margin: 0; }
-    .tf-review-facts div { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+    .tf-review-facts div { display: flex; justify-content: space-between; gap: 12px; font-size: var(--type-label-size); }
     .tf-review-facts dt { color: var(--muted); }
     .tf-review-facts dd { margin: 0; font-weight: 650; text-align: end; overflow-wrap: anywhere; }
     .tf-review-timeline { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-    .tf-review-timeline li { display: grid; gap: 3px; padding-inline-start: 12px; border-inline-start: 2px solid var(--border); font-size: 13px; }
-    .tf-review-timeline small { color: var(--muted); font-size: 12px; }
+    .tf-review-timeline li { display: grid; gap: 3px; padding-inline-start: 12px; border-inline-start: 2px solid var(--border); font-size: var(--type-label-size); }
+    .tf-review-timeline small { color: var(--muted); font-size: var(--type-meta-size); }
     .tf-review-video { width: 100%; max-height: 70vh; border-radius: var(--r-md); background: #000; }
-    .tf-review-instructions { margin: 0; white-space: pre-line; color: var(--text-2); font-size: 14px; line-height: 1.7; }
-    .tf-review-back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-bottom: 4px; font-size: 13px; font-weight: 650; }
+    .tf-review-instructions { margin: 0; white-space: pre-line; color: var(--text-2); font-size: var(--type-body-sm-size); line-height: 1.7; }
+    .tf-review-back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-bottom: 4px; font-size: var(--type-label-size); font-weight: 650; }
     .tf-review-back svg { width: 16px; height: 16px; flex: none; }
     @media (max-width: 960px) { .tf-review-layout { grid-template-columns: minmax(0, 1fr); } }
   `
@@ -72,6 +74,9 @@ export class ApplicationReviewPageComponent implements OnDestroy {
   readonly revokeReason = signal('');
   readonly revokeError = signal('');
   readonly reasonLimits = REVOCATION_REASON;
+  private readonly decisionForm = viewChild(ReviewDecisionFormComponent);
+  readonly unsavedChanges = injectUnsavedChanges(() => this.decisionForm()?.hasUnsavedChanges() === true ||
+    (this.revokeOpen() && !!this.revokeReason().trim()));
 
   private readonly reviewerId = computed(() => this.session.current()?.userId ?? '');
   readonly canStart = computed(() => { const r = this.review(); return !!r && Review.canStartReview(r.application); });
@@ -97,6 +102,7 @@ export class ApplicationReviewPageComponent implements OnDestroy {
   ngOnDestroy(): void { this.demo()?.revoke(); }
 
   t(key: string, fallback = ''): string { return this.locale.t(key, fallback); }
+  queueReturnParams() { return returnQuery(this.route.snapshot.queryParamMap, ['scope', 'kind', 'status', 'sort', 'page', 'focus']); }
   date(value: string): string { return value ? this.fmt.date(value, { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
   status(value: number | null): string { return value === null ? '—' : this.t(Review.statusKey(value), ''); }
   duration(seconds: number | null): string {

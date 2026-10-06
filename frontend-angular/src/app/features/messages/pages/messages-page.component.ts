@@ -1,3 +1,6 @@
+import { UiStateComponent } from '@shared/components/ui-state.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, ElementRef, ViewChild, afterNextRender, computed, inject, Injector, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -25,7 +28,7 @@ import { UnreadMessages } from '@features/navigation/services/unread-messages';
 @Component({
   selector: 'tf-messages-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, FormsModule, RouterLink, WorkspaceShellComponent, ProtectedFileViewerComponent, FilePickerComponent],
+  imports: [UiStateComponent, SkeletonComponent, ActionFeedbackDirective, IconComponent, FormsModule, RouterLink, WorkspaceShellComponent, ProtectedFileViewerComponent, FilePickerComponent],
   templateUrl: './messages-page.component.html',
   styleUrl: '../../../shared/styles/workspace-detail.css',
   styles: `
@@ -38,7 +41,7 @@ import { UnreadMessages } from '@features/navigation/services/unread-messages';
     .tf-bubble { max-width: min(80%, 560px); padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); overflow-wrap: anywhere; }
     .tf-bubble[data-mine="true"] { margin-inline-start: auto; background: var(--primary-soft); }
     .tf-bubble p { margin: 0; white-space: pre-line; }
-    .tf-bubble small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .tf-bubble small { display: block; margin-top: 4px; color: var(--muted); font-size: var(--type-caption-size); }
     /* One inbox surface: the list is a rail inside it, the conversation fills the rest (V3). */
     .tf-messages { gap: 0; padding: 0; align-items: stretch; border: 1px solid var(--border); border-radius: var(--r-lg);
       background: var(--surface); overflow: hidden; min-block-size: min(620px, calc(100dvh - 240px)); }
@@ -46,12 +49,12 @@ import { UnreadMessages } from '@features/navigation/services/unread-messages';
     .tf-messages > .tf-inbox-panel { border-inline-end: 1px solid var(--border); background: color-mix(in oklab, var(--surface-2) 45%, var(--surface)); }
     .tf-inbox { gap: 2px; }
     .tf-inbox a { border-color: transparent; border-radius: var(--r-md); padding: 12px; transition: background-color var(--motion-fast) ease; }
-    .tf-inbox a:hover { background: var(--surface-2); }
+    @media (hover:hover) and (pointer:fine){.tf-inbox a:hover { background: var(--surface-2); } }
     .tf-inbox a[aria-current='page'] { border-color: transparent; background: var(--primary-soft); }
     .tf-inbox strong { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .tf-thread-links { display: flex; flex-wrap: wrap; gap: 6px; }
     .tf-thread-panel--idle { display: grid; place-content: center; justify-items: center; gap: 6px; text-align: center; }
-    .tf-thread-panel--idle h2 { margin: 0; font-size: 17px; }
+    .tf-thread-panel--idle h2 { margin: 0; font-size: var(--type-item-title-size); }
     .tf-thread-idle-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-block-end: 6px; border-radius: 12px;
       background: var(--primary-soft); color: var(--primary); }
     @media (max-width: 860px) { .tf-messages { min-block-size: 0; } .tf-messages > .tf-inbox-panel { border-inline-end: 0; } .tf-thread-panel--idle { display: none; } }
@@ -87,10 +90,19 @@ export class MessagesPageComponent {
   readonly draft = signal('');
   readonly file = signal<File | null>(null);
   readonly sending = signal(false);
+  readonly arriving = signal<ReadonlySet<string>>(new Set());
   readonly sendError = signal('');
 
   readonly viewerId = computed(() => this.session.current()?.userId ?? '');
   readonly shellRole = computed(() => (this.session.current()?.roles ?? []).includes('Teacher') ? 'Teacher' : 'Student');
+  readonly workspacePath = computed(() => {
+    const roles = this.session.current()?.roles ?? [];
+    if (roles.includes('Teacher')) return '/teacher/work';
+    if (roles.includes('Student')) return '/student/requests';
+    if (roles.includes('Admin')) return '/admin/home';
+    if (roles.includes('Finance')) return '/finance/home';
+    return '/quality/applications';
+  });
   readonly current = computed(() => this.conversations().find(c => c.id === this.conversationId()) ?? null);
 
   constructor() {
@@ -103,6 +115,7 @@ export class MessagesPageComponent {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
       this.conversationId.set(params.get('conversationId') ?? '');
       this.messages.set([]);
+      this.arriving.set(new Set());
       this.sendError.set('');
       void this.open();
     });
@@ -151,6 +164,10 @@ export class MessagesPageComponent {
       const page = await firstValueFrom(this.gateway.messages(id));
       if (id !== this.conversationId()) return;
       const before = this.messages().length;
+      if (!showLoading) {
+        const previous = new Set(this.messages().map(message => message.id));
+        this.arriving.update(ids => new Set([...ids, ...page.filter(message => !previous.has(message.id)).map(message => message.id)]));
+      }
       this.messages.set(Messaging.merge(this.messages(), page));
       this.threadError.set('');
       if (this.messages().length !== before) this.scrollToEnd();
@@ -211,6 +228,7 @@ export class MessagesPageComponent {
       void this.reloadList();
       return;
     }
+    if (!this.messages().some(message => message.id === incoming.id)) this.arriving.update(ids => new Set([...ids, incoming.id]));
     this.messages.set(Messaging.merge(this.messages(), [incoming]));
     this.scrollToEnd();
     // The listed unread count predates this message, so read the list again before deciding.

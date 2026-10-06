@@ -10,13 +10,15 @@
     <span><strong>{{ copy().storyChooseTitle }}</strong><small>{{ copy().storyChooseBody }}</small></span>
     <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
   </a>
-  <a routerLink="/requests/new">
+  @if (canRequest()) {
+  <a routerLink="/requests/new/open">
     <span><strong>{{ copy().storyPostTitle }}</strong><small>{{ copy().storyPostBody }}</small></span>
     <svg class="tf-inline-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#tf-i-arrow" /></svg>
   </a>
+  }
 </nav>
 
-<div class="tf-product-story" data-product-story #story>
+<div class="tf-product-story" data-product-story #story (focusin)="focusWithin.set(true)" (focusout)="leaveFocus($event)">
   <div class="tf-story-visual" aria-hidden="true">
     <div class="tf-story-canvas" [attr.data-story-state]="step() + 1">
       <header class="tf-story-canvas-head">
@@ -103,6 +105,9 @@
     </div>
   </div>
 
+  <div class="tf-story-layout"><div class="tf-story-controls">
+    @if (canPlay()) { <button type="button" class="tf-button tf-button-ghost" [attr.aria-pressed]="paused()" (click)="togglePlayback()">{{ paused() ? locale.t('craft_story_resume', 'Resume demonstration') : locale.t('craft_story_pause', 'Pause demonstration') }}</button> }
+  </div>
   <ol class="tf-story-steps" [attr.aria-label]="copy().storyStepsLabel">
     @for (item of steps(); track item.rawIndex) {
       <li class="tf-story-step" data-product-story-step
@@ -114,5 +119,5 @@
         </button>
       </li>
     }
-  </ol>
+  </ol></div>
 </div>

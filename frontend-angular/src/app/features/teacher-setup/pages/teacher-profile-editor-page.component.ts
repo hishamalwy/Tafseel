@@ -1,3 +1,7 @@
+import { TimeZoneSelectComponent } from '@shared/components/time-zone-select.component';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
+import { IconComponent } from '@shared/components/icon.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
@@ -8,6 +12,8 @@ import { LocaleService } from '@core/i18n/locale.service';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { ToastComponent } from '@shared/components/toast.component';
 import { ToastService } from '@shared/services/toast.service';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
+import { injectUnsavedChanges } from '@shared/utils/unsaved-changes';
 import { CredentialListComponent } from '../components/credential-list.component';
 import { browserTimeZone, timeZoneChoices, timeZoneLabel } from '../models/availability';
 import {
@@ -24,13 +30,13 @@ type Section = 'core' | TeachingChoice;
 @Component({
   selector: 'tf-teacher-profile-editor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, CredentialListComponent, SetupProgressComponent],
+  imports: [TimeZoneSelectComponent, SkeletonComponent, ActionFeedbackDirective, IconComponent, FormsModule, RouterLink, WorkspaceShellComponent, ToastComponent, CredentialListComponent, SetupProgressComponent],
   templateUrl: './teacher-profile-editor-page.component.html',
   styles: `
     .tf-profile-editor-card .tf-field-help { display: block; }
     .tf-choice-grid { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; padding: 0; border: 0; }
-    .tf-choice-group { display: grid; gap: 6px; }
-    .tf-choice-group h3 { margin: 0; font-size: 13px; color: var(--text-2); }
+    .tf-choice-group { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+    .tf-choice-group h3 { margin: 0; font-size: var(--type-label-size); color: var(--text-2); }
   `
 })
 export class TeacherProfileEditorPageComponent {
@@ -45,6 +51,7 @@ export class TeacherProfileEditorPageComponent {
   readonly loadError = signal('');
   readonly workspace = signal<ProfileWorkspace | null>(null);
   readonly draft = signal<ProfileDraft>(ProfileForm.draft(null, browserTimeZone()));
+  private readonly initialDraft = signal<ProfileDraft>(this.draft());
   readonly fmt = inject(FormatService);
   /** Reply times a person states (an hour, a day), in the minutes the API stores; a saved odd value stays listed. */
   readonly responseChoices = computed(() => {
@@ -53,6 +60,7 @@ export class TeacherProfileEditorPageComponent {
     return current && !choices.includes(current) ? [...choices, current].sort((a, b) => a - b) : choices;
   });
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
   readonly saving = signal<Section | ''>('');
   readonly serverFields = signal<Partial<Record<string, string>>>({});
   readonly errors = signal<Partial<Record<Section, string>>>({});
@@ -60,6 +68,11 @@ export class TeacherProfileEditorPageComponent {
   readonly selected = signal<Record<TeachingChoice, readonly string[]>>({ languages: [], topics: [], educationLevels: [] });
   readonly zones = computed(() => timeZoneChoices(this.workspace()?.profile.timeZoneId ?? '', this.draft().timeZoneId));
   readonly browserZone = browserTimeZone();
+  readonly hasUnsavedChanges = computed(() => !this.loading() && !!this.workspace() && (
+    JSON.stringify(this.draft()) !== JSON.stringify(this.initialDraft()) ||
+    (['languages', 'topics', 'educationLevels'] as const).some(choice => this.dirty(choice))
+  ));
+  readonly unsavedChanges = injectUnsavedChanges(() => this.hasUnsavedChanges());
 
   /** A zone named in the reader's language rather than as its IANA identifier (UX-06). */
   zoneLabel(zone: string): string { return timeZoneLabel(zone, this.locale.lang()); }
@@ -117,6 +130,7 @@ export class TeacherProfileEditorPageComponent {
       const workspace = await this.load.execute();
       this.workspace.set(workspace);
       this.draft.set(ProfileForm.draft(workspace.profile, this.browserZone));
+      this.initialDraft.set(this.draft());
       this.selected.set({
         languages: workspace.profile.languages.map(x => x.id),
         topics: workspace.profile.topics.map(x => x.id),
@@ -135,10 +149,12 @@ export class TeacherProfileEditorPageComponent {
     this.attempted.set(true);
     this.serverFields.set({});
     this.clearError('core');
-    if (Object.keys(ProfileForm.problems(this.draft())).length) return;
+    if (Object.keys(ProfileForm.problems(this.draft())).length) return this.focusFirstInvalid();
     await this.run('core', async () => {
-      await this.saveProfile.execute(this.draft());
+      const submitted = this.draft();
+      await this.saveProfile.execute(submitted);
       await this.refreshProfileOnly();
+      this.initialDraft.set(submitted);
       this.attempted.set(false);
     });
   }

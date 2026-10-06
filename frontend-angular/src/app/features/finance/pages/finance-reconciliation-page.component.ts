@@ -1,3 +1,5 @@
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
@@ -26,7 +28,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
 @Component({
   selector: 'tf-finance-reconciliation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PriceComponent, WorkspaceShellComponent],
+  imports: [SkeletonComponent, ActionFeedbackDirective, RouterLink, PriceComponent, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell [role]="shellRole()" section="finance">
       <div class="tf-fin">
@@ -35,7 +37,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
             <h1>{{ t('fin_recon_title', 'Reconciliation') }}</h1>
             <p>{{ t('fin_recon_intro', 'Every check of the ledger, escrow and payouts. An anomaly becomes a case: acknowledge it while you investigate, then resolve it with what you found. No balance is edited here.') }}</p>
           </div>
-          <button type="button" class="tf-button tf-button-secondary" (click)="scan()" [disabled]="busy()" data-testid="finance-recon-scan">{{ t('fin_recon_run', 'Run the checks again') }}</button>
+          <button type="button" class="tf-button tf-button-secondary" (click)="scan()" [tfActionFeedback]="loading() ? 'busy' : 'idle'" [attr.aria-busy]="loading()" [disabled]="busy()" data-testid="finance-recon-scan">{{ t('fin_recon_run', 'Run the checks again') }}</button>
         </header>
         @if (summary(); as s) {
           <section class="tf-fin-card" aria-labelledby="fin-recon-summary" data-testid="finance-recon-summary">
@@ -55,12 +57,12 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
           }
         </div>
         @if (loading()) {
-          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+          <tf-skeleton kind="queue" [label]="t('common_loading', 'Loading…')" />
         } @else if (error()) {
           <div class="tf-state" data-state="error" role="alert">
             <p class="tf-state-title">{{ t('fin_recon_error', 'We couldn’t run reconciliation.') }}</p>
             <p class="tf-state-body">{{ error() }}</p>
-            <button type="button" class="tf-button tf-button-secondary" (click)="scan()">{{ t('common_retry', 'Try again') }}</button>
+            <button type="button" class="tf-button tf-button-secondary" (click)="scan()" [tfActionFeedback]="loading() ? 'busy' : 'idle'" [attr.aria-busy]="loading()">{{ t('common_retry', 'Try again') }}</button>
           </div>
         } @else if (visible().length) {
           <ul class="tf-fin-cases" data-testid="finance-recon-cases">
@@ -81,8 +83,8 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
                 </dl>
                 @if (c.status !== 2) {
                   <div class="tf-fin-actions">
-                    @if (c.status === 0) { <button type="button" class="tf-button" (click)="annotate(c, 'acknowledge')" [disabled]="busy()" data-testid="finance-recon-ack">{{ t('fin_recon_ack', 'I am investigating') }}</button> }
-                    <button type="button" class="tf-button" [class.tf-button-secondary]="c.status === 0" (click)="annotate(c, 'resolve')" [disabled]="busy()" data-testid="finance-recon-resolve">{{ t('fin_recon_resolve', 'Resolve with a note') }}</button>
+                    @if (c.status === 0) { <button type="button" class="tf-button" (click)="annotate(c, 'acknowledge')" [tfActionFeedback]="actionState('acknowledge:' + c.id)" [disabled]="busy()" data-testid="finance-recon-ack">{{ t('fin_recon_ack', 'I am investigating') }}</button> }
+                    <button type="button" class="tf-button" [class.tf-button-secondary]="c.status === 0" (click)="annotate(c, 'resolve')" [tfActionFeedback]="actionState('resolve:' + c.id)" [disabled]="busy()" data-testid="finance-recon-resolve">{{ t('fin_recon_resolve', 'Resolve with a note') }}</button>
                   </div>
                 }
               </li>
@@ -97,7 +99,7 @@ const FILTERS: readonly (readonly [number | null, string, string])[] = [
   styles: [FINANCE_STYLES, `
     .tf-fin-cases { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
     .tf-fin-case-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .tf-fin-case-head h2 { font-size: 14px; }
+    .tf-fin-case-head h2 { font-size: var(--type-body-sm-size); }
   `]
 })
 export class FinanceReconciliationPageComponent {
@@ -112,6 +114,8 @@ export class FinanceReconciliationPageComponent {
   readonly filter = signal<number | null>(null);
   readonly loading = signal(true);
   readonly busy = signal(false);
+  readonly activeAction = signal('');
+  actionState(key: string): 'busy' | 'idle' { return this.busy() && this.activeAction() === key ? 'busy' : 'idle'; }
   readonly error = signal('');
   readonly summary = signal<ReconciliationSummary | null>(null);
   readonly cases = signal<readonly ReconciliationCase[]>([]);
@@ -148,6 +152,7 @@ export class FinanceReconciliationPageComponent {
       confirmLabel: this.t('common_continue', 'Continue'), cancelLabel: this.t('common_cancel', 'Cancel')
     });
     if (note === null) return;
+    this.activeAction.set(action + ':' + c.id);
     this.busy.set(true);
     try {
       const updated = await this.gateway.annotate(c.id, action, note.trim(), c.version);

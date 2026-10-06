@@ -1,12 +1,6 @@
 <tf-workspace-shell role="Student" section="overview">
   @if (loading()) {
-    <div class="tf-home" data-state="loading" role="status" aria-live="polite">
-      <span class="tf-sr-only">{{ t('common_loading', 'Loading…') }}</span>
-      <p class="tf-home-greeting tf-skeleton"></p>
-      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-      <div class="tf-home-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-    </div>
+    <tf-skeleton kind="work" />
   } @else if (error()) {
     <div class="tf-state" data-state="error" data-testid="home-error" role="alert">
       <p class="tf-state-title">{{ t('sh_error', 'We couldn’t load your home.') }}</p>
@@ -46,7 +40,7 @@
             <strong>{{ t('sh_start_find', 'Find a teacher') }}</strong><span class="tf-home-start-card__go" aria-hidden="true"><tf-icon name="arrow-right" [size]="18" /></span>
             <span>{{ t('sh_start_find_body', 'Browse qualified teachers and ask the one you choose.') }}</span>
           </a>
-          <a class="tf-home-start-card" data-testid="home-post-request" routerLink="/requests/new">
+          <a class="tf-home-start-card" data-testid="home-post-request" routerLink="/requests/new/open">
             <span class="tf-home-start-card__icon" aria-hidden="true"><tf-icon name="file-plus" [size]="20" /></span>
             <strong>{{ t('sh_start_post', 'Post a request') }}</strong><span class="tf-home-start-card__go" aria-hidden="true"><tf-icon name="arrow-right" [size]="18" /></span>
             <span>{{ t('sh_start_post_body', 'Describe what you need, then ask one teacher or receive offers from several.') }}</span>
@@ -55,9 +49,10 @@
       </ng-template>
 
       @if (partial()) {
-        <p class="tf-alert" data-kind="error" data-testid="home-partial" role="status">
+        <p class="tf-alert tf-home-partial" data-kind="error" data-testid="home-partial" role="status">
           {{ t('sh_partial_error', 'Some of your items couldn’t load.') }}
-          <button type="button" class="tf-inline-action" (click)="refresh()">{{ t('common_retry', 'Retry') }}</button>
+          <button type="button" class="tf-button tf-button-secondary tf-button-sm tf-retry" (click)="refresh()"
+                  [disabled]="refreshing()" [attr.aria-busy]="refreshing()">{{ t('common_retry', 'Retry') }}</button>
         </p>
       }
 

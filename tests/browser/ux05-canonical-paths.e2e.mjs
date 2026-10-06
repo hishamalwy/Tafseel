@@ -1,6 +1,6 @@
 /* UX-05 end-to-end: one path per marketplace goal, and the old /requests links still arrive.
  *
- *   1. A student who opens /requests lands on the request-mode choice (/requests/new).
+ *   1. A student who opens /requests lands on the explanation form (/requests/new).
  *   2. A teacher who opens /requests lands on Open requests (/teacher/opportunities); the public
  *      header offers the teacher Open requests and the student Post a request.
  *   3. A stored /requests?requestId= link opens that request's own screen for each role; a value
@@ -36,20 +36,21 @@ async function noInlineMarketplace(page, where) {
   assert.equal(await page.locator(INLINE).count(), 0, `${where}: no Wave 2 inline marketplace control`);
 }
 
-await step('1. a student who opens /requests lands on the request-mode choice', async () => {
+await step('1. a student who opens /requests lands on the explanation form', async () => {
   const { page } = student;
   await registerStudent(student, `طالب UX-05 ${stamp}`, studentEmail, studentPassword);
   await visit(page, `${BASE}/ar/requests`);
-  await page.waitForURL(url => pathOf(url) === '/ar/requests/new', { timeout: 15000 });
-  await page.locator('[data-testid=request-modes]').waitFor({ timeout: 15000 });
+  await page.waitForURL(url => pathOf(url) === '/ar/requests/new/open', { timeout: 15000 });
+  await page.locator('#open-title').waitFor({ timeout: 15000 });
+  assert.equal(await page.locator('[data-testid=request-modes]').count(), 0);
   await noInlineMarketplace(page, 'student /requests');
-  await noHorizontalOverflow(page, 'request-mode choice');
+  await noHorizontalOverflow(page, 'explanation form');
 
   // Every link to the demand path on the public pages is the canonical one.
   await visit(page, `${BASE}/ar/`);
   assert.equal(await page.locator('a[href="/ar/requests"], a[href="/ar/requests/"]').count(), 0, 'no public link to the retired page');
-  assert.ok(await page.locator('a[href^="/ar/requests/new"]').count() > 0, 'the landing page links to the request-mode choice');
-  await shot(page, 'ux05-01-student-choice');
+  assert.ok(await page.locator('a[href^="/ar/requests/new"]').count() > 0, 'the landing page links to the explanation form');
+  await shot(page, 'ux05-01-student-explanation-form');
 });
 
 await step('2. a teacher who opens /requests lands on Open requests, and the header says so', async () => {

@@ -2,7 +2,7 @@
   <div class="tf-work">
     <h1>{{ title() }}</h1>
 
-    <div class="tf-work-chips" role="group" [attr.aria-label]="title()" data-testid="work-chips">
+    <div tfSegmented class="tf-work-chips" role="group" [attr.aria-label]="title()" data-testid="work-chips">
       @for (item of chips; track item) {
         <button type="button" class="tf-work-chip" data-testid="work-chip" [attr.data-chip]="item"
                 [attr.aria-pressed]="item === chip()" (click)="choose(item)">{{ chipLabel(item) }}</button>
@@ -10,21 +10,16 @@
     </div>
 
     @if (loading()) {
-      <div class="tf-work-list" data-state="loading" role="status" aria-live="polite">
-        <span class="tf-sr-only">{{ t('common_loading', 'Loading…') }}</span>
-        <div class="tf-work-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-        <div class="tf-work-card"><div class="tf-skeleton"></div><div class="tf-skeleton"></div></div>
-      </div>
+      <tf-skeleton kind="work" />
     } @else if (error()) {
-      <div class="tf-state" data-state="error" data-testid="work-error" role="alert">
-        <p class="tf-state-title">{{ t('work_error', 'We couldn’t load your items.') }}</p>
+      <tf-ui-state state="error" data-testid="work-error" [title]="t('work_error', 'We couldn’t load your items.')">
         <button type="button" class="tf-button" (click)="load()">{{ t('common_retry', 'Retry') }}</button>
-      </div>
+      </tf-ui-state>
     } @else {
       @if (partial()) {
         <p class="tf-alert" data-kind="error" data-testid="work-partial" role="status">
           {{ t('work_partial_error', 'Some of your items couldn’t load.') }}
-          <button type="button" class="tf-inline-action" (click)="load()">{{ t('common_retry', 'Retry') }}</button>
+          <button type="button" class="tf-button tf-button-secondary tf-button-sm tf-retry" (click)="load()">{{ t('common_retry', 'Retry') }}</button>
         </p>
       }
       @if (items().length) {
@@ -52,10 +47,12 @@
           }
         </div>
       } @else {
-        <p class="tf-work-empty" data-testid="work-empty">
-          {{ emptyText() }}
-          <a [routerLink]="startLink().path">{{ startLink().label }}</a>
-        </p>
+        <tf-ui-state data-testid="work-empty" [title]="emptyText()"
+                     [variant]="chip() === 'action' ? 'caught-up' : chip() === 'all' ? 'first-use' : 'filtered'"
+                     [body]="chip() === 'action' ? t('craft_caught_up', 'You are up to date. New items that need you will appear here.') : t('craft_work_empty', 'Your requests, orders and sessions will appear here as you get started.')">
+          @if (chip() !== 'all') { <button class="tf-button tf-button-secondary" type="button" (click)="choose('all')">{{ t('work_all', 'All') }}</button> }
+          <a class="tf-button tf-button-secondary" [routerLink]="startLink().path">{{ startLink().label }}</a>
+        </tf-ui-state>
       }
     }
   </div>

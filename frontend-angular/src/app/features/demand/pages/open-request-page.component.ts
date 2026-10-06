@@ -1,12 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { problemMessage } from '@core/http/problem-message';
 import { LocaleService } from '@core/i18n/locale.service';
-import { timeZoneLabel } from '@features/teacher-setup/models/availability';
+import { timeZoneLabel } from '@shared/utils/time-zones';
 import { FilePickerComponent, fileKindText, fileSizeText } from '@shared/components/file-picker.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
+import { injectUnsavedChanges } from '@shared/utils/unsaved-changes';
 import {
   Attachment, CatalogOption, Demand, DraftProblem, OPEN_REQUEST_FILE_LIMITS, OPEN_REQUEST_LIMITS, OpenRequestDraft, SavedOpenDraft
 } from '../models/demand';
@@ -27,9 +30,9 @@ const SAVE_DEBOUNCE_MS = 600;
 @Component({
   selector: 'tf-open-request-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, WorkspaceShellComponent, FilePickerComponent],
+  imports: [SkeletonComponent, FormsModule, WorkspaceShellComponent, FilePickerComponent],
   templateUrl: './open-request-page.component.html',
-  styleUrl: '../../../shared/styles/workspace-detail.css'
+  styleUrls: ['../../../shared/styles/workspace-detail.css', './open-request-page.component.css']
 })
 export class OpenRequestPageComponent {
   private readonly load = inject(LoadOpenRequestForm);
@@ -52,12 +55,26 @@ export class OpenRequestPageComponent {
   readonly form = signal<OpenRequestForm | null>(null);
   readonly draft = signal<OpenRequestDraft>(Demand.emptyOpenDraft());
   readonly saved = signal<SavedOpenDraft | null>(null);
+  readonly draftStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  private revision = 0;
+  private savedRevision = 0;
+  private fileRevision = 0;
+  private savingDraft: Promise<void> | undefined;
+  private disposed = false;
+  private published = false;
+  readonly unsavedChanges = injectUnsavedChanges(() => !this.published && this.revision > this.savedRevision);
   readonly attached = computed<readonly Attachment[]>(() => this.saved()?.attachments ?? []);
+  readonly serviceHint = computed(() => {
+    const service = this.form()?.serviceTypes.find(item => item.id === this.draft().serviceTypeId);
+    return (this.locale.isRtl() ? service?.descriptionArabic : service?.description)
+      || this.t('craft_request_service_hint', 'Choose the format you need; teachers will describe what their offer includes.');
+  });
   /** 'upload' shows only the file step; 'details' the full form with the files already attached. */
   readonly step = signal<'upload' | 'details'>('details');
   readonly uploading = signal(false);
   readonly fileError = signal('');
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
   readonly busy = signal(false);
   readonly error = signal('');
   readonly problems = computed(() => this.attempted() ? Demand.openProblems(this.draft(), Date.now()) : {});
@@ -65,7 +82,11 @@ export class OpenRequestPageComponent {
   private saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    inject(Title).setTitle(`${this.t('open_request_title', 'Post an open request')} — Tafseel`);
+    inject(DestroyRef).onDestroy(() => {
+      this.disposed = true;
+      if (this.saveTimer) clearTimeout(this.saveTimer);
+    });
+    inject(Title).setTitle(`${this.t('open_request_title', 'Request an explanation')} — Tafseel`);
     if (inject(ActivatedRoute).snapshot.queryParamMap.get('start') === 'upload') this.step.set('upload');
     void this.refresh();
   }
@@ -89,6 +110,8 @@ export class OpenRequestPageComponent {
       ...d,
       [field]: field === 'budgetMin' || field === 'budgetMax' ? (value === '' || value === null ? null : Number(value)) : String(value ?? '')
     }));
+    this.revision++;
+    this.draftStatus.set('saving');
     this.scheduleSave();
   }
 
@@ -100,6 +123,7 @@ export class OpenRequestPageComponent {
       this.form.set(form);
       if (saved) {
         this.saved.set(saved);
+        this.draftStatus.set('saved');
         if (!Demand.isBlank(saved.fields)) this.draft.set(saved.fields);
       }
     }
@@ -111,6 +135,7 @@ export class OpenRequestPageComponent {
   async upload(chosen: File[]): Promise<void> {
     if (this.uploading()) return;
     this.uploading.set(true);
+    this.fileRevision++;
     this.fileError.set('');
     const refused: string[] = [];
     try {
@@ -122,6 +147,7 @@ export class OpenRequestPageComponent {
         }
       }
     } finally {
+      this.fileRevision++;
       this.uploading.set(false);
       this.fileError.set(refused.join(' '));
     }
@@ -130,10 +156,11 @@ export class OpenRequestPageComponent {
   async remove(file: Attachment): Promise<void> {
     if (this.uploading()) return;
     this.uploading.set(true);
+    this.fileRevision++;
     this.fileError.set('');
     try { this.saved.set(await this.drafts.remove(file.id)); }
     catch (error) { this.fileError.set(problemMessage(error, (k, f) => this.t(k, f)).text); }
-    finally { this.uploading.set(false); }
+    finally { this.fileRevision++; this.uploading.set(false); }
   }
 
   continueToDetails(): void {
@@ -144,11 +171,13 @@ export class OpenRequestPageComponent {
     if (this.busy() || this.uploading()) return;
     this.attempted.set(true);
     this.error.set('');
-    if (Object.keys(Demand.openProblems(this.draft(), Date.now())).length) return;
+    if (Object.keys(Demand.openProblems(this.draft(), Date.now())).length) return this.focusFirstInvalid();
     this.busy.set(true);
     if (this.saveTimer) clearTimeout(this.saveTimer);
     try {
+      await this.savingDraft;
       const created = await this.publish.execute(this.draft(), this.saved()?.id ?? null);
+      this.published = true;
       await this.router.navigate(['/requests', created.id]);
     } catch (error) {
       // The draft and its files stay exactly as they were: nothing is lost by a refused publish.
@@ -160,12 +189,27 @@ export class OpenRequestPageComponent {
 
   private scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => {
-      if (this.busy()) return;
-      this.drafts.save(this.draft())
-        .then(saved => this.saved.set(saved))
-        .catch(() => { /* A failed autosave is retried by the next change; publishing does not depend on it. */ });
-    }, SAVE_DEBOUNCE_MS);
+    this.saveTimer = setTimeout(() => { void this.saveDraft(); }, SAVE_DEBOUNCE_MS);
+  }
+
+  async saveDraft(): Promise<void> {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    if (this.disposed || this.busy()) return;
+    if (this.savingDraft) { await this.savingDraft; return; }
+    const revision = this.revision, files = this.fileRevision, filesChanging = this.uploading();
+    this.draftStatus.set('saving');
+    this.savingDraft = this.drafts.save(this.draft()).then(saved => {
+      if (this.disposed) return;
+      this.saved.update(current => ({ ...saved,
+        attachments: filesChanging || files !== this.fileRevision ? current?.attachments ?? saved.attachments : saved.attachments
+      }));
+      this.savedRevision = revision;
+      this.draftStatus.set(revision === this.revision ? 'saved' : 'saving');
+    }).catch(() => { if (!this.disposed) this.draftStatus.set('error'); }).finally(() => {
+      this.savingDraft = undefined;
+      if (!this.disposed && !this.busy() && this.revision > revision) this.scheduleSave();
+    });
+    await this.savingDraft;
   }
 
   private refusal(error: FileRefused): string {

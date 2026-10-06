@@ -32,11 +32,18 @@ export class LocaleService {
 
   private readonly current = signal<Lang>(this.initial());
   private readonly tables = signal<Readonly<Partial<Record<Lang, Table>>>>({});
+  private readonly loading = new Map<Lang, Promise<void>>();
+  private selection = 0;
 
   readonly lang = this.current.asReadonly();
   readonly dir = computed<'rtl' | 'ltr'>(() => (this.current() === 'ar' ? 'rtl' : 'ltr'));
   readonly isRtl = computed(() => this.current() === 'ar');
   readonly ready = computed(() => this.tables()[this.current()] !== undefined);
+
+  /** Server-only dictionaries are supplied before prerendering, without bundling them in the client. */
+  seed(lang: Lang, table: Table): void {
+    this.tables.update(t => ({ ...t, [lang]: table }));
+  }
 
   constructor() {
     effect(() => {
@@ -73,32 +80,40 @@ export class LocaleService {
    * every link, reload and share from it came back in English. Without a prefix
    * (`ng serve`) there is only one bundle, and the switch stays in place.
    */
-  set(lang: Lang): void {
-    this.prefs.write(STORAGE_KEY, lang);
+  async set(lang: Lang): Promise<void> {
+    const selection = ++this.selection;
     const prefixed = this.urlLocale();
     const location = this.document.defaultView?.location;
     if (prefixed && prefixed !== lang && location) {
+      this.prefs.write(STORAGE_KEY, lang);
       const rest = location.pathname.replace(/^\/(ar|en)(?=\/|$)/i, '');
       location.assign(`/${lang}${rest || '/'}${location.search}${location.hash}`);
       return;
     }
-    this.current.set(lang);
+    // Commit copy, direction and navigation labels together. A delayed or failed
+    // dictionary must never leave a translated page under an English header.
+    await this.load(lang);
+    if (selection === this.selection && this.tables()[lang]) {
+      this.current.set(lang);
+      this.prefs.write(STORAGE_KEY, lang);
+    }
   }
 
-  toggle(): void {
-    this.set(this.current() === 'ar' ? 'en' : 'ar');
+  toggle(): Promise<void> {
+    return this.set(this.current() === 'ar' ? 'en' : 'ar');
   }
 
   async load(lang: Lang): Promise<void> {
     if (this.tables()[lang]) return;
-    try {
-      const table = await firstValueFrom(this.http.get<Table>(`locale/${lang}.json`));
-      this.tables.update(t => ({ ...t, [lang]: table }));
-    } catch {
-      // A missing table must not blank the UI: t() falls back to the inline
-      // English the template already carries.
-      this.tables.update(t => ({ ...t, [lang]: {} }));
-    }
+    const pending = this.loading.get(lang);
+    if (pending) return pending;
+    const request = firstValueFrom(this.http.get<Table>(`locale/${lang}.json`))
+      .then(table => { this.tables.update(t => ({ ...t, [lang]: table })); })
+      // Keep the current language and allow the next attempt to retry.
+      .catch(() => {})
+      .finally(() => { this.loading.delete(lang); });
+    this.loading.set(lang, request);
+    return request;
   }
 
   /** The language the address is under, or null where there is no prefix. */

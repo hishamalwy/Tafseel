@@ -89,7 +89,7 @@ async function registerTeacher(actor, fullName, email, password) {
   assert.ok((await registered).ok(), 'registration accepted');
   await page.waitForURL(url => pathOf(url).endsWith('/auth/confirm-email'), { timeout: 15000 });
   await visit(page, await outboxLink(email, 'mode=confirm'));
-  await page.locator('.tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('[data-testid=auth-notice], .tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
   await page.locator('#login-email').fill(email);
   await page.locator('#login-password').fill(password);
   await page.locator('form button[type=submit]').first().click();

@@ -26,11 +26,11 @@ async function header(roles: readonly string[]) {
 }
 
 describe('PublicHeaderComponent', () => {
-  it('posts a request through the request-mode choice, and gives a teacher Open requests instead (UX-05)', async () => {
+  it('opens the explanation form directly, labels it as help, and gives a teacher Open requests instead', async () => {
     for (const roles of [[], ['Student']]) {
       const link = (await header(roles)).querySelector('[data-testid=header-demand-link]')!;
-      expect(link.getAttribute('href')).toBe('/requests/new');
-      expect(link.textContent?.trim()).toBe('Post a Request');
+      expect(link.getAttribute('href')).toBe('/requests/new/open');
+      expect(link.textContent?.trim()).toBe('Get help');
     }
     const teacher = await header(['Teacher']);
     const link = teacher.querySelector('[data-testid=header-demand-link]')!;
@@ -38,6 +38,24 @@ describe('PublicHeaderComponent', () => {
     expect(link.textContent?.trim()).toBe('Open requests');
     const hrefs = [...teacher.querySelectorAll('a')].map(a => a.getAttribute('href'));
     expect(hrefs).not.toContain('/requests');
+  });
+
+  it('offers one primary call to action to visitors, then removes it after sign-in', async () => {
+    const visitor = await header([]);
+    for (const id of ['header-cta', 'menu-cta']) {
+      const cta = visitor.querySelector(`[data-testid=${id}]`)!;
+      expect(cta.textContent?.trim()).toBe('Get started');
+      expect(cta.getAttribute('href')).toBe('/auth?mode=register&role=student');
+      expect(cta.classList.contains('tf-button')).toBe(true);
+    }
+    const studentPage = await header(['Student']);
+    expect(studentPage.querySelector('[data-testid=header-cta]')).toBeNull();
+    expect(studentPage.querySelector('[data-testid=menu-cta]')).toBeNull();
+    for (const roles of [['Teacher'], ['Admin'], ['Finance']]) {
+      const page = await header(roles);
+      expect(page.querySelector('[data-testid=header-cta]')).toBeNull();
+      expect(page.querySelector('[data-testid=menu-cta]')).toBeNull();
+    }
   });
 
   it('renders an identifiable menu control and keeps its state in sync', async () => {
@@ -66,5 +84,15 @@ describe('PublicHeaderComponent', () => {
     fixture.detectChanges();
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(fixture.nativeElement.querySelector('#test-public-menu')?.getAttribute('data-public-menu')).toBe('open');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(button);
+
+    button.click();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    expect(button.getAttribute('aria-expanded')).toBe('false');
   });
 });

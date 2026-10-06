@@ -107,7 +107,7 @@
               <form class="tf-form" (ngSubmit)="isTeacher() ? askClarification() : reply()" novalidate>
                 <div class="tf-field">
                   <label for="request-message">{{ isTeacher() ? t('demand_ask_label', 'Ask the student') : t('demand_reply_label', 'Your answer') }}</label>
-                  <textarea id="request-message" name="message" rows="3" maxlength="2000" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
+                  <textarea autocomplete="off" id="request-message" name="message" rows="3" maxlength="2000" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
                 </div>
                 @if (!isTeacher()) {
                   <tf-file-picker inputId="reply-files" [multiple]="true" [accept]="fileAccept" [compact]="true" testId="reply-files"

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, timeout } from 'rxjs';
 import { CatalogService, FeaturedSubject, FeaturedTeacher, PlatformStats } from '../models/featured';
 import {
   CAMPAIGN_MEMORY, JourneyOffer, LANDING_GATEWAY, STUDENT_JOURNEY_GATEWAY
@@ -19,36 +19,34 @@ export interface LandingContent {
 /**
  * The five public reads, settled independently.
  *
- * `allSettled` rather than `all` on purpose: a failing promotions endpoint must
- * not blank the teachers section. Each part answers `null` when it failed, which
- * the page renders as its own empty state rather than as an empty result — the
- * two mean different things to a visitor.
+ * Publish each section as it settles; optional reads must not hide ready
+ * discovery content. Failed reads are null, successful empty lists stay empty.
  */
 @Injectable({ providedIn: 'root' })
 export class LoadLandingContent {
   private readonly gateway = inject(LANDING_GATEWAY);
 
-  async execute(): Promise<LandingContent> {
-    const settled = await Promise.allSettled([
-      firstValueFrom(this.gateway.featuredSubjects(4)),
-      firstValueFrom(this.gateway.featuredTeachers(3)),
-      firstValueFrom(this.gateway.services()),
-      firstValueFrom(this.gateway.promotions()),
-      firstValueFrom(this.gateway.platformStats())
-    ] as const);
-
-    const at = <T>(index: number): T | null => {
-      const result = settled[index];
-      return result?.status === 'fulfilled' ? (result.value as T) : null;
+  async execute(publish?: (section: Partial<LandingContent>) => void): Promise<LandingContent> {
+    const settle = async <K extends keyof LandingContent>(
+      key: K, request: Observable<LandingContent[K]>, fallback: LandingContent[K]
+    ): Promise<LandingContent[K]> => {
+      let value: LandingContent[K];
+      try {
+        value = await firstValueFrom(request.pipe(timeout(10_000)));
+      } catch {
+        value = fallback;
+      }
+      publish?.({ [key]: value } as Partial<LandingContent>);
+      return value;
     };
-
-    return {
-      subjects: at<readonly FeaturedSubject[]>(0),
-      teachers: at<readonly FeaturedTeacher[]>(1),
-      services: at<readonly CatalogService[]>(2),
-      promotions: at<readonly Promotion[]>(3) ?? [],
-      stats: at<PlatformStats>(4)
-    };
+    const [subjects, teachers, services, promotions, stats] = await Promise.all([
+      settle('subjects', this.gateway.featuredSubjects(4), null),
+      settle('teachers', this.gateway.featuredTeachers(3), null),
+      settle('services', this.gateway.services(), null),
+      settle('promotions', this.gateway.promotions(), []),
+      settle('stats', this.gateway.platformStats(), null)
+    ]);
+    return { subjects, teachers, services, promotions, stats };
   }
 }
 

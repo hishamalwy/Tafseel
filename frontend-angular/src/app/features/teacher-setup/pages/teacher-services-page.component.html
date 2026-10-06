@@ -10,11 +10,12 @@
       <a class="tf-button tf-button-ghost" routerLink="/teacher/publication">{{ t('setup_publication_title', 'Publication') }}</a>
     </div>
   </header>
+  @if (successNotice()) { <tf-ui-state state="success" variant="confirmation" [compact]="true" [title]="successNotice()" /> }
 
   <tf-setup-progress current="services" />
 
   @if (loading() && !workspace()) {
-    <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+    <tf-skeleton kind="work" />
   } @else if (loadError() && !workspace()) {
     <div class="tf-state" data-state="error" role="alert">
       <p class="tf-state-title">{{ t('setup_services_failed', 'Your services could not be loaded.') }}</p>
@@ -87,7 +88,7 @@
   }
 
   <ng-template #termsForm let-type>
-    <form class="tf-form tf-offer-form" (ngSubmit)="submit(type)" novalidate data-testid="offering-form">
+    <form animate.enter="tf-motion-enter" class="tf-form tf-offer-form" (ngSubmit)="submit(type)" novalidate data-testid="offering-form">
       @if (editor()?.mode === 'create') {
         <div class="tf-field">
           <label for="offer-subject">{{ t('apply_subject', 'Subject') }}</label>
@@ -104,7 +105,7 @@
             ? locale.format('setup_price_in', { currency: fmt.currencyLabel(type.currency) }, 'Price ({currency})')
             : locale.format('setup_price_per_hour_in', { currency: fmt.currencyLabel(type.currency) }, 'Price per hour ({currency})') }}</label>
           @if (!ServiceOffer.isAsync(type)) { <small class="tf-muted">{{ t('setup_price_per_hour_help', 'Students pay this for each hour; a 30-minute session costs half.') }}</small> }
-          <input id="offer-price" name="price" type="number" inputmode="decimal" step="0.01" [attr.min]="type.minPrice" [attr.max]="type.maxPrice"
+          <input autocomplete="off" id="offer-price" name="price" type="number" inputmode="decimal" step="0.01" [attr.min]="type.minPrice" [attr.max]="type.maxPrice"
                  [ngModel]="terms().price" (ngModelChange)="setTerm('price', $event)" [attr.aria-invalid]="!!problem('price', type)" [attr.aria-describedby]="problem('price', type) ? 'offer-price-error' : null">
           @if (problem('price', type)) { <span id="offer-price-error" class="tf-field-error">{{ problem('price', type) }}</span> }
         </div>
@@ -132,16 +133,16 @@
       <div class="tf-grid-2">
         <div class="tf-field">
           <label for="offer-approach-en">{{ t('setup_approach_en', 'How you teach it (English, optional)') }}</label>
-          <textarea id="offer-approach-en" name="approachEn" dir="ltr" [attr.maxlength]="approachMax" [ngModel]="terms().approachEn" (ngModelChange)="setTerm('approachEn', $event)"></textarea>
+          <textarea autocomplete="off" id="offer-approach-en" name="approachEn" dir="ltr" [attr.maxlength]="approachMax" [ngModel]="terms().approachEn" (ngModelChange)="setTerm('approachEn', $event)"></textarea>
         </div>
         <div class="tf-field">
           <label for="offer-approach-ar">{{ t('setup_approach_ar', 'How you teach it (Arabic, optional)') }}</label>
-          <textarea id="offer-approach-ar" name="approachAr" dir="rtl" [attr.maxlength]="approachMax" [ngModel]="terms().approachAr" (ngModelChange)="setTerm('approachAr', $event)"></textarea>
+          <textarea autocomplete="off" id="offer-approach-ar" name="approachAr" dir="rtl" [attr.maxlength]="approachMax" [ngModel]="terms().approachAr" (ngModelChange)="setTerm('approachAr', $event)"></textarea>
         </div>
       </div>
       @if (formError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="offering-error">{{ formError() }}</div> }
       <div class="tf-form-actions">
-        <button type="submit" class="tf-button" data-testid="save-offering" [disabled]="!!busy()">{{ busy() ? t('common_saving', 'Saving…') : (editor()?.mode === 'create' ? t('setup_create_service', 'Create service') : t('common_save', 'Save')) }}</button>
+        <button type="submit" class="tf-button" [tfActionFeedback]="busy() ? 'busy' : 'idle'" data-testid="save-offering" [disabled]="!!busy()">{{ busy() ? t('common_saving', 'Saving…') : (editor()?.mode === 'create' ? t('setup_create_service', 'Create service') : t('common_save', 'Save')) }}</button>
         <button type="button" class="tf-button tf-button-ghost" (click)="close()">{{ t('common_cancel', 'Cancel') }}</button>
       </div>
     </form>

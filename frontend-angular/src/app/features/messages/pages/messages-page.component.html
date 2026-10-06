@@ -12,7 +12,7 @@
     <section class="tf-profile-editor-card tf-inbox-panel" aria-labelledby="inbox-title">
       <div><h2 id="inbox-title">{{ t('messages_inbox', 'Conversations') }}</h2></div>
       @if (loadingList()) {
-        <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+        <tf-skeleton kind="work" />
       } @else if (listError()) {
         <div class="tf-alert" data-kind="error" role="alert">{{ listError() }}</div>
         <button type="button" class="tf-button tf-button-secondary" (click)="reloadList()">{{ t('common_retry', 'Retry') }}</button>
@@ -29,7 +29,7 @@
           }
         </ul>
       } @else {
-        <p class="tf-muted">{{ t('messages_empty', 'No conversations yet. Open an order or a session to message the other person.') }}</p>
+        <tf-ui-state icon="message" [compact]="true" [title]="t('craft_messages_empty_title', 'Your conversations start here')" [body]="t('messages_empty', 'No conversations yet. Open an order or a session to message the other person.')"><a class="tf-button tf-button-secondary" [routerLink]="workspacePath()">{{ t('craft_open_workspace', 'Open my workspace') }}</a></tf-ui-state>
       }
     </section>
 
@@ -56,11 +56,11 @@
         @if (threadError()) {
           <div class="tf-alert" data-kind="error" role="alert" data-testid="thread-error">{{ threadError() }}</div>
         } @else if (loadingThread() && !messages().length) {
-          <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+          <tf-skeleton kind="work" />
         } @else {
           <ol class="tf-thread" #thread data-testid="thread" aria-live="polite">
             @for (item of messages(); track item.id) {
-              <li class="tf-bubble" data-testid="message" [attr.data-mine]="item.senderId === viewerId()" [attr.data-message-id]="item.id">
+              <li class="tf-bubble" [class.tf-message-arrive]="arriving().has(item.id)" data-testid="message" [attr.data-mine]="item.senderId === viewerId()" [attr.data-message-id]="item.id">
                 <p>{{ item.body }}</p>
                 @for (file of item.attachments; track file.id) {
                   <button type="button" class="tf-button tf-button-ghost tf-button-sm" data-testid="message-attachment" (click)="openAttachment(file)">{{ file.name }}</button>
@@ -75,7 +75,7 @@
           <form class="tf-form" #composer (ngSubmit)="send(composer)" novalidate data-testid="composer">
             <div class="tf-field">
               <label for="message-body">{{ t('messages_write', 'Write a message') }}</label>
-              <textarea id="message-body" name="body" rows="3" [attr.maxlength]="limits.body" [ngModel]="draft()" (ngModelChange)="draft.set($event)"></textarea>
+              <textarea autocomplete="off" id="message-body" name="body" rows="3" [attr.maxlength]="limits.body" [ngModel]="draft()" (ngModelChange)="draft.set($event)"></textarea>
             </div>
             <div class="tf-field">
               <tf-file-picker inputId="message-file" [compact]="true" accept=".pdf,.png,.jpg,.jpeg,.docx,.pptx,.zip"
@@ -83,7 +83,7 @@
                               [files]="file() ? [file()!] : []" (picked)="pickFile($event)" (removed)="removeFile()" />
             </div>
             @if (sendError()) { <div class="tf-alert" data-kind="error" role="alert" data-testid="send-error">{{ sendError() }}</div> }
-            <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="send-message" [disabled]="sending()">{{ sending() ? t('common_saving', 'Saving…') : t('demand_send', 'Send') }}</button></div>
+            <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="send-message" [disabled]="sending()" [tfActionFeedback]="sending() ? 'busy' : 'idle'">{{ sending() ? t('craft_sending', 'Sending…') : t('demand_send', 'Send') }}</button></div>
           </form>
         }
       }

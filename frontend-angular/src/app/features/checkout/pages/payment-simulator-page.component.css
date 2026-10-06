@@ -61,26 +61,26 @@
 /* In dark mode the page, the stage and --surface are all dark; the paper is lifted so it still reads as paper. */
 :host-context(html[data-theme='dark']) .tf-sim-slip { background: color-mix(in oklab, var(--surface) 84%, var(--brand-bone)); }
 :host-context(html[data-theme='dark']) .tf-sim-done__stage { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand-bone) 10%, transparent); }
-.tf-sim-slip__label { margin: 0; color: var(--text-2); font-size: 12px; font-weight: 700; text-align: center; }
+.tf-sim-slip__label { margin: 0; color: var(--text-2); font-size: var(--type-meta-size); font-weight: 700; text-align: center; }
 .tf-sim-slip__amount { margin: 4px 0 18px; font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.03em; text-align: center; }
 .tf-sim-slip__rows { display: grid; margin: 0; border-block-start: 2px dashed var(--border-strong); }
 .tf-sim-slip__rows div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-block: 11px; border-block-end: 1px dashed var(--border); }
 .tf-sim-slip__rows div:last-child { border-block-end: 0; }
-.tf-sim-slip__rows dt { flex: none; color: var(--text-2); font-size: 13px; }
-.tf-sim-slip__rows dd { min-inline-size: 0; margin: 0; font-size: 14px; font-weight: 700; text-align: end; overflow-wrap: anywhere; }
+.tf-sim-slip__rows dt { flex: none; color: var(--text-2); font-size: var(--type-label-size); }
+.tf-sim-slip__rows dd { min-inline-size: 0; margin: 0; font-size: var(--type-body-sm-size); font-weight: 700; text-align: end; overflow-wrap: anywhere; }
 .tf-sim-slip__ok { display: inline-flex; align-items: center; gap: 6px; color: var(--success); }
 .tf-sim-slip__ok::before { content: ''; inline-size: 8px; block-size: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in oklab, var(--success) 20%, transparent); }
 
 .tf-sim-done__actions { display: grid; gap: 10px; margin-block-start: 4px; animation: tf-sim-rise .5s 1.9s var(--sim-ease) both; }
 .tf-sim-return { display: grid; gap: 8px; }
-.tf-sim-return p { margin: 0; color: var(--text-2); font-size: 13px; text-align: center; }
+.tf-sim-return p { margin: 0; color: var(--text-2); font-size: var(--type-label-size); text-align: center; }
 .tf-sim-return strong { color: var(--text); font-variant-numeric: tabular-nums; }
 .tf-sim-return__bar { display: block; block-size: 4px; overflow: hidden; border-radius: 4px; background: var(--surface-2); }
 .tf-sim-return__bar i { display: block; block-size: 100%; border-radius: inherit; background: var(--primary); transform-origin: left center; animation: tf-sim-drain linear both; animation-delay: 0s; }
 :host-context([dir='rtl']) .tf-sim-return__bar i { transform-origin: right center; }
 .tf-sim-done .tf-pay-primary-link, .tf-sim-done .tf-pay-secondary-link { block-size: 50px; inline-size: 100%; cursor: pointer; transition: transform .2s var(--sim-ease), box-shadow .2s ease; }
 .tf-sim-done .tf-pay-primary-link { border: 0; font: inherit; font-weight: 700; }
-.tf-sim-done .tf-pay-primary-link:hover { transform: translateY(-2px); box-shadow: 0 12px 28px color-mix(in oklab, var(--primary) 24%, transparent); }
+@media (hover:hover) and (pointer:fine){.tf-sim-done .tf-pay-primary-link:hover { transform: translateY(-2px); box-shadow: 0 12px 28px color-mix(in oklab, var(--primary) 24%, transparent); } }
 .tf-sim-done .tf-pay-primary-link:focus-visible, .tf-sim-done .tf-pay-secondary-link:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 
 @keyframes tf-sim-orbit { to { transform: translateY(-50%) rotate(360deg); } }

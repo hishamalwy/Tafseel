@@ -30,10 +30,10 @@
           <div class="tf-grid-2">
             <div class="tf-field"><label for="apply-subject">{{ t('apply_subject', 'Subject') }}</label><select id="apply-subject" name="subject" [ngModel]="subjectId()" (ngModelChange)="changeSubject($event)" required>@for (item of selectedSubjects(); track item.id) { <option [value]="item.id" [disabled]="item.disabled">{{ label(item) }}{{ item.reason ? ' — ' + t(item.reason, '') : '' }}</option> }</select></div>
             <div class="tf-field"><label for="apply-topic">{{ t('apply_topic', 'Qualification topic') }}</label><select id="apply-topic" name="topic" [ngModel]="topicId()" (ngModelChange)="topicId.set($event)" required>@for (item of topics(); track item.id) { <option [value]="item.id">{{ topicLabel(item) }}</option> }</select></div>
-            <div class="tf-field"><label for="apply-city">{{ t('apply_city', 'City') }}</label><input id="apply-city" name="city" [ngModel]="city()" (ngModelChange)="city.set($event)" maxlength="150" required></div>
-            <div class="tf-field"><label for="apply-years">{{ t('apply_years', 'Years of experience') }}</label><input id="apply-years" name="years" type="number" [ngModel]="years()" (ngModelChange)="years.set($event)" min="0" max="80" required></div>
+            <div class="tf-field"><label for="apply-city">{{ t('apply_city', 'City') }}</label><input autocomplete="address-level2" id="apply-city" name="city" [ngModel]="city()" (ngModelChange)="city.set($event)" maxlength="150" required></div>
+            <div class="tf-field"><label for="apply-years">{{ t('apply_years', 'Years of experience') }}</label><input autocomplete="off" id="apply-years" name="years" type="number" [ngModel]="years()" (ngModelChange)="years.set($event)" min="0" max="80" required></div>
           </div>
-          <fieldset><legend>{{ t('apply_languages', 'Teaching languages') }}</legend><div class="tf-chip-row">@for (language of ws.languages; track language.id) { <label class="tf-lang-chip"><input type="checkbox" [checked]="checked(language.id)" (change)="toggleLanguage(language.id, $any($event.target).checked)"><span>{{ languageName(language) }}</span></label> }</div></fieldset>
+          <fieldset class="tf-field"><legend>{{ t('apply_languages', 'Teaching languages') }}</legend><div class="tf-chip-row">@for (language of ws.languages; track language.id) { <label class="tf-lang-chip"><input type="checkbox" [checked]="checked(language.id)" (change)="toggleLanguage(language.id, $any($event.target).checked)"><span>{{ languageName(language) }}</span></label> }</div></fieldset>
           @if (missingDetails(); as missing) {
             <p class="tf-alert" data-kind="warning" role="alert" data-testid="apply-missing">{{ missing }}</p>
           }

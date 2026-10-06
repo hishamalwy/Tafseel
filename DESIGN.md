@@ -31,8 +31,6 @@ colors:
   surface-2: "#F4F2ED"
   text-2: "#625E66"
   muted: "#625E66"
-  ink-2: "#625E66"
-  ink-3: "#625E66"
   primary-soft: "#F0EEF7"
   accent-soft: "#DFE9EE"
   success-soft: "#DFF8E6"
@@ -77,29 +75,12 @@ typography:
     body-sm: "14px"
     body: "15px"
     body-lg: "16px"
-    lead: "17px"
-    subtitle: "18px"
-    title-3xs: "19px"
-    title-2xs: "20px"
-    title-xs: "21px"
-    title-sm: "22px"
-    title-sm-alt: "23px"
-    title: "24px"
-    title-lg: "25px"
-    heading-xs: "26px"
-    heading-sm: "27px"
-    heading-sm-alt: "28px"
-    heading-md-alt: "29px"
-    heading-md: "30px"
-    heading-lg-alt: "31px"
-    heading-lg: "32px"
-    heading-xl: "34px"
-    display-2xs: "36px"
-    display-xs: "38px"
-    display-sm: "40px"
-    display-md: "46px"
-    display-lg: "52px"
-    display-xl: "60px"
+    item-title: "16px"
+    section-title: "19px"
+    title: "22px"
+    figure: "28px"
+    page-title: "clamp(24px, 2.2vw, 32px)"
+    display: "clamp(2.25rem, 5vw, 4.75rem)"
 rounded:
   xs: "4px"
   sm-tight: "6px"
@@ -186,10 +167,35 @@ unused there — a dark shadow on a dark canvas reads as mud.
 
 ### Typography Roles
 
-A page picks a **role**, never a pixel size. Nine roles, all drawn from the `typography.scale` ramp.
+A page picks a **role**, never a pixel size. Twelve roles on one ramp —
+11 · 12 · 13 · 14 · 15 · 16 · 19 · 22 · 28, plus the fluid `page-title` and `display`.
 
-`display` · `page-title` · `section-title` · `item-title` · `body` · `body-sm` · `label` · `meta` ·
-`caption` — plus `numeric` for tabular figures.
+`display` · `page-title` · `figure` · `title` · `section-title` · `item-title` · `body-lg` · `body` ·
+`body-sm` · `label` · `meta` · `caption` — plus `numeric` for tabular figures.
+
+| Role | Size | Use |
+| ---- | ---- | --- |
+| `figure` | 28px | the number a screen is about: a balance, a queue count |
+| `title` | 22px | a card's headline amount, a focused panel's title |
+| `section-title` | 19px | a section heading inside a page |
+| `item-title` | 16px | a card or list item heading |
+| `body-lg` | 16px | controls and calls to action (16px is also iOS's no-zoom floor for inputs) |
+
+A size between two steps is a rounding of one of them, never a new step: the old 30-step inventory
+(17, 18, 20, 21, 23, 25, 26, 27, 29…) is retired. Component styles hold no raw `font-size: Npx`;
+they consume `var(--type-<role>-size)`, and so does every operational rule in `css/tafseel.css`.
+The one exception is editorial display type of 23px and up on Persuade surfaces — the auth brand
+panel, a profile's headline price, the landing and marketplace heroes — where the size is the
+composition, not a step on the reading ramp.
+
+**Secondary text has two names because it has two steps.** `--text-2` is secondary text (a
+description, a supporting line); `--muted` is the quieter step below it (metadata, captions,
+placeholders). They share `#625E66` in Light, but Dark separates them (82% and 68% of the bone ink),
+so they are not aliases and must not be swapped. There is no `--ink-2` or `--ink-3`.
+
+**Tokens live in one place.** `css/tafseel.css` has exactly one top-level `:root` block and one
+`html[data-theme="dark"]` block; a family's tokens are a labelled group inside them, not a second
+`:root` further down the file.
 
 Consumed as `.tf-type-*` classes or the `--type-*` tokens. The display face is confined to `display`
 and `page-title`; dense tables, metadata, labels and form controls stay in Thmanyah Sans. Weights
@@ -236,7 +242,18 @@ the product.
 ### Motion
 
 `--motion-fast` (120ms) · `--motion-normal` (220ms) · `--motion-slow` (320ms), `--ease-out` by
-default. `prefers-reduced-motion: reduce` collapses all of it globally.
+default. Animate `transform` and `opacity` only: a progress fill scales (`scaleX`/`scaleY`), it is
+never resized by `width` or `height`.
+
+**Reduced motion is per component, not a global kill switch.** There is no global
+`prefers-reduced-motion` rule, on purpose: a blanket `animation-duration: 0.01ms` also removes the
+feedback that explains a state change. Every component that moves owns a
+`@media (prefers-reduced-motion: reduce)` block next to its motion that removes travel (translate,
+scale, rotation, stagger) and keeps what carries meaning — opacity and colour changes, and a busy
+spinner, which is state rather than decoration.
+
+**Hover is for pointers.** Every `:hover` rule sits inside `@media (hover:hover) and (pointer:fine)`,
+so a tap on a phone never leaves a card lifted or a row shifted. Focus styles stay outside it.
 
 ### Breakpoints
 

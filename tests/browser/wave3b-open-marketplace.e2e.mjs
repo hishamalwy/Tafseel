@@ -10,6 +10,7 @@
  * and payment creates exactly one order. The database is only read.
  */
 import assert from 'node:assert/strict';
+import { join } from 'node:path';
 import {
   BASE, SEED, api, attribute, confirmDialog, context, finish, noHorizontalOverflow, pathOf, payInSimulator, registerStudent,
   shot, signIn, spa, sql, start, step, visit, waitForCall
@@ -44,13 +45,12 @@ async function sendOffer(actor, amount, hours, revisions, message) {
   return response;
 }
 
-await step('J4-01 student chooses an open request and publishes it from the real catalog', async () => {
+await step('J4-01 student opens the explanation form directly and publishes from the real catalog', async () => {
   const { page } = student;
   await registerStudent(student, `Wave3B Open Student ${stamp}`, studentEmail, studentPassword);
-  await spa(student, '/requests/new');
-  await page.locator('[data-testid=request-modes]').waitFor({ timeout: 15000 });
-  assert.equal(await page.locator('[data-testid=request-mode-direct]').getAttribute('href'), '/en/teachers/');
-  await page.locator('[data-testid=request-mode-open]').click();
+  await spa(student, '/requests/new/open');
+  await page.locator('#open-title').waitFor({ timeout: 15000 });
+  assert.equal(await page.locator('[data-testid=request-modes]').count(), 0);
   await page.waitForURL(url => pathOf(url) === '/en/requests/new/open', { timeout: 15000 });
 
   // Nothing is filled in for the student: publishing empty is refused on the page.
@@ -134,8 +134,31 @@ await step('J4-06 student compares the offers as the teachers wrote them, withou
   await page.waitForURL(url => pathOf(url) === `/en/requests/${requestId}/offers`, { timeout: 15000 });
   await page.locator('[data-testid=offer]').nth(1).waitFor({ timeout: 15000 });
   assert.equal(await page.locator('[data-testid=offer]').count(), 2);
+  await page.getByRole('button', { name: 'Show comparison' }).click();
+  await page.locator('#offer-comparison tbody tr').first().waitFor();
+  assert.equal(await page.locator('#offer-comparison tbody tr').count(), 2);
+  await noHorizontalOverflow(page, 'offer comparison');
   assert.doesNotMatch(await page.locator('[data-testid=offers]').innerText(), /best|recommended|top pick/i);
   await shot(page, 'open-03-compare');
+  const panel=page.locator('.tf-offer-compare'),list=page.getByTestId('offers');
+  const panelBox=await panel.boundingBox(),listBox=await list.boundingBox();
+  assert.ok(listBox.y-panelBox.y-panelBox.height>=23,'comparison and offers have a distinct 24px boundary');
+  assert.equal(await panel.getByRole('heading').count(),1,'the disclosure does not repeat the section title');
+  if(process.env.TAFSEEL_SHOT_DIR)await panel.screenshot({path:join(process.env.TAFSEEL_SHOT_DIR,'buttons-comparison-light-en-desktop.png')});
+  await page.getByTestId('comparison-toggle').click();await page.getByTestId('offer-comparison').waitFor({state:'detached'});
+  await page.setViewportSize({width:390,height:844});
+  await page.getByTestId('comparison-toggle').click();await page.locator('#offer-comparison tbody tr').first().waitFor();
+  await noHorizontalOverflow(page,'English phone comparison');
+  if(process.env.TAFSEEL_SHOT_DIR)await panel.screenshot({path:join(process.env.TAFSEEL_SHOT_DIR,'buttons-comparison-light-en-phone.png')});
+  await visit(page,`${BASE}/ar/requests/${requestId}/offers`);
+  await page.getByTestId('comparison-toggle').click();await page.locator('#offer-comparison tbody tr').first().waitFor();
+  await noHorizontalOverflow(page,'Arabic phone comparison');
+  if(process.env.TAFSEEL_SHOT_DIR)await panel.screenshot({path:join(process.env.TAFSEEL_SHOT_DIR,'buttons-comparison-light-ar-phone.png')});
+  await page.locator('tf-theme-toggle button').first().click();
+  if(process.env.TAFSEEL_SHOT_DIR)await panel.screenshot({path:join(process.env.TAFSEEL_SHOT_DIR,'buttons-comparison-dark-ar-phone.png')});
+  await page.setViewportSize({width:1280,height:900});
+  await visit(page,`${BASE}/en/requests/${requestId}/offers`);
+  await page.getByTestId('comparison-toggle').click();await page.locator('#offer-comparison tbody tr').first().waitFor();
 });
 
 await step('J4-07 a selection made against a changed offer is refused, explained, and shown with the new terms', async () => {

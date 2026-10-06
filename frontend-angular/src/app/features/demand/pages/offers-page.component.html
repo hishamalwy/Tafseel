@@ -36,6 +36,27 @@
     }
 
     @if (offers().length) {
+      @if (offers().length > 1) {
+        <section class="tf-profile-editor-card tf-offer-compare" aria-labelledby="offer-comparison-title">
+          <header class="tf-offer-compare__head">
+            <div><h2 id="offer-comparison-title">{{ t('craft_compare_offers', 'Compare offer details') }}</h2>
+              <p class="tf-field-help">{{ t('craft_compare_hint', 'The same offers, side by side. Open an offer below to read its full scope before selecting.') }}</p></div>
+            <button type="button" class="tf-button tf-button-secondary" data-testid="comparison-toggle" [attr.aria-expanded]="comparing()" aria-controls="offer-comparison" (click)="comparing.set(!comparing())">{{ comparing() ? t('craft_compare_hide', 'Hide comparison') : t('craft_compare_show', 'Show comparison') }}</button>
+          </header>
+          @if (comparing()) {
+          <div id="offer-comparison" class="tf-offer-compare__body" data-testid="offer-comparison">
+            <div class="tf-table-scroll" tabindex="0" role="region" [attr.aria-label]="t('craft_compare_offers', 'Compare offer details')" style="overflow-x:auto">
+              <table class="tf-table"><caption class="tf-sr-only">{{ t('craft_compare_offers', 'Compare offer details') }}</caption>
+                <thead><tr><th scope="col">{{ t('common_teacher', 'Teacher') }}</th><th scope="col">{{ t('demand_price', 'Price') }}</th><th scope="col">{{ t('setup_delivery_time', 'Delivery time') }}</th><th scope="col">{{ t('setup_revisions', 'Revisions') }}</th><th scope="col">{{ t('demand_valid_until', 'Valid until') }}</th><th scope="col">{{ t('common_status', 'Status') }}</th></tr></thead>
+                <tbody>@for (offer of offers(); track offer.id) {
+                  <tr><th scope="row">{{ teacherName(offer) }}</th><td><tf-price [amount]="offer.amount" [currency]="offer.currency" /></td><td>{{ fmt.duration(offer.deliveryHours) }}</td><td>{{ offer.includedRevisions }}</td><td>{{ date(offer.validUntil) }}</td><td>{{ t(Demand.offerStatusKey(offer.status), '') }}</td></tr>
+                }</tbody>
+              </table>
+            </div>
+          </div>
+          }
+        </section>
+      }
       <div class="tf-card-list" data-testid="offers">
         @for (offer of offers(); track offer.id) {
           <article class="tf-profile-editor-card" data-testid="offer" [attr.data-offer-id]="offer.id" [attr.data-status]="offer.status"

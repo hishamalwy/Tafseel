@@ -1,0 +1,40 @@
+:host{display:block;min-inline-size:0}
+.tf-loading-shape__form{display:grid;gap:var(--space-5);padding:var(--space-5);border:1px solid var(--border-subtle);border-radius:var(--r-lg);background:var(--surface)}
+.tf-loading-shape__control{block-size:44px;inline-size:100%;border-radius:var(--r-sm)}
+.tf-loading-shape[data-kind="queue"] .tf-loading-shape__content,.tf-loading-shape[data-kind="table"] .tf-loading-shape__content{gap:0;border:1px solid var(--border-subtle);border-radius:var(--r-md);overflow:hidden}
+.tf-loading-shape[data-kind="queue"] .tf-loading-shape__row,.tf-loading-shape[data-kind="table"] .tf-loading-shape__row{border:0;border-block-start:1px solid var(--border-subtle);border-radius:0}
+.tf-loading-shape[data-kind="table"] .tf-loading-shape__lines{grid-template-columns:repeat(3,minmax(0,1fr));align-items:center}
+.tf-loading-shape[data-kind="table"] .tf-loading-shape__lines i{inline-size:85%;block-size:14px}
+.tf-loading-shape{inline-size:100%;min-inline-size:0}
+.tf-loading-shape__content{display:grid;gap:var(--space-4)}
+.tf-loading-shape__row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--space-4);
+  padding:var(--space-5);border:1px solid var(--border-subtle);border-radius:var(--r-lg);background:var(--surface)}
+.tf-loading-shape i{display:block;min-inline-size:0}
+.tf-loading-shape__lines{display:grid;gap:var(--space-3)}
+.tf-loading-shape__title{inline-size:65%;block-size:18px}
+.tf-loading-shape__line{inline-size:90%;block-size:13px}
+.tf-loading-shape__short{inline-size:45%;block-size:12px}
+.tf-loading-shape__action{inline-size:72px;block-size:32px}
+.tf-loading-shape__avatar{inline-size:64px;block-size:64px;border-radius:var(--r-md)}
+.tf-loading-shape__identity{display:grid;grid-template-columns:80px minmax(0,1fr);align-items:center;gap:var(--space-5);padding:var(--space-6)}
+.tf-loading-shape__identity>div{display:grid;gap:var(--space-3)}
+.tf-loading-shape__identity .tf-loading-shape__avatar{inline-size:80px;block-size:80px}
+.tf-loading-shape__summary{display:grid;gap:var(--space-3);padding:var(--space-5);border-block:1px solid var(--border-subtle)}
+.tf-loading-shape[data-kind="teachers"] .tf-loading-shape__content{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tf-loading-shape[data-kind="teachers"] .tf-loading-shape__row{grid-template-columns:64px minmax(0,1fr);min-block-size:270px;align-content:start}
+.tf-loading-shape[data-kind="teachers"] .tf-loading-shape__action{grid-column:1/-1;inline-size:100%;margin-block-start:var(--space-6)}
+.tf-loading-shape[data-kind="slots"] .tf-loading-shape__content{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tf-loading-shape[data-kind="slots"] .tf-loading-shape__row{grid-template-columns:minmax(0,1fr);padding:var(--space-3)}
+.tf-loading-shape[data-kind="slots"] .tf-loading-shape__action{display:none}
+.tf-loading-shape[data-kind="balances"] .tf-loading-shape__content{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tf-loading-shape[data-kind="balances"] .tf-loading-shape__row{grid-template-columns:minmax(0,1fr);min-block-size:145px}
+.tf-loading-shape[data-kind="balances"] .tf-loading-shape__action{display:none}
+@media(max-width:767px){.tf-loading-shape[data-kind="teachers"] .tf-loading-shape__content,.tf-loading-shape[data-kind="balances"] .tf-loading-shape__content{grid-template-columns:minmax(0,1fr)}}
+
+
+.tf-loading-shape[data-kind="work"] .tf-loading-shape__content{gap:0;border:1px solid var(--border-subtle);border-radius:var(--r-lg);overflow:hidden}
+.tf-loading-shape[data-kind="work"] .tf-loading-shape__row{border:0;border-block-start:1px solid var(--border-subtle);border-radius:0}
+.tf-loading-shape[data-kind="work"] .tf-loading-shape__row:first-child{border-block-start:0}
+.tf-loading-shape[data-kind="detail"] .tf-loading-shape__content{grid-template-columns:minmax(0,1fr) minmax(240px,340px)}
+.tf-loading-shape[data-kind="detail"] .tf-loading-shape__row:first-child{grid-row:span 2;min-block-size:320px;align-content:start}
+@media(max-width:960px){.tf-loading-shape[data-kind="detail"] .tf-loading-shape__content{grid-template-columns:minmax(0,1fr)}.tf-loading-shape[data-kind="detail"] .tf-loading-shape__row:first-child{grid-row:auto;min-block-size:200px}}

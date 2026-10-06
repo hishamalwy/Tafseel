@@ -9,17 +9,17 @@
       <a routerLink="/admin/marketing/coupons" [attr.aria-current]="tab === 'coupons' ? 'page' : null">{{ t('marketing_coupons', 'Discount codes') }}</a>
       <a routerLink="/admin/marketing/promotions" [attr.aria-current]="tab === 'promotions' ? 'page' : null">{{ t('marketing_promotions', 'Home page promotions') }}</a>
     </nav>
-    @if (loading()) { <div class="tf-state" role="status">{{ t('common_loading', 'Loading…') }}</div> }
+    @if (loading()) { <tf-skeleton kind="form" [label]="t('common_loading', 'Loading…')" /> }
     @if (error()) { <div class="tf-alert" data-kind="error" role="alert">{{ error() }} <button type="button" class="tf-button tf-button-secondary" (click)="load()">{{ t('common_retry', 'Retry') }}</button></div> }
     @if (!loading() && tab === 'coupons') {
       <section class="tf-marketing__panel" aria-labelledby="coupon-create-title">
         <div class="tf-marketing__panel-head"><h2 id="coupon-create-title">{{ t('marketing_new_coupon', 'New discount code') }}</h2><p>{{ t('marketing_coupon_hint', 'The code becomes usable as soon as you create it.') }}</p></div>
         <form class="tf-marketing__form" (submit)="createCoupon(); $event.preventDefault()">
-          <label class="tf-field"><span>{{ t('admin_coupon_name', 'Internal name') }}</span><input required maxlength="200" [value]="coupon().name" (input)="patchCoupon({ name: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('admin_coupon_name', 'Internal name') }}</span><input autocomplete="off" required maxlength="200" [value]="coupon().name" (input)="patchCoupon({ name: $any($event.target).value })"></label>
           <label class="tf-field"><span>{{ t('admin_coupon_code', 'Coupon code') }}</span><input required maxlength="40" autocomplete="off" [value]="coupon().code" (input)="patchCoupon({ code: $any($event.target).value })"></label>
           <label class="tf-field"><span>{{ t('admin_coupon_type', 'Discount type') }}</span><select [value]="coupon().discountType" (change)="patchCoupon({ discountType: +$any($event.target).value })"><option value="0">{{ t('admin_coupon_type_percent', 'Percent') }}</option><option value="1">{{ t('admin_coupon_type_fixed', 'Fixed amount') }}</option></select></label>
-          <label class="tf-field"><span>{{ t('admin_coupon_value', 'Discount value') }}</span><input required type="number" min="0.01" [max]="coupon().discountType === 0 ? 100 : 1000000" step="0.01" [value]="coupon().discountValue" (input)="patchCoupon({ discountValue: +$any($event.target).value })"></label>
-          <label class="tf-field"><span>{{ t('marketing_expires_optional', 'Expires (optional)') }}</span><input type="datetime-local" (change)="patchCoupon({ expiresAt: expiry($any($event.target).value) })"></label>
+          <label class="tf-field"><span>{{ t('admin_coupon_value', 'Discount value') }}</span><input autocomplete="off" required type="number" min="0.01" [max]="coupon().discountType === 0 ? 100 : 1000000" step="0.01" [value]="coupon().discountValue" (input)="patchCoupon({ discountValue: +$any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('marketing_expires_optional', 'Expires (optional)') }}</span><input autocomplete="off" type="datetime-local" (change)="patchCoupon({ expiresAt: expiry($any($event.target).value) })"></label>
           <button type="submit" class="tf-button" [disabled]="busy() || !coupon().name.trim() || !coupon().code.trim()">{{ busy() ? t('common_saving', 'Saving…') : t('marketing_create_coupon', 'Create code') }}</button>
         </form>
       </section>
@@ -38,16 +38,32 @@
         <div class="tf-marketing__panel-head"><h2 id="promotion-create-title">{{ t('marketing_new_promotion', 'New home page promotion') }}</h2><p>{{ t('marketing_promotion_hint', 'Write the message in both languages so visitors see the right version.') }}</p></div>
         <form class="tf-marketing__form" (submit)="createPromotion(); $event.preventDefault()">
           <label class="tf-field"><span>{{ t('marketing_promotion_type', 'Type') }}</span><select [value]="promotion().kind" (change)="patchPromotion({ kind: +$any($event.target).value, couponCode: '' })"><option value="2">{{ t('marketing_announcement', 'Announcement') }}</option><option value="0">{{ t('marketing_discount', 'Discount') }}</option><option value="4">{{ t('marketing_event', 'Event') }}</option></select></label>
-          <label class="tf-field"><span>{{ t('marketing_title_ar', 'Arabic title') }}</span><input required maxlength="160" dir="rtl" [value]="promotion().titleAr" (input)="patchPromotion({ titleAr: $any($event.target).value })"></label>
-          <label class="tf-field"><span>{{ t('marketing_title_en', 'English title') }}</span><input required maxlength="160" dir="ltr" [value]="promotion().titleEn" (input)="patchPromotion({ titleEn: $any($event.target).value })"></label>
-          <label class="tf-field"><span>{{ t('marketing_body_ar', 'Arabic description') }}</span><textarea maxlength="400" rows="3" dir="rtl" [value]="promotion().bodyAr" (input)="patchPromotion({ bodyAr: $any($event.target).value })"></textarea></label>
-          <label class="tf-field"><span>{{ t('marketing_body_en', 'English description') }}</span><textarea maxlength="400" rows="3" dir="ltr" [value]="promotion().bodyEn" (input)="patchPromotion({ bodyEn: $any($event.target).value })"></textarea></label>
+          <label class="tf-field"><span>{{ t('marketing_title_ar', 'Arabic title') }}</span><input autocomplete="off" required maxlength="160" dir="rtl" [value]="promotion().titleAr" (input)="patchPromotion({ titleAr: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('marketing_title_en', 'English title') }}</span><input autocomplete="off" required maxlength="160" dir="ltr" [value]="promotion().titleEn" (input)="patchPromotion({ titleEn: $any($event.target).value })"></label>
+          <label class="tf-field"><span>{{ t('marketing_body_ar', 'Arabic description') }}</span><textarea autocomplete="off" maxlength="400" rows="3" dir="rtl" [value]="promotion().bodyAr" (input)="patchPromotion({ bodyAr: $any($event.target).value })"></textarea></label>
+          <label class="tf-field"><span>{{ t('marketing_body_en', 'English description') }}</span><textarea autocomplete="off" maxlength="400" rows="3" dir="ltr" [value]="promotion().bodyEn" (input)="patchPromotion({ bodyEn: $any($event.target).value })"></textarea></label>
           @if (promotion().kind === 0) {
             <label class="tf-field"><span>{{ t('admin_coupon_code', 'Coupon code') }}</span><select required [value]="promotion().couponCode" (change)="patchPromotion({ couponCode: $any($event.target).value })"><option value="">{{ t('marketing_choose_coupon', 'Choose an active code') }}</option>@for (code of usableCoupons(); track code.id) { <option [value]="code.code">{{ code.code }}</option> }</select></label>
           }
-          <label class="tf-field"><span>{{ t('marketing_expires_optional', 'Ends (optional)') }}</span><input type="datetime-local" (change)="patchPromotion({ endsAt: expiry($any($event.target).value) })"></label>
+          <label class="tf-field"><span>{{ t('marketing_expires_optional', 'Ends (optional)') }}</span><input autocomplete="off" type="datetime-local" (change)="patchPromotion({ endsAt: expiry($any($event.target).value) })"></label>
           <button type="submit" class="tf-button" [disabled]="busy() || !promotion().titleAr.trim() || !promotion().titleEn.trim() || (promotion().kind === 0 && !promotion().couponCode)">{{ busy() ? t('common_saving', 'Saving…') : t('marketing_publish', 'Publish promotion') }}</button>
         </form>
+      </section>
+      <section class="tf-marketing__preview" aria-labelledby="promotion-preview-label" data-testid="promotion-preview">
+        <h2 id="promotion-preview-label">{{ t('craft_promotion_preview', 'Preview before publishing') }}</h2>
+        <div class="tf-cluster" role="group" [attr.aria-label]="t('craft_promotion_preview', 'Preview before publishing')">
+          <button type="button" class="tf-button tf-button-secondary" [attr.aria-pressed]="previewLanguage() === 'ar'" (click)="previewLanguage.set('ar')" lang="ar">العربية</button>
+          <button type="button" class="tf-button tf-button-secondary" [attr.aria-pressed]="previewLanguage() === 'en'" (click)="previewLanguage.set('en')" lang="en">English</button>
+        </div>
+        <p class="tf-field-help">{{ t('craft_preview_note', 'Local preview. Visitors see the message only after you publish it.') }}</p>
+        <div class="tf-promo-wizard tf-marketing__preview-card" [attr.dir]="previewLanguage() === 'ar' ? 'rtl' : 'ltr'" [attr.lang]="previewLanguage()">
+          <div class="tf-promo-wizard-body">
+            <tf-promotion-content titleId="promotion-preview-title" [interactive]="false"
+              [title]="previewTitle()" [body]="previewBody()"
+              [code]="promotion().kind === 0 ? promotion().couponCode : ''" [codeLabel]="t('admin_coupon_code', 'Coupon code')" />
+          </div>
+          <p class="tf-marketing__preview-expiry">{{ promotion().endsAt ? t('marketing_expires_optional', 'Ends (optional)') + ': ' + date(promotion().endsAt) : t('craft_preview_no_expiry', 'No end date') }}</p>
+        </div>
       </section>
       <section class="tf-marketing__list" aria-labelledby="promotion-list-title">
         <h2 id="promotion-list-title">{{ t('marketing_existing_promotions', 'Your promotions') }}</h2>

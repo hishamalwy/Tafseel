@@ -1,14 +1,15 @@
-<tf-workspace-shell [role]="role() === 'teacher' ? 'Teacher' : 'Student'" [section]="role() === 'teacher' ? 'work' : 'requests'">
-  <a class="tf-back-link" [routerLink]="role() === 'teacher' ? '/teacher/work' : '/student/requests'" [queryParams]="{ tab: 'orders' }">{{ t('order_back', 'All orders') }}</a>
+<tf-workspace-shell [role]="role() === 'teacher' || (!role() && teacherWorkspace()) ? 'Teacher' : 'Student'" [section]="role() === 'teacher' || (!role() && teacherWorkspace()) ? 'work' : 'requests'">
+  <a class="tf-back-link" [routerLink]="role() === 'teacher' || (!role() && teacherWorkspace()) ? '/teacher/work' : '/student/requests'" [queryParams]="{ tab: 'orders' }">{{ t('order_back', 'All orders') }}</a>
 
   @switch (state()) {
     @case ('loading') {
-      <div class="tf-state" data-state="loading" role="status">{{ t('common_loading', 'Loading…') }}</div>
+      <tf-skeleton kind="detail" />
     }
     @case ('missing') {
       <div class="tf-state" data-state="error" role="alert">
         <h1 class="tf-state-title">{{ t('order_detail_missing_title', 'This order isn’t available') }}</h1>
         <p class="tf-state-body">{{ t('order_detail_missing_body', 'It may belong to another account, or it no longer exists.') }}</p>
+        <a class="tf-button tf-button-secondary" [routerLink]="teacherWorkspace() ? '/teacher/work' : '/student/requests'">{{ t('craft_open_workspace', 'Open my workspace') }}</a>
       </div>
     }
     @case ('failed') {
@@ -23,12 +24,18 @@
           <div class="tf-stack">
             <span class="tf-page-header-eyebrow">{{ (locale.lang() === 'ar' ? (o.serviceNameArabic || o.serviceNameEnglish) : (o.serviceNameEnglish || o.serviceNameArabic)) || t('order_detail_title', 'Order') }}</span>
             <h1>{{ heading() }}</h1>
-            <p class="tf-page-header-desc">{{ role() === 'teacher' ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}: {{ counterpart() }}</p>
+            <p class="tf-page-header-desc">{{ role() === 'teacher' || (!role() && teacherWorkspace()) ? t('demand_student', 'Student') : t('demand_teacher', 'Teacher') }}: {{ counterpart() }}</p>
           </div>
           <div class="tf-page-header-actions">
             <span class="tf-badge" data-testid="order-status" [attr.data-status]="o.status" [attr.data-payment]="o.paymentStatus">{{ statusLabel() }}</span>
           </div>
         </header>
+        <div class="tf-journey-summary" data-testid="journey-summary">
+          <div><span>{{ t('sd_col_status', 'Status') }}</span><strong>{{ statusLabel() }}</strong></div>
+          <div><span>{{ t('craft_created', 'Created') }}</span><strong>{{ date(o.createdAt) }}</strong></div>
+        </div>
+        @if (successNotice()) { <tf-ui-state state="success" variant="confirmation" [compact]="true" [title]="successNotice()" /> }
+
 
         <div class="tf-detail-layout">
           <div class="tf-detail-column">
@@ -39,44 +46,44 @@
               @if (can('pay')) { <p class="tf-muted">{{ t('order_pay_hint', 'The teacher accepted. Pay to confirm the order; work starts after payment.') }}</p> }
               @if (role() === 'student' && o.status === 0 && o.paymentStatus === 1) { <p class="tf-muted">{{ t('td_start_awaiting_student', 'Payment confirmed. The teacher starts work next.') }}</p> }
               @if (can('start')) { <p class="tf-muted">{{ t('order_start_hint', 'Payment is confirmed. Start the work when you begin.') }}</p> }
-              @if (role() === 'teacher' && o.status === 0 && o.paymentStatus === 0) { <p class="tf-muted">{{ t('td_start_awaiting_payment', 'Waiting for the student’s payment to be confirmed.') }}</p> }
-              @if (role() === 'teacher' && o.status === 3) { <p class="tf-alert" data-kind="warning" data-testid="revision-requested">{{ t('order_revision_for_teacher', 'The student asked for a revision. Deliver the updated work.') }}</p>
+              @if (role() === 'teacher' || (!role() && teacherWorkspace()) && o.status === 0 && o.paymentStatus === 0) { <p class="tf-muted">{{ t('td_start_awaiting_payment', 'Waiting for the student’s payment to be confirmed.') }}</p> }
+              @if (role() === 'teacher' || (!role() && teacherWorkspace()) && o.status === 3) { <p class="tf-alert" data-kind="warning" data-testid="revision-requested">{{ t('order_revision_for_teacher', 'The student asked for a revision. Deliver the updated work.') }}</p>
                 @if (latestRevisionNote(); as note) { <blockquote class="tf-revision-note" data-testid="revision-note"><strong>{{ t('order_revision_note_label', 'What the student asked for') }}</strong><p dir="auto">{{ note }}</p></blockquote> } }
-              @if (role() === 'teacher' && o.status === 2) { <p class="tf-muted">{{ t('order_waiting_review', 'Delivered. Waiting for the student to accept or ask for a revision.') }}</p> }
+              @if (role() === 'teacher' || (!role() && teacherWorkspace()) && o.status === 2) { <p class="tf-muted">{{ t('order_waiting_review', 'Delivered. Waiting for the student to accept or ask for a revision.') }}</p> }
               @if (role() === 'student' && (o.status === 1 || o.status === 3)) { <p class="tf-muted">{{ t('order_in_progress_student', 'The teacher is working on it.') }}</p> }
               @if (can('complete')) { <p class="tf-muted">{{ locale.format('order_delivered_hint', { n: revisionsLeft() }, 'Review the delivery, then accept it or ask for a revision ({n} left).') }}</p> }
               @if (o.status === 5) {
                 <!-- A cancelled order used to show an empty "Next step": say what happened to the money and that nothing is left to do. -->
                 <p class="tf-muted" data-testid="order-cancelled-note">{{ o.paymentStatus === 3
-                  ? (role() === 'teacher'
+                  ? (role() === 'teacher' || (!role() && teacherWorkspace())
                     ? t('order_cancelled_refunded_teacher', 'This order was cancelled and the student’s payment was refunded, so no earnings come from it. You do not need to do anything.')
                     : t('order_cancelled_refunded_student', 'This order was cancelled and your payment was refunded to the way you paid. You do not need to do anything.'))
                   : t('order_cancelled_unpaid', 'This order was cancelled before it was paid. Nothing was charged and nothing is left to do.') }}</p>
               }
               @if (isCompleted()) {
-                <p class="tf-muted" data-testid="order-completed-note">{{ role() === 'teacher' ? t('order_completed_teacher', 'Completed. The earnings from this order are pending clearance before they can be withdrawn.') : t('order_completed_student', 'This order is complete.') }}</p>
+                <p class="tf-muted" data-testid="order-completed-note">{{ role() === 'teacher' || (!role() && teacherWorkspace()) ? t('order_completed_teacher', 'Completed. The earnings from this order are pending clearance before they can be withdrawn.') : t('order_completed_student', 'This order is complete.') }}</p>
                 @if (o.hasReview) { <p class="tf-muted" data-testid="review-submitted">{{ t('order_review_done', 'You reviewed this order.') }}@if (o.reviewOverallScore) { ★ {{ fmt.number(o.reviewOverallScore, { maximumFractionDigits: 1 }) }} }</p> }
               }
 
               <div class="tf-action-row">
                 @if (can('pay')) { <a class="tf-button" data-testid="pay-order" routerLink="/checkout" [queryParams]="{ orderId: o.id }">{{ t('order_pay', 'Pay now') }}</a> }
-                @if (can('start')) { <button type="button" class="tf-button" data-testid="start-order" (click)="start()" [disabled]="!!busy()">{{ t('td_start', 'Start') }}</button> }
+                @if (can('start')) { <button type="button" class="tf-button" data-testid="start-order" (click)="start()" [disabled]="!!busy()" [tfActionFeedback]="busy() === 'start' ? 'busy' : 'idle'">{{ t('td_start', 'Start') }}</button> }
                 @if (can('deliver')) { <button type="button" class="tf-button" data-testid="open-deliver" (click)="toggle('deliver')" [attr.aria-expanded]="panel() === 'deliver'">{{ o.status === 3 ? t('order_redeliver', 'Deliver again') : t('delivery_upload', 'Submit explanation files') }}</button> }
-                @if (can('complete')) { <button type="button" class="tf-button" data-testid="complete-order" (click)="complete()" [disabled]="!!busy()">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
+                @if (can('complete')) { <button type="button" class="tf-button" data-testid="complete-order" (click)="complete()" [disabled]="!!busy()" [tfActionFeedback]="busy() === 'complete' ? 'busy' : 'idle'">{{ t('sd_approve_delivery', 'Accept delivery') }}</button> }
                 @if (can('revision')) { <button type="button" class="tf-button tf-button-secondary" data-testid="open-revision" (click)="toggle('revision')" [attr.aria-expanded]="panel() === 'revision'">{{ t('order_ask_revision', 'Ask for a revision') }}</button> }
                 @if (can('review')) { <button type="button" class="tf-button" data-testid="open-review" (click)="toggle('review')" [attr.aria-expanded]="panel() === 'review'">{{ t('order_leave_review', 'Review the teacher') }}</button> }
                 <button type="button" class="tf-button tf-button-ghost" data-testid="open-conversation" (click)="openConversation()" [disabled]="!!busy()">{{ t('order_message', 'Message') }} {{ counterpart() }}</button>
                 @if (o.paymentStatus === 1 && o.status !== 5) {
                   <a class="tf-button tf-button-ghost" data-testid="report-problem" routerLink="/disputes" [queryParams]="{ orderId: o.id }">{{ t('order_report_problem', 'Report a problem') }}</a>
                 }
-                @if (can('cancel')) { <button type="button" class="tf-button tf-button-ghost" data-testid="cancel-order" (click)="cancel()" [disabled]="!!busy()">{{ t('order_cancel', 'Cancel order') }}</button> }
+                @if (can('cancel')) { <button type="button" class="tf-button tf-button-ghost" data-testid="cancel-order" (click)="cancel()" [disabled]="!!busy()" [tfActionFeedback]="busy() === 'cancel' ? 'busy' : 'idle'">{{ t('order_cancel', 'Cancel order') }}</button> }
               </div>
 
               @if (panel() === 'deliver' && can('deliver')) {
-                <form class="tf-form" (ngSubmit)="deliver()" novalidate data-testid="deliver-form">
+                <form animate.enter="tf-motion-enter" class="tf-form" (ngSubmit)="deliver()" novalidate data-testid="deliver-form">
                   <div class="tf-field">
                     <label for="deliver-files">{{ locale.format('order_delivery_files', { max: limits.files }, 'Files (up to {max}: PDF, image, audio or video)') }}</label>
-                    <tf-file-picker inputId="deliver-files" [multiple]="true" [busy]="busy() === 'deliver'"
+                    <tf-file-picker inputId="deliver-files" [multiple]="true" [busy]="busy() === 'deliver'" [progress]="progress()"
                                     accept="application/pdf,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg"
                                     [title]="t('upload_drop_files', 'Drag files here, or choose them from your device')"
                                     [hint]="locale.format('order_delivery_limits', { n: limits.files, max: limits.bytes / 1048576 }, 'Up to {n} files · {max} MB each')"
@@ -85,26 +92,25 @@
                   </div>
                   <div class="tf-field">
                     <label for="deliver-message">{{ t('order_delivery_message', 'Note to the student (optional)') }}</label>
-                    <textarea id="deliver-message" name="message" rows="3" [attr.maxlength]="limits.message" [ngModel]="deliveryMessage()" (ngModelChange)="deliveryMessage.set($event)"></textarea>
+                    <textarea autocomplete="off" id="deliver-message" name="message" rows="3" [attr.maxlength]="limits.message" [ngModel]="deliveryMessage()" (ngModelChange)="deliveryMessage.set($event)"></textarea>
                   </div>
-                  @if (progress() !== null) { <progress class="tf-progress" max="100" [value]="progress()" [attr.aria-label]="t('common_uploading', 'Uploading…')"></progress> }
-                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-delivery" [disabled]="!!busy()">{{ busy() === 'deliver' ? t('common_uploading', 'Uploading…') : t('order_send_delivery', 'Send delivery') }}</button></div>
+                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-delivery" [tfActionFeedback]="busy() === 'deliver' ? 'busy' : 'idle'" [disabled]="!!busy()">{{ busy() === 'deliver' ? t('common_uploading', 'Uploading…') : t('order_send_delivery', 'Send delivery') }}</button></div>
                 </form>
               }
 
               @if (panel() === 'revision' && can('revision')) {
-                <form class="tf-form" (ngSubmit)="requestRevision()" novalidate data-testid="revision-form">
+                <form animate.enter="tf-motion-enter" class="tf-form" (ngSubmit)="requestRevision()" novalidate data-testid="revision-form">
                   <p class="tf-muted">{{ locale.format('order_revisions_left', { n: revisionsLeft(), total: o.revisionAllowance }, '{n} of {total} revisions left.') }}</p>
                   <div class="tf-field">
                     <label for="revision-reason">{{ t('order_revision_reason', 'What should change?') }}</label>
-                    <textarea id="revision-reason" name="reason" rows="3" maxlength="2000" [ngModel]="revisionReason()" (ngModelChange)="revisionReason.set($event)"></textarea>
+                    <textarea autocomplete="off" id="revision-reason" name="reason" rows="3" maxlength="2000" [ngModel]="revisionReason()" (ngModelChange)="revisionReason.set($event)"></textarea>
                   </div>
-                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-revision" [disabled]="!!busy()">{{ t('order_ask_revision', 'Ask for a revision') }}</button></div>
+                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-revision" [tfActionFeedback]="busy() === 'revision' ? 'busy' : 'idle'" [disabled]="!!busy()">{{ t('order_ask_revision', 'Ask for a revision') }}</button></div>
                 </form>
               }
 
               @if (panel() === 'review' && can('review')) {
-                <form class="tf-form" (ngSubmit)="submitReview()" novalidate data-testid="review-form">
+                <form animate.enter="tf-motion-enter" class="tf-form" (ngSubmit)="submitReview()" novalidate data-testid="review-form">
                   @for (criterion of criteria; track criterion) {
                     <div class="tf-decision-row" role="group" [attr.aria-labelledby]="'review-' + criterion">
                       <span [id]="'review-' + criterion">{{ t('review_' + criterion, criterion) }}</span>
@@ -120,12 +126,12 @@
                   @if (reviewProblems().includes('ratings')) { <p class="tf-field-error" role="alert">{{ t('order_review_ratings_required', 'Rate every item from 1 to 5.') }}</p> }
                   <div class="tf-field">
                     <label for="review-comment">{{ t('order_review_comment', 'Your review') }}</label>
-                    <textarea id="review-comment" name="comment" rows="4" maxlength="2000" [ngModel]="review().comment" (ngModelChange)="setReview('comment', $event)"
+                    <textarea autocomplete="off" id="review-comment" name="comment" rows="4" maxlength="2000" [ngModel]="review().comment" (ngModelChange)="setReview('comment', $event)"
                               [attr.aria-invalid]="reviewProblems().includes('comment')" [attr.aria-describedby]="reviewProblems().includes('comment') ? 'review-comment-error' : null"></textarea>
                     @if (reviewProblems().includes('comment')) { <span id="review-comment-error" class="tf-field-error">{{ t('order_review_comment_required', 'Write a few words about the teacher.') }}</span> }
                   </div>
                   <label class="tf-check"><input type="checkbox" name="recommends" [checked]="review().recommends" (change)="setReview('recommends', $any($event.target).checked)"><span>{{ t('order_review_recommends', 'I recommend this teacher') }}</span></label>
-                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-review" [disabled]="!!busy()">{{ t('order_publish_review', 'Publish review') }}</button></div>
+                  <div class="tf-form-actions"><button type="submit" class="tf-button" data-testid="submit-review" [tfActionFeedback]="busy() === 'review' ? 'busy' : 'idle'" [disabled]="!!busy()">{{ t('order_publish_review', 'Publish review') }}</button></div>
                 </form>
               }
             </section>
@@ -171,7 +177,7 @@
               } @else if (timeline().length) {
                 <ol class="tf-timeline" data-testid="order-timeline">
                   @for (event of timeline(); track event.id) {
-                    <li [attr.data-event]="event.eventType"><strong>{{ eventLabel(event) }}@if (event.metadata?.revisionSequence; as sequence) { #{{ sequence }} }</strong><small>{{ date(event.occurredAt) }} · {{ actorLabel(event) }}</small>@if (event.metadata?.note; as note) {<p class="tf-timeline-note" dir="auto">{{ note }}</p>}</li>
+                    <li [class.tf-motion-enter]="arrivingEvents().has(event.id)" [attr.data-event]="event.eventType"><strong>{{ eventLabel(event) }}@if (event.metadata?.revisionSequence; as sequence) { #{{ sequence }} }</strong><small>{{ date(event.occurredAt) }} · {{ actorLabel(event) }}</small>@if (event.metadata?.note; as note) {<p class="tf-timeline-note" dir="auto">{{ note }}</p>}</li>
                   }
                 </ol>
               } @else { <p class="tf-muted">{{ t('order_detail_no_history', 'No history yet.') }}</p> }

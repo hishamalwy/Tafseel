@@ -1,32 +1,32 @@
 /* Shared layout for workspace detail screens (requests, offers, orders, sessions, messages).
    Colour, type and spacing come from the design system tokens; this file only arranges. */
 :host { display: block; }
-.tf-detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 18px; align-items: start; }
-.tf-detail-column { display: grid; gap: 18px; min-width: 0; }
+.tf-detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: var(--space-section-gap); align-items: start; }
+.tf-detail-column { display: grid; gap: var(--space-section-gap); min-width: 0; }
 /* A card is a grid item: without this, one long file name widens the column under its neighbour. */
 .tf-detail-column > * { min-width: 0; }
 .tf-facts { display: grid; gap: 10px; margin: 0; }
-.tf-facts div { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.tf-facts div { display: flex; justify-content: space-between; gap: 12px; font-size: var(--type-label-size); }
 .tf-facts dt { color: var(--muted); }
 .tf-facts dd { margin: 0; font-weight: 650; text-align: end; overflow-wrap: anywhere; }
-.tf-prose { margin: 0; white-space: pre-line; color: var(--text-2); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.tf-prose { margin: 0; white-space: pre-line; color: var(--text-2); font-size: var(--type-body-sm-size); line-height: 1.7; overflow-wrap: anywhere; }
 .tf-timeline { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-.tf-timeline li { display: grid; gap: 3px; padding-inline-start: 12px; border-inline-start: 2px solid var(--border); font-size: 13px; }
-.tf-timeline small { color: var(--muted); font-size: 12px; }
+.tf-timeline li { display: grid; gap: 3px; padding-inline-start: 12px; border-inline-start: 2px solid var(--border); font-size: var(--type-label-size); }
+.tf-timeline small { color: var(--muted); font-size: var(--type-meta-size); }
 .tf-action-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 /* minmax(0, 1fr): a long file name is truncated inside the card instead of sizing the column. */
 .tf-file-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; }
 .tf-file-list li > span { flex: 1 1 0; }
 .tf-file-list li > button { flex: none; }
 .tf-file-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px;
-  border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 13px; }
+  border: 1px solid var(--border); border-radius: var(--r-sm); font-size: var(--type-label-size); }
 .tf-file-list span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* .tf-back-link lives in the design system (css/tafseel.css) so every detail screen shares one rhythm. */
 .tf-countdown { font-variant-numeric: tabular-nums; font-weight: 750; }
 .tf-card-list { display: grid; gap: 12px; }
 .tf-progress { width: 100%; height: 6px; accent-color: var(--primary); }
 @media (max-width: 960px) { .tf-detail-layout { grid-template-columns: minmax(0, 1fr); } }
-.tf-decision-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; font-size: 14px; }
+.tf-decision-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; font-size: var(--type-body-sm-size); }
 @media (max-width: 560px) { .tf-decision-row { grid-template-columns: minmax(0, 1fr); } }
 
 /* A screen that could not load has no header, so its state title is the page heading. */

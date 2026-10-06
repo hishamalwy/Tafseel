@@ -13,7 +13,7 @@
 :host { display: block; }
 
 .tf-auth-heading {
-  font-size: 22px;
+  font-size: var(--type-page-title-size);
   font-weight: 800;
   letter-spacing: -.02em;
 }
@@ -27,7 +27,7 @@
   background: none;
   padding: 0;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--type-label-size);
   font-weight: 700;
   color: var(--primary);
   cursor: pointer;
@@ -41,7 +41,7 @@
 .tf-auth-alert {
   margin: 0;
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: var(--type-label-size);
   font-weight: 600;
   color: var(--error);
   background: var(--error-soft);
@@ -51,7 +51,7 @@
 .tf-auth-success {
   margin: 0 0 16px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--type-body-sm-size);
   font-weight: 600;
   line-height: 1.6;
   color: var(--success);
@@ -62,7 +62,7 @@
 .tf-auth-note {
   margin-block-end: 16px;
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: var(--type-label-size);
   line-height: 1.6;
   color: var(--text-2);
   background: var(--surface-2);
@@ -77,14 +77,14 @@
 
 .tf-auth-submit {
   block-size: 44px;
-  font-size: 14px;
+  font-size: var(--type-body-sm-size);
   margin-block-start: 4px;
 }
 
 .tf-auth-switch {
   margin-block-start: 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--type-label-size);
   color: var(--muted);
 }
 
@@ -93,7 +93,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--type-meta-size);
   font-weight: 700;
   color: var(--error);
 }

@@ -17,14 +17,14 @@ import { IconComponent } from './icon.component';
     <div class="tf-field">
       <label [attr.for]="fieldId()">{{ label() }}</label>
       <div class="tf-password-wrap">
-        <input [id]="fieldId()" [type]="revealed() ? 'text' : 'password'" dir="ltr"
+        <input [id]="fieldId()" [name]="name() || fieldId()" [required]="required()" [disabled]="disabled()" [readOnly]="readOnly()" [type]="revealed() ? 'text' : 'password'" dir="ltr"
                [attr.autocomplete]="autocomplete()" [attr.placeholder]="placeholder()"
                [class.tf-field--invalid]="invalid()" [attr.aria-invalid]="invalid()"
                [attr.aria-describedby]="message() ? fieldId() + '-msg' : null"
                [value]="value()"
                (input)="value.set($any($event.target).value)"
                (focus)="focused.emit()" (blur)="blurred.emit()" />
-        <button type="button" class="tf-password-toggle" (click)="toggle()"
+        <button type="button" class="tf-password-toggle" [disabled]="disabled()" (click)="toggle()"
                 [attr.aria-pressed]="revealed()" [attr.aria-label]="toggleLabel()">
           <tf-icon [name]="revealed() ? 'eye-off' : 'eye'" />
         </button>
@@ -53,6 +53,10 @@ export class PasswordFieldComponent {
   readonly fieldId = input.required<string>();
   readonly label = input.required<string>();
   readonly value = model('');
+  readonly name = input('');
+  readonly required = input(false);
+  readonly disabled = input(false);
+  readonly readOnly = input(false);
   readonly autocomplete = input<string>('current-password');
   readonly placeholder = input<string | null>(null);
   readonly invalid = input(false);
@@ -75,6 +79,7 @@ export class PasswordFieldComponent {
       : (this.revealed() ? 'Hide password' : 'Show password'));
 
   toggle(): void {
+    if (this.disabled()) return;
     const shared = this.revealedState();
     if (shared) shared.set(!shared());
     else this.ownRevealed.set(!this.ownRevealed());

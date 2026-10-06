@@ -89,7 +89,7 @@ await step('J2 teacher registers in /auth, confirms from the outbox and signs in
 
   const link = await outboxLink(teacherEmail, 'mode=confirm');
   await visit(page, link);
-  await page.locator('.tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('[data-testid=auth-notice], .tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
 
   await page.locator('#login-email').fill(teacherEmail);
   await page.locator('#login-password').fill(teacherPassword);
@@ -366,6 +366,7 @@ await step('J11-07 teacher creates services at valid prices; only the approved s
   await explanation.locator('[data-testid=save-offering]').click();
   assert.equal((await created).status(), 201);
   await explanation.locator('[data-testid=offering][data-active=true]').waitFor({ timeout: 15000 });
+  await page.locator('tf-ui-state [data-state=success]').waitFor();
 
   const live = page.locator(`[data-testid=service-type][data-code="${SEED.live.Code}"]`);
   await live.locator('[data-testid=add-offering]').click();
@@ -432,6 +433,7 @@ await step('J11-08 weekly windows: multiple days, invalid and overlapping ranges
     [[0, '09:00:00', '12:00:00', TIME_ZONE, 60], [2, '09:00:00', '12:00:00', TIME_ZONE, 60]], 'the zone and wall-clock times as entered');
   await page.locator('[data-testid=rule]').nth(1).waitFor({ timeout: 15000 });
   assert.equal(await page.locator('[data-testid=rule]').count(), 2);
+  await page.locator('tf-ui-state [data-state=success]').waitFor();
 
   await page.locator('[data-testid=add-rule]').click();
   await page.locator('[data-testid=day-0]').check();

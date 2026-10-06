@@ -35,7 +35,7 @@
         }
 
         <label for="dispute-reason">{{ c().reasonLabel }}</label>
-        <textarea id="dispute-reason" rows="4" maxlength="2000" required
+        <textarea autocomplete="off" id="dispute-reason" rows="4" maxlength="2000" required
                   [placeholder]="c().reason"
                   [value]="createReason()" (input)="createReason.set($any($event.target).value); reviewing.set(false)"></textarea>
         <p class="tf-dispute-hint">{{ c().reasonHint }}</p>
@@ -173,7 +173,7 @@
           @if (d.canParticipate) {
             <form class="tf-dispute-reply" (ngSubmit)="send($event)">
               <label for="case-message">{{ messageFieldLabel() }}</label>
-              <textarea id="case-message" rows="3" maxlength="2000" required data-testid="dispute-message-body"
+              <textarea autocomplete="off" id="case-message" rows="3" maxlength="2000" required data-testid="dispute-message-body"
                         [value]="messageBody()" (input)="messageBody.set($any($event.target).value)"></textarea>
               @if (d.canUploadEvidence) {
                 <tf-file-picker [compact]="true" [removable]="false" [busy]="busy()" [title]="c().addEvidence" [hint]="c().fileHint"
@@ -210,7 +210,7 @@
                     <option value="no-action">{{ c().none }}</option>
                   </select>
                   <label for="dispute-rationale">{{ c().rationale }}</label>
-                  <textarea id="dispute-rationale" rows="3" maxlength="2000" required [placeholder]="c().rationale"
+                  <textarea autocomplete="off" id="dispute-rationale" rows="3" maxlength="2000" required [placeholder]="c().rationale"
                             [value]="rationale()" (input)="rationale.set($any($event.target).value)"></textarea>
                   <button type="submit" class="tf-button" [disabled]="busy()">{{ c().resolve }}</button>
                 </form>

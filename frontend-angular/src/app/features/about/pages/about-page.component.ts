@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { ABOUT_COPY } from '@features/about/content/about.content';
@@ -35,6 +35,7 @@ export class AboutPageComponent {
   }));
 
   constructor() {
-    queueMicrotask(() => this.title.setTitle(`${this.c().heroTitle} — Tafseel`));
+    // The heading already carries the brand line, so it is the whole title.
+    effect(() => this.title.setTitle(this.c().heroTitle));
   }
 }

@@ -485,9 +485,12 @@ public static class DependencyInjection
             // expires on its own; PreProduction rehearses Production, so it signs per participant too.
             .Validate(x => !(environment.IsProduction() || environment.IsPreProduction())
                     || configuration.GetValue<string>("LiveSessions:Provider") != "JaaS"
-                    || string.IsNullOrWhiteSpace(x.StaticJwt)
-                    && !x.KeyId.Contains("SAMPLE_APP", StringComparison.OrdinalIgnoreCase),
-                "Production and PreProduction JaaS require per-participant signing with the account's own key (no StaticJwt, no sample Key ID).")
+                    || string.IsNullOrWhiteSpace(x.StaticJwt),
+                "Production and PreProduction JaaS require per-participant signing: remove JaaS:StaticJwt from the settings (the host settings file is the usual place).")
+            .Validate(x => !(environment.IsProduction() || environment.IsPreProduction())
+                    || configuration.GetValue<string>("LiveSessions:Provider") != "JaaS"
+                    || !x.KeyId.Contains("SAMPLE_APP", StringComparison.OrdinalIgnoreCase),
+                "Production and PreProduction JaaS require per-participant signing with the account's own key: JaaS:KeyId is the sample app's key.")
             .ValidateOnStart();
         services.AddOptions<PaymentOptions>()
             .Bind(configuration.GetRequiredSection(PaymentOptions.SectionName))

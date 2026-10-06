@@ -26,6 +26,8 @@ export class ThemeService {
     effect(() => {
       const theme = this.current();
       this.document.documentElement.setAttribute('data-theme', theme);
+      const canvas = this.document.defaultView?.getComputedStyle(this.document.documentElement).getPropertyValue('--canvas').trim();
+      if (canvas) this.document.querySelector('meta[name="theme-color"]')?.setAttribute('content', canvas);
       this.prefs.write(STORAGE_KEY, theme);
     });
   }

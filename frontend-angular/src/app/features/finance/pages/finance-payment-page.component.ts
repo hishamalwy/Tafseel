@@ -1,3 +1,4 @@
+import { ActionFeedbackDirective } from '@shared/directives/action-feedback.directive';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
@@ -21,7 +22,7 @@ import { FINANCE_STYLES, financeShellRole } from './finance-shared';
 @Component({
   selector: 'tf-finance-payment-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PriceComponent, WorkspaceShellComponent],
+  imports: [ActionFeedbackDirective, RouterLink, PriceComponent, WorkspaceShellComponent],
   template: `
     <tf-workspace-shell [role]="shellRole()" section="finance">
       <a class="tf-back-link" routerLink="/finance/payments">{{ t('fin_back_payments', 'All payments') }}</a>
@@ -40,7 +41,7 @@ import { FINANCE_STYLES, financeShellRole } from './finance-shared';
               <p><span class="tf-badge" [attr.data-tone]="status().tone" data-testid="finance-payment-state">{{ t(status().labelKey, status().fallback) }}</span></p>
             </div>
             @if (d.refundAvailable) {
-              <button type="button" class="tf-button tf-button-secondary is-danger" (click)="refund()" [disabled]="busy()" data-testid="finance-refund">{{ t('fin_refund', 'Refund in full') }}</button>
+              <button type="button" class="tf-button tf-button-secondary is-danger" (click)="refund()" [tfActionFeedback]="actionState('refund')" [disabled]="busy()" data-testid="finance-refund">{{ t('fin_refund', 'Refund in full') }}</button>
             }
           </header>
           @if (!d.refundAvailable && d.refundBlockedReason && d.payment.status === 1) {
@@ -118,7 +119,7 @@ import { FINANCE_STYLES, financeShellRole } from './finance-shared';
     </tf-workspace-shell>
   `,
   styles: [FINANCE_STYLES, `
-    .tf-fin-trail { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+    .tf-fin-trail { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: var(--type-body-sm-size); }
     .tf-fin-trail li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding-block: 6px; border-block-end: 1px solid var(--border); }
     .tf-fin-trail li:last-child { border-block-end: 0; }
   `]
@@ -134,6 +135,8 @@ export class FinancePaymentPageComponent implements OnInit {
   readonly shellRole = computed(() => financeShellRole(this.session.current()?.roles));
   readonly loading = signal(true);
   readonly busy = signal(false);
+  readonly activeAction = signal('');
+  actionState(key: string): 'busy' | 'idle' { return this.busy() && this.activeAction() === key ? 'busy' : 'idle'; }
   readonly error = signal('');
   readonly detail = signal<FinancePaymentDetail | null>(null);
   readonly status = computed(() => { const d = this.detail(); return FinanceWords.payment(d?.payment.status ?? -1, d?.payment.stuck); });
@@ -178,6 +181,7 @@ export class FinancePaymentPageComponent implements OnInit {
       confirmLabel: this.t('fin_refund', 'Refund in full'), cancelLabel: this.t('common_cancel', 'Cancel'), destructive: true
     })) return;
     this.refundKey ||= crypto.randomUUID();
+    this.activeAction.set('refund');
     this.busy.set(true);
     try {
       await this.gateway.refund(d.payment.id, reason.trim(), this.refundKey);

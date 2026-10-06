@@ -4,7 +4,7 @@
       <tf-brand-mark [width]="22" [height]="30" />
     </a>
 
-    <nav data-hide-sm class="tf-nav-track tf-public-header__nav" [attr.aria-label]="labels().primaryNav">
+    <nav data-hide-sm class="tf-public-header__nav" [attr.aria-label]="labels().primaryNav">
       <a class="tf-nav-link" routerLink="/teachers" routerLinkActive="is-current"
          [routerLinkActiveOptions]="{ exact: false }" ariaCurrentWhenActive="page">{{ labels().browse }}</a>
       <a class="tf-nav-link" data-testid="header-demand-link" [routerLink]="demandLink().path" routerLinkActive="is-current"
@@ -16,6 +16,7 @@
     <div class="tf-public-header-actions tf-public-header__actions">
       <tf-lang-toggle />
       <tf-theme-toggle />
+      <span data-hide-sm class="tf-public-header__divider" aria-hidden="true"></span>
 
       @if (session(); as user) {
         <a data-hide-sm class="tf-public-header__account" [routerLink]="accountHref()">
@@ -25,8 +26,12 @@
       } @else {
         <a data-hide-sm class="tf-nav-login" routerLink="/auth">{{ labels().login }}</a>
       }
+      @if (isGuest()) {
+        <a data-hide-sm class="tf-button tf-public-header__cta" data-testid="header-cta"
+           [routerLink]="cta().path" [queryParams]="cta().query">{{ cta().label }}</a>
+      }
 
-      <button type="button" class="tf-icon-btn" data-public-menu-toggle (click)="toggleMenu()"
+      <button #menuToggle type="button" class="tf-icon-btn" data-public-menu-toggle (click)="toggleMenu()"
               [attr.aria-controls]="menuId()" [attr.aria-expanded]="menuOpen()"
               [attr.aria-label]="labels().menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -40,11 +45,18 @@
   <!-- The mobile sheet. `data-public-menu` is what the stylesheet animates. -->
   <div [id]="menuId()" [attr.data-public-menu]="menuOpen() ? 'open' : 'closed'" class="tf-shell">
     <nav [attr.aria-label]="labels().menu">
-      <a routerLink="/teachers" (click)="closeMenu()">{{ labels().browse }}</a>
-      <a [routerLink]="demandLink().path" (click)="closeMenu()">{{ demandLink().label }}</a>
-      <a routerLink="/about" (click)="closeMenu()">{{ labels().about }}</a>
+      <a routerLink="/teachers" routerLinkActive="is-current" [routerLinkActiveOptions]="{ exact: false }"
+         ariaCurrentWhenActive="page" (click)="closeMenu()">{{ labels().browse }}</a>
+      <a [routerLink]="demandLink().path" routerLinkActive="is-current"
+         ariaCurrentWhenActive="page" (click)="closeMenu()">{{ demandLink().label }}</a>
+      <a routerLink="/about" routerLinkActive="is-current"
+         ariaCurrentWhenActive="page" (click)="closeMenu()">{{ labels().about }}</a>
     </nav>
     <div class="tf-public-menu-actions">
+       @if (isGuest()) {
+         <a class="tf-button tf-public-menu-cta" data-testid="menu-cta" [routerLink]="cta().path" [queryParams]="cta().query"
+            (click)="closeMenu()">{{ cta().label }}</a>
+       }
       @if (session(); as user) {
         <a class="tf-public-menu-login" [routerLink]="accountHref()" (click)="closeMenu()">
           <img decoding="async" [src]="avatarSrc()" alt="" width="24" height="24" />

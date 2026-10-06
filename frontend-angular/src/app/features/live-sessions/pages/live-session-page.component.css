@@ -13,8 +13,8 @@
   gap: 16px;
   margin-block-end: 12px;
 }
-.tf-session-meeting-bar h3 { margin: 0; font-size: 20px; }
-.tf-session-meeting-bar p { margin: 4px 0 0; color: var(--text-2); font-size: 14px; }
+.tf-session-meeting-bar h3 { margin: 0; font-size: var(--type-section-title-size); }
+.tf-session-meeting-bar p { margin: 4px 0 0; color: var(--text-2); font-size: var(--type-body-sm-size); }
 .tf-session-meeting-stage {
   inline-size: 100%;
   block-size: min(68vh, 680px);

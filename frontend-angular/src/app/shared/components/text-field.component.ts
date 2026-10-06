@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
 
 /**
  * Label, control, and the one message slot beneath it.
@@ -14,9 +14,10 @@ import { ChangeDetectionStrategy, Component, input, model, output } from '@angul
   template: `
     <div class="tf-field">
       <label [attr.for]="fieldId()">{{ label() }}</label>
-      <input [id]="fieldId()" [type]="type()" [attr.inputmode]="inputMode()"
+      <input [id]="fieldId()" [name]="name() || fieldId()" [required]="required()" [disabled]="disabled()" [readOnly]="readOnly()" [type]="type()" [attr.inputmode]="inputMode()"
              [attr.autocomplete]="autocomplete()" [attr.placeholder]="placeholder()"
-             [attr.maxlength]="maxLength()" [attr.dir]="dir()"
+             [attr.maxlength]="maxLength()" [attr.dir]="direction()"
+             [attr.spellcheck]="type() === 'email' ? 'false' : null"
              [class.tf-field--invalid]="invalid()"
              [attr.aria-invalid]="invalid()"
              [attr.aria-describedby]="message() ? fieldId() + '-msg' : null"
@@ -41,12 +42,18 @@ export class TextFieldComponent {
   readonly fieldId = input.required<string>();
   readonly label = input.required<string>();
   readonly value = model('');
+  readonly name = input('');
+  readonly required = input(false);
+  readonly disabled = input(false);
+  readonly readOnly = input(false);
   readonly type = input<'text' | 'email' | 'password'>('text');
   readonly autocomplete = input<string | null>(null);
   readonly placeholder = input<string | null>(null);
   readonly inputMode = input<string | null>(null);
   readonly maxLength = input<number | null>(null);
   readonly dir = input<string | null>(null);
+  /** An address is Latin left-to-right text; in an RTL field its "@" and "." jump ends as it is typed. */
+  readonly direction = computed(() => this.dir() ?? (this.type() === 'email' ? 'ltr' : null));
   readonly invalid = input(false);
   /** Error when `invalid`, hint otherwise — one slot, so they cannot both show. */
   readonly message = input<string>('');

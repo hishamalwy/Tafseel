@@ -37,7 +37,10 @@ internal sealed class TeacherEarningsService(TafseelDbContext db, IFinancialServ
             .Where(o => orderIds.Contains(o.Id) && o.TeacherId == teacherId)
             .Select(o => new
             {
-                o.Id, o.Price, o.TeacherCommissionPercent, o.TeacherCommissionAmount,
+                o.Id,
+                o.Price,
+                o.TeacherCommissionPercent,
+                o.TeacherCommissionAmount,
                 Title = db.LearningRequests.Where(r => r.Id == o.LearningRequestId).Select(r => r.Title).FirstOrDefault()
             })
             .ToDictionaryAsync(o => o.Id, ct);

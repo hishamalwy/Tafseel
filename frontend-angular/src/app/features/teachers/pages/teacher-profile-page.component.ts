@@ -1,3 +1,6 @@
+import { TeacherStylesComponent } from '@shared/components/lazy-feature-styles.component';
+import { TeacherTransition } from '@shared/directives/teacher-transition.directive';
+import { SkeletonComponent } from '@shared/components/skeleton.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -24,7 +27,7 @@ import {
 @Component({
   selector: 'tf-teacher-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PublicHeaderComponent, SkipLinkComponent, ToastComponent, PriceComponent],
+  imports: [TeacherStylesComponent, SkeletonComponent, RouterLink, PublicHeaderComponent, SkipLinkComponent, ToastComponent, PriceComponent],
   templateUrl: './teacher-profile-page.component.html',
   styleUrl: './teacher-profile-page.component.css'
 })
@@ -35,6 +38,8 @@ export class TeacherProfilePageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
   private readonly toasts = inject(ToastService);
+  readonly transition = inject(TeacherTransition);
+  readonly loadingAvatar = this.transition.avatarSrc();
   readonly locale = inject(LocaleService);
   readonly fmt = inject(FormatService);
 

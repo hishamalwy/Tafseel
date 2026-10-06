@@ -72,7 +72,7 @@
               <div class="tf-grid-2">
                 <div class="tf-field">
                   <label for="offer-amount">{{ locale.format('setup_price_in', { currency: fmt.currencyLabel(r.currency) }, 'Price ({currency})') }}</label>
-                  <input id="offer-amount" name="amount" type="number" step="0.01" min="0.01" [ngModel]="draft().amount" (ngModelChange)="set('amount', $event)" [attr.aria-invalid]="!!problem('amount')" [attr.aria-describedby]="problem('amount') ? 'offer-amount-error' : null">
+                  <input autocomplete="off" id="offer-amount" name="amount" type="number" step="0.01" min="0.01" [ngModel]="draft().amount" (ngModelChange)="set('amount', $event)" [attr.aria-invalid]="!!problem('amount')" [attr.aria-describedby]="problem('amount') ? 'offer-amount-error' : null">
                   @if (problem('amount')) { <span id="offer-amount-error" class="tf-field-error">{{ problem('amount') }}</span> }
                   @else if (terms(); as terms) { <small class="tf-field-hint" data-testid="offer-price-range">{{ locale.format('demand_price_range_hint', { min: fmt.money(terms.minPrice, r.currency), max: fmt.money(terms.maxPrice, r.currency) }, 'Between {min} and {max} for this service.') }}</small> }
                 </div>
@@ -100,7 +100,7 @@
               </div>
               <div class="tf-field">
                 <label for="offer-message">{{ t('demand_offer_message', 'Message to the student') }}</label>
-                <textarea id="offer-message" name="message" rows="4" [attr.maxlength]="limits.message" [ngModel]="draft().message" (ngModelChange)="set('message', $event)" [attr.aria-invalid]="!!problem('message')" [attr.aria-describedby]="problem('message') ? 'offer-message-error' : null"></textarea>
+                <textarea autocomplete="off" id="offer-message" name="message" rows="4" [attr.maxlength]="limits.message" [ngModel]="draft().message" (ngModelChange)="set('message', $event)" [attr.aria-invalid]="!!problem('message')" [attr.aria-describedby]="problem('message') ? 'offer-message-error' : null"></textarea>
                 @if (problem('message')) { <span id="offer-message-error" class="tf-field-error">{{ problem('message') }}</span> }
               </div>
               <div class="tf-form-actions">

@@ -1,0 +1,6 @@
+.tf-offer-compare { gap: var(--space-4); margin-block-end: var(--space-6); }
+.tf-offer-compare__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); }
+.tf-offer-compare__head > div { flex: 1 1 320px; min-inline-size: 0; }
+.tf-offer-compare__head p { margin: var(--space-2) 0 0; max-inline-size: 68ch; line-height: 1.6; }
+.tf-offer-compare__head > button { flex: 0 0 auto; }
+.tf-offer-compare__body { min-inline-size: 0; border-block-start: 1px solid var(--border); padding-block-start: var(--space-4); }

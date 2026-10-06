@@ -42,22 +42,30 @@ const VISIBLE_RATIO = 0.18;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   templateUrl: './product-story.component.html',
-  styles: `:host { display: contents; }`
+  styles: `:host { display: contents; }.tf-story-layout{display:grid;align-content:start;gap:var(--space-3);min-inline-size:0}.tf-story-controls{display:flex;justify-content:flex-end}.tf-story-controls button{min-block-size:44px}`
 })
 export class ProductStoryComponent {
-  private readonly locale = inject(LocaleService);
+  readonly locale = inject(LocaleService);
   private readonly motion = inject(ReducedMotion);
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly fmt = inject(FormatService);
 
   readonly teacher = input<StoryTeacher | null>(null);
+  readonly canRequest = input(true);
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('story');
   private readonly inView = signal(false);
   private readonly documentHidden = signal(false);
   /** Once a visitor picks a step, the section stops advancing on its own. */
   private readonly manual = signal(false);
+  readonly paused = this.manual.asReadonly();
+  readonly canPlay = computed(() => !this.motion.preferred());
+  readonly focusWithin = signal(false);
+  togglePlayback(): void { this.manual.update(value => !value); }
+  leaveFocus(event: FocusEvent): void {
+    if (!this.host().nativeElement.contains(event.relatedTarget as Node | null)) this.focusWithin.set(false);
+  }
 
   readonly step = signal(0);
 
@@ -100,7 +108,7 @@ export class ProductStoryComponent {
   private autoplay(): void {
     effect(onCleanup => {
       const running = this.inView() && !this.documentHidden()
-        && !this.motion.preferred() && !this.manual();
+        && !this.motion.preferred() && !this.manual() && !this.focusWithin();
       if (!running) return;
       const timer = setInterval(
         () => this.step.update(s => (s + 1) % STEP_COUNT), AUTOPLAY_MS);

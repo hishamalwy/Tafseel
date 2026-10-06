@@ -112,7 +112,7 @@ await step('4. account self-service: rename, sign out another device, change the
   await confirmDialog(page);
   assert.equal((await changed).status(), 204);
   await page.waitForURL(url => pathOf(url) === '/ar/auth', { timeout: 15000 });
-  await page.locator('.tf-auth-success, [role=status]').first().waitFor({ timeout: 10000 });
+  await page.locator('[data-testid=auth-notice], .tf-auth-success, [role=status]').first().waitFor({ timeout: 10000 });
   await signIn(student, email, newPassword);
 });
 

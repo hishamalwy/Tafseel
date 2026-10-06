@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { Observable, map, of } from 'rxjs';
 import { CatalogService, FeaturedSubject, FeaturedTeacher, PlatformStats } from '../models/featured';
 import { JourneyOffer, LandingGateway, StudentJourneyGateway } from '../services/landing.ports';
 import { Promotion } from '../models/promotion';
@@ -89,6 +90,7 @@ function toFeaturedTeacher(dto: TeacherCardDto): FeaturedTeacher {
 @Injectable()
 export class HttpLandingGateway implements LandingGateway {
   private readonly http = inject(HttpClient);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   featuredSubjects(take: number): Observable<readonly FeaturedSubject[]> {
     return this.http
@@ -122,12 +124,15 @@ export class HttpLandingGateway implements LandingGateway {
   }
 
   promotions(): Observable<readonly Promotion[]> {
+    // Optional content must not delay the server's first response or enter its transfer cache.
+    if (!this.isBrowser) return of([]);
     return this.http
       .get<PromotionDto[]>('/api/v1/promotions')
       .pipe(map(rows => (Array.isArray(rows) ? rows : []).map(toPromotion)));
   }
 
   platformStats(): Observable<PlatformStats | null> {
+    if (!this.isBrowser) return of(null);
     return this.http
       .get<StatsDto>('/api/v1/platform/stats')
       .pipe(map(dto => dto ? {

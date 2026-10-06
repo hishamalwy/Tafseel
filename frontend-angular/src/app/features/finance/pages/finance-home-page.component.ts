@@ -68,11 +68,11 @@ interface Queue { key: string; labelKey: string; fallback: string; count: number
       color: inherit; text-decoration: none; transition: border-color var(--motion-fast) ease; }
     .tf-fin-queues li:first-child a { border-color: color-mix(in oklab, var(--primary) 34%, var(--border));
       background: color-mix(in oklab, var(--primary-soft) 55%, var(--surface)); }
-    .tf-fin-queues a:hover { border-color: var(--primary); }
-    .tf-fin-queues strong { font-size: 28px; line-height: 1; min-width: 2ch; font-variant-numeric: tabular-nums; }
-    .tf-fin-queues span { font-size: 15px; font-weight: 650; }
+    @media (hover:hover) and (pointer:fine) { .tf-fin-queues a:hover { border-color: var(--primary); } }
+    .tf-fin-queues strong { font-size: var(--type-figure-size); line-height: 1; min-width: 2ch; font-variant-numeric: tabular-nums; }
+    .tf-fin-queues span { font-size: var(--type-body-size); font-weight: 650; }
     .tf-fin-go { color: var(--primary); }
-    .tf-fin-ledger { margin: 0; padding: 12px 16px; border-radius: var(--r-md); font-size: 14px; font-weight: 600; }
+    .tf-fin-ledger { margin: 0; padding: 12px 16px; border-radius: var(--r-md); font-size: var(--type-body-sm-size); font-weight: 600; }
     .tf-fin-ledger[data-balanced='true'] { background: var(--success-soft); color: var(--success); }
     .tf-fin-ledger[data-balanced='false'] { background: var(--warning-soft); color: var(--warning); }
     @media (prefers-reduced-motion: reduce) { .tf-fin-queues a { transition: none; } }

@@ -53,6 +53,20 @@ async function open(conversations: () => readonly Conversation[]) {
 const settle = () => new Promise(resolve => setTimeout(resolve, 10));
 
 describe('MessagesPageComponent', () => {
+  it('keeps initial history still and animates only a newly received message across poll refreshes', async () => {
+    const { harness, gateway, handlers } = await open(() => [conversation(0)]);
+    gateway.messages.mockReturnValue(of([message('history', 'them')]));
+    const component = harness.routeDebugElement!.componentInstance as MessagesPageComponent;
+    await component.reloadThread(true);
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('[data-message-id="history"]')?.classList.contains('tf-message-arrive')).toBe(false);
+    handlers().message(message('new', 'them'));
+    await settle(); harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('[data-message-id="new"]')?.classList.contains('tf-message-arrive')).toBe(true);
+    await component.reloadThread(false); harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('[data-message-id="history"]')?.classList.contains('tf-message-arrive')).toBe(false);
+    expect(harness.routeNativeElement!.querySelectorAll('[data-message-id="new"]')).toHaveLength(1);
+  });
   it('joins the conversation and marks it read when it opens with unread messages', async () => {
     const { gateway, realtime } = await open(() => [conversation(2)]);
     expect(realtime.join).toHaveBeenCalledWith('c1');

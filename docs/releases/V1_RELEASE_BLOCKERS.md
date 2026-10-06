@@ -8,6 +8,12 @@ checklist: [`PRODUCTION_READINESS.md`](GO_LIVE_CHECKLIST.md).
 
 No ticket here was started in Release Control 1.
 
+**Dependency remediation backlog (2026-10-06):** the pre-push `node scripts/ci/check-vulnerable-packages.mjs` check fails for frontend production dependencies: Critical `proxy-addr` ([GHSA-jqcg-44mw-7w3h](https://github.com/advisories/GHSA-jqcg-44mw-7w3h)) and High `source-map-js` ([GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)). Remediation remains open; update the affected dependencies and verify the existing gate passes without exceptions. No dependency changes were made during the push task.
+
+**Button/spacing follow-up complete (2026-10-05):** [CRAFT-BUTTONS-2026-10-05](../tickets/v1/CRAFT-BUTTONS-2026-10-05.md), correcting the four user screenshot examples after the presentation refinement. Actual AR/EN, light/dark and phone/desktop evidence; 27/27 affected browser groups pass. No release-blocker or business-rule state change.
+
+**Presentation refinement complete (2026-10-05):** `CRAFT-2026-10-05` implements and verifies the accepted 13 UX scopes, then 10 UI scopes across the existing V1 interface. [Completion ledger](../engineering/UX_UI_CRAFT_2026_10_05.md) and [Before/After evidence](../engineering/UX_UI_CRAFT_COMPLETION_2026_10_05.md). These audit scope numbers are distinct from the historical UX tickets below. No business/provider/API change or production-readiness status change is implied.
+
 **Launch readiness (2026-09-30):** this register predates the product-completeness pass (FIN-02…07, PROD-01, SEC-04 and
 SEC-05 are built in the current tree). For launch, use [PRODUCTION_LAUNCH_READINESS.md](PRODUCTION_LAUNCH_READINESS.md)
 and [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md); the provider, infrastructure, legal and decision tickets below still apply.

@@ -25,16 +25,16 @@ import { PublicVideoComponent } from '../components/public-video.component';
     .tf-readiness { display: grid; gap: 18px; max-width: 860px; }
     .tf-readiness-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .tf-readiness-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px;
-      border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); font-size: 14px; }
+      border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); font-size: var(--type-body-sm-size); }
     .tf-readiness-list li[data-done="true"] { color: var(--text-2); }
     .tf-readiness-mark { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-inline-end: 10px; border-radius: 50%;
-      border: 1px solid var(--border-strong); font-size: 12px; font-weight: 800; flex: none; }
+      border: 1px solid var(--border-strong); font-size: var(--type-meta-size); font-weight: 800; flex: none; }
     [data-done="true"] .tf-readiness-mark { background: var(--success); border-color: var(--success); color: var(--primary-ink); }
     /* The checklist's links are how a teacher reaches each unfinished step, so they are targets a thumb can
        hit rather than words at the end of a line (UX-06). */
     .tf-readiness-list a { display: inline-flex; align-items: center; justify-content: center;
       min-block-size: var(--touch-min, 44px); min-inline-size: 64px; padding-inline: 12px; margin-block: -6px;
-      font-size: 13px; font-weight: 700; white-space: nowrap; }
+      font-size: var(--type-label-size); font-weight: 700; white-space: nowrap; }
   `
 })
 export class TeacherPublicationPageComponent {

@@ -29,14 +29,15 @@ export class LangToggleComponent {
   readonly label = computed(() => (this.locale.lang() === 'ar' ? 'English' : 'العربية'));
 
   async switch(): Promise<void> {
+    if (this.saving()) return;
+    this.saving.set(true);
     const next = this.locale.lang() === 'ar' ? 'en' : 'ar';
     if (this.session?.current()) {
-      this.saving.set(true);
       try {
         await firstValueFrom(this.http.put<void>('/api/v1/auth/language', { lang: next }).pipe(timeout(2000)));
       } catch { /* the site still switches; e-mails keep the previous language */ }
-      this.saving.set(false);
     }
-    this.locale.set(next);
+    try { await this.locale.set(next); }
+    finally { this.saving.set(false); }
   }
 }

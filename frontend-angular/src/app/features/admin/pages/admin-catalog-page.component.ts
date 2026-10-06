@@ -10,6 +10,7 @@ import { ToastComponent } from '@shared/components/toast.component';
 import { WorkspaceShellComponent } from '@shared/layouts/workspace-shell.component';
 import { DialogService } from '@shared/services/dialog.service';
 import { ToastService } from '@shared/services/toast.service';
+import { injectFocusFirstInvalid } from '@shared/utils/form-focus';
 import {
   CATALOG_KINDS, Catalog, CatalogKind, CatalogService, EducationLevel, LIVE_DURATIONS, Language, LanguageDraft, LanguageForm,
   LevelDraft, LevelForm, Problems, QualificationDraft, QualificationForm, QualificationTopic, ResourceDraft, ResourceForm,
@@ -49,6 +50,7 @@ export class AdminCatalogPageComponent {
   readonly subjectFilter = signal('');
   readonly form = signal<OpenForm>(null);
   readonly attempted = signal(false);
+  private readonly focusFirstInvalid = injectFocusFirstInvalid();
 
   readonly serviceDraft = signal<ServiceDraft>(ServiceForm.empty());
   readonly subjectDraft = signal<SubjectDraft>(SubjectForm.empty());
@@ -191,7 +193,7 @@ export class AdminCatalogPageComponent {
     const open = this.form();
     if (!open || this.busy()) return;
     this.attempted.set(true);
-    if (Object.keys(this.problems()).length) return;
+    if (Object.keys(this.problems()).length) return this.focusFirstInvalid();
     this.busy.set(true);
     this.error.set('');
     try {

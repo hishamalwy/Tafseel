@@ -4,6 +4,8 @@
 decisions ([Owner decisions](../releases/V1_OWNER_DECISIONS.md)). Changes only through a ticket that passes Gate 1 of
 [`SDLC.md`](../engineering/SDLC.md). Terms: [Product Contract](./TAFSEEL_PRODUCT_CONTRACT.md).
 
+**Implementation note (2026-10-05):** the existing V1 interface received the accepted system-wide UX/UI presentation refinement under [CRAFT-2026-10-05](../engineering/UX_UI_CRAFT_2026_10_05.md): 13 UX scopes verified before 10 UI scopes. [Completion and screenshots](../engineering/UX_UI_CRAFT_COMPLETION_2026_10_05.md). Capability/business scope is unchanged.
+
 ## What V1 is
 
 **Tafseel V1 is a commercially usable, Saudi-first learning-help marketplace in which a student can

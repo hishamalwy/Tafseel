@@ -66,7 +66,7 @@ import { LoadMyOffers } from '../services/demand.use-cases';
   styles: `
     .tf-my-offers { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
     .tf-my-offer-head { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
-    .tf-my-offer-head h2 { margin: 2px 0 0; font-size: 17px; }
+    .tf-my-offer-head h2 { margin: 2px 0 0; font-size: var(--type-item-title-size); }
   `
 })
 export class MyOffersPageComponent {

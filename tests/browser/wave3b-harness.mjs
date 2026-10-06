@@ -120,7 +120,7 @@ export async function registerStudent(actor, fullName, email, password) {
   await page.waitForURL(url => pathOf(url).endsWith('/auth/confirm-email'), { timeout: 15000 });
   await visit(page, await outboxLink(email, 'mode=confirm'));
   // The confirmation is said on the sign-in form itself (UX-11), where the person is about to act.
-  await page.locator('.tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('[data-testid=auth-notice], .tf-auth-success, .tf-toast').first().waitFor({ state: 'visible', timeout: 15000 });
   await page.locator('#login-email').fill(email);
   await page.locator('#login-password').fill(password);
   await budget(1);
@@ -300,7 +300,10 @@ export async function noHorizontalOverflow(page, what) {
 }
 
 export async function shot(page, name) {
-  if (SHOTS) await page.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
+  if (SHOTS) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
+  }
 }
 
 /** Reads server state from the throwaway database; journeys never write to it. */

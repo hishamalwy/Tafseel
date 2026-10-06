@@ -207,8 +207,8 @@ await step('UX-05 /requests forwards each role to its canonical screen and no in
 
   const p = student.page;
   await p.goto(`${BASE}/en/requests`, { waitUntil: 'networkidle' });
-  await p.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === '/en/requests/new', { timeout: 15000 });
-  await p.locator('[data-testid=request-modes]').waitFor({ timeout: 15000 });
+  await p.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === '/en/requests/new/open', { timeout: 15000 });
+  await p.locator('#open-title').waitFor({ timeout: 15000 });
   await p.goto(`${BASE}/en/requests?requestId=${openRequestId}`, { waitUntil: 'networkidle' });
   await p.waitForURL(url => new URL(String(url)).pathname.replace(/\/$/, '') === `/en/requests/${openRequestId}`, { timeout: 15000 });
   await p.locator('[data-testid=request-status]').waitFor({ timeout: 15000 });

@@ -144,8 +144,15 @@ await step('5. Finance sends it: audited details, start, evidence — never a ba
   const row = () => page.locator(`[data-testid=finance-withdrawal-row][data-withdrawal-id="${withdrawalId}"]`);
   await row().waitFor({ timeout: 15000 });
   const instruction = waitForCall(page, 'POST', /transfer-instruction$/);
+  await page.route('**/transfer-instruction', async route => {
+    const response = await route.fetch(); await new Promise(resolve => setTimeout(resolve, 500)); await route.fulfill({response});
+  });
   await row().locator('[data-testid=finance-transfer-details]').click();
+  await row().locator('[data-testid=finance-transfer-details][aria-busy=true]').waitFor();
+  assert.equal(await row().locator('[data-testid=finance-transfer-details]').getAttribute('data-feedback'), 'busy');
+  await shot(page, 'ui04-finance-action-busy');
   assert.ok((await instruction).ok());
+  await page.unroute('**/transfer-instruction');
   assert.equal(await page.locator('[data-testid=finance-instruction-iban]').innerText(), IBAN.replaceAll(' ', ''));
   const note = await page.locator('[data-testid=finance-instruction-note]').innerText();
   assert.match(note, /^TFS-W-/);

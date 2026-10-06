@@ -1,5 +1,6 @@
 import { Provider } from '@angular/core';
 import { Routes } from '@angular/router';
+import { unsavedChangesGuard } from '@shared/utils/unsaved-changes';
 import { DEMAND_GATEWAY } from './services/demand.ports';
 import { HttpDemandGateway } from './services/http-demand.gateway';
 import {
@@ -16,6 +17,7 @@ const providers: Provider[] = [HttpDemandGateway, { provide: DEMAND_GATEWAY, use
 
 export const OPEN_REQUEST_ROUTES: Routes = [{
   path: '',
+  canDeactivate: [unsavedChangesGuard],
   providers: [...providers, LoadOpenRequestForm, PublishOpenRequest, OpenRequestDrafts],
   loadComponent: () => import('./pages/open-request-page.component').then(m => m.OpenRequestPageComponent)
 }];
