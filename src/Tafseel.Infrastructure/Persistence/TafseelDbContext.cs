@@ -88,6 +88,7 @@ public sealed class TafseelDbContext(DbContextOptions<TafseelDbContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        Tafseel.Infrastructure.Finance.ProviderOperations.Configure(builder);
 
         builder.Entity<ApplicationUser>(user =>
         {

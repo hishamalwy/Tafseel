@@ -128,6 +128,9 @@ public static class EnvironmentSeed
     /// </summary>
     private static async Task<string> SeedFinanceScenarioAsync(IServiceProvider services, SeedClock clock, CancellationToken ct)
     {
+        await using (var check = services.CreateAsyncScope())
+            if (check.ServiceProvider.GetRequiredService<IPaymentProvider>().Name == "Paymob")
+                return "Finance fixtures are disabled for Paymob: complete an actual owner TEST purchase.";
         string studentId, teacherId, financeId;
         await using (var scope = services.CreateAsyncScope())
         {

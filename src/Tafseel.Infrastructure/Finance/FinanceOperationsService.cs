@@ -160,6 +160,8 @@ internal sealed class FinanceOperationsService(
             : viewerId == payment.StudentId || viewerId == teacherId ? "refund_self_processing_forbidden"
             : null;
 
+        if (blocked is null && await db.Set<ProviderRefund>().AnyAsync(x => x.PaymentId == paymentId && !x.Applied, ct))
+            blocked = "refund_pending";
         return new(item, attempts, webhooks, purchase, escrow, refunds,
             ledger.Select(l => new FinanceLedgerLineDto(l.BusinessKey, l.Debit.ToString(), l.Credit.ToString(),
                 l.Amount, l.Currency, l.CreatedAt)).ToArray(),

@@ -97,8 +97,8 @@ export class FinanceGateway {
     };
   }
 
-  refund(paymentId: string, reason: string, key: string): Promise<unknown> {
-    return firstValueFrom(this.http.post(`/api/v1/payments/${encodeURIComponent(paymentId)}/refund`, { reason },
+  refund(paymentId: string, reason: string, key: string): Promise<{ providerStatus: string }> {
+    return firstValueFrom(this.http.post<{ providerStatus: string }>(`/api/v1/payments/${encodeURIComponent(paymentId)}/refund`, { reason },
       { headers: new HttpHeaders({ 'Idempotency-Key': key }) }));
   }
 

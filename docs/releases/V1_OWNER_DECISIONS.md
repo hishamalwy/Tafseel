@@ -17,9 +17,29 @@ Product Owner has stated it explicitly; the documents listed for it are updated 
 | DEC-12 | Production hosting and data location | **OPEN** | Direction recorded; provider and region open |
 | DEC-13 | Listed price reference for the agreed-price disclosure | **DECIDED** | Option A — immutable server-side snapshot at Direct Request creation; no backfill; implemented by UX-09 |
 | DEC-14 | Live session approval before payment | **DECIDED** | Student requests a slot; teacher accepts or declines; only accepted requests can be paid |
+| DEC-16 | Phase 1 Trust and Safety operational policy | **OPEN** | Role expansion requested; SLA, takeover, safeguards, prior-case visibility and protected additive implementation approval await owner decision |
 
 Decisions are recorded here before their implementation. Each ticket tracks the code, schema and
 verification work that follows; historical financial records remain governed by the Product Contract.
+
+## DEC-16 — Phase 1 Trust and Safety operational policy
+
+- **Status:** **OPEN**, raised 2026-10-06. The user requested Phase 1 only; this is not approval for Phase 2.
+- **Already requested:** Quality owns case-scoped safety investigation without Admin/Finance powers;
+  typed subjects, assignment, internal notes, audit of private reads, non-financial resolution and financial
+  recommendations; safe additive migrations; Arabic/English Dashboard workflows and full verification.
+- **Decision required:** the concrete policy proposal in
+  [Phase 1 system design §§5 and 9](../audits/production-hardening-phase1/SYSTEM_DESIGN.md):
+  severity response/action deadlines; Admin-only reassignment; 24-hour expiring, independently reviewed
+  High/Critical safeguards on new purchases/publication; same-purchase-only prior-case summaries;
+  assigned-case/resolved-case access rules; necessary additive Domain/migration changes with failing tests first.
+- **Recommended:** adopt the proposal with any owner amendments. No deadlines, restrictions or new
+  entitlements are effective until the Product Owner explicitly states the decision.
+- **Blocked ticket:** [TRUST-01](../tickets/v1/TRUST-01.md), Gate 1; Gates 2–3 remain partial.
+- **Documents affected after decision:** Product Contract §§2/6/7/7a; Roles and Permissions; V1 Scope §9;
+  release blockers; TRUST-01; API contract/snapshots and Phase 1 evidence after implementation.
+- **Implementation boundary:** no provider work, no financial semantics change, no inferred legacy
+  private-resource links, no Phase 2 work. Existing financial execution remains protected.
 
 ---
 

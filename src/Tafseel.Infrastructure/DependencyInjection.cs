@@ -349,16 +349,23 @@ public static class DependencyInjection
         services.AddScoped<ICouponCheckoutQuoteService, CouponCheckoutQuoteService>();
         services.AddScoped<IPromotionService, PromotionService>();
         services.AddScoped<IPlatformStatsService, PlatformStatsService>();
-        services.AddSingleton<MockPaymentProvider>();
-        services.AddScoped<IMockPaymentSimulator, MockPaymentSimulator>();
-        services.AddSingleton<IPaymentProvider>(sp =>
+        services.AddScoped<PaymentCheckoutService>();
+        if (environment.IsEnvironment("Testing")) services.AddSingleton<MockPaymentProvider>();
+        if (configuration["Payments:Provider"] == "Paymob") services.AddHostedService<PaymobRecoveryWorker>();
+        services.AddHttpClient<PaymobPaymentProvider>((sp, client) =>
         {
-            var provider = sp.GetRequiredService<IOptions<PaymentOptions>>().Value.Provider;
-            return provider switch
+            client.BaseAddress = new Uri(sp.GetRequiredService<IOptions<PaymobOptions>>().Value.BaseUrl.TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(25);
+        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+            .RemoveAllLoggers();
+        services.AddScoped<IPaymentProvider>(sp =>
+        {
+            var selected = sp.GetRequiredService<IOptions<PaymentOptions>>().Value.Provider;
+            return selected switch
             {
-                "Mock" => sp.GetRequiredService<MockPaymentProvider>(),
-                _ => throw new InvalidOperationException(
-                    $"Payment provider '{provider}' is not registered. Development uses Mock; Production requires a registered real provider.")
+                "Paymob" => sp.GetRequiredService<PaymobPaymentProvider>(),
+                "Mock" when environment.IsEnvironment("Testing") => sp.GetRequiredService<MockPaymentProvider>(),
+                _ => throw new InvalidOperationException("Payments:Provider must be Paymob. Deterministic fakes are for Testing only.")
             };
         });
         services.AddScoped<IMessagingService, MessagingService>();
@@ -504,29 +511,16 @@ public static class DependencyInjection
             .Validate(x =>
                     !environment.IsProduction() || x.Provider != "Mock",
                 "The mock payment provider is forbidden in Production.")
-            .Validate(x =>
-                    environment.IsProduction() || x.Provider == "Mock",
-                "Non-Production environments must use Payments:Provider=Mock until a real PSP adapter is registered.")
-            .Validate(x =>
-                    !environment.IsProduction() || x.Provider == "Mock" || false,
-                "No non-mock payment provider implementation is registered yet. Production remains fail-closed.")
+            .Validate(x => x.Provider == "Paymob" || environment.IsEnvironment("Testing") && x.Provider == "Mock",
+                "Payments:Provider must be Paymob. Mock is restricted to Testing.")
             .Validate(x => !x.AutoReleaseEnabled || x.AutoReleaseAfterHours is >= 24 and <= 720,
                 "Payments:AutoReleaseAfterHours must be between 24 and 720 when automatic release is enabled.")
-            .Validate(x =>
-                    x.Provider != "Mock" || x.Mock.Enabled,
-                "Payments:Provider=Mock requires Payments:Mock:Enabled=true.")
-            .Validate(x =>
-                    !x.Mock.SimulatorEnabled || x.Provider == "Mock",
-                "Payments:Mock:SimulatorEnabled requires Payments:Provider=Mock.")
-            .Validate(x =>
-                    !environment.IsProduction() || !x.Mock.SimulatorEnabled,
-                "The mock payment simulator is forbidden in Production.")
-            .Validate(x =>
-                    string.IsNullOrWhiteSpace(x.Mock.DefaultReturnPath)
-                    || (x.Mock.DefaultReturnPath.StartsWith('/')
-                        && !x.Mock.DefaultReturnPath.StartsWith("//", StringComparison.Ordinal)
-                        && !x.Mock.DefaultReturnPath.Contains("://", StringComparison.Ordinal)),
-                "Payments:Mock:DefaultReturnPath must be a site-relative path such as /student/overview.")
+            .ValidateOnStart();
+        services.AddOptions<PaymobOptions>().Bind(configuration.GetSection("Paymob"))
+            .Validate(x => configuration["Payments:Provider"] != "Paymob" || x.Problems(environment.IsProduction()).Count == 0,
+                "Paymob settings are missing or invalid. Use KSA, SAR, matching mode keys and public HTTPS callback URLs.")
+            .Validate(x => !environment.IsPreProduction() || !x.IsLive,
+                "PreProduction requires Paymob Test mode.")
             .ValidateOnStart();
         services.AddOptions<DisputeOptions>()
             .Bind(configuration.GetRequiredSection(DisputeOptions.SectionName))

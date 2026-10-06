@@ -10,6 +10,7 @@ public sealed record PaymentDto(
     Guid Id, Guid? OrderId, Guid? LiveSessionBookingId, Guid? LearningRequestId, decimal Amount, string Currency, string Provider,
     string ProviderReference, PaymentStatus Status, DateTimeOffset CreatedAt);
 public sealed record PaymentInitiationDto(PaymentDto Payment, string CheckoutReference);
+public sealed record PaymentStateDto(PaymentDto Payment, string State);
 public sealed record OpenRequestPaymentQuoteDto(
     decimal OfferAmount, decimal StudentFeePercent, decimal StudentFeeAmount,
     decimal Total, string Currency, DateTimeOffset ReservationExpiresAt);
@@ -21,7 +22,7 @@ public sealed record MockWebhookEvent(
     bool Succeeded);
 public sealed record RefundDto(
     Guid Id, Guid PaymentId, Guid? OrderId, Guid? LiveSessionBookingId,
-    decimal Amount, string Currency, DateTimeOffset CreatedAt);
+    decimal Amount, string Currency, DateTimeOffset CreatedAt, string ProviderStatus = "Succeeded", string? FailureCode = null);
 public sealed record AdminRefundRequest(
     [param: Required, NotWhiteSpace, StringLength(1000)] string Reason);
 public sealed record RequestWithdrawal(
@@ -134,15 +135,26 @@ public sealed record CouponReconciliationReportDto(
     int MissingEscrow, int DuplicateMovement, int NeedsManualReview,
     IReadOnlyCollection<CouponReconciliationRowDto> Rows);
 
-public sealed record ProviderInitiation(string ProviderReference, string CheckoutReference);
+public sealed record ProviderInitiation(string ProviderReference, string CheckoutReference,
+    string? IntentionId = null, string? OrderId = null);
+public sealed record ProviderPaymentRequest(Guid PaymentId, Guid PayableId, string Reference,
+    decimal Amount, string Currency, string Item, string Name, string Email, string Phone);
+public enum ProviderEventKind { Payment, Pending, Refund, Ignore }
 public sealed record VerifiedPaymentEvent(
-    string EventId, string ProviderReference, decimal Amount, string Currency, bool Succeeded);
+    string EventId, string ProviderReference, decimal Amount, string Currency, bool Succeeded,
+    ProviderEventKind Kind = ProviderEventKind.Payment, string? TransactionId = null,
+    string? OrderId = null, bool? IsLive = null, decimal? RefundedAmount = null);
+public enum ProviderRefundStatus { Requested, Sending, Succeeded, Rejected, Unknown }
+public sealed record ProviderRefundResult(ProviderRefundStatus Status, string? Reference = null, string? FailureCode = null);
 
 public interface IPaymentProvider
 {
     string Name { get; }
-    Task<ProviderInitiation> InitiateAsync(Guid paymentId, decimal amount, string currency, CancellationToken ct);
+    Task<ProviderInitiation> InitiateAsync(ProviderPaymentRequest request, CancellationToken ct);
     VerifiedPaymentEvent VerifyWebhook(ReadOnlyMemory<byte> payload, string signature);
+    Task<ProviderRefundResult> RefundAsync(string transactionId, decimal amount, string currency, CancellationToken ct) =>
+        throw new NotSupportedException("The provider does not support refunds.");
+    Task<VerifiedPaymentEvent?> InquireAsync(string reference, CancellationToken ct, string? transactionId = null) => Task.FromResult<VerifiedPaymentEvent?>(null);
 }
 
 public interface IFinancialService
@@ -157,6 +169,7 @@ public interface IFinancialService
         string studentId, Guid learningRequestId, CancellationToken ct);
     Task ProcessWebhookAsync(ReadOnlyMemory<byte> payload, string signature, CancellationToken ct);
     Task<PaymentDto> GetPaymentAsync(string userId, Guid paymentId, CancellationToken ct);
+    Task<PaymentStateDto> GetPaymentStateAsync(string userId, Guid paymentId, CancellationToken ct);
     Task<RefundDto> RefundAsync(
         string adminId, Guid paymentId, string reason, string idempotencyKey, CancellationToken ct);
     Task<WithdrawalDto> RequestWithdrawalAsync(
@@ -201,56 +214,8 @@ public interface IFinancialService
 public sealed class PaymentOptions
 {
     public const string SectionName = "Payments";
-    public string Provider { get; init; } = "Mock";
+    public string Provider { get; init; } = "Paymob";
     public string WebhookSecret { get; init; } = "";
     public bool AutoReleaseEnabled { get; init; }
     public int AutoReleaseAfterHours { get; init; } = 72;
-    /// <summary>Mock-provider controls. Ignored when Provider is not Mock.</summary>
-    public MockPaymentOptions Mock { get; init; } = new();
-}
-
-/// <summary>
-/// Development / explicitly enabled Staging mock PSP controls.
-/// Production must keep SimulatorEnabled=false (and Provider != Mock).
-/// </summary>
-public sealed class MockPaymentOptions
-{
-    /// <summary>When Provider=Mock, must remain true. Production forbids Provider=Mock entirely.</summary>
-    public bool Enabled { get; init; } = true;
-    /// <summary>Exposes the browser checkout simulator and server-side signed webhook helper.</summary>
-    public bool SimulatorEnabled { get; init; }
-    /// <summary>Relative app path after a simulated outcome (open-redirect safe).</summary>
-    public string DefaultReturnPath { get; init; } = Common.AppRoutes.StudentHome;
-}
-
-public sealed record PaymentCapabilitiesDto(string Provider, bool MockSimulatorEnabled);
-
-public sealed record MockSimulatorSessionDto(
-    string ProviderReference,
-    Guid PaymentId,
-    decimal Amount,
-    string Currency,
-    PaymentStatus Status,
-    Guid? OrderId,
-    Guid? LiveSessionBookingId,
-    Guid? LearningRequestId = null);
-
-public sealed record MockSimulatorCompleteRequest(
-    [param: Required, StringLength(200)] string ProviderReference,
-    bool Succeeded,
-    [param: StringLength(300)] string? ReturnPath);
-
-public sealed record MockSimulatorCompleteResponse(
-    PaymentStatus Status,
-    Guid PaymentId,
-    string ReturnUrl);
-
-public interface IMockPaymentSimulator
-{
-    bool IsActive { get; }
-    PaymentCapabilitiesDto GetCapabilities();
-    Task<MockSimulatorSessionDto> GetSessionAsync(
-        string studentId, string providerReference, CancellationToken ct);
-    Task<MockSimulatorCompleteResponse> CompleteAsync(
-        string studentId, MockSimulatorCompleteRequest input, CancellationToken ct);
 }

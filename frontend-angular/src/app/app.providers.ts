@@ -19,10 +19,10 @@ import {
   HttpCatalogGateway, HttpFavouritesGateway, HttpTeacherGateway
 } from '@features/teachers/services/http-teacher.gateway';
 import {
-  BOOKING_GATEWAY, MOCK_CHECKOUT_GATEWAY, PAYABLE_GATEWAY, PAYMENT_GATEWAY
+  BOOKING_GATEWAY, PAYABLE_GATEWAY, PAYMENT_GATEWAY
 } from '@features/checkout/services/checkout.ports';
 import {
-  HttpBookingGateway, HttpMockCheckoutGateway, HttpPayableGateway, HttpPaymentGateway
+  HttpBookingGateway, HttpPayableGateway, HttpPaymentGateway
 } from '@features/checkout/services/http-checkout.gateway';
 import {
   DISPUTE_ADMIN_GATEWAY, DISPUTE_GATEWAY
@@ -66,8 +66,6 @@ export const appProviders: Provider[] = [
   HttpPaymentGateway,
   { provide: PAYMENT_GATEWAY, useExisting: HttpPaymentGateway },
 
-  HttpMockCheckoutGateway,
-  { provide: MOCK_CHECKOUT_GATEWAY, useExisting: HttpMockCheckoutGateway },
 
   HttpBookingGateway,
   { provide: BOOKING_GATEWAY, useExisting: HttpBookingGateway },

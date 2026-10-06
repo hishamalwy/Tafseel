@@ -12,7 +12,7 @@ namespace Tafseel.Api.Controllers;
 [Route("api/v1")]
 public sealed class PaymentsController(
     IFinancialService finance, IPaymentProvider paymentProvider, ICouponCheckoutQuoteService couponQuotes,
-    ITeacherEarningsService earnings) : ControllerBase
+    ITeacherEarningsService earnings, IHostEnvironment environment) : ControllerBase
 {
     [Authorize(Policy = Permissions.PaymentsViewOwn), EnableRateLimiting("payment")]
     [HttpPost("payments/{kind}/{id:guid}/coupon-quote")]
@@ -55,30 +55,24 @@ public sealed class PaymentsController(
     public Task<PaymentDto> Get(Guid id, CancellationToken ct) =>
         finance.GetPaymentAsync(UserId(), id, ct);
 
+    [Authorize(Policy = Permissions.PaymentsViewOwn), HttpGet("payments/{id:guid}/status")]
+    public Task<PaymentStateDto> Status(Guid id, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "private, no-store, max-age=0";
+        return finance.GetPaymentStateAsync(UserId(), id, ct);
+    }
+
+    [AllowAnonymous, EnableRateLimiting("webhook"), RequestSizeLimit(64 * 1024)]
+    [HttpPost("payments/webhooks/paymob")]
+    public Task<IActionResult> PaymobWebhook([FromQuery, Required] string hmac, CancellationToken ct) =>
+        ProcessWebhookAsync("Paymob", hmac, ct);
+
+    // Deterministic test adapter only. No simulator or mock callback is enabled in a deployed environment.
     [AllowAnonymous, EnableRateLimiting("webhook"), RequestSizeLimit(64 * 1024)]
     [HttpPost("payments/webhooks/mock")]
     public Task<IActionResult> MockWebhook(
         [FromHeader(Name = "X-Mock-Signature"), Required] string signature, CancellationToken ct) =>
-        ProcessWebhookAsync("Mock", signature, ct);
-
-    /// <summary>
-    /// Provider-named webhook endpoint. Fail-closed when the path provider does not match
-    /// the configured/selected <see cref="IPaymentProvider.Name"/>.
-    /// Signature header: X-Mock-Signature (Mock) or X-Payment-Signature (future PSPs).
-    /// </summary>
-    [AllowAnonymous, EnableRateLimiting("webhook"), RequestSizeLimit(64 * 1024)]
-    [HttpPost("payments/webhooks/{provider}")]
-    public async Task<IActionResult> Webhook(
-        string provider,
-        [FromHeader(Name = "X-Mock-Signature")] string? mockSignature,
-        [FromHeader(Name = "X-Payment-Signature")] string? paymentSignature,
-        CancellationToken ct)
-    {
-        var signature = mockSignature ?? paymentSignature;
-        if (string.IsNullOrWhiteSpace(signature))
-            return BadRequest();
-        return await ProcessWebhookAsync(provider, signature, ct);
-    }
+        environment.IsEnvironment("Testing") ? ProcessWebhookAsync("Mock", signature, ct) : Task.FromResult<IActionResult>(NotFound());
 
     [Authorize(Policy = Permissions.FinanceRefundsExecute), HttpPost("payments/{id:guid}/refund")]
     public Task<RefundDto> Refund(

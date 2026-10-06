@@ -45,7 +45,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'auth/confirm-email', renderMode: RenderMode.Client },
   { path: 'disputes', renderMode: RenderMode.Client },
   { path: 'checkout', renderMode: RenderMode.Client },
-  { path: 'checkout/simulator', renderMode: RenderMode.Client },
+  { path: 'checkout/result', renderMode: RenderMode.Client },
   { path: 'sessions/book', renderMode: RenderMode.Client },
   { path: 'requests/new', renderMode: RenderMode.Client },
   { path: 'requests', renderMode: RenderMode.Client },

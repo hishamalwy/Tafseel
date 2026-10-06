@@ -9,6 +9,7 @@ Backlog). Blocker list: [`V1_RELEASE_BLOCKERS.md`](../../releases/V1_RELEASE_BLO
 
 | Ticket | Title | Size | 1 Business | 2 UX | 3 Contract | Board | Waits on |
 |--------|-------|------|------------|------|------------|-------|----------|
+| [TRUST-01](./TRUST-01.md) | Phase 1 Quality Trust and Safety | L | ⛔ | ◐ | ◐ | **Backlog** 2026-10-06 | DEC-16 operational policy and protected additive changes |
 | [FIN-01](./FIN-01.md) | Teacher earnings screen | M | ✅ | ✅ | ✅ no new contract | **Done** 2026-09-16 | — |
 | [UX-04](./UX-04.md) | Product statuses and fields | S | ✅ | ✅ | ✅ no new contract | **Done** 2026-09-16 | — |
 | [UX-05](./UX-05.md) | Remove duplicate marketplace paths | S | ✅ | ✅ | ✅ no new contract (one server link value fixed) | **Done** 2026-09-16 | — |

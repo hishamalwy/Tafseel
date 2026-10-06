@@ -1,0 +1,7 @@
+:host { display: block; }
+.tf-payment-result { padding-block: var(--s-8); }
+.tf-payment-result__panel { max-inline-size: 640px; margin-inline: auto; padding: clamp(var(--s-3), 5vw, var(--s-6)); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
+h1 { margin-block: var(--s-3) var(--s-2); font-size: var(--type-page-title-size); line-height: 1.2; }
+p { color: var(--text-2); max-inline-size: 54ch; }
+.tf-payment-result__amount { margin-block: var(--s-3); font-size: var(--type-figure-size); }
+.tf-form-actions { flex-wrap: wrap; }

@@ -34,7 +34,7 @@ import { unsavedChangesGuard } from '@shared/utils/unsaved-changes';
  * for every role (`/messages`, `/conversations/:conversationId`).
  *   Tafseel-Disputes           /disputes/
  *   Tafseel-Payment            /checkout/                     (?orderId= / ?bookingId=)
- *   Tafseel-Mock-Checkout      /checkout/simulator/
+ *   Tafseel-Payment-Result     /checkout/result/
  *
  * The server links to what a notification or email is about, without knowing who
  * will open it: `/orders/:orderId`, `/live-sessions/:sessionId`,
@@ -160,11 +160,11 @@ export const routes: Routes = [
         .then(m => m.BookSessionPageComponent)
   },
   {
-    path: 'checkout/simulator',
+    path: 'checkout/result',
     canActivate: [authenticatedGuard],
     loadComponent: () =>
-      import('@features/checkout/pages/payment-simulator-page.component')
-        .then(m => m.PaymentSimulatorPageComponent)
+      import('@features/checkout/pages/payment-result-page.component')
+        .then(m => m.PaymentResultPageComponent)
   },
   {
     path: 'checkout',

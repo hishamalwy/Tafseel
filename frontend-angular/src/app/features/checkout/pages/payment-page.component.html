@@ -6,7 +6,7 @@
     <div class="tf-pay-state" role="status">{{ t('pay_loading', 'Loading your payment…') }}</div>
   }
 
-  @if (!loading() && unavailable() && !initiated()) {
+  @if (!loading() && unavailable()) {
     <div class="tf-pay-state" role="alert">
       <h1>{{ t('pay_unavailable_title', 'This payment is not available') }}</h1>
       @if (kind === 'open-request') {
@@ -133,7 +133,6 @@
             </div>
           }
 
-          @if (!ctx.canResumeMock) {
             <div class="tf-pay-coupon">
               <label for="pay-coupon-code">{{ t('pay_coupon_label', 'Have a discount code?') }}</label>
               <div class="tf-pay-coupon__entry">
@@ -160,9 +159,6 @@
                 </div>
               }
             </div>
-          } @else {
-            <p class="tf-pay-note">{{ t('pay_coupon_after_start', 'This checkout has already started. Resume it to keep the original total.') }}</p>
-          }
 
           @if (reservationSeconds() !== null) {
             <p class="tf-pay-hold" data-testid="checkout-reservation" [attr.data-urgent]="(reservationSeconds() ?? 0) < 60 ? '' : null">
@@ -182,27 +178,13 @@
             </li>
           </ul>
 
-          @if (ctx.mockEnabled) {
-            <div class="tf-pay-method" data-selected="true">
-              <svg class="tf-pay-method__check" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.2 2.4 2.4 4.6-4.9" /></svg>
-              <span>
-                <strong>{{ t('pay_method_mock', 'Simulated payment') }}</strong>
-                <span>{{ t('pay_method_mock_hint', 'This environment uses the payment simulator.') }}</span>
-              </span>
-            </div>
-          } @else {
-            <p class="tf-pay-note">{{ t('pay_provider_method_note', 'You will be taken to our payment provider.') }}</p>
-          }
+          <p class="tf-pay-note">{{ t('pay_provider_method_note', 'Card details are entered securely on Paymob.') }}</p>
 
-          @if (ctx.canResumeMock) {
-            <!-- UX-33: after an attempt that did not finish there is one thing to do, and it says so. -->
-            <p class="tf-pay-retry-note" role="status" data-testid="pay-retry-note">{{ t('pay_retry_note', 'Your last payment attempt did not finish, so no money was taken. Press “Try payment again” — the total stays the same.') }}</p>
-          }
           @if (payError()) { <p class="tf-pay-note" role="alert" data-testid="pay-error">{{ payError() }}</p> }
           <button type="button" class="tf-pay-cta" data-testid="pay-securely" (click)="pay()"
                   [disabled]="submitting()" [class.is-busy]="submitting()">
             <svg class="tf-pay-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
-            <span>{{ submitting() ? t('pay_submitting', 'Starting…') : ctx.canResumeMock ? t('pay_try_again', 'Try payment again') : t('pay_securely', 'Pay securely') }}</span>
+            <span>{{ submitting() ? t('pay_submitting', 'Starting…') : t('pay_securely', 'Pay securely') }}</span>
           </button>
 
           <div class="tf-req-context-protection tf-pay-protection-foot">
@@ -228,41 +210,13 @@
           </div>
           <button type="button" (click)="pay()" [disabled]="submitting()" [class.is-busy]="submitting()">
             <svg class="tf-pay-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
-            <span>{{ submitting() ? t('pay_submitting', 'Starting…') : ctx.canResumeMock ? t('pay_try_again', 'Try payment again') : t('pay_securely', 'Pay securely') }}</span>
+            <span>{{ submitting() ? t('pay_submitting', 'Starting…') : t('pay_securely', 'Pay securely') }}</span>
           </button>
         </div>
       </div>
     }
   }
 
-  @if (initiated()) {
-    <div class="tf-pay-state tf-pay-success">
-      <!-- Started, not confirmed: the provider has not answered yet, so the seal waits instead of ticking. -->
-      <div class="tf-pay-seal" data-tone="pending" aria-hidden="true">
-        <svg viewBox="0 0 80 80">
-          <circle class="tf-pay-seal__disc" cx="40" cy="40" r="25" />
-          <circle class="tf-pay-seal__ring" cx="40" cy="40" r="25" pathLength="100" />
-          <path class="tf-pay-seal__mark" d="M40 28v13l8.5 5.5" pathLength="100" />
-        </svg>
-      </div>
-      <h1>{{ t('pay_initiated', 'Payment started') }}</h1>
-      <p class="tf-pay-note">
-        {{ t('pay_checkout_ref', 'Checkout reference') }}
-        <strong class="tf-pay-mono">{{ checkoutReference() }}</strong>
-      </p>
-      <p class="tf-pay-note">{{ t('pay_webhook_note', 'We will confirm as soon as the provider does.') }}</p>
-
-      <ol class="tf-req-success-steps" [attr.aria-label]="t('pay_next_title', 'What happens next')">
-        @for (step of nextSteps(); track step.n) {
-          <li><span aria-hidden="true">{{ step.n }}</span><span>{{ step.text }}</span></li>
-        }
-      </ol>
-
-      <div class="tf-req-success-actions">
-        <a [routerLink]="dashboardLink" class="tf-pay-primary-link">{{ t('pay_go_dashboard', 'Go to dashboard') }}</a>
-      </div>
-    </div>
-  }
 </main>
 
 <tf-toast />

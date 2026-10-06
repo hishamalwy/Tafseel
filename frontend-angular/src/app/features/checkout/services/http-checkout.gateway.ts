@@ -5,7 +5,7 @@ import { LiveSessionLike, OfferLike, OpenRequestLike, OpenRequestPaymentQuote, O
 import { BookableService, BookingDraft, Slot, toDateKey } from '../models/booking';
 import {
   BookableTeacher, BookingGateway, CreatedBooking,
-  MockCheckoutGateway, MockCheckoutSession, MockCompletion, CouponCheckoutQuote,
+  PaymentState, CouponCheckoutQuote,
   PayableGateway, PaymentGateway, PaymentInitiation, TeacherSummary
 } from '../services/checkout.ports';
 
@@ -106,56 +106,9 @@ export class HttpPaymentGateway implements PaymentGateway {
       `${Payable.paymentPath(payable)}/coupon-quote`, { couponCode: code });
   }
 
-  mockSimulatorEnabled(): Observable<boolean> {
-    return this.http
-      .get<{ mockSimulatorEnabled?: boolean }>('/api/v1/payments/mock/capabilities')
-      .pipe(map(caps => !!caps?.mockSimulatorEnabled), catchError(() => of(false)));
+  state(paymentId: string): Observable<PaymentState> {
+    return this.http.get<PaymentState>(`/api/v1/payments/${encodeURIComponent(paymentId)}/status`);
   }
-
-  /** A 404 here simply means there is nothing to resume. */
-  mockCheckoutExists(reference: string): Observable<boolean> {
-    return this.http
-      .get(`/api/v1/payments/mock/simulator?ref=${encodeURIComponent(reference)}`)
-      .pipe(map(() => true), catchError(() => of(false)));
-  }
-}
-
-@Injectable()
-export class HttpMockCheckoutGateway implements MockCheckoutGateway {
-  private readonly http = inject(HttpClient);
-
-  session(reference: string): Observable<MockCheckoutSession> {
-    return this.http
-      .get<{
-        providerReference?: string; orderId?: string | null; liveSessionBookingId?: string | null; learningRequestId?: string | null;
-        amount?: number | null; currency?: string | null; status?: number | string;
-      }>(`/api/v1/payments/mock/simulator?ref=${encodeURIComponent(reference)}`)
-      .pipe(map(dto => ({
-        providerReference: dto.providerReference || reference,
-        orderId: dto.orderId ?? null,
-        liveSessionBookingId: dto.liveSessionBookingId ?? null,
-        learningRequestId: dto.learningRequestId ?? null,
-        amount: dto.amount ?? null,
-        currency: dto.currency || 'SAR',
-        confirmed: isConfirmed(dto.status)
-      })));
-  }
-
-  complete(reference: string, succeeded: boolean, returnPath: string): Observable<MockCompletion> {
-    return this.http
-      .post<{ status?: number | string; returnUrl?: string | null }>(
-        '/api/v1/payments/mock/simulator/complete',
-        { providerReference: reference, succeeded, returnPath })
-      .pipe(map(result => ({
-        confirmed: isConfirmed(result.status),
-        returnUrl: result.returnUrl ?? null
-      })));
-  }
-}
-
-/** The API answers with either the enum ordinal or its name. */
-function isConfirmed(status: number | string | undefined): boolean {
-  return Number(status) === 1 || String(status).toLowerCase() === 'confirmed';
 }
 
 /** A service as the public teacher profile returns it; a live offering's `price` is per hour. */

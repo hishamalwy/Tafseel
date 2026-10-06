@@ -184,9 +184,9 @@ export class FinancePaymentPageComponent implements OnInit {
     this.activeAction.set('refund');
     this.busy.set(true);
     try {
-      await this.gateway.refund(d.payment.id, reason.trim(), this.refundKey);
+      const result = await this.gateway.refund(d.payment.id, reason.trim(), this.refundKey);
       this.refundKey = '';
-      this.toasts.show(this.t('admin_refund_done', 'Refunded.'));
+      this.toasts.show(result.providerStatus === 'Succeeded' ? this.t('admin_refund_done', 'Refunded.') : this.t('pay_refund_requested', 'Refund requested. Waiting for Paymob confirmation.'));
       await this.load();
     } catch (error) {
       this.toasts.show(problemMessage(error, (k, f) => this.t(k, f)).text || this.t('admin_action_failed', 'This could not be done.'));

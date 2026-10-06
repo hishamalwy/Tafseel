@@ -81,9 +81,9 @@ public static class ProductionConfigurationGuard
         if (!(configuration["Resend:ApiToken"] ?? "").StartsWith("re_", StringComparison.Ordinal))
             problems.Add("Resend:ApiToken must be a Resend API key.");
 
-        var webhookSecret = configuration["Payments:WebhookSecret"] ?? "";
-        if (webhookSecret.Length < 32 || webhookSecret.StartsWith("REPLACE_", StringComparison.Ordinal))
-            problems.Add("Payments:WebhookSecret must be the provider's signing secret (at least 32 characters).");
+        if (configuration["Payments:Provider"] != "Paymob")
+            problems.Add("Payments:Provider must be Paymob in Production.");
+        problems.AddRange((configuration.GetSection("Paymob").Get<Finance.PaymobOptions>() ?? new()).Problems(production: true));
 
         if (configuration.GetValue<bool>("SeedUsers:Enabled") || configuration.GetValue<bool>("SeedDemoData:Enabled"))
             problems.Add("SeedUsers:Enabled and SeedDemoData:Enabled must be false in Production.");

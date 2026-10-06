@@ -214,10 +214,3 @@ export const Payable = {
 export const GUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/**
- * The mock provider derives its reference from the payable id, so a resumed
- * checkout can be found without storing anything.
- */
-export function mockReference(payableId: string): string {
-  return 'mock_' + String(payableId).replace(/-/g, '').toLowerCase();
-}

@@ -26,7 +26,16 @@ public sealed class ProductionConfigurationGuardTests
         ["ConnectionStrings:Tafseel"] = "Server=tcp:db.internal,1433;Database=tafseel;User Id=tafseel_app;Password=from-secret-store",
         ["DataProtection:KeysPath"] = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "tafseel-keys")),
         ["Resend:ApiToken"] = "re_from_secret_store",
-        ["Payments:WebhookSecret"] = new string('s', 40)
+        ["Payments:Provider"] = "Paymob",
+        ["Paymob:BaseUrl"] = "https://ksa.paymob.com",
+        ["Paymob:IntegrationId"] = "40001",
+        ["Paymob:Currency"] = "SAR", ["Paymob:Mode"] = "Live",
+        ["Paymob:SecretKey"] = "sk_live_" + Guid.NewGuid().ToString("N"),
+        ["Paymob:PublicKey"] = "pk_live_" + Guid.NewGuid().ToString("N"),
+        ["Paymob:HmacSecret"] = Guid.NewGuid().ToString("N"),
+        ["Paymob:ApiKey"] = Guid.NewGuid().ToString("N"),
+        ["Paymob:NotificationUrl"] = "https://tafseel.sa/api/v1/payments/webhooks/paymob",
+        ["Paymob:RedirectionUrl"] = "https://tafseel.sa/checkout/result"
     };
 
     private static IReadOnlyList<string> Problems(Dictionary<string, string?> values) =>
@@ -52,7 +61,14 @@ public sealed class ProductionConfigurationGuardTests
     [InlineData("ConnectionStrings:Tafseel", "Server=(localdb)\\mssqllocaldb;Database=Tafseel", "ConnectionStrings:Tafseel")]
     [InlineData("DataProtection:KeysPath", "App_Data/keys", "DataProtection:KeysPath")]
     [InlineData("Resend:ApiToken", "local-dev-dummy-token", "Resend:ApiToken")]
-    [InlineData("Payments:WebhookSecret", "short", "Payments:WebhookSecret")]
+    [InlineData("Paymob:HmacSecret", "short", "Paymob:HmacSecret")]
+    [InlineData("Paymob:SecretKey", "sk_test_invalid", "Paymob:SecretKey")]
+    [InlineData("Paymob:PublicKey", "pk_test_invalid", "Paymob:PublicKey")]
+    [InlineData("Paymob:IntegrationId", "34667", "Paymob:IntegrationId")]
+    [InlineData("Paymob:Currency", "EGP", "Paymob:Currency")]
+    [InlineData("Paymob:BaseUrl", "https://accept.paymob.com", "Paymob:BaseUrl")]
+    [InlineData("Paymob:NotificationUrl", "http://tafseel.sa/api/v1/payments/webhooks/paymob", "Paymob:NotificationUrl")]
+    [InlineData("Payments:Provider", "Mock", "Payments:Provider")]
     [InlineData("SeedUsers:Enabled", "true", "SeedUsers:Enabled")]
     [InlineData("SeedDemoData:Enabled", "true", "SeedDemoData:Enabled")]
     public void Each_placeholder_local_or_demo_value_is_named(string key, string value, string named)
@@ -85,7 +101,7 @@ public sealed class ProductionConfigurationGuardTests
             () => ProductionConfigurationGuard.EnsureReady(configuration, new Host(Environments.Production)));
 
         foreach (var key in new[] { "AllowedHosts", "Cors:AllowedOrigins", "Email:From", "Email:ConfirmationUrl",
-                     "ConnectionStrings:Tafseel", "DataProtection:KeysPath", "Resend:ApiToken", "Payments:WebhookSecret" })
+                     "ConnectionStrings:Tafseel", "DataProtection:KeysPath", "Resend:ApiToken", "Paymob:SecretKey" })
             Assert.Contains(key, error.Message);
         Assert.DoesNotContain("vpaas-magic-cookie", error.Message);
     }
@@ -111,14 +127,9 @@ public sealed class ProductionConfigurationGuardTests
             Assert.Equal("webhook", method.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName));
     }
 
-    // The test-mode strip reads the payment capabilities on every page; under the 10-per-minute payment policy that
-    // used up a student's budget before checkout (429 on a real payment).
     [Fact]
-    public void The_payment_capabilities_read_spends_no_payment_budget()
-    {
-        var capabilities = typeof(MockPaymentSimulatorController).GetMethod(nameof(MockPaymentSimulatorController.Capabilities))!;
-        Assert.NotNull(capabilities.GetCustomAttribute<Microsoft.AspNetCore.RateLimiting.DisableRateLimitingAttribute>());
-    }
+    public void The_mock_simulator_controller_is_retired() =>
+        Assert.DoesNotContain(typeof(PaymentsController).Assembly.GetTypes(), type => type.Name == "MockPaymentSimulatorController");
 
     // A multipart form is cut at FormOptions' 128 MiB default whatever RequestSizeLimit allows, so a 3-minute phone
     // video under the promised 250 MB failed before reaching the scanner.

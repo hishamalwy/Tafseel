@@ -11,8 +11,13 @@ export interface TeacherSummary {
 }
 
 export interface PaymentInitiation {
-  /** Either a URL to send the browser to, or a provider reference. */
+  /** HTTPS Unified Checkout or Tafseel's authoritative result page. */
   readonly checkoutReference: string;
+}
+export interface PaymentState {
+  readonly state: 'Pending' | 'Confirmed' | 'Failed' | 'Refunded';
+  readonly payment: { id: string; amount: number; currency: string; orderId: string | null;
+    liveSessionBookingId: string | null; learningRequestId: string | null };
 }
 
 /** Reading what is being paid for. */
@@ -33,10 +38,7 @@ export interface PaymentGateway {
   /** `Idempotency-Key` makes a repeat attempt join the existing payment. */
   initiate(payable: Payable, idempotencyKey: string, couponCode: string | null): Observable<PaymentInitiation>;
   quoteCoupon(payable: Payable, code: string): Observable<CouponCheckoutQuote>;
-  /** Whether this deployment offers the mock simulator instead of a real provider. */
-  mockSimulatorEnabled(): Observable<boolean>;
-  /** Whether a mock checkout already exists for this payable and can be resumed. */
-  mockCheckoutExists(reference: string): Observable<boolean>;
+  state(paymentId: string): Observable<PaymentState>;
 }
 
 export interface CouponCheckoutQuote {
@@ -49,34 +51,6 @@ export interface CouponCheckoutQuote {
 
 export const PAYABLE_GATEWAY = new InjectionToken<PayableGateway>('PayableGateway');
 export const PAYMENT_GATEWAY = new InjectionToken<PaymentGateway>('PaymentGateway');
-
-/** One simulated checkout session, as the mock provider models it. */
-export interface MockCheckoutSession {
-  readonly providerReference: string;
-  readonly orderId: string | null;
-  readonly liveSessionBookingId: string | null;
-  readonly learningRequestId: string | null;
-  readonly amount: number | null;
-  readonly currency: string;
-  readonly confirmed: boolean;
-}
-
-export interface MockCompletion {
-  readonly confirmed: boolean;
-  readonly returnUrl: string | null;
-}
-
-/**
- * The payment simulator that stands in for a provider in non-production
- * environments. Separate from PaymentGateway because it exists only where the
- * simulator is enabled, and no production code path should depend on it.
- */
-export interface MockCheckoutGateway {
-  session(reference: string): Observable<MockCheckoutSession>;
-  complete(reference: string, succeeded: boolean, returnPath: string): Observable<MockCompletion>;
-}
-
-export const MOCK_CHECKOUT_GATEWAY = new InjectionToken<MockCheckoutGateway>('MockCheckoutGateway');
 
 /** The teacher profile a booking needs, plus the services it can book. */
 export interface BookableTeacher {

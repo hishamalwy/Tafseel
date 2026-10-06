@@ -18,11 +18,11 @@ using Tafseel.Infrastructure.Messaging;
 
 namespace Tafseel.Infrastructure.Finance;
 
-internal sealed class FinancialService(
+internal sealed partial class FinancialService(
     TafseelDbContext db, IPaymentProvider provider, ICouponService coupons,
     NotificationWriter notifications, IOptions<FeeOptions> feeOptions,
     IOptions<WithdrawalOptions> withdrawalOptions, IOptions<DisputeOptions> disputeOptions,
-    TimeProvider clock, IPayoutProvider payouts, IPayoutDestinationVault payoutVault) : IFinancialService
+    TimeProvider clock, IPayoutProvider payouts, IPayoutDestinationVault payoutVault, PaymentCheckoutService checkouts) : IFinancialService
 {
     private readonly WithdrawalOptions _withdrawals = withdrawalOptions.Value;
     private readonly DisputeOptions _disputes = disputeOptions.Value;
@@ -32,34 +32,37 @@ internal sealed class FinancialService(
         idempotencyKey = RequiredKey(idempotencyKey);
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await LockAsync($"payment-init:{orderId}", ct);
-        var existing = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId, ct);
+        var existing = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId && x.StudentId == studentId, ct);
         if (existing is not null)
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
             await EnsureRetryCouponMatchesAsync(existing, couponCode, ct);
-            var retry = await provider.InitiateAsync(orderId, existing.Amount, existing.Currency, ct);
-            return new(Map(existing), retry.CheckoutReference);
+            await tx.CommitAsync(ct);
+            await tx.DisposeAsync();
+            return await checkouts.ResumeAsync(existing, ct);
         }
         var order = await db.Orders.SingleOrDefaultAsync(
                 x => x.Id == orderId && x.StudentId == studentId, ct)
             ?? throw new DomainException("order_not_owned", "Order was not found.");
+        await RequireUnusedPaymentKeyAsync(studentId, idempotencyKey, ct);
         if (order.Status != OrderStatus.AwaitingPayment || order.PaymentStatus != OrderPaymentStatus.Pending)
             throw new DomainException("payment_not_allowed", "This order cannot be paid.");
         var now = clock.GetUtcNow();
         var (coupon, discount, charge) = await coupons
             .ResolveForPaymentAsync(couponCode, order.StudentTotal, order.Currency, now, ct);
-        var initiation = await provider.InitiateAsync(order.Id, charge, order.Currency, ct);
+        var reference = PaymentReference(order.Id);
         var payment = new Payment(order.Id, studentId, charge, order.Currency,
-            provider.Name, initiation.ProviderReference, idempotencyKey, now);
+            provider.Name, reference, idempotencyKey, now);
         db.AddRange(payment,
-            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, now),
             Audit("PaymentInitiated", studentId, "Payment", payment.Id.ToString(), idempotencyKey));
         if (coupon is not null)
             db.Add(new CouponRedemption(coupon.Id, studentId, payment.Id, order.Id, null, discount, order.Currency, now));
+        checkouts.Reserve(payment, now);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-        return new(Map(payment), initiation.CheckoutReference);
+        await tx.DisposeAsync();
+        return await checkouts.ResumeAsync(payment, ct);
     }
 
     public async Task<PaymentInitiationDto> InitiateLiveSessionPaymentAsync(
@@ -69,36 +72,38 @@ internal sealed class FinancialService(
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await LockAsync($"payment-init-session:{liveSessionBookingId}", ct);
         var existing = await db.Payments.SingleOrDefaultAsync(
-            x => x.LiveSessionBookingId == liveSessionBookingId, ct);
+            x => x.LiveSessionBookingId == liveSessionBookingId && x.StudentId == studentId, ct);
         if (existing is not null)
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
             await EnsureRetryCouponMatchesAsync(existing, couponCode, ct);
-            var retry = await provider.InitiateAsync(
-                liveSessionBookingId, existing.Amount, existing.Currency, ct);
-            return new(Map(existing), retry.CheckoutReference);
+            await tx.CommitAsync(ct);
+            await tx.DisposeAsync();
+            return await checkouts.ResumeAsync(existing, ct);
         }
         var booking = await db.LiveSessionBookings.SingleOrDefaultAsync(
                 x => x.Id == liveSessionBookingId && x.StudentId == studentId, ct)
             ?? throw new DomainException("live_session_not_owned", "Live session was not found.");
+        await RequireUnusedPaymentKeyAsync(studentId, idempotencyKey, ct);
         if (booking.Status != LiveSessionStatus.AwaitingPayment)
             throw new DomainException("payment_not_allowed", "This live session cannot be paid.");
         var now = clock.GetUtcNow();
         var (coupon, discount, charge) = await coupons
             .ResolveForPaymentAsync(couponCode, booking.TotalPrice, booking.Currency, now, ct);
-        var initiation = await provider.InitiateAsync(booking.Id, charge, booking.Currency, ct);
+        var reference = PaymentReference(booking.Id);
         var payment = Payment.ForLiveSession(booking.Id, studentId, charge, booking.Currency,
-            provider.Name, initiation.ProviderReference, idempotencyKey, now);
+            provider.Name, reference, idempotencyKey, now);
         db.AddRange(payment,
-            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, now),
             Audit("LiveSessionPaymentInitiated", studentId, "Payment", payment.Id.ToString(), idempotencyKey));
         if (coupon is not null)
             db.Add(new CouponRedemption(
                 coupon.Id, studentId, payment.Id, null, booking.Id, discount, booking.Currency, now));
+        checkouts.Reserve(payment, now);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-        return new(Map(payment), initiation.CheckoutReference);
+        await tx.DisposeAsync();
+        return await checkouts.ResumeAsync(payment, ct);
     }
 
     public async Task<PaymentInitiationDto> InitiateOpenRequestPaymentAsync(
@@ -108,19 +113,21 @@ internal sealed class FinancialService(
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await LockAsync($"open-request:{learningRequestId}", ct);
         var existing = await db.Payments.SingleOrDefaultAsync(x =>
-            x.LearningRequestId == learningRequestId && x.Status == PaymentStatus.Pending, ct);
+            x.LearningRequestId == learningRequestId && x.StudentId == studentId && x.Status == PaymentStatus.Pending, ct);
         if (existing is not null)
         {
             if (existing.StudentId != studentId || existing.InitiationIdempotencyKey != idempotencyKey)
                 throw new DomainException("payment_already_initiated", "Payment has already been initiated.");
             await EnsureRetryCouponMatchesAsync(existing, couponCode, ct);
-            var retry = await provider.InitiateAsync(learningRequestId, existing.Amount, existing.Currency, ct);
-            return new(Map(existing), retry.CheckoutReference);
+            await tx.CommitAsync(ct);
+            await tx.DisposeAsync();
+            return await checkouts.ResumeAsync(existing, ct);
         }
         var request = await db.LearningRequests.SingleOrDefaultAsync(
                 x => x.Id == learningRequestId && x.StudentId == studentId, ct)
             ?? throw new DomainException("request_not_owned", "Learning request was not found.");
         var now = clock.GetUtcNow();
+        await RequireUnusedPaymentKeyAsync(studentId, idempotencyKey, ct);
         if (request.Status != LearningRequestStatus.AwaitingPayment
             || request.PaymentReservationExpiresAt is null || now >= request.PaymentReservationExpiresAt
             || request.SelectedOfferId is not Guid offerId)
@@ -129,18 +136,29 @@ internal sealed class FinancialService(
             x => x.Id == offerId && x.Status == TeacherOfferStatus.Selected, ct);
         var studentTotal = OpenRequestStudentTotal(offer.Amount);
         var (coupon, discount, charge) = await coupons.ResolveForPaymentAsync(couponCode, studentTotal, "SAR", now, ct);
-        var initiation = await provider.InitiateAsync(request.Id, charge, "SAR", ct);
+        var reference = PaymentReference(request.Id);
         var payment = Payment.ForOpenRequest(request.Id, studentId, charge, "SAR",
-            provider.Name, initiation.ProviderReference, idempotencyKey, now);
+            provider.Name, reference, idempotencyKey, now);
         db.AddRange(payment,
-            new PaymentAttempt(payment.Id, initiation.ProviderReference, PaymentAttemptStatus.Created, null, now),
             Audit("OpenRequestPaymentInitiated", studentId, "LearningRequest", request.Id.ToString(), idempotencyKey));
         if (coupon is not null)
             payment.RecordOpenRequestCoupon(coupon.Id, discount);
+        checkouts.Reserve(payment, now);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-        return new(Map(payment), initiation.CheckoutReference);
+        await tx.DisposeAsync();
+        return await checkouts.ResumeAsync(payment, ct);
     }
+
+    private async Task RequireUnusedPaymentKeyAsync(string studentId, string key, CancellationToken ct)
+    {
+        await LockAsync($"payment-command:{studentId}:{key}", ct);
+        if (await db.Payments.AnyAsync(x => x.StudentId == studentId && x.InitiationIdempotencyKey == key, ct))
+            throw new DomainException("payment_already_initiated", "This payment command already belongs to another purchase.");
+    }
+
+    private string PaymentReference(Guid payableId) => provider.Name == "Mock"
+        ? $"mock_{payableId:N}" : $"tf_{Guid.NewGuid():N}";
 
     public async Task<OpenRequestPaymentQuoteDto> QuoteOpenRequestPaymentAsync(
         string studentId, Guid learningRequestId, CancellationToken ct)
@@ -188,9 +206,30 @@ internal sealed class FinancialService(
         ReadOnlyMemory<byte> payload, string signature, CancellationToken ct)
     {
         var message = provider.VerifyWebhook(payload, signature);
+        if (message.Kind == ProviderEventKind.Ignore) return;
+        var trustedInquiry = false;
+        if (provider.Name == "Paymob")
+        {
+            var checkout = await db.Set<ProviderCheckout>().AsNoTracking().SingleOrDefaultAsync(x => x.Reference == message.ProviderReference, ct)
+                ?? throw new DomainException("payment_not_found", "Payment was not found.");
+            if (checkout.OrderId is null || message.Kind == ProviderEventKind.Refund)
+            {
+                var evidence = await provider.InquireAsync(checkout.Reference, ct, message.Kind == ProviderEventKind.Refund ? message.TransactionId : null);
+                if (evidence is null || evidence.OrderId != message.OrderId || evidence.ProviderReference != message.ProviderReference
+                    || evidence.TransactionId != message.TransactionId || evidence.Amount != message.Amount || evidence.Currency != message.Currency
+                    || message.Kind == ProviderEventKind.Refund && evidence.Kind != ProviderEventKind.Refund)
+                    throw new DomainException("payment_mismatch", "Provider payment does not match the payable.");
+                message = message with { RefundedAmount = evidence.RefundedAmount };
+                trustedInquiry = true;
+            }
+        }
+        await ProcessVerifiedEventAsync(message, Convert.ToHexString(SHA256.HashData(payload.Span)), trustedInquiry, ct);
+    }
+
+    internal async Task ProcessVerifiedEventAsync(VerifiedPaymentEvent message, string payloadHash, bool trustedInquiry, CancellationToken ct)
+    {
         if (string.IsNullOrWhiteSpace(message.EventId) || string.IsNullOrWhiteSpace(message.ProviderReference))
             throw new DomainException("invalid_webhook", "Payment webhook payload is invalid.");
-        var payloadHash = Convert.ToHexString(SHA256.HashData(payload.Span));
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         await LockAsync($"webhook:{provider.Name}:{message.EventId}", ct);
         if (await db.PaymentWebhookRecords.AnyAsync(
@@ -199,16 +238,80 @@ internal sealed class FinancialService(
         var payment = await db.Payments.SingleOrDefaultAsync(
                 x => x.Provider == provider.Name && x.ProviderReference == message.ProviderReference, ct)
             ?? throw new DomainException("payment_not_found", "Payment was not found.");
+        await LockAsync($"provider-checkout:{payment.Id}", ct);
         var now = clock.GetUtcNow();
-        if (payment.LearningRequestId is Guid payableRequestId && payment.OrderId is null)
+        if (message.Amount != payment.Amount || !string.Equals(message.Currency, payment.Currency, StringComparison.Ordinal))
+            throw new DomainException("payment_mismatch", "Provider payment does not match the payable.");
+        var checkout = await db.Set<ProviderCheckout>().SingleOrDefaultAsync(x => x.PaymentId == payment.Id, ct);
+        if (provider.Name == "Paymob")
+        {
+            if (checkout is null || message.OrderId is null || checkout.OrderId is null && !trustedInquiry
+                || checkout.OrderId is not null && checkout.OrderId != message.OrderId)
+                throw new DomainException("payment_mismatch", "Provider payment does not match the payable.");
+            checkout.OrderId ??= message.OrderId;
+            if (message.Succeeded && message.Kind == ProviderEventKind.Payment)
+            {
+                if (checkout.TransactionId is not null && checkout.TransactionId != message.TransactionId)
+                {
+                    await ProviderExceptionAsync(payment.Id, "provider_duplicate_capture", "Another provider transaction captured the same payable. Finance must refund the extra transaction at Paymob.", ct);
+                    db.Add(new PaymentWebhookRecord(provider.Name, message.EventId, payloadHash, message.ProviderReference, now));
+                    await db.SaveChangesAsync(ct);
+                    await tx.CommitAsync(ct);
+                    return;
+                }
+                checkout.TransactionId = message.TransactionId;
+            }
+        }
+        db.Add(new PaymentWebhookRecord(provider.Name, message.EventId, payloadHash, message.ProviderReference, now));
+        if (message.Kind == ProviderEventKind.Pending)
+        {
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return;
+        }
+        if (message.Kind == ProviderEventKind.Refund)
+        {
+            if (checkout?.TransactionId != message.TransactionId || message.RefundedAmount != payment.Amount || !message.Succeeded)
+                throw new DomainException("payment_mismatch", "Provider refund does not match the captured payment.");
+            var operation = await db.Set<ProviderRefund>().SingleOrDefaultAsync(x => x.PaymentId == payment.Id, ct)
+                ?? await QueueProviderRefundAsync(payment, payment.StudentId, $"paymob-refund:{message.TransactionId}", "Provider refund callback", ct);
+            operation.Status = ProviderRefundStatus.Succeeded;
+            operation.ProviderReference ??= message.TransactionId;
+            await ApplyProviderRefundAsync(operation, ct);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return;
+        }
+        if (payment.Status is PaymentStatus.Confirmed or PaymentStatus.Refunded)
+        {
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return;
+        }
+        if (message.Succeeded && provider.Name == "Paymob")
+        {
+            var unavailable = payment.LearningRequestId is Guid requestId && payment.OrderId is null
+                && await db.LearningRequests.AnyAsync(x => x.Id == requestId &&
+                    (x.Status != LearningRequestStatus.AwaitingPayment || x.PaymentReservationExpiresAt == null || x.PaymentReservationExpiresAt <= now), ct)
+                || payment.OrderId is Guid orderId && await db.Orders.AnyAsync(x => x.Id == orderId && x.Status == OrderStatus.Cancelled, ct)
+                || payment.LiveSessionBookingId is Guid bookingId && await db.LiveSessionBookings.AnyAsync(x => x.Id == bookingId && x.Status == LiveSessionStatus.Cancelled, ct);
+            if (unavailable)
+            {
+                await ProviderExceptionAsync(payment.Id, "provider_unallocated_capture", "Paymob captured a cancelled or expired payable. A full provider refund was requested; no purchase was funded.", ct);
+                await QueueProviderRefundAsync(payment, payment.StudentId, $"unallocated:{payment.Id:N}", "Cancelled or expired payable", ct, unallocated: true);
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+                return;
+            }
+        }
+        // Existing fake tests preserve the reservation refusal; Paymob records and refunds external captures above.
+        if (message.Succeeded && payment.LearningRequestId is Guid payableRequestId && payment.OrderId is null)
         {
             var payable = await db.LearningRequests.AsNoTracking().SingleAsync(x => x.Id == payableRequestId, ct);
             if (payable.Status != LearningRequestStatus.AwaitingPayment
                 || payable.PaymentReservationExpiresAt is null || now >= payable.PaymentReservationExpiresAt)
                 throw new DomainException("offer_reservation_expired", "The selected Offer reservation has expired.");
         }
-        db.Add(new PaymentWebhookRecord(provider.Name, message.EventId, payloadHash,
-            message.ProviderReference, now));
         if (!message.Succeeded)
         {
             db.Add(new PaymentAttempt(payment.Id, payment.ProviderReference,
@@ -306,7 +409,9 @@ internal sealed class FinancialService(
 
     public async Task<PaymentDto> GetPaymentAsync(string userId, Guid paymentId, CancellationToken ct)
     {
-        var payment = await db.Payments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == paymentId, ct)
+        var payment = await db.Payments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == paymentId &&
+            (x.StudentId == userId || x.OrderId != null && db.Orders.Any(o => o.Id == x.OrderId && o.TeacherId == userId)
+                || x.LiveSessionBookingId != null && db.LiveSessionBookings.Any(b => b.Id == x.LiveSessionBookingId && b.TeacherId == userId)), ct)
             ?? throw new DomainException("payment_not_owned", "Payment was not found.");
         if (payment.OrderId is Guid orderId)
         {
@@ -334,7 +439,7 @@ internal sealed class FinancialService(
     /// <summary>
     /// Splits the <b>actually captured</b> amount between the teacher and the platform.
     /// Coupons consume platform margin first; the teacher only shares a discount larger than that margin.
-    /// This is the single allocation rule for Orders and live sessions, on both release and reversal —
+    /// This is the single allocation rule for Orders and live sessions, on both release and reversal â€”
     /// do not re-derive it from Order/booking totals, which are pre-coupon commercial terms.
     /// </summary>
     /// <remarks>
@@ -357,6 +462,7 @@ internal sealed class FinancialService(
         if (await db.EscrowEntries.AnyAsync(
                 x => x.OrderId == order.Id && x.Type == EscrowEntryType.Released, ct))
             return;
+        await RequireNoProviderRefundAsync(payment, ct);
         var now = clock.GetUtcNow();
         var escrow = await AccountAsync(LedgerAccountKind.EscrowHeld, "", payment.Currency, ct);
         var platform = await AccountAsync(LedgerAccountKind.PlatformRevenue, "", payment.Currency, ct);
@@ -421,6 +527,7 @@ internal sealed class FinancialService(
                 x => x.LiveSessionBookingId == booking.Id && x.Type == EscrowEntryType.Released, ct))
             return;
 
+        await RequireNoProviderRefundAsync(payment, ct);
         var now = clock.GetUtcNow();
         var escrow = await AccountAsync(LedgerAccountKind.EscrowHeld, "", payment.Currency, ct);
         var platform = await AccountAsync(LedgerAccountKind.PlatformRevenue, "", payment.Currency, ct);
@@ -456,6 +563,11 @@ internal sealed class FinancialService(
         var payment = await db.Payments.SingleOrDefaultAsync(
                 x => x.LiveSessionBookingId == booking.Id && x.Status == PaymentStatus.Confirmed, ct)
             ?? throw new DomainException("payment_not_confirmed", "Confirmed payment was not found.");
+        if (payment.Provider == "Paymob")
+        {
+            await QueueProviderRefundAsync(payment, actorId, idempotencyKey, "Live session refund", ct);
+            return;
+        }
         idempotencyKey = RequiredKey(idempotencyKey);
         if (await db.EscrowEntries.AnyAsync(
                 x => x.PaymentId == payment.Id && x.Type == EscrowEntryType.Released, ct))
@@ -485,6 +597,19 @@ internal sealed class FinancialService(
                 || payment.LiveSessionBookingId != null && x.LiveSessionBookingId == payment.LiveSessionBookingId, ct))
             throw new DomainException("refund_requires_dispute_resolution",
                 "This purchase has a dispute and must be resolved through the dispute workflow.");
+        if (payment.Provider == "Paymob")
+        {
+            var teacherId = payment.OrderId is Guid ownedOrder
+                ? await db.Orders.Where(x => x.Id == ownedOrder).Select(x => x.TeacherId).SingleAsync(ct)
+                : await db.LiveSessionBookings.Where(x => x.Id == payment.LiveSessionBookingId).Select(x => x.TeacherId).SingleAsync(ct);
+            EnsureNotOwnPurchase(adminId, payment.StudentId, teacherId);
+            if (await db.EscrowEntries.AnyAsync(x => x.PaymentId == paymentId && x.Type == EscrowEntryType.Released, ct))
+                throw new DomainException("refund_after_release_forbidden", "Released escrow must be refunded through its dispute workflow.");
+            var operation = await QueueProviderRefundAsync(payment, adminId, idempotencyKey, reason, ct);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Map(operation, payment);
+        }
         Refund refund;
         if (payment.LiveSessionBookingId is Guid bookingId)
         {
@@ -524,6 +649,11 @@ internal sealed class FinancialService(
             ?? throw new DomainException("payment_not_confirmed", "Confirmed payment was not found.");
         if (refundStudent)
         {
+            if (payment.Provider == "Paymob")
+            {
+                await QueueProviderRefundAsync(payment, actorId, idempotencyKey, "Dispute refund", ct);
+                return;
+            }
             if (await db.EscrowEntries.AnyAsync(
                     x => x.PaymentId == payment.Id && x.Type == EscrowEntryType.Released, ct))
                 await RefundReleasedOrderCoreAsync(payment, order, actorId, idempotencyKey, ct);
@@ -783,9 +913,12 @@ internal sealed class FinancialService(
             return false;
         }
 
+        if (await db.Set<ProviderRefund>().AnyAsync(x => x.PaymentId == maturity.PaymentId && !x.Applied
+            && x.Status != ProviderRefundStatus.Rejected, ct)) return false;
+
         /* Serialize against dispute creation on the SAME resource GovernanceService.OpenDisputeAsync
            locks. Reading Disputes under Serializable is not enough: both sides only *read* that table,
-           shared range locks do not conflict, and the writes land in different tables — so without this
+           shared range locks do not conflict, and the writes land in different tables â€” so without this
            lock a dispute could pass its eligibility check just before the deadline and commit just after
            a concurrent promotion, leaving withdrawable money exposed to a valid dispute.
 
@@ -1037,7 +1170,7 @@ internal sealed class FinancialService(
 
         var anomalies = new List<ReconciliationAnomalyDto>();
 
-        // (1) Confirmed capture with no escrow hold — money entered with no custody record.
+        // (1) Confirmed capture with no escrow hold â€” money entered with no custody record.
         foreach (var row in await db.Payments.AsNoTracking()
                      .Where(p => p.Status == PaymentStatus.Confirmed
                          && !db.EscrowEntries.Any(e => e.PaymentId == p.Id && e.Type == EscrowEntryType.Held))
@@ -1056,19 +1189,24 @@ internal sealed class FinancialService(
         var confirmed = await db.Payments.AsNoTracking()
             .Where(x => x.Status != PaymentStatus.Pending && x.Status != PaymentStatus.Failed)
             .Select(x => new { x.Id, x.OrderId, x.LiveSessionBookingId, x.Amount }).ToArrayAsync(ct);
+        // A released refund reverses the teacher/platform ledger, rather than draining escrow a second time.
+        // Count it only when the original release, matching reversal and full Refund record prove the return.
+        var reversals = await VerifiedReleaseReversalsAsync(ct);
         var overReleased = 0;
         foreach (var payment in confirmed)
         {
-            if (!moved.TryGetValue(payment.Id, out var out_) || out_ <= payment.Amount) continue;
+            if (!moved.TryGetValue(payment.Id, out var out_)) continue;
+            out_ -= reversals.GetValueOrDefault(payment.Id);
+            if (out_ <= payment.Amount) continue;
             overReleased++;
             if (anomalies.Count < AnomalyLimit)
                 anomalies.Add(new("EscrowOverReleased", payment.Id, payment.OrderId, payment.LiveSessionBookingId,
                     payment.Amount, payment.Amount, out_, out_ - payment.Amount,
-                    "Released plus refunded escrow exceeds the confirmed capture."));
+                    "Net released plus refunded escrow exceeds the confirmed capture after proven release reversals."));
         }
 
         // (5) FR-1 signature: teacher + platform release ledger must equal the confirmed capture exactly.
-        // One batched read — a per-payment SumAsync used to N+1 the ledger and 500 Admin Home
+        // One batched read â€” a per-payment SumAsync used to N+1 the ledger and 500 Admin Home
         // (/admin/attention calls this on every mount) when LocalDB cancelled the command.
         var allocationMismatches = 0;
         var releaseKeys = new List<string>(confirmed.Length * 2);
@@ -1100,7 +1238,7 @@ internal sealed class FinancialService(
                     "Teacher plus platform release does not equal the confirmed capture (FR-1 signature)."));
         }
 
-        // (6)(7) Negative teacher balances — a ledger hole, usually a reversal after withdrawal.
+        // (6)(7) Negative teacher balances â€” a ledger hole, usually a reversal after withdrawal.
         var negativeAvailable = 0;
         var negativePending = 0;
         var teacherAccounts = accounts
@@ -1303,7 +1441,7 @@ internal sealed class FinancialService(
     /// <summary>
     /// Resolves which teacher-side account currently holds a released earning, and marks any pending
     /// schedule reversed so the maturity worker can never promote refunded money.
-    /// Exactly one account is debited — never both.
+    /// Exactly one account is debited â€” never both.
     /// </summary>
     private async Task<LedgerAccountKind> ReverseTeacherEarningAsync(
         Guid paymentId, DateTimeOffset now, CancellationToken ct)

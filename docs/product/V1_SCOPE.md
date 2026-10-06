@@ -201,6 +201,7 @@ mock provider stays forbidden in Production.
 | Application queue with filters and counts | J11-04 | Proven (3A) | MUST |
 | Review screen, demo access, decision | J11-05 | Proven (3A) | MUST |
 | Qualification revoke | J11-05 | Built — review page, with reason and audit (2026-09-30) | V1 |
+| Quality Trust and Safety queue and case-scoped investigation | TRUST-01 | Proposed — Gate 1 blocked by DEC-16 (2026-10-06); not implemented | Phase 1 production hardening |
 | Showcase moderation | J11-11 | Missing | V1.1 (with showcases) |
 
 ## 10. Admin

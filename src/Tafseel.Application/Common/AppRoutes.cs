@@ -44,7 +44,6 @@ public static class AppRoutes
     public static string CheckoutOrder(Guid orderId) => $"/checkout?orderId={orderId}";
     public static string CheckoutLiveSession(Guid sessionId) => $"/checkout?liveSessionId={sessionId}";
     /// <summary>The mock PSP's hosted page, which the provider returns the payer to.</summary>
-    public const string CheckoutSimulator = "/checkout/simulator";
 
     public const string TeacherApply = "/teach/apply";
     public static string TeacherApplyForSubject(Guid subjectId) =>

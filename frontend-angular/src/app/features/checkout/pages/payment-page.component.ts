@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { problemMessage } from '@core/http/problem-message';
 import { Title } from '@angular/platform-browser';
@@ -13,7 +13,7 @@ import { PricePanelComponent } from '@shared/components/price-panel.component';
 import { WorkflowHeaderComponent } from '@shared/layouts/workflow-header.component';
 import { CheckoutContext, InitiatePayment, LoadCheckoutContext } from '../services/checkout.use-cases';
 import { CouponCheckoutQuote, PAYMENT_GATEWAY } from '../services/checkout.ports';
-import { PayableKind, mockReference } from '../models/payable';
+import { PayableKind } from '../models/payable';
 import { timeZoneLabel } from '@features/teacher-setup/models/availability';
 import { SkipLinkComponent } from '@shared/layouts/skip-link.component';
 
@@ -37,7 +37,6 @@ export class PaymentPageComponent {
   private readonly initiate = inject(InitiatePayment);
   private readonly payments = inject(PAYMENT_GATEWAY);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private readonly title = inject(Title);
   private readonly toasts = inject(ToastService);
@@ -48,18 +47,16 @@ export class PaymentPageComponent {
   readonly unavailable = signal(false);
   readonly submitting = signal(false);
   readonly context = signal<CheckoutContext | null>(null);
-  readonly checkoutReference = signal('');
   readonly couponInput = signal('');
   readonly couponQuote = signal<CouponCheckoutQuote | null>(null);
   readonly couponBusy = signal(false);
   readonly couponError = signal('');
   readonly amountToPay = computed(() => this.couponQuote()?.chargeAmount ?? this.context()?.payable.total ?? 0);
 
-  readonly initiated = computed(() => this.checkoutReference() !== '');
   /** Reopened after the payment was confirmed (a stored link, Back, a second tab): nothing left to pay. */
   readonly alreadyPaid = computed(() => !this.loading() && !!this.context()?.payable.alreadyPaid);
   readonly showCheckout = computed(() =>
-    !this.loading() && !this.unavailable() && !this.initiated() && !this.alreadyPaid() && this.context() !== null);
+    !this.loading() && !this.unavailable() && !this.alreadyPaid() && this.context() !== null);
   /** Where the paid purchase lives. */
   readonly purchaseLink = computed(() => this.kind === 'live-session'
     ? ['/live-sessions', this.payableId] : ['/orders', this.payableId]);
@@ -183,11 +180,6 @@ export class PaymentPageComponent {
       : this.fmt.moneyView(null);
   });
 
-  readonly mockContinueLink = computed(() => {
-    const payable = this.context()?.payable;
-    if (!payable || !this.context()?.canResumeMock) return null;
-    return mockReference(payable.id);
-  });
 
   changeCoupon(value: string): void {
     this.couponInput.set(value);
@@ -213,10 +205,6 @@ export class PaymentPageComponent {
     }
   }
 
-  readonly nextSteps = computed(() => [1, 2, 3, 4].map(n => ({
-    n: String(n),
-    text: this.t(`pay_next_${n}`, '')
-  })));
 
   // ---- actions ----
   async load(kind: PayableKind, id: string): Promise<void> {
@@ -249,25 +237,8 @@ export class PaymentPageComponent {
     this.submitting.set(true);
     this.payError.set('');
     try {
-      const outcome = await this.initiate.execute(context.payable, context.mockEnabled,
-        this.couponQuote()?.code ?? null);
-      switch (outcome.kind) {
-        case 'redirect':
-          this.document.location.href = outcome.url;
-          return;
-        case 'mock':
-        case 'resume-mock':
-          if (outcome.kind === 'resume-mock') {
-            this.toasts.show(this.t('pay_already_resume', 'Resuming your existing checkout.'));
-          }
-          await this.router.navigate(['/checkout/simulator'], {
-            queryParams: { ref: outcome.reference }
-          });
-          return;
-        case 'initiated':
-          this.checkoutReference.set(outcome.reference);
-          return;
-      }
+      const outcome = await this.initiate.execute(context.payable, this.couponQuote()?.code ?? null);
+      this.document.location.assign(outcome.url);
     } catch (error) {
       const problem = problemMessage(error, (k, f) => this.t(k, f));
       this.payError.set(problem.text || this.t('pay_failed', 'Payment could not start.'));

@@ -1,0 +1,22 @@
+<tf-skip-link />
+<tf-workflow-header [crumb]="t('pay_breadcrumb')" />
+<main id="main" class="tf-shell tf-payment-result">
+  <section class="tf-payment-result__panel" aria-labelledby="payment-result-title" data-testid="payment-result">
+    <div role="status" aria-live="polite" aria-atomic="true" [attr.data-state]="state()">
+      <span class="tf-badge" [attr.data-tone]="tone()">{{ t('pay_result_label') }}</span>
+      <h1 id="payment-result-title">{{ t('pay_result_' + state() + '_title') }}</h1>
+      <p>{{ t('pay_result_' + state() + '_body') }}</p>
+    </div>
+    @if (payment(); as payment) {
+      <div class="tf-payment-result__amount"><tf-price [amount]="payment.amount" [currency]="payment.currency" /></div>
+    }
+    <div class="tf-form-actions">
+      @if (state() === 'processing' || state() === 'unknown') {
+        <button class="tf-button" type="button" (click)="retry()" [disabled]="busy()">{{ t('pay_result_retry') }}</button>
+      }
+      @if (state() !== 'verifying') {
+        <a [routerLink]="purchaseLink()" class="tf-button" [class.tf-button-secondary]="state() === 'unknown' || state() === 'processing'">{{ t('pay_result_purchase') }}</a>
+      }
+    </div>
+  </section>
+</main>

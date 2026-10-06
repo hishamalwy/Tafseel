@@ -3,7 +3,7 @@ import { of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { OfferLike, Payable } from '../models/payable';
 import { PAYABLE_GATEWAY, PAYMENT_GATEWAY, PayableGateway } from './checkout.ports';
-import { LoadCheckoutContext } from './checkout.use-cases';
+import { InitiatePayment, LoadCheckoutContext } from './checkout.use-cases';
 
 const REQUEST_ID = '6f1c2b8e-4a3d-4f5e-9b1a-2c3d4e5f6a7b';
 
@@ -19,7 +19,7 @@ function load(request: object, offers: object[]) {
   TestBed.configureTestingModule({
     providers: [
       { provide: PAYABLE_GATEWAY, useValue: payables },
-      { provide: PAYMENT_GATEWAY, useValue: { mockSimulatorEnabled: () => of(false) } }
+      { provide: PAYMENT_GATEWAY, useValue: {} }
     ]
   });
   return TestBed.inject(LoadCheckoutContext).execute('open-request', REQUEST_ID, false);
@@ -60,5 +60,27 @@ describe('LoadCheckoutContext for a live session request', () => {
       ]
     });
     expect(await TestBed.inject(LoadCheckoutContext).execute('live-session', REQUEST_ID, true)).toBeNull();
+  });
+});
+
+
+describe('Paymob checkout initiation', () => {
+  const payable = Payable.fromOrder({ id: REQUEST_ID, price: 100, studentTotal: 108, currency: 'SAR' }, false);
+  it('redirects to the official KSA Unified Checkout with the same command key across retries', async () => {
+    const keys: string[] = [];
+    TestBed.configureTestingModule({ providers: [{ provide: PAYMENT_GATEWAY, useValue: {
+      initiate: (_: Payable, key: string) => { keys.push(key); return of({ checkoutReference: 'https://ksa.checkout.paymob.com/?publicKey=public&clientSecret=checkout' }); }
+    } }] });
+    const useCase = TestBed.inject(InitiatePayment);
+    expect((await useCase.execute(payable)).url).toContain('https://ksa.checkout.paymob.com/');
+    await useCase.execute(payable);
+    expect(keys[0]).toBe(keys[1]);
+  });
+  it('accepts only the owned result route and refuses an arbitrary redirect host', async () => {
+    let url = `/checkout/result?paymentId=${REQUEST_ID}`;
+    TestBed.configureTestingModule({ providers: [{ provide: PAYMENT_GATEWAY, useValue: { initiate: () => of({ checkoutReference: url }) } }] });
+    expect((await TestBed.inject(InitiatePayment).execute(payable)).url).toBe(url);
+    url = 'https://evil.example/';
+    await expect(TestBed.inject(InitiatePayment).execute(payable)).rejects.toThrow('Unsafe');
   });
 });

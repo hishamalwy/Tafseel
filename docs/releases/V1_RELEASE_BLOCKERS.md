@@ -8,6 +8,19 @@ checklist: [`PRODUCTION_READINESS.md`](GO_LIVE_CHECKLIST.md).
 
 No ticket here was started in Release Control 1.
 
+**Production hardening Phase 1 (2026-10-06):** [TRUST-01](../tickets/v1/TRUST-01.md) is **Backlog / Gate 1
+blocked by DEC-16**. The high-level Quality Trust and Safety expansion is requested. Its concrete operational
+policy and case-scoped architecture are prepared in
+[system design](../audits/production-hardening-phase1/SYSTEM_DESIGN.md); no feature implementation or phase
+completion is claimed. Baseline checks/findings are in
+[evidence](../audits/production-hardening-phase1/BASELINE.md). Phase 2 is not authorized.
+
+**Baseline follow-up backlog (2026-10-06):** `QA-BASELINE-01` — deduplicate AppRoutesTests theory data
+so xUnit does not silently collapse repeated discovery IDs. `ENG-BASELINE-01` — review the existing
+landing-global.css 51.88/50 kB warning and observed CS8604 compiler warning; coordinate the latter with
+the concurrent provider workstream. Its new PaymentProviderBoundaryTests also produced a SQLite
+TeacherServices.RowVersion failure during the baseline run. These are recorded, not fixed in TRUST-01.
+
 **Dependency remediation backlog (2026-10-06):** the pre-push `node scripts/ci/check-vulnerable-packages.mjs` check fails for frontend production dependencies: Critical `proxy-addr` ([GHSA-jqcg-44mw-7w3h](https://github.com/advisories/GHSA-jqcg-44mw-7w3h)) and High `source-map-js` ([GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)). Remediation remains open; update the affected dependencies and verify the existing gate passes without exceptions. No dependency changes were made during the push task.
 
 **Docker build backlog (2026-10-06):** [Docker workflow run](https://github.com/hishamalwy/Tafseel/actions/runs/37427957580) fails in `npm run build`: locale validation in `frontend-angular/scripts/server-error-codes.mjs` raises `ENOENT` while reading `/src/src/` in the webclient build stage. Make the backend sources available to that validation and verify the image builds; no Docker changes were made during the push task.
@@ -49,6 +62,7 @@ recorded in the Product Contract and [`V1_OWNER_DECISIONS.md`](./V1_OWNER_DECISI
 
 | ID | Decision | Pri | Blocker | Blocks | Size | Business | UX | Contract | Completion evidence |
 |----|----------|-----|---------|--------|------|----------|----|----------|---------------------|
+| DEC-16 | Trust and Safety Phase 1: SLA, reassignment, temporary safeguards, prior-case visibility, assigned/resolved access and protected additive changes | P1 | yes | TRUST-01 | S | ⛔ | ◐ | ◐ | Explicit owner decision on the linked proposal, followed by Gates 1–3 |
 | DEC-08 | VAT and e-invoicing obligations for the launch entity — **qualified Saudi legal/tax advice required before the production payment-provider contract/sign-off and before final checkout/invoice wording** | P1 | yes | PAY-01 (contract sign-off), LEG-01; transitively PAY-02, PAY-03, PAY-04a, FIN-02…05 | S | ⛔ | — | — | Written legal/tax position; TAX tickets added if required |
 | DEC-12 | Production provider and physical data region. Direction recorded (managed PaaS, single instance, managed SQL Server-compatible database, private durable object storage, managed secret store, observability); provider and region open pending data-residency/legal advice and service availability | P1 | yes | INF-03, INF-04, INF-07, SEC-04, OBS-01 (DATA-01, REL-01, OBS-02 transitively) | S | ⛔ | — | — | Named provider and region in `PRODUCTION_READINESS.md` |
 | DEC-03 | Completion after the dispute window has passed credits *Available* directly (not Pending) | P2 | no | — | S | ⛔ | — | — | Contract §3.9 confirmed |
