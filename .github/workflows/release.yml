@@ -60,7 +60,7 @@ jobs:
           Jwt__SigningKey: release-only-signing-key-with-at-least-32-characters
           Resend__ApiToken: release-token
           Payments__WebhookSecret: release-webhook-secret-with-at-least-32-characters
-      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
         with:
           path: artifacts/release/publish
           format: spdx-json
@@ -77,13 +77,13 @@ jobs:
           tar -C artifacts/release -czf artifacts/tafseel-${VERSION}.tar.gz publish
           (cd artifacts/release && sha256sum tafseel-idempotent.sql sbom.spdx.json docker-metadata.json gate-summary.md > SHA256SUMS)
           (cd artifacts && sha256sum tafseel-${VERSION}.tar.gz >> release/SHA256SUMS)
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-${{ env.VERSION }}
           path: |
             artifacts/tafseel-${{ env.VERSION }}.tar.gz
             artifacts/release
-      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
         with:
           tag_name: ${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
